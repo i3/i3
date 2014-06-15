@@ -1,4 +1,4 @@
-ALL_TARGETS += i3
+ALL_TARGETS += i3 test-tools
 INSTALL_TARGETS += install-i3
 CLEAN_TARGETS += clean-i3
 
@@ -36,20 +36,22 @@ src/%.o: src/%.c $(i3_HEADERS_DEP)
 	echo "[i3] CC $<"
 	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ ${canonical_path}/$<
 
-# This target compiles the command parser twice:
-# Once with -DTEST_PARSER, creating a stand-alone executable used for tests,
-# and once as an object file for i3.
+test-tools: test.commands_parser test.config_parser
+
+test.commands_parser: src/commands_parser.c $(i3_HEADERS_DEP) i3-command-parser.stamp libi3.a
+	echo "[i3] Link test.commands_parser"
+	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.commands_parser $< $(LIBS) $(i3_LIBS)
+
+test.config_parser: src/config_parser.c $(i3_HEADERS_DEP) i3-config-parser.stamp libi3.a
+	echo "[i3] Link test.config_parser"
+	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.config_parser $< $(LIBS) $(i3_LIBS)
+
 src/commands_parser.o: src/commands_parser.c $(i3_HEADERS_DEP) i3-command-parser.stamp
 	echo "[i3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.commands_parser $< $(LIBS) $(i3_LIBS)
 	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
-# This target compiles the command parser twice:
-# Once with -DTEST_PARSER, creating a stand-alone executable used for tests,
-# and once as an object file for i3.
 src/config_parser.o: src/config_parser.c $(i3_HEADERS_DEP) i3-config-parser.stamp
 	echo "[i3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.config_parser $< $(LIBS) $(i3_LIBS)
 	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
 i3-command-parser.stamp: generate-command-parser.pl parser-specs/commands.spec
@@ -64,7 +66,7 @@ i3-config-parser.stamp: generate-command-parser.pl parser-specs/config.spec
 
 i3: libi3.a $(i3_OBJECTS)
 	echo "[i3] Link i3"
-	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS) $(i3_LIBS)
+	$(CC) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS) $(i3_LIBS)
 
 install-i3: i3
 	echo "[i3] Install"
@@ -79,6 +81,7 @@ install-i3: i3
 	$(INSTALL) -m 0755 i3-sensible-editor $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-pager $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-terminal $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -m 0755 i3-save-tree $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-dmenu-desktop $(DESTDIR)$(PREFIX)/bin/
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)$(SYSCONFDIR)/i3/config
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes || $(INSTALL) -m 0644 i3.config.keycodes $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes

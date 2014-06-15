@@ -19,9 +19,9 @@
 /* A datatype to pass through the callbacks to save the state */
 struct workspaces_json_params {
     struct ws_head *workspaces;
-    i3_ws          *workspaces_walk;
-    char           *cur_key;
-    char           *json;
+    i3_ws *workspaces_walk;
+    char *cur_key;
+    char *json;
 };
 
 /*
@@ -29,7 +29,7 @@ struct workspaces_json_params {
  *
  */
 static int workspaces_boolean_cb(void *params_, int val) {
-    struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
+    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
 
     if (!strcmp(params->cur_key, "visible")) {
         params->workspaces_walk->visible = val;
@@ -58,39 +58,35 @@ static int workspaces_boolean_cb(void *params_, int val) {
  * Parse an integer (num or the rect)
  *
  */
-#if YAJL_MAJOR >= 2
 static int workspaces_integer_cb(void *params_, long long val) {
-#else
-static int workspaces_integer_cb(void *params_, long val) {
-#endif
-    struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
+    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
 
     if (!strcmp(params->cur_key, "num")) {
-        params->workspaces_walk->num = (int) val;
+        params->workspaces_walk->num = (int)val;
         FREE(params->cur_key);
         return 1;
     }
 
     if (!strcmp(params->cur_key, "x")) {
-        params->workspaces_walk->rect.x = (int) val;
+        params->workspaces_walk->rect.x = (int)val;
         FREE(params->cur_key);
         return 1;
     }
 
     if (!strcmp(params->cur_key, "y")) {
-        params->workspaces_walk->rect.y = (int) val;
+        params->workspaces_walk->rect.y = (int)val;
         FREE(params->cur_key);
         return 1;
     }
 
     if (!strcmp(params->cur_key, "width")) {
-        params->workspaces_walk->rect.w = (int) val;
+        params->workspaces_walk->rect.w = (int)val;
         FREE(params->cur_key);
         return 1;
     }
 
     if (!strcmp(params->cur_key, "height")) {
-        params->workspaces_walk->rect.h = (int) val;
+        params->workspaces_walk->rect.h = (int)val;
         FREE(params->cur_key);
         return 1;
     }
@@ -103,51 +99,71 @@ static int workspaces_integer_cb(void *params_, long val) {
  * Parse a string (name, output)
  *
  */
-#if YAJL_MAJOR >= 2
 static int workspaces_string_cb(void *params_, const unsigned char *val, size_t len) {
-#else
-static int workspaces_string_cb(void *params_, const unsigned char *val, unsigned int len) {
-#endif
-        struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
+    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
 
-        char *output_name;
+    char *output_name;
 
-        if (!strcmp(params->cur_key, "name")) {
-            /* Save the name */
-            params->workspaces_walk->name = i3string_from_utf8_with_length((const char *)val, len);
+    if (!strcmp(params->cur_key, "name")) {
+        const char *ws_name = (const char *)val;
+        params->workspaces_walk->canonical_name = strndup(ws_name, len);
 
-            /* Save its rendered width */
-            params->workspaces_walk->name_width =
-                predict_text_width(params->workspaces_walk->name);
+        if (config.strip_ws_numbers && params->workspaces_walk->num >= 0) {
+            /* Special case: strip off the workspace number */
+            static char ws_num[10];
 
-            DLOG("Got Workspace %s, name_width: %d, glyphs: %zu\n",
-                 i3string_as_utf8(params->workspaces_walk->name),
-                 params->workspaces_walk->name_width,
-                 i3string_get_num_glyphs(params->workspaces_walk->name));
-            FREE(params->cur_key);
+            snprintf(ws_num, sizeof(ws_num), "%d", params->workspaces_walk->num);
 
-            return 1;
+            /* Calculate the length of the number str in the name */
+            size_t offset = strspn(ws_name, ws_num);
+
+            /* Also strip off the conventional ws name delimiter */
+            if (offset && ws_name[offset] == ':')
+                offset += 1;
+
+            /* Offset may be equal to length, in which case display the number */
+            params->workspaces_walk->name = (offset < len
+                                                 ? i3string_from_utf8_with_length(ws_name + offset, len - offset)
+                                                 : i3string_from_utf8(ws_num));
+
+        } else {
+            /* Default case: just save the name */
+            params->workspaces_walk->name = i3string_from_utf8_with_length(ws_name, len);
         }
 
-        if (!strcmp(params->cur_key, "output")) {
-            /* We add the ws to the TAILQ of the output, it belongs to */
-            output_name = smalloc(sizeof(const unsigned char) * (len + 1));
-            strncpy(output_name, (const char*) val, len);
-            output_name[len] = '\0';
-            i3_output *target = get_output_by_name(output_name);
-            if (target) {
-                params->workspaces_walk->output = target;
+        /* Save its rendered width */
+        params->workspaces_walk->name_width =
+            predict_text_width(params->workspaces_walk->name);
 
-                TAILQ_INSERT_TAIL(params->workspaces_walk->output->workspaces,
-                                  params->workspaces_walk,
-                                  tailq);
-            }
+        DLOG("Got Workspace canonical: %s, name: '%s', name_width: %d, glyphs: %zu\n",
+             params->workspaces_walk->canonical_name,
+             i3string_as_utf8(params->workspaces_walk->name),
+             params->workspaces_walk->name_width,
+             i3string_get_num_glyphs(params->workspaces_walk->name));
+        FREE(params->cur_key);
 
-            FREE(output_name);
-            return 1;
+        return 1;
+    }
+
+    if (!strcmp(params->cur_key, "output")) {
+        /* We add the ws to the TAILQ of the output, it belongs to */
+        output_name = smalloc(sizeof(const unsigned char) * (len + 1));
+        strncpy(output_name, (const char *)val, len);
+        output_name[len] = '\0';
+        i3_output *target = get_output_by_name(output_name);
+        if (target) {
+            params->workspaces_walk->output = target;
+
+            TAILQ_INSERT_TAIL(params->workspaces_walk->output->workspaces,
+                              params->workspaces_walk,
+                              tailq);
         }
 
-        return 0;
+        FREE(output_name);
+        return 1;
+    }
+
+    return 0;
 }
 
 /*
@@ -155,7 +171,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
  *
  */
 static int workspaces_start_map_cb(void *params_) {
-    struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
+    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
 
     i3_ws *new_workspace = NULL;
 
@@ -182,34 +198,24 @@ static int workspaces_start_map_cb(void *params_) {
  * Essentially we just save it in the parsing-state
  *
  */
-#if YAJL_MAJOR >= 2
 static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
-#else
-static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, unsigned int keyLen) {
-#endif
-    struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
+    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
     FREE(params->cur_key);
 
     params->cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(params->cur_key, (const char*) keyVal, keyLen);
+    strncpy(params->cur_key, (const char *)keyVal, keyLen);
     params->cur_key[keyLen] = '\0';
 
     return 1;
 }
 
 /* A datastructure to pass all these callbacks to yajl */
-yajl_callbacks workspaces_callbacks = {
-    NULL,
-    &workspaces_boolean_cb,
-    &workspaces_integer_cb,
-    NULL,
-    NULL,
-    &workspaces_string_cb,
-    &workspaces_start_map_cb,
-    &workspaces_map_key_cb,
-    NULL,
-    NULL,
-    NULL
+static yajl_callbacks workspaces_callbacks = {
+    .yajl_boolean = workspaces_boolean_cb,
+    .yajl_integer = workspaces_integer_cb,
+    .yajl_string = workspaces_string_cb,
+    .yajl_start_map = workspaces_start_map_cb,
+    .yajl_map_key = workspaces_map_key_cb,
 };
 
 /*
@@ -229,24 +235,15 @@ void parse_workspaces_json(char *json) {
 
     yajl_handle handle;
     yajl_status state;
-#if YAJL_MAJOR < 2
-    yajl_parser_config parse_conf = { 0, 0 };
+    handle = yajl_alloc(&workspaces_callbacks, NULL, (void *)&params);
 
-    handle = yajl_alloc(&workspaces_callbacks, &parse_conf, NULL, (void*) &params);
-#else
-    handle = yajl_alloc(&workspaces_callbacks, NULL, (void*) &params);
-#endif
-
-    state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
+    state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
     /* FIXME: Propper errorhandling for JSON-parsing */
     switch (state) {
         case yajl_status_ok:
             break;
         case yajl_status_client_canceled:
-#if YAJL_MAJOR < 2
-        case yajl_status_insufficient_data:
-#endif
         case yajl_status_error:
             ELOG("Could not parse workspaces-reply!\n");
             exit(EXIT_FAILURE);
@@ -267,12 +264,13 @@ void free_workspaces(void) {
     if (outputs == NULL) {
         return;
     }
-    i3_ws     *ws_walk;
+    i3_ws *ws_walk;
 
-    SLIST_FOREACH(outputs_walk, outputs, slist) {
+    SLIST_FOREACH (outputs_walk, outputs, slist) {
         if (outputs_walk->workspaces != NULL && !TAILQ_EMPTY(outputs_walk->workspaces)) {
-            TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
+            TAILQ_FOREACH (ws_walk, outputs_walk->workspaces, tailq) {
                 I3STRING_FREE(ws_walk->name);
+                FREE(ws_walk->canonical_name);
             }
             FREE_TAILQ(outputs_walk->workspaces, i3_ws);
         }

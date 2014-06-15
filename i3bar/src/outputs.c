@@ -20,10 +20,10 @@
 /* A datatype to pass through the callbacks to save the state */
 struct outputs_json_params {
     struct outputs_head *outputs;
-    i3_output           *outputs_walk;
-    char                *cur_key;
-    char                *json;
-    bool                in_rect;
+    i3_output *outputs_walk;
+    char *cur_key;
+    char *json;
+    bool in_rect;
 };
 
 /*
@@ -31,7 +31,7 @@ struct outputs_json_params {
  *
  */
 static int outputs_null_cb(void *params_) {
-    struct outputs_json_params *params = (struct outputs_json_params*) params_;
+    struct outputs_json_params *params = (struct outputs_json_params *)params_;
 
     FREE(params->cur_key);
 
@@ -43,7 +43,7 @@ static int outputs_null_cb(void *params_) {
  *
  */
 static int outputs_boolean_cb(void *params_, int val) {
-    struct outputs_json_params *params = (struct outputs_json_params*) params_;
+    struct outputs_json_params *params = (struct outputs_json_params *)params_;
 
     if (!strcmp(params->cur_key, "active")) {
         params->outputs_walk->active = val;
@@ -64,39 +64,35 @@ static int outputs_boolean_cb(void *params_, int val) {
  * Parse an integer (current_workspace or the rect)
  *
  */
-#if YAJL_MAJOR >= 2
 static int outputs_integer_cb(void *params_, long long val) {
-#else
-static int outputs_integer_cb(void *params_, long val) {
-#endif
-    struct outputs_json_params *params = (struct outputs_json_params*) params_;
+    struct outputs_json_params *params = (struct outputs_json_params *)params_;
 
     if (!strcmp(params->cur_key, "current_workspace")) {
-        params->outputs_walk->ws = (int) val;
+        params->outputs_walk->ws = (int)val;
         FREE(params->cur_key);
         return 1;
     }
 
     if (!strcmp(params->cur_key, "x")) {
-        params->outputs_walk->rect.x = (int) val;
+        params->outputs_walk->rect.x = (int)val;
         FREE(params->cur_key);
         return 1;
     }
 
     if (!strcmp(params->cur_key, "y")) {
-        params->outputs_walk->rect.y = (int) val;
+        params->outputs_walk->rect.y = (int)val;
         FREE(params->cur_key);
         return 1;
     }
 
     if (!strcmp(params->cur_key, "width")) {
-        params->outputs_walk->rect.w = (int) val;
+        params->outputs_walk->rect.w = (int)val;
         FREE(params->cur_key);
         return 1;
     }
 
     if (!strcmp(params->cur_key, "height")) {
-        params->outputs_walk->rect.h = (int) val;
+        params->outputs_walk->rect.h = (int)val;
         FREE(params->cur_key);
         return 1;
     }
@@ -108,16 +104,12 @@ static int outputs_integer_cb(void *params_, long val) {
  * Parse a string (name)
  *
  */
-#if YAJL_MAJOR >= 2
 static int outputs_string_cb(void *params_, const unsigned char *val, size_t len) {
-#else
-static int outputs_string_cb(void *params_, const unsigned char *val, unsigned int len) {
-#endif
-    struct outputs_json_params *params = (struct outputs_json_params*) params_;
+    struct outputs_json_params *params = (struct outputs_json_params *)params_;
 
     if (!strcmp(params->cur_key, "current_workspace")) {
         char *copy = smalloc(sizeof(const unsigned char) * (len + 1));
-        strncpy(copy, (const char*) val, len);
+        strncpy(copy, (const char *)val, len);
         copy[len] = '\0';
 
         char *end;
@@ -136,7 +128,7 @@ static int outputs_string_cb(void *params_, const unsigned char *val, unsigned i
     }
 
     char *name = smalloc(sizeof(const unsigned char) * (len + 1));
-    strncpy(name, (const char*) val, len);
+    strncpy(name, (const char *)val, len);
     name[len] = '\0';
 
     params->outputs_walk->name = name;
@@ -151,7 +143,7 @@ static int outputs_string_cb(void *params_, const unsigned char *val, unsigned i
  *
  */
 static int outputs_start_map_cb(void *params_) {
-    struct outputs_json_params *params = (struct outputs_json_params*) params_;
+    struct outputs_json_params *params = (struct outputs_json_params *)params_;
     i3_output *new_output = NULL;
 
     if (params->cur_key == NULL) {
@@ -184,7 +176,7 @@ static int outputs_start_map_cb(void *params_) {
  *
  */
 static int outputs_end_map_cb(void *params_) {
-    struct outputs_json_params *params = (struct outputs_json_params*) params_;
+    struct outputs_json_params *params = (struct outputs_json_params *)params_;
     if (params->in_rect) {
         params->in_rect = false;
         /* Ignore the end of a rect */
@@ -232,34 +224,26 @@ static int outputs_end_map_cb(void *params_) {
  * Essentially we just save it in the parsing-state
  *
  */
-#if YAJL_MAJOR >= 2
 static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
-#else
-static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, unsigned keyLen) {
-#endif
-    struct outputs_json_params *params = (struct outputs_json_params*) params_;
+    struct outputs_json_params *params = (struct outputs_json_params *)params_;
     FREE(params->cur_key);
 
     params->cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(params->cur_key, (const char*) keyVal, keyLen);
+    strncpy(params->cur_key, (const char *)keyVal, keyLen);
     params->cur_key[keyLen] = '\0';
 
     return 1;
 }
 
 /* A datastructure to pass all these callbacks to yajl */
-yajl_callbacks outputs_callbacks = {
-    &outputs_null_cb,
-    &outputs_boolean_cb,
-    &outputs_integer_cb,
-    NULL,
-    NULL,
-    &outputs_string_cb,
-    &outputs_start_map_cb,
-    &outputs_map_key_cb,
-    &outputs_end_map_cb,
-    NULL,
-    NULL
+static yajl_callbacks outputs_callbacks = {
+    .yajl_null = outputs_null_cb,
+    .yajl_boolean = outputs_boolean_cb,
+    .yajl_integer = outputs_integer_cb,
+    .yajl_string = outputs_string_cb,
+    .yajl_start_map = outputs_start_map_cb,
+    .yajl_map_key = outputs_map_key_cb,
+    .yajl_end_map = outputs_end_map_cb,
 };
 
 /*
@@ -285,24 +269,15 @@ void parse_outputs_json(char *json) {
 
     yajl_handle handle;
     yajl_status state;
-#if YAJL_MAJOR < 2
-    yajl_parser_config parse_conf = { 0, 0 };
+    handle = yajl_alloc(&outputs_callbacks, NULL, (void *)&params);
 
-    handle = yajl_alloc(&outputs_callbacks, &parse_conf, NULL, (void*) &params);
-#else
-    handle = yajl_alloc(&outputs_callbacks, NULL, (void*) &params);
-#endif
-
-    state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
+    state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
     /* FIXME: Propper errorhandling for JSON-parsing */
     switch (state) {
         case yajl_status_ok:
             break;
         case yajl_status_client_canceled:
-#if YAJL_MAJOR < 2
-        case yajl_status_insufficient_data:
-#endif
         case yajl_status_error:
             ELOG("Could not parse outputs-reply!\n");
             exit(EXIT_FAILURE);
@@ -321,7 +296,7 @@ i3_output *get_output_by_name(char *name) {
     if (name == NULL) {
         return NULL;
     }
-    SLIST_FOREACH(walk, outputs, slist) {
+    SLIST_FOREACH (walk, outputs, slist) {
         if (!strcmp(walk->name, name)) {
             break;
         }

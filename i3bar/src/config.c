@@ -27,15 +27,11 @@ static char *cur_key;
  * Essentially we just save it in cur_key.
  *
  */
-#if YAJL_MAJOR >= 2
 static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
-#else
-static int config_map_key_cb(void *params_, const unsigned char *keyVal, unsigned keyLen) {
-#endif
     FREE(cur_key);
 
     cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(cur_key, (const char*) keyVal, keyLen);
+    strncpy(cur_key, (const char *)keyVal, keyLen);
     cur_key[keyLen] = '\0';
 
     return 1;
@@ -61,11 +57,7 @@ static int config_null_cb(void *params_) {
  * Parse a string
  *
  */
-#if YAJL_MAJOR >= 2
 static int config_string_cb(void *params_, const unsigned char *val, size_t _len) {
-#else
-static int config_string_cb(void *params_, const unsigned char *val, unsigned int _len) {
-#endif
     int len = (int)_len;
     /* The id and socket_path are ignored, we already know them. */
     if (!strcmp(cur_key, "id") || !strcmp(cur_key, "socket_path"))
@@ -73,29 +65,29 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
 
     if (!strcmp(cur_key, "mode")) {
         DLOG("mode = %.*s, len = %d\n", len, val, len);
-        config.hide_on_modifier = (len == 4 && !strncmp((const char*)val, "dock", strlen("dock")) ? M_DOCK
-            : (len == 4 && !strncmp((const char*)val, "hide", strlen("hide")) ? M_HIDE
-                : M_INVISIBLE));
+        config.hide_on_modifier = (len == 4 && !strncmp((const char *)val, "dock", strlen("dock")) ? M_DOCK
+                                                                                                   : (len == 4 && !strncmp((const char *)val, "hide", strlen("hide")) ? M_HIDE
+                                                                                                                                                                      : M_INVISIBLE));
         return 1;
     }
 
     if (!strcmp(cur_key, "hidden_state")) {
         DLOG("hidden_state = %.*s, len = %d\n", len, val, len);
-        config.hidden_state = (len == 4 && !strncmp((const char*)val, "hide", strlen("hide")) ? S_HIDE : S_SHOW);
+        config.hidden_state = (len == 4 && !strncmp((const char *)val, "hide", strlen("hide")) ? S_HIDE : S_SHOW);
         return 1;
     }
 
     if (!strcmp(cur_key, "modifier")) {
         DLOG("modifier = %.*s\n", len, val);
-        if (len == 5 && !strncmp((const char*)val, "shift", strlen("shift"))) {
+        if (len == 5 && !strncmp((const char *)val, "shift", strlen("shift"))) {
             config.modifier = ShiftMask;
             return 1;
         }
-        if (len == 4 && !strncmp((const char*)val, "ctrl", strlen("ctrl"))) {
+        if (len == 4 && !strncmp((const char *)val, "ctrl", strlen("ctrl"))) {
             config.modifier = ControlMask;
             return 1;
         }
-        if (len == 4 && !strncmp((const char*)val, "Mod", strlen("Mod"))) {
+        if (len == 4 && !strncmp((const char *)val, "Mod", strlen("Mod"))) {
             switch (val[3]) {
                 case '1':
                     config.modifier = Mod1Mask;
@@ -122,15 +114,11 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
 
     if (!strcmp(cur_key, "position")) {
         DLOG("position = %.*s\n", len, val);
-        config.position = (len == 3 && !strncmp((const char*)val, "top", strlen("top")) ? POS_TOP : POS_BOT);
+        config.position = (len == 3 && !strncmp((const char *)val, "top", strlen("top")) ? POS_TOP : POS_BOT);
         return 1;
     }
 
     if (!strcmp(cur_key, "status_command")) {
-        /* We cannot directly start the child here, because start_child() also
-         * needs to be run when no command was specified (to setup stdin).
-         * Therefore we save the command in 'config' and access it later in
-         * got_bar_config() */
         DLOG("command = %.*s\n", len, val);
         sasprintf(&config.command, "%.*s", len, val);
         return 1;
@@ -145,7 +133,7 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
     if (!strcmp(cur_key, "outputs")) {
         DLOG("+output %.*s\n", len, val);
         int new_num_outputs = config.num_outputs + 1;
-        config.outputs = srealloc(config.outputs, sizeof(char*) * new_num_outputs);
+        config.outputs = srealloc(config.outputs, sizeof(char *) * new_num_outputs);
         sasprintf(&config.outputs[config.num_outputs], "%.*s", len, val);
         config.num_outputs = new_num_outputs;
         return 1;
@@ -158,13 +146,13 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
         return 1;
     }
 
-#define COLOR(json_name, struct_name) \
-    do { \
-        if (!strcmp(cur_key, #json_name)) { \
+#define COLOR(json_name, struct_name)                                  \
+    do {                                                               \
+        if (!strcmp(cur_key, #json_name)) {                            \
             DLOG(#json_name " = " #struct_name " = %.*s\n", len, val); \
             sasprintf(&(config.colors.struct_name), "%.*s", len, val); \
-            return 1; \
-        } \
+            return 1;                                                  \
+        }                                                              \
     } while (0)
 
     COLOR(statusline, bar_fg);
@@ -205,6 +193,12 @@ static int config_boolean_cb(void *params_, int val) {
         return 1;
     }
 
+    if (!strcmp(cur_key, "strip_workspace_numbers")) {
+        DLOG("strip_workspace_numbers = %d\n", val);
+        config.strip_ws_numbers = val;
+        return 1;
+    }
+
     if (!strcmp(cur_key, "verbose")) {
         DLOG("verbose = %d\n", val);
         config.verbose = val;
@@ -216,17 +210,10 @@ static int config_boolean_cb(void *params_, int val) {
 
 /* A datastructure to pass all these callbacks to yajl */
 static yajl_callbacks outputs_callbacks = {
-    &config_null_cb,
-    &config_boolean_cb,
-    NULL,
-    NULL,
-    NULL,
-    &config_string_cb,
-    NULL,
-    &config_map_key_cb,
-    NULL,
-    NULL,
-    NULL
+    .yajl_null = config_null_cb,
+    .yajl_boolean = config_boolean_cb,
+    .yajl_string = config_string_cb,
+    .yajl_map_key = config_map_key_cb,
 };
 
 /*
@@ -236,24 +223,15 @@ static yajl_callbacks outputs_callbacks = {
 void parse_config_json(char *json) {
     yajl_handle handle;
     yajl_status state;
-#if YAJL_MAJOR < 2
-    yajl_parser_config parse_conf = { 0, 0 };
-
-    handle = yajl_alloc(&outputs_callbacks, &parse_conf, NULL, NULL);
-#else
     handle = yajl_alloc(&outputs_callbacks, NULL, NULL);
-#endif
 
-    state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
+    state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
     /* FIXME: Proper errorhandling for JSON-parsing */
     switch (state) {
         case yajl_status_ok:
             break;
         case yajl_status_client_canceled:
-#if YAJL_MAJOR < 2
-        case yajl_status_insufficient_data:
-#endif
         case yajl_status_error:
             ELOG("Could not parse config-reply!\n");
             exit(EXIT_FAILURE);
@@ -268,9 +246,9 @@ void parse_config_json(char *json) {
  *
  */
 void free_colors(struct xcb_color_strings_t *colors) {
-#define FREE_COLOR(x) \
-    do { \
-        if (colors->x) \
+#define FREE_COLOR(x)        \
+    do {                     \
+        if (colors->x)       \
             free(colors->x); \
     } while (0)
     FREE_COLOR(bar_fg);
@@ -290,4 +268,3 @@ void free_colors(struct xcb_color_strings_t *colors) {
     FREE_COLOR(focus_ws_border);
 #undef FREE_COLOR
 }
-

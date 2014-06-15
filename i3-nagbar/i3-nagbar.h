@@ -1,5 +1,4 @@
-#ifndef I3_NAGBAR
-#define I3_NAGBAR
+#pragma once
 
 #include <err.h>
 
@@ -17,5 +16,3 @@ while (0)
 #undef xmacro
 
 extern xcb_window_t root;
-
-#endif

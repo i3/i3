@@ -32,6 +32,7 @@ state INITIAL:
   'for_window'                             -> FOR_WINDOW
   'assign'                                 -> ASSIGN
   'focus_follows_mouse'                    -> FOCUS_FOLLOWS_MOUSE
+  'mouse_warping'                          -> MOUSE_WARPING
   'force_focus_wrapping'                   -> FORCE_FOCUS_WRAPPING
   'force_xinerama', 'force-xinerama'       -> FORCE_XINERAMA
   'workspace_auto_back_and_forth'          -> WORKSPACE_BACK_AND_FORTH
@@ -171,6 +172,11 @@ state CRITERION_STR:
 state FOCUS_FOLLOWS_MOUSE:
   value = word
       -> call cfg_focus_follows_mouse($value)
+
+# mouse_warping warping_t
+state MOUSE_WARPING:
+  value = 'none', 'output'
+      -> call cfg_mouse_warping($value)
 
 # force_focus_wrapping
 state FORCE_FOCUS_WRAPPING:
@@ -358,6 +364,7 @@ state BAR:
   'font'                   -> BAR_FONT
   'binding_mode_indicator' -> BAR_BINDING_MODE_INDICATOR
   'workspace_buttons'      -> BAR_WORKSPACE_BUTTONS
+  'strip_workspace_numbers' -> BAR_STRIP_WORKSPACE_NUMBERS
   'verbose'                -> BAR_VERBOSE
   'colors'                 -> BAR_COLORS_BRACE
   '}'
@@ -419,6 +426,10 @@ state BAR_BINDING_MODE_INDICATOR:
 state BAR_WORKSPACE_BUTTONS:
   value = word
       -> call cfg_bar_workspace_buttons($value); BAR
+
+state BAR_STRIP_WORKSPACE_NUMBERS:
+  value = word
+      -> call cfg_bar_strip_workspace_numbers($value); BAR
 
 state BAR_VERBOSE:
   value = word

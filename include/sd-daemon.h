@@ -1,7 +1,6 @@
 /*-*- Mode: C; c-basic-offset: 8; indent-tabs-mode: nil -*-*/
 
-#ifndef foosddaemonhfoo
-#define foosddaemonhfoo
+#pragma once
 
 /***
   Copyright 2010 Lennart Poettering
@@ -260,6 +259,4 @@ int sd_booted(void) _sd_hidden_;
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

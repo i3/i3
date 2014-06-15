@@ -7,8 +7,7 @@
  * xcb.c: Communicating with X
  *
  */
-#ifndef XCB_H_
-#define XCB_H_
+#pragma once
 
 #include <stdint.h>
 //#include "outputs.h"
@@ -133,5 +132,3 @@ void redraw_bars(void);
  *
  */
 void set_current_mode(struct mode *mode);
-
-#endif

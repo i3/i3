@@ -5,8 +5,7 @@
  * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
  *
  */
-#ifndef TRAYCLIENT_H_
-#define TRAYCLIENT_H_
+#pragma once
 
 #include "common.h"
 
@@ -21,5 +20,3 @@ struct trayclient {
 
     TAILQ_ENTRY(trayclient) tailq;  /* Pointer for the TAILQ-Macro */
 };
-
-#endif

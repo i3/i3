@@ -42,4 +42,34 @@ does_i3_live;
 
 exit_gracefully($pid);
 
+################################################################################
+# Related bug: multiple for_window assignments caused a crash
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+for_window [instance=__i3-test-window1] move workspace 3
+for_window [instance=__i3-test-window2] move workspace 2
+EOT
+
+$pid = launch_with_config($config);
+
+my $window1 = open_window(
+    wm_class => '__i3-test-window1',
+    dont_map => 1,
+);
+$window1->map;
+
+my $window2 = open_window(
+    wm_class => '__i3-test-window2',
+    dont_map => 1,
+);
+$window2->map;
+
+does_i3_live;
+
+exit_gracefully($pid);
+
 done_testing;

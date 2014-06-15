@@ -126,6 +126,7 @@ is($nodes->[0]->{focused}, 1, 'fullscreen window focused');
 cmd 'fullscreen';
 
 # Focus screen 1
+sync_with_i3;
 $x->root->warp_pointer(1025, 0);
 sync_with_i3;
 
@@ -134,6 +135,7 @@ cmd "workspace $tmp";
 my $diff_ws = open_window;
 
 # Focus screen 0
+sync_with_i3;
 $x->root->warp_pointer(0, 0);
 sync_with_i3;
 

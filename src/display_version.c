@@ -21,38 +21,21 @@
 static bool human_readable_key;
 static char *human_readable_version;
 
-#if YAJL_MAJOR >= 2
 static int version_string(void *ctx, const unsigned char *val, size_t len) {
-#else
-static int version_string(void *ctx, const unsigned char *val, unsigned int len) {
-#endif
     if (human_readable_key)
         sasprintf(&human_readable_version, "%.*s", (int)len, val);
     return 1;
 }
 
-#if YAJL_MAJOR >= 2
 static int version_map_key(void *ctx, const unsigned char *stringval, size_t stringlen) {
-#else
-static int version_map_key(void *ctx, const unsigned char *stringval, unsigned int stringlen) {
-#endif
     human_readable_key = (stringlen == strlen("human_readable") &&
-                   strncmp((const char*)stringval, "human_readable", strlen("human_readable")) == 0);
+                          strncmp((const char *)stringval, "human_readable", strlen("human_readable")) == 0);
     return 1;
 }
 
 static yajl_callbacks version_callbacks = {
-    NULL, /* null */
-    NULL, /* boolean */
-    NULL, /* integer */
-    NULL, /* double */
-    NULL, /* number */
-    &version_string,
-    NULL, /* start_map */
-    &version_map_key,
-    NULL, /* end_map */
-    NULL, /* start_array */
-    NULL /* end_array */
+    .yajl_string = version_string,
+    .yajl_map_key = version_map_key,
 };
 
 /*
@@ -93,11 +76,11 @@ void display_running_version(void) {
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_LOCAL;
     strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
-    if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
+    if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0)
         err(EXIT_FAILURE, "Could not connect to i3");
 
     if (ipc_send_message(sockfd, 0, I3_IPC_MESSAGE_TYPE_GET_VERSION,
-                         (uint8_t*)"") == -1)
+                         (uint8_t *)"") == -1)
         err(EXIT_FAILURE, "IPC: write()");
 
     uint32_t reply_length;
@@ -113,15 +96,9 @@ void display_running_version(void) {
     if (reply_type != I3_IPC_MESSAGE_TYPE_GET_VERSION)
         errx(EXIT_FAILURE, "Got reply type %d, but expected %d (GET_VERSION)", reply_type, I3_IPC_MESSAGE_TYPE_GET_VERSION);
 
-#if YAJL_MAJOR >= 2
     yajl_handle handle = yajl_alloc(&version_callbacks, NULL, NULL);
-#else
-    yajl_parser_config parse_conf = { 0, 0 };
 
-    yajl_handle handle = yajl_alloc(&version_callbacks, &parse_conf, NULL, NULL);
-#endif
-
-    yajl_status state = yajl_parse(handle, (const unsigned char*)reply, (int)reply_length);
+    yajl_status state = yajl_parse(handle, (const unsigned char *)reply, (int)reply_length);
     if (state != yajl_status_ok)
         errx(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
 
@@ -135,9 +112,9 @@ void display_running_version(void) {
 
     sasprintf(&exepath, "/proc/%d/exe", getpid());
 
-    while ((linksize = readlink(exepath, destpath, destpath_size)) == destpath_size) {
-            destpath_size = destpath_size * 2;
-            destpath = srealloc(destpath, destpath_size);
+    while ((linksize = readlink(exepath, destpath, destpath_size)) == (ssize_t)destpath_size) {
+        destpath_size = destpath_size * 2;
+        destpath = srealloc(destpath, destpath_size);
     }
     if (linksize == -1)
         err(EXIT_FAILURE, "readlink(%s)", exepath);
@@ -151,7 +128,7 @@ void display_running_version(void) {
     free(exepath);
     sasprintf(&exepath, "/proc/%s/exe", pid_from_atom);
 
-    while ((linksize = readlink(exepath, destpath, destpath_size)) == destpath_size) {
+    while ((linksize = readlink(exepath, destpath, destpath_size)) == (ssize_t)destpath_size) {
         destpath_size = destpath_size * 2;
         destpath = srealloc(destpath, destpath_size);
     }

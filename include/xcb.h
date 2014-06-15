@@ -7,8 +7,7 @@
  * xcb.c: Helper functions for easier usage of XCB
  *
  */
-#ifndef I3_XCB_H
-#define I3_XCB_H
+#pragma once
 
 #include "data.h"
 #include "xcursor.h"
@@ -95,7 +94,7 @@ void fake_absolute_configure_notify(Con *con);
  * Sends the WM_TAKE_FOCUS ClientMessage to the given window
  *
  */
-void send_take_focus(xcb_window_t window);
+void send_take_focus(xcb_window_t window, xcb_timestamp_t timestamp);
 
 /**
  * Raises the given window (typically client->frame) above all other windows
@@ -137,5 +136,3 @@ uint16_t get_visual_depth(xcb_visualid_t visual_id);
  *
  */
 xcb_visualid_t get_visualid_by_depth(uint16_t depth);
-
-#endif

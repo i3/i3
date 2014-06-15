@@ -21,7 +21,7 @@ static Rect total_outputs_dimensions(void) {
     Output *output;
     /* Use Rect to encapsulate dimensions, ignoring x/y */
     Rect outputs_dimensions = {0, 0, 0, 0};
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         outputs_dimensions.height += output->rect.height;
         outputs_dimensions.width += output->rect.width;
     }
@@ -198,14 +198,14 @@ void floating_enable(Con *con, bool automatic) {
 
     DLOG("Original rect: (%d, %d) with %d x %d\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
     DLOG("Geometry = (%d, %d) with %d x %d\n", con->geometry.x, con->geometry.y, con->geometry.width, con->geometry.height);
-    Rect zero = { 0, 0, 0, 0 };
+    Rect zero = {0, 0, 0, 0};
     nc->rect = con->geometry;
     /* If the geometry was not set (split containers), we need to determine a
      * sensible one by combining the geometry of all children */
     if (memcmp(&(nc->rect), &zero, sizeof(Rect)) == 0) {
         DLOG("Geometry not set, combining children\n");
         Con *child;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
             DLOG("child geometry: %d x %d\n", child->geometry.width, child->geometry.height);
             nc->rect.width += child->geometry.width;
             nc->rect.height = max(nc->rect.height, child->geometry.height);
@@ -231,7 +231,7 @@ void floating_enable(Con *con, bool automatic) {
     nc->rect.width -= border_style_rect.width;
 
     /* Add some more pixels for the title bar */
-    if(con_border_style(con) == BS_NORMAL)
+    if (con_border_style(con) == BS_NORMAL)
         nc->rect.height += deco_height;
 
     /* Honor the X11 border */
@@ -258,7 +258,8 @@ void floating_enable(Con *con, bool automatic) {
     /* Sanity check: Are the coordinates on the appropriate output? If not, we
      * need to change them */
     Output *current_output = get_output_containing(nc->rect.x +
-        (nc->rect.width / 2), nc->rect.y + (nc->rect.height / 2));
+                                                       (nc->rect.width / 2),
+                                                   nc->rect.y + (nc->rect.height / 2));
 
     Con *correct_output = con_get_output(ws);
     if (!current_output || current_output->con != correct_output) {
@@ -336,7 +337,8 @@ void floating_disable(Con *con, bool automatic) {
      * workspace itself */
     if (focused->type == CT_WORKSPACE)
         con->parent = focused;
-    else con->parent = focused->parent;
+    else
+        con->parent = focused->parent;
 
     /* con_fix_percent will adjust the percent value */
     con->percent = 0.0;
@@ -481,25 +483,27 @@ DRAGGING_CB(resize_window_callback) {
     uint32_t dest_width;
     uint32_t dest_height;
 
-    double ratio = (double) old_rect->width / old_rect->height;
+    double ratio = (double)old_rect->width / old_rect->height;
 
     /* First guess: We resize by exactly the amount the mouse moved,
      * taking into account in which corner the client was grabbed */
     if (corner & BORDER_LEFT)
         dest_width = old_rect->width - (new_x - event->root_x);
-    else dest_width = old_rect->width + (new_x - event->root_x);
+    else
+        dest_width = old_rect->width + (new_x - event->root_x);
 
     if (corner & BORDER_TOP)
         dest_height = old_rect->height - (new_y - event->root_y);
-    else dest_height = old_rect->height + (new_y - event->root_y);
+    else
+        dest_height = old_rect->height + (new_y - event->root_y);
 
     /* User wants to keep proportions, so we may have to adjust our values */
     if (params->proportional) {
-        dest_width = max(dest_width, (int) (dest_height * ratio));
-        dest_height = max(dest_height, (int) (dest_width / ratio));
+        dest_width = max(dest_width, (int)(dest_height * ratio));
+        dest_height = max(dest_height, (int)(dest_width / ratio));
     }
 
-    con->rect = (Rect) { dest_x, dest_y, dest_width, dest_height };
+    con->rect = (Rect) {dest_x, dest_y, dest_width, dest_height};
 
     /* Obey window size */
     floating_check_size(con);
@@ -535,23 +539,21 @@ void floating_resize_window(Con *con, const bool proportional,
      * a bitmask of the nearest borders (BORDER_LEFT, BORDER_RIGHT, …) */
     border_t corner = 0;
 
-    if (event->event_x <= (con->rect.width / 2))
+    if (event->event_x <= (int16_t)(con->rect.width / 2))
         corner |= BORDER_LEFT;
-    else corner |= BORDER_RIGHT;
+    else
+        corner |= BORDER_RIGHT;
 
     int cursor = 0;
-    if (event->event_y <= (con->rect.height / 2)) {
+    if (event->event_y <= (int16_t)(con->rect.height / 2)) {
         corner |= BORDER_TOP;
-        cursor = (corner & BORDER_LEFT) ?
-            XCURSOR_CURSOR_TOP_LEFT_CORNER : XCURSOR_CURSOR_TOP_RIGHT_CORNER;
-    }
-    else {
+        cursor = (corner & BORDER_LEFT) ? XCURSOR_CURSOR_TOP_LEFT_CORNER : XCURSOR_CURSOR_TOP_RIGHT_CORNER;
+    } else {
         corner |= BORDER_BOTTOM;
-        cursor = (corner & BORDER_LEFT) ?
-            XCURSOR_CURSOR_BOTTOM_LEFT_CORNER : XCURSOR_CURSOR_BOTTOM_RIGHT_CORNER;
+        cursor = (corner & BORDER_LEFT) ? XCURSOR_CURSOR_BOTTOM_LEFT_CORNER : XCURSOR_CURSOR_BOTTOM_RIGHT_CORNER;
     }
 
-    struct resize_window_callback_params params = { corner, proportional, event };
+    struct resize_window_callback_params params = {corner, proportional, event};
 
     /* get the initial rect in case of revert/cancel */
     Rect initial_rect = con->rect;
@@ -567,6 +569,103 @@ void floating_resize_window(Con *con, const bool proportional,
         con->scratchpad_state = SCRATCHPAD_CHANGED;
 }
 
+/* As endorsed by “ASSOCIATING CUSTOM DATA WITH A WATCHER” in ev(3) */
+struct drag_x11_cb {
+    ev_check check;
+
+    /* Whether this modal event loop should be exited and with which result. */
+    drag_result_t result;
+
+    /* The container that is being dragged or resized, or NULL if this is a
+     * drag of the resize handle. */
+    Con *con;
+
+    /* The dimensions of con when the loop was started. */
+    Rect old_rect;
+
+    /* The callback to invoke after every pointer movement. */
+    callback_t callback;
+
+    /* User data pointer for callback. */
+    const void *extra;
+};
+
+static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
+    struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w;
+    xcb_motion_notify_event_t *last_motion_notify = NULL;
+    xcb_generic_event_t *event;
+
+    while ((event = xcb_poll_for_event(conn)) != NULL) {
+        if (event->response_type == 0) {
+            xcb_generic_error_t *error = (xcb_generic_error_t *)event;
+            DLOG("X11 Error received (probably harmless)! sequence 0x%x, error_code = %d\n",
+                 error->sequence, error->error_code);
+            free(event);
+            continue;
+        }
+
+        /* Strip off the highest bit (set if the event is generated) */
+        int type = (event->response_type & 0x7F);
+
+        switch (type) {
+            case XCB_BUTTON_RELEASE:
+                dragloop->result = DRAG_SUCCESS;
+                break;
+
+            case XCB_KEY_PRESS:
+                DLOG("A key was pressed during drag, reverting changes.");
+                dragloop->result = DRAG_REVERT;
+                handle_event(type, event);
+                break;
+
+            case XCB_UNMAP_NOTIFY: {
+                xcb_unmap_notify_event_t *unmap_event = (xcb_unmap_notify_event_t *)event;
+                Con *con = con_by_window_id(unmap_event->window);
+
+                if (con != NULL) {
+                    DLOG("UnmapNotify for window 0x%08x (container %p)\n", unmap_event->window, con);
+
+                    if (con_get_workspace(con) == con_get_workspace(focused)) {
+                        DLOG("UnmapNotify for a managed window on the current workspace, aborting\n");
+                        dragloop->result = DRAG_ABORT;
+                    }
+                }
+
+                handle_event(type, event);
+                break;
+            }
+
+            case XCB_MOTION_NOTIFY:
+                /* motion_notify events are saved for later */
+                FREE(last_motion_notify);
+                last_motion_notify = (xcb_motion_notify_event_t *)event;
+                break;
+
+            default:
+                DLOG("Passing to original handler\n");
+                handle_event(type, event);
+                break;
+        }
+
+        if (last_motion_notify != (xcb_motion_notify_event_t *)event)
+            free(event);
+
+        if (dragloop->result != DRAGGING)
+            return;
+    }
+
+    if (last_motion_notify == NULL)
+        return;
+
+    dragloop->callback(
+        dragloop->con,
+        &(dragloop->old_rect),
+        last_motion_notify->root_x,
+        last_motion_notify->root_y,
+        dragloop->extra);
+    free(last_motion_notify);
+}
+
 /*
  * This function grabs your pointer and keyboard and lets you drag stuff around
  * (borders). Every time you move your mouse, an XCB_MOTION_NOTIFY event will
@@ -576,31 +675,28 @@ void floating_resize_window(Con *con, const bool proportional,
  *
  */
 drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
-                confine_to, border_t border, int cursor, callback_t callback, const void *extra)
-{
-    uint32_t new_x, new_y;
-    Rect old_rect = { 0, 0, 0, 0 };
-    if (con != NULL)
-        memcpy(&old_rect, &(con->rect), sizeof(Rect));
-
-    xcb_cursor_t xcursor = (cursor && xcursor_supported) ?
-        xcursor_get_cursor(cursor) : XCB_NONE;
+                                                                                confine_to,
+                           border_t border, int cursor, callback_t callback, const void *extra) {
+    xcb_cursor_t xcursor = (cursor && xcursor_supported) ? xcursor_get_cursor(cursor) : XCB_NONE;
 
     /* Grab the pointer */
     xcb_grab_pointer_cookie_t cookie;
     xcb_grab_pointer_reply_t *reply;
-    cookie = xcb_grab_pointer(conn,
-        false,               /* get all pointer events specified by the following mask */
-        root,                /* grab the root window */
-        XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, /* which events to let through */
-        XCB_GRAB_MODE_ASYNC, /* pointer events should continue as normal */
-        XCB_GRAB_MODE_ASYNC, /* keyboard mode */
-        confine_to,          /* confine_to = in which window should the cursor stay */
-        xcursor,             /* possibly display a special cursor */
-        XCB_CURRENT_TIME);
+    xcb_generic_error_t *error;
 
-    if ((reply = xcb_grab_pointer_reply(conn, cookie, NULL)) == NULL) {
-        ELOG("Could not grab pointer\n");
+    cookie = xcb_grab_pointer(conn,
+                              false,                                                         /* get all pointer events specified by the following mask */
+                              root,                                                          /* grab the root window */
+                              XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, /* which events to let through */
+                              XCB_GRAB_MODE_ASYNC,                                           /* pointer events should continue as normal */
+                              XCB_GRAB_MODE_ASYNC,                                           /* keyboard mode */
+                              confine_to,                                                    /* confine_to = in which window should the cursor stay */
+                              xcursor,                                                       /* possibly display a special cursor */
+                              XCB_CURRENT_TIME);
+
+    if ((reply = xcb_grab_pointer_reply(conn, cookie, &error)) == NULL) {
+        ELOG("Could not grab pointer (error_code = %d)\n", error->error_code);
+        free(error);
         return DRAG_ABORT;
     }
 
@@ -611,99 +707,46 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
     xcb_grab_keyboard_reply_t *keyb_reply;
 
     keyb_cookie = xcb_grab_keyboard(conn,
-            false, /* get all keyboard events */
-            root, /* grab the root window */
-            XCB_CURRENT_TIME,
-            XCB_GRAB_MODE_ASYNC, /* continue processing pointer events as normal */
-            XCB_GRAB_MODE_ASYNC /* keyboard mode */
-            );
+                                    false, /* get all keyboard events */
+                                    root,  /* grab the root window */
+                                    XCB_CURRENT_TIME,
+                                    XCB_GRAB_MODE_ASYNC, /* continue processing pointer events as normal */
+                                    XCB_GRAB_MODE_ASYNC  /* keyboard mode */
+                                    );
 
-    if ((keyb_reply = xcb_grab_keyboard_reply(conn, keyb_cookie, NULL)) == NULL) {
-        ELOG("Could not grab keyboard\n");
+    if ((keyb_reply = xcb_grab_keyboard_reply(conn, keyb_cookie, &error)) == NULL) {
+        ELOG("Could not grab keyboard (error_code = %d)\n", error->error_code);
+        free(error);
+        xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
         return DRAG_ABORT;
     }
 
     free(keyb_reply);
 
     /* Go into our own event loop */
-    xcb_flush(conn);
+    struct drag_x11_cb loop = {
+        .result = DRAGGING,
+        .con = con,
+        .callback = callback,
+        .extra = extra,
+    };
+    if (con)
+        loop.old_rect = con->rect;
+    ev_check_init(&loop.check, xcb_drag_check_cb);
+    main_set_x11_cb(false);
+    ev_check_start(main_loop, &loop.check);
 
-    xcb_generic_event_t *inside_event, *last_motion_notify = NULL;
-    Con *inside_con = NULL;
+    while (loop.result == DRAGGING)
+        ev_run(main_loop, EVRUN_ONCE);
 
-    drag_result_t drag_result = DRAGGING;
-    /* I’ve always wanted to have my own eventhandler… */
-    while (drag_result == DRAGGING && (inside_event = xcb_wait_for_event(conn))) {
-        /* We now handle all events we can get using xcb_poll_for_event */
-        do {
-            /* skip x11 errors */
-            if (inside_event->response_type == 0) {
-                free(inside_event);
-                continue;
-            }
-            /* Strip off the highest bit (set if the event is generated) */
-            int type = (inside_event->response_type & 0x7F);
-
-            switch (type) {
-                case XCB_BUTTON_RELEASE:
-                    drag_result = DRAG_SUCCESS;
-                    break;
-
-                case XCB_MOTION_NOTIFY:
-                    /* motion_notify events are saved for later */
-                    FREE(last_motion_notify);
-                    last_motion_notify = inside_event;
-                    break;
-
-                case XCB_UNMAP_NOTIFY:
-                    inside_con = con_by_window_id(((xcb_unmap_notify_event_t*)inside_event)->window);
-
-                    if (inside_con != NULL) {
-                        DLOG("UnmapNotify for window 0x%08x (container %p)\n", ((xcb_unmap_notify_event_t*)inside_event)->window, inside_con);
-
-                        if (con_get_workspace(inside_con) == con_get_workspace(focused)) {
-                            DLOG("UnmapNotify for a managed window on the current workspace, aborting\n");
-                            drag_result = DRAG_ABORT;
-                        }
-                    }
-
-                    handle_event(type, inside_event);
-                    break;
-
-                case XCB_KEY_PRESS:
-                    /* Cancel the drag if a key was pressed */
-                    DLOG("A key was pressed during drag, reverting changes.");
-                    drag_result = DRAG_REVERT;
-
-                    handle_event(type, inside_event);
-                    break;
-
-                default:
-                    DLOG("Passing to original handler\n");
-                    /* Use original handler */
-                    handle_event(type, inside_event);
-                    break;
-            }
-            if (last_motion_notify != inside_event)
-                free(inside_event);
-        } while ((inside_event = xcb_poll_for_event(conn)) != NULL);
-
-        if (last_motion_notify == NULL || drag_result != DRAGGING)
-            continue;
-
-        new_x = ((xcb_motion_notify_event_t*)last_motion_notify)->root_x;
-        new_y = ((xcb_motion_notify_event_t*)last_motion_notify)->root_y;
-
-        callback(con, &old_rect, new_x, new_y, extra);
-        FREE(last_motion_notify);
-    }
+    ev_check_stop(main_loop, &loop.check);
+    main_set_x11_cb(true);
 
     xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME);
     xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
-
     xcb_flush(conn);
 
-    return drag_result;
+    return loop.result;
 }
 
 /*
@@ -746,18 +789,16 @@ void floating_fix_coordinates(Con *con, Rect *old_rect, Rect *new_rect) {
          new_rect->x, new_rect->y, new_rect->width, new_rect->height);
     /* First we get the x/y coordinates relative to the x/y coordinates
      * of the output on which the window is on */
-    int32_t rel_x = con->rect.x - old_rect->x + (int32_t)(con->rect.width  / 2);
+    int32_t rel_x = con->rect.x - old_rect->x + (int32_t)(con->rect.width / 2);
     int32_t rel_y = con->rect.y - old_rect->y + (int32_t)(con->rect.height / 2);
     /* Then we calculate a fraction, for example 0.63 for a window
      * which is at y = 1212 of a 1920 px high output */
     DLOG("rel_x = %d, rel_y = %d, fraction_x = %f, fraction_y = %f, output->w = %d, output->h = %d\n",
-          rel_x, rel_y, (double)rel_x / old_rect->width, (double)rel_y / old_rect->height,
-          old_rect->width, old_rect->height);
+         rel_x, rel_y, (double)rel_x / old_rect->width, (double)rel_y / old_rect->height,
+         old_rect->width, old_rect->height);
     /* Here we have to multiply at first. Or we will lose precision when not compiled with -msse2 */
-    con->rect.x = (int32_t)new_rect->x + (double)(rel_x * (int32_t)new_rect->width)
-        / (int32_t)old_rect->width - (int32_t)(con->rect.width / 2);
-    con->rect.y = (int32_t)new_rect->y + (double)(rel_y * (int32_t)new_rect->height)
-        / (int32_t)old_rect->height - (int32_t)(con->rect.height / 2);
+    con->rect.x = (int32_t)new_rect->x + (double)(rel_x * (int32_t)new_rect->width) / (int32_t)old_rect->width - (int32_t)(con->rect.width / 2);
+    con->rect.y = (int32_t)new_rect->y + (double)(rel_y * (int32_t)new_rect->height) / (int32_t)old_rect->height - (int32_t)(con->rect.height / 2);
     DLOG("Resulting coordinates: x = %d, y = %d\n", con->rect.x, con->rect.y);
 }
 

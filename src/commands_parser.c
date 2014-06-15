@@ -35,8 +35,8 @@
 #include "all.h"
 
 // Macros to make the YAJL API a bit easier to use.
-#define y(x, ...) yajl_gen_ ## x (command_output.json_gen, ##__VA_ARGS__)
-#define ystr(str) yajl_gen_string(command_output.json_gen, (unsigned char*)str, strlen(str))
+#define y(x, ...) (command_output.json_gen != NULL ? yajl_gen_##x(command_output.json_gen, ##__VA_ARGS__) : 0)
+#define ystr(str) (command_output.json_gen != NULL ? yajl_gen_string(command_output.json_gen, (unsigned char *)str, strlen(str)) : 0)
 
 /*******************************************************************************
  * The data structures used for parsing. Essentially the current state and a
@@ -179,11 +179,10 @@ static cmdp_state state;
 #ifndef TEST_PARSER
 static Match current_match;
 #endif
-static struct CommandResult subcommand_output;
-static struct CommandResult command_output;
+static struct CommandResultIR subcommand_output;
+static struct CommandResultIR command_output;
 
 #include "GENERATED_command_call.h"
-
 
 static void next_state(const cmdp_token *token) {
     if (token->next_state == __CALL) {
@@ -205,16 +204,20 @@ static void next_state(const cmdp_token *token) {
     }
 }
 
-struct CommandResult *parse_command(const char *input) {
+/*
+ * Parses and executes the given command. If a caller-allocated yajl_gen is
+ * passed, a json reply will be generated in the format specified by the ipc
+ * protocol. Pass NULL if no json reply is required.
+ *
+ * Free the returned CommandResult with command_result_free().
+ */
+CommandResult *parse_command(const char *input, yajl_gen gen) {
     DLOG("COMMAND: *%s*\n", input);
     state = INITIAL;
+    CommandResult *result = scalloc(sizeof(CommandResult));
 
-/* A YAJL JSON generator used for formatting replies. */
-#if YAJL_MAJOR >= 2
-    command_output.json_gen = yajl_gen_alloc(NULL);
-#else
-    command_output.json_gen = yajl_gen_alloc(NULL, NULL);
-#endif
+    /* A YAJL JSON generator used for formatting replies. */
+    command_output.json_gen = gen;
 
     y(array_open);
     command_output.needs_tree_render = false;
@@ -225,17 +228,18 @@ struct CommandResult *parse_command(const char *input) {
     const cmdp_token *token;
     bool token_handled;
 
-    // TODO: make this testable
+// TODO: make this testable
 #ifndef TEST_PARSER
     cmd_criteria_init(&current_match, &subcommand_output);
 #endif
 
     /* The "<=" operator is intentional: We also handle the terminating 0-byte
      * explicitly by looking for an 'end' token. */
-    while ((walk - input) <= len) {
+    while ((size_t)(walk - input) <= len) {
         /* skip whitespace and newlines before every token */
         while ((*walk == ' ' || *walk == '\t' ||
-                *walk == '\r' || *walk == '\n') && *walk != '\0')
+                *walk == '\r' || *walk == '\n') &&
+               *walk != '\0')
             walk++;
 
         cmdp_token_ptr *ptr = &(tokens[state]);
@@ -263,7 +267,7 @@ struct CommandResult *parse_command(const char *input) {
                 if (*walk == '"') {
                     beginning++;
                     walk++;
-                    while (*walk != '\0' && (*walk != '"' || *(walk-1) == '\\'))
+                    while (*walk != '\0' && (*walk != '"' || *(walk - 1) == '\\'))
                         walk++;
                 } else {
                     if (token->name[0] == 's') {
@@ -281,22 +285,22 @@ struct CommandResult *parse_command(const char *input) {
                          * semicolon (;). */
                         while (*walk != ' ' && *walk != '\t' &&
                                *walk != ']' && *walk != ',' &&
-                               *walk !=  ';' && *walk != '\r' &&
+                               *walk != ';' && *walk != '\r' &&
                                *walk != '\n' && *walk != '\0')
                             walk++;
                     }
                 }
                 if (walk != beginning) {
-                    char *str = scalloc(walk-beginning + 1);
+                    char *str = scalloc(walk - beginning + 1);
                     /* We copy manually to handle escaping of characters. */
                     int inpos, outpos;
                     for (inpos = 0, outpos = 0;
-                         inpos < (walk-beginning);
+                         inpos < (walk - beginning);
                          inpos++, outpos++) {
                         /* We only handle escaped double quotes to not break
                          * backwards compatibility with people using \w in
                          * regular expressions etc. */
-                        if (beginning[inpos] == '\\' && beginning[inpos+1] == '"')
+                        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"')
                             inpos++;
                         str[outpos] = beginning[inpos];
                     }
@@ -316,19 +320,19 @@ struct CommandResult *parse_command(const char *input) {
                 if (*walk == '\0' || *walk == ',' || *walk == ';') {
                     next_state(token);
                     token_handled = true;
-                    /* To make sure we start with an appropriate matching
+/* To make sure we start with an appropriate matching
                      * datastructure for commands which do *not* specify any
                      * criteria, we re-initialize the criteria system after
                      * every command. */
-                    // TODO: make this testable
+// TODO: make this testable
 #ifndef TEST_PARSER
                     if (*walk == '\0' || *walk == ';')
                         cmd_criteria_init(&current_match, &subcommand_output);
 #endif
                     walk++;
                     break;
-               }
-           }
+                }
+            }
         }
 
         if (!token_handled) {
@@ -382,6 +386,9 @@ struct CommandResult *parse_command(const char *input) {
             ELOG("Your command: %s\n", input);
             ELOG("              %s\n", position);
 
+            result->parse_error = true;
+            result->error_message = errormessage;
+
             /* Format this error message as a JSON reply. */
             y(map_open);
             ystr("success");
@@ -400,7 +407,6 @@ struct CommandResult *parse_command(const char *input) {
             y(map_close);
 
             free(position);
-            free(errormessage);
             clear_stack();
             break;
         }
@@ -408,7 +414,19 @@ struct CommandResult *parse_command(const char *input) {
 
     y(array_close);
 
-    return &command_output;
+    result->needs_tree_render = command_output.needs_tree_render;
+    return result;
+}
+
+/*
+ * Frees a CommandResult
+ */
+void command_result_free(CommandResult *result) {
+    if (result == NULL)
+        return;
+
+    FREE(result->error_message);
+    FREE(result);
 }
 
 /*******************************************************************************
@@ -446,6 +464,12 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Syntax: %s <command>\n", argv[0]);
         return 1;
     }
-    parse_command(argv[1]);
+    yajl_gen gen = yajl_gen_alloc(NULL);
+
+    CommandResult *result = parse_command(argv[1], gen);
+
+    command_result_free(result);
+
+    yajl_gen_free(gen);
 }
 #endif

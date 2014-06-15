@@ -1,0 +1,138 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.8    │
+ └──────────────────────────────┘
+
+This is i3 v4.8. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+The biggest new feature certainly is layout saving/restoring. See
+http://i3wm.org/docs/layout-saving.html for more details. tl;dr: export your
+current layout as JSON file, load it into new i3 sessions, get placeholder
+windows that will be replaced by the actual apps once you start them.
+
+Also very important for owners of HiDPI/“retina” displays is that i3 will now
+respect your configured DPI and scale up its UI elements accordingly. Use
+“xrandr --dpi 184” to set your dpi to 184, in case your setup does not figure
+it out automatically. To get properly scaling fonts, we also changed the
+default font from a bitmap font to a pango font (“DejaVu Sans Mono 8”).
+
+Multiple changes improve the compatibility of i3 with other software, e.g.
+java-based software (focus handling, once again) or external pagers (we now
+provide _NET_CLIENT_LIST and let pager applications change workspaces).
+
+For packagers, another change is that yajl ≥ 2.0 is now required for compiling
+i3. This should not be a problem for anyone, as that version is pretty old by
+now.
+
+For contributors, note that we have starting formatting the source code with
+clang-format-3.5. This means that there will no longer be a need to argue about
+coding style when discussing patches :).
+
+ ┌────────────────────────────┐
+ │ Changes in v4.8            │
+ └────────────────────────────┘
+
+  • docs/ipc: reformat/update list of ipc libraries
+  • docs/ipc: fix current_workspace outputs reply member
+  • docs/ipc: update ipc COMMAND reply docs
+  • docs/userguide: fix multiple typos
+  • docs/debugging: use bzip2
+  • docs/debugging: explain how to enable logging on the fly
+  • docs/debugging: merge the debug symbols/backtrace section
+  • docs/debugging: recommend i3 --moreversion
+  • man/i3-nagbar.man: update manpage to document all options
+  • i3bar: Amend status line error 127 message
+  • i3bar: don’t kill watcher on EOF, leads to better error messages
+  • i3bar: send mouse wheel events to child too
+  • i3bar: do click handling and tray padding retina-correctly
+  • i3bar: render separators render-correctly
+  • i3bar: reinit colors on barconfig update
+  • i3bar: Don't start child unless status_command
+  • i3bar: implement custom workspace numbers config
+  • resize floating windows when right-clicking the decoration
+  • enable shmlog when invoked as i3-with-shmlog
+  • Disable pointer warps when focus_follows_mouse is disabled
+  • Movement into a branch considers movement direction
+  • set ewmh desktop properties on startup
+  • handle ButtonPress events with child != XCB_NONE
+  • implement layout restoring
+  • only LOG() the DPI when it changes, DLOG() it otherwise
+  • send IPC window events for focus and title changes
+  • these types of windows are now floating by default:
+    dialog, utility, toolbar and splash windows, modal windows, windows with an
+    equal minimum and maximum size
+  • send last event timestamp with WM_TAKE_FOCUS message
+  • maintain the _NET_CLIENT_LIST property
+  • don’t set input focus _and_ send WM_TAKE_FOCUS
+  • respect CFLAGS in linking command
+  • fix parallel make
+  • reset SIGPIPE handler before executing a command
+  • render default window border width retina-correctly
+  • draw workspace buttons and padded text blocks retina-correctly
+  • render resize windows retina-correctly
+  • delegate click handling to dock clients
+  • send complete config on barconfig_update
+  • implement the window::fullscreen_mode ipc event
+  • make all workspaces starting with "__" internal
+  • improve error messages for i3-internal workspace names
+  • allow _NET_ACTIVE_WINDOW requests to switch workspaces if they indicate
+    that they are a pager (following the spec)
+  • workspace assignments by number
+  • add configuration option for disabling mouse warping
+  • set _NET_ACTIVE_WINDOW to None when none has focus
+  • set X-LightDM-DesktopName in i3.xsession.desktop to fix autostart on Ubuntu
+  • don’t ELOG ipc EOF
+  • replace all printf()s with D?LOG
+  • delete ipc socket when exiting, cleanup tmpdir
+  • default config: switch to DejaVu Sans Mono 8 as default font
+  • cleanup tmpdir when restarting and not using XDG_RUNTIME_DIR
+  • Snap pointer to resize bar on drag resize
+  • Size resizebar according to container size
+  • Fix clang -Wextra except -Wunused-parameter
+  • Respect Motif hint for window decorations
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • create con pixmaps when not needed
+  • i3bar: fix resource leak: statusline_ctx needs to be freed first
+  • tree_split should not split floating cons
+  • fix memory leak with ipc_receive_message
+  • fix invalid reads by setting con->window to NULL in tree_close
+  • fix memory leak when closing windows
+  • fix memory leak when matching window by criteria
+  • fix memory leak when matching window by con_id
+  • ignore dock clients in the resize command
+  • clear wm_size_hints if they are not set
+  • resize window check should check for NULL
+  • fix window event crash with no window
+  • i3-dmenu-desktop: also quote the %c field code
+  • new_window and new_float can now be used simultaneously with different
+    border widths
+  • fix crash when using multiple for_window statements that move windows
+  • Set input focus with last timestamp
+  • handle windows whose WM_TRANSIENT_FOR points to themselve
+  • don’t overwrite the original size of floating windows when changing border
+  • don’t errnously render floating fullscreen windows during restart
+  • ensure floating windows don’t drop out of fullscreen when restarting
+  • don’t overwrite the window’s geometry after restartingnext
+  • i3bar: Set `mapped` flag on trayclient creation
+  • i3bar: don't show "EOF" status line error
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+Aleksi Blinnikka, Alexander Berntsen, Alexander Kedrik, Antonio, Arun
+Persaud, Atte Peltomaki, bo, Campbell Barton, chris, David Coppa, eeemsi,
+Holger Langenau, Jean-Philippe Ouellet, Jens, jeroentbt, Jonas Maaskola,
+Julian Ospald, Kernc, Koston, lasers, lkraav, Marcin, Marco Hunsicker,
+Marcus Crestani, Matthias Thubauville, Maxime, Michael Stapelberg, Peter
+Boström, Petr Písař, Quentin Glidic, Steve Jones, TonyC, Tony Crisci,
+Vivien Didelot, Wieland Hoffmann, x33a, xeen
+
+-- Michael Stapelberg, 2014-06-15

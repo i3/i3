@@ -18,7 +18,9 @@
 
 #include <X11/XKBlib.h>
 
-typedef enum { CLICK_BORDER = 0, CLICK_DECORATION = 1, CLICK_INSIDE = 2 } click_destination_t;
+typedef enum { CLICK_BORDER = 0,
+               CLICK_DECORATION = 1,
+               CLICK_INSIDE = 2 } click_destination_t;
 
 /*
  * Finds the correct pair of first/second cons between the resize will take
@@ -62,12 +64,7 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
         second = tmp;
     }
 
-    /* We modify the X/Y position in the event so that the divider line is at
-     * the actual position of the border, not at the position of the click. */
     const orientation_t orientation = ((border == BORDER_LEFT || border == BORDER_RIGHT) ? HORIZ : VERT);
-    if (orientation == HORIZ)
-        event->root_x = second->rect.x;
-    else event->root_y = second->rect.y;
 
     resize_graphical_handler(first, second, orientation, event);
 
@@ -94,7 +91,7 @@ static bool floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *eve
         to_bottom = con->rect.height - event->event_y;
 
     DLOG("click was %d px to the right, %d px to the left, %d px to top, %d px to bottom\n",
-                    to_right, to_left, to_top, to_bottom);
+         to_right, to_left, to_top, to_bottom);
 
     if (to_right < to_left &&
         to_right < to_top &&
@@ -127,7 +124,7 @@ static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click
     /* check if this was a click on the window border (and on which one) */
     Rect bsr = con_border_style_rect(con);
     DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x\n",
-            event->event_x, event->event_y, con, event->event);
+         event->event_x, event->event_y, con, event->event);
     DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
     if (dest == CLICK_DECORATION) {
         /* The user clicked on a window decoration. We ignore the following case:
@@ -152,15 +149,15 @@ static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click
         return tiling_resize_for_border(con, BORDER_TOP, event);
     }
 
-    if (event->event_x >= 0 && event->event_x <= bsr.x &&
-        event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height)
+    if (event->event_x >= 0 && event->event_x <= (int32_t)bsr.x &&
+        event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height))
         return tiling_resize_for_border(con, BORDER_LEFT, event);
 
-    if (event->event_x >= (con->window_rect.x + con->window_rect.width) &&
-        event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height)
+    if (event->event_x >= (int32_t)(con->window_rect.x + con->window_rect.width) &&
+        event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height))
         return tiling_resize_for_border(con, BORDER_RIGHT, event);
 
-    if (event->event_y >= (con->window_rect.y + con->window_rect.height))
+    if (event->event_y >= (int32_t)(con->window_rect.y + con->window_rect.height))
         return tiling_resize_for_border(con, BORDER_BOTTOM, event);
 
     return false;
@@ -175,6 +172,10 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     DLOG("--> click properties: mod = %d, destination = %d\n", mod_pressed, dest);
     DLOG("--> OUTCOME = %p\n", con);
     DLOG("type = %d, name = %s\n", con->type, con->name);
+
+    /* don’t handle dockarea cons, they must not be focused */
+    if (con->parent->type == CT_DOCKAREA)
+        goto done;
 
     /* Any click in a workspace should focus that workspace. If the
      * workspace is on another output we need to do a workspace_show in
@@ -191,10 +192,6 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     if (ws != focused_workspace)
         workspace_show(ws);
     focused_id = XCB_NONE;
-
-    /* don’t handle dockarea cons, they must not be focused */
-    if (con->parent->type == CT_DOCKAREA)
-        goto done;
 
     /* get the floating con */
     Con *floatingcon = con_inside_floating(con);
@@ -242,10 +239,10 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
             return 1;
         }
 
-        /* 5: resize (floating) if this was a click on the left/right/bottom
-         * border. also try resizing (tiling) if it was a click on the top
-         * border, but continue if that does not work */
-        if (mod_pressed && event->detail == 3) {
+        /*  5: resize (floating) if this was a (left or right) click on the
+         * left/right/bottom border, or a right click on the decoration.
+         * also try resizing (tiling) if it was a click on the top */
+        if (mod_pressed && event->detail == XCB_BUTTON_INDEX_3) {
             DLOG("floating resize due to floatingmodifier\n");
             floating_resize_window(floatingcon, proportional, event);
             return 1;
@@ -256,6 +253,12 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
             DLOG("tiling resize with fallback\n");
             if (tiling_resize(con, event, dest))
                 goto done;
+        }
+
+        if (dest == CLICK_DECORATION && event->detail == XCB_BUTTON_INDEX_3) {
+            DLOG("floating resize due to decoration right click\n");
+            floating_resize_window(floatingcon, proportional, event);
+            return 1;
         }
 
         if (dest == CLICK_BORDER) {
@@ -281,7 +284,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     }
 
     /* 7: floating modifier pressed, initiate a resize */
-    if (dest == CLICK_INSIDE && mod_pressed && event->detail == 3) {
+    if (dest == CLICK_INSIDE && mod_pressed && event->detail == XCB_BUTTON_INDEX_3) {
         if (floating_mod_on_tiled_client(con, event))
             return 1;
     }
@@ -310,7 +313,9 @@ done:
  */
 int handle_button_press(xcb_button_press_event_t *event) {
     Con *con;
-    DLOG("Button %d pressed on window 0x%08x\n", event->state, event->event);
+    DLOG("Button %d pressed on window 0x%08x (child 0x%08x) at (%d, %d) (root %d, %d)\n",
+         event->state, event->event, event->child, event->event_x, event->event_y,
+         event->root_x, event->root_y);
 
     last_timestamp = event->time;
 
@@ -325,7 +330,7 @@ int handle_button_press(xcb_button_press_event_t *event) {
          * click coordinates and focus the output's active workspace. */
         if (event->event == root) {
             Con *output, *ws;
-            TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+            TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
                 if (con_is_internal(output) ||
                     !rect_contains(output->rect, event->event_x, event->event_y))
                     continue;
@@ -346,9 +351,14 @@ int handle_button_press(xcb_button_press_event_t *event) {
         return 0;
     }
 
+    if (event->child != XCB_NONE) {
+        DLOG("event->child not XCB_NONE, so this is an event which originated from a click into the application, but the application did not handle it.\n");
+        return route_click(con, event, mod_pressed, CLICK_INSIDE);
+    }
+
     /* Check if the click was on the decoration of a child */
     Con *child;
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
             continue;
 

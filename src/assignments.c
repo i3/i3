@@ -23,12 +23,12 @@ void run_assignments(i3Window *window) {
 
     /* Check if any assignments match */
     Assignment *current;
-    TAILQ_FOREACH(current, &assignments, assignments) {
+    TAILQ_FOREACH (current, &assignments, assignments) {
         if (!match_matches_window(&(current->match), window))
             continue;
 
         bool skip = false;
-        for (int c = 0; c < window->nr_assignments; c++) {
+        for (uint32_t c = 0; c < window->nr_assignments; c++) {
             if (window->ran_assignments[c] != current)
                 continue;
 
@@ -45,19 +45,19 @@ void run_assignments(i3Window *window) {
             DLOG("execute command %s\n", current->dest.command);
             char *full_command;
             sasprintf(&full_command, "[id=\"%d\"] %s", window->id, current->dest.command);
-            struct CommandResult *command_output = parse_command(full_command);
+            CommandResult *result = parse_command(full_command, NULL);
             free(full_command);
 
-            if (command_output->needs_tree_render)
+            if (result->needs_tree_render)
                 needs_tree_render = true;
 
-            yajl_gen_free(command_output->json_gen);
+            command_result_free(result);
         }
 
         /* Store that we ran this assignment to not execute it again */
         window->nr_assignments++;
-        window->ran_assignments = srealloc(window->ran_assignments, sizeof(Assignment*) * window->nr_assignments);
-        window->ran_assignments[window->nr_assignments-1] = current;
+        window->ran_assignments = srealloc(window->ran_assignments, sizeof(Assignment *) * window->nr_assignments);
+        window->ran_assignments[window->nr_assignments - 1] = current;
     }
 
     /* If any of the commands required re-rendering, we will do that now. */
@@ -72,7 +72,7 @@ void run_assignments(i3Window *window) {
 Assignment *assignment_for(i3Window *window, int type) {
     Assignment *assignment;
 
-    TAILQ_FOREACH(assignment, &assignments, assignments) {
+    TAILQ_FOREACH (assignment, &assignments, assignments) {
         if ((type != A_ANY && (assignment->type & type) == 0) ||
             !match_matches_window(&(assignment->match), window))
             continue;

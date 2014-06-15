@@ -20,11 +20,11 @@
 
 #include "common.h"
 
-ev_io      *i3_connection;
+ev_io *i3_connection;
 
 const char *sock_path;
 
-typedef void(*handler_t)(char*);
+typedef void (*handler_t)(char *);
 
 /*
  * Called, when we get a reply to a command from i3.
@@ -67,7 +67,7 @@ void got_output_reply(char *reply) {
     reconfig_windows(false);
 
     i3_output *o_walk;
-    SLIST_FOREACH(o_walk, outputs, slist) {
+    SLIST_FOREACH (o_walk, outputs, slist) {
         kick_tray_clients(o_walk);
     }
 
@@ -100,9 +100,6 @@ void got_bar_config(char *reply) {
     /* Resolve color strings to colorpixels and save them, then free the strings. */
     init_colors(&(config.colors));
 
-    /* The name of this function is actually misleading. Even if no command is
-     * specified, this function initiates the watchers to listen on stdin and
-     * react accordingly */
     start_child(config.command);
     FREE(config.command);
 }
@@ -160,15 +157,20 @@ void got_bar_config_update(char *event) {
     char *found_id = strstr(event, expected_id);
     FREE(expected_id);
     if (found_id == NULL)
-       return;
+        return;
+
+    free_colors(&(config.colors));
 
     /* update the configuration with the received settings */
     DLOG("Received bar config update \"%s\"\n", event);
-    int old_mode = config.hide_on_modifier;
+    bar_display_mode_t old_mode = config.hide_on_modifier;
     parse_config_json(event);
     if (old_mode != config.hide_on_modifier) {
         reconfig_windows(true);
     }
+
+    init_colors(&(config.colors));
+    realloc_sl_buffer();
 
     draw_bars(false);
 }
@@ -191,7 +193,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     int fd = watcher->fd;
 
     /* First we only read the header, because we know its length */
-    uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t)*2;
+    uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t) * 2;
     char *header = smalloc(header_len);
 
     /* We first parse the fixed-length IPC-header, to know, how much data
@@ -215,7 +217,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
 
     if (strncmp(header, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC))) {
         ELOG("Wrong magic code: %.*s\n Expected: %s\n",
-             (int) strlen(I3_IPC_MAGIC),
+             (int)strlen(I3_IPC_MAGIC),
              header,
              I3_IPC_MAGIC);
         exit(EXIT_FAILURE);
@@ -223,10 +225,10 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
 
     char *walk = header + strlen(I3_IPC_MAGIC);
     uint32_t size;
-    memcpy(&size, (uint32_t*)walk, sizeof(uint32_t));
+    memcpy(&size, (uint32_t *)walk, sizeof(uint32_t));
     walk += sizeof(uint32_t);
     uint32_t type;
-    memcpy(&type, (uint32_t*)walk, sizeof(uint32_t));
+    memcpy(&type, (uint32_t *)walk, sizeof(uint32_t));
 
     /* Now that we know, what to expect, we can start read()ing the rest
      * of the message */
@@ -272,7 +274,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
     }
 
     /* We are a wellbehaved client and send a proper header first */
-    uint32_t to_write = strlen (I3_IPC_MAGIC) + sizeof(uint32_t)*2 + len;
+    uint32_t to_write = strlen(I3_IPC_MAGIC) + sizeof(uint32_t) * 2 + len;
     /* TODO: I'm not entirely sure if this buffer really has to contain more
      * than the pure header (why not just write() the payload from *payload?),
      * but we leave it for now */

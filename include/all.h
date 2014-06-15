@@ -79,9 +79,12 @@
 #include "scratchpad.h"
 #include "commands.h"
 #include "commands_parser.h"
+#include "bindings.h"
 #include "config_directives.h"
 #include "config_parser.h"
 #include "fake_outputs.h"
 #include "display_version.h"
+#include "restore_layout.h"
+#include "main.h"
 
 #endif

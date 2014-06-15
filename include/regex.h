@@ -7,8 +7,7 @@
  * regex.c: Interface to libPCRE (perl compatible regular expressions).
  *
  */
-#ifndef I3_REGEX_H
-#define I3_REGEX_H
+#pragma once
 
 /**
  * Creates a new 'regex' struct containing the given pattern and a PCRE
@@ -35,5 +34,3 @@ void regex_free(struct regex *regex);
  *
  */
 bool regex_matches(struct regex *regex, const char *input);
-
-#endif

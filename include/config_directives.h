@@ -7,13 +7,18 @@
  * config_directives.h: all config storing functions (see config_parser.c)
  *
  */
-#ifndef I3_CONFIG_DIRECTIVES_H
-#define I3_CONFIG_DIRECTIVES_H
+#pragma once
 
 #include "config_parser.h"
 
+/**
+ * A utility function to convert a string of modifiers to the corresponding bit
+ * mask.
+ */
+uint32_t modifiers_from_str(const char *str);
+
 /** The beginning of the prototype for every cfg_ function. */
-#define I3_CFG Match *current_match, struct ConfigResult *result
+#define I3_CFG Match *current_match, struct ConfigResultIR *result
 
 /* Defines a configuration function, that is, anything that can be called by
  * using 'call cfg_foo()' in parser-specs/.*.spec. Useful so that we don’t need
@@ -41,6 +46,7 @@ CFGFUN(default_orientation, const char *orientation);
 CFGFUN(workspace_layout, const char *layout);
 CFGFUN(workspace_back_and_forth, const char *value);
 CFGFUN(focus_follows_mouse, const char *value);
+CFGFUN(mouse_warping, const char *value);
 CFGFUN(force_focus_wrapping, const char *value);
 CFGFUN(force_xinerama, const char *value);
 CFGFUN(fake_outputs, const char *outputs);
@@ -76,6 +82,5 @@ CFGFUN(bar_color_single, const char *colorclass, const char *color);
 CFGFUN(bar_status_command, const char *command);
 CFGFUN(bar_binding_mode_indicator, const char *value);
 CFGFUN(bar_workspace_buttons, const char *value);
+CFGFUN(bar_strip_workspace_numbers, const char *value);
 CFGFUN(bar_finish);
-
-#endif

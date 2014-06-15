@@ -8,8 +8,7 @@
  * default (ringbuffer for storing the debug log).
  *
  */
-#ifndef I3_I3_SHMLOG_H
-#define I3_I3_SHMLOG_H
+#pragma once
 
 #include <stdint.h>
 #include <pthread.h>
@@ -43,5 +42,3 @@ typedef struct i3_shmlog_header {
      * tail -f) in an efficient way. */
     pthread_cond_t condvar;
 } i3_shmlog_header;
-
-#endif

@@ -7,8 +7,7 @@
  * window.c: Updates window attributes (X11 hints/properties).
  *
  */
-#ifndef I3_WINDOW_H
-#define I3_WINDOW_H
+#pragma once
 
 /**
  * Updates the WM_CLASS (consisting of the class and instance) for the
@@ -63,4 +62,16 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
  */
 void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *urgency_hint);
 
-#endif
+/**
+ * Updates the MOTIF_WM_HINTS. The container's border style should be set to
+ * `motif_border_style' if border style is not BS_NORMAL.
+ *
+ * i3 only uses this hint when it specifies a window should have no
+ * title bar, or no decorations at all, which is how most window managers
+ * handle it.
+ *
+ * The EWMH spec intended to replace Motif hints with _NET_WM_WINDOW_TYPE, but
+ * it is still in use by popular widget toolkits such as GTK+ and Java AWT.
+ *
+ */
+void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style);

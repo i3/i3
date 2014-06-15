@@ -102,8 +102,6 @@ bool resize_find_tiling_participants(Con **current, Con **other, direction_t dir
 int resize_graphical_handler(Con *first, Con *second, orientation_t orientation, const xcb_button_press_event_t *event) {
     DLOG("resize handler\n");
 
-    uint32_t new_position;
-
     /* TODO: previously, we were getting a rect containing all screens. why? */
     Con *output = con_get_output(first);
     DLOG("x = %d, width = %d\n", output->rect.x, output->rect.width);
@@ -120,21 +118,31 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     /* Open a new window, the resizebar. Grab the pointer and move the window around
        as the user moves the pointer. */
     xcb_window_t grabwin = create_window(conn, output->rect, XCB_COPY_FROM_PARENT, XCB_COPY_FROM_PARENT,
-            XCB_WINDOW_CLASS_INPUT_ONLY, XCURSOR_CURSOR_POINTER, true, mask, values);
+                                         XCB_WINDOW_CLASS_INPUT_ONLY, XCURSOR_CURSOR_POINTER, true, mask, values);
 
+    /* Keep track of the coordinate orthogonal to motion so we can determine
+     * the length of the resize afterward. */
+    uint32_t initial_position, new_position;
+
+    /* Configure the resizebar and snap the pointer. The resizebar runs along
+     * the rect of the second con and follows the motion of the pointer. */
     Rect helprect;
     if (orientation == HORIZ) {
-        helprect.x = event->root_x;
-        helprect.y = output->rect.y;
-        helprect.width = 2;
-        helprect.height = output->rect.height;
-        new_position = event->root_x;
+        helprect.x = second->rect.x;
+        helprect.y = second->rect.y;
+        helprect.width = logical_px(2);
+        helprect.height = second->rect.height;
+        initial_position = second->rect.x;
+        xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
+                         second->rect.x, event->root_y);
     } else {
-        helprect.x = output->rect.x;
-        helprect.y = event->root_y;
-        helprect.width = output->rect.width;
-        helprect.height = 2;
-        new_position = event->root_y;
+        helprect.x = second->rect.x;
+        helprect.y = second->rect.y;
+        helprect.width = second->rect.width;
+        helprect.height = logical_px(2);
+        initial_position = second->rect.y;
+        xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
+                         event->root_x, second->rect.y);
     }
 
     mask = XCB_CW_BACK_PIXEL;
@@ -144,16 +152,18 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     values[1] = 1;
 
     xcb_window_t helpwin = create_window(conn, helprect, XCB_COPY_FROM_PARENT, XCB_COPY_FROM_PARENT,
-            XCB_WINDOW_CLASS_INPUT_OUTPUT, (orientation == HORIZ ?
-                                          XCURSOR_CURSOR_RESIZE_HORIZONTAL :
-                                          XCURSOR_CURSOR_RESIZE_VERTICAL), true, mask, values);
+                                         XCB_WINDOW_CLASS_INPUT_OUTPUT, (orientation == HORIZ ? XCURSOR_CURSOR_RESIZE_HORIZONTAL : XCURSOR_CURSOR_RESIZE_VERTICAL), true, mask, values);
 
     xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
 
     xcb_flush(conn);
 
-    const struct callback_params params = { orientation, output, helpwin, &new_position };
+    /* `new_position' will be updated by the `resize_callback'. */
+    new_position = initial_position;
 
+    const struct callback_params params = {orientation, output, helpwin, &new_position};
+
+    /* `drag_pointer' blocks until the drag is completed. */
     drag_result_t drag_result = drag_pointer(NULL, event, grabwin, BORDER_TOP, 0, resize_callback, &params);
 
     xcb_destroy_window(conn, helpwin);
@@ -164,10 +174,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     if (drag_result == DRAG_REVERT)
         return 0;
 
-    int pixels;
-    if (orientation == HORIZ)
-        pixels = (new_position - event->root_x);
-    else pixels = (new_position - event->root_y);
+    int pixels = (new_position - initial_position);
 
     DLOG("Done, pixels = %d\n", pixels);
 

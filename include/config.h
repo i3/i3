@@ -10,8 +10,7 @@
  * bindings mode).
  *
  */
-#ifndef I3_CONFIG_H
-#define I3_CONFIG_H
+#pragma once
 
 #include <stdbool.h>
 #include "queue.h"
@@ -99,6 +98,7 @@ struct Config {
     int container_stack_limit;
     int container_stack_limit_value;
     int default_border_width;
+    int default_floating_border_width;
 
     /** Default orientation for new containers */
     int default_orientation;
@@ -108,6 +108,16 @@ struct Config {
      * focus), we allow him to do this with this relatively special option.
      * It is not planned to add any different focus models. */
     bool disable_focus_follows_mouse;
+
+    /** By default, when switching focus to a window on a different output
+     * (e.g. focusing a window on workspace 3 on output VGA-1, coming from
+     * workspace 2 on LVDS-1), the mouse cursor is warped to the center of
+     * that window.
+     *
+     * With the mouse_warping option, you can control when the mouse cursor
+     * should be warped. "none" disables warping entirely, whereas "output"
+     * is the default behavior described above. */
+    warping_t mouse_warping;
 
     /** Remove borders if they are adjacent to the screen edge.
      * This is useful if you are reaching scrollbar on the edge of the
@@ -180,6 +190,7 @@ struct Config {
         struct Colortriple focused_inactive;
         struct Colortriple unfocused;
         struct Colortriple urgent;
+        struct Colortriple placeholder;
     } client;
     struct config_bar {
         struct Colortriple focused;
@@ -267,6 +278,10 @@ struct Barconfig {
      * zero. */
     bool hide_workspace_buttons;
 
+    /** Strip workspace numbers? Configuration option is
+     * 'strip_workspace_numbers yes'. */
+    bool strip_workspace_numbers;
+
     /** Hide mode button? Configuration option is 'binding_mode_indicator no'
      * but we invert the bool for the same reason as hide_workspace_buttons.*/
     bool hide_binding_mode_indicator;
@@ -309,12 +324,6 @@ struct Barconfig {
 void load_configuration(xcb_connection_t *conn, const char *override_configfile, bool reload);
 
 /**
- * Translates keysymbols to keycodes for all bindings which use keysyms.
- *
- */
-void translate_keysyms(void);
-
-/**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
  * mapping_notify event or a configuration file reload
  *
@@ -322,29 +331,10 @@ void translate_keysyms(void);
 void ungrab_all_keys(xcb_connection_t *conn);
 
 /**
- * Grab the bound keys (tell X to send us keypress events for those keycodes)
- *
- */
-void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);
-
-/**
- * Switches the key bindings to the given mode, if the mode exists
- *
- */
-void switch_mode(const char *new_mode);
-
-/**
  * Sends the current bar configuration as an event to all barconfig_update listeners.
- * This update mechnism currently only includes the hidden_state and the mode in the config.
- *
- */void update_barconfig();
-
-/**
- * Returns a pointer to the Binding with the specified modifiers and keycode
- * or NULL if no such binding exists.
  *
  */
-Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode);
+void update_barconfig();
 
 /**
  * Kills the configerror i3-nagbar process, if any.
@@ -356,5 +346,3 @@ Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode
  *
  */
 void kill_configerror_nagbar(bool wait_for_it);
-
-#endif

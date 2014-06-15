@@ -7,8 +7,7 @@
  * child.c: Getting Input for the statusline
  *
  */
-#ifndef CHILD_H_
-#define CHILD_H_
+#pragma once
 
 #include <stdbool.h>
 
@@ -75,9 +74,13 @@ void stop_child(void);
 void cont_child(void);
 
 /*
+ * Whether or not the child want click events
+ *
+ */
+bool child_want_click_events(void);
+
+/*
  * Generates a click event, if enabled.
  *
  */
 void send_block_clicked(int button, const char *name, const char *instance, int x, int y);
-
-#endif

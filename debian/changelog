@@ -1,8 +1,26 @@
-i3-wm (4.6.1-1) unstable; urgency=low
+i3-wm (4.7.3-1) unstable; urgency=low
 
-  * NOT YET RELEASED.
+  * NOT YET RELEASED
 
- -- Michael Stapelberg <stapelberg@debian.org>  Wed, 07 Aug 2013 20:53:26 +0200
+ -- Michael Stapelberg <stapelberg@debian.org>  Thu, 23 Jan 2014 23:11:48 +0100
+
+i3-wm (4.7.2-1) unstable; urgency=low
+
+  * New upstream release. (Closes: #736396)
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Thu, 23 Jan 2014 23:03:03 +0100
+
+i3-wm (4.7.1-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Tue, 21 Jan 2014 19:29:34 +0100
+
+i3-wm (4.7-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Sun, 22 Dec 2013 21:19:02 +0100
 
 i3-wm (4.6-1) unstable; urgency=low
 

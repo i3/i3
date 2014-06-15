@@ -1,0 +1,288 @@
+#!/usr/bin/env perl
+# vim:ts=4:sw=4:expandtab
+#
+# © 2013-2014 Michael Stapelberg
+#
+# Requires perl ≥ v5.10, AnyEvent::I3 and JSON::XS
+
+use strict;
+use warnings qw(FATAL utf8);
+use Data::Dumper;
+use IPC::Open2;
+use POSIX qw(locale_h);
+use File::Find;
+use File::Basename qw(basename);
+use File::Temp qw(tempfile);
+use Getopt::Long;
+use Pod::Usage;
+use AnyEvent::I3;
+use JSON::XS;
+use List::Util qw(first);
+use v5.10;
+use utf8;
+use open ':encoding(UTF-8)';
+
+binmode STDOUT, ':utf8';
+binmode STDERR, ':utf8';
+
+my $workspace;
+my $output;
+my $result = GetOptions(
+    'workspace=s' => \$workspace,
+    'output=s' => \$output,
+    'version' => sub {
+        say "i3-save-tree 0.1 © 2013 Michael Stapelberg";
+        exit 0;
+    },
+    'help' => sub {
+        pod2usage(-exitval => 0);
+    });
+
+die "Could not parse command line options" unless $result;
+
+if (!defined($workspace) && !defined($output)) {
+    die "One of --workspace or --output need to be specified";
+}
+
+unless (defined($workspace) ^ defined($output)) {
+    die "Only one of --workspace or --output can be specified";
+}
+
+my $i3 = i3();
+if (!$i3->connect->recv) {
+    die "Could not connect to i3";
+}
+
+sub filter_containers {
+    my ($tree, $pred) = @_;
+
+    $_ = $tree;
+    return $tree if $pred->();
+
+    for my $child (@{$tree->{nodes}}, @{$tree->{floating_nodes}}) {
+        my $result = filter_containers($child, $pred);
+        return $result if defined($result);
+    }
+
+    return undef;
+}
+
+sub leaf_node {
+    my ($tree) = @_;
+
+    return $tree->{type} eq 'con' &&
+           @{$tree->{nodes}} == 0 &&
+           @{$tree->{floating_nodes}} == 0;
+}
+
+my %allowed_keys = map { ($_, 1) } qw(
+    type
+    fullscreen_mode
+    layout
+    border
+    current_border_width
+    floating
+    percent
+    nodes
+    floating_nodes
+    name
+    geometry
+    window_properties
+);
+
+sub strip_containers {
+    my ($tree) = @_;
+
+    # layout is not relevant for a leaf container
+    delete $tree->{layout} if leaf_node($tree);
+
+    # fullscreen_mode conveys no state at all, it can either be 0 or 1 and the
+    # default is _always_ 0, so skip noop entries.
+    delete $tree->{fullscreen_mode} if $tree->{fullscreen_mode} == 0;
+
+    # names for non-leafs are auto-generated and useful only for i3 debugging
+    delete $tree->{name} unless leaf_node($tree);
+
+    delete $tree->{geometry} if zero_rect($tree->{geometry});
+
+    delete $tree->{current_border_width} if $tree->{current_border_width} == -1;
+
+    for my $key (keys %$tree) {
+        next if exists($allowed_keys{$key});
+
+        delete $tree->{$key};
+    }
+
+    for my $key (qw(nodes floating_nodes)) {
+        $tree->{$key} = [ map { strip_containers($_) } @{$tree->{$key}} ];
+    }
+
+    return $tree;
+}
+
+my $json_xs = JSON::XS->new->pretty(1)->allow_nonref->space_before(0)->canonical(1);
+
+sub zero_rect {
+    my ($rect) = @_;
+    return $rect->{x} == 0 &&
+           $rect->{y} == 0 &&
+           $rect->{width} == 0 &&
+           $rect->{height} == 0;
+}
+
+# Dumps the containers in JSON, but with comments to explain the user what she
+# needs to fix.
+sub dump_containers {
+    my ($tree, $ws, $last) = @_;
+
+    $ws //= "";
+
+    say $ws . '{';
+
+    $ws .= (' ' x 4);
+
+    if (!leaf_node($tree)) {
+        my $desc = $tree->{layout} . ' split container';
+        if ($tree->{type} ne 'con') {
+            $desc = $tree->{type};
+        }
+        say "$ws// $desc with " . @{$tree->{nodes}} . " children";
+    }
+
+    # Turn “window_properties” into “swallows” expressions, but only for leaf
+    # nodes. It only makes sense for leaf nodes to swallow anything.
+    if (leaf_node($tree)) {
+        my $swallows = {};
+        for my $property (keys %{$tree->{window_properties}}) {
+            $swallows->{$property} = '^' . quotemeta($tree->{window_properties}->{$property}) . '$';
+        }
+        $tree->{swallows} = [ $swallows ];
+    }
+    delete $tree->{window_properties};
+
+    my @keys = sort keys %$tree;
+    for (0 .. (@keys-1)) {
+        my $key = $keys[$_];
+        # Those are handled recursively, not printed.
+        next if $key eq 'nodes' || $key eq 'floating_nodes';
+
+        # JSON::XS’s encode appends a newline
+        chomp(my $val = $json_xs->encode($tree->{$key}));
+
+        # Fix indentation. Keep in mind we are producing output to be
+        # read/modified by a human.
+        $val =~ s/^/$ws/mg;
+        $val =~ s/^\s+//;
+
+        # Comment out all swallows criteria, they are just suggestions.
+        if ($key eq 'swallows') {
+            $val =~ s,^(\s*)\s{3}",\1// ",gm;
+        }
+
+        # Append a comma unless this is the last value.
+        # Ugly, but necessary so that we can print all values before recursing.
+        my $comma = ($_ == (@keys-1) &&
+                     @{$tree->{nodes}} == 0 &&
+                     @{$tree->{floating_nodes}} == 0 ? '' : ',');
+        say qq#$ws"$key": $val$comma#;
+    }
+
+    for my $key (qw(nodes floating_nodes)) {
+        my $num = scalar @{$tree->{$key}};
+        next if !$num;
+
+        say qq#$ws"$key": [#;
+        for (0 .. ($num-1)) {
+            dump_containers(
+                $tree->{$key}->[$_],
+                $ws . (' ' x 4),
+                ($_ == ($num-1)));
+        }
+        say qq#$ws]#;
+    }
+
+    $ws =~ s/\s{4}$//;
+
+    say $ws . ($last ? '}' : '},');
+}
+
+my $tree = $i3->get_tree->recv;
+
+my $dump;
+if (defined($workspace)) {
+    $dump = filter_containers($tree, sub {
+        $_->{type} eq 'workspace' && $_->{name} eq $workspace
+    });
+} else {
+    $dump = filter_containers($tree, sub {
+        $_->{type} eq 'output' && $_->{name} eq $output
+    });
+    # Get the output’s content container (living beneath dockarea containers).
+    $dump = first { $_->{type} eq 'con' } @{$dump->{nodes}};
+}
+
+$dump = strip_containers($dump);
+
+say "// vim:ts=4:sw=4:et";
+for my $key (qw(nodes floating_nodes)) {
+    for (0 .. (@{$dump->{$key}} - 1)) {
+        dump_containers($dump->{$key}->[$_], undef, 1);
+        # Newlines separate containers so that one can use { and } in vim to
+        # jump out of the current container.
+        say '';
+    }
+}
+
+=encoding utf-8
+
+=head1 NAME
+
+    i3-save-tree - save (parts of) the layout tree for restoring
+
+=head1 SYNOPSIS
+
+    i3-save-tree [--workspace=name] [--output=name]
+
+=head1 DESCRIPTION
+
+Dumps a workspace (or an entire output) to stdout. The data is supposed to be
+edited a bit by a human, then later fed to i3 via the append_layout command.
+
+The append_layout command will create placeholder windows, arranged in the
+layout the input file specifies. Each container should have a swallows
+specification. When a window is mapped (made visible on the screen) that
+matches the specification, i3 will put it into that place and kill the
+placeholder.
+
+=head1 OPTIONS
+
+=over
+
+=item B<--workspace=name>
+
+Specifies the workspace that should be dumped, e.g. 1. Either this or --output
+need to be specified.
+
+=item B<--output=name>
+
+Specifies the output that should be dumped, e.g. LVDS-1. Either this or
+--workspace need to be specified.
+
+=back
+
+=head1 VERSION
+
+Version 0.1
+
+=head1 AUTHOR
+
+Michael Stapelberg, C<< <michael at i3wm.org> >>
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2013 Michael Stapelberg.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the BSD license.
+
+=cut

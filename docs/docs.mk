@@ -14,7 +14,8 @@ ASCIIDOC_TOC_TARGETS = \
 	docs/multi-monitor.html \
 	docs/wsbar.html \
 	docs/testsuite.html \
-	docs/i3bar-protocol.html
+	docs/i3bar-protocol.html \
+	docs/layout-saving.html
 
 ASCIIDOC_TARGETS = \
 	$(ASCIIDOC_TOC_TARGETS) \

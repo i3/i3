@@ -9,8 +9,7 @@
  * (take your time to read it completely, it answers all questions).
  *
  */
-#ifndef I3_RANDR_H
-#define I3_RANDR_H
+#pragma once
 
 #include "data.h"
 #include <xcb/randr.h>
@@ -85,7 +84,7 @@ Output *get_output_by_name(const char *name);
  * if there is no output which contains these coordinates.
  *
  */
-Output *get_output_containing(int x, int y);
+Output *get_output_containing(unsigned int x, unsigned int y);
 
 /*
  * In contained_by_output, we check if any active output contains part of the container.
@@ -121,5 +120,3 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
  *
  */
 Output *get_output_next_wrap(direction_t direction, Output *current);
-
-#endif

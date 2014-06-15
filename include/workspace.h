@@ -8,8 +8,7 @@
  *              workspaces.
  *
  */
-#ifndef I3_WORKSPACE_H
-#define I3_WORKSPACE_H
+#pragma once
 
 #include "data.h"
 #include "tree.h"
@@ -181,4 +180,3 @@ Con *workspace_attach_to(Con *ws);
  * The container inherits the layout from the workspace.
  */
 Con *workspace_encapsulate(Con *ws);
-#endif

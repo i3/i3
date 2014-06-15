@@ -8,9 +8,6 @@
  *          events.  This code is from xcb-util.
  *
  */
-#ifndef I3_DEBUG_H
-#define I3_DEBUG_H
+#pragma once
 
 int handle_event(void *ignored, xcb_connection_t *c, xcb_generic_event_t *e);
-
-#endif

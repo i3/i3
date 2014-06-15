@@ -7,8 +7,7 @@
  * manage.c: Initially managing new windows (or existing ones on restart).
  *
  */
-#ifndef I3_MANAGE_H
-#define I3_MANAGE_H
+#pragma once
 
 #include "data.h"
 
@@ -51,5 +50,4 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                      int16_t x, int16_t y, uint16_t width, uint16_t height,
                      uint32_t border_width);
 
-#endif
 #endif

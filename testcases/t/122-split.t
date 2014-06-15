@@ -145,7 +145,7 @@ sub get_output_content {
     is(scalar @outputs, 1, 'exactly one output (testcase not multi-monitor capable)');
     my $output = $outputs[0];
     # get the first (and only) CT_CON
-    return first { $_->{type} == 2 } @{$output->{nodes}};
+    return first { $_->{type} eq 'con' } @{$output->{nodes}};
 }
 
 $tmp = fresh_workspace;

@@ -20,7 +20,8 @@ MANS_ASCIIDOC = \
 	man/i3-dump-log.1
 
 MANS_POD = \
-	man/i3-dmenu-desktop.1
+	man/i3-dmenu-desktop.1 \
+	man/i3-save-tree.1
 
 MANS = \
 	$(MANS_ASCIIDOC) \
@@ -31,7 +32,7 @@ mans: $(MANS)
 $(MANS_ASCIIDOC): %.1: %.man man/asciidoc.conf
 	$(A2X_MAN_CALL)
 
-$(MANS_POD): %.1: i3-dmenu-desktop
+$(MANS_POD): man/%.1: %
 	$(POD2MAN_CALL)
 
 clean-mans:

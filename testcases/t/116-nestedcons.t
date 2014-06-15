@@ -51,7 +51,7 @@ my $expected = {
     window => undef,
     name => 'root',
     orientation => $ignore,
-    type => 0,
+    type => 'root',
     id => $ignore,
     rect => $ignore,
     window_rect => $ignore,
@@ -90,16 +90,16 @@ my @nodes = @{$tree->{nodes}};
 
 ok(@nodes > 0, 'root node has at least one leaf');
 
-ok((all { $_->{type} == 1 } @nodes), 'all nodes are of type CT_OUTPUT');
+ok((all { $_->{type} eq 'output' } @nodes), 'all nodes are of type CT_OUTPUT');
 ok((none { defined($_->{window}) } @nodes), 'no CT_OUTPUT contains a window');
 ok((all { @{$_->{nodes}} > 0 } @nodes), 'all nodes have at least one leaf (workspace)');
 my @workspaces;
 for my $ws (@nodes) {
-    my $content = first { $_->{type} == 2 } @{$ws->{nodes}};
+    my $content = first { $_->{type} eq 'con' } @{$ws->{nodes}};
     @workspaces = (@workspaces, @{$content->{nodes}});
 }
 
-ok((all { $_->{type} == 4 } @workspaces), 'all workspaces are of type CT_WORKSPACE');
+ok((all { $_->{type} eq 'workspace' } @workspaces), 'all workspaces are of type CT_WORKSPACE');
 #ok((all { @{$_->{nodes}} == 0 } @workspaces), 'all workspaces are empty yet');
 ok((none { defined($_->{window}) } @workspaces), 'no CT_OUTPUT contains a window');
 

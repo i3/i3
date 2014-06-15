@@ -196,8 +196,7 @@ sub workspace_numbers_sorted {
     my @outputs = @{$tree->{nodes}};
     my @workspaces;
     for my $output (@outputs) {
-        # get the first CT_CON of each output
-        my $content = first { $_->{type} == 2 } @{$output->{nodes}};
+        my $content = first { $_->{type} eq 'con' } @{$output->{nodes}};
         @workspaces = (@workspaces, @{$content->{nodes}});
     }
 

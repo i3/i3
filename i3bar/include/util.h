@@ -5,8 +5,7 @@
  * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
-#ifndef UTIL_H_
-#define UTIL_H_
+#pragma once
 
 #include "queue.h"
 
@@ -35,8 +34,6 @@
         walk = SLIST_FIRST(l); \
     } \
 } while (0)
-
-#endif
 
 /* Securely fee tail-queues */
 #define FREE_TAILQ(l, type) do { \

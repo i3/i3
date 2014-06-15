@@ -29,11 +29,11 @@
 #include <i3/ipc.h>
 
 static uint32_t offset_next_write,
-                wrap_count;
+    wrap_count;
 
 static i3_shmlog_header *header;
 static char *logbuffer,
-            *walk;
+    *walk;
 
 static int check_for_wrap(void) {
     if (wrap_count == header->wrap_count)
@@ -70,8 +70,7 @@ int main(int argc, char *argv[]) {
         {"verbose", no_argument, 0, 'V'},
         {"follow", no_argument, 0, 'f'},
         {"help", no_argument, 0, 'h'},
-        {0, 0, 0, 0}
-    };
+        {0, 0, 0, 0}};
 
     char *options_string = "s:vfVh";
 
@@ -139,7 +138,7 @@ int main(int argc, char *argv[]) {
     if (logbuffer == MAP_FAILED)
         err(EXIT_FAILURE, "Could not mmap SHM segment for the i3 log");
 
-    header = (i3_shmlog_header*)logbuffer;
+    header = (i3_shmlog_header *)logbuffer;
 
     if (verbose)
         printf("next_write = %d, last_wrap = %d, logbuffer_size = %d, shmname = %s\n",

@@ -172,6 +172,10 @@ values will later be pushed to X11 in +src/x.c+.
 src/resize.c::
 Contains the functions to resize containers.
 
+src/restore_layout.c::
+Everything for restored containers that is not pure state parsing (which can be
+found in load_layout.c).
+
 src/sighandler.c::
 Handles +SIGSEGV+, +SIGABRT+ and +SIGFPE+ by showing a dialog that i3 crashed.
 You can chose to let it dump core, to restart it in-place or to restart it

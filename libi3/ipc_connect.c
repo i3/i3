@@ -32,7 +32,7 @@ int ipc_connect(const char *socket_path) {
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_LOCAL;
     strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
-    if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
+    if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0)
         err(EXIT_FAILURE, "Could not connect to i3");
 
     return sockfd;

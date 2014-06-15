@@ -7,8 +7,7 @@
  * move.c: Moving containers into some direction.
  *
  */
-#ifndef I3_MOVE_H
-#define I3_MOVE_H
+#pragma once
 
 /**
  * Moves the current container in the given direction (TOK_LEFT, TOK_RIGHT,
@@ -16,5 +15,3 @@
  *
  */
 void tree_move(int direction);
-
-#endif

@@ -1,7 +1,7 @@
 IPC interface (interprocess communication)
 ==========================================
 Michael Stapelberg <michael@i3wm.org>
-October 2012
+February 2014
 
 This document describes how to interface with i3 from a separate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
@@ -140,12 +140,13 @@ VERSION (7)::
 
 === COMMAND reply
 
-The reply consists of a single serialized map. At the moment, the only
-property is +success (bool)+, but this will be expanded in future versions.
+The reply consists of a list of serialized maps for each command that was
+parsed. Each has the property +success (bool)+ and may also include a
+human-readable error message in the property +error (string)+.
 
 *Example:*
 -------------------
-{ "success": true }
+[{ "success": true }]
 -------------------
 
 === WORKSPACES reply
@@ -227,9 +228,9 @@ name (string)::
 	The name of this output (as seen in +xrandr(1)+). Encoded in UTF-8.
 active (boolean)::
 	Whether this output is currently active (has a valid mode).
-current_workspace (integer)::
-	The current workspace which is visible on this output. +null+ if the
-	output is not active.
+current_workspace (string)::
+	The name of the current workspace that is visible on this output. +null+ if
+	the output is not active.
 rect (map)::
 	The rectangle of this output (equals the rect of the output it
 	is on), consists of x, y, width, height.
@@ -240,7 +241,7 @@ rect (map)::
  {
   "name": "LVDS1",
   "active": true,
-  "current_workspace": 4,
+  "current_workspace": "4",
   "rect": {
    "x": 0,
    "y": 0,
@@ -251,7 +252,7 @@ rect (map)::
  {
   "name": "VGA1",
   "active": true,
-  "current_workspace": 1,
+  "current_workspace": "1",
   "rect": {
    "x": 1280,
    "y": 0,
@@ -277,7 +278,12 @@ name (string)::
 	The internal name of this container. For all containers which are part
 	of the tree structure down to the workspace contents, this is set to a
 	nice human-readable name of the container.
+	For containers that have an X11 window, the content is the title
+	(_NET_WM_NAME property) of that window.
 	For all other containers, the content is not defined (yet).
+type (string)::
+	Type of this container. Can be one of "root", "output", "con",
+	"floating_con", "workspace" or "dockarea".
 border (string)::
 	Can be either "normal", "none" or "1pixel", dependending on the
 	container’s border style.
@@ -627,10 +633,11 @@ mode (2)::
 	Sent whenever i3 changes its binding mode.
 window (3)::
 	Sent when a client's window is successfully reparented (that is when i3
-	has finished fitting it into a container).
+	has finished fitting it into a container), when a window received input
+	focus or when certain properties of the window have changed.
 barconfig_update (4)::
     Sent when the hidden_state or mode field in the barconfig of any bar
-    instance was updated.
+    instance was updated and when the config is reloaded.
 
 *Example:*
 --------------------------------------------------------------------
@@ -670,12 +677,12 @@ but will still be present in the "old" property.
  "change": "focus",
  "current": {
   "id": 28489712,
-  "type":4,
+  "type": "workspace",
   ...
  }
  "old": {
   "id": 28489715,
-  "type": 4,
+  "type": "workspace",
   ...
  }
 }
@@ -707,14 +714,18 @@ mode is simply named default.
 === window event
 
 This event consists of a single serialized map containing a property
-+change (string)+ which currently can indicate only that a new window
-has been successfully reparented (the value will be "new").
++change (string)+ which indicates the type of the change
+
+* +new+ - the window has become managed by i3
+* +focus+ - the window has received input focus
+* +title+ - the window's title has changed
+* +fullscreen_mode+ - the window has entered or exited fullscreen mode
 
 Additionally a +container (object)+ field will be present, which consists
-of the window's parent container. Be aware that the container will hold
-the initial name of the newly reparented window (e.g. if you run urxvt
-with a shell that changes the title, you will still at this point get the
-window title as "urxvt").
+of the window's parent container. Be aware that for the "new" event, the
+container will hold the initial name of the newly reparented window (e.g.
+if you run urxvt with a shell that changes the title, you will still at
+this point get the window title as "urxvt").
 
 *Example:*
 ---------------------------
@@ -722,7 +733,7 @@ window title as "urxvt").
  "change": "new",
  "container": {
   "id": 35569536,
-  "type": 2,
+  "type": "con",
   ...
  }
 }
@@ -731,20 +742,8 @@ window title as "urxvt").
 === barconfig_update event
 
 This event consists of a single serialized map reporting on options from the
-barconfig of the specified bar_id that were updated in i3. The map always
-consists of a property +id (string)+, which specifies to which bar instance the
-sent config update belongs, a property +hidden_state (string)+, which indicates
-the hidden_state of an i3bar instance, and a property +mode (string)+, which
-corresponds to the current mode.
-
-*Example:*
----------------------------
-{
-    "id": "bar-0",
-    "hidden_state": "hide"
-    "mode": "hide"
-}
----------------------------
+barconfig of the specified bar_id that were updated in i3. This event is the
+same as a +GET_BAR_CONFIG+ reply for the bar with the given id.
 
 == See also (existing libraries)
 
@@ -756,13 +755,19 @@ know):
 
 C::
 	i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
-	However, there is no library yet.
-Ruby::
-	http://github.com/badboy/i3-ipc
-Perl::
-	https://metacpan.org/module/AnyEvent::I3
-Python::
-	* https://github.com/whitelynx/i3ipc
-	* https://github.com/ziberna/i3-py (includes higher-level features)
+
+	https://github.com/acrisci/i3ipc-glib
 Go::
 	* https://github.com/proxypoke/i3ipc
+JavaScript::
+	* https://github.com/acrisci/i3ipc-gjs
+Lua::
+	* https:/github.com/acrisci/i3ipc-lua
+Perl::
+	* https://metacpan.org/module/AnyEvent::I3
+Python::
+	* https://github.com/acrisci/i3ipc-python
+	* https://github.com/whitelynx/i3ipc (not maintained)
+	* https://github.com/ziberna/i3-py (not maintained)
+Ruby::
+	http://github.com/badboy/i3-ipc

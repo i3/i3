@@ -15,7 +15,7 @@ Build-Depends: debhelper (>= 7.0.50~),
                docbook-xml,
                pkg-config,
                libev-dev (>= 1:4.04),
-               libyajl-dev,
+               libyajl-dev (>= 2.0.4),
                libpcre3-dev,
                libstartup-notification0-dev (>= 0.10),
                libcairo2-dev,
@@ -38,7 +38,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}, x11-utils
 Provides: x-window-manager
 Suggests: rxvt-unicode | x-terminal-emulator
-Recommends: xfonts-base
+Recommends: xfonts-base, fonts-dejavu-core, libanyevent-i3-perl, libjson-xs-perl
 Description: improved dynamic tiling window manager
  Key features of i3 are good documentation, reasonable defaults (changeable in
  a simple configuration file) and good multi-monitor support. The user

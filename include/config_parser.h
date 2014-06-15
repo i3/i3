@@ -7,19 +7,19 @@
  * config_parser.h: config parser-related definitions
  *
  */
-#ifndef I3_CONFIG_PARSER_H
-#define I3_CONFIG_PARSER_H
+#pragma once
 
 #include <yajl/yajl_gen.h>
 
 extern pid_t config_error_nagbar_pid;
 
 /*
- * The result of a parse_config call. Currently unused, but the JSON output
- * will be useful in the future when we implement a config parsing IPC command.
+ * An intermediate reprsentation of the result of a parse_config call.
+ * Currently unused, but the JSON output will be useful in the future when we
+ * implement a config parsing IPC command.
  *
  */
-struct ConfigResult {
+struct ConfigResultIR {
     /* The JSON generator to append a reply to. */
     yajl_gen json_gen;
 
@@ -29,7 +29,7 @@ struct ConfigResult {
     int next_state;
 };
 
-struct ConfigResult *parse_config(const char *input, struct context *context);
+struct ConfigResultIR *parse_config(const char *input, struct context *context);
 
 /**
  * Parses the given file by first replacing the variables, then calling
@@ -37,5 +37,3 @@ struct ConfigResult *parse_config(const char *input, struct context *context);
  *
  */
 void parse_file(const char *f);
-
-#endif

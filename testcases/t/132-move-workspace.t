@@ -22,6 +22,7 @@ my $i3 = i3(get_socket_path());
 
 # We move the pointer out of our way to avoid a bug where the focus will
 # be set to the window under the cursor
+sync_with_i3;
 $x->root->warp_pointer(0, 0);
 sync_with_i3;
 

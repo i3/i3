@@ -28,14 +28,13 @@
 #include "common.h"
 
 /* Global variables for child_*() */
-i3bar_child child = { 0 };
+i3bar_child child;
 
 /* stdin- and sigchild-watchers */
-ev_io    *stdin_io;
+ev_io *stdin_io;
 ev_child *child_sig;
 
 /* JSON parser for stdin */
-yajl_callbacks callbacks;
 yajl_handle parser;
 
 /* JSON generator for stdout */
@@ -81,12 +80,7 @@ static void clear_status_blocks() {
  * `draw_bars' is called, the error message text will be drawn on the bar in
  * the space allocated for the statusline.
  */
-
-/* forward function declaration is needed to add __attribute__ mechanism which
- * helps the compiler understand we are defining a printf wrapper */
-static void set_statusline_error(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
-
-static void set_statusline_error(const char *format, ...) {
+__attribute__((format(printf, 1, 2))) static void set_statusline_error(const char *format, ...) {
     clear_status_blocks();
 
     char *message;
@@ -162,16 +156,12 @@ static int stdin_start_map(void *context) {
     memset(&(ctx->block), '\0', sizeof(struct status_block));
 
     /* Default width of the separator block. */
-    ctx->block.sep_block_width = 9;
+    ctx->block.sep_block_width = logical_px(9);
 
     return 1;
 }
 
-#if YAJL_MAJOR >= 2
 static int stdin_map_key(void *context, const unsigned char *key, size_t len) {
-#else
-static int stdin_map_key(void *context, const unsigned char *key, unsigned int len) {
-#endif
     parser_ctx *ctx = context;
     FREE(ctx->last_map_key);
     sasprintf(&(ctx->last_map_key), "%.*s", len, key);
@@ -189,11 +179,7 @@ static int stdin_boolean(void *context, int val) {
     return 1;
 }
 
-#if YAJL_MAJOR >= 2
 static int stdin_string(void *context, const unsigned char *val, size_t len) {
-#else
-static int stdin_string(void *context, const unsigned char *val, unsigned int len) {
-#endif
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "full_text") == 0) {
         ctx->block.full_text = i3string_from_utf8_with_length((const char *)val, len);
@@ -202,9 +188,9 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
         sasprintf(&(ctx->block.color), "%.*s", len, val);
     }
     if (strcasecmp(ctx->last_map_key, "align") == 0) {
-        if (len == strlen("left") && !strncmp((const char*)val, "left", strlen("left"))) {
+        if (len == strlen("left") && !strncmp((const char *)val, "left", strlen("left"))) {
             ctx->block.align = ALIGN_LEFT;
-        } else if (len == strlen("right") && !strncmp((const char*)val, "right", strlen("right"))) {
+        } else if (len == strlen("right") && !strncmp((const char *)val, "right", strlen("right"))) {
             ctx->block.align = ALIGN_RIGHT;
         } else {
             ctx->block.align = ALIGN_CENTER;
@@ -215,13 +201,13 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
         i3string_free(text);
     }
     if (strcasecmp(ctx->last_map_key, "name") == 0) {
-        char *copy = (char*)malloc(len+1);
+        char *copy = (char *)malloc(len + 1);
         strncpy(copy, (const char *)val, len);
         copy[len] = 0;
         ctx->block.name = copy;
     }
     if (strcasecmp(ctx->last_map_key, "instance") == 0) {
-        char *copy = (char*)malloc(len+1);
+        char *copy = (char *)malloc(len + 1);
         strncpy(copy, (const char *)val, len);
         copy[len] = 0;
         ctx->block.instance = copy;
@@ -229,11 +215,7 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
     return 1;
 }
 
-#if YAJL_MAJOR >= 2
 static int stdin_integer(void *context, long long val) {
-#else
-static int stdin_integer(void *context, long val) {
-#endif
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
         ctx->block.min_width = (uint32_t)val;
@@ -261,7 +243,7 @@ static int stdin_end_map(void *context) {
 static int stdin_end_array(void *context) {
     DLOG("dumping statusline:\n");
     struct status_block *current;
-    TAILQ_FOREACH(current, &statusline_head, blocks) {
+    TAILQ_FOREACH (current, &statusline_head, blocks) {
         DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
         DLOG("color = %s\n", current->color);
     }
@@ -272,15 +254,17 @@ static int stdin_end_array(void *context) {
 /*
  * Helper function to read stdin
  *
+ * Returns NULL on EOF.
+ *
  */
 static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
     int fd = watcher->fd;
     int n = 0;
     int rec = 0;
     int buffer_len = STDIN_CHUNK_SIZE;
-    unsigned char *buffer = smalloc(buffer_len+1);
+    unsigned char *buffer = smalloc(buffer_len + 1);
     buffer[0] = '\0';
-    while(1) {
+    while (1) {
         n = read(fd, buffer + rec, buffer_len - rec);
         if (n == -1) {
             if (errno == EAGAIN) {
@@ -291,9 +275,7 @@ static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
-            /* end of file, kill the watcher */
             ELOG("stdin: received EOF\n");
-            cleanup();
             *ret_buffer_len = -1;
             return NULL;
         }
@@ -318,20 +300,17 @@ static void read_flat_input(char *buffer, int length) {
     I3STRING_FREE(first->full_text);
     /* Remove the trailing newline and terminate the string at the same
      * time. */
-    if (buffer[length-1] == '\n' || buffer[length-1] == '\r')
-        buffer[length-1] = '\0';
-    else buffer[length] = '\0';
+    if (buffer[length - 1] == '\n' || buffer[length - 1] == '\r')
+        buffer[length - 1] = '\0';
+    else
+        buffer[length] = '\0';
     first->full_text = i3string_from_utf8(buffer);
 }
 
 static bool read_json_input(unsigned char *input, int length) {
     yajl_status status = yajl_parse(parser, input, length);
     bool has_urgent = false;
-#if YAJL_MAJOR >= 2
     if (status != yajl_status_ok) {
-#else
-    if (status != yajl_status_ok && status != yajl_status_insufficient_data) {
-#endif
         char *message = (char *)yajl_get_error(parser, 0, input, length);
 
         /* strip the newline yajl adds to the error message */
@@ -342,7 +321,7 @@ static bool read_json_input(unsigned char *input, int length) {
                 status, message, length, input);
 
         set_statusline_error("Could not parse JSON (%s)", message);
-        yajl_free_error(parser, (unsigned char*)message);
+        yajl_free_error(parser, (unsigned char *)message);
         draw_bars(false);
     } else if (parser_context.has_urgent) {
         has_urgent = true;
@@ -364,7 +343,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     if (child.version > 0) {
         has_urgent = read_json_input(buffer, rec);
     } else {
-        read_flat_input((char*)buffer, rec);
+        read_flat_input((char *)buffer, rec);
     }
     free(buffer);
     draw_bars(has_urgent);
@@ -398,7 +377,7 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
          * full_text pointer later. */
         struct status_block *new_block = scalloc(sizeof(struct status_block));
         TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
-        read_flat_input((char*)buffer, rec);
+        read_flat_input((char *)buffer, rec);
     }
     free(buffer);
     ev_io_stop(main_loop, stdin_io);
@@ -416,15 +395,15 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     int exit_status = WEXITSTATUS(watcher->rstatus);
 
     ELOG("Child (pid: %d) unexpectedly exited with status %d\n",
-           child.pid,
-           exit_status);
+         child.pid,
+         exit_status);
 
     /* this error is most likely caused by a user giving a nonexecutable or
      * nonexistent file, so we will handle those cases separately. */
     if (exit_status == 126)
         set_statusline_error("status_command is not executable (exit %d)", exit_status);
     else if (exit_status == 127)
-        set_statusline_error("status_command not found (exit %d)", exit_status);
+        set_statusline_error("status_command not found or is missing a library dependency (exit %d)", exit_status);
     else
         set_statusline_error("status_command process exited unexpectedly (exit %d)", exit_status);
 
@@ -435,11 +414,8 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
 void child_write_output(void) {
     if (child.click_events) {
         const unsigned char *output;
-#if YAJL_MAJOR < 2
-        unsigned int size;
-#else
         size_t size;
-#endif
+
         yajl_gen_get_buf(gen, &output, &size);
         write(child_stdin, output, size);
         write(child_stdin, "\n", 1);
@@ -450,69 +426,66 @@ void child_write_output(void) {
 /*
  * Start a child-process with the specified command and reroute stdin.
  * We actually start a $SHELL to execute the command so we don't have to care
- * about arguments and such
+ * about arguments and such.
+ *
+ * If `command' is NULL, such as in the case when no `status_command' is given
+ * in the bar config, no child will be started.
  *
  */
 void start_child(char *command) {
+    if (command == NULL)
+        return;
+
     /* Allocate a yajl parser which will be used to parse stdin. */
-    memset(&callbacks, '\0', sizeof(yajl_callbacks));
-    callbacks.yajl_map_key = stdin_map_key;
-    callbacks.yajl_boolean = stdin_boolean;
-    callbacks.yajl_string = stdin_string;
-    callbacks.yajl_integer = stdin_integer;
-    callbacks.yajl_start_array = stdin_start_array;
-    callbacks.yajl_end_array = stdin_end_array;
-    callbacks.yajl_start_map = stdin_start_map;
-    callbacks.yajl_end_map = stdin_end_map;
-#if YAJL_MAJOR < 2
-    yajl_parser_config parse_conf = { 0, 0 };
-
-    parser = yajl_alloc(&callbacks, &parse_conf, NULL, (void*)&parser_context);
-
-    gen = yajl_gen_alloc(NULL, NULL);
-#else
+    static yajl_callbacks callbacks = {
+        .yajl_boolean = stdin_boolean,
+        .yajl_integer = stdin_integer,
+        .yajl_string = stdin_string,
+        .yajl_start_map = stdin_start_map,
+        .yajl_map_key = stdin_map_key,
+        .yajl_end_map = stdin_end_map,
+        .yajl_start_array = stdin_start_array,
+        .yajl_end_array = stdin_end_array,
+    };
     parser = yajl_alloc(&callbacks, NULL, &parser_context);
 
     gen = yajl_gen_alloc(NULL);
-#endif
 
-    if (command != NULL) {
-        int pipe_in[2]; /* pipe we read from */
-        int pipe_out[2]; /* pipe we write to */
+    int pipe_in[2];  /* pipe we read from */
+    int pipe_out[2]; /* pipe we write to */
 
-        if (pipe(pipe_in) == -1)
-            err(EXIT_FAILURE, "pipe(pipe_in)");
-        if (pipe(pipe_out) == -1)
-            err(EXIT_FAILURE, "pipe(pipe_out)");
+    if (pipe(pipe_in) == -1)
+        err(EXIT_FAILURE, "pipe(pipe_in)");
+    if (pipe(pipe_out) == -1)
+        err(EXIT_FAILURE, "pipe(pipe_out)");
 
-        child.pid = fork();
-        switch (child.pid) {
-            case -1:
-                ELOG("Couldn't fork(): %s\n", strerror(errno));
-                exit(EXIT_FAILURE);
-            case 0:
-                /* Child-process. Reroute streams and start shell */
+    child.pid = fork();
+    switch (child.pid) {
+        case -1:
+            ELOG("Couldn't fork(): %s\n", strerror(errno));
+            exit(EXIT_FAILURE);
+        case 0:
+            /* Child-process. Reroute streams and start shell */
 
-                close(pipe_in[0]);
-                close(pipe_out[1]);
+            close(pipe_in[0]);
+            close(pipe_out[1]);
 
-                dup2(pipe_in[1], STDOUT_FILENO);
-                dup2(pipe_out[0], STDIN_FILENO);
+            dup2(pipe_in[1], STDOUT_FILENO);
+            dup2(pipe_out[0], STDIN_FILENO);
 
-                setpgid(child.pid, 0);
-                execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char*) NULL);
-                return;
-            default:
-                /* Parent-process. Reroute streams */
+            setpgid(child.pid, 0);
+            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char *)NULL);
+            return;
+        default:
+            /* Parent-process. Reroute streams */
 
-                close(pipe_in[1]);
-                close(pipe_out[0]);
+            close(pipe_in[1]);
+            close(pipe_out[0]);
 
-                dup2(pipe_in[0], STDIN_FILENO);
-                child_stdin = pipe_out[1];
+            dup2(pipe_in[0], STDIN_FILENO);
+            child_stdin = pipe_out[1];
 
-                break;
-        }
+            break;
     }
 
     /* We set O_NONBLOCK because blocking is evil in event-driven software */
@@ -624,4 +597,12 @@ void cont_child(void) {
         child.stopped = false;
         killpg(child.pid, child.cont_signal);
     }
+}
+
+/*
+ * Whether or not the child want click events
+ *
+ */
+bool child_want_click_events(void) {
+    return child.click_events;
 }

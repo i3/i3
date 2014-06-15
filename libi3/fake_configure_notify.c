@@ -39,7 +39,7 @@ void fake_configure_notify(xcb_connection_t *conn, xcb_rectangle_t r, xcb_window
     generated_event->above_sibling = XCB_NONE;
     generated_event->override_redirect = false;
 
-    xcb_send_event(conn, false, window, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)generated_event);
+    xcb_send_event(conn, false, window, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char *)generated_event);
     xcb_flush(conn);
 
     free(event);

@@ -30,226 +30,14 @@ void ungrab_all_keys(xcb_connection_t *conn) {
     xcb_ungrab_key(conn, XCB_GRAB_ANY, root, XCB_BUTTON_MASK_ANY);
 }
 
-static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint32_t keycode) {
-    DLOG("Grabbing %d with modifiers %d (with mod_mask_lock %d)\n", keycode, bind->mods, bind->mods | XCB_MOD_MASK_LOCK);
-    /* Grab the key in all combinations */
-    #define GRAB_KEY(modifier) \
-        do { \
-            xcb_grab_key(conn, 0, root, modifier, keycode, \
-                         XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC); \
-        } while (0)
-    int mods = bind->mods;
-    if ((bind->mods & BIND_MODE_SWITCH) != 0) {
-        mods &= ~BIND_MODE_SWITCH;
-        if (mods == 0)
-            mods = XCB_MOD_MASK_ANY;
-    }
-    GRAB_KEY(mods);
-    GRAB_KEY(mods | xcb_numlock_mask);
-    GRAB_KEY(mods | XCB_MOD_MASK_LOCK);
-    GRAB_KEY(mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
-}
-
-/*
- * Returns a pointer to the Binding with the specified modifiers and keycode
- * or NULL if no such binding exists.
- *
- */
-Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode) {
-    Binding *bind;
-
-    if (!key_release) {
-        /* On a KeyPress event, we first reset all
-         * B_UPON_KEYRELEASE_IGNORE_MODS bindings back to B_UPON_KEYRELEASE */
-        TAILQ_FOREACH(bind, bindings, bindings) {
-            if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
-                bind->release = B_UPON_KEYRELEASE;
-        }
-    }
-
-    TAILQ_FOREACH(bind, bindings, bindings) {
-        /* First compare the modifiers (unless this is a
-         * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
-         * event) */
-        if (bind->mods != modifiers &&
-            (bind->release != B_UPON_KEYRELEASE_IGNORE_MODS ||
-             !key_release))
-            continue;
-
-        /* If a symbol was specified by the user, we need to look in
-         * the array of translated keycodes for the event’s keycode */
-        if (bind->symbol != NULL) {
-            if (memmem(bind->translated_to,
-                       bind->number_keycodes * sizeof(xcb_keycode_t),
-                       &keycode, sizeof(xcb_keycode_t)) == NULL)
-                continue;
-        } else {
-            /* This case is easier: The user specified a keycode */
-            if (bind->keycode != keycode)
-                continue;
-        }
-
-        /* If this keybinding is a KeyRelease binding, it matches the key which
-         * the user pressed. We therefore mark it as
-         * B_UPON_KEYRELEASE_IGNORE_MODS for later, so that the user can
-         * release the modifiers before the actual key and the KeyRelease will
-         * still be matched. */
-        if (bind->release == B_UPON_KEYRELEASE && !key_release)
-            bind->release = B_UPON_KEYRELEASE_IGNORE_MODS;
-
-        /* Check if the binding is for a KeyPress or a KeyRelease event */
-        if ((bind->release == B_UPON_KEYPRESS && key_release) ||
-            (bind->release >= B_UPON_KEYRELEASE && !key_release))
-            continue;
-
-        break;
-    }
-
-    return (bind == TAILQ_END(bindings) ? NULL : bind);
-}
-
-/*
- * Translates keysymbols to keycodes for all bindings which use keysyms.
- *
- */
-void translate_keysyms(void) {
-    Binding *bind;
-    xcb_keysym_t keysym;
-    int col;
-    xcb_keycode_t i,
-                  min_keycode = xcb_get_setup(conn)->min_keycode,
-                  max_keycode = xcb_get_setup(conn)->max_keycode;
-
-    TAILQ_FOREACH(bind, bindings, bindings) {
-        if (bind->keycode > 0)
-            continue;
-
-        /* We need to translate the symbol to a keycode */
-        keysym = XStringToKeysym(bind->symbol);
-        if (keysym == NoSymbol) {
-            ELOG("Could not translate string to key symbol: \"%s\"\n",
-                 bind->symbol);
-            continue;
-        }
-
-        /* Base column we use for looking up key symbols. We always consider
-         * the base column and the corresponding shift column, so without
-         * mode_switch, we look in 0 and 1, with mode_switch we look in 2 and
-         * 3. */
-        col = (bind->mods & BIND_MODE_SWITCH ? 2 : 0);
-
-        FREE(bind->translated_to);
-        bind->number_keycodes = 0;
-
-        for (i = min_keycode; i && i <= max_keycode; i++) {
-            if ((xcb_key_symbols_get_keysym(keysyms, i, col) != keysym) &&
-                (xcb_key_symbols_get_keysym(keysyms, i, col+1) != keysym))
-                continue;
-            bind->number_keycodes++;
-            bind->translated_to = srealloc(bind->translated_to,
-                                           (sizeof(xcb_keycode_t) *
-                                            bind->number_keycodes));
-            bind->translated_to[bind->number_keycodes-1] = i;
-        }
-
-        DLOG("Translated symbol \"%s\" to %d keycode\n", bind->symbol,
-             bind->number_keycodes);
-    }
-}
-
-/*
- * Grab the bound keys (tell X to send us keypress events for those keycodes)
- *
- */
-void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch) {
-    Binding *bind;
-    TAILQ_FOREACH(bind, bindings, bindings) {
-        if ((bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) == 0) ||
-            (!bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) != 0))
-            continue;
-
-        /* The easy case: the user specified a keycode directly. */
-        if (bind->keycode > 0) {
-            grab_keycode_for_binding(conn, bind, bind->keycode);
-            continue;
-        }
-
-        xcb_keycode_t *walk = bind->translated_to;
-        for (int i = 0; i < bind->number_keycodes; i++)
-            grab_keycode_for_binding(conn, bind, *walk++);
-    }
-}
-
-/*
- * Switches the key bindings to the given mode, if the mode exists
- *
- */
-void switch_mode(const char *new_mode) {
-    struct Mode *mode;
-
-    LOG("Switching to mode %s\n", new_mode);
-
-    SLIST_FOREACH(mode, &modes, modes) {
-        if (strcasecmp(mode->name, new_mode) != 0)
-            continue;
-
-        ungrab_all_keys(conn);
-        bindings = mode->bindings;
-        translate_keysyms();
-        grab_all_keys(conn, false);
-
-        char *event_msg;
-        sasprintf(&event_msg, "{\"change\":\"%s\"}", mode->name);
-
-        ipc_send_event("mode", I3_IPC_EVENT_MODE, event_msg);
-        FREE(event_msg);
-
-        return;
-    }
-
-    ELOG("ERROR: Mode not found\n");
-}
-
 /*
  * Sends the current bar configuration as an event to all barconfig_update listeners.
- * This update mechnism currently only includes the hidden_state and the mode in the config.
  *
  */
 void update_barconfig() {
     Barconfig *current;
-    TAILQ_FOREACH(current, &barconfigs, configs) {
-        /* Build json message */
-        char *hidden_state;
-        switch (current->hidden_state) {
-            case S_SHOW:
-                hidden_state ="show";
-                break;
-            case S_HIDE:
-            default:
-                hidden_state = "hide";
-                break;
-        }
-
-        char *mode;
-        switch (current->mode) {
-            case M_HIDE:
-                mode ="hide";
-                break;
-            case M_INVISIBLE:
-                mode ="invisible";
-                break;
-            case M_DOCK:
-            default:
-                mode = "dock";
-                break;
-        }
-
-        /* Send an event to all barconfig listeners*/
-        char *event_msg;
-        sasprintf(&event_msg, "{ \"id\":\"%s\", \"hidden_state\":\"%s\", \"mode\":\"%s\" }", current->id, hidden_state, mode);
-
-        ipc_send_event("barconfig_update", I3_IPC_EVENT_BARCONFIG_UPDATE, event_msg);
-        FREE(event_msg);
+    TAILQ_FOREACH (current, &barconfigs, configs) {
+        ipc_send_barconfig_update_event(current);
     }
 }
 
@@ -317,8 +105,7 @@ static char *get_config_path(const char *override_configpath) {
     free(buf);
 
     die("Unable to find the configuration file (looked at "
-            "~/.i3/config, $XDG_CONFIG_HOME/i3/config, "
-            SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
+        "~/.i3/config, $XDG_CONFIG_HOME/i3/config, " SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
 }
 
 /*
@@ -408,7 +195,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(barconfig);
         }
 
-        /* Clear workspace names */
+/* Clear workspace names */
 #if 0
         Workspace *ws;
         TAILQ_FOREACH(ws, workspaces, workspaces)
@@ -417,7 +204,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
         /* Invalidate pixmap caches in case font or colors changed */
         Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons)
+        TAILQ_FOREACH (con, &all_cons, all_cons)
             FREE(con->deco_render_params);
 
         /* Get rid of the current font */
@@ -435,19 +222,19 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     bindings = default_mode->bindings;
 
 #define REQUIRED_OPTION(name) \
-    if (config.name == NULL) \
+    if (config.name == NULL)  \
         die("You did not specify required configuration option " #name "\n");
 
     /* Clear the old config or initialize the data structure */
     memset(&config, 0, sizeof(config));
 
-    /* Initialize default colors */
+/* Initialize default colors */
 #define INIT_COLOR(x, cborder, cbackground, ctext, cindicator) \
-    do { \
-        x.border = get_colorpixel(cborder); \
-        x.background = get_colorpixel(cbackground); \
-        x.text = get_colorpixel(ctext); \
-        x.indicator = get_colorpixel(cindicator); \
+    do {                                                       \
+        x.border = get_colorpixel(cborder);                    \
+        x.background = get_colorpixel(cbackground);            \
+        x.text = get_colorpixel(ctext);                        \
+        x.indicator = get_colorpixel(cindicator);              \
     } while (0)
 
     config.client.background = get_colorpixel("#000000");
@@ -456,6 +243,9 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888", "#292d2e");
     INIT_COLOR(config.client.urgent, "#2f343a", "#900000", "#ffffff", "#900000");
 
+    /* border and indicator color are ignored for placeholder contents */
+    INIT_COLOR(config.client.placeholder, "#000000", "#0c0c0c", "#ffffff", "#000000");
+
     /* the last argument (indicator color) is ignored for bar colors */
     INIT_COLOR(config.bar.focused, "#4c7899", "#285577", "#ffffff", "#000000");
     INIT_COLOR(config.bar.unfocused, "#333333", "#222222", "#888888", "#000000");
@@ -463,7 +253,8 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
     config.default_border = BS_NORMAL;
     config.default_floating_border = BS_NORMAL;
-    config.default_border_width = 2;
+    config.default_border_width = logical_px(2);
+    config.default_floating_border_width = logical_px(2);
     /* Set default_orientation to NO_ORIENTATION for auto orientation. */
     config.default_orientation = NO_ORIENTATION;
 

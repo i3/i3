@@ -9,8 +9,7 @@
  *        …).
  *
  */
-#ifndef I3_CON_H
-#define I3_CON_H
+#pragma once
 
 /**
  * Create a new container (and attach it to the given parent, if not NULL).
@@ -37,6 +36,12 @@ void con_focus(Con *con);
  *
  */
 bool con_is_leaf(Con *con);
+
+/**
+ * Returns true when this con is a leaf node with a managed X11 window (e.g.,
+ * excluding dock containers)
+ */
+bool con_has_managed_window(Con *con);
 
 /*
  * Returns true if a container should be considered split.
@@ -81,7 +86,7 @@ Con *con_parent_with_orientation(Con *con, orientation_t orientation);
  * Returns the first fullscreen node below this node.
  *
  */
-Con *con_get_fullscreen_con(Con *con, int fullscreen_mode);
+Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode);
 
 /**
  * Returns true if the container is internal, such as __i3_scratch
@@ -193,7 +198,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
  * container).
  *
  */
-int con_orientation(Con *con);
+orientation_t con_orientation(Con *con);
 
 /**
  * Returns the container which will be focused next when the given container
@@ -340,5 +345,3 @@ void con_set_urgency(Con *con, bool urgent);
  *
  */
 char *con_get_tree_representation(Con *con);
-
-#endif

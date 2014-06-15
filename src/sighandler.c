@@ -34,8 +34,7 @@ static char *crash_text[] = {
     "or press",
     "- 'b' to save a backtrace (needs GDB),",
     "- 'r' to restart i3 in-place or",
-    "- 'f' to forget the current layout and restart"
-};
+    "- 'f' to forget the current layout and restart"};
 static int crash_text_longest = 5;
 static int backtrace_string_index = 3;
 static int backtrace_done = 0;
@@ -102,8 +101,7 @@ static int backtrace(void) {
             "-ex", "set logging on",
             "-ex", "bt full",
             "-ex", "quit",
-            NULL
-        };
+            NULL};
         execvp(args[0], args);
         DLOG("Failed to exec GDB\n");
         exit(1);
@@ -129,11 +127,11 @@ static int backtrace(void) {
  */
 static int sig_draw_window(xcb_window_t win, int width, int height, int font_height, i3String **crash_text_i3strings) {
     /* re-draw the background */
-    xcb_rectangle_t border = { 0, 0, width, height},
-                    inner = { 2, 2, width - 4, height - 4};
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FF0000") });
+    xcb_rectangle_t border = {0, 0, width, height},
+                    inner = {2, 2, width - 4, height - 4};
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#FF0000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#000000") });
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#000000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
@@ -151,7 +149,7 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
             set_font_colors(pixmap_gc, get_colorpixel(bt_colour), get_colorpixel("#000000"));
 
         draw_text(crash_text_i3strings[i], pixmap, pixmap_gc,
-                8, 5 + i * font_height, width - 16);
+                  8, 5 + i * font_height, width - 16);
 
         /* and reset the colour again for other lines */
         if (i == backtrace_string_index)
@@ -221,10 +219,10 @@ static xcb_window_t open_input_window(xcb_connection_t *conn, Rect screen_rect, 
 
     xcb_create_window(conn,
                       XCB_COPY_FROM_PARENT,
-                      win, /* the window id */
-                      root, /* parent == root */
+                      win,                 /* the window id */
+                      root,                /* parent == root */
                       x, y, width, height, /* dimensions */
-                      0, /* border = 0, we draw our own */
+                      0,                   /* border = 0, we draw our own */
                       XCB_WINDOW_CLASS_INPUT_OUTPUT,
                       XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
                       mask,
@@ -238,10 +236,10 @@ static xcb_window_t open_input_window(xcb_connection_t *conn, Rect screen_rect, 
 
 static void open_popups() {
     /* width and height of the popup window, so that the text fits in */
-    int crash_text_num = sizeof(crash_text) / sizeof(char*);
+    int crash_text_num = sizeof(crash_text) / sizeof(char *);
     int height = 13 + (crash_text_num * config.font.height);
 
-    int crash_text_length = sizeof(crash_text) / sizeof(char*);
+    int crash_text_length = sizeof(crash_text) / sizeof(char *);
     i3String **crash_text_i3strings = smalloc(sizeof(i3String *) * (crash_text_length + 1));
     /* Pre-compute i3Strings for our text */
     for (int i = 0; i < crash_text_length; ++i) {
@@ -255,7 +253,7 @@ static void open_popups() {
     /* Open a popup window on each virtual screen */
     Output *screen;
     xcb_window_t win;
-    TAILQ_FOREACH(screen, &outputs, outputs) {
+    TAILQ_FOREACH (screen, &outputs, outputs) {
         if (!screen->active)
             continue;
         win = open_input_window(conn, screen->rect, width, height);
@@ -300,7 +298,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         /* Strip off the highest bit (set if the event is generated) */
         int type = (event->response_type & 0x7F);
         if (type == XCB_KEY_PRESS) {
-            sig_handle_key_press(NULL, conn, (xcb_key_press_event_t*)event);
+            sig_handle_key_press(NULL, conn, (xcb_key_press_event_t *)event);
         }
         free(event);
     }

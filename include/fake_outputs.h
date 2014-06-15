@@ -8,8 +8,7 @@
  * which don’t support multi-monitor in a useful way) and for our testsuite.
  *
  */
-#ifndef I3_FAKE_OUTPUTS_H
-#define I3_FAKE_OUTPUTS_H
+#pragma once
 
 /**
  * Creates outputs according to the given specification.
@@ -19,5 +18,3 @@
  *
  */
 void fake_outputs_init(const char *output_spec);
-
-#endif

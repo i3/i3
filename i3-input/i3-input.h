@@ -1,5 +1,4 @@
-#ifndef I3_INPUT
-#define I3_INPUT
+#pragma once
 
 #include <err.h>
 
@@ -13,5 +12,3 @@
 while (0)
 
 extern xcb_window_t root;
-
-#endif

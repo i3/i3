@@ -8,8 +8,7 @@
  * as i3-msg, i3-config-wizard, …
  *
  */
-#ifndef I3_LIBI3_H
-#define I3_LIBI3_H
+#pragma once
 
 #include <stdbool.h>
 #include <stdarg.h>
@@ -383,4 +382,10 @@ char *get_process_filename(const char *prefix);
  */
 char *get_exe_path(const char *argv0);
 
-#endif
+/**
+ * Convert a logical amount of pixels (e.g. 2 pixels on a “standard” 96 DPI
+ * screen) to a corresponding amount of physical pixels on a standard or retina
+ * screen, e.g. 5 pixels on a 227 DPI MacBook Pro 13" Retina screen.
+ *
+ */
+int logical_px(const int logical);

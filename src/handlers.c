@@ -58,10 +58,11 @@ bool event_is_ignored(const int sequence, const int response_type) {
             event = SLIST_NEXT(event, ignore_events);
             SLIST_REMOVE(&ignore_events, save, Ignore_Event, ignore_events);
             free(save);
-        } else event = SLIST_NEXT(event, ignore_events);
+        } else
+            event = SLIST_NEXT(event, ignore_events);
     }
 
-    SLIST_FOREACH(event, &ignore_events, ignore_events) {
+    SLIST_FOREACH (event, &ignore_events, ignore_events) {
         if (event->sequence != sequence)
             continue;
 
@@ -162,7 +163,7 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     layout_t layout = (enter_child ? con->parent->layout : con->layout);
     if (layout == L_DEFAULT) {
         Con *child;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+        TAILQ_FOREACH (child, &(con->nodes_head), nodes)
             if (rect_contains(child->deco_rect, event->event_x, event->event_y)) {
                 LOG("using child %p / %s instead!\n", child, child->name);
                 con = child;
@@ -181,6 +182,10 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
 #endif
 
     if (config.disable_focus_follows_mouse)
+        return;
+
+    /* if this container is already focused, there is nothing to do. */
+    if (con == focused)
         return;
 
     /* Get the currently focused workspace to check if the focus change also
@@ -204,7 +209,6 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
  *
  */
 static void handle_motion_notify(xcb_motion_notify_event_t *event) {
-
     last_timestamp = event->time;
 
     /* Skip events where the pointer was over a child window, we are only
@@ -227,7 +231,7 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
 
     /* see over which rect the user is */
     Con *current;
-    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
         if (!rect_contains(current->deco_rect, event->event_x, event->event_y))
             continue;
 
@@ -294,7 +298,7 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
     Con *con;
 
     DLOG("window 0x%08x wants to be at %dx%d with %dx%d\n",
-        event->window, event->x, event->y, event->width, event->height);
+         event->window, event->x, event->y, event->width, event->height);
 
     /* For unmanaged windows, we just execute the configure request. As soon as
      * it gets mapped, we will take over anyways. */
@@ -304,12 +308,13 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
         uint32_t mask = 0;
         uint32_t values[7];
         int c = 0;
-#define COPY_MASK_MEMBER(mask_member, event_member) do { \
-        if (event->value_mask & mask_member) { \
-            mask |= mask_member; \
-            values[c++] = event->event_member; \
-        } \
-} while (0)
+#define COPY_MASK_MEMBER(mask_member, event_member) \
+    do {                                            \
+        if (event->value_mask & mask_member) {      \
+            mask |= mask_member;                    \
+            values[c++] = event->event_member;      \
+        }                                           \
+    } while (0)
 
         COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_X, x);
         COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_Y, y);
@@ -528,19 +533,37 @@ static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
     handle_unmap_notify_event(&unmap);
 }
 
+static bool window_name_changed(i3Window *window, char *old_name) {
+    if ((old_name == NULL) && (window->name == NULL))
+        return false;
+
+    /* Either the old or the new one is NULL, but not both. */
+    if ((old_name == NULL) ^ (window->name == NULL))
+        return true;
+
+    return (strcmp(old_name, i3string_as_utf8(window->name)) != 0);
+}
+
 /*
  * Called when a window changes its title
  *
  */
 static bool handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
-                                xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
+                                     xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;
 
+    char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
+
     window_update_name(con->window, prop, false);
 
     x_push_changes(croot);
+
+    if (window_name_changed(con->window, old_name))
+        ipc_send_window_event("title", con);
+
+    FREE(old_name);
 
     return true;
 }
@@ -551,14 +574,21 @@ static bool handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t
  *
  */
 static bool handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t state,
-                                xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
+                                            xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;
 
+    char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
+
     window_update_name_legacy(con->window, prop, false);
 
     x_push_changes(croot);
+
+    if (window_name_changed(con->window, old_name))
+        ipc_send_window_event("title", con);
+
+    FREE(old_name);
 
     return true;
 }
@@ -628,7 +658,7 @@ static void handle_expose_event(xcb_expose_event_t *event) {
 static void handle_client_message(xcb_client_message_event_t *event) {
     /* If this is a startup notification ClientMessage, the library will handle
      * it and call our monitor_event() callback. */
-    if (sn_xcb_display_process_event(sndisplay, (xcb_generic_event_t*)event))
+    if (sn_xcb_display_process_event(sndisplay, (xcb_generic_event_t *)event))
         return;
 
     LOG("ClientMessage for window 0x%08x\n", event->window);
@@ -669,7 +699,11 @@ static void handle_client_message(xcb_client_message_event_t *event) {
 
         tree_render();
     } else if (event->type == A__NET_ACTIVE_WINDOW) {
+        if (event->format != 32)
+            return;
+
         DLOG("_NET_ACTIVE_WINDOW: Window 0x%08x should be activated\n", event->window);
+
         Con *con = con_by_window_id(event->window);
         if (con == NULL) {
             DLOG("Could not get window for client message\n");
@@ -677,8 +711,9 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         }
 
         Con *ws = con_get_workspace(con);
-        if (!workspace_is_visible(ws)) {
-            DLOG("Workspace not visible, ignoring _NET_ACTIVE_WINDOW\n");
+
+        if (ws == NULL) {
+            DLOG("Window is not being managed, ignoring _NET_ACTIVE_WINDOW\n");
             return;
         }
 
@@ -687,10 +722,26 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             return;
         }
 
-        if (ws != con_get_workspace(focused))
+        /* data32[0] indicates the source of the request (application or pager) */
+        if (event->data.data32[0] == 2) {
+            /* Always focus the con if it is from a pager, because this is most
+             * likely from some user action */
+            DLOG("This request came from a pager. Focusing con = %p\n", con);
             workspace_show(ws);
+            con_focus(con);
+        } else {
+            /* If the request is from an application, only focus if the
+             * workspace is visible. Otherwise set the urgency hint. */
+            if (workspace_is_visible(ws)) {
+                DLOG("Request to focus con on a visible workspace. Focusing con = %p\n", con);
+                workspace_show(ws);
+                con_focus(con);
+            } else {
+                DLOG("Request to focus con on a hidden workspace. Setting urgent con = %p\n", con);
+                con_set_urgency(con, true);
+            }
+        }
 
-        con_focus(con);
         tree_render();
     } else if (event->type == A_I3_SYNC) {
         xcb_window_t window = event->data.data32[0];
@@ -707,7 +758,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         ev->data.data32[0] = window;
         ev->data.data32[1] = rnd;
 
-        xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char*)ev);
+        xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char *)ev);
         xcb_flush(conn);
         free(reply);
     } else if (event->type == A__NET_REQUEST_FRAME_EXTENTS) {
@@ -729,16 +780,16 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         Rect r = {
             config.default_border_width, /* left */
             config.default_border_width, /* right */
-            config.font.height + 5, /* top */
-            config.default_border_width /* bottom */
+            config.font.height + 5,      /* top */
+            config.default_border_width  /* bottom */
         };
         xcb_change_property(
-                conn,
-                XCB_PROP_MODE_REPLACE,
-                event->window,
-                A__NET_FRAME_EXTENTS,
-                XCB_ATOM_CARDINAL, 32, 4,
-                &r);
+            conn,
+            XCB_PROP_MODE_REPLACE,
+            event->window,
+            A__NET_FRAME_EXTENTS,
+            XCB_ATOM_CARDINAL, 32, 4,
+            &r);
         xcb_flush(conn);
     } else {
         DLOG("unhandled clientmessage\n");
@@ -764,7 +815,7 @@ int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_wi
  *
  */
 static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                        xcb_atom_t name, xcb_get_property_reply_t *reply) {
+                                xcb_atom_t name, xcb_get_property_reply_t *reply) {
     Con *con = con_by_window_id(window);
     if (con == NULL) {
         DLOG("Received WM_NORMAL_HINTS for unknown client\n");
@@ -773,7 +824,7 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
 
     xcb_size_hints_t size_hints;
 
-        //CLIENT_LOG(client);
+    //CLIENT_LOG(client);
 
     /* If the hints were already in this event, use them, if not, request them */
     if (reply != NULL)
@@ -853,7 +904,8 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
         aspect_ratio = min_aspect;
     } else if ((width / height) > max_aspect) {
         aspect_ratio = max_aspect;
-    } else goto render_and_return;
+    } else
+        goto render_and_return;
 
     if (fabs(con->aspect_ratio - aspect_ratio) > DBL_EPSILON) {
         con->aspect_ratio = aspect_ratio;
@@ -872,7 +924,7 @@ render_and_return:
  *
  */
 static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                  xcb_atom_t name, xcb_get_property_reply_t *reply) {
+                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
     Con *con = con_by_window_id(window);
     if (con == NULL) {
         DLOG("Received WM_HINTS for unknown client\n");
@@ -897,7 +949,7 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
  *
  */
 static bool handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                         xcb_atom_t name, xcb_get_property_reply_t *prop) {
+                                 xcb_atom_t name, xcb_get_property_reply_t *prop) {
     Con *con;
 
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL) {
@@ -907,7 +959,8 @@ static bool handle_transient_for(void *data, xcb_connection_t *conn, uint8_t sta
 
     if (prop == NULL) {
         prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
-                                false, window, XCB_ATOM_WM_TRANSIENT_FOR, XCB_ATOM_WINDOW, 0, 32), NULL);
+                                                                       false, window, XCB_ATOM_WM_TRANSIENT_FOR, XCB_ATOM_WINDOW, 0, 32),
+                                      NULL);
         if (prop == NULL)
             return false;
     }
@@ -923,14 +976,15 @@ static bool handle_transient_for(void *data, xcb_connection_t *conn, uint8_t sta
  *
  */
 static bool handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                        xcb_atom_t name, xcb_get_property_reply_t *prop) {
+                                       xcb_atom_t name, xcb_get_property_reply_t *prop) {
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;
 
     if (prop == NULL) {
         prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
-                                false, window, A_WM_CLIENT_LEADER, XCB_ATOM_WINDOW, 0, 32), NULL);
+                                                                       false, window, A_WM_CLIENT_LEADER, XCB_ATOM_WINDOW, 0, 32),
+                                      NULL);
         if (prop == NULL)
             return false;
     }
@@ -1002,14 +1056,13 @@ struct property_handler_t {
 };
 
 static struct property_handler_t property_handlers[] = {
-    { 0, 128, handle_windowname_change },
-    { 0, UINT_MAX, handle_hints },
-    { 0, 128, handle_windowname_change_legacy },
-    { 0, UINT_MAX, handle_normal_hints },
-    { 0, UINT_MAX, handle_clientleader_change },
-    { 0, UINT_MAX, handle_transient_for },
-    { 0, 128, handle_windowrole_change }
-};
+    {0, 128, handle_windowname_change},
+    {0, UINT_MAX, handle_hints},
+    {0, 128, handle_windowname_change_legacy},
+    {0, UINT_MAX, handle_normal_hints},
+    {0, UINT_MAX, handle_clientleader_change},
+    {0, UINT_MAX, handle_transient_for},
+    {0, 128, handle_windowrole_change}};
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
 /*
@@ -1018,7 +1071,6 @@ static struct property_handler_t property_handlers[] = {
  *
  */
 void property_handlers_init(void) {
-
     sn_monitor_context_new(sndisplay, conn_screen, startup_monitor_event, NULL, NULL);
 
     property_handlers[0].atom = A__NET_WM_NAME;
@@ -1034,7 +1086,7 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
     struct property_handler_t *handler = NULL;
     xcb_get_property_reply_t *propr = NULL;
 
-    for (int c = 0; c < sizeof(property_handlers) / sizeof(struct property_handler_t); c++) {
+    for (size_t c = 0; c < sizeof(property_handlers) / sizeof(struct property_handler_t); c++) {
         if (property_handlers[c].atom != atom)
             continue;
 
@@ -1072,61 +1124,61 @@ void handle_event(int type, xcb_generic_event_t *event) {
     switch (type) {
         case XCB_KEY_PRESS:
         case XCB_KEY_RELEASE:
-            handle_key_press((xcb_key_press_event_t*)event);
+            handle_key_press((xcb_key_press_event_t *)event);
             break;
 
         case XCB_BUTTON_PRESS:
-            handle_button_press((xcb_button_press_event_t*)event);
+            handle_button_press((xcb_button_press_event_t *)event);
             break;
 
         case XCB_MAP_REQUEST:
-            handle_map_request((xcb_map_request_event_t*)event);
+            handle_map_request((xcb_map_request_event_t *)event);
             break;
 
         case XCB_UNMAP_NOTIFY:
-            handle_unmap_notify_event((xcb_unmap_notify_event_t*)event);
+            handle_unmap_notify_event((xcb_unmap_notify_event_t *)event);
             break;
 
         case XCB_DESTROY_NOTIFY:
-            handle_destroy_notify_event((xcb_destroy_notify_event_t*)event);
+            handle_destroy_notify_event((xcb_destroy_notify_event_t *)event);
             break;
 
         case XCB_EXPOSE:
-            handle_expose_event((xcb_expose_event_t*)event);
+            handle_expose_event((xcb_expose_event_t *)event);
             break;
 
         case XCB_MOTION_NOTIFY:
-            handle_motion_notify((xcb_motion_notify_event_t*)event);
+            handle_motion_notify((xcb_motion_notify_event_t *)event);
             break;
 
         /* Enter window = user moved his mouse over the window */
         case XCB_ENTER_NOTIFY:
-            handle_enter_notify((xcb_enter_notify_event_t*)event);
+            handle_enter_notify((xcb_enter_notify_event_t *)event);
             break;
 
         /* Client message are sent to the root window. The only interesting
          * client message for us is _NET_WM_STATE, we honour
          * _NET_WM_STATE_FULLSCREEN and _NET_WM_STATE_DEMANDS_ATTENTION */
         case XCB_CLIENT_MESSAGE:
-            handle_client_message((xcb_client_message_event_t*)event);
+            handle_client_message((xcb_client_message_event_t *)event);
             break;
 
         /* Configure request = window tried to change size on its own */
         case XCB_CONFIGURE_REQUEST:
-            handle_configure_request((xcb_configure_request_event_t*)event);
+            handle_configure_request((xcb_configure_request_event_t *)event);
             break;
 
         /* Mapping notify = keyboard mapping changed (Xmodmap), re-grab bindings */
         case XCB_MAPPING_NOTIFY:
-            handle_mapping_notify((xcb_mapping_notify_event_t*)event);
+            handle_mapping_notify((xcb_mapping_notify_event_t *)event);
             break;
 
         case XCB_FOCUS_IN:
-            handle_focus_in((xcb_focus_in_event_t*)event);
+            handle_focus_in((xcb_focus_in_event_t *)event);
             break;
 
         case XCB_PROPERTY_NOTIFY: {
-            xcb_property_notify_event_t *e = (xcb_property_notify_event_t*)event;
+            xcb_property_notify_event_t *e = (xcb_property_notify_event_t *)event;
             last_timestamp = e->time;
             property_notify(e->state, e->window, e->atom);
             break;

@@ -7,8 +7,7 @@
  * floating.c: Floating windows.
  *
  */
-#ifndef I3_FLOATING_H
-#define I3_FLOATING_H
+#pragma once
 
 #include "tree.h"
 
@@ -183,5 +182,3 @@ void floating_reposition(Con *con, Rect newrect);
  *
  */
 void floating_fix_coordinates(Con *con, Rect *old_rect, Rect *new_rect);
-
-#endif

@@ -1,0 +1,37 @@
+#
+# Valgrind suppression file for i3 testcases
+#
+# Format specification:
+# http://valgrind.org/docs/manual/manual-core.html#manual-core.suppress
+#
+
+#
+# GLib
+#
+{
+    Ignore fundamental GType registration
+    Memcheck:Leak
+    ...
+    fun:g_type_register_fundamental
+    ...
+}
+
+{
+    Ignore static GType registration
+    Memcheck:Leak
+    match-leak-kinds: possible
+    ...
+    fun:g_type_register_static
+    ...
+}
+
+{
+    Ignore GObject init function
+    Memcheck:Leak
+    match-leak-kinds: possible
+    ...
+    obj:/usr/lib/libgobject-2.0*
+    ...
+    fun:call_init.part.0
+    ...
+}

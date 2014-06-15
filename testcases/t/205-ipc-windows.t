@@ -30,19 +30,31 @@ $i3->connect()->recv;
 # Events
 
 my $new = AnyEvent->condvar;
+my $focus = AnyEvent->condvar;
 $i3->subscribe({
     window => sub {
         my ($event) = @_;
-        $new->send($event->{change} eq 'new');
+        if ($event->{change} eq 'new') {
+            $new->send($event);
+        } elsif ($event->{change} eq 'focus') {
+            $focus->send($event);
+        }
     }
 })->recv;
 
 open_window;
 
 my $t;
-$t = AnyEvent->timer(after => 0.5, cb => sub { $new->send(0); });
+$t = AnyEvent->timer(
+    after => 0.5,
+    cb => sub {
+        $new->send(0);
+        $focus->send(0);
+    }
+);
 
-ok($new->recv, 'Window "new" event received');
+is($new->recv->{container}->{focused}, 0, 'Window "new" event received');
+is($focus->recv->{container}->{focused}, 1, 'Window "focus" event received');
 
 }
 

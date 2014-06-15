@@ -166,7 +166,8 @@ hint and are opened in floating mode by default.
 You can toggle floating mode for a window by pressing +$mod+Shift+Space+. By
 dragging the window’s titlebar with your mouse you can move the window
 around. By grabbing the borders and moving them you can resize the window. You
-can also do that by using the <<floating_modifier>>.
+can also do that by using the <<floating_modifier>>. Another way to resize
+floating windows using the mouse is to right-click on the titlebar and drag.
 
 For resizing floating windows with your keyboard, see <<resizingconfig>>.
 
@@ -203,7 +204,7 @@ orientation (horizontal, vertical or unspecified) and the orientation depends
 on the layout the container is in (vertical for splitv and stacking, horizontal
 for splith and tabbed). So, in our example with the workspace, the default
 layout of the workspace +Container+ is splith (most monitors are widescreen
-nowadays). If you change the layout to splitv (+$mod+l+ in the default config)
+nowadays). If you change the layout to splitv (+$mod+v+ in the default config)
 and *then* open two terminals, i3 will configure your windows like this:
 
 image::tree-shot2.png["shot2",title="Vertical Workspace Orientation"]
@@ -249,13 +250,13 @@ single workspace on which you open three terminal windows. All these terminal
 windows are directly attached to one node inside i3’s layout tree, the
 workspace node. By default, the workspace node’s orientation is +horizontal+.
 
-Now you move one of these terminals down (+$mod+k+ by default). The workspace
-node’s orientation will be changed to +vertical+. The terminal window you moved
-down is directly attached to the workspace and appears on the bottom of the
-screen. A new (horizontal) container was created to accommodate the other two
-terminal windows. You will notice this when switching to tabbed mode (for
-example). You would end up having one tab called "another container" and the
-other one being the terminal window you moved down.
+Now you move one of these terminals down (+$mod+Shift+k+ by default). The
+workspace node’s orientation will be changed to +vertical+. The terminal window
+you moved down is directly attached to the workspace and appears on the bottom
+of the screen. A new (horizontal) container was created to accommodate the
+other two terminal windows. You will notice this when switching to tabbed mode
+(for example). You would end up having one tab called "another container" and
+the other one being the terminal window you moved down.
 
 [[configuring]]
 == Configuring i3
@@ -727,6 +728,9 @@ client.unfocused::
 	A client which is not the focused one of its container.
 client.urgent::
 	A client which has its urgency hint activated.
+client.placeholder::
+	Background and text color are used to draw placeholder window contents
+	(when restoring layouts). Border and indicator are ignored.
 
 You can also specify the color to be used to paint the background of the client
 windows. This color will be used to paint the window on top of which the client
@@ -749,6 +753,7 @@ client.focused          #4c7899 #285577 #ffffff #2e9ef4
 client.focused_inactive #333333 #5f676a #ffffff #484e50
 client.unfocused        #333333 #222222 #888888 #292d2e
 client.urgent           #2f343a #900000 #ffffff #900000
+client.placeholder      #000000 #0c0c0c #ffffff #000000
 ---------------------------------------------------------
 
 Note that for the window decorations, the color around the child window is the
@@ -804,6 +809,26 @@ focus_follows_mouse <yes|no>
 ----------------------
 focus_follows_mouse no
 ----------------------
+
+=== Mouse warping
+
+By default, when switching focus to a window on a different output (e.g.
+focusing a window on workspace 3 on output VGA-1, coming from workspace 2 on
+LVDS-1), the mouse cursor is warped to the center of that window.
+
+With the +mouse_warping+ option, you can control when the mouse cursor should
+be warped. +none+ disables warping entirely, whereas +output+ is the default
+behavior described above.
+
+*Syntax*:
+---------------------------
+mouse_warping <output|none>
+---------------------------
+
+*Example*:
+------------------
+mouse_warping none
+------------------
 
 === Popups during fullscreen mode
 
@@ -861,7 +886,7 @@ inferior Xinerama API explicitly and therefore don’t provide support for
 reconfiguring your screens on the fly (they are read only once on startup and
 that’s it).
 
-For people who do cannot modify their +~/.xsession+ to add the
+For people who cannot modify their +~/.xsession+ to add the
 +--force-xinerama+ commandline parameter, a configuration option is provided:
 
 *Syntax*:
@@ -1185,6 +1210,31 @@ bar {
     workspace_buttons no
 }
 ------------------------
+
+=== Strip workspace numbers
+
+Specifies whether workspace numbers should be displayed within the workspace
+buttons. This is useful if you want to have a named workspace that stays in
+order on the bar according to its number without displaying the number prefix.
+
+When +strip_workspace_numbers+ is set to +yes+, any workspace that has a name of
+the form "[n]:[NAME]" will display only the name. You could use this, for
+instance, to display Roman numerals rather than digits by naming your
+workspaces to "1:I", "2:II", "3:III", "4:IV", ...
+
+The default is to display the full name within the workspace button.
+
+*Syntax*:
+----------------------------------
+strip_workspace_numbers <yes|no>
+----------------------------------
+
+*Example*:
+----------------------------
+bar {
+    strip_workspace_numbers yes
+}
+----------------------------
 
 === Binding Mode indicator
 

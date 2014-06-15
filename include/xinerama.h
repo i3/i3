@@ -9,8 +9,7 @@
  * driver which does not support RandR in 2011 *sigh*.
  *
  */
-#ifndef I3_XINERAMA_H
-#define I3_XINERAMA_H
+#pragma once
 
 #include "data.h"
 
@@ -20,5 +19,3 @@
  *
  */
 void xinerama_init(void);
-
-#endif

@@ -53,6 +53,11 @@ cmd 'kill';
 ($nodes, $focus) = get_ws_content($tmp);
 isnt($nodes->[0]->{id}, $split, 'split container closed');
 
+# clean up the remaining containers to ensure this workspace will be garbage
+# collected.
+cmd 'kill';
+cmd 'kill';
+
 ##############################################################
 # same thing but this time we are moving the cons away instead
 # of killing them

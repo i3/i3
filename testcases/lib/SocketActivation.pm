@@ -110,6 +110,7 @@ sub activate_i3 {
         if ($args{valgrind}) {
             $i3cmd =
                 qq|valgrind -v --log-file="$outdir/valgrind-for-$test.log" | .
+                qq|--suppressions="./valgrind.supp" | .
                 qq|--leak-check=full --track-origins=yes --num-callers=20 | .
                 qq|--tool=memcheck -- $i3cmd|;
         }

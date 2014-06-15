@@ -31,6 +31,7 @@ my $pid = launch_with_config($config);
 # Setup workspaces so that they stay open (with an empty container).
 ################################################################################
 
+sync_with_i3;
 $x->root->warp_pointer(0, 0);
 sync_with_i3;
 

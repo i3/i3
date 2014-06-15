@@ -77,10 +77,10 @@ sub workspaces_per_screen {
     my @outputs = @{$tree->{nodes}};
 
     my $fake0 = first { $_->{name} eq 'fake-0' } @outputs;
-    my $fake0_content = first { $_->{type} == 2 } @{$fake0->{nodes}};
+    my $fake0_content = first { $_->{type} eq 'con' } @{$fake0->{nodes}};
 
     my $fake1 = first { $_->{name} eq 'fake-1' } @outputs;
-    my $fake1_content = first { $_->{type} == 2 } @{$fake1->{nodes}};
+    my $fake1_content = first { $_->{type} eq 'con' } @{$fake1->{nodes}};
 
     my @fake0_workspaces = map { $_->{name} } @{$fake0_content->{nodes}};
     my @fake1_workspaces = map { $_->{name} } @{$fake1_content->{nodes}};

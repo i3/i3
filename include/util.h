@@ -8,8 +8,7 @@
  *         also libi3).
  *
  */
-#ifndef I3_UTIL_H
-#define I3_UTIL_H
+#pragma once
 
 #include <err.h>
 
@@ -58,6 +57,20 @@ int min(int a, int b);
 int max(int a, int b);
 bool rect_contains(Rect rect, uint32_t x, uint32_t y);
 Rect rect_add(Rect a, Rect b);
+Rect rect_sub(Rect a, Rect b);
+
+/**
+ * Returns true if the name consists of only digits.
+ *
+ */
+__attribute__((pure)) bool name_is_digits(const char *name);
+
+/**
+ * Parses the workspace name as a number. Returns -1 if the workspace should be
+ * interpreted as a "named workspace".
+ *
+ */
+long ws_name_to_number(const char *name);
 
 /**
  * Updates *destination with new_value and returns true if it was changed or false
@@ -141,5 +154,3 @@ void start_nagbar(pid_t *nagbar_pid, char *argv[]);
  *
  */
 void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it);
-
-#endif

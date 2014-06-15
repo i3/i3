@@ -7,22 +7,17 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
-#ifndef I3_COMMANDS_PARSER_H
-#define I3_COMMANDS_PARSER_H
+#pragma once
 
 #include <yajl/yajl_gen.h>
 
 /*
- * Holds the result of a call to any command. When calling
- * parse_command("floating enable, border none"), the parser will internally
- * use a struct CommandResult when calling cmd_floating and cmd_border.
- * parse_command will also return another struct CommandResult, whose
- * json_output is set to a map of individual json_outputs and whose
- * needs_tree_trender is true if any individual needs_tree_render was true.
- *
+ * Holds an intermediate represenation of the result of a call to any command.
+ * When calling parse_command("floating enable, border none"), the parser will
+ * internally use this struct when calling cmd_floating and cmd_border.
  */
-struct CommandResult {
-    /* The JSON generator to append a reply to. */
+struct CommandResultIR {
+    /* The JSON generator to append a reply to (may be NULL). */
     yajl_gen json_gen;
 
     /* The next state to transition to. Passed to the function so that we can
@@ -34,6 +29,31 @@ struct CommandResult {
     bool needs_tree_render;
 };
 
-struct CommandResult *parse_command(const char *input);
+typedef struct CommandResult CommandResult;
 
-#endif
+/**
+ * A struct that contains useful information about the result of a command as a
+ * whole (e.g. a compound command like "floating enable, border none").
+ * needs_tree_render is true if needs_tree_render of any individual command was
+ * true.
+ */
+struct CommandResult {
+    bool parse_error;
+    /* the error_message is currently only set for parse errors */
+    char *error_message;
+    bool needs_tree_render;
+};
+
+/**
+ * Parses and executes the given command. If a caller-allocated yajl_gen is
+ * passed, a json reply will be generated in the format specified by the ipc
+ * protocol. Pass NULL if no json reply is required.
+ *
+ * Free the returned CommandResult with command_result_free().
+ */
+CommandResult *parse_command(const char *input, yajl_gen gen);
+
+/**
+ * Frees a CommandResult
+ */
+void command_result_free(CommandResult *result);

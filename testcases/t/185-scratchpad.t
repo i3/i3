@@ -35,7 +35,7 @@ is($tree->{name}, 'root', 'root node is the first thing we get');
 my @__i3 = grep { $_->{name} eq '__i3' } @{$tree->{nodes}};
 is(scalar @__i3, 1, 'output __i3 found');
 
-my $content = first { $_->{type} == 2 } @{$__i3[0]->{nodes}};
+my $content = first { $_->{type} eq 'con' } @{$__i3[0]->{nodes}};
 my @workspaces = @{$content->{nodes}};
 my @workspace_names = map { $_->{name} } @workspaces;
 ok('__i3_scratch' ~~ @workspace_names, '__i3_scratch workspace found');

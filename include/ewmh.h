@@ -7,8 +7,7 @@
  * ewmh.c: Get/set certain EWMH properties easily.
  *
  */
-#ifndef I3_EWMH_C
-#define I3_EWMH_C
+#pragma once
 
 /**
  * Updates _NET_CURRENT_DESKTOP with the current desktop number.
@@ -27,6 +26,11 @@ void ewmh_update_current_desktop(void);
  *
  */
 void ewmh_update_active_window(xcb_window_t window);
+
+/**
+ * Updates the _NET_CLIENT_LIST hint. Used for window listers.
+ */
+void ewmh_update_client_list(xcb_window_t *list, int num_windows);
 
 /**
  * Updates the _NET_CLIENT_LIST_STACKING hint. Necessary to move tabs in
@@ -62,5 +66,3 @@ void ewmh_setup_hints(void);
  *
  */
 void ewmh_update_workarea(void);
-
-#endif

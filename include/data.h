@@ -7,8 +7,7 @@
  * include/data.h: This file defines all data structures used by i3
  *
  */
-#ifndef I3_DATA_H
-#define I3_DATA_H
+#pragma once
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
@@ -93,6 +92,22 @@ typedef enum {
 } layout_t;
 
 /**
+ * Binding input types. See Binding::input_type.
+ */
+typedef enum {
+    B_KEYBOARD = 0,
+    B_MOUSE = 1
+} input_type_t;
+
+/**
+ * Mouse pointer warping modes.
+ */
+typedef enum {
+    POINTER_WARPING_OUTPUT = 0,
+    POINTER_WARPING_NONE = 1
+} warping_t;
+
+/**
  * Stores a rectangle, for example the size of a window, the child window etc.
  * It needs to be packed so that the compiler will not add any padding bytes.
  * (it is used in src/ewmh.c for example)
@@ -151,7 +166,7 @@ struct deco_render_params {
 };
 
 /**
- * Stores which workspace (by name) goes to which output.
+ * Stores which workspace (by name or number) goes to which output.
  *
  */
 struct Workspace_Assignment {
@@ -214,6 +229,10 @@ struct regex {
  *
  */
 struct Binding {
+    /* The type of input this binding is for. (Mouse bindings are not yet
+     * implemented. All bindings are currently assumed to be keyboard bindings.) */
+    input_type_t input_type;
+
     /** If true, the binding should be executed upon a KeyRelease event, not a
      * KeyPress (the default). */
     enum {
@@ -374,7 +393,7 @@ struct Match {
     struct regex *class;
     struct regex *instance;
     struct regex *mark;
-    struct regex *role;
+    struct regex *window_role;
     enum {
         U_DONTCHECK = -1,
         U_LATEST = 0,
@@ -449,6 +468,9 @@ struct Assignment {
 
     TAILQ_ENTRY(Assignment) assignments;
 };
+
+/** Fullscreen modes. Used by Con.fullscreen_mode. */
+typedef enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode_t;
 
 /**
  * A 'Con' represents everything from the X11 root window down to a single X11 window.
@@ -538,7 +560,7 @@ struct Con {
 
     TAILQ_HEAD(swallow_head, Match) swallow_head;
 
-    enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode;
+    fullscreen_mode_t fullscreen_mode;
     /* layout is the layout of this container: one of split[v|h], stacked or
      * tabbed. Special containers in the tree (above workspaces) have special
      * layouts like dockarea or output.
@@ -595,5 +617,3 @@ struct Con {
     /* Depth of the container window */
     uint16_t depth;
 };
-
-#endif

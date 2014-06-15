@@ -76,23 +76,22 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
 
     /* TODO: refactor the following */
     croot = con_new(NULL, NULL);
-    croot->rect = (Rect){
+    croot->rect = (Rect) {
         geometry->x,
         geometry->y,
         geometry->width,
-        geometry->height
-    };
+        geometry->height};
     focused = croot;
 
-    tree_append_json(globbed);
+    tree_append_json(focused, globbed, NULL);
 
-    printf("appended tree, using new root\n");
+    DLOG("appended tree, using new root\n");
     croot = TAILQ_FIRST(&(croot->nodes_head));
-    printf("new root = %p\n", croot);
+    DLOG("new root = %p\n", croot);
     Con *out = TAILQ_FIRST(&(croot->nodes_head));
-    printf("out = %p\n", out);
+    DLOG("out = %p\n", out);
     Con *ws = TAILQ_FIRST(&(out->nodes_head));
-    printf("ws = %p\n", ws);
+    DLOG("ws = %p\n", ws);
 
     /* For in-place restarting into v4.2, we need to make sure the new
      * pseudo-output __i3 is present. */
@@ -119,12 +118,11 @@ void tree_init(xcb_get_geometry_reply_t *geometry) {
     croot->name = "root";
     croot->type = CT_ROOT;
     croot->layout = L_SPLITH;
-    croot->rect = (Rect){
+    croot->rect = (Rect) {
         geometry->x,
         geometry->y,
         geometry->width,
-        geometry->height
-    };
+        geometry->height};
 
     _create___i3();
 }
@@ -169,7 +167,7 @@ Con *tree_open_con(Con *con, i3Window *window) {
 static bool _is_con_mapped(Con *con) {
     Con *child;
 
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes)
         if (_is_con_mapped(child))
             return true;
 
@@ -216,7 +214,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
     bool abort_kill = false;
     /* We cannot use TAILQ_FOREACH because the children get deleted
      * in their parent’s nodes_head */
-    for (child = TAILQ_FIRST(&(con->nodes_head)); child; ) {
+    for (child = TAILQ_FIRST(&(con->nodes_head)); child;) {
         nextchild = TAILQ_NEXT(child, nodes);
         DLOG("killing child=%p\n", child);
         if (!tree_close(child, kill_window, true, false))
@@ -239,7 +237,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
              * unmap the window,
              * then reparent it to the root window. */
             xcb_change_window_attributes(conn, con->window->id,
-                    XCB_CW_EVENT_MASK, (uint32_t[]){ XCB_NONE });
+                                         XCB_CW_EVENT_MASK, (uint32_t[]) {XCB_NONE});
             xcb_unmap_window(conn, con->window->id);
             cookie = xcb_reparent_window(conn, con->window->id, root, 0, 0);
 
@@ -249,9 +247,9 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
 
             /* We are no longer handling this window, thus set WM_STATE to
              * WM_STATE_WITHDRAWN (see ICCCM 4.1.3.1) */
-            long data[] = { XCB_ICCCM_WM_STATE_WITHDRAWN, XCB_NONE };
+            long data[] = {XCB_ICCCM_WM_STATE_WITHDRAWN, XCB_NONE};
             cookie = xcb_change_property(conn, XCB_PROP_MODE_REPLACE,
-                        con->window->id, A_WM_STATE, A_WM_STATE, 32, 2, data);
+                                         con->window->id, A_WM_STATE, A_WM_STATE, 32, 2, data);
 
             /* Ignore X11 errors for the ReparentWindow request.
              * X11 Errors are returned when the window was already destroyed */
@@ -260,7 +258,8 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
         FREE(con->window->class_class);
         FREE(con->window->class_instance);
         i3string_free(con->window->name);
-        free(con->window);
+        FREE(con->window->ran_assignments);
+        FREE(con->window);
     }
 
     Con *ws = con_get_workspace(con);
@@ -336,10 +335,10 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
             } else {
                 if (!force_set_focus && con != focused)
                     DLOG("not changing focus, the container was not focused before\n");
-                else con_focus(next);
+                else
+                    con_focus(next);
             }
-        }
-        else {
+        } else {
             DLOG("not focusing because we're not killing anybody\n");
         }
     } else {
@@ -367,7 +366,7 @@ void tree_close_con(kill_window_t kill_window) {
     if (focused->type == CT_WORKSPACE) {
         DLOG("Workspaces cannot be close, closing all children instead\n");
         Con *child, *nextchild;
-        for (child = TAILQ_FIRST(&(focused->focus_head)); child; ) {
+        for (child = TAILQ_FIRST(&(focused->focus_head)); child;) {
             nextchild = TAILQ_NEXT(child, focused);
             DLOG("killing child=%p\n", child);
             tree_close(child, kill_window, false, false);
@@ -387,7 +386,7 @@ void tree_close_con(kill_window_t kill_window) {
  *
  */
 void tree_split(Con *con, orientation_t orientation) {
-    if (con->type == CT_FLOATING_CON) {
+    if (con_is_floating(con)) {
         DLOG("Floating containers can't be split.\n");
         return;
     }
@@ -471,16 +470,14 @@ bool level_down(void) {
     if (next == TAILQ_END(&(focused->focus_head))) {
         DLOG("cannot go down\n");
         return false;
-    }
-    else if (next->type == CT_FLOATING_CON) {
+    } else if (next->type == CT_FLOATING_CON) {
         /* Floating cons shouldn't be directly focused; try immediately
          * going to the grandchild of the focused con. */
         Con *child = TAILQ_FIRST(&(next->focus_head));
         if (child == TAILQ_END(&(next->focus_head))) {
             DLOG("cannot go down\n");
             return false;
-        }
-        else
+        } else
             next = TAILQ_FIRST(&(next->focus_head));
     }
 
@@ -492,12 +489,12 @@ static void mark_unmapped(Con *con) {
     Con *current;
 
     con->mapped = false;
-    TAILQ_FOREACH(current, &(con->nodes_head), nodes)
+    TAILQ_FOREACH (current, &(con->nodes_head), nodes)
         mark_unmapped(current);
     if (con->type == CT_WORKSPACE) {
         /* We need to call mark_unmapped on floating nodes aswell since we can
          * make containers floating. */
-        TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
+        TAILQ_FOREACH (current, &(con->floating_head), floating_windows)
             mark_unmapped(current);
     }
 }
@@ -599,13 +596,15 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
             Con *next;
             if (way == 'n')
                 next = TAILQ_NEXT(con, floating_windows);
-            else next = TAILQ_PREV(con, floating_head, floating_windows);
+            else
+                next = TAILQ_PREV(con, floating_head, floating_windows);
 
             /* If there is no next/previous container, wrap */
             if (!next) {
                 if (way == 'n')
                     next = TAILQ_FIRST(&(parent->floating_head));
-                else next = TAILQ_LAST(&(parent->floating_head), floating_head);
+                else
+                    next = TAILQ_LAST(&(parent->floating_head), floating_head);
             }
 
             /* Still no next/previous container? bail out */
@@ -638,7 +637,8 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
     Con *next;
     if (way == 'n')
         next = TAILQ_NEXT(current, nodes);
-    else next = TAILQ_PREV(current, nodes_head, nodes);
+    else
+        next = TAILQ_PREV(current, nodes_head, nodes);
 
     if (!next) {
         if (!config.force_focus_wrapping) {
@@ -654,7 +654,8 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
 
         if (way == 'n')
             next = TAILQ_FIRST(&(parent->nodes_head));
-        else next = TAILQ_LAST(&(parent->nodes_head), nodes_head);
+        else
+            next = TAILQ_LAST(&(parent->nodes_head), nodes_head);
     }
 
     /* Don't violate fullscreen focus restrictions. */

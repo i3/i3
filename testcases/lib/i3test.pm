@@ -391,7 +391,7 @@ sub get_workspace_names {
     for my $output (@outputs) {
         next if $output->{name} eq '__i3';
         # get the first CT_CON of each output
-        my $content = first { $_->{type} == 2 } @{$output->{nodes}};
+        my $content = first { $_->{type} eq 'con' } @{$output->{nodes}};
         @cons = (@cons, @{$content->{nodes}});
     }
     [ map { $_->{name} } @cons ]
@@ -434,7 +434,7 @@ sub fresh_workspace {
                         @{$tree->{nodes}};
         die "BUG: Could not find output $args{output}" unless defined($output);
         # Get the focused workspace on that output and switch to it.
-        my $content = first { $_->{type} == 2 } @{$output->{nodes}};
+        my $content = first { $_->{type} eq 'con' } @{$output->{nodes}};
         my $focused = $content->{focus}->[0];
         my $workspace = first { $_->{id} == $focused } @{$content->{nodes}};
         $workspace = $workspace->{name};
@@ -479,7 +479,7 @@ sub get_ws {
     my @workspaces;
     for my $output (@outputs) {
         # get the first CT_CON of each output
-        my $content = first { $_->{type} == 2 } @{$output->{nodes}};
+        my $content = first { $_->{type} eq 'con' } @{$output->{nodes}};
         @workspaces = (@workspaces, @{$content->{nodes}});
     }
 
@@ -589,13 +589,13 @@ sub get_dock_clients {
     for my $output (@outputs) {
         if (!defined($which)) {
             @docked = (@docked, map { @{$_->{nodes}} }
-                                grep { $_->{type} == 5 }
+                                grep { $_->{type} eq 'dockarea' }
                                 @{$output->{nodes}});
         } elsif ($which eq 'top') {
-            my $first = first { $_->{type} == 5 } @{$output->{nodes}};
+            my $first = first { $_->{type} eq 'dockarea' } @{$output->{nodes}};
             @docked = (@docked, @{$first->{nodes}}) if defined($first);
         } elsif ($which eq 'bottom') {
-            my @matching = grep { $_->{type} == 5 } @{$output->{nodes}};
+            my @matching = grep { $_->{type} eq 'dockarea' } @{$output->{nodes}};
             my $last = $matching[-1];
             @docked = (@docked, @{$last->{nodes}}) if defined($last);
         }
@@ -645,7 +645,7 @@ sub focused_ws {
     my $tree = $i3->get_tree->recv;
     my $focused = $tree->{focus}->[0];
     my $output = first { $_->{id} == $focused } @{$tree->{nodes}};
-    my $content = first { $_->{type} == 2 } @{$output->{nodes}};
+    my $content = first { $_->{type} eq 'con' } @{$output->{nodes}};
     my $first = first { $_->{fullscreen_mode} == 1 } @{$content->{nodes}};
     return $first->{name}
 }
@@ -714,6 +714,8 @@ sub sync_with_i3 {
     # event mask, it will get the ClientMessage.
     $x->send_event(0, $root, EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
 
+    return $myrnd if $args{dont_wait_for_event};
+
     # now wait until the reply is here
     return wait_for_event 2, sub {
         my ($event) = @_;
@@ -781,7 +783,7 @@ To avoid caching:
 =cut
 sub get_socket_path {
     my ($cache) = @_;
-    $cache ||= 1;
+    $cache //= 1;
 
     if ($cache && defined($_cached_socket_path)) {
         return $_cached_socket_path;
