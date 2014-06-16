@@ -284,7 +284,6 @@ static void handle_map_request(xcb_map_request_event_t *event) {
     add_ignore_event(event->sequence, -1);
 
     manage_window(event->window, cookie, false);
-    x_push_changes(croot);
     return;
 }
 
