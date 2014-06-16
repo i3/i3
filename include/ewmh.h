@@ -19,6 +19,12 @@
 void ewmh_update_current_desktop(void);
 
 /**
+ * Updates _NET_NUMBER_OF_DESKTOPS which we interpret as the number of
+ * noninternal workspaces.
+ */
+void ewmh_update_number_of_desktops(void);
+
+/**
  * Updates _NET_ACTIVE_WINDOW with the currently focused window.
  *
  * EWMH: The window ID of the currently active window or None if no window has

@@ -765,8 +765,9 @@ int main(int argc, char *argv[]) {
     x_set_i3_atoms();
     ewmh_update_workarea();
 
-    /* Set the _NET_CURRENT_DESKTOP property. */
+    /* Set the ewmh desktop properties. */
     ewmh_update_current_desktop();
+    ewmh_update_number_of_desktops();
 
     struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
     struct ev_io *xkb = scalloc(sizeof(struct ev_io));
