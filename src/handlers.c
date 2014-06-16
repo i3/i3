@@ -489,7 +489,6 @@ static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
 
     tree_close(con, DONT_KILL_WINDOW, false, false);
     tree_render();
-    x_push_changes(croot);
 
 ignore_end:
     /* If the client (as opposed to i3) destroyed or unmapped a window, an
