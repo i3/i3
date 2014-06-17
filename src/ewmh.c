@@ -48,9 +48,9 @@ void ewmh_update_number_of_desktops(void) {
     Con *output;
     uint32_t idx = 0;
 
-    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         Con *ws;
-        TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) {
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
             if (STARTS_WITH(ws->name, "__"))
                 continue;
             ++idx;
@@ -58,7 +58,7 @@ void ewmh_update_number_of_desktops(void) {
     }
 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
-            A__NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1, &idx);
+                        A__NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1, &idx);
 }
 
 /*
