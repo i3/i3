@@ -394,6 +394,40 @@ umlauts or special characters 'and' having some comfortably reachable key
 bindings. For example, when typing, capslock+1 or capslock+2 for switching
 workspaces is totally convenient. Try it :-).
 
+[[mousebindings]]
+
+=== Mouse bindings
+
+A mouse binding makes i3 execute a command upon pressing a specific mouse
+button in the scope of the clicked container (see <<command_criteria>>). You
+can configure mouse bindings in a similar way to key bindings.
+
+*Syntax*:
+----------------------------------
+bindsym [Modifiers+]button[n] command
+----------------------------------
+
+If the binding has no modifiers, it will only run when you click on the
+titlebar of the window. Otherwise, it will run when any part of the window is
+clicked.
+
+*Examples*:
+--------------------------------
+# The middle button over a titlebar kills the window
+bindsym button2 kill
+
+# The middle button and a modifer over any part of the window kills the window
+bindsym $mod+button2 kill
+
+# The right button toggles floating
+bindsym button3 floating toggle
+bindsym $mod+button3 floating toggle
+
+# The side buttons move the window around
+bindsym button9 move left
+bindsym button8 move right
+--------------------------------
+
 [[floating_modifier]]
 
 === The floating modifier

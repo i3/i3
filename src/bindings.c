@@ -379,18 +379,25 @@ void check_for_duplicate_bindings(struct context *context) {
 }
 
 /*
- * Runs the given binding and handles parse errors. Returns a CommandResult for
- * running the binding's command. Caller should render tree if
- * needs_tree_render is true. Free with command_result_free().
+ * Runs the given binding and handles parse errors. If con is passed, it will
+ * execute the command binding with that container selected by criteria.
+ * Returns a CommandResult for running the binding's command. Caller should
+ * render tree if needs_tree_render is true. Free with command_result_free().
  *
  */
-CommandResult *run_binding(Binding *bind) {
+CommandResult *run_binding(Binding *bind, Con *con) {
+    char *command;
+
     /* We need to copy the command since “reload” may be part of the command,
      * and then the memory that bind->command points to may not contain the
      * same data anymore. */
-    char *command_copy = sstrdup(bind->command);
-    CommandResult *result = parse_command(command_copy, NULL);
-    free(command_copy);
+    if (con == NULL)
+        command = sstrdup(bind->command);
+    else
+        sasprintf(&command, "[con_id=\"%d\"] %s", con, bind->command);
+
+    CommandResult *result = parse_command(command, NULL);
+    free(command);
 
     if (result->needs_tree_render)
         tree_render();
