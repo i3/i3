@@ -791,6 +791,21 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             XCB_ATOM_CARDINAL, 32, 4,
             &r);
         xcb_flush(conn);
+    } else if (event->type == A_WM_CHANGE_STATE) {
+        /* http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.4 */
+        Con *con = con_by_window_id(event->window);
+
+        if (con && event->data.data32[0] == 3) {
+            /* this request is so we can play some animiation showing the
+             * window physically moving to the tray before we close it (I
+             * think) */
+            DLOG("Client has requested iconic state. Closing this con. (con = %p)\n", con);
+            tree_close(con, DONT_KILL_WINDOW, false, false);
+            tree_render();
+        } else {
+            DLOG("Not handling WM_CHANGE_STATE request. (window = %d, state = %d)\n", event->window, event->data.data32[0]);
+        }
+
     } else {
         DLOG("unhandled clientmessage\n");
         return;
