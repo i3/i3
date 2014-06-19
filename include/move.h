@@ -10,8 +10,8 @@
 #pragma once
 
 /**
- * Moves the current container in the given direction (TOK_LEFT, TOK_RIGHT,
+ * Moves the given container in the given direction (TOK_LEFT, TOK_RIGHT,
  * TOK_UP, TOK_DOWN from cmdparse.l)
  *
  */
-void tree_move(int direction);
+void tree_move(Con *con, int direction);

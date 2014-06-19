@@ -132,18 +132,17 @@ static void move_to_output_directed(Con *con, direction_t direction) {
 }
 
 /*
- * Moves the current container in the given direction (D_LEFT, D_RIGHT,
+ * Moves the given container in the given direction (D_LEFT, D_RIGHT,
  * D_UP, D_DOWN).
  *
  */
-void tree_move(int direction) {
+void tree_move(Con *con, int direction) {
     position_t position;
     Con *target;
 
     DLOG("Moving in direction %d\n", direction);
 
     /* 1: get the first parent with the same orientation */
-    Con *con = focused;
 
     if (con->type == CT_WORKSPACE) {
         DLOG("Not moving workspace\n");

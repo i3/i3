@@ -1545,25 +1545,35 @@ void cmd_move_direction(I3_CMD, char *direction, char *move_px) {
     // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
     int px = atoi(move_px);
 
-    /* TODO: make 'move' work with criteria. */
-    DLOG("moving in direction %s, px %s\n", direction, move_px);
-    if (con_is_floating(focused)) {
-        DLOG("floating move with %d pixels\n", px);
-        Rect newrect = focused->parent->rect;
-        if (strcmp(direction, "left") == 0) {
-            newrect.x -= px;
-        } else if (strcmp(direction, "right") == 0) {
-            newrect.x += px;
-        } else if (strcmp(direction, "up") == 0) {
-            newrect.y -= px;
-        } else if (strcmp(direction, "down") == 0) {
-            newrect.y += px;
+    owindow *current;
+    HANDLE_EMPTY_MATCH;
+
+    Con *initially_focused = focused;
+
+    TAILQ_FOREACH (current, &owindows, owindows) {
+        DLOG("moving in direction %s, px %s\n", direction, move_px);
+        if (con_is_floating(current->con)) {
+            DLOG("floating move with %d pixels\n", px);
+            Rect newrect = current->con->parent->rect;
+            if (strcmp(direction, "left") == 0) {
+                newrect.x -= px;
+            } else if (strcmp(direction, "right") == 0) {
+                newrect.x += px;
+            } else if (strcmp(direction, "up") == 0) {
+                newrect.y -= px;
+            } else if (strcmp(direction, "down") == 0) {
+                newrect.y += px;
+            }
+            floating_reposition(current->con->parent, newrect);
+        } else {
+            tree_move(current->con, (strcmp(direction, "right") == 0 ? D_RIGHT : (strcmp(direction, "left") == 0 ? D_LEFT : (strcmp(direction, "up") == 0 ? D_UP : D_DOWN))));
+            cmd_output->needs_tree_render = true;
         }
-        floating_reposition(focused->parent, newrect);
-    } else {
-        tree_move((strcmp(direction, "right") == 0 ? D_RIGHT : (strcmp(direction, "left") == 0 ? D_LEFT : (strcmp(direction, "up") == 0 ? D_UP : D_DOWN))));
-        cmd_output->needs_tree_render = true;
     }
+
+    /* the move command should not disturb focus */
+    if (focused != initially_focused)
+        con_focus(initially_focused);
 
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
