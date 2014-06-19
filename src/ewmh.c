@@ -24,9 +24,9 @@ void ewmh_update_current_desktop(void) {
     uint32_t idx = 0;
     /* We count to get the index of this workspace because named workspaces
      * don’t have the ->num property */
-    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         Con *ws;
-        TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) {
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
             if (STARTS_WITH(ws->name, "__"))
                 continue;
 

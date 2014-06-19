@@ -25,7 +25,7 @@ static struct Mode *mode_from_name(const char *name) {
     struct Mode *mode;
 
     /* Try to find the mode in the list of modes and return it */
-    SLIST_FOREACH (mode, &modes, modes) {
+    SLIST_FOREACH(mode, &modes, modes) {
         if (strcmp(mode->name, name) == 0)
             return mode;
     }
@@ -104,7 +104,7 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
  */
 void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch) {
     Binding *bind;
-    TAILQ_FOREACH (bind, bindings, bindings) {
+    TAILQ_FOREACH(bind, bindings, bindings) {
         if (bind->input_type != B_KEYBOARD ||
             (bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) == 0) ||
             (!bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) != 0))
@@ -133,7 +133,7 @@ static Binding *get_binding(uint16_t modifiers, bool is_release, uint16_t input_
     if (!is_release) {
         /* On a press event, we first reset all B_UPON_KEYRELEASE_IGNORE_MODS
          * bindings back to B_UPON_KEYRELEASE */
-        TAILQ_FOREACH (bind, bindings, bindings) {
+        TAILQ_FOREACH(bind, bindings, bindings) {
             if (bind->input_type != input_type)
                 continue;
             if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
@@ -141,7 +141,7 @@ static Binding *get_binding(uint16_t modifiers, bool is_release, uint16_t input_
         }
     }
 
-    TAILQ_FOREACH (bind, bindings, bindings) {
+    TAILQ_FOREACH(bind, bindings, bindings) {
         /* First compare the modifiers (unless this is a
          * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
          * event) */
@@ -248,7 +248,7 @@ void translate_keysyms(void) {
     min_keycode = xcb_get_setup(conn)->min_keycode;
     max_keycode = xcb_get_setup(conn)->max_keycode;
 
-    TAILQ_FOREACH (bind, bindings, bindings) {
+    TAILQ_FOREACH(bind, bindings, bindings) {
         if (bind->input_type == B_MOUSE) {
             int button = atoi(bind->symbol + (sizeof("button") - 1));
             bind->keycode = button;
@@ -304,7 +304,7 @@ void switch_mode(const char *new_mode) {
 
     DLOG("Switching to mode %s\n", new_mode);
 
-    SLIST_FOREACH (mode, &modes, modes) {
+    SLIST_FOREACH(mode, &modes, modes) {
         if (strcasecmp(mode->name, new_mode) != 0)
             continue;
 
@@ -334,8 +334,8 @@ void switch_mode(const char *new_mode) {
  */
 void check_for_duplicate_bindings(struct context *context) {
     Binding *bind, *current;
-    TAILQ_FOREACH (current, bindings, bindings) {
-        TAILQ_FOREACH (bind, bindings, bindings) {
+    TAILQ_FOREACH(current, bindings, bindings) {
+        TAILQ_FOREACH(bind, bindings, bindings) {
             /* Abort when we reach the current keybinding, only check the
              * bindings before */
             if (bind == current)

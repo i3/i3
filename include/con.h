@@ -18,7 +18,6 @@
  */
 Con *con_new_skeleton(Con *parent, i3Window *window);
 
-
 /* A wrapper for con_new_skeleton, to retain the old con_new behaviour
  *
  */

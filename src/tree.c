@@ -167,9 +167,9 @@ Con *tree_open_con(Con *con, i3Window *window) {
 static bool _is_con_mapped(Con *con) {
     Con *child;
 
-    TAILQ_FOREACH (child, &(con->nodes_head), nodes)
-        if (_is_con_mapped(child))
-            return true;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+    if (_is_con_mapped(child))
+        return true;
 
     return con->mapped;
 }
@@ -489,13 +489,13 @@ static void mark_unmapped(Con *con) {
     Con *current;
 
     con->mapped = false;
-    TAILQ_FOREACH (current, &(con->nodes_head), nodes)
-        mark_unmapped(current);
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes)
+    mark_unmapped(current);
     if (con->type == CT_WORKSPACE) {
         /* We need to call mark_unmapped on floating nodes aswell since we can
          * make containers floating. */
-        TAILQ_FOREACH (current, &(con->floating_head), floating_windows)
-            mark_unmapped(current);
+        TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
+        mark_unmapped(current);
     }
 }
 

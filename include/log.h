@@ -78,14 +78,14 @@ void set_verbosity(bool _verbose);
  *
  */
 void debuglog(char *fmt, ...)
-    __attribute__ ((format (printf, 1, 2)));
+    __attribute__((format(printf, 1, 2)));
 
 /**
  * Logs the given message to stdout while prefixing the current time to it.
  *
  */
 void errorlog(char *fmt, ...)
-    __attribute__ ((format (printf, 1, 2)));
+    __attribute__((format(printf, 1, 2)));
 
 /**
  * Logs the given message to stdout while prefixing the current time to it,
@@ -93,7 +93,7 @@ void errorlog(char *fmt, ...)
  *
  */
 void verboselog(char *fmt, ...)
-    __attribute__ ((format (printf, 1, 2)));
+    __attribute__((format(printf, 1, 2)));
 
 /**
  * Deletes the unused log files. Useful if i3 exits immediately, eg.

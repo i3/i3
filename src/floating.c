@@ -21,7 +21,7 @@ static Rect total_outputs_dimensions(void) {
     Output *output;
     /* Use Rect to encapsulate dimensions, ignoring x/y */
     Rect outputs_dimensions = {0, 0, 0, 0};
-    TAILQ_FOREACH (output, &outputs, outputs) {
+    TAILQ_FOREACH(output, &outputs, outputs) {
         outputs_dimensions.height += output->rect.height;
         outputs_dimensions.width += output->rect.width;
     }
@@ -205,7 +205,7 @@ void floating_enable(Con *con, bool automatic) {
     if (memcmp(&(nc->rect), &zero, sizeof(Rect)) == 0) {
         DLOG("Geometry not set, combining children\n");
         Con *child;
-        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             DLOG("child geometry: %d x %d\n", child->geometry.width, child->geometry.height);
             nc->rect.width += child->geometry.width;
             nc->rect.height = max(nc->rect.height, child->geometry.height);

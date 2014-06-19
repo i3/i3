@@ -49,7 +49,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata);
  *
  */
 struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
-    xcb_get_property_reply_t *startup_id_reply, bool ignore_mapped_leader);
+                                              xcb_get_property_reply_t *startup_id_reply, bool ignore_mapped_leader);
 
 /**
  * Checks if the given window belongs to a startup notification by checking if

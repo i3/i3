@@ -23,13 +23,13 @@
 extern char *current_socketpath;
 
 typedef struct ipc_client {
-        int fd;
+    int fd;
 
-        /* The events which this client wants to receive */
-        int num_events;
-        char **events;
+    /* The events which this client wants to receive */
+    int num_events;
+    char **events;
 
-        TAILQ_ENTRY(ipc_client) clients;
+    TAILQ_ENTRY(ipc_client) clients;
 } ipc_client;
 
 /*
@@ -42,13 +42,13 @@ typedef struct ipc_client {
  * message_type is the type of the message as the sender specified it.
  *
  */
-typedef void(*handler_t)(int, uint8_t*, int, uint32_t, uint32_t);
+typedef void (*handler_t)(int, uint8_t *, int, uint32_t, uint32_t);
 
 /* Macro to declare a callback */
-#define IPC_HANDLER(name) \
-        static void handle_ ## name (int fd, uint8_t *message, \
-                                     int size, uint32_t message_size, \
-                                     uint32_t message_type)
+#define IPC_HANDLER(name)                                      \
+    static void handle_##name(int fd, uint8_t *message,        \
+                              int size, uint32_t message_size, \
+                              uint32_t message_type)
 
 /**
  * Handler for activity on the listening socket, meaning that a new client

@@ -36,7 +36,7 @@ void ungrab_all_keys(xcb_connection_t *conn) {
  */
 void update_barconfig() {
     Barconfig *current;
-    TAILQ_FOREACH (current, &barconfigs, configs) {
+    TAILQ_FOREACH(current, &barconfigs, configs) {
         ipc_send_barconfig_update_event(current);
     }
 }
@@ -204,8 +204,8 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
         /* Invalidate pixmap caches in case font or colors changed */
         Con *con;
-        TAILQ_FOREACH (con, &all_cons, all_cons)
-            FREE(con->deco_render_params);
+        TAILQ_FOREACH(con, &all_cons, all_cons)
+        FREE(con->deco_render_params);
 
         /* Get rid of the current font */
         free_font();

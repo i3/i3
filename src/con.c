@@ -142,7 +142,7 @@ void con_attach(Con *con, Con *parent, bool ignore_focus) {
     } else {
         if (!ignore_focus) {
             /* Get the first tiling container in focus stack */
-            TAILQ_FOREACH (loop, &(parent->focus_head), focused) {
+            TAILQ_FOREACH(loop, &(parent->focus_head), focused) {
                 if (loop->type == CT_FLOATING_CON)
                     continue;
                 current = loop;
@@ -388,13 +388,13 @@ Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode) {
         TAILQ_REMOVE(&bfs_head, entry, entries);
         free(entry);
 
-        TAILQ_FOREACH (child, &(current->nodes_head), nodes) {
+        TAILQ_FOREACH(child, &(current->nodes_head), nodes) {
             entry = smalloc(sizeof(struct bfs_entry));
             entry->con = child;
             TAILQ_INSERT_TAIL(&bfs_head, entry, entries);
         }
 
-        TAILQ_FOREACH (child, &(current->floating_head), floating_windows) {
+        TAILQ_FOREACH(child, &(current->floating_head), floating_windows) {
             entry = smalloc(sizeof(struct bfs_entry));
             entry->con = child;
             TAILQ_INSERT_TAIL(&bfs_head, entry, entries);
@@ -460,9 +460,9 @@ bool con_inside_focused(Con *con) {
  */
 Con *con_by_window_id(xcb_window_t window) {
     Con *con;
-    TAILQ_FOREACH (con, &all_cons, all_cons)
-        if (con->window != NULL && con->window->id == window)
-            return con;
+    TAILQ_FOREACH(con, &all_cons, all_cons)
+    if (con->window != NULL && con->window->id == window)
+        return con;
     return NULL;
 }
 
@@ -473,9 +473,9 @@ Con *con_by_window_id(xcb_window_t window) {
  */
 Con *con_by_frame_id(xcb_window_t frame) {
     Con *con;
-    TAILQ_FOREACH (con, &all_cons, all_cons)
-        if (con->frame == frame)
-            return con;
+    TAILQ_FOREACH(con, &all_cons, all_cons)
+    if (con->frame == frame)
+        return con;
     return NULL;
 }
 
@@ -490,8 +490,8 @@ Con *con_for_window(Con *con, i3Window *window, Match **store_match) {
     //DLOG("searching con for window %p starting at con %p\n", window, con);
     //DLOG("class == %s\n", window->class_class);
 
-    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
-        TAILQ_FOREACH (match, &(child->swallow_head), matches) {
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH(match, &(child->swallow_head), matches) {
             if (!match_matches_window(match, window))
                 continue;
             if (store_match != NULL)
@@ -503,8 +503,8 @@ Con *con_for_window(Con *con, i3Window *window, Match **store_match) {
             return result;
     }
 
-    TAILQ_FOREACH (child, &(con->floating_head), floating_windows) {
-        TAILQ_FOREACH (match, &(child->swallow_head), matches) {
+    TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
+        TAILQ_FOREACH(match, &(child->swallow_head), matches) {
             if (!match_matches_window(match, window))
                 continue;
             if (store_match != NULL)
@@ -527,8 +527,8 @@ int con_num_children(Con *con) {
     Con *child;
     int children = 0;
 
-    TAILQ_FOREACH (child, &(con->nodes_head), nodes)
-        children++;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+    children++;
 
     return children;
 }
@@ -547,7 +547,7 @@ void con_fix_percent(Con *con) {
     // with a percentage set we have
     double total = 0.0;
     int children_with_percent = 0;
-    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
         if (child->percent > 0.0) {
             total += child->percent;
             ++children_with_percent;
@@ -557,7 +557,7 @@ void con_fix_percent(Con *con) {
     // if there were children without a percentage set, set to a value that
     // will make those children proportional to all others
     if (children_with_percent != children) {
-        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             if (child->percent <= 0.0) {
                 if (children_with_percent == 0)
                     total += (child->percent = 1.0);
@@ -570,11 +570,11 @@ void con_fix_percent(Con *con) {
     // if we got a zero, just distribute the space equally, otherwise
     // distribute according to the proportions we got
     if (total == 0.0) {
-        TAILQ_FOREACH (child, &(con->nodes_head), nodes)
-            child->percent = 1.0 / children;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+        child->percent = 1.0 / children;
     } else if (total != 1.0) {
-        TAILQ_FOREACH (child, &(con->nodes_head), nodes)
-            child->percent /= total;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+        child->percent /= total;
     }
 }
 
@@ -807,7 +807,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
 
     if (!con_is_leaf(con)) {
         Con *child;
-        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             if (!child->window)
                 continue;
 
@@ -1003,7 +1003,7 @@ Con *con_descend_tiling_focused(Con *con) {
         return next;
     do {
         before = next;
-        TAILQ_FOREACH (child, &(next->focus_head), focused) {
+        TAILQ_FOREACH(child, &(next->focus_head), focused) {
             if (child->type == CT_FLOATING_CON)
                 continue;
 
@@ -1038,7 +1038,7 @@ Con *con_descend_direction(Con *con, direction_t direction) {
             /* Wrong orientation. We use the last focused con. Within that con,
              * we recurse to chose the left/right con or at least the last
              * focused one. */
-            TAILQ_FOREACH (current, &(con->focus_head), focused) {
+            TAILQ_FOREACH(current, &(con->focus_head), focused) {
                 if (current->type != CT_FLOATING_CON) {
                     most = current;
                     break;
@@ -1063,7 +1063,7 @@ Con *con_descend_direction(Con *con, direction_t direction) {
             /* Wrong orientation. We use the last focused con. Within that con,
              * we recurse to chose the top/bottom con or at least the last
              * focused one. */
-            TAILQ_FOREACH (current, &(con->focus_head), focused) {
+            TAILQ_FOREACH(current, &(con->focus_head), focused) {
                 if (current->type != CT_FLOATING_CON) {
                     most = current;
                     break;
@@ -1426,7 +1426,7 @@ Rect con_minimum_size(Con *con) {
     if (con->layout == L_STACKED || con->layout == L_TABBED) {
         uint32_t max_width = 0, max_height = 0, deco_height = 0;
         Con *child;
-        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             Rect min = con_minimum_size(child);
             deco_height += child->deco_rect.height;
             max_width = max(max_width, min.width);
@@ -1443,7 +1443,7 @@ Rect con_minimum_size(Con *con) {
     if (con_is_split(con)) {
         uint32_t width = 0, height = 0;
         Con *child;
-        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             Rect min = con_minimum_size(child);
             if (con->layout == L_SPLITH) {
                 width += min.width;
@@ -1538,7 +1538,7 @@ bool con_has_urgent_child(Con *con) {
 
     /* We are not interested in floating windows since they can only be
      * attached to a workspace → nodes_head instead of focus_head */
-    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
         if (con_has_urgent_child(child))
             return true;
     }
@@ -1651,7 +1651,7 @@ char *con_get_tree_representation(Con *con) {
 
     /* 2) append representation of children */
     Con *child;
-    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
         char *child_txt = con_get_tree_representation(child);
 
         char *tmp_buf;

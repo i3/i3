@@ -24,11 +24,11 @@ void dump() {
     printf("first: %d\n", e->abc);
     e = TAILQ_LAST(&head, objhead);
     printf("last: %d\n", e->abc);
-    TAILQ_FOREACH (e, &head, entry) {
+    TAILQ_FOREACH(e, &head, entry) {
         printf("  %d\n", e->abc);
     }
     printf("again, but reverse:\n");
-    TAILQ_FOREACH_REVERSE (e, &head, objhead, entry) {
+    TAILQ_FOREACH_REVERSE(e, &head, objhead, entry) {
         printf("  %d\n", e->abc);
     }
     printf("done\n\n");

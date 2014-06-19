@@ -334,7 +334,7 @@ CFGFUN(workspace, const char *workspace, const char *output) {
      * outputs */
     struct Workspace_Assignment *assignment;
     bool duplicate = false;
-    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
         if (strcasecmp(assignment->name, workspace) == 0) {
             ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
                  workspace);

@@ -917,7 +917,7 @@ void parse_file(const char *f) {
      * variables (otherwise we will count them twice, which is bad when
      * 'extra' is negative) */
     char *bufcopy = sstrdup(buf);
-    SLIST_FOREACH (current, &variables, variables) {
+    SLIST_FOREACH(current, &variables, variables) {
         int extra = (strlen(current->value) - strlen(current->key));
         char *next;
         for (next = bufcopy;
@@ -937,11 +937,11 @@ void parse_file(const char *f) {
     destwalk = new;
     while (walk < (buf + stbuf.st_size)) {
         /* Find the next variable */
-        SLIST_FOREACH (current, &variables, variables)
-            current->next_match = strcasestr(walk, current->key);
+        SLIST_FOREACH(current, &variables, variables)
+        current->next_match = strcasestr(walk, current->key);
         nearest = NULL;
         int distance = stbuf.st_size;
-        SLIST_FOREACH (current, &variables, variables) {
+        SLIST_FOREACH(current, &variables, variables) {
             if (current->next_match == NULL)
                 continue;
             if ((current->next_match - walk) < distance) {

@@ -253,7 +253,7 @@ static void open_popups() {
     /* Open a popup window on each virtual screen */
     Output *screen;
     xcb_window_t win;
-    TAILQ_FOREACH (screen, &outputs, outputs) {
+    TAILQ_FOREACH(screen, &outputs, outputs) {
         if (!screen->active)
             continue;
         win = open_input_window(conn, screen->rect, width, height);

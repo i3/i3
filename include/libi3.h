@@ -72,17 +72,17 @@ struct Font {
  * infrastructure, we define a fallback. */
 #if !defined(LOG)
 void verboselog(char *fmt, ...)
-    __attribute__ ((format (printf, 1, 2)));
+    __attribute__((format(printf, 1, 2)));
 #define LOG(fmt, ...) verboselog("[libi3] " __FILE__ " " fmt, ##__VA_ARGS__)
 #endif
 #if !defined(ELOG)
 void errorlog(char *fmt, ...)
-    __attribute__ ((format (printf, 1, 2)));
+    __attribute__((format(printf, 1, 2)));
 #define ELOG(fmt, ...) errorlog("[libi3] ERROR: " fmt, ##__VA_ARGS__)
 #endif
 #if !defined(DLOG)
 void debuglog(char *fmt, ...)
-    __attribute__ ((format (printf, 1, 2)));
+    __attribute__((format(printf, 1, 2)));
 #define DLOG(fmt, ...) debuglog("%s:%s:%d - " fmt, I3__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #endif
 
@@ -167,13 +167,13 @@ void i3string_free(i3String *str);
  * to prevent accidentally using freed memory.
  *
  */
-#define I3STRING_FREE(str) \
-do { \
- if (str != NULL) { \
- i3string_free(str); \
- str = NULL; \
- } \
-} while (0)
+#define I3STRING_FREE(str)      \
+    do {                        \
+        if (str != NULL) {      \
+            i3string_free(str); \
+            str = NULL;         \
+        }                       \
+    } while (0)
 
 /**
  * Returns the UTF-8 encoded version of the i3String.
@@ -285,8 +285,8 @@ uint32_t aio_get_mod_mask_for(uint32_t keysym, xcb_key_symbols_t *symbols);
  *
  */
 uint32_t get_mod_mask_for(uint32_t keysym,
-                           xcb_key_symbols_t *symbols,
-                           xcb_get_modifier_mapping_reply_t *modmap_reply);
+                          xcb_key_symbols_t *symbols,
+                          xcb_get_modifier_mapping_reply_t *modmap_reply);
 
 /**
  * Loads a font for usage, also getting its height. If fallback is true,
@@ -338,14 +338,14 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
  *
  */
 void draw_text(i3String *text, xcb_drawable_t drawable,
-        xcb_gcontext_t gc, int x, int y, int max_width);
+               xcb_gcontext_t gc, int x, int y, int max_width);
 
 /**
  * ASCII version of draw_text to print static strings.
  *
  */
 void draw_text_ascii(const char *text, xcb_drawable_t drawable,
-        xcb_gcontext_t gc, int x, int y, int max_width);
+                     xcb_gcontext_t gc, int x, int y, int max_width);
 
 /**
  * Predict the text width in pixels for the given text. Text must be

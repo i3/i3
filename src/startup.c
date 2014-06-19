@@ -37,7 +37,7 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
     DLOG("Timeout for startup sequence %s\n", id);
 
     struct Startup_Sequence *current, *sequence = NULL;
-    TAILQ_FOREACH (current, &startup_sequences, sequences) {
+    TAILQ_FOREACH(current, &startup_sequences, sequences) {
         if (strcmp(current->id, id) != 0)
             continue;
 
@@ -219,7 +219,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
     /* Get the corresponding internal startup sequence */
     const char *id = sn_startup_sequence_get_id(snsequence);
     struct Startup_Sequence *current, *sequence = NULL;
-    TAILQ_FOREACH (current, &startup_sequences, sequences) {
+    TAILQ_FOREACH(current, &startup_sequences, sequences) {
         if (strcmp(current->id, id) != 0)
             continue;
 
@@ -309,7 +309,7 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
     }
 
     struct Startup_Sequence *current, *sequence = NULL;
-    TAILQ_FOREACH (current, &startup_sequences, sequences) {
+    TAILQ_FOREACH(current, &startup_sequences, sequences) {
         if (strcmp(current->id, startup_id) != 0)
             continue;
 

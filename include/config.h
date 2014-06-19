@@ -241,10 +241,13 @@ struct Barconfig {
     char *socket_path;
 
     /** Bar display mode (hide unless modifier is pressed or show in dock mode or always hide in invisible mode) */
-    enum { M_DOCK = 0, M_HIDE = 1, M_INVISIBLE = 2 } mode;
+    enum { M_DOCK = 0,
+           M_HIDE = 1,
+           M_INVISIBLE = 2 } mode;
 
     /* The current hidden_state of the bar, which indicates whether it is hidden or shown */
-    enum { S_HIDE = 0, S_SHOW = 1 } hidden_state;
+    enum { S_HIDE = 0,
+           S_SHOW = 1 } hidden_state;
 
     /** Bar modifier (to show bar when in hide mode). */
     enum {
@@ -259,7 +262,8 @@ struct Barconfig {
     } modifier;
 
     /** Bar position (bottom by default). */
-    enum { P_BOTTOM = 0, P_TOP = 1 } position;
+    enum { P_BOTTOM = 0,
+           P_TOP = 1 } position;
 
     /** Command that should be run to execute i3bar, give a full path if i3bar is not
      * in your $PATH.

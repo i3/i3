@@ -128,7 +128,7 @@ void refresh_statusline(void) {
     statusline_width = 0;
 
     /* Predict the text width of all blocks (in pixels). */
-    TAILQ_FOREACH (block, &statusline_head, blocks) {
+    TAILQ_FOREACH(block, &statusline_head, blocks) {
         if (i3string_get_num_bytes(block->full_text) == 0)
             continue;
 
@@ -173,7 +173,7 @@ void refresh_statusline(void) {
 
     /* Draw the text of each block. */
     uint32_t x = 0;
-    TAILQ_FOREACH (block, &statusline_head, blocks) {
+    TAILQ_FOREACH(block, &statusline_head, blocks) {
         if (i3string_get_num_bytes(block->full_text) == 0)
             continue;
 
@@ -206,7 +206,7 @@ void hide_bars(void) {
     }
 
     i3_output *walk;
-    SLIST_FOREACH (walk, outputs, slist) {
+    SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active) {
             continue;
         }
@@ -231,7 +231,7 @@ void unhide_bars(void) {
 
     cont_child();
 
-    SLIST_FOREACH (walk, outputs, slist) {
+    SLIST_FOREACH(walk, outputs, slist) {
         if (walk->bar == XCB_NONE) {
             continue;
         }
@@ -303,7 +303,7 @@ void handle_button(xcb_button_press_event_t *event) {
     /* Determine, which bar was clicked */
     i3_output *walk;
     xcb_window_t bar = event->event;
-    SLIST_FOREACH (walk, outputs, slist) {
+    SLIST_FOREACH(walk, outputs, slist) {
         if (walk->bar == bar) {
             break;
         }
@@ -315,7 +315,7 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     /* TODO: Move this to extern get_ws_for_output() */
-    TAILQ_FOREACH (cur_ws, walk->workspaces, tailq) {
+    TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
         if (cur_ws->visible) {
             break;
         }
@@ -338,7 +338,7 @@ void handle_button(xcb_button_press_event_t *event) {
         /* First calculate width of tray area */
         trayclient *trayclient;
         int tray_width = 0;
-        TAILQ_FOREACH_REVERSE (trayclient, walk->trayclients, tc_head, tailq) {
+        TAILQ_FOREACH_REVERSE(trayclient, walk->trayclients, tc_head, tailq) {
             if (!trayclient->mapped)
                 continue;
             tray_width += (font.height + logical_px(2));
@@ -351,7 +351,7 @@ void handle_button(xcb_button_press_event_t *event) {
         if (x >= 0) {
             struct status_block *block;
 
-            TAILQ_FOREACH (block, &statusline_head, blocks) {
+            TAILQ_FOREACH(block, &statusline_head, blocks) {
                 last_block_x = block_x;
                 block_x += block->width + block->x_offset + block->x_append;
 
@@ -387,7 +387,7 @@ void handle_button(xcb_button_press_event_t *event) {
             break;
         case 1:
             /* Check if this event regards a workspace button */
-            TAILQ_FOREACH (cur_ws, walk->workspaces, tailq) {
+            TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
                 DLOG("x = %d\n", x);
                 if (x >= 0 && x < cur_ws->name_width + logical_px(10)) {
                     break;
@@ -398,7 +398,7 @@ void handle_button(xcb_button_press_event_t *event) {
             /* Otherwise, focus our currently visible workspace if it is not
              * already focused */
             if (cur_ws == NULL) {
-                TAILQ_FOREACH (cur_ws, walk->workspaces, tailq) {
+                TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
                     if (cur_ws->visible && !cur_ws->focused)
                         break;
                 }
@@ -455,12 +455,12 @@ void handle_button(xcb_button_press_event_t *event) {
 static void configure_trayclients(void) {
     trayclient *trayclient;
     i3_output *output;
-    SLIST_FOREACH (output, outputs, slist) {
+    SLIST_FOREACH(output, outputs, slist) {
         if (!output->active)
             continue;
 
         int clients = 0;
-        TAILQ_FOREACH_REVERSE (trayclient, output->trayclients, tc_head, tailq) {
+        TAILQ_FOREACH_REVERSE(trayclient, output->trayclients, tc_head, tailq) {
             if (!trayclient->mapped)
                 continue;
             clients++;
@@ -544,7 +544,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
 
             DLOG("X window %08x requested docking\n", client);
             i3_output *walk, *output = NULL;
-            SLIST_FOREACH (walk, outputs, slist) {
+            SLIST_FOREACH(walk, outputs, slist) {
                 if (!walk->active)
                     continue;
                 if (config.tray_output) {
@@ -562,7 +562,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             if (output == NULL &&
                 config.tray_output &&
                 strcasecmp("primary", config.tray_output) == 0) {
-                SLIST_FOREACH (walk, outputs, slist) {
+                SLIST_FOREACH(walk, outputs, slist) {
                     if (!walk->active)
                         continue;
                     DLOG("Falling back to output %s because no primary output is configured\n", walk->name);
@@ -650,12 +650,12 @@ static void handle_destroy_notify(xcb_destroy_notify_event_t *event) {
     DLOG("DestroyNotify for window = %08x, event = %08x\n", event->window, event->event);
 
     i3_output *walk;
-    SLIST_FOREACH (walk, outputs, slist) {
+    SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active)
             continue;
         DLOG("checking output %s\n", walk->name);
         trayclient *trayclient;
-        TAILQ_FOREACH (trayclient, walk->trayclients, tailq) {
+        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
             if (trayclient->win != event->window)
                 continue;
 
@@ -679,12 +679,12 @@ static void handle_map_notify(xcb_map_notify_event_t *event) {
     DLOG("MapNotify for window = %08x, event = %08x\n", event->window, event->event);
 
     i3_output *walk;
-    SLIST_FOREACH (walk, outputs, slist) {
+    SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active)
             continue;
         DLOG("checking output %s\n", walk->name);
         trayclient *trayclient;
-        TAILQ_FOREACH (trayclient, walk->trayclients, tailq) {
+        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
             if (trayclient->win != event->window)
                 continue;
 
@@ -707,12 +707,12 @@ static void handle_unmap_notify(xcb_unmap_notify_event_t *event) {
     DLOG("UnmapNotify for window = %08x, event = %08x\n", event->window, event->event);
 
     i3_output *walk;
-    SLIST_FOREACH (walk, outputs, slist) {
+    SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active)
             continue;
         DLOG("checking output %s\n", walk->name);
         trayclient *trayclient;
-        TAILQ_FOREACH (trayclient, walk->trayclients, tailq) {
+        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
             if (trayclient->win != event->window)
                 continue;
 
@@ -739,11 +739,11 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
         DLOG("xembed_info updated\n");
         trayclient *trayclient = NULL, *walk;
         i3_output *o_walk;
-        SLIST_FOREACH (o_walk, outputs, slist) {
+        SLIST_FOREACH(o_walk, outputs, slist) {
             if (!o_walk->active)
                 continue;
 
-            TAILQ_FOREACH (walk, o_walk->trayclients, tailq) {
+            TAILQ_FOREACH(walk, o_walk->trayclients, tailq) {
                 if (walk->win != event->window)
                     continue;
                 trayclient = walk;
@@ -802,12 +802,12 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
 
     trayclient *trayclient;
     i3_output *output;
-    SLIST_FOREACH (output, outputs, slist) {
+    SLIST_FOREACH(output, outputs, slist) {
         if (!output->active)
             continue;
 
         int clients = 0;
-        TAILQ_FOREACH_REVERSE (trayclient, output->trayclients, tc_head, tailq) {
+        TAILQ_FOREACH_REVERSE(trayclient, output->trayclients, tc_head, tailq) {
             if (!trayclient->mapped)
                 continue;
             clients++;
@@ -1280,7 +1280,7 @@ void init_tray_colors(void) {
 void clean_xcb(void) {
     i3_output *o_walk;
     free_workspaces();
-    SLIST_FOREACH (o_walk, outputs, slist) {
+    SLIST_FOREACH(o_walk, outputs, slist) {
         destroy_window(o_walk);
         FREE(o_walk->trayclients);
         FREE(o_walk->workspaces);
@@ -1434,7 +1434,7 @@ void reconfig_windows(bool redraw_bars) {
     static bool tray_configured = false;
 
     i3_output *walk;
-    SLIST_FOREACH (walk, outputs, slist) {
+    SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active) {
             /* If an output is not active, we destroy its bar */
             /* FIXME: Maybe we rather want to unmap? */
@@ -1596,7 +1596,7 @@ void reconfig_windows(bool redraw_bars) {
                  * VGA-1 but output == [HDMI-1]).
                  */
                 i3_output *output;
-                SLIST_FOREACH (output, outputs, slist) {
+                SLIST_FOREACH(output, outputs, slist) {
                     if (strcasecmp(output->name, tray_output) == 0 ||
                         (strcasecmp(tray_output, "primary") == 0 && output->primary)) {
                         init_tray();
@@ -1685,7 +1685,7 @@ void draw_bars(bool unhide) {
     refresh_statusline();
 
     i3_output *outputs_walk;
-    SLIST_FOREACH (outputs_walk, outputs, slist) {
+    SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (!outputs_walk->active) {
             DLOG("Output %s inactive, skipping...\n", outputs_walk->name);
             continue;
@@ -1715,7 +1715,7 @@ void draw_bars(bool unhide) {
              * position */
             trayclient *trayclient;
             int traypx = 0;
-            TAILQ_FOREACH (trayclient, outputs_walk->trayclients, tailq) {
+            TAILQ_FOREACH(trayclient, outputs_walk->trayclients, tailq) {
                 if (!trayclient->mapped)
                     continue;
                 /* We assume the tray icons are quadratic (we use the font
@@ -1737,7 +1737,7 @@ void draw_bars(bool unhide) {
 
         if (!config.disable_ws) {
             i3_ws *ws_walk;
-            TAILQ_FOREACH (ws_walk, outputs_walk->workspaces, tailq) {
+            TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
                 DLOG("Drawing Button for WS %s at x = %d, len = %d\n",
                      i3string_as_utf8(ws_walk->name), i, ws_walk->name_width);
                 uint32_t fg_color = colors.inactive_ws_fg;
@@ -1853,7 +1853,7 @@ void draw_bars(bool unhide) {
  */
 void redraw_bars(void) {
     i3_output *outputs_walk;
-    SLIST_FOREACH (outputs_walk, outputs, slist) {
+    SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (!outputs_walk->active) {
             continue;
         }

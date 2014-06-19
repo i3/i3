@@ -14,8 +14,8 @@
 #include <yajl/yajl_version.h>
 
 /* Shorter names for all those yajl_gen_* functions */
-#define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
-#define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
+#define y(x, ...) yajl_gen_##x(gen, ##__VA_ARGS__)
+#define ystr(str) yajl_gen_string(gen, (unsigned char *)str, strlen(str))
 
 #define ygenalloc() yajl_gen_alloc(NULL)
 #define yalloc(callbacks, client) yajl_alloc(callbacks, NULL, client)

@@ -296,7 +296,7 @@ i3_output *get_output_by_name(char *name) {
     if (name == NULL) {
         return NULL;
     }
-    SLIST_FOREACH (walk, outputs, slist) {
+    SLIST_FOREACH(walk, outputs, slist) {
         if (!strcmp(walk->name, name)) {
             break;
         }

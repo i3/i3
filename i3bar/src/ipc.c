@@ -67,7 +67,7 @@ void got_output_reply(char *reply) {
     reconfig_windows(false);
 
     i3_output *o_walk;
-    SLIST_FOREACH (o_walk, outputs, slist) {
+    SLIST_FOREACH(o_walk, outputs, slist) {
         kick_tray_clients(o_walk);
     }
 

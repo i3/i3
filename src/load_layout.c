@@ -110,10 +110,10 @@ static int json_end_array(void *ctx) {
     if (parsing_focus) {
         /* Clear the list of focus mappings */
         struct focus_mapping *mapping;
-        TAILQ_FOREACH_REVERSE (mapping, &focus_mappings, focus_mappings_head, focus_mappings) {
+        TAILQ_FOREACH_REVERSE(mapping, &focus_mappings, focus_mappings_head, focus_mappings) {
             LOG("focus (reverse) %d\n", mapping->old_id);
             Con *con;
-            TAILQ_FOREACH (con, &(json_node->focus_head), focused) {
+            TAILQ_FOREACH(con, &(json_node->focus_head), focused) {
                 if (con->old_id != mapping->old_id)
                     continue;
                 LOG("got it! %p\n", con);

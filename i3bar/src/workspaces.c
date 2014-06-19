@@ -266,9 +266,9 @@ void free_workspaces(void) {
     }
     i3_ws *ws_walk;
 
-    SLIST_FOREACH (outputs_walk, outputs, slist) {
+    SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (outputs_walk->workspaces != NULL && !TAILQ_EMPTY(outputs_walk->workspaces)) {
-            TAILQ_FOREACH (ws_walk, outputs_walk->workspaces, tailq) {
+            TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
                 I3STRING_FREE(ws_walk->name);
                 FREE(ws_walk->canonical_name);
             }

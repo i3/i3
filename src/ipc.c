@@ -74,7 +74,7 @@ static bool mkdirp(const char *path) {
  */
 void ipc_send_event(const char *event, uint32_t message_type, const char *payload) {
     ipc_client *current;
-    TAILQ_FOREACH (current, &all_clients, clients) {
+    TAILQ_FOREACH(current, &all_clients, clients) {
         /* see if this client is interested in this event */
         bool interested = false;
         for (int i = 0; i < current->num_events; i++) {
@@ -344,7 +344,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(array_open);
     Con *node;
     if (con->type != CT_DOCKAREA || !inplace_restart) {
-        TAILQ_FOREACH (node, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH(node, &(con->nodes_head), nodes) {
             dump_node(gen, node, inplace_restart);
         }
     }
@@ -352,14 +352,14 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     ystr("floating_nodes");
     y(array_open);
-    TAILQ_FOREACH (node, &(con->floating_head), floating_windows) {
+    TAILQ_FOREACH(node, &(con->floating_head), floating_windows) {
         dump_node(gen, node, inplace_restart);
     }
     y(array_close);
 
     ystr("focus");
     y(array_open);
-    TAILQ_FOREACH (node, &(con->focus_head), focused) {
+    TAILQ_FOREACH(node, &(con->focus_head), focused) {
         y(integer, (long int)node);
     }
     y(array_close);
@@ -386,7 +386,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("swallows");
     y(array_open);
     Match *match;
-    TAILQ_FOREACH (match, &(con->swallow_head), matches) {
+    TAILQ_FOREACH(match, &(con->swallow_head), matches) {
         y(map_open);
         if (match->dock != -1) {
             ystr("dock");
@@ -591,11 +591,11 @@ IPC_HANDLER(get_workspaces) {
     Con *focused_ws = con_get_workspace(focused);
 
     Con *output;
-    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         if (con_is_internal(output))
             continue;
         Con *ws;
-        TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) {
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
             assert(ws->type == CT_WORKSPACE);
             y(map_open);
 
@@ -656,7 +656,7 @@ IPC_HANDLER(get_outputs) {
     y(array_open);
 
     Output *output;
-    TAILQ_FOREACH (output, &outputs, outputs) {
+    TAILQ_FOREACH(output, &outputs, outputs) {
         y(map_open);
 
         ystr("name");
@@ -710,9 +710,9 @@ IPC_HANDLER(get_marks) {
     y(array_open);
 
     Con *con;
-    TAILQ_FOREACH (con, &all_cons, all_cons)
-        if (con->mark != NULL)
-            ystr(con->mark);
+    TAILQ_FOREACH(con, &all_cons, all_cons)
+    if (con->mark != NULL)
+        ystr(con->mark);
 
     y(array_close);
 
@@ -766,7 +766,7 @@ IPC_HANDLER(get_bar_config) {
     if (message_size == 0) {
         y(array_open);
         Barconfig *current;
-        TAILQ_FOREACH (current, &barconfigs, configs) {
+        TAILQ_FOREACH(current, &barconfigs, configs) {
             ystr(current->id);
         }
         y(array_close);
@@ -786,7 +786,7 @@ IPC_HANDLER(get_bar_config) {
     strncpy(bar_id, (const char *)message, message_size);
     LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
     Barconfig *current, *config = NULL;
-    TAILQ_FOREACH (current, &barconfigs, configs) {
+    TAILQ_FOREACH(current, &barconfigs, configs) {
         if (strcmp(current->id, bar_id) != 0)
             continue;
 
@@ -852,7 +852,7 @@ IPC_HANDLER(subscribe) {
     ipc_client *current, *client = NULL;
 
     /* Search the ipc_client structure for this connection */
-    TAILQ_FOREACH (current, &all_clients, clients) {
+    TAILQ_FOREACH(current, &all_clients, clients) {
         if (current->fd != fd)
             continue;
 
@@ -932,7 +932,7 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
 
         /* Delete the client from the list of clients */
         ipc_client *current;
-        TAILQ_FOREACH (current, &all_clients, clients) {
+        TAILQ_FOREACH(current, &all_clients, clients) {
             if (current->fd != w->fd)
                 continue;
 

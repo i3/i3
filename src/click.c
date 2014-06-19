@@ -330,7 +330,7 @@ int handle_button_press(xcb_button_press_event_t *event) {
          * click coordinates and focus the output's active workspace. */
         if (event->event == root) {
             Con *output, *ws;
-            TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
+            TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
                 if (con_is_internal(output) ||
                     !rect_contains(output->rect, event->event_x, event->event_y))
                     continue;
@@ -358,7 +358,7 @@ int handle_button_press(xcb_button_press_event_t *event) {
 
     /* Check if the click was on the decoration of a child */
     Con *child;
-    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
         if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
             continue;
 

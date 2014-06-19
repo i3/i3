@@ -243,7 +243,7 @@ static int stdin_end_map(void *context) {
 static int stdin_end_array(void *context) {
     DLOG("dumping statusline:\n");
     struct status_block *current;
-    TAILQ_FOREACH (current, &statusline_head, blocks) {
+    TAILQ_FOREACH(current, &statusline_head, blocks) {
         DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
         DLOG("color = %s\n", current->color);
     }
