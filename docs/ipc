@@ -717,6 +717,7 @@ This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change
 
 * +new+ - the window has become managed by i3
+* +close+ - the window has closed
 * +focus+ - the window has received input focus
 * +title+ - the window's title has changed
 * +fullscreen_mode+ - the window has entered or exited fullscreen mode
