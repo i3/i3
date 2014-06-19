@@ -832,6 +832,8 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     }
 
     CALL(parent, on_remove_child);
+
+    ipc_send_window_event("move", con);
 }
 
 /*

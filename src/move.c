@@ -206,6 +206,7 @@ void tree_move(int direction) {
                 TAILQ_INSERT_HEAD(&(swap->parent->focus_head), con, focused);
 
                 DLOG("Swapped.\n");
+                ipc_send_window_event("move", con);
                 return;
             }
 
@@ -213,6 +214,7 @@ void tree_move(int direction) {
                 /*  If we couldn't find a place to move it on this workspace,
                  *  try to move it to a workspace on a different output */
                 move_to_output_directed(con, direction);
+                ipc_send_window_event("move", con);
                 return;
             }
 
@@ -264,4 +266,5 @@ end:
     FREE(con->deco_render_params);
 
     tree_flatten(croot);
+    ipc_send_window_event("move", con);
 }

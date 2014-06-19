@@ -721,6 +721,7 @@ This event consists of a single serialized map containing a property
 * +focus+ - the window has received input focus
 * +title+ - the window's title has changed
 * +fullscreen_mode+ - the window has entered or exited fullscreen mode
+* +move+ - the window has changed its position in the tree
 
 Additionally a +container (object)+ field will be present, which consists
 of the window's parent container. Be aware that for the "new" event, the
