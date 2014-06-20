@@ -722,6 +722,7 @@ This event consists of a single serialized map containing a property
 * +title+ - the window's title has changed
 * +fullscreen_mode+ - the window has entered or exited fullscreen mode
 * +move+ - the window has changed its position in the tree
+* +floating+ - the window has transitioned to or from floating
 
 Additionally a +container (object)+ field will be present, which consists
 of the window's parent container. Be aware that for the "new" event, the
