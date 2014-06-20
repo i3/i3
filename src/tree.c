@@ -582,6 +582,13 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
             return true;
 
         Con *focus = con_descend_direction(workspace, direction);
+
+        /* special case: if there was no tiling con to focus and the workspace
+         * has a floating con in the focus stack, focus the top of the focus
+         * stack (which may be floating) */
+        if (focus == workspace)
+            focus = con_descend_focused(workspace);
+
         if (focus) {
             con_focus(focus);
             x_set_warp_to(&(focus->rect));
