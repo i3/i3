@@ -231,6 +231,7 @@ void con_focus(Con *con) {
         con->urgent = false;
         con_update_parents_urgency(con);
         workspace_update_urgent_flag(con_get_workspace(con));
+        ipc_send_window_event("urgent", con);
     }
 }
 
@@ -1599,14 +1600,16 @@ void con_set_urgency(Con *con, bool urgent) {
 
     con_update_parents_urgency(con);
 
-    if (con->urgent == urgent)
-        LOG("Urgency flag changed to %d\n", con->urgent);
-
     Con *ws;
     /* Set the urgency flag on the workspace, if a workspace could be found
      * (for dock clients, that is not the case). */
     if ((ws = con_get_workspace(con)) != NULL)
         workspace_update_urgent_flag(ws);
+
+    if (con->urgent == urgent) {
+        LOG("Urgency flag changed to %d\n", con->urgent);
+        ipc_send_window_event("urgent", con);
+    }
 }
 
 /*
