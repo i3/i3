@@ -436,11 +436,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (nc->geometry.width == 0)
         nc->geometry = (Rect) {geom->x, geom->y, geom->width, geom->height};
 
-    if (want_floating) {
-        DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
-        floating_enable(nc, true);
-    }
-
     if (motif_border_style != BS_NORMAL) {
         DLOG("MOTIF_WM_HINTS specifies decorations (border_style = %d)\n", motif_border_style);
         if (want_floating) {
@@ -448,6 +443,16 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         } else {
             con_set_border_style(nc, motif_border_style, config.default_border_width);
         }
+    }
+
+    if (want_floating) {
+        DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
+        /* motif hints will be applied only when `new_float` is `normal` or not
+         * specified */
+        bool automatic_border = (config.default_floating_border != BS_NORMAL &&
+                                 motif_border_style == BS_NORMAL);
+
+        floating_enable(nc, automatic_border);
     }
 
     /* to avoid getting an UnmapNotify event due to reparenting, we temporarily
