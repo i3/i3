@@ -177,15 +177,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         if (!exists) {
             /* Set ->num to the number of the workspace, if the name actually
              * is a number or starts with a number */
-            char *endptr = NULL;
-            long parsed_num = strtol(ws->name, &endptr, 10);
-            if (parsed_num == LONG_MIN ||
-                parsed_num == LONG_MAX ||
-                parsed_num < 0 ||
-                endptr == ws->name)
-                ws->num = -1;
-            else
-                ws->num = parsed_num;
+            ws->num = ws_name_to_number(ws->name);
             LOG("Used number %d for workspace with name %s\n", ws->num, ws->name);
 
             break;

@@ -550,12 +550,9 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
     /* get the workspace */
     Con *output, *workspace = NULL;
 
-    char *endptr = NULL;
-    long parsed_num = strtol(which, &endptr, 10);
-    if (parsed_num == LONG_MIN ||
-        parsed_num == LONG_MAX ||
-        parsed_num < 0 ||
-        endptr == which) {
+    long parsed_num = ws_name_to_number(which);
+
+    if (parsed_num == -1) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
         // TODO: better error message
         yerror("Could not parse number");
@@ -954,16 +951,12 @@ void cmd_workspace(I3_CMD, char *which) {
 void cmd_workspace_number(I3_CMD, char *which) {
     Con *output, *workspace = NULL;
 
-    char *endptr = NULL;
-    long parsed_num = strtol(which, &endptr, 10);
-    if (parsed_num == LONG_MIN ||
-        parsed_num == LONG_MAX ||
-        parsed_num < 0 ||
-        endptr == which) {
+    long parsed_num = ws_name_to_number(which);
+
+    if (parsed_num == -1) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
         // TODO: better error message
         yerror("Could not parse number");
-
         return;
     }
 
@@ -1925,15 +1918,8 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     /* Change the name and try to parse it as a number. */
     FREE(workspace->name);
     workspace->name = sstrdup(new_name);
-    char *endptr = NULL;
-    long parsed_num = strtol(new_name, &endptr, 10);
-    if (parsed_num == LONG_MIN ||
-        parsed_num == LONG_MAX ||
-        parsed_num < 0 ||
-        endptr == new_name)
-        workspace->num = -1;
-    else
-        workspace->num = parsed_num;
+
+    workspace->num = ws_name_to_number(new_name);
     LOG("num = %d\n", workspace->num);
 
     /* By re-attaching, the sort order will be correct afterwards. */
