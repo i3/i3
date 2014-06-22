@@ -93,6 +93,7 @@ Con *workspace_get(const char *num, bool *created) {
 
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
         ewmh_update_number_of_desktops();
+        ewmh_update_desktop_viewport();
         if (created != NULL)
             *created = true;
     } else if (created != NULL) {
@@ -418,6 +419,7 @@ static void _workspace_show(Con *workspace) {
             tree_close(old, DONT_KILL_WINDOW, false, false);
             ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
             ewmh_update_number_of_desktops();
+            ewmh_update_desktop_viewport();
         }
     }
 

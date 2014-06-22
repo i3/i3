@@ -62,6 +62,43 @@ void ewmh_update_number_of_desktops(void) {
 }
 
 /*
+ * Updates _NET_DESKTOP_VIEWPORT, which is an array of pairs of cardinals that
+ * define the top left corner of each desktop's viewport.
+ */
+void ewmh_update_desktop_viewport(void) {
+    Con *output;
+    int num_desktops = 0;
+    /* count number of desktops */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *ws;
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+            if (STARTS_WITH(ws->name, "__"))
+                continue;
+
+            num_desktops++;
+        }
+    }
+
+    uint32_t viewports[num_desktops * 2];
+
+    int current_position = 0;
+    /* fill the viewport buffer */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *ws;
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+            if (STARTS_WITH(ws->name, "__"))
+                continue;
+
+            viewports[current_position++] = output->rect.x;
+            viewports[current_position++] = output->rect.y;
+        }
+    }
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
+                        A__NET_DESKTOP_VIEWPORT, XCB_ATOM_CARDINAL, 32, current_position, &viewports);
+}
+
+/*
  * Updates _NET_ACTIVE_WINDOW with the currently focused window.
  *
  * EWMH: The window ID of the currently active window or None if no window has
@@ -159,5 +196,5 @@ void ewmh_setup_hints(void) {
     /* I’m not entirely sure if we need to keep _NET_WM_NAME on root. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, 19, supported_atoms);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, 20, supported_atoms);
 }

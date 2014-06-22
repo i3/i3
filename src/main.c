@@ -674,6 +674,7 @@ int main(int argc, char *argv[]) {
     /* Set the ewmh desktop properties. */
     ewmh_update_current_desktop();
     ewmh_update_number_of_desktops();
+    ewmh_update_desktop_viewport();
 
     struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
     xcb_check = scalloc(sizeof(struct ev_check));
