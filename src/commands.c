@@ -513,7 +513,27 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
 
     LOG("should move window to workspace %s\n", name);
     /* get the workspace */
-    Con *ws = workspace_get(name, NULL);
+    Con *ws = NULL;
+    Con *output = NULL;
+
+    /* first look for a workspace with this name */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        GREP_FIRST(ws, output_get_content(output), !strcasecmp(child->name, name));
+    }
+
+    /* if the name is plain digits, we interpret this as a "workspace number"
+     * command */
+    if (!ws && name_is_digits(name)) {
+        long parsed_num = ws_name_to_number(name);
+        TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+            GREP_FIRST(ws, output_get_content(output),
+                       child->num == parsed_num);
+        }
+    }
+
+    /* if no workspace was found, make a new one */
+    if (!ws)
+        ws = workspace_get(name, NULL);
 
     ws = maybe_auto_back_and_forth_workspace(ws);
 
@@ -1006,7 +1026,30 @@ void cmd_workspace_name(I3_CMD, char *name) {
     DLOG("should switch to workspace %s\n", name);
     if (maybe_back_and_forth(cmd_output, name))
         return;
-    workspace_show_by_name(name);
+
+    Con *ws = NULL;
+    Con *output = NULL;
+
+    /* first look for a workspace with this name */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        GREP_FIRST(ws, output_get_content(output), !strcasecmp(child->name, name));
+    }
+
+    /* if the name is only digits, we interpret this as a "workspace number"
+     * command */
+    if (!ws && name_is_digits(name)) {
+        long parsed_num = ws_name_to_number(name);
+        TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+            GREP_FIRST(ws, output_get_content(output),
+                       child->num == parsed_num);
+        }
+    }
+
+    /* if no workspace was found, make a new one */
+    if (!ws)
+        ws = workspace_get(name, NULL);
+
+    workspace_show(ws);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
