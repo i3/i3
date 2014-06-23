@@ -62,6 +62,44 @@ void ewmh_update_number_of_desktops(void) {
 }
 
 /*
+ * Updates _NET_DESKTOP_NAMES: "The names of all virtual desktops. This is a
+ * list of NULL-terminated strings in UTF-8 encoding"
+ */
+void ewmh_update_desktop_names(void) {
+    Con *output;
+    int msg_length = 0;
+
+    /* count the size of the property message to set */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *ws;
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+            if (STARTS_WITH(ws->name, "__"))
+                continue;
+            msg_length += strlen(ws->name) + 1;
+        }
+    }
+
+    char desktop_names[msg_length];
+    int current_position = 0;
+
+    /* fill the buffer with the names of the i3 workspaces */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *ws;
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+            if (STARTS_WITH(ws->name, "__"))
+                continue;
+
+            for (size_t i = 0; i < strlen(ws->name) + 1; i++) {
+                desktop_names[current_position++] = ws->name[i];
+            }
+        }
+    }
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
+                        A__NET_DESKTOP_NAMES, A_UTF8_STRING, 8, msg_length, desktop_names);
+}
+
+/*
  * Updates _NET_DESKTOP_VIEWPORT, which is an array of pairs of cardinals that
  * define the top left corner of each desktop's viewport.
  */
@@ -196,5 +234,5 @@ void ewmh_setup_hints(void) {
     /* I’m not entirely sure if we need to keep _NET_WM_NAME on root. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, 20, supported_atoms);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, 21, supported_atoms);
 }

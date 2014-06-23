@@ -25,6 +25,12 @@ void ewmh_update_current_desktop(void);
 void ewmh_update_number_of_desktops(void);
 
 /**
+ * Updates _NET_DESKTOP_NAMES: "The names of all virtual desktops. This is a
+ * list of NULL-terminated strings in UTF-8 encoding"
+ */
+void ewmh_update_desktop_names(void);
+
+/**
  * Updates _NET_DESKTOP_VIEWPORT, which is an array of pairs of cardinals that
  * define the top left corner of each desktop's viewport.
  */

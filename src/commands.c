@@ -1987,6 +1987,9 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     ysuccess(true);
 
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"rename\"}");
+    ewmh_update_desktop_names();
+    ewmh_update_desktop_viewport();
+    ewmh_update_current_desktop();
 }
 
 /*
