@@ -1550,7 +1550,7 @@ void cmd_move_direction(I3_CMD, char *direction, char *move_px) {
 
     Con *initially_focused = focused;
 
-    TAILQ_FOREACH (current, &owindows, owindows) {
+    TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("moving in direction %s, px %s\n", direction, move_px);
         if (con_is_floating(current->con)) {
             DLOG("floating move with %d pixels\n", px);
