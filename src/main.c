@@ -483,6 +483,10 @@ int main(int argc, char *argv[]) {
     colormap = root_screen->default_colormap;
 
     DLOG("root_depth = %d, visual_id = 0x%08x.\n", root_depth, visual_id);
+    DLOG("root_screen->height_in_pixels = %d, root_screen->height_in_millimeters = %d, dpi = %d\n",
+         root_screen->height_in_pixels, root_screen->height_in_millimeters,
+         (int)((double)root_screen->height_in_pixels * 25.4 / (double)root_screen->height_in_millimeters));
+    DLOG("One logical pixel corresponds to %d physical pixels on this display.\n", logical_px(1));
 
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
     xcb_query_pointer_cookie_t pointercookie = xcb_query_pointer(conn, root);
