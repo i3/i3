@@ -18,6 +18,7 @@ use Pod::Usage;
 use AnyEvent::I3;
 use JSON::XS;
 use List::Util qw(first);
+use Encode qw(decode);
 use v5.10;
 use utf8;
 use open ':encoding(UTF-8)';
@@ -47,6 +48,9 @@ if (!defined($workspace) && !defined($output)) {
 unless (defined($workspace) ^ defined($output)) {
     die "Only one of --workspace or --output can be specified";
 }
+
+$workspace = decode('utf-8', $workspace);
+$output = decode('utf-8', $output);
 
 my $i3 = i3();
 if (!$i3->connect->recv) {
