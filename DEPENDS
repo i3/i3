@@ -10,8 +10,8 @@
 │ pkg-config   │ 0.25   │ 0.26   │ http://pkgconfig.freedesktop.org/      │
 │ libxcb       │ 1.1.93 │ 1.10   │ http://xcb.freedesktop.org/dist/       │
 │ xcb-util     │ 0.3.3  │ 0.4.1  │ http://xcb.freedesktop.org/dist/       │
-│ xkbcommon    │ 0.2.0  │ 0.4.0  │ http://xkbcommon.org/                  │
-│ xkbcommon-x11│ 0.2.0  │ 0.4.0  │ http://xkbcommon.org/                  │
+│ xkbcommon    │ 0.4.0  │ 0.4.0  │ http://xkbcommon.org/                  │
+│ xkbcommon-x11│ 0.4.0  │ 0.4.0  │ http://xkbcommon.org/                  │
 │ util-cursor³ │ 0.0.99 │ 0.0.99 │ http://xcb.freedesktop.org/dist/       │
 │ libev        │ 4.0    │ 4.11   │ http://libev.schmorp.de/               │
 │ yajl         │ 2.0.1  │ 2.0.4  │ http://lloyd.github.com/yajl/          │
