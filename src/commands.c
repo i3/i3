@@ -1731,13 +1731,10 @@ void cmd_reload(I3_CMD) {
 void cmd_restart(I3_CMD) {
     LOG("restarting i3\n");
     ipc_shutdown();
+    unlink(config.ipc_socket_path);
     /* We need to call this manually since atexit handlers don’t get called
      * when exec()ing */
     purge_zerobyte_logfile();
-    /* The unlink call is intentionally after the purge_zerobyte_logfile() so
-     * that the latter does not remove the directory yet. We need to store the
-     * restart layout state in there. */
-    unlink(config.ipc_socket_path);
     i3_restart(false);
 
     // XXX: default reply for now, make this a better reply

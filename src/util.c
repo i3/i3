@@ -249,6 +249,15 @@ char *store_restart_layout(void) {
         filename = resolve_tilde(config.restart_state_path);
     }
 
+    /* create the directory, it could have been cleaned up before restarting or
+     * may not exist at all in case it was user-specified. */
+    char *filenamecopy = sstrdup(filename);
+    char *base = dirname(filenamecopy);
+    DLOG("Creating \"%s\" for storing the restart layout\n", base);
+    if (!mkdirp(base))
+        ELOG("Could not create \"%s\" for storing the restart layout, layout will be lost.\n", base);
+    free(filenamecopy);
+
     int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         perror("open()");
