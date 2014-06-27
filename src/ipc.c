@@ -41,7 +41,7 @@ static void set_nonblock(int sockfd) {
  * Emulates mkdir -p (creates any missing folders)
  *
  */
-static bool mkdirp(const char *path) {
+bool mkdirp(const char *path) {
     if (mkdir(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0)
         return true;
     if (errno != ENOENT) {
