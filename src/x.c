@@ -1140,8 +1140,7 @@ void x_set_i3_atoms(void) {
  *
  */
 void x_set_warp_to(Rect *rect) {
-    if (!config.disable_focus_follows_mouse &&
-        config.mouse_warping != POINTER_WARPING_NONE)
+    if (config.mouse_warping != POINTER_WARPING_NONE)
         warp_to = rect;
 }
 
