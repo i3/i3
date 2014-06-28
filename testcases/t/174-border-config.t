@@ -66,7 +66,7 @@ $first = open_window;
 @content = @{get_ws_content($tmp)};
 ok(@content == 1, 'one container opened');
 is($content[0]->{border}, 'pixel', 'border pixel by default');
-is($content[0]->{current_border_width}, -1, 'border width pixels -1 (default)');
+is($content[0]->{current_border_width}, 1, 'border width pixels 1 (default)');
 
 exit_gracefully($pid);
 
