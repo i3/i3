@@ -1810,34 +1810,46 @@ void cmd_focus_output(I3_CMD, char *name) {
 void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
     int x = atoi(cx);
     int y = atoi(cy);
+    bool has_error = false;
 
-    if (!con_is_floating(focused)) {
-        ELOG("Cannot change position. The window/container is not floating\n");
-        yerror("Cannot change position. The window/container is not floating.");
-        return;
-    }
+    owindow *current;
+    HANDLE_EMPTY_MATCH;
 
-    if (strcmp(method, "absolute") == 0) {
-        focused->parent->rect.x = x;
-        focused->parent->rect.y = y;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        if (!con_is_floating(current->con)) {
+            ELOG("Cannot change position. The window/container is not floating\n");
 
-        DLOG("moving to absolute position %d %d\n", x, y);
-        floating_maybe_reassign_ws(focused->parent);
-        cmd_output->needs_tree_render = true;
-    }
+            if (!has_error) {
+                yerror("Cannot change position of a window/container because it is not floating.");
+                has_error = true;
+            }
 
-    if (strcmp(method, "position") == 0) {
-        Rect newrect = focused->parent->rect;
+            continue;
+        }
 
-        DLOG("moving to position %d %d\n", x, y);
-        newrect.x = x;
-        newrect.y = y;
+        if (strcmp(method, "absolute") == 0) {
+            current->con->parent->rect.x = x;
+            current->con->parent->rect.y = y;
 
-        floating_reposition(focused->parent, newrect);
+            DLOG("moving to absolute position %d %d\n", x, y);
+            floating_maybe_reassign_ws(current->con->parent);
+            cmd_output->needs_tree_render = true;
+        }
+
+        if (strcmp(method, "position") == 0) {
+            Rect newrect = current->con->parent->rect;
+
+            DLOG("moving to position %d %d\n", x, y);
+            newrect.x = x;
+            newrect.y = y;
+
+            floating_reposition(current->con->parent, newrect);
+        }
     }
 
     // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    if (!has_error)
+        ysuccess(true);
 }
 
 /*
