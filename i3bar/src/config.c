@@ -248,8 +248,7 @@ void parse_config_json(char *json) {
 void free_colors(struct xcb_color_strings_t *colors) {
 #define FREE_COLOR(x)        \
     do {                     \
-        if (colors->x)       \
-            free(colors->x); \
+        FREE(colors->x);     \
     } while (0)
     FREE_COLOR(bar_fg);
     FREE_COLOR(bar_bg);
