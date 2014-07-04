@@ -261,6 +261,14 @@ struct Barconfig {
         M_MOD5 = 7
     } modifier;
 
+    /** Command that should be run when mouse wheel up button is pressed over
+     * i3bar to override the default behavior. */
+    char *wheel_up_cmd;
+
+    /** Command that should be run when mouse wheel down button is pressed over
+     * i3bar to override the default behavior. */
+    char *wheel_down_cmd;
+
     /** Bar position (bottom by default). */
     enum { P_BOTTOM = 0,
            P_TOP = 1 } position;

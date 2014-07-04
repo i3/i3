@@ -1104,6 +1104,27 @@ bar {
 
 Available modifiers are Mod1-Mod5, Shift, Control (see +xmodmap(1)+).
 
+=== Mouse button commands
+
+Specifies a command to run when a button was pressed on i3bar to override the
+default behavior. Currently only the mouse wheel buttons are supported. This is
+useful for disabling the scroll wheel action or running scripts that implement
+custom behavior for these buttons.
+
+*Syntax*:
+---------------------
+wheel_up_cmd <command>
+wheel_down_cmd <command>
+---------------------
+
+*Example*:
+---------------------
+bar {
+    wheel_up_cmd nop
+    wheel_down_cmd exec ~/.i3/scripts/custom_wheel_down
+}
+---------------------
+
 === Bar ID
 
 Specifies the bar ID for the configured bar instance. If this option is missing,

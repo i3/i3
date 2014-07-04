@@ -358,6 +358,8 @@ state BAR:
   'hidden_state'           -> BAR_HIDDEN_STATE
   'id'                     -> BAR_ID
   'modifier'               -> BAR_MODIFIER
+  'wheel_up_cmd'           -> BAR_WHEEL_UP_CMD
+  'wheel_down_cmd'         -> BAR_WHEEL_DOWN_CMD
   'position'               -> BAR_POSITION
   'output'                 -> BAR_OUTPUT
   'tray_output'            -> BAR_TRAY_OUTPUT
@@ -402,6 +404,14 @@ state BAR_ID:
 state BAR_MODIFIER:
   modifier = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Control', 'Ctrl', 'Shift'
       -> call cfg_bar_modifier($modifier); BAR
+
+state BAR_WHEEL_UP_CMD:
+  command = string
+      -> call cfg_bar_wheel_up_cmd($command); BAR
+
+state BAR_WHEEL_DOWN_CMD:
+  command = string
+      -> call cfg_bar_wheel_down_cmd($command); BAR
 
 state BAR_POSITION:
   position = 'top', 'bottom'

@@ -512,6 +512,16 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
             break;
     }
 
+    if (config->wheel_up_cmd) {
+        ystr("wheel_up_cmd");
+        ystr(config->wheel_up_cmd);
+    }
+
+    if (config->wheel_down_cmd) {
+        ystr("wheel_down_cmd");
+        ystr(config->wheel_down_cmd);
+    }
+
     ystr("position");
     if (config->position == P_BOTTOM)
         ystr("bottom");

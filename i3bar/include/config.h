@@ -24,6 +24,8 @@ typedef enum { M_DOCK = 0,
 
 typedef struct config_t {
     int modifier;
+    char *wheel_up_cmd;
+    char *wheel_down_cmd;
     position_t position;
     int verbose;
     struct xcb_color_strings_t colors;

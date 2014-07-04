@@ -459,6 +459,16 @@ CFGFUN(bar_modifier, const char *modifier) {
         current_bar.modifier = M_SHIFT;
 }
 
+CFGFUN(bar_wheel_up_cmd, const char *command) {
+    FREE(current_bar.wheel_up_cmd);
+    current_bar.wheel_up_cmd = sstrdup(command);
+}
+
+CFGFUN(bar_wheel_down_cmd, const char *command) {
+    FREE(current_bar.wheel_down_cmd);
+    current_bar.wheel_down_cmd = sstrdup(command);
+}
+
 CFGFUN(bar_position, const char *position) {
     current_bar.position = (strcmp(position, "top") == 0 ? P_TOP : P_BOTTOM);
 }
