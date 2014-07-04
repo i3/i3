@@ -806,6 +806,38 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             DLOG("Not handling WM_CHANGE_STATE request. (window = %d, state = %d)\n", event->window, event->data.data32[0]);
         }
 
+    } else if (event->type == A__NET_CURRENT_DESKTOP) {
+        /* This request is used by pagers and bars to change the current
+         * desktop likely as a result of some user action. We interpret this as
+         * a request to focus the given workspace. See
+         * http://standards.freedesktop.org/wm-spec/latest/ar01s03.html#idm140251368135008
+         * */
+        Con *output;
+        uint32_t idx = 0;
+        DLOG("Request to change current desktop to index %d\n", event->data.data32[0]);
+
+        TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+            Con *ws;
+            TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+                if (STARTS_WITH(ws->name, "__"))
+                    continue;
+
+                if (idx == event->data.data32[0]) {
+                    /* data32[1] is a timestamp used to prevent focus race conditions */
+                    if (event->data.data32[1])
+                        last_timestamp = event->data.data32[1];
+
+                    DLOG("Handling request to focus workspace %s\n", ws->name);
+
+                    workspace_show(ws);
+                    tree_render();
+
+                    return;
+                }
+
+                ++idx;
+            }
+        }
     } else {
         DLOG("unhandled clientmessage\n");
         return;
