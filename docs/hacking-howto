@@ -951,6 +951,8 @@ For a short introduction into using git, see
 http://web.archive.org/web/20121024222556/http://www.spheredev.org/wiki/Git_for_the_lazy
 or, for more documentation, see http://git-scm.com/documentation
 
+You can view the git repository online at http://code.i3wm.org.
+
 Please talk to us before working on new features to see whether they will be
 accepted. There are a few things which we don’t want to see in i3, e.g. a
 command which will focus windows in an alt+tab like way.
