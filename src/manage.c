@@ -447,10 +447,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     if (want_floating) {
         DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
-        /* motif hints will be applied only when `new_float` is `normal` or not
-         * specified */
-        bool automatic_border = (config.default_floating_border != BS_NORMAL &&
-                                 motif_border_style == BS_NORMAL);
+        /* automatically set the border to the default value if a motif border
+         * was not specified */
+        bool automatic_border = (motif_border_style == BS_NORMAL);
 
         floating_enable(nc, automatic_border);
     }
