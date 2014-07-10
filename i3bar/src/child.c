@@ -371,7 +371,7 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         if (config.hide_on_modifier) {
             stop_child();
         }
-        read_json_input(buffer + consumed, rec - consumed);
+        draw_bars(read_json_input(buffer + consumed, rec - consumed));
     } else {
         /* In case of plaintext, we just add a single block and change its
          * full_text pointer later. */
