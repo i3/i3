@@ -84,7 +84,7 @@ is_num_children($first_ws, 0, 'no containers on this workspace yet');
 # echo its $DESKTOP_STARTUP_ID. We (blockingly) read the variable into
 # $startup_id in the testcase.
 my $tmp = tmpnam();
-mkfifo($tmp, 0600) or BAIL_OUT "Could not create FIFO in $tmp";
+mkfifo($tmp, 0600) or BAIL_OUT "Could not create FIFO in $tmp: $!";
 
 cmd qq|exec echo \$DESKTOP_STARTUP_ID >$tmp|;
 
