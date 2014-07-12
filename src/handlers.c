@@ -1092,6 +1092,30 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
     return;
 }
 
+/*
+ * Handles the WM_CLASS property for assignments and criteria selection.
+ *
+ */
+static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                                xcb_atom_t name, xcb_get_property_reply_t *prop) {
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
+        return false;
+
+    if (prop == NULL) {
+        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
+                                                                       false, window, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 0, 32),
+                                      NULL);
+
+        if (prop == NULL)
+            return false;
+    }
+
+    window_update_class(con->window, prop, false);
+
+    return true;
+}
+
 /* Returns false if the event could not be processed (e.g. the window could not
  * be found), true otherwise */
 typedef bool (*cb_property_handler_t)(void *data, xcb_connection_t *c, uint8_t state, xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *property);
@@ -1109,7 +1133,8 @@ static struct property_handler_t property_handlers[] = {
     {0, UINT_MAX, handle_normal_hints},
     {0, UINT_MAX, handle_clientleader_change},
     {0, UINT_MAX, handle_transient_for},
-    {0, 128, handle_windowrole_change}};
+    {0, 128, handle_windowrole_change},
+    {0, 128, handle_class_change}};
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
 /*
@@ -1127,6 +1152,7 @@ void property_handlers_init(void) {
     property_handlers[4].atom = A_WM_CLIENT_LEADER;
     property_handlers[5].atom = XCB_ATOM_WM_TRANSIENT_FOR;
     property_handlers[6].atom = A_WM_WINDOW_ROLE;
+    property_handlers[7].atom = XCB_ATOM_WM_CLASS;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
