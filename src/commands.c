@@ -899,15 +899,27 @@ void cmd_nop(I3_CMD, char *comment) {
  */
 void cmd_append_layout(I3_CMD, char *path) {
     LOG("Appending layout \"%s\"\n", path);
+
+    json_content_t content = json_determine_content(path);
+    LOG("JSON content = %d\n", content);
+    if (content == JSON_CONTENT_UNKNOWN) {
+        ELOG("Could not determine the contents of \"%s\", not loading.\n", path);
+        ysuccess(false);
+        return;
+    }
+
     Con *parent = focused;
-    /* We need to append the layout to a split container, since a leaf
-     * container must not have any children (by definition).
-     * Note that we explicitly check for workspaces, since they are okay for
-     * this purpose, but con_accepts_window() returns false for workspaces. */
-    while (parent->type != CT_WORKSPACE && !con_accepts_window(parent))
-        parent = parent->parent;
-    DLOG("Appending to parent=%p instead of focused=%p\n",
-         parent, focused);
+    if (content == JSON_CONTENT_WORKSPACE) {
+        parent = output_get_content(con_get_output(parent));
+    } else {
+        /* We need to append the layout to a split container, since a leaf
+         * container must not have any children (by definition).
+         * Note that we explicitly check for workspaces, since they are okay for
+         * this purpose, but con_accepts_window() returns false for workspaces. */
+        while (parent->type != CT_WORKSPACE && !con_accepts_window(parent))
+            parent = parent->parent;
+    }
+    DLOG("Appending to parent=%p instead of focused=%p\n", parent, focused);
     char *errormsg = NULL;
     tree_append_json(parent, path, &errormsg);
     if (errormsg != NULL) {
@@ -930,6 +942,9 @@ void cmd_append_layout(I3_CMD, char *path) {
     render_con(croot, false);
 
     restore_open_placeholder_windows(parent);
+
+    if (content == JSON_CONTENT_WORKSPACE)
+        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"restored\"}");
 
     cmd_output->needs_tree_render = true;
 }

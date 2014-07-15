@@ -52,11 +52,13 @@ static int json_start_map(void *ctx) {
                 DLOG("New floating_node\n");
                 Con *ws = con_get_workspace(json_node);
                 json_node = con_new_skeleton(NULL, NULL);
+                json_node->name = NULL;
                 json_node->parent = ws;
                 DLOG("Parent is workspace = %p\n", ws);
             } else {
                 Con *parent = json_node;
                 json_node = con_new_skeleton(NULL, NULL);
+                json_node->name = NULL;
                 json_node->parent = parent;
             }
         }
@@ -81,6 +83,40 @@ static int json_end_map(void *ctx) {
                 Match *match = TAILQ_FIRST(&(json_node->swallow_head));
                 TAILQ_REMOVE(&(json_node->swallow_head), match, matches);
                 match_free(match);
+            }
+        }
+
+        if (json_node->type == CT_WORKSPACE) {
+            /* Ensure the workspace has a name. */
+            DLOG("Attaching workspace. name = %s\n", json_node->name);
+            if (json_node->name == NULL || strcmp(json_node->name, "") == 0) {
+                json_node->name = sstrdup("unnamed");
+            }
+
+            /* Prevent name clashes when appending a workspace, e.g. when the
+             * user tries to restore a workspace called “1” but already has a
+             * workspace called “1”. */
+            Con *output;
+            Con *workspace = NULL;
+            TAILQ_FOREACH (output, &(croot->nodes_head), nodes)
+                GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, json_node->name));
+            char *base = sstrdup(json_node->name);
+            int cnt = 1;
+            while (workspace != NULL) {
+                FREE(json_node->name);
+                asprintf(&(json_node->name), "%s_%d", base, cnt++);
+                workspace = NULL;
+                TAILQ_FOREACH (output, &(croot->nodes_head), nodes)
+                    GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, json_node->name));
+            }
+            free(base);
+
+            /* Set num accordingly so that i3bar will properly sort it. */
+            json_node->num = ws_name_to_number(json_node->name);
+        } else {
+            // TODO: remove this in the “next” branch.
+            if (json_node->name == NULL || strcmp(json_node->name, "") == 0) {
+                json_node->name = sstrdup("#ff0000");
             }
         }
 
@@ -390,26 +426,94 @@ static int json_double(void *ctx, double val) {
     return 1;
 }
 
+static json_content_t content_result;
+
+static int json_determine_content_string(void *ctx, const unsigned char *val, size_t len) {
+    if (strcasecmp(last_key, "type") != 0)
+        return 1;
+
+    DLOG("string = %.*s, last_key = %s\n", (int)len, val, last_key);
+    if (strncasecmp((const char *)val, "workspace", len) == 0)
+        content_result = JSON_CONTENT_WORKSPACE;
+    return 0;
+}
+
+/* Parses the given JSON file until it encounters the first “type” property to
+ * determine whether the file contains workspaces or regular containers, which
+ * is important to know when deciding where (and how) to append the contents.
+ * */
+json_content_t json_determine_content(const char *filename) {
+    FILE *f;
+    if ((f = fopen(filename, "r")) == NULL) {
+        ELOG("Cannot open file \"%s\"\n", filename);
+        return JSON_CONTENT_UNKNOWN;
+    }
+    struct stat stbuf;
+    if (fstat(fileno(f), &stbuf) != 0) {
+        ELOG("Cannot fstat() \"%s\"\n", filename);
+        fclose(f);
+        return JSON_CONTENT_UNKNOWN;
+    }
+    char *buf = smalloc(stbuf.st_size);
+    int n = fread(buf, 1, stbuf.st_size, f);
+    if (n != stbuf.st_size) {
+        ELOG("File \"%s\" could not be read entirely, not loading.\n", filename);
+        fclose(f);
+        return JSON_CONTENT_UNKNOWN;
+    }
+    DLOG("read %d bytes\n", n);
+    // We default to JSON_CONTENT_CON because it is legal to not include
+    // “"type": "con"” in the JSON files for better readability.
+    content_result = JSON_CONTENT_CON;
+    yajl_gen g;
+    yajl_handle hand;
+    static yajl_callbacks callbacks = {
+        .yajl_string = json_determine_content_string,
+        .yajl_map_key = json_key,
+    };
+    g = yajl_gen_alloc(NULL);
+    hand = yajl_alloc(&callbacks, NULL, (void *)g);
+    /* Allowing comments allows for more user-friendly layout files. */
+    yajl_config(hand, yajl_allow_comments, true);
+    /* Allow multiple values, i.e. multiple nodes to attach */
+    yajl_config(hand, yajl_allow_multiple_values, true);
+    yajl_status stat;
+    setlocale(LC_NUMERIC, "C");
+    stat = yajl_parse(hand, (const unsigned char *)buf, n);
+    if (stat != yajl_status_ok && stat != yajl_status_client_canceled) {
+        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, n);
+        ELOG("JSON parsing error: %s\n", str);
+        yajl_free_error(hand, str);
+    }
+
+    setlocale(LC_NUMERIC, "");
+    yajl_complete_parse(hand);
+
+    fclose(f);
+
+    return content_result;
+}
+
 void tree_append_json(Con *con, const char *filename, char **errormsg) {
     FILE *f;
     if ((f = fopen(filename, "r")) == NULL) {
-        LOG("Cannot open file \"%s\"\n", filename);
+        ELOG("Cannot open file \"%s\"\n", filename);
         return;
     }
     struct stat stbuf;
     if (fstat(fileno(f), &stbuf) != 0) {
-        LOG("Cannot fstat() the file\n");
+        ELOG("Cannot fstat() \"%s\"\n", filename);
         fclose(f);
         return;
     }
     char *buf = smalloc(stbuf.st_size);
     int n = fread(buf, 1, stbuf.st_size, f);
     if (n != stbuf.st_size) {
-        LOG("File \"%s\" could not be read entirely, not loading.\n", filename);
+        ELOG("File \"%s\" could not be read entirely, not loading.\n", filename);
         fclose(f);
         return;
     }
-    LOG("read %d bytes\n", n);
+    DLOG("read %d bytes\n", n);
     yajl_gen g;
     yajl_handle hand;
     static yajl_callbacks callbacks = {
