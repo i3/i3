@@ -13,18 +13,6 @@
  */
 #include "all.h"
 
-char *colors[] = {
-    "#ff0000",
-    "#00FF00",
-    "#0000FF",
-    "#ff00ff",
-    "#00ffff",
-    "#ffff00",
-    "#aa0000",
-    "#00aa00",
-    "#0000aa",
-    "#aa00aa"};
-
 static void con_on_remove_child(Con *con);
 
 /*
@@ -59,16 +47,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
         new->depth = window->depth;
     else
         new->depth = XCB_COPY_FROM_PARENT;
-    static int cnt = 0;
-    DLOG("opening window %d\n", cnt);
-
-    /* TODO: remove window coloring after test-phase */
-    DLOG("color %s\n", colors[cnt]);
-    new->name = strdup(colors[cnt]);
-    //uint32_t cp = get_colorpixel(colors[cnt]);
-    cnt++;
-    if ((cnt % (sizeof(colors) / sizeof(char *))) == 0)
-        cnt = 0;
+    DLOG("opening window\n");
 
     TAILQ_INIT(&(new->floating_head));
     TAILQ_INIT(&(new->nodes_head));

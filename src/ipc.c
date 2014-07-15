@@ -299,8 +299,10 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("name");
     if (con->window && con->window->name)
         ystr(i3string_as_utf8(con->window->name));
-    else
+    else if (con->name != NULL)
         ystr(con->name);
+    else
+        y(null);
 
     if (con->type == CT_WORKSPACE) {
         ystr("num");
