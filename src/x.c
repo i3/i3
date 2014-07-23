@@ -659,10 +659,18 @@ void x_push_node(Con *con) {
              con, con->window->id, con->ignore_unmap);
     }
 
+    /* The pixmap of a borderless leaf container will not be used except
+     * for the titlebar in a stack or tabs (issue #1013). */
+    bool is_pixmap_needed = (con->border_style != BS_NONE ||
+                             !con_is_leaf(con) ||
+                             con->parent->layout == L_STACKED ||
+                             con->parent->layout == L_TABBED);
+
     bool fake_notify = false;
-    /* Set new position if rect changed (and if height > 0) */
-    if (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0 &&
-        rect.height > 0) {
+    /* Set new position if rect changed (and if height > 0) or if the pixmap
+     * needs to be recreated */
+    if ((is_pixmap_needed && con->pixmap == XCB_NONE) || (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0 &&
+                                                          rect.height > 0)) {
         /* We first create the new pixmap, then render to it, set it as the
          * background and only afterwards change the window size. This reduces
          * flickering. */
@@ -673,13 +681,6 @@ void x_push_node(Con *con) {
          * (height == 0) or when it is not needed. */
         bool has_rect_changed = (state->rect.width != rect.width || state->rect.height != rect.height);
 
-        /* The pixmap of a borderless leaf container will not be used except
-         * for the titlebar in a stack or tabs (issue #1013). */
-        bool is_pixmap_needed = (con->border_style != BS_NONE ||
-                                 !con_is_leaf(con) ||
-                                 con->parent->layout == L_STACKED ||
-                                 con->parent->layout == L_TABBED);
-
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
         if (!is_pixmap_needed && con->pixmap != XCB_NONE) {
@@ -687,7 +688,7 @@ void x_push_node(Con *con) {
             con->pixmap = XCB_NONE;
         }
 
-        if (has_rect_changed && is_pixmap_needed) {
+        if (is_pixmap_needed && (has_rect_changed || con->pixmap == XCB_NONE)) {
             if (con->pixmap == 0) {
                 con->pixmap = xcb_generate_id(conn);
                 con->pm_gc = xcb_generate_id(conn);
