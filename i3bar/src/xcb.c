@@ -1271,6 +1271,7 @@ void clean_xcb(void) {
     FREE(outputs);
 
     xcb_flush(xcb_connection);
+    xcb_aux_sync(xcb_connection);
     xcb_disconnect(xcb_connection);
 
     ev_check_stop(main_loop, xcb_chk);
