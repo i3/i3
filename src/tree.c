@@ -621,6 +621,14 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         if (!next)
             return false;
 
+        /* Raise the floating window on top of other windows preserving
+         * relative stack order */
+        while (TAILQ_LAST(&(parent->floating_head), floating_head) != next) {
+            Con *last = TAILQ_LAST(&(parent->floating_head), floating_head);
+            TAILQ_REMOVE(&(parent->floating_head), last, floating_windows);
+            TAILQ_INSERT_HEAD(&(parent->floating_head), last, floating_windows);
+        }
+
         con_focus(con_descend_focused(next));
         return true;
     }
