@@ -473,12 +473,12 @@ void x_draw_decoration(Con *con) {
     /* 5: draw two unconnected horizontal lines in border color */
     xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]) {p->color->border});
     Rect *dr = &(con->deco_rect);
-    int deco_diff_l = 2;
-    int deco_diff_r = 2;
-    if (parent->layout == L_TABBED) {
-        if (TAILQ_PREV(con, nodes_head, nodes) != NULL)
+    adjacent_t borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
+    int deco_diff_l = borders_to_hide & ADJ_LEFT_SCREEN_EDGE ? 0 : con->current_border_width;
+    int deco_diff_r = borders_to_hide & ADJ_RIGHT_SCREEN_EDGE ? 0 : con-> current_border_width;
+    if (parent->layout == L_TABBED ||
+        (parent->layout == L_STACKED && TAILQ_NEXT(con, nodes) != NULL)) {
             deco_diff_l = 0;
-        if (TAILQ_NEXT(con, nodes) != NULL)
             deco_diff_r = 0;
     }
     xcb_segment_t segments[] = {
