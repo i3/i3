@@ -327,6 +327,20 @@ struct Barconfig {
 };
 
 /**
+ * Finds the configuration file to use (either the one specified by
+ * override_configpath), the user’s one or the system default) and calls
+ * parse_file().
+ *
+ * If you specify override_configpath, only this path is used to look for a
+ * configuration file.
+ *
+ * If use_nagbar is false, don't try to start i3-nagbar but log the errors to
+ * stdout/stderr instead.
+ *
+ */
+bool parse_configuration(const char *override_configpath, bool use_nagbar);
+
+/**
  * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
  *
  * If you specify override_configpath, only this path is used to look for a

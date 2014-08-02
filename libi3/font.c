@@ -167,6 +167,12 @@ i3Font load_font(const char *pattern, const bool fallback) {
     i3Font font;
     font.type = FONT_TYPE_NONE;
 
+    /* No XCB connction, return early because we're just validating the
+     * configuration file. */
+    if (conn == NULL) {
+        return font;
+    }
+
 #if PANGO_SUPPORT
     /* Try to load a pango font if specified */
     if (strlen(pattern) > strlen("pango:") && !strncmp(pattern, "pango:", strlen("pango:"))) {

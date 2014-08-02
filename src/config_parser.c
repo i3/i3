@@ -840,7 +840,7 @@ static char *migrate_config(char *input, off_t size) {
  * parse_config and possibly launching i3-nagbar.
  *
  */
-void parse_file(const char *f) {
+bool parse_file(const char *f, bool use_nagbar) {
     SLIST_HEAD(variables_head, Variable) variables = SLIST_HEAD_INITIALIZER(&variables);
     int fd, ret, read_bytes = 0;
     struct stat stbuf;
@@ -1000,7 +1000,7 @@ void parse_file(const char *f) {
 
     check_for_duplicate_bindings(context);
 
-    if (context->has_errors || context->has_warnings) {
+    if (use_nagbar && (context->has_errors || context->has_warnings)) {
         ELOG("FYI: You are using i3 version " I3_VERSION "\n");
         if (version == 3)
             ELOG("Please convert your configfile first, then fix any remaining errors (see above).\n");
@@ -1030,6 +1030,8 @@ void parse_file(const char *f) {
         free(pageraction);
     }
 
+    bool has_errors = context->has_errors;
+
     FREE(context->line_copy);
     free(context);
     free(new);
@@ -1042,6 +1044,8 @@ void parse_file(const char *f) {
         SLIST_REMOVE_HEAD(&variables, variables);
         FREE(current);
     }
+
+    return !has_errors;
 }
 
 #endif

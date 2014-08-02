@@ -112,12 +112,19 @@ static char *get_config_path(const char *override_configpath) {
  * parse_file().
  *
  */
-static void parse_configuration(const char *override_configpath) {
+bool parse_configuration(const char *override_configpath, bool use_nagbar) {
     char *path = get_config_path(override_configpath);
     LOG("Parsing configfile %s\n", path);
     FREE(current_configpath);
     current_configpath = path;
-    parse_file(path);
+
+    /* initialize default bindings if we're just validating the config file */
+    if (!use_nagbar && bindings == NULL) {
+        bindings = scalloc(sizeof(struct bindings_head));
+        TAILQ_INIT(bindings);
+    }
+
+    return parse_file(path, use_nagbar);
 }
 
 /*
@@ -260,7 +267,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     if (config.workspace_urgency_timer == 0)
         config.workspace_urgency_timer = 0.5;
 
-    parse_configuration(override_configpath);
+    parse_configuration(override_configpath, true);
 
     if (reload) {
         translate_keysyms();

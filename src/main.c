@@ -88,11 +88,6 @@ struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignment
 /* We hope that those are supported and set them to true */
 bool xcursor_supported = true;
 
-/* This will be set to true when -C is used so that functions can behave
- * slightly differently. We don’t want i3-nagbar to be started when validating
- * the config, for example. */
-bool only_check_config = false;
-
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
@@ -201,6 +196,7 @@ int main(int argc, char *argv[]) {
     bool force_xinerama = false;
     char *fake_outputs = NULL;
     bool disable_signalhandler = false;
+    bool only_check_config = false;
     static struct option long_options[] = {
         {"no-autostart", no_argument, 0, 'a'},
         {"config", required_argument, 0, 'c'},
@@ -366,10 +362,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (only_check_config) {
+        exit(parse_configuration(override_configpath, false) ? 0 : 1);
+    }
+
     /* If the user passes more arguments, we act like i3-msg would: Just send
      * the arguments as an IPC message to i3. This allows for nice semantic
      * commands such as 'i3 border none'. */
-    if (!only_check_config && optind < argc) {
+    if (optind < argc) {
         /* We enable verbose mode so that the user knows what’s going on.
          * This should make it easier to find mistakes when the user passes
          * arguments by mistake. */
@@ -492,10 +492,6 @@ int main(int argc, char *argv[]) {
     xcb_query_pointer_cookie_t pointercookie = xcb_query_pointer(conn, root);
 
     load_configuration(conn, override_configpath, false);
-    if (only_check_config) {
-        LOG("Done checking configuration file. Exiting.\n");
-        exit(0);
-    }
 
     if (config.ipc_socket_path == NULL) {
         /* Fall back to a file name in /tmp/ based on the PID */
