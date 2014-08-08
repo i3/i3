@@ -1263,8 +1263,14 @@ void con_set_layout(Con *con, layout_t layout) {
             new->layout = layout;
             new->last_split_layout = con->last_split_layout;
 
+            /* Save the container that was focused before we move containers
+             * around, but only if the container is visible (otherwise focus
+             * will be restored properly automatically when switching). */
             Con *old_focused = TAILQ_FIRST(&(con->focus_head));
             if (old_focused == TAILQ_END(&(con->focus_head)))
+                old_focused = NULL;
+            if (old_focused != NULL &&
+                !workspace_is_visible(con_get_workspace(old_focused)))
                 old_focused = NULL;
 
             /* 3: move the existing cons of this workspace below the new con */
