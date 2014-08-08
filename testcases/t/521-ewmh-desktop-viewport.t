@@ -33,6 +33,9 @@ EOT
 my $pid = launch_with_config($config);
 
 sub get_desktop_viewport {
+    # Make sure that i3 pushed its changes to X11 before querying.
+    sync_with_i3;
+
     my $cookie = $x->get_property(
         0,
         $x->get_root_window(),
