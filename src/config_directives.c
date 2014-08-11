@@ -271,13 +271,15 @@ CFGFUN(new_window, const char *windowtype, const char *border, const long width)
     }
 
     if (strcmp(windowtype, "new_window") == 0) {
-        DLOG("default tiled border style = %d and border width = %d\n", border_style, border_width);
+        DLOG("default tiled border style = %d and border width = %d (%d physical px)\n",
+             border_style, border_width, logical_px(border_width));
         config.default_border = border_style;
-        config.default_border_width = border_width;
+        config.default_border_width = logical_px(border_width);
     } else {
-        DLOG("default floating border style = %d and border width = %d\n", border_style, border_width);
+        DLOG("default floating border style = %d and border width = %d (%d physical px)\n",
+             border_style, border_width, logical_px(border_width));
         config.default_floating_border = border_style;
-        config.default_floating_border_width = border_width;
+        config.default_floating_border_width = logical_px(border_width);
     }
 }
 
