@@ -422,7 +422,7 @@ state BAR_OUTPUT:
       -> call cfg_bar_output($output); BAR
 
 state BAR_TRAY_OUTPUT:
-  output = string
+  output = word
       -> call cfg_bar_tray_output($output); BAR
 
 state BAR_FONT:
