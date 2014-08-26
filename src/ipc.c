@@ -339,6 +339,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
             ystr(i3string_as_utf8(con->window->name));
         }
 
+        ystr("transient_for");
+        if (con->window->transient_for == XCB_NONE)
+            y(null);
+        else y(integer, con->window->transient_for);
+
         y(map_close);
     }
 

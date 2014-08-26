@@ -288,6 +288,8 @@ void render_con(Con *con, bool render_fullscreen) {
                     while (transient_con != NULL &&
                            transient_con->window != NULL &&
                            transient_con->window->transient_for != XCB_NONE) {
+                        DLOG("transient_con = 0x%08x, transient_con->window->transient_for = 0x%08x, fullscreen_id = 0x%08x\n",
+                                transient_con->window->id, transient_con->window->transient_for, fullscreen->window->id);
                         if (transient_con->window->transient_for == fullscreen->window->id) {
                             is_transient_for = true;
                             break;
