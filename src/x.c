@@ -15,9 +15,9 @@
 /* Stores the X11 window ID of the currently focused window */
 xcb_window_t focused_id = XCB_NONE;
 
-/* Because 'focused_id' might be reset to force input focus (after click to
- * raise), we separately keep track of the X11 window ID to be able to always
- * tell whether the focused window actually changed. */
+/* Because 'focused_id' might be reset to force input focus, we separately keep
+ * track of the X11 window ID to be able to always tell whether the focused
+ * window actually changed. */
 static xcb_window_t last_focused = XCB_NONE;
 
 /* Stores coordinates to warp mouse pointer to if set */
