@@ -617,10 +617,7 @@ IPC_HANDLER(get_workspaces) {
             y(map_open);
 
             ystr("num");
-            if (ws->num == -1)
-                y(null);
-            else
-                y(integer, ws->num);
+            y(integer, ws->num);
 
             ystr("name");
             ystr(ws->name);

@@ -24,7 +24,7 @@ sub check_order {
     my ($msg) = @_;
 
     my @ws = @{$i3->get_workspaces->recv};
-    my @nums = map { $_->{num} } grep { defined($_->{num}) } @ws;
+    my @nums = map { $_->{num} } grep { $_->{num} != -1 } @ws;
     my @sorted = sort @nums;
 
     is_deeply(\@nums, \@sorted, $msg);
