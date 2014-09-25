@@ -430,16 +430,16 @@ void x_draw_decoration(Con *con) {
             xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &leftline);
         }
         if (!(borders_to_hide & ADJ_RIGHT_SCREEN_EDGE)) {
-            xcb_rectangle_t rightline = {r->width + br.width + br.x, 0, r->width, r->height};
+            xcb_rectangle_t rightline = {r->width + (br.width + br.x), 0, -(br.width + br.x), r->height};
             xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &rightline);
         }
         if (!(borders_to_hide & ADJ_LOWER_SCREEN_EDGE)) {
-            xcb_rectangle_t bottomline = {0, r->height + br.height + br.y, r->width, r->height};
+            xcb_rectangle_t bottomline = {br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y)};
             xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &bottomline);
         }
         /* 1pixel border needs an additional line at the top */
         if (p->border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
-            xcb_rectangle_t topline = {br.x, 0, con->rect.width + br.width + br.x, br.y};
+            xcb_rectangle_t topline = {br.x, 0, r->width + br.width, br.y};
             xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &topline);
         }
 
@@ -453,10 +453,10 @@ void x_draw_decoration(Con *con) {
             xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]) {p->color->indicator});
             if (p->parent_layout == L_SPLITH)
                 xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]) {
-                                                                              {r->width + br.width + br.x, br.y, r->width, r->height + br.height}});
+                                                                              {r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height}});
             else if (p->parent_layout == L_SPLITV)
                 xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]) {
-                                                                              {br.x, r->height + br.height + br.y, r->width - (2 * br.x), r->height}});
+                                                                              {br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y)}});
         }
     }
 
