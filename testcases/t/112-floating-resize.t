@@ -69,7 +69,7 @@ cmd 'border 1pixel';
 test_resize;
 
 ################################################################################
-# Check if we can position a floating window out of bounds. The XDummy screen
+# Check if we can position a floating window out of bounds. The Xephyr screen
 # is 1280x1024, so x=2864, y=893 is out of bounds.
 ################################################################################
 

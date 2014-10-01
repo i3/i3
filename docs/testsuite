@@ -74,6 +74,9 @@ client, simply called +cpan+. It comes with every Perl installation and can be
 used to install the testsuite. Many users prefer to use the more modern
 +cpanminus+ instead, though (because it asks no questions and just works):
 
+The tests additionally require +Xephyr(1)+ to run a nested X server. Install
++xserver-xephyr+ on Debian or +xorg-xserver-xephyr+ on Arch Linux.
+
 .Installing testsuite dependencies using cpanminus (preferred)
 --------------------------------------------------------------------------------
 $ cd ~/i3/testcases
@@ -102,7 +105,7 @@ more testcases. Also, it takes care of starting up a separate instance of i3
 with an appropriate configuration file and creates a folder for each run
 containing the appropriate i3 logfile for each testcase. The latest folder can
 always be found under the symlink +latest/+. Unless told differently, it will
-run the tests on a separate X server instance (using the Xdummy script).
+run the tests on a separate X server instance (using Xephyr).
 
 .Example invocation of complete-run.pl+
 ---------------------------------------
@@ -146,12 +149,11 @@ $ less latest/i3-log-for-04-floating.t
 If your attempt to run the tests with a bare call to ./complete-run.pl fails, try this:
 
 ---------------------------------------------------
-$ ./complete-run.pl --parallel=1 --keep-xdummy-output
+$ ./complete-run.pl --parallel=1 --keep-xserver-output
 ---------------------------------------------------
 
-One common cause of failures is not having the X dummy server module
-installed.  Under Debian and Ubuntu this is the package
-+xserver-xorg-video-dummy+.
+This will show the output of Xephyr, which is the X server implementation we
+use for testing.
 
 ==== IPC interface
 
@@ -175,10 +177,9 @@ manager.
 === Filesystem structure
 
 In the git root of i3, the testcases live in the folder +testcases+. This
-folder contains the +complete-run.pl+ and +Xdummy+ scripts and a base
-configuration file which will be used for the tests. The different testcases
-(their file extension is .t, not .pl) themselves can be found in the
-conventionally named subfolder +t+:
+folder contains the +complete-run.pl+ and a base configuration file which will
+be used for the tests. The different testcases (their file extension is .t, not
+.pl) themselves can be found in the conventionally named subfolder +t+:
 
 .Filesystem structure
 --------------------------------------------
@@ -197,7 +198,6 @@ conventionally named subfolder +t+:
 │   │   ├── omitted for brevity
 │   │   ├── ...
 │   │   └── 74-regress-focus-toggle.t
-│   └── Xdummy
 --------------------------------------------
 
 == Anatomy of a testcase
