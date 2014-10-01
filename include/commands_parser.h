@@ -45,6 +45,14 @@ struct CommandResult {
 };
 
 /**
+ * Parses a string (or word, if as_word is true). Extracted out of
+ * parse_command so that it can be used in src/workspace.c for interpreting
+ * workspace commands.
+ *
+ */
+char *parse_string(const char **walk, bool as_word);
+
+/**
  * Parses and executes the given command. If a caller-allocated yajl_gen is
  * passed, a json reply will be generated in the format specified by the ipc
  * protocol. Pass NULL if no json reply is required.

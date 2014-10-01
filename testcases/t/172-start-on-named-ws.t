@@ -88,4 +88,22 @@ is_deeply(\@names, [ '3' ], 'i3 starts on workspace 3 without whitespace');
 
 exit_gracefully($pid);
 
+################################################################################
+# 5: now with a binding that contains multiple commands
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bindsym Mod1+1 workspace 3; exec foo
+EOT
+
+$pid = launch_with_config($config);
+
+@names = @{get_workspace_names()};
+is_deeply(\@names, [ '3' ], 'i3 starts on workspace 3 without ;exec foo');
+
+exit_gracefully($pid);
+
 done_testing;

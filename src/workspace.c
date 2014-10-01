@@ -126,7 +126,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
             strncasecmp(bind->command, "workspace", strlen("workspace")) != 0)
             continue;
         DLOG("relevant command = %s\n", bind->command);
-        char *target = bind->command + strlen("workspace ");
+        const char *target = bind->command + strlen("workspace ");
         while ((*target == ' ' || *target == '\t') && target != '\0')
             target++;
         /* We check if this is the workspace
@@ -142,16 +142,16 @@ Con *create_workspace_on_output(Output *output, Con *content) {
             strncasecmp(target, "back_and_forth", strlen("back_and_forth")) == 0 ||
             strncasecmp(target, "current", strlen("current")) == 0)
             continue;
-        if (*target == '"')
-            target++;
-        if (strncasecmp(target, "__", strlen("__")) == 0) {
+        char *target_name = parse_string(&target, false);
+        if (target_name == NULL)
+            continue;
+        if (strncasecmp(target_name, "__", strlen("__")) == 0) {
             LOG("Cannot create workspace \"%s\". Names starting with __ are i3-internal.\n", target);
+            free(target_name);
             continue;
         }
         FREE(ws->name);
-        ws->name = strdup(target);
-        if (ws->name[strlen(ws->name) - 1] == '"')
-            ws->name[strlen(ws->name) - 1] = '\0';
+        ws->name = target_name;
         DLOG("trying name *%s*\n", ws->name);
 
         /* Ensure that this workspace is not assigned to a different output —

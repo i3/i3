@@ -205,6 +205,61 @@ static void next_state(const cmdp_token *token) {
 }
 
 /*
+ * Parses a string (or word, if as_word is true). Extracted out of
+ * parse_command so that it can be used in src/workspace.c for interpreting
+ * workspace commands.
+ *
+ */
+char *parse_string(const char **walk, bool as_word) {
+    const char *beginning = *walk;
+    /* Handle quoted strings (or words). */
+    if (**walk == '"') {
+        beginning++;
+        (*walk)++;
+        while (**walk != '\0' && (**walk != '"' || *(*walk - 1) == '\\'))
+            (*walk)++;
+    } else {
+        if (!as_word) {
+            /* For a string (starting with 's'), the delimiters are
+             * comma (,) and semicolon (;) which introduce a new
+             * operation or command, respectively. Also, newlines
+             * end a command. */
+            while (**walk != ';' && **walk != ',' &&
+                   **walk != '\0' && **walk != '\r' &&
+                   **walk != '\n')
+                (*walk)++;
+        } else {
+            /* For a word, the delimiters are white space (' ' or
+             * '\t'), closing square bracket (]), comma (,) and
+             * semicolon (;). */
+            while (**walk != ' ' && **walk != '\t' &&
+                   **walk != ']' && **walk != ',' &&
+                   **walk != ';' && **walk != '\r' &&
+                   **walk != '\n' && **walk != '\0')
+                (*walk)++;
+        }
+    }
+    if (*walk == beginning)
+        return NULL;
+
+    char *str = scalloc(*walk - beginning + 1);
+    /* We copy manually to handle escaping of characters. */
+    int inpos, outpos;
+    for (inpos = 0, outpos = 0;
+         inpos < (*walk - beginning);
+         inpos++, outpos++) {
+        /* We only handle escaped double quotes to not break
+         * backwards compatibility with people using \w in
+         * regular expressions etc. */
+        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"')
+            inpos++;
+        str[outpos] = beginning[inpos];
+    }
+
+    return str;
+}
+
+/*
  * Parses and executes the given command. If a caller-allocated yajl_gen is
  * passed, a json reply will be generated in the format specified by the ipc
  * protocol. Pass NULL if no json reply is required.
@@ -262,48 +317,8 @@ CommandResult *parse_command(const char *input, yajl_gen gen) {
 
             if (strcmp(token->name, "string") == 0 ||
                 strcmp(token->name, "word") == 0) {
-                const char *beginning = walk;
-                /* Handle quoted strings (or words). */
-                if (*walk == '"') {
-                    beginning++;
-                    walk++;
-                    while (*walk != '\0' && (*walk != '"' || *(walk - 1) == '\\'))
-                        walk++;
-                } else {
-                    if (token->name[0] == 's') {
-                        /* For a string (starting with 's'), the delimiters are
-                         * comma (,) and semicolon (;) which introduce a new
-                         * operation or command, respectively. Also, newlines
-                         * end a command. */
-                        while (*walk != ';' && *walk != ',' &&
-                               *walk != '\0' && *walk != '\r' &&
-                               *walk != '\n')
-                            walk++;
-                    } else {
-                        /* For a word, the delimiters are white space (' ' or
-                         * '\t'), closing square bracket (]), comma (,) and
-                         * semicolon (;). */
-                        while (*walk != ' ' && *walk != '\t' &&
-                               *walk != ']' && *walk != ',' &&
-                               *walk != ';' && *walk != '\r' &&
-                               *walk != '\n' && *walk != '\0')
-                            walk++;
-                    }
-                }
-                if (walk != beginning) {
-                    char *str = scalloc(walk - beginning + 1);
-                    /* We copy manually to handle escaping of characters. */
-                    int inpos, outpos;
-                    for (inpos = 0, outpos = 0;
-                         inpos < (walk - beginning);
-                         inpos++, outpos++) {
-                        /* We only handle escaped double quotes to not break
-                         * backwards compatibility with people using \w in
-                         * regular expressions etc. */
-                        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"')
-                            inpos++;
-                        str[outpos] = beginning[inpos];
-                    }
+                char *str = parse_string(&walk, (token->name[0] != 's'));
+                if (str != NULL) {
                     if (token->identifier)
                         push_string(token->identifier, str);
                     /* If we are at the end of a quoted string, skip the ending
