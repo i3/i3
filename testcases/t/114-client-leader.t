@@ -109,6 +109,8 @@ $fwindow = open_window({ dont_map => 1 });
 $fwindow->transient_for($right);
 $fwindow->map;
 
+wait_for_map($fwindow);
+
 my $floating_con = get_ws($tmp)->{floating_nodes}[0]->{nodes}[0];
 is($floating_con->{window_properties}->{transient_for}, $right->id, 'WM_TRANSIENT_FOR properly parsed');
 
