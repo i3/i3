@@ -151,6 +151,57 @@ static void dump_rect(yajl_gen gen, const char *name, Rect r) {
     y(map_close);
 }
 
+static void dump_binding(yajl_gen gen, Binding *bind) {
+    y(map_open);
+    ystr("input_code");
+    y(integer, bind->keycode);
+
+    ystr("input_type");
+    ystr((const char*)(bind->input_type == B_KEYBOARD ? "keyboard" : "mouse"));
+
+    ystr("symbol");
+    ystr(bind->symbol);
+
+    ystr("command");
+    ystr(bind->command);
+
+    ystr("mods");
+    y(array_open);
+    for (int i = 0; i < 8; i++) {
+        if (bind->mods & (1 << i)) {
+            switch (1 << i) {
+                case XCB_MOD_MASK_SHIFT:
+                    ystr("shift");
+                    break;
+                case XCB_MOD_MASK_LOCK:
+                    ystr("lock");
+                    break;
+                case XCB_MOD_MASK_CONTROL:
+                    ystr("ctrl");
+                    break;
+                case XCB_MOD_MASK_1:
+                    ystr("Mod1");
+                    break;
+                case XCB_MOD_MASK_2:
+                    ystr("Mod2");
+                    break;
+                case XCB_MOD_MASK_3:
+                    ystr("Mod3");
+                    break;
+                case XCB_MOD_MASK_4:
+                    ystr("Mod4");
+                    break;
+                case XCB_MOD_MASK_5:
+                    ystr("Mod5");
+                    break;
+            }
+        }
+    }
+    y(array_close);
+
+    y(map_close);
+}
+
 void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(map_open);
     ystr("id");
@@ -1143,6 +1194,36 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig) {
     y(get_buf, &payload, &length);
 
     ipc_send_event("barconfig_update", I3_IPC_EVENT_BARCONFIG_UPDATE, (const char *)payload);
+    y(free);
+    setlocale(LC_NUMERIC, "");
+}
+
+/*
+ * For the binding events, we send the serialized binding struct.
+ */
+void ipc_send_binding_event(const char *event_type, Binding *bind) {
+    DLOG("Issue IPC binding %s event (sym = %s, code = %d)\n", event_type, bind->symbol, bind->keycode);
+
+    setlocale(LC_NUMERIC, "C");
+
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("change");
+    ystr(event_type);
+
+    ystr("binding");
+    dump_binding(gen, bind);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_event("binding", I3_IPC_EVENT_BINDING, (const char *)payload);
+
     y(free);
     setlocale(LC_NUMERIC, "");
 }
