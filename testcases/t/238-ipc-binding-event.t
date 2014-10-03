@@ -35,6 +35,8 @@ SKIP: {
 
     skip 'xdotool is required to test the binding event. `[apt-get install|pacman -S] xdotool`', 1 if $?;
 
+    skip "AnyEvent::I3 too old (need >= 0.16)", 1 if $AnyEvent::I3::VERSION < 0.16;
+
     my $pid = launch_with_config($config);
 
     my $i3 = i3(get_socket_path());
