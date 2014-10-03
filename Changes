@@ -1,5 +1,9 @@
 Revision history for AnyEvent-I3
 
+0.16    2014-10-03
+
+   * support the barconfig_update and binding event
+
 0.15    2013-02-18
 
     * support the window event
