@@ -16,11 +16,11 @@ AnyEvent::I3 - communicate with the i3 window manager
 
 =cut
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 =head1 VERSION
 
-Version 0.15
+Version 0.16
 
 =head1 SYNOPSIS
 
@@ -112,6 +112,8 @@ my %events = (
     output => ($event_mask | 1),
     mode => ($event_mask | 2),
     window => ($event_mask | 3),
+    barconfig_update => ($event_mask | 4),
+    binding => ($event_mask | 5),
     _error => 0xFFFFFFFF,
 );
 
