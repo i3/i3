@@ -1,4 +1,4 @@
-package StartXDummy;
+package StartXServer;
 # vim:ts=4:sw=4:expandtab
 
 use strict;

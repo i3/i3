@@ -19,7 +19,7 @@ use Time::HiRes qw(time);
 use IO::Handle;
 # these are shipped with the testsuite
 use lib qw(lib);
-use StartXDummy;
+use StartXServer;
 use StatusLine;
 use TestWorker;
 # the following modules are not shipped with Perl
@@ -133,7 +133,7 @@ for my $display (@displays) {
 
 # Read previous timing information, if available. We will be able to roughly
 # predict the test duration and schedule a good order for the tests.
-my $timingsjson = StartXDummy::slurp('.last_run_timings.json');
+my $timingsjson = StartXServer::slurp('.last_run_timings.json');
 %timings = %{decode_json($timingsjson)} if length($timingsjson) > 0;
 
 # Re-order the files so that those which took the longest time in the previous
@@ -222,7 +222,7 @@ printf("\t%s with %.2f seconds\n", $_, $timings{$_})
 if ($numtests == 1) {
     say '';
     say 'Test output:';
-    say StartXDummy::slurp($logfile);
+    say StartXServer::slurp($logfile);
 }
 
 END { cleanup() }
