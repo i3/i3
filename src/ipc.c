@@ -160,7 +160,10 @@ static void dump_binding(yajl_gen gen, Binding *bind) {
     ystr((const char*)(bind->input_type == B_KEYBOARD ? "keyboard" : "mouse"));
 
     ystr("symbol");
-    ystr(bind->symbol);
+    if (bind->symbol == NULL)
+        y(null);
+    else
+        ystr(bind->symbol);
 
     ystr("command");
     ystr(bind->command);

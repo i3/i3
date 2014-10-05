@@ -769,9 +769,9 @@ input_code (integer)::
 	If the binding was configured with +bindcode+, this will be the key code
 	that was given for the binding. If the binding is a mouse binding, it will be
 	the number of the mouse button that was pressed. Otherwise it will be 0.
-symbol (string)::
+symbol (string or null)::
 	If this is a keyboard binding that was configured with +bindsym+, this
-	field will contain the given symbol.
+	field will contain the given symbol. Otherwise it will be +null+.
 input_type (string)::
 	This will be +"keyboard"+ or +"mouse"+ depending on whether or not this was
 	a keyboard or a mouse binding.
