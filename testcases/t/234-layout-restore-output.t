@@ -19,7 +19,6 @@
 # Bug still in: 4.8-26-gf96ec19
 use i3test;
 use File::Temp qw(tempfile);
-use List::MoreUtils qw(uniq);
 use IO::Handle;
 
 my $ws = fresh_workspace;
