@@ -10,7 +10,7 @@
 
 # Hopefully one of these is installed (no flamewars about preference please!):
 for editor in $VISUAL $EDITOR nano vim vi emacs pico qe mg jed gedit mc-edit; do
-    if which $editor > /dev/null 2>&1; then
+    if command -v $editor > /dev/null 2>&1; then
         exec $editor "$@"
     fi
 done
