@@ -1598,20 +1598,26 @@ void cmd_focus(I3_CMD) {
 }
 
 /*
- * Implementation of 'fullscreen [global]'.
+ * Implementation of 'fullscreen enable|toggle [global]' and
+ *                   'fullscreen disable'
  *
  */
-void cmd_fullscreen(I3_CMD, char *fullscreen_mode) {
-    if (fullscreen_mode == NULL)
-        fullscreen_mode = "output";
-    DLOG("toggling fullscreen, mode = %s\n", fullscreen_mode);
+void cmd_fullscreen(I3_CMD, char *action, char *fullscreen_mode) {
+    fullscreen_mode_t mode = strcmp(fullscreen_mode, "global") == 0 ? CF_GLOBAL : CF_OUTPUT;
+    DLOG("%s fullscreen, mode = %s\n", action, fullscreen_mode);
     owindow *current;
 
     HANDLE_EMPTY_MATCH;
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_toggle_fullscreen(current->con, (strcmp(fullscreen_mode, "global") == 0 ? CF_GLOBAL : CF_OUTPUT));
+        if (strcmp(action, "toggle") == 0) {
+            con_toggle_fullscreen(current->con, mode);
+        } else if (strcmp(action, "enable") == 0) {
+            con_enable_fullscreen(current->con, mode);
+        } else if (strcmp(action, "disable") == 0) {
+            con_disable_fullscreen(current->con);
+        }
     }
 
     cmd_output->needs_tree_render = true;

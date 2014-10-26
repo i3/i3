@@ -173,6 +173,18 @@ void con_fix_percent(Con *con);
 void con_toggle_fullscreen(Con *con, int fullscreen_mode);
 
 /**
+ * Enables fullscreen mode for the given container, if necessary.
+ *
+ */
+void con_enable_fullscreen(Con *con, fullscreen_mode_t fullscreen_mode);
+
+/**
+ * Disables fullscreen mode for the given container, if necessary.
+ *
+ */
+void con_disable_fullscreen(Con *con);
+
+/**
  * Moves the given container to the currently focused container on the given
  * workspace.
  *

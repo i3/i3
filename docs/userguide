@@ -91,7 +91,7 @@ To display a window in fullscreen mode or to go out of fullscreen mode again,
 press +$mod+f+.
 
 There is also a global fullscreen mode in i3 in which the client will span all
-available outputs (the command is +fullscreen global+).
+available outputs (the command is +fullscreen toggle global+).
 
 === Opening other applications
 
@@ -367,7 +367,7 @@ bindcode [--release] [Modifiers+]keycode command
 *Examples*:
 --------------------------------
 # Fullscreen
-bindsym $mod+f fullscreen
+bindsym $mod+f fullscreen toggle
 
 # Restart
 bindsym $mod+Shift+r restart
@@ -1502,9 +1502,13 @@ Use +layout toggle split+, +layout stacking+, +layout tabbed+, +layout splitv+
 or +layout splith+ to change the current container layout to splith/splitv,
 stacking, tabbed layout, splitv or splith, respectively.
 
-To make the current window (!) fullscreen, use +fullscreen+, to make
-it floating (or tiling again) use +floating enable+ respectively +floating disable+
-(or +floating toggle+):
+To make the current window (!) fullscreen, use +fullscreen enable+ (or
++fullscreen enable global+ for the global mode), to leave either fullscreen
+mode use +fullscreen disable+, and to toggle between these two states use
++fullscreen toggle+ (or +fullscreen toggle global+).
+
+Likewise, to make the current window floating (or tiling again) use +floating
+enable+ respectively +floating disable+ (or +floating toggle+):
 
 *Syntax*:
 --------------
@@ -1525,7 +1529,7 @@ bindsym $mod+x layout toggle
 bindsym $mod+x layout toggle all
 
 # Toggle fullscreen
-bindsym $mod+f fullscreen
+bindsym $mod+f fullscreen toggle
 
 # Toggle floating/tiling
 bindsym $mod+t floating toggle

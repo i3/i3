@@ -187,10 +187,10 @@ void cmd_focus_level(I3_CMD, char *level);
 void cmd_focus(I3_CMD);
 
 /**
- * Implementation of 'fullscreen [global]'.
+ * Implementation of 'fullscreen [enable|disable|toggle] [global]'.
  *
  */
-void cmd_fullscreen(I3_CMD, char *fullscreen_mode);
+void cmd_fullscreen(I3_CMD, char *action, char *fullscreen_mode);
 
 /**
  * Implementation of 'move <direction> [<pixels> [px]]'.
