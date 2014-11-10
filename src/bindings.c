@@ -381,6 +381,33 @@ void check_for_duplicate_bindings(struct context *context) {
 }
 
 /*
+ * Creates a dynamically allocated copy of bind.
+ */
+static Binding *binding_copy(Binding *bind) {
+    Binding *ret = smalloc(sizeof(Binding));
+    *ret = *bind;
+    ret->symbol = strdup(bind->symbol);
+    ret->command = strdup(bind->command);
+    ret->translated_to = smalloc(sizeof(xcb_keycode_t) * bind->number_keycodes);
+    memcpy(ret->translated_to, bind->translated_to, sizeof(xcb_keycode_t) * bind->number_keycodes);
+    return ret;
+}
+
+/*
+ * Frees the binding. If bind is null, it simply returns.
+ */
+void binding_free(Binding *bind) {
+    if (bind == NULL) {
+        return;
+    }
+
+    FREE(bind->symbol);
+    FREE(bind->translated_to);
+    FREE(bind->command);
+    FREE(bind);
+}
+
+/*
  * Runs the given binding and handles parse errors. If con is passed, it will
  * execute the command binding with that container selected by criteria.
  * Returns a CommandResult for running the binding's command. Caller should
@@ -390,14 +417,15 @@ void check_for_duplicate_bindings(struct context *context) {
 CommandResult *run_binding(Binding *bind, Con *con) {
     char *command;
 
-    /* We need to copy the command since “reload” may be part of the command,
-     * and then the memory that bind->command points to may not contain the
+    /* We need to copy the binding and command since “reload” may be part of
+     * the command, and then the memory that bind points to may not contain the
      * same data anymore. */
     if (con == NULL)
         command = sstrdup(bind->command);
     else
         sasprintf(&command, "[con_id=\"%d\"] %s", con, bind->command);
 
+    Binding *bind_cp = binding_copy(bind);
     CommandResult *result = parse_command(command, NULL);
     free(command);
 
@@ -423,7 +451,8 @@ CommandResult *run_binding(Binding *bind, Con *con) {
         free(pageraction);
     }
 
-    ipc_send_binding_event("run", bind);
+    ipc_send_binding_event("run", bind_cp);
+    binding_free(bind_cp);
 
     return result;
 }

@@ -147,9 +147,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             while (!TAILQ_EMPTY(bindings)) {
                 bind = TAILQ_FIRST(bindings);
                 TAILQ_REMOVE(bindings, bind, bindings);
-                FREE(bind->translated_to);
-                FREE(bind->command);
-                FREE(bind);
+                binding_free(bind);
             }
             FREE(bindings);
             SLIST_REMOVE(&modes, mode, Mode, modes);
