@@ -347,6 +347,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(integer, con->current_border_width);
 
     dump_rect(gen, "rect", con->rect);
+    dump_rect(gen, "deco_rect", con->deco_rect);
     dump_rect(gen, "window_rect", con->window_rect);
     dump_rect(gen, "geometry", con->geometry);
 

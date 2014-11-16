@@ -24,6 +24,7 @@ static Con *json_node;
 static Con *to_focus;
 static bool parsing_swallows;
 static bool parsing_rect;
+static bool parsing_deco_rect;
 static bool parsing_window_rect;
 static bool parsing_geometry;
 static bool parsing_focus;
@@ -47,7 +48,7 @@ static int json_start_map(void *ctx) {
         match_init(current_swallow);
         TAILQ_INSERT_TAIL(&(json_node->swallow_head), current_swallow, matches);
     } else {
-        if (!parsing_rect && !parsing_window_rect && !parsing_geometry) {
+        if (!parsing_rect && !parsing_deco_rect && !parsing_window_rect && !parsing_geometry) {
             if (last_key && strcasecmp(last_key, "floating_nodes") == 0) {
                 DLOG("New floating_node\n");
                 Con *ws = con_get_workspace(json_node);
@@ -68,7 +69,7 @@ static int json_start_map(void *ctx) {
 
 static int json_end_map(void *ctx) {
     LOG("end of map\n");
-    if (!parsing_swallows && !parsing_rect && !parsing_window_rect && !parsing_geometry) {
+    if (!parsing_swallows && !parsing_rect && !parsing_deco_rect && !parsing_window_rect && !parsing_geometry) {
         /* Set a few default values to simplify manually crafted layout files. */
         if (json_node->layout == L_DEFAULT) {
             DLOG("Setting layout = L_SPLITH\n");
@@ -121,12 +122,11 @@ static int json_end_map(void *ctx) {
         x_con_init(json_node, json_node->depth);
         json_node = json_node->parent;
     }
-    if (parsing_rect)
-        parsing_rect = false;
-    if (parsing_window_rect)
-        parsing_window_rect = false;
-    if (parsing_geometry)
-        parsing_geometry = false;
+
+    parsing_rect = false;
+    parsing_deco_rect = false;
+    parsing_window_rect = false;
+    parsing_geometry = false;
     return 1;
 }
 
@@ -174,6 +174,9 @@ static int json_key(void *ctx, const unsigned char *val, size_t len) {
 
     if (strcasecmp(last_key, "rect") == 0)
         parsing_rect = true;
+
+    if (strcasecmp(last_key, "deco_rect") == 0)
+        parsing_deco_rect = true;
 
     if (strcasecmp(last_key, "window_rect") == 0)
         parsing_window_rect = true;
@@ -532,6 +535,7 @@ void tree_append_json(Con *con, const char *filename, char **errormsg) {
     to_focus = NULL;
     parsing_swallows = false;
     parsing_rect = false;
+    parsing_deco_rect = false;
     parsing_window_rect = false;
     parsing_geometry = false;
     parsing_focus = false;

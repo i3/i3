@@ -316,6 +316,10 @@ window_rect (map)::
 	So, when using the +default+ layout, you will have a 2 pixel border on
 	each side, making the window_rect +{ "x": 2, "y": 0, "width": 632,
 	"height": 366 }+ (for example).
+deco_rect (map)::
+	The coordinates of the *window decoration* inside its container. These
+	coordinates are relative to the container and do not include the actual
+	client window.
 geometry (map)::
 	The original geometry the window specified when i3 mapped it. Used when
 	switching a window to floating mode, for example.
