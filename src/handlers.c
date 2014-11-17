@@ -838,6 +838,24 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 ++idx;
             }
         }
+    } else if (event->type == A__NET_CLOSE_WINDOW) {
+        /*
+         * Pagers wanting to close a window MUST send a _NET_CLOSE_WINDOW
+         * client message request to the root window.
+         * http://standards.freedesktop.org/wm-spec/wm-spec-latest.html#idm140200472668896
+         */
+        Con *con = con_by_window_id(event->window);
+        if (con) {
+            DLOG("Handling _NET_CLOSE_WINDOW request (con = %p)\n", con);
+
+            if (event->data.data32[0])
+                last_timestamp = event->data.data32[0];
+
+            tree_close(con, KILL_WINDOW, false, false);
+            tree_render();
+        } else {
+            DLOG("Couldn't find con for _NET_CLOSE_WINDOW request. (window = %d)\n", event->window);
+        }
     } else {
         DLOG("unhandled clientmessage\n");
         return;
