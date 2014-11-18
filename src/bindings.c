@@ -386,10 +386,14 @@ void check_for_duplicate_bindings(struct context *context) {
 static Binding *binding_copy(Binding *bind) {
     Binding *ret = smalloc(sizeof(Binding));
     *ret = *bind;
-    ret->symbol = strdup(bind->symbol);
-    ret->command = strdup(bind->command);
-    ret->translated_to = smalloc(sizeof(xcb_keycode_t) * bind->number_keycodes);
-    memcpy(ret->translated_to, bind->translated_to, sizeof(xcb_keycode_t) * bind->number_keycodes);
+    if (bind->symbol != NULL)
+        ret->symbol = strdup(bind->symbol);
+    if (bind->command != NULL)
+        ret->command = strdup(bind->command);
+    if (bind->translated_to != NULL) {
+        ret->translated_to = smalloc(sizeof(xcb_keycode_t) * bind->number_keycodes);
+        memcpy(ret->translated_to, bind->translated_to, sizeof(xcb_keycode_t) * bind->number_keycodes);
+    }
     return ret;
 }
 
