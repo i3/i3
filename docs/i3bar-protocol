@@ -148,7 +148,7 @@ min_width::
         when you want to set a sensible minimum width regardless of which font you
         are using, and at what particular size.
 align::
-	Align text on the +center+ (default), +right+ or +left+ of the block, when
+	Align text on the +center+, +right+ or +left+ (default) of the block, when
 	the minimum width of the latter, specified by the +min_width+ key, is not
 	reached.
 name and instance::

@@ -27,6 +27,7 @@ struct rect_t {
 };
 
 typedef enum {
+    /* First value to make it the default. */
     ALIGN_LEFT,
     ALIGN_CENTER,
     ALIGN_RIGHT
