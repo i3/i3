@@ -156,7 +156,7 @@ void refresh_statusline(void) {
 
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL)
-            block->width += block->sep_block_width;
+            statusline_width += block->sep_block_width;
 
         statusline_width += block->width + block->x_offset + block->x_append;
     }
@@ -168,7 +168,7 @@ void refresh_statusline(void) {
         realloc_sl_buffer();
 
     /* Clear the statusline pixmap. */
-    xcb_rectangle_t rect = {0, 0, root_screen->width_in_pixels, font.height + logical_px(5)};
+    xcb_rectangle_t rect = {0, 0, root_screen->width_in_pixels, bar_height};
     xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
 
     /* Draw the text of each block. */
@@ -176,11 +176,30 @@ void refresh_statusline(void) {
     TAILQ_FOREACH(block, &statusline_head, blocks) {
         if (i3string_get_num_bytes(block->full_text) == 0)
             continue;
+        uint32_t fg_color;
 
-        uint32_t colorpixel = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
-        set_font_colors(statusline_ctx, colorpixel, colors.bar_bg);
-        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 1, block->width);
-        x += block->width + block->x_offset + block->x_append;
+        /* If this block is urgent, draw it with the defined color and border. */
+        if (block->urgent) {
+            fg_color = colors.urgent_ws_fg;
+
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+
+            /* Draw the background */
+            uint32_t bg_color = colors.urgent_ws_bg;
+            uint32_t bg_values[] = { bg_color, bg_color };
+            xcb_change_gc(xcb_connection, statusline_ctx, mask, bg_values);
+
+            /* The urgent background “overshoots” by 2 px so that the text that
+             * is printed onto it will not be look so cut off. */
+            xcb_rectangle_t bg_rect = { x - logical_px(2), 0, block->width + logical_px(4), bar_height };
+            xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_ctx, 1, &bg_rect);
+        } else {
+            fg_color = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
+        }
+
+        set_font_colors(statusline_ctx, fg_color, colors.bar_bg);
+        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 3, block->width);
+        x += block->width + block->sep_block_width + block->x_offset + block->x_append;
 
         if (TAILQ_NEXT(block, blocks) != NULL && !block->no_separator && block->sep_block_width > 0) {
             /* This is not the last block, draw a separator. */
@@ -190,8 +209,8 @@ void refresh_statusline(void) {
             xcb_change_gc(xcb_connection, statusline_ctx, mask, values);
             xcb_poly_line(xcb_connection, XCB_COORD_MODE_ORIGIN, statusline_pm,
                           statusline_ctx, 2,
-                          (xcb_point_t[]) {{x - sep_offset, 2},
-                                           {x - sep_offset, font.height - 2}});
+                          (xcb_point_t[]) { { x - sep_offset, logical_px(4) },
+                                            { x - sep_offset, bar_height - logical_px(4) } });
         }
     }
 }
@@ -1703,18 +1722,18 @@ void draw_bars(bool unhide) {
                 /* We assume the tray icons are quadratic (we use the font
                  * *height* as *width* of the icons) because we configured them
                  * like this. */
-                traypx += font.height + 2;
+                traypx += font.height + logical_px(2);
             }
             /* Add 2px of padding if there are any tray icons */
             if (traypx > 0)
-                traypx += 2;
+                traypx += logical_px(2);
             xcb_copy_area(xcb_connection,
                           statusline_pm,
                           outputs_walk->buffer,
                           outputs_walk->bargc,
-                          MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + 4)), 0,
-                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - traypx - 4)), 3,
-                          MIN(outputs_walk->rect.w - traypx - 4, (int)statusline_width), font.height + 2);
+                          MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + logical_px(4))), 0,
+                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - traypx - logical_px(4))), 0,
+                          MIN(outputs_walk->rect.w - traypx - logical_px(4), (int)statusline_width), bar_height);
         }
 
         if (!config.disable_ws) {
