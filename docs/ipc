@@ -617,7 +617,7 @@ you can register to an event.
 *Example:*
 ---------------------------------
 type: SUBSCRIBE
-payload: [ "workspace", "focus" ]
+payload: [ "workspace", "output" ]
 ---------------------------------
 
 
