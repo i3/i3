@@ -668,15 +668,16 @@ if ($is_event) {
 
 This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change ("focus", "init",
-"empty", "urgent").
+"empty", "urgent"). A +current (object)+ property will be present with the
+affected workspace whenever the type of event affects a workspace (otherwise,
+it will be +null).
 
-Moreover, when the change is "focus", an +old (object)+ and a +current
-(object)+ properties will be present with the previous and current
-workspace respectively.  When the first switch occurs (when i3 focuses
-the workspace visible at the beginning) there is no previous
-workspace, and the +old+ property will be set to +null+.  Also note
-that if the previous is empty it will get destroyed when switching,
-but will still be present in the "old" property.
+When the change is "focus", an +old (object)+ property will be present with the
+previous workspace.  When the first switch occurs (when i3 focuses the
+workspace visible at the beginning) there is no previous workspace, and the
++old+ property will be set to +null+.  Also note that if the previous is empty
+it will get destroyed when switching, but will still be present in the "old"
+property.
 
 *Example:*
 ---------------------

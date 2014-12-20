@@ -128,7 +128,7 @@ static void move_to_output_directed(Con *con, direction_t direction) {
 
     tree_flatten(croot);
 
-    ipc_send_workspace_focus_event(ws, old_ws);
+    ipc_send_workspace_event("focus", ws, old_ws);
 }
 
 /*

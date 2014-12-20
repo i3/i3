@@ -1120,21 +1120,23 @@ int ipc_create_socket(const char *filename) {
 }
 
 /*
- * For the workspace "focus" event we send, along the usual "change" field,
- * also the current and previous workspace, in "current" and "old"
- * respectively.
+ * Generates a json workspace event. Returns a dynamically allocated yajl
+ * generator. Free with yajl_gen_free().
  */
-void ipc_send_workspace_focus_event(Con *current, Con *old) {
+yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old) {
     setlocale(LC_NUMERIC, "C");
     yajl_gen gen = ygenalloc();
 
     y(map_open);
 
     ystr("change");
-    ystr("focus");
+    ystr(change);
 
     ystr("current");
-    dump_node(gen, current, false);
+    if (current == NULL)
+        y(null);
+    else
+        dump_node(gen, current, false);
 
     ystr("old");
     if (old == NULL)
@@ -1144,13 +1146,26 @@ void ipc_send_workspace_focus_event(Con *current, Con *old) {
 
     y(map_close);
 
+    setlocale(LC_NUMERIC, "");
+
+    return gen;
+}
+
+/*
+ * For the workspace events we send, along with the usual "change" field, also
+ * the workspace container in "current". For focus events, we send the
+ * previously focused workspace in "old".
+ */
+void ipc_send_workspace_event(const char *change, Con *current, Con *old) {
+    yajl_gen gen = ipc_marshal_workspace_event(change, current, old);
+
     const unsigned char *payload;
     ylength length;
     y(get_buf, &payload, &length);
 
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
+
     y(free);
-    setlocale(LC_NUMERIC, "");
 }
 
 /**

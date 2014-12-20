@@ -11,6 +11,7 @@
  *
  */
 #include "all.h"
+#include "yajl_utils.h"
 
 /* Stores a copy of the name of the last used workspace for the workspace
  * back-and-forth switching. */
@@ -91,7 +92,7 @@ Con *workspace_get(const char *num, bool *created) {
 
         con_attach(workspace, content, false);
 
-        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
+        ipc_send_workspace_event("init", workspace, NULL);
         ewmh_update_number_of_desktops();
         ewmh_update_desktop_names();
         ewmh_update_desktop_viewport();
@@ -409,7 +410,7 @@ static void _workspace_show(Con *workspace) {
     } else
         con_focus(next);
 
-    ipc_send_workspace_focus_event(workspace, current);
+    ipc_send_workspace_event("focus", workspace, current);
 
     DLOG("old = %p / %s\n", old, (old ? old->name : "(null)"));
     /* Close old workspace if necessary. This must be done *after* doing
@@ -421,8 +422,16 @@ static void _workspace_show(Con *workspace) {
         /* check if this workspace is currently visible */
         if (!workspace_is_visible(old)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
+            yajl_gen gen = ipc_marshal_workspace_event("empty", old, NULL);
             tree_close(old, DONT_KILL_WINDOW, false, false);
-            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
+
+            const unsigned char *payload;
+            ylength length;
+            y(get_buf, &payload, &length);
+            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
+
+            y(free);
+
             ewmh_update_number_of_desktops();
             ewmh_update_desktop_names();
             ewmh_update_desktop_viewport();
@@ -766,7 +775,7 @@ void workspace_update_urgent_flag(Con *ws) {
     DLOG("Workspace urgency flag changed from %d to %d\n", old_flag, ws->urgent);
 
     if (old_flag != ws->urgent)
-        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"urgent\"}");
+        ipc_send_workspace_event("urgent", ws, NULL);
 }
 
 /*

@@ -50,6 +50,7 @@ subtest 'Workspace empty event upon switch', sub {
 
     my $event = $cond->recv;
     is($event->{change}, 'empty', '"Empty" event received upon workspace switch');
+    is($event->{current}->{name}, $ws1, '"current" property should be set to the workspace con');
 };
 
 ################################################################################
@@ -116,6 +117,7 @@ subtest 'Workspace empty event upon window close', sub {
 
     my $event = $cond->recv;
     is($event->{change}, 'empty', '"Empty" event received upon window close');
+    is($event->{current}->{name}, $ws1, '"current" property should be set to the workspace con');
 };
 
 }

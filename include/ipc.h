@@ -89,11 +89,17 @@ void ipc_shutdown(void);
 void dump_node(yajl_gen gen, Con *con, bool inplace_restart);
 
 /**
- * For the workspace "focus" event we send, along the usual "change" field,
- * also the current and previous workspace, in "current" and "old"
- * respectively.
+ * Generates a json workspace event. Returns a dynamically allocated yajl
+ * generator. Free with yajl_gen_free().
  */
-void ipc_send_workspace_focus_event(Con *current, Con *old);
+yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old);
+
+/**
+ * For the workspace events we send, along with the usual "change" field, also
+ * the workspace container in "current". For focus events, we send the
+ * previously focused workspace in "old".
+ */
+void ipc_send_workspace_event(const char *change, Con *current, Con *old);
 
 /**
  * For the window events we send, along the usual "change" field,

@@ -944,7 +944,7 @@ void cmd_append_layout(I3_CMD, char *path) {
     restore_open_placeholder_windows(parent);
 
     if (content == JSON_CONTENT_WORKSPACE)
-        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"restored\"}");
+        ipc_send_workspace_event("restored", parent, NULL);
 
     cmd_output->needs_tree_render = true;
 }
@@ -1313,7 +1313,7 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
                 create_workspace_on_output(current_output, ws->parent);
 
             /* notify the IPC listeners */
-            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
+            ipc_send_workspace_event("init", ws, NULL);
         }
         DLOG("Detaching\n");
 
@@ -1334,7 +1334,7 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
         TAILQ_FOREACH(floating_con, &(ws->floating_head), floating_windows)
         floating_fix_coordinates(floating_con, &(old_content->rect), &(content->rect));
 
-        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"move\"}");
+        ipc_send_workspace_event("move", ws, NULL);
         if (workspace_was_visible) {
             /* Focus the moved workspace on the destination output. */
             workspace_show(ws);
@@ -1761,7 +1761,7 @@ void cmd_reload(I3_CMD) {
     load_configuration(conn, NULL, true);
     x_set_i3_atoms();
     /* Send an IPC event just in case the ws names have changed */
-    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"reload\"}");
+    ipc_send_workspace_event("reload", NULL, NULL);
     /* Send an update event for the barconfig just in case it has changed */
     update_barconfig();
 
@@ -2040,7 +2040,7 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     cmd_output->needs_tree_render = true;
     ysuccess(true);
 
-    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"rename\"}");
+    ipc_send_workspace_event("rename", workspace, NULL);
     ewmh_update_desktop_names();
     ewmh_update_desktop_viewport();
     ewmh_update_current_desktop();
