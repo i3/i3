@@ -123,8 +123,8 @@ void startup_sequence_delete(struct Startup_Sequence *sequence) {
  * the application is reparented to init (process-id 1), which correctly handles
  * childs, so we don’t have to do it :-).
  *
- * The shell is determined by looking for the SHELL environment variable. If it
- * does not exist, /bin/sh is used.
+ * The shell used to start applications is the system's bourne shell (i.e.,
+ * /bin/sh).
  *
  * The no_startup_id flag determines whether a startup notification context
  * (and ID) should be created, which is the default and encouraged behavior.
