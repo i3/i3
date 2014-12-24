@@ -191,7 +191,7 @@ void refresh_statusline(void) {
 
             /* The urgent background “overshoots” by 2 px so that the text that
              * is printed onto it will not be look so cut off. */
-            xcb_rectangle_t bg_rect = { x - logical_px(2), 0, block->width + logical_px(4), bar_height };
+            xcb_rectangle_t bg_rect = { x - logical_px(2), logical_px(1), block->width + logical_px(4), bar_height - logical_px(2) };
             xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_ctx, 1, &bg_rect);
         } else {
             fg_color = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
