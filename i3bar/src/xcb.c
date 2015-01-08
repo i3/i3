@@ -482,6 +482,39 @@ void handle_button(xcb_button_press_event_t *event) {
 }
 
 /*
+ * Handle visibility notifications: when none of the bars are visible, e.g.
+ * if windows are in full-screen on each output, suspend the child process.
+ *
+ */
+static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
+    bool visible = (event->state != XCB_VISIBILITY_FULLY_OBSCURED);
+    int num_visible = 0;
+    i3_output *output;
+
+    SLIST_FOREACH (output, outputs, slist) {
+        if (!output->active) {
+            continue;
+        }
+        if (output->bar == event->window) {
+            if (output->visible == visible) {
+                return;
+            }
+            output->visible = visible;
+        }
+        num_visible += output->visible;
+    }
+
+    if (num_visible == 0) {
+        stop_child();
+    } else if (num_visible == visible) {
+        /* Wake the child only when transitioning from 0 to 1 visible bar.
+         * We cannot transition from 0 to 2 or more visible bars at once since
+         * visibility events are delivered to each window separately */
+        cont_child();
+    }
+}
+
+/*
  * Adjusts the size of the tray window and alignment of the tray clients by
  * configuring their respective x coordinates. To be called when mapping or
  * unmapping a tray client window.
@@ -945,6 +978,10 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
         }
 
         switch (type) {
+            case XCB_VISIBILITY_NOTIFY:
+                /* Visibility change: a bar is [un]obscured by other window */
+                handle_visibility_notify((xcb_visibility_notify_event_t *)event);
+                break;
             case XCB_EXPOSE:
                 /* Expose-events happen, when the window needs to be redrawn */
                 redraw_bars();
@@ -1461,6 +1498,12 @@ void reconfig_windows(bool redraw_bars) {
              * */
             values[2] = XCB_EVENT_MASK_EXPOSURE |
                         XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT;
+            if (config.hide_on_modifier == M_DOCK) {
+                /* If the bar is normally visible, catch visibility change events to suspend
+                 * the status process when the bar is obscured by full-screened windows.  */
+                values[2] |= XCB_EVENT_MASK_VISIBILITY_CHANGE;
+                walk->visible = true;
+            }
             if (!config.disable_ws) {
                 values[2] |= XCB_EVENT_MASK_BUTTON_PRESS;
             }
