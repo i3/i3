@@ -210,7 +210,15 @@ void render_con(Con *con, bool render_fullscreen) {
         fullscreen->rect = rect;
         x_raise_con(fullscreen);
         render_con(fullscreen, true);
-        return;
+        /* Fullscreen containers are either global (underneath the CT_ROOT
+         * container) or per-output (underneath the CT_CONTENT container). For
+         * global fullscreen containers, we cannot abort rendering here yet,
+         * because the floating windows (with popup_during_fullscreen smart)
+         * have not yet been rendered (see the CT_ROOT code path below). See
+         * also http://bugs.i3wm.org/1393 */
+        if (con->type != CT_ROOT) {
+            return;
+        }
     }
 
     /* find the height for the decorations */
@@ -247,8 +255,10 @@ void render_con(Con *con, bool render_fullscreen) {
         render_l_output(con);
     } else if (con->type == CT_ROOT) {
         Con *output;
-        TAILQ_FOREACH (output, &(con->nodes_head), nodes) {
-            render_con(output, false);
+        if (!fullscreen) {
+            TAILQ_FOREACH (output, &(con->nodes_head), nodes) {
+                render_con(output, false);
+            }
         }
 
         /* We need to render floating windows after rendering all outputs’
