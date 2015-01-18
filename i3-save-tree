@@ -92,6 +92,7 @@ my %allowed_keys = map { ($_, 1) } qw(
     name
     geometry
     window_properties
+    mark
 );
 
 sub strip_containers {
