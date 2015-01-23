@@ -771,7 +771,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         next = ws;
     }
 
-    if (source_output != dest_output && !con_is_internal(source_output)) {
+    if (source_output != dest_output) {
         /* Take the relative coordinates of the current output, then add them
          * to the coordinate space of the correct output */
         if (fix_coordinates && con->type == CT_FLOATING_CON) {
