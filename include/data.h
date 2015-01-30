@@ -255,6 +255,11 @@ struct Binding {
         B_UPON_KEYRELEASE_IGNORE_MODS = 2,
     } release;
 
+    /** If this is true for a mouse binding, the binding should be executed
+     * when the button is pressed over any part of the window, not just the
+     * title bar (default). */
+    bool whole_window;
+
     uint32_t number_keycodes;
 
     /** Keycode to bind */

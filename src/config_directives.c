@@ -171,8 +171,8 @@ CFGFUN(font, const char *font) {
     font_pattern = sstrdup(font);
 }
 
-CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, command, DEFAULT_BINDING_MODE);
+CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *whole_window, const char *command) {
+    configure_binding(bindtype, modifiers, key, release, whole_window, command, DEFAULT_BINDING_MODE);
 }
 
 /*******************************************************************************
@@ -181,8 +181,8 @@ CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, co
 
 static char *current_mode;
 
-CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, command, current_mode);
+CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *whole_window, const char *command) {
+    configure_binding(bindtype, modifiers, key, release, whole_window, command, current_mode);
 }
 
 CFGFUN(enter_mode, const char *modename) {

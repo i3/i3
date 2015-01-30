@@ -404,12 +404,12 @@ can configure mouse bindings in a similar way to key bindings.
 
 *Syntax*:
 ----------------------------------
-bindsym [Modifiers+]button[n] command
+bindsym [--whole-window] [Modifiers+]button[n] command
 ----------------------------------
 
-If the binding has no modifiers, it will only run when you click on the
-titlebar of the window. Otherwise, it will run when any part of the window is
-clicked.
+By default, the binding will only run when you click on the titlebar of the
+window. If the +--whole-window+ flag is given, it will run when any part of the
+window is clicked.
 
 *Examples*:
 --------------------------------
@@ -417,7 +417,7 @@ clicked.
 bindsym button2 kill
 
 # The middle button and a modifer over any part of the window kills the window
-bindsym $mod+button2 kill
+bindsym --whole-window $mod+button2 kill
 
 # The right button toggles floating
 bindsym button3 floating toggle

@@ -182,9 +182,9 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     if (dest == CLICK_DECORATION || dest == CLICK_INSIDE) {
         Binding *bind = get_binding_from_xcb_event((xcb_generic_event_t *)event);
         /* clicks over a window decoration will always trigger the binding and
-         * clicks on the inside of the window will only trigger a binding if it
-         * has modifiers. */
-        if (bind && (dest == CLICK_DECORATION || (bind->mods && dest == CLICK_INSIDE))) {
+         * clicks on the inside of the window will only trigger a binding if
+         * the --whole-window flag was given for the binding. */
+        if (bind && (dest == CLICK_DECORATION || bind->whole_window)) {
             CommandResult *result = run_binding(bind, con);
 
             /* ASYNC_POINTER eats the event */

@@ -24,7 +24,7 @@ const char *DEFAULT_BINDING_MODE;
  *
  */
 Binding *configure_binding(const char *bindtype, const char *modifiers, const char *input_code,
-                           const char *release, const char *command, const char *mode);
+                           const char *release, const char *whole_window, const char *command, const char *mode);
 
 /**
  * Grab the bound keys (tell X to send us keypress events for those keycodes)
