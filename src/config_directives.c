@@ -392,6 +392,7 @@ CFGFUN(color, const char *colorclass, const char *border, const char *background
     APPLY_COLORS(focused);
     APPLY_COLORS(unfocused);
     APPLY_COLORS(urgent);
+    APPLY_COLORS(placeholder);
 
 #undef APPLY_COLORS
 }
