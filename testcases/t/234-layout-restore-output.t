@@ -179,7 +179,56 @@ $fh->flush;
 cmd "append_layout $filename";
 
 ok(workspace_exists('4'), 'workspace "4" exists now');
-my $ws = get_ws("4");
+$ws = get_ws("4");
 is($ws->{num}, 4, 'workspace number is 4');
+
+################################################################################
+# Append a workspace with a numeric name, with the “type” property at the end
+# of the JSON blurb (which is valid and sometimes happens).
+################################################################################
+
+ok(!workspace_exists('5'), 'workspace "5" does not exist yet');
+
+($fh, $filename) = tempfile(UNLINK => 1);
+print $fh <<'EOT';
+// vim:ts=4:sw=4:et
+{
+    // workspace with 1 children
+    "border": "pixel",
+    "floating": "auto_off",
+    "layout": "splith",
+    "percent": null,
+    "name": "5",
+    "nodes": [
+        {
+            "border": "pixel",
+            "floating": "auto_off",
+            "geometry": {
+               "height": 268,
+               "width": 484,
+               "x": 0,
+               "y": 0
+            },
+            "name": "vals@w00t: ~",
+            "percent": 1,
+            "swallows": [
+               {
+               // "class": "^URxvt$",
+               // "instance": "^urxvt$",
+               // "title": "^vals\\@w00t\\:\\ \\~$"
+               }
+            ],
+            "type": "con"
+        }
+    ],
+    "type": "workspace"
+}
+EOT
+$fh->flush;
+cmd "append_layout $filename";
+
+ok(workspace_exists('5'), 'workspace "5" exists now');
+$ws = get_ws("5");
+is($ws->{num}, 5, 'workspace number is 5');
 
 done_testing;
