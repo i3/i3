@@ -72,14 +72,16 @@ i3-msg 'debuglog on; shmlog on; reload'
 No matter whether i3 misbehaved in some way without crashing or whether it just
 crashed, the logfile provides all information necessary to debug the problem.
 
-To save a compressed version of the logfile (suitable for attaching it to a
-bugreport), use:
---------------------------------------------------------------------
-DISPLAY=:0 i3-dump-log | bzip2 -c > /tmp/i3.log.bz2
---------------------------------------------------------------------
+To upload a compressed version of the logfile (for a bugreport), use:
+------------------------------------------------------------------------------
+DISPLAY=:0 i3-dump-log | bzip2 -c | curl --data-binary @- http://logs.i3wm.org
+------------------------------------------------------------------------------
 
 This command does not depend on i3 (it also works while i3 displays
 the crash dialog), but it requires a working X11 connection.
+
+After running it, you will get a URL to the logfile. Please include that URL in
+your bug report.
 
 == On crashes: Obtaining a backtrace
 
