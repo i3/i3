@@ -28,12 +28,14 @@
 #include <getopt.h>
 #include <limits.h>
 
+#include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
 
+#include "reformat.h"
 #include "libi3.h"
 #include <i3/ipc.h>
 
@@ -243,7 +245,25 @@ int main(int argc, char *argv[]) {
         /* NB: We still fall-through and print the reply, because even if one
          * command failed, that doesn’t mean that all commands failed. */
     }
-    printf("%.*s\n", reply_length, reply);
+
+    /* pretty print the reply */
+    yajl_gen gen = yajl_gen_alloc(NULL);
+    yajl_status state = beautify_json(gen, reply, reply_length);
+    switch (state) {
+        case yajl_status_ok:
+            break;
+        case yajl_status_client_canceled:
+        case yajl_status_error:
+            errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
+    }
+
+    const unsigned char * buf;
+    size_t len;
+    yajl_gen_get_buf(gen, &buf, &len);
+    printf("%.*s", (int)len, buf);
+
+    yajl_gen_free(gen);
+
     free(reply);
 
     close(sockfd);
