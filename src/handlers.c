@@ -799,8 +799,8 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             /* this request is so we can play some animiation showing the
              * window physically moving to the tray before we close it (I
              * think) */
-            DLOG("Client has requested iconic state. Closing this con. (con = %p)\n", con);
-            tree_close(con, DONT_KILL_WINDOW, false, false);
+            DLOG("Client has requested iconic state. Moving this con to scratchpad. (con = %p)\n", con);
+            scratchpad_move(con);
             tree_render();
         } else {
             DLOG("Not handling WM_CHANGE_STATE request. (window = %d, state = %d)\n", event->window, event->data.data32[0]);
