@@ -117,6 +117,12 @@ int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
     return 0;
 }
 
+uint32_t get_sep_offset(struct status_block *block) {
+    if (!block->no_separator && block->sep_block_width > 0)
+        return block->sep_block_width / 2 + block->sep_block_width % 2;
+    return 0;
+}
+
 /*
  * Redraws the statusline to the buffer
  *
@@ -148,8 +154,8 @@ void refresh_statusline(void) {
                     block->x_offset = padding_width;
                     break;
                 case ALIGN_CENTER:
-                    block->x_offset = padding_width / logical_px(2);
-                    block->x_append = padding_width / logical_px(2) + padding_width % logical_px(2);
+                    block->x_offset = padding_width / 2;
+                    block->x_append = padding_width / 2 + padding_width % 2;
                     break;
             }
         }
@@ -201,9 +207,9 @@ void refresh_statusline(void) {
         draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 3, block->width);
         x += block->width + block->sep_block_width + block->x_offset + block->x_append;
 
-        if (TAILQ_NEXT(block, blocks) != NULL && !block->no_separator && block->sep_block_width > 0) {
+        uint32_t sep_offset = get_sep_offset(block);
+        if (TAILQ_NEXT(block, blocks) != NULL && sep_offset > 0) {
             /* This is not the last block, draw a separator. */
-            uint32_t sep_offset = block->sep_block_width / 2 + block->sep_block_width % 2;
             uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_LINE_WIDTH;
             uint32_t values[] = {colors.sep_fg, colors.bar_bg, logical_px(1)};
             xcb_change_gc(xcb_connection, statusline_ctx, mask, values);
@@ -362,22 +368,31 @@ void handle_button(xcb_button_press_event_t *event) {
                 continue;
             tray_width += (font.height + logical_px(2));
         }
+        if (tray_width > 0)
+            tray_width += logical_px(2);
 
         int block_x = 0, last_block_x;
-        int offset = (walk->rect.w - (statusline_width + tray_width)) - logical_px(10);
+        int offset = walk->rect.w - statusline_width - tray_width - logical_px(4);
 
         x = original_x - offset;
         if (x >= 0) {
             struct status_block *block;
+            int sep_offset_remainder = 0;
 
-            TAILQ_FOREACH(block, &statusline_head, blocks) {
+            TAILQ_FOREACH (block, &statusline_head, blocks) {
+                if (i3string_get_num_bytes(block->full_text) == 0)
+                    continue;
+
                 last_block_x = block_x;
-                block_x += block->width + block->x_offset + block->x_append;
+                block_x += block->width + block->x_offset + block->x_append
+                           + get_sep_offset(block) + sep_offset_remainder;
 
                 if (x <= block_x && x >= last_block_x) {
                     send_block_clicked(event->detail, block->name, block->instance, event->root_x, event->root_y);
                     return;
                 }
+
+                sep_offset_remainder = block->sep_block_width - get_sep_offset(block);
             }
         }
         x = original_x;
