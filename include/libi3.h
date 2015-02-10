@@ -290,7 +290,8 @@ uint32_t get_mod_mask_for(uint32_t keysym,
 
 /**
  * Loads a font for usage, also getting its height. If fallback is true,
- * the fonts 'fixed' or '-misc-*' will be loaded instead of exiting.
+ * the fonts 'fixed' or '-misc-*' will be loaded instead of exiting. If any
+ * font was previously loaded, it will be freed.
  *
  */
 i3Font load_font(const char *pattern, const bool fallback);
@@ -302,7 +303,8 @@ i3Font load_font(const char *pattern, const bool fallback);
 void set_font(i3Font *font);
 
 /**
- * Frees the resources taken by the current font.
+ * Frees the resources taken by the current font. If no font was previously
+ * loaded, it simply returns.
  *
  */
 void free_font(void);
