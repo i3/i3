@@ -1257,6 +1257,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
             break;
 
         case XCB_BUTTON_PRESS:
+        case XCB_BUTTON_RELEASE:
             handle_button_press((xcb_button_press_event_t *)event);
             break;
 
