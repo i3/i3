@@ -404,17 +404,18 @@ can configure mouse bindings in a similar way to key bindings.
 
 *Syntax*:
 ----------------------------------
-bindsym [--whole-window] [Modifiers+]button[n] command
+bindsym [--release] [--whole-window] [Modifiers+]button[n] command
 ----------------------------------
 
 By default, the binding will only run when you click on the titlebar of the
 window. If the +--whole-window+ flag is given, it will run when any part of the
-window is clicked.
+window is clicked. If the +--release+ flag is given, it will run when the mouse
+button is released.
 
 *Examples*:
 --------------------------------
 # The middle button over a titlebar kills the window
-bindsym button2 kill
+bindsym --release button2 kill
 
 # The middle button and a modifer over any part of the window kills the window
 bindsym --whole-window $mod+button2 kill

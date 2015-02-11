@@ -200,6 +200,11 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         }
     }
 
+    /* There is no default behavior for button release events so we are done. */
+    if (event->response_type == XCB_BUTTON_RELEASE) {
+        goto done;
+    }
+
     /* Any click in a workspace should focus that workspace. If the
      * workspace is on another output we need to do a workspace_show in
      * order for i3bar (and others) to notice the change in workspace. */
@@ -336,9 +341,10 @@ done:
  */
 int handle_button_press(xcb_button_press_event_t *event) {
     Con *con;
-    DLOG("Button %d pressed on window 0x%08x (child 0x%08x) at (%d, %d) (root %d, %d)\n",
-         event->state, event->event, event->child, event->event_x, event->event_y,
-         event->root_x, event->root_y);
+    DLOG("Button %d %s on window 0x%08x (child 0x%08x) at (%d, %d) (root %d, %d)\n",
+         event->state, (event->response_type == XCB_BUTTON_PRESS ? "press" : "release"),
+         event->event, event->child, event->event_x, event->event_y, event->root_x,
+         event->root_y);
 
     last_timestamp = event->time;
 
@@ -351,7 +357,7 @@ int handle_button_press(xcb_button_press_event_t *event) {
     if (!(con = con_by_frame_id(event->event))) {
         /* If the root window is clicked, find the relevant output from the
          * click coordinates and focus the output's active workspace. */
-        if (event->event == root) {
+        if (event->event == root && event->response_type == XCB_BUTTON_PRESS) {
             Con *output, *ws;
             TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
                 if (con_is_internal(output) ||
