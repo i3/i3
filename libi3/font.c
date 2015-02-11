@@ -160,10 +160,14 @@ static int predict_text_width_pango(const char *text, size_t text_len) {
 
 /*
  * Loads a font for usage, also getting its metrics. If fallback is true,
- * the fonts 'fixed' or '-misc-*' will be loaded instead of exiting.
+ * the fonts 'fixed' or '-misc-*' will be loaded instead of exiting. If any
+ * font was previously loaded, it will be freed.
  *
  */
 i3Font load_font(const char *pattern, const bool fallback) {
+    /* if any font was previously loaded, free it now */
+    free_font();
+
     i3Font font;
     font.type = FONT_TYPE_NONE;
 
@@ -257,10 +261,15 @@ void set_font(i3Font *font) {
 }
 
 /*
- * Frees the resources taken by the current font.
+ * Frees the resources taken by the current font. If no font was previously
+ * loaded, it simply returns.
  *
  */
 void free_font(void) {
+    /* if there is no saved font, simply return */
+    if (savedFont == NULL)
+        return;
+
     free(savedFont->pattern);
     switch (savedFont->type) {
         case FONT_TYPE_NONE:
@@ -283,6 +292,8 @@ void free_font(void) {
             assert(false);
             break;
     }
+
+    savedFont = NULL;
 }
 
 /*
