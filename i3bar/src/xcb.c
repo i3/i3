@@ -339,18 +339,6 @@ void handle_button(xcb_button_press_event_t *event) {
         return;
     }
 
-    /* TODO: Move this to extern get_ws_for_output() */
-    TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
-        if (cur_ws->visible) {
-            break;
-        }
-    }
-
-    if (cur_ws == NULL) {
-        DLOG("No Workspace active?\n");
-        return;
-    }
-
     int32_t x = event->event_x >= 0 ? event->event_x : 0;
     int32_t original_x = x;
 
@@ -396,6 +384,18 @@ void handle_button(xcb_button_press_event_t *event) {
             }
         }
         x = original_x;
+    }
+
+    /* TODO: Move this to extern get_ws_for_output() */
+    TAILQ_FOREACH (cur_ws, walk->workspaces, tailq) {
+        if (cur_ws->visible) {
+            break;
+        }
+    }
+
+    if (cur_ws == NULL) {
+        DLOG("No Workspace active?\n");
+        return;
     }
 
     switch (event->detail) {
@@ -1512,15 +1512,13 @@ void reconfig_windows(bool redraw_bars) {
              * BUTTON_PRESS, to handle clicks on the workspace buttons
              * */
             values[2] = XCB_EVENT_MASK_EXPOSURE |
-                        XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT;
+                        XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
+                        XCB_EVENT_MASK_BUTTON_PRESS;
             if (config.hide_on_modifier == M_DOCK) {
                 /* If the bar is normally visible, catch visibility change events to suspend
                  * the status process when the bar is obscured by full-screened windows.  */
                 values[2] |= XCB_EVENT_MASK_VISIBILITY_CHANGE;
                 walk->visible = true;
-            }
-            if (!config.disable_ws) {
-                values[2] |= XCB_EVENT_MASK_BUTTON_PRESS;
             }
             xcb_void_cookie_t win_cookie = xcb_create_window_checked(xcb_connection,
                                                                      root_screen->root_depth,

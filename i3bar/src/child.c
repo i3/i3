@@ -520,33 +520,35 @@ void child_click_events_key(const char *key) {
  *
  */
 void send_block_clicked(int button, const char *name, const char *instance, int x, int y) {
-    if (child.click_events) {
-        child_click_events_initialize();
-
-        yajl_gen_map_open(gen);
-
-        if (name) {
-            child_click_events_key("name");
-            yajl_gen_string(gen, (const unsigned char *)name, strlen(name));
-        }
-
-        if (instance) {
-            child_click_events_key("instance");
-            yajl_gen_string(gen, (const unsigned char *)instance, strlen(instance));
-        }
-
-        child_click_events_key("button");
-        yajl_gen_integer(gen, button);
-
-        child_click_events_key("x");
-        yajl_gen_integer(gen, x);
-
-        child_click_events_key("y");
-        yajl_gen_integer(gen, y);
-
-        yajl_gen_map_close(gen);
-        child_write_output();
+    if (!child.click_events) {
+        return;
     }
+
+    child_click_events_initialize();
+
+    yajl_gen_map_open(gen);
+
+    if (name) {
+        child_click_events_key("name");
+        yajl_gen_string(gen, (const unsigned char *)name, strlen(name));
+    }
+
+    if (instance) {
+        child_click_events_key("instance");
+        yajl_gen_string(gen, (const unsigned char *)instance, strlen(instance));
+    }
+
+    child_click_events_key("button");
+    yajl_gen_integer(gen, button);
+
+    child_click_events_key("x");
+    yajl_gen_integer(gen, x);
+
+    child_click_events_key("y");
+    yajl_gen_integer(gen, y);
+
+    yajl_gen_map_close(gen);
+    child_write_output();
 }
 
 /*
