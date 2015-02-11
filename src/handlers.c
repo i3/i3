@@ -651,6 +651,19 @@ static void handle_expose_event(xcb_expose_event_t *event) {
     return;
 }
 
+#define _NET_WM_MOVERESIZE_SIZE_TOPLEFT      0
+#define _NET_WM_MOVERESIZE_SIZE_TOP          1
+#define _NET_WM_MOVERESIZE_SIZE_TOPRIGHT     2
+#define _NET_WM_MOVERESIZE_SIZE_RIGHT        3
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT  4
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOM       5
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT   6
+#define _NET_WM_MOVERESIZE_SIZE_LEFT         7
+#define _NET_WM_MOVERESIZE_MOVE              8  /* movement only */
+#define _NET_WM_MOVERESIZE_SIZE_KEYBOARD     9  /* size via keyboard */
+#define _NET_WM_MOVERESIZE_MOVE_KEYBOARD     10 /* move via keyboard */
+#define _NET_WM_MOVERESIZE_CANCEL            11 /* cancel operation */
+
 /*
  * Handle client messages (EWMH)
  *
@@ -855,6 +868,33 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             tree_render();
         } else {
             DLOG("Couldn't find con for _NET_CLOSE_WINDOW request. (window = %d)\n", event->window);
+        }
+    } else if (event->type == A__NET_WM_MOVERESIZE) {
+        /*
+         * Client-side decorated Gtk3 windows emit this signal when being
+         * dragged by their GtkHeaderBar
+         */
+        Con *con = con_by_window_id(event->window);
+        if (!con || !con_is_floating(con)) {
+            DLOG("Couldn't find con for _NET_WM_MOVERESIZE request, or con not floating (window = %d)\n", event->window);
+            return;
+        }
+        DLOG("Handling _NET_WM_MOVERESIZE request (con = %p)\n", con);
+        uint32_t direction = event->data.data32[2];
+        uint32_t x_root = event->data.data32[0];
+        uint32_t y_root = event->data.data32[1];
+        /* construct fake xcb_button_press_event_t */
+        xcb_button_press_event_t fake = {
+            .root_x = x_root,
+            .root_y = y_root,
+            .event_x = x_root - (con->rect.x),
+            .event_y = y_root - (con->rect.y)};
+        if (direction == _NET_WM_MOVERESIZE_MOVE) {
+            floating_drag_window(con->parent, &fake);
+        } else if (direction >= _NET_WM_MOVERESIZE_SIZE_TOPLEFT && direction <= _NET_WM_MOVERESIZE_SIZE_LEFT) {
+            floating_resize_window(con->parent, FALSE, &fake);
+        } else {
+            DLOG("_NET_WM_MOVERESIZE direction %d not implemented\n", direction);
         }
     } else {
         DLOG("unhandled clientmessage\n");
