@@ -407,8 +407,7 @@ void tree_split(Con *con, orientation_t orientation) {
     Con *parent = con->parent;
 
     /* Force re-rendering to make the indicator border visible. */
-    FREE(con->deco_render_params);
-    FREE(parent->deco_render_params);
+    con_force_split_parents_redraw(con);
 
     /* if we are in a container whose parent contains only one
      * child (its split functionality is unused so far), we just change the

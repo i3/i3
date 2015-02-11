@@ -20,7 +20,7 @@ static void con_on_remove_child(Con *con);
  * force parent split containers to be redrawn
  *
  */
-static void con_force_split_parents_redraw(Con *con) {
+void con_force_split_parents_redraw(Con *con) {
     Con *parent = con;
 
     while (parent && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
