@@ -15,5 +15,6 @@ and https://github.com/i3/i3lock
 * Before sending a pull request for new features, please check with us that the
   feature is something we want to see in i3 by opening an issue which has
   “feature request” or “enhancement” in its title.
+* Use the `next` branch for developing and sending your pull request.
 * Use `clang-format` to format your code.
 * Run the testsuite, see http://i3wm.org/docs/testsuite.html
