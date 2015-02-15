@@ -4,6 +4,14 @@ i3-wm (4.8.1-1) unstable; urgency=medium
 
  -- Michael Stapelberg <stapelberg@debian.org>  Sun, 15 Jun 2014 19:37:32 +0200
 
+i3-wm (4.8-2) unstable; urgency=medium
+
+  * Backport two bugfixes:
+    - backport-dpi-fix.patch (Closes: #778460)
+    - backport-i3bar-tray-fix.patch (Closes: #778461)
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Sun, 15 Feb 2015 13:24:42 +0100
+
 i3-wm (4.8-1) unstable; urgency=medium
 
   * New upstream release.
