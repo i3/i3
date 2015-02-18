@@ -72,6 +72,7 @@ static void clear_statusline(struct statusline_head *head, bool free_resources) 
             I3STRING_FREE(first->full_text);
             FREE(first->color);
             FREE(first->name);
+            FREE(first->instance);
         }
 
         TAILQ_REMOVE(head, first, blocks);
