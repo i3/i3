@@ -56,7 +56,6 @@ parser_ctx parser_context;
 
 /* The buffer statusline points to */
 struct statusline_head statusline_head = TAILQ_HEAD_INITIALIZER(statusline_head);
-char *statusline_buffer = NULL;
 
 int child_stdin;
 
@@ -115,9 +114,6 @@ void cleanup(void) {
     if (stdin_io != NULL) {
         ev_io_stop(main_loop, stdin_io);
         FREE(stdin_io);
-        FREE(statusline_buffer);
-        /* statusline pointed to memory within statusline_buffer */
-        statusline = NULL;
     }
 
     if (child_sig != NULL) {
