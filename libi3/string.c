@@ -20,6 +20,7 @@ struct _i3String {
     xcb_char2b_t *ucs2;
     size_t num_glyphs;
     size_t num_bytes;
+    bool is_markup;
 };
 
 /*
@@ -40,6 +41,19 @@ i3String *i3string_from_utf8(const char *from_utf8) {
 }
 
 /*
+ * Build an i3String from an UTF-8 encoded string in Pango markup.
+ *
+ */
+i3String *i3string_from_markup(const char *from_markup) {
+    i3String *str = i3string_from_utf8(from_markup);
+
+    /* Set the markup flag */
+    str->is_markup = true;
+
+    return str;
+}
+
+/*
  * Build an i3String from an UTF-8 encoded string with fixed length.
  * To be used when no proper NUL-terminaison is available.
  * Returns the newly-allocated i3String.
@@ -55,6 +69,20 @@ i3String *i3string_from_utf8_with_length(const char *from_utf8, size_t num_bytes
 
     /* Store the length */
     str->num_bytes = num_bytes;
+
+    return str;
+}
+
+/*
+ * Build an i3String from an UTF-8 encoded string in Pango markup with fixed
+ * length.
+ *
+ */
+i3String *i3string_from_markup_with_length(const char *from_markup, size_t num_bytes) {
+    i3String *str = i3string_from_utf8_with_length(from_markup, num_bytes);
+
+    /* set the markup flag */
+    str->is_markup = true;
 
     return str;
 }
@@ -131,6 +159,13 @@ const xcb_char2b_t *i3string_as_ucs2(i3String *str) {
 size_t i3string_get_num_bytes(i3String *str) {
     i3string_ensure_utf8(str);
     return str->num_bytes;
+}
+
+/*
+ * Whether the given i3String is in Pango markup.
+ */
+bool i3string_is_markup(i3String *str) {
+    return str->is_markup;
 }
 
 /*

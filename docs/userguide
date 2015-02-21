@@ -1625,6 +1625,10 @@ container to the next/previous workspace and +move container to workspace curren
 See <<move_to_outputs>> for how to move a container/workspace to a different
 RandR output.
 
+Workspace names are parsed as
+https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup]
+by i3bar.
+
 [[back_and_forth]]
 To switch back to the previously focused workspace, use +workspace
 back_and_forth+; likewise, you can move containers to the previously focused
@@ -1646,6 +1650,7 @@ move [window|container] [to] workspace <prev|next|current>
 -------------------------
 bindsym $mod+1 workspace 1
 bindsym $mod+2 workspace 2
+bindsym $mod+3 workspace 3:<span foreground="red">vim</span>
 ...
 
 bindsym $mod+Shift+1 move container to workspace 1

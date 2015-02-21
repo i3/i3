@@ -142,12 +142,25 @@ int sasprintf(char **strp, const char *fmt, ...);
 i3String *i3string_from_utf8(const char *from_utf8);
 
 /**
+ * Build an i3String from an UTF-8 encoded string in Pango markup.
+ *
+ */
+i3String *i3string_from_markup(const char *from_markup);
+
+/**
  * Build an i3String from an UTF-8 encoded string with fixed length.
  * To be used when no proper NUL-terminaison is available.
  * Returns the newly-allocated i3String.
  *
  */
 i3String *i3string_from_utf8_with_length(const char *from_utf8, size_t num_bytes);
+
+/**
+ * Build an i3String from an UTF-8 encoded string in Pango markup with fixed
+ * length.
+ *
+ */
+i3String *i3string_from_markup_with_length(const char *from_markup, size_t num_bytes);
 
 /**
  * Build an i3String from an UCS-2 encoded string.
@@ -192,6 +205,11 @@ const xcb_char2b_t *i3string_as_ucs2(i3String *str);
  *
  */
 size_t i3string_get_num_bytes(i3String *str);
+
+/**
+ * Whether the given i3String is in Pango markup.
+ */
+bool i3string_is_markup(i3String *str);
 
 /**
  * Returns the number of glyphs in an i3String.

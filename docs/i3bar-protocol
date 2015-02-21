@@ -119,7 +119,8 @@ click_events::
 full_text::
 	The most simple block you can think of is one which just includes the
 	only required key, the +full_text+ key. i3bar will display the string
-	value and that’s it.
+	value parsed as
+	https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup].
 short_text::
 	Where appropriate, the +short_text+ (string) entry should also be
 	provided. It will be used in case the status line needs to be shortened

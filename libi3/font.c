@@ -102,7 +102,8 @@ static bool load_pango_font(i3Font *font, const char *desc) {
  *
  */
 static void draw_text_pango(const char *text, size_t text_len,
-                            xcb_drawable_t drawable, int x, int y, int max_width) {
+                            xcb_drawable_t drawable, int x, int y,
+                            int max_width, bool is_markup) {
     /* Create the Pango layout */
     /* root_visual_type is cached in load_pango_font */
     cairo_surface_t *surface = cairo_xcb_surface_create(conn, drawable,
@@ -116,7 +117,10 @@ static void draw_text_pango(const char *text, size_t text_len,
     pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
     pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
 
-    pango_layout_set_text(layout, text, text_len);
+    if (is_markup)
+        pango_layout_set_markup(layout, text, text_len);
+    else
+        pango_layout_set_text(layout, text, text_len);
 
     /* Do the drawing */
     cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
@@ -135,7 +139,7 @@ static void draw_text_pango(const char *text, size_t text_len,
  * Calculate the text width using Pango rendering.
  *
  */
-static int predict_text_width_pango(const char *text, size_t text_len) {
+static int predict_text_width_pango(const char *text, size_t text_len, bool is_markup) {
     /* Create a dummy Pango layout */
     /* root_visual_type is cached in load_pango_font */
     cairo_surface_t *surface = cairo_xcb_surface_create(conn, root_screen->root, root_visual_type, 1, 1);
@@ -145,7 +149,12 @@ static int predict_text_width_pango(const char *text, size_t text_len) {
     /* Get the font width */
     gint width;
     pango_layout_set_font_description(layout, savedFont->specific.pango_desc);
-    pango_layout_set_text(layout, text, text_len);
+
+    if (is_markup)
+        pango_layout_set_markup(layout, text, text_len);
+    else
+        pango_layout_set_text(layout, text, text_len);
+
     pango_cairo_update_layout(cr, layout);
     pango_layout_get_pixel_size(layout, &width, NULL);
 
@@ -383,7 +392,7 @@ void draw_text(i3String *text, xcb_drawable_t drawable,
         case FONT_TYPE_PANGO:
             /* Render the text using Pango */
             draw_text_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
-                            drawable, x, y, max_width);
+                            drawable, x, y, max_width, i3string_is_markup(text));
             return;
 #endif
         default:
@@ -422,7 +431,7 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
         case FONT_TYPE_PANGO:
             /* Render the text using Pango */
             draw_text_pango(text, strlen(text),
-                            drawable, x, y, max_width);
+                            drawable, x, y, max_width, false);
             return;
 #endif
         default:
@@ -518,7 +527,8 @@ int predict_text_width(i3String *text) {
 #if PANGO_SUPPORT
         case FONT_TYPE_PANGO:
             /* Calculate extents using Pango */
-            return predict_text_width_pango(i3string_as_utf8(text), i3string_get_num_bytes(text));
+            return predict_text_width_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
+                                            i3string_is_markup(text));
 #endif
         default:
             assert(false);
