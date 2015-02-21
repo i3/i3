@@ -1608,6 +1608,83 @@ void cmd_focus(I3_CMD) {
 }
 
 /*
+ * Implementation of 'focus next'.
+ *
+ */
+void cmd_focus_next(I3_CMD) {
+    bool focused_found = false;
+    owindow *current, *first = NULL, *next = NULL;
+    Con *ws;
+
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        ws = con_get_workspace(current->con);
+        /* If no workspace could be found, this was a dock window.
+         * Just skip it, you cannot focus dock windows. */
+        if (!ws)
+            continue;
+
+	if (!first)
+	    first = current;
+
+	if (focused_found) {
+	    next = current;
+	    break;
+	}
+
+	if (current->con == focused)
+	    focused_found = true;
+    }
+
+    if (!next)
+	next = first;
+
+    if (!next) {
+	LOG("No matching window to focus.\n");
+	ysuccess(false);
+	return;
+    }
+
+    /* Check the fullscreen focus constraints. */
+    if (!con_fullscreen_permits_focusing(next->con)) {
+	LOG("Cannot change focus while in fullscreen mode (fullscreen rules).\n");
+	ysuccess(false);
+	return;
+    }
+
+    ws = con_get_workspace(next->con);
+
+    /* In case this is a scratchpad window, call scratchpad_show(). */
+    /* TODO: How to handle scratchpad windows properly? */
+    if (false && ws == workspace_get("__i3_scratch", NULL)) {
+	scratchpad_show(next->con);
+    } else {
+	/* If the container is not on the current workspace,
+	 * workspace_show() will switch to a different workspace and (if
+	 * enabled) trigger a mouse pointer warp to the currently focused
+	 * container (!) on the target workspace.
+	 *
+	 * Therefore, before calling workspace_show(), we make sure that
+	 * 'next' will be focused on the workspace. However, we cannot
+	 * just con_focus(next) because then the pointer will not be
+	 * warped at all (the code thinks we are already there).
+	 *
+	 * So we focus 'next' to make it the currently focused window of
+	 * the target workspace, then revert focus. */
+	Con *currently_focused = focused;
+	con_focus(next->con);
+	con_focus(currently_focused);
+
+	/* Now switch to the workspace, then focus */
+	workspace_show(ws);
+	LOG("focusing %p / %s\n", next->con, next->con->name);
+	con_focus(next->con);
+    }
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'fullscreen enable|toggle [global]' and
  *                   'fullscreen disable'
  *
