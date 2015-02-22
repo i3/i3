@@ -314,7 +314,9 @@ void cmd_criteria_match_windows(I3_CMD) {
             DLOG("match by mark\n");
             TAILQ_INSERT_TAIL(&owindows, current, owindows);
         } else {
-            if (current->con->window && match_matches_window(current_match, current->con->window)) {
+            if (current->con->window &&
+                match_matches_window(current_match, current->con->window) &&
+                match_matches_workspace(current_match, current->con)) {
                 DLOG("matches window!\n");
                 TAILQ_INSERT_TAIL(&owindows, current, owindows);
             } else {
@@ -403,6 +405,14 @@ void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue) {
             current_match->urgent = U_OLDEST;
         }
         return;
+    }
+
+    if (strcmp(ctype, "workspace") == 0) {
+	if (strcmp(cvalue, "current") == 0)
+	    current_match->current_workspace = true;
+	else
+	    current_match->workspace = regex_new(cvalue);
+	return;
     }
 
     ELOG("Unknown criterion: %s\n", ctype);
