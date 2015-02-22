@@ -41,6 +41,13 @@ void match_copy(Match *dest, Match *src);
 bool match_matches_window(Match *match, i3Window *window);
 
 /**
+ * Check if a match data structure matches the workspace of the given
+ * container.
+ *
+ */
+bool match_matches_workspace(Match *match, Con *con);
+
+/**
  * Frees the given match. It must not be used afterwards!
  *
  */

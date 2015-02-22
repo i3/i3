@@ -49,6 +49,7 @@ state CRITERIA:
   ctype = 'con_mark' -> CRITERION
   ctype = 'title' -> CRITERION
   ctype = 'urgent' -> CRITERION
+  ctype = 'workspace' -> CRITERION
   ']' -> call cmd_criteria_match_windows(); INITIAL
 
 state CRITERION:
@@ -132,6 +133,7 @@ state WORKSPACE_NUMBER:
 # focus output <output>
 # focus tiling|floating|mode_toggle
 # focus parent|child
+# focus next
 # focus
 state FOCUS:
   direction = 'left', 'right', 'up', 'down'
@@ -142,6 +144,8 @@ state FOCUS:
       -> call cmd_focus_window_mode($window_mode)
   level = 'parent', 'child'
       -> call cmd_focus_level($level)
+  'next'
+      -> call cmd_focus_next()
   end
       -> call cmd_focus()
 

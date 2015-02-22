@@ -46,6 +46,8 @@ bool match_is_empty(Match *match) {
             match->class == NULL &&
             match->instance == NULL &&
             match->window_role == NULL &&
+            match->workspace == NULL &&
+            match->current_workspace == false &&
             match->urgent == U_DONTCHECK &&
             match->id == XCB_NONE &&
             match->con_id == NULL &&
@@ -185,6 +187,34 @@ bool match_matches_window(Match *match, i3Window *window) {
 }
 
 /*
+ * Check if a match data structure matches the workspace of the given
+ * container.
+ *
+ */
+bool match_matches_workspace(Match *match, Con *con) {
+    if (match->current_workspace) {
+	Con *current = con_get_workspace(focused);
+	Con *ws = con_get_workspace(con);
+	if (ws == current)
+            LOG("current workspace matches\n");
+	else
+	    return false;
+    }
+
+    if (match->workspace) {
+	Con *ws = con_get_workspace(con);
+	if (ws->name &&
+	    regex_matches(match->workspace, ws->name)) {
+            LOG("workspace name matches (%s)\n", ws->name);
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/*
  * Frees the given match. It must not be used afterwards!
  *
  */
@@ -196,6 +226,7 @@ void match_free(Match *match) {
     regex_free(match->instance);
     regex_free(match->mark);
     regex_free(match->window_role);
+    regex_free(match->workspace);
 
     /* Second step: free the regex helper struct itself */
     FREE(match->title);
@@ -204,4 +235,5 @@ void match_free(Match *match) {
     FREE(match->instance);
     FREE(match->mark);
     FREE(match->window_role);
+    FREE(match->workspace);
 }

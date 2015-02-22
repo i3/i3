@@ -408,6 +408,8 @@ struct Match {
     struct regex *instance;
     struct regex *mark;
     struct regex *window_role;
+    struct regex *workspace;
+    bool current_workspace;
     enum {
         U_DONTCHECK = -1,
         U_LATEST = 0,

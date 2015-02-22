@@ -187,6 +187,12 @@ void cmd_focus_level(I3_CMD, char *level);
 void cmd_focus(I3_CMD);
 
 /**
+ * Implementation of 'focus next'.
+ *
+ */
+void cmd_focus_next(I3_CMD);
+
+/**
  * Implementation of 'fullscreen [enable|disable|toggle] [global]'.
  *
  */
