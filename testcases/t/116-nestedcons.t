@@ -54,7 +54,6 @@ my $expected = {
     type => 'root',
     id => $ignore,
     rect => $ignore,
-    deco_rect => $ignore,
     window_rect => $ignore,
     geometry => $ignore,
     swallows => $ignore,

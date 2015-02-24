@@ -33,10 +33,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context);
 
 /**
  * Parses the given file by first replacing the variables, then calling
- * parse_config and launching i3-nagbar if use_nagbar is true.
- *
- * The return value is a boolean indicating whether there were errors during
- * parsing.
+ * parse_config and possibly launching i3-nagbar.
  *
  */
-bool parse_file(const char *f, bool use_nagbar);
+void parse_file(const char *f);

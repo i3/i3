@@ -19,7 +19,7 @@ use Time::HiRes qw(time);
 use IO::Handle;
 # these are shipped with the testsuite
 use lib qw(lib);
-use StartXServer;
+use StartXDummy;
 use StatusLine;
 use TestWorker;
 # the following modules are not shipped with Perl
@@ -43,7 +43,7 @@ sub Log { say $log "@_" }
 
 my %timings;
 my $help = 0;
-# Number of tests to run in parallel. Important to know how many Xephyr
+# Number of tests to run in parallel. Important to know how many Xdummy
 # instances we need to start (unless @displays are given). Defaults to
 # num_cores * 2.
 my $parallel = undef;
@@ -55,11 +55,11 @@ my %options = (
     coverage => 0,
     restart => 0,
 );
-my $keep_xserver_output = 0;
+my $keep_xdummy_output = 0;
 
 my $result = GetOptions(
     "coverage-testing" => \$options{coverage},
-    "keep-xserver-output" => \$keep_xserver_output,
+    "keep-xdummy-output" => \$keep_xdummy_output,
     "valgrind" => \$options{valgrind},
     "strace" => \$options{strace},
     "xtrace" => \$options{xtrace},
@@ -86,9 +86,6 @@ foreach my $binary (@binaries) {
     die "$binary is not an executable" unless -x $binary;
 }
 
-qx(Xephyr -help 2>&1);
-die "Xephyr was not found in your path. Please install Xephyr (xserver-xephyr on Debian)." if $?;
-
 @displays = split(/,/, join(',', @displays));
 @displays = map { s/ //g; $_ } @displays;
 
@@ -100,9 +97,9 @@ my @testfiles = @ARGV;
 
 my $numtests = scalar @testfiles;
 
-# No displays specified, let’s start some Xephyr instances.
+# No displays specified, let’s start some Xdummy instances.
 if (@displays == 0) {
-    @displays = start_xserver($parallel, $numtests, $keep_xserver_output);
+    @displays = start_xdummy($parallel, $numtests, $keep_xdummy_output);
 }
 
 # 1: create an output directory for this test-run
@@ -118,7 +115,8 @@ symlink("$outdir", "latest") or die "Could not symlink latest to $outdir";
 # connect to all displays for two reasons:
 # 1: check if the display actually works
 # 2: keep the connection open so that i3 is not the only client. this prevents
-#    the X server from exiting
+#    the X server from exiting (Xdummy will restart it, but not quick enough
+#    sometimes)
 my @single_worker;
 for my $display (@displays) {
     my $screen;
@@ -133,7 +131,7 @@ for my $display (@displays) {
 
 # Read previous timing information, if available. We will be able to roughly
 # predict the test duration and schedule a good order for the tests.
-my $timingsjson = StartXServer::slurp('.last_run_timings.json');
+my $timingsjson = StartXDummy::slurp('.last_run_timings.json');
 %timings = %{decode_json($timingsjson)} if length($timingsjson) > 0;
 
 # Re-order the files so that those which took the longest time in the previous
@@ -222,7 +220,7 @@ printf("\t%s with %.2f seconds\n", $_, $timings{$_})
 if ($numtests == 1) {
     say '';
     say 'Test output:';
-    say StartXServer::slurp($logfile);
+    say StartXDummy::slurp($logfile);
 }
 
 END { cleanup() }
@@ -348,7 +346,7 @@ complete-run.pl [files...]
 
 =head1 EXAMPLE
 
-To run the whole testsuite on a reasonable number of Xephyr instances (your
+To run the whole testsuite on a reasonable number of Xdummy instances (your
 running X11 will not be touched), run:
   ./complete-run.pl
 
@@ -367,11 +365,11 @@ will parallelize the tests:
   # Run tests on the second X server
   ./complete-run.pl -d :1
 
-  # Run four tests in parallel on some Xephyr servers
+  # Run four tests in parallel on some Xdummy servers
   ./complete-run.pl -d :1,:2,:3,:4
 
 Note that it is not necessary to specify this anymore. If omitted,
-complete-run.pl will start (num_cores * 2) Xephyr instances.
+complete-run.pl will start (num_cores * 2) Xdummy instances.
 
 =item B<--valgrind>
 
@@ -394,8 +392,8 @@ Exits i3 cleanly (instead of kill -9) to make coverage testing work properly.
 
 =item B<--parallel>
 
-Number of Xephyr instances to start (if you don’t want to start num_cores * 2
+Number of Xdummy instances to start (if you don’t want to start num_cores * 2
 instances for some reason).
 
-  # Run all tests on a single Xephyr instance
+  # Run all tests on a single Xdummy instance
   ./complete-run.pl -p 1

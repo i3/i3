@@ -50,9 +50,9 @@ EOT
 
 my $expected = <<'EOT';
 cfg_enter_mode(meh)
-cfg_mode_binding(bindsym, Mod1,Shift, x, (null), (null), resize grow)
-cfg_mode_binding(bindcode, Mod1, 44, (null), (null), resize shrink)
-cfg_mode_binding(bindsym, Mod1, x, --release, (null), exec foo)
+cfg_mode_binding(bindsym, Mod1,Shift, x, (null), resize grow)
+cfg_mode_binding(bindcode, Mod1, 44, (null), resize shrink)
+cfg_mode_binding(bindsym, Mod1, x, --release, exec foo)
 EOT
 
 is(parser_calls($config),
@@ -408,7 +408,6 @@ client.focused          #4c7899 #285577 #ffffff #2e9ef4
 client.focused_inactive #333333 #5f676a #ffffff #484e50
 client.unfocused        #333333 #222222 #888888 #292d2e
 client.urgent           #2f343a #900000 #ffffff #900000
-client.placeholder      #000000 #0c0c0c #ffffff #000000
 EOT
 
 $expected = <<'EOT';
@@ -416,7 +415,6 @@ cfg_color(client.focused, #4c7899, #285577, #ffffff, #2e9ef4)
 cfg_color(client.focused_inactive, #333333, #5f676a, #ffffff, #484e50)
 cfg_color(client.unfocused, #333333, #222222, #888888, #292d2e)
 cfg_color(client.urgent, #2f343a, #900000, #ffffff, #900000)
-cfg_color(client.placeholder, #000000, #0c0c0c, #ffffff, #000000)
 EOT
 
 is(parser_calls($config),
@@ -433,7 +431,7 @@ client.focused          #4c7899 #285577 #ffffff #2e9ef4
 EOT
 
 my $expected_all_tokens = <<'EOT';
-ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', 'bar', 'font', 'mode', 'floating_minimum_size', 'floating_maximum_size', 'floating_modifier', 'default_orientation', 'workspace_layout', 'new_window', 'new_float', 'hide_edge_borders', 'for_window', 'assign', 'focus_follows_mouse', 'mouse_warping', 'force_focus_wrapping', 'force_xinerama', 'force-xinerama', 'workspace_auto_back_and_forth', 'fake_outputs', 'fake-outputs', 'force_display_urgency_hint', 'workspace', 'ipc_socket', 'ipc-socket', 'restart_state', 'popup_during_fullscreen', 'exec_always', 'exec', 'client.background', 'client.focused_inactive', 'client.focused', 'client.unfocused', 'client.urgent', 'client.placeholder'
+ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', 'bar', 'font', 'mode', 'floating_minimum_size', 'floating_maximum_size', 'floating_modifier', 'default_orientation', 'workspace_layout', 'new_window', 'new_float', 'hide_edge_borders', 'for_window', 'assign', 'focus_follows_mouse', 'mouse_warping', 'force_focus_wrapping', 'force_xinerama', 'force-xinerama', 'workspace_auto_back_and_forth', 'fake_outputs', 'fake-outputs', 'force_display_urgency_hint', 'workspace', 'ipc_socket', 'ipc-socket', 'restart_state', 'popup_during_fullscreen', 'exec_always', 'exec', 'client.background', 'client.focused_inactive', 'client.focused', 'client.unfocused', 'client.urgent'
 EOT
 
 my $expected_end = <<'EOT';
@@ -620,7 +618,7 @@ EOT
 
 $expected = <<'EOT';
 cfg_enter_mode(yo)
-cfg_mode_binding(bindsym, (null), x, (null), (null), resize shrink left)
+cfg_mode_binding(bindsym, (null), x, (null), resize shrink left)
 ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', '}'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: mode "yo" {
@@ -647,7 +645,7 @@ EOT
 
 $expected = <<'EOT';
 cfg_bar_output(LVDS-1)
-ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'i3bar_command', 'status_command', 'socket_path', 'mode', 'hidden_state', 'id', 'modifier', 'wheel_up_cmd', 'wheel_down_cmd', 'position', 'output', 'tray_output', 'font', 'binding_mode_indicator', 'workspace_buttons', 'strip_workspace_numbers', 'verbose', 'colors', '}'
+ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'i3bar_command', 'status_command', 'socket_path', 'mode', 'hidden_state', 'id', 'modifier', 'position', 'output', 'tray_output', 'font', 'binding_mode_indicator', 'workspace_buttons', 'strip_workspace_numbers', 'verbose', 'colors', '}'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: bar {
 ERROR: CONFIG: Line   2:     output LVDS-1

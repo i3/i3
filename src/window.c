@@ -125,8 +125,7 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
  */
 void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("CLIENT_LEADER not set on window 0x%08x.\n", win->id);
-        win->leader = XCB_NONE;
+        DLOG("CLIENT_LEADER not set.\n");
         FREE(prop);
         return;
     }
@@ -150,8 +149,7 @@ void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
  */
 void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("TRANSIENT_FOR not set on window 0x%08x.\n", win->id);
-        win->transient_for = XCB_NONE;
+        DLOG("TRANSIENT_FOR not set.\n");
         FREE(prop);
         return;
     }
@@ -162,7 +160,7 @@ void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) 
         return;
     }
 
-    DLOG("Transient for changed to 0x%08x (window 0x%08x)\n", transient_for, win->id);
+    DLOG("Transient for changed to %08x\n", transient_for);
 
     win->transient_for = transient_for;
 

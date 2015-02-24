@@ -39,6 +39,7 @@ state INITIAL:
   'scratchpad' -> SCRATCHPAD
   'mode' -> MODE
   'bar' -> BAR
+  'gap_size' -> GAP_SIZE
 
 state CRITERIA:
   ctype = 'class' -> CRITERION
@@ -84,6 +85,11 @@ state BORDER:
     -> call cmd_border($border_style, "0")
   border_style = '1pixel'
     -> call cmd_border($border_style, "1")
+
+# gap_size <size>
+state GAP_SIZE:
+  width = word
+      -> call cmd_gap_size($width)
 
 state BORDER_WIDTH:
   end
@@ -156,28 +162,12 @@ state KILL:
   end
       -> call cmd_kill($kill_mode)
 
-# fullscreen enable|toggle [global]
-# fullscreen disable
 # fullscreen [global]
 state FULLSCREEN:
-  action = 'disable'
-      -> call cmd_fullscreen($action, "output")
-  action = 'enable', 'toggle'
-      -> FULLSCREEN_MODE
-  action = ''
-      -> FULLSCREEN_COMPAT
-
-state FULLSCREEN_MODE:
-  mode = 'global'
-      -> call cmd_fullscreen($action, $mode)
+  fullscreen_mode = 'global'
+      -> call cmd_fullscreen($fullscreen_mode)
   end
-      -> call cmd_fullscreen($action, "output")
-
-state FULLSCREEN_COMPAT:
-  mode = 'global'
-      -> call cmd_fullscreen("toggle", $mode)
-  end
-      -> call cmd_fullscreen("toggle", "output")
+      -> call cmd_fullscreen($fullscreen_mode)
 
 # split v|h|vertical|horizontal
 state SPLIT:

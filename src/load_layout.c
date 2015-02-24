@@ -24,7 +24,6 @@ static Con *json_node;
 static Con *to_focus;
 static bool parsing_swallows;
 static bool parsing_rect;
-static bool parsing_deco_rect;
 static bool parsing_window_rect;
 static bool parsing_geometry;
 static bool parsing_focus;
@@ -48,7 +47,7 @@ static int json_start_map(void *ctx) {
         match_init(current_swallow);
         TAILQ_INSERT_TAIL(&(json_node->swallow_head), current_swallow, matches);
     } else {
-        if (!parsing_rect && !parsing_deco_rect && !parsing_window_rect && !parsing_geometry) {
+        if (!parsing_rect && !parsing_window_rect && !parsing_geometry) {
             if (last_key && strcasecmp(last_key, "floating_nodes") == 0) {
                 DLOG("New floating_node\n");
                 Con *ws = con_get_workspace(json_node);
@@ -69,7 +68,7 @@ static int json_start_map(void *ctx) {
 
 static int json_end_map(void *ctx) {
     LOG("end of map\n");
-    if (!parsing_swallows && !parsing_rect && !parsing_deco_rect && !parsing_window_rect && !parsing_geometry) {
+    if (!parsing_swallows && !parsing_rect && !parsing_window_rect && !parsing_geometry) {
         /* Set a few default values to simplify manually crafted layout files. */
         if (json_node->layout == L_DEFAULT) {
             DLOG("Setting layout = L_SPLITH\n");
@@ -99,21 +98,26 @@ static int json_end_map(void *ctx) {
              * workspace called “1”. */
             Con *output;
             Con *workspace = NULL;
-            TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-            GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, json_node->name));
+            TAILQ_FOREACH (output, &(croot->nodes_head), nodes)
+                GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, json_node->name));
             char *base = sstrdup(json_node->name);
             int cnt = 1;
             while (workspace != NULL) {
                 FREE(json_node->name);
                 asprintf(&(json_node->name), "%s_%d", base, cnt++);
                 workspace = NULL;
-                TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-                GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, json_node->name));
+                TAILQ_FOREACH (output, &(croot->nodes_head), nodes)
+                    GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, json_node->name));
             }
             free(base);
 
             /* Set num accordingly so that i3bar will properly sort it. */
             json_node->num = ws_name_to_number(json_node->name);
+        } else {
+            // TODO: remove this in the “next” branch.
+            if (json_node->name == NULL || strcmp(json_node->name, "") == 0) {
+                json_node->name = sstrdup("#ff0000");
+            }
         }
 
         LOG("attaching\n");
@@ -122,11 +126,12 @@ static int json_end_map(void *ctx) {
         x_con_init(json_node, json_node->depth);
         json_node = json_node->parent;
     }
-
-    parsing_rect = false;
-    parsing_deco_rect = false;
-    parsing_window_rect = false;
-    parsing_geometry = false;
+    if (parsing_rect)
+        parsing_rect = false;
+    if (parsing_window_rect)
+        parsing_window_rect = false;
+    if (parsing_geometry)
+        parsing_geometry = false;
     return 1;
 }
 
@@ -141,10 +146,10 @@ static int json_end_array(void *ctx) {
     if (parsing_focus) {
         /* Clear the list of focus mappings */
         struct focus_mapping *mapping;
-        TAILQ_FOREACH_REVERSE(mapping, &focus_mappings, focus_mappings_head, focus_mappings) {
+        TAILQ_FOREACH_REVERSE (mapping, &focus_mappings, focus_mappings_head, focus_mappings) {
             LOG("focus (reverse) %d\n", mapping->old_id);
             Con *con;
-            TAILQ_FOREACH(con, &(json_node->focus_head), focused) {
+            TAILQ_FOREACH (con, &(json_node->focus_head), focused) {
                 if (con->old_id != mapping->old_id)
                     continue;
                 LOG("got it! %p\n", con);
@@ -174,9 +179,6 @@ static int json_key(void *ctx, const unsigned char *val, size_t len) {
 
     if (strcasecmp(last_key, "rect") == 0)
         parsing_rect = true;
-
-    if (strcasecmp(last_key, "deco_rect") == 0)
-        parsing_deco_rect = true;
 
     if (strcasecmp(last_key, "window_rect") == 0)
         parsing_window_rect = true;
@@ -425,20 +427,9 @@ static int json_double(void *ctx, double val) {
 }
 
 static json_content_t content_result;
-static int content_level;
-
-static int json_determine_content_deeper(void *ctx) {
-    content_level++;
-    return 1;
-}
-
-static int json_determine_content_shallower(void *ctx) {
-    content_level--;
-    return 1;
-}
 
 static int json_determine_content_string(void *ctx, const unsigned char *val, size_t len) {
-    if (strcasecmp(last_key, "type") != 0 || content_level > 1)
+    if (strcasecmp(last_key, "type") != 0)
         return 1;
 
     DLOG("string = %.*s, last_key = %s\n", (int)len, val, last_key);
@@ -474,16 +465,11 @@ json_content_t json_determine_content(const char *filename) {
     // We default to JSON_CONTENT_CON because it is legal to not include
     // “"type": "con"” in the JSON files for better readability.
     content_result = JSON_CONTENT_CON;
-    content_level = 0;
     yajl_gen g;
     yajl_handle hand;
     static yajl_callbacks callbacks = {
         .yajl_string = json_determine_content_string,
         .yajl_map_key = json_key,
-        .yajl_start_array = json_determine_content_deeper,
-        .yajl_start_map = json_determine_content_deeper,
-        .yajl_end_map = json_determine_content_shallower,
-        .yajl_end_array = json_determine_content_shallower,
     };
     g = yajl_gen_alloc(NULL);
     hand = yajl_alloc(&callbacks, NULL, (void *)g);
@@ -551,7 +537,6 @@ void tree_append_json(Con *con, const char *filename, char **errormsg) {
     to_focus = NULL;
     parsing_swallows = false;
     parsing_rect = false;
-    parsing_deco_rect = false;
     parsing_window_rect = false;
     parsing_geometry = false;
     parsing_focus = false;

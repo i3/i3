@@ -22,6 +22,7 @@ state INITIAL:
   'bar'                                    -> BARBRACE
   'font'                                   -> FONT
   'mode'                                   -> MODENAME
+  'gap_size'                               -> GAP_SIZE
   'floating_minimum_size'                  -> FLOATING_MINIMUM_SIZE_WIDTH
   'floating_maximum_size'                  -> FLOATING_MAXIMUM_SIZE_WIDTH
   'floating_modifier'                      -> FLOATING_MODIFIER
@@ -45,13 +46,18 @@ state INITIAL:
   exectype = 'exec_always', 'exec'         -> EXEC
   colorclass = 'client.background'
       -> COLOR_SINGLE
-  colorclass = 'client.focused_inactive', 'client.focused', 'client.unfocused', 'client.urgent', 'client.placeholder'
+  colorclass = 'client.focused_inactive', 'client.focused', 'client.unfocused', 'client.urgent'
       -> COLOR_BORDER
 
 # We ignore comments and 'set' lines (variables).
 state IGNORE_LINE:
   line
       -> INITIAL
+
+# gap_size <size>
+state GAP_SIZE:
+  width = number
+      -> call cfg_gap_size(&width)
 
 # floating_minimum_size <width> x <height>
 state FLOATING_MINIMUM_SIZE_WIDTH:
@@ -278,8 +284,6 @@ state FONT:
 state BINDING:
   release = '--release'
       ->
-  whole_window = '--whole-window'
-      ->
   modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl', 'Mode_switch', '$mod'
       ->
   '+'
@@ -290,10 +294,8 @@ state BINDING:
 state BINDCOMMAND:
   release = '--release'
       ->
-  whole_window = '--whole-window'
-      ->
   command = string
-      -> call cfg_binding($bindtype, $modifiers, $key, $release, $whole_window, $command)
+      -> call cfg_binding($bindtype, $modifiers, $key, $release, $command)
 
 ################################################################################
 # Mode configuration
@@ -337,10 +339,8 @@ state MODE_BINDING:
 state MODE_BINDCOMMAND:
   release = '--release'
       ->
-  whole_window = '--whole-window'
-      ->
   command = string
-      -> call cfg_mode_binding($bindtype, $modifiers, $key, $release, $whole_window, $command); MODE
+      -> call cfg_mode_binding($bindtype, $modifiers, $key, $release, $command); MODE
 
 ################################################################################
 # Bar configuration (i3bar)
@@ -364,8 +364,6 @@ state BAR:
   'hidden_state'           -> BAR_HIDDEN_STATE
   'id'                     -> BAR_ID
   'modifier'               -> BAR_MODIFIER
-  'wheel_up_cmd'           -> BAR_WHEEL_UP_CMD
-  'wheel_down_cmd'         -> BAR_WHEEL_DOWN_CMD
   'position'               -> BAR_POSITION
   'output'                 -> BAR_OUTPUT
   'tray_output'            -> BAR_TRAY_OUTPUT
@@ -411,14 +409,6 @@ state BAR_MODIFIER:
   modifier = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Control', 'Ctrl', 'Shift'
       -> call cfg_bar_modifier($modifier); BAR
 
-state BAR_WHEEL_UP_CMD:
-  command = string
-      -> call cfg_bar_wheel_up_cmd($command); BAR
-
-state BAR_WHEEL_DOWN_CMD:
-  command = string
-      -> call cfg_bar_wheel_down_cmd($command); BAR
-
 state BAR_POSITION:
   position = 'top', 'bottom'
       -> call cfg_bar_position($position); BAR
@@ -428,7 +418,7 @@ state BAR_OUTPUT:
       -> call cfg_bar_output($output); BAR
 
 state BAR_TRAY_OUTPUT:
-  output = word
+  output = string
       -> call cfg_bar_tray_output($output); BAR
 
 state BAR_FONT:

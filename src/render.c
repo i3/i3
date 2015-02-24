@@ -41,7 +41,7 @@ static void render_l_output(Con *con) {
     /* Find the content container and ensure that there is exactly one. Also
      * check for any non-CT_DOCKAREA clients. */
     Con *content = NULL;
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         if (child->type == CT_CON) {
             if (content != NULL) {
                 DLOG("More than one CT_CON on output container\n");
@@ -71,25 +71,25 @@ static void render_l_output(Con *con) {
     if (fullscreen) {
         fullscreen->rect = con->rect;
         x_raise_con(fullscreen);
-        render_con(fullscreen, true);
+        render_con(fullscreen, true, false);
         return;
     }
 
     /* First pass: determine the height of all CT_DOCKAREAs (the sum of their
      * children) and figure out how many pixels we have left for the rest */
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         if (child->type != CT_DOCKAREA)
             continue;
 
         child->rect.height = 0;
-        TAILQ_FOREACH(dockchild, &(child->nodes_head), nodes)
-        child->rect.height += dockchild->geometry.height;
+        TAILQ_FOREACH (dockchild, &(child->nodes_head), nodes)
+            child->rect.height += dockchild->geometry.height;
 
         height -= child->rect.height;
     }
 
     /* Second pass: Set the widths/heights */
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         if (child->type == CT_CON) {
             child->rect.x = x;
             child->rect.y = y;
@@ -111,7 +111,7 @@ static void render_l_output(Con *con) {
         DLOG("child at (%d, %d) with (%d x %d)\n",
              child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         x_raise_con(child);
-        render_con(child, false);
+        render_con(child, false, child->type == CT_DOCKAREA);
     }
 }
 
@@ -123,7 +123,7 @@ static void render_l_output(Con *con) {
  * updated in X11.
  *
  */
-void render_con(Con *con, bool render_fullscreen) {
+void render_con(Con *con, bool render_fullscreen, bool already_inset) {
     int children = con_num_children(con);
     DLOG("Rendering %snode %p / %s / layout %d / children %d\n",
          (render_fullscreen ? "fullscreen " : ""), con, con->name, con->layout,
@@ -140,6 +140,26 @@ void render_con(Con *con, bool render_fullscreen) {
         rect.y += 2;
         rect.width -= 2 * 2;
         rect.height -= 2 * 2;
+    }
+
+    bool should_inset = ((con_is_leaf(con) ||
+                          (children > 0 &&
+                           (con->layout == L_STACKED ||
+                            con->layout == L_TABBED))) &&
+                         con->type != CT_FLOATING_CON &&
+                         con->type != CT_WORKSPACE);
+    if ((!already_inset && should_inset)) {
+        Rect inset = (Rect) {config.gap_size, config.gap_size,
+            config.gap_size * -2, config.gap_size * -2};
+        rect = rect_add(rect, inset);
+        if (!render_fullscreen) {
+            con->rect = rect_add(con->rect, inset);
+            if (con->window) {
+                con->window_rect = rect_add(con->window_rect, inset);
+            }
+        }
+        inset.height = config.gap_size * -1;
+        con->deco_rect = rect_add(con->deco_rect, inset);
     }
 
     int x = rect.x;
@@ -209,16 +229,8 @@ void render_con(Con *con, bool render_fullscreen) {
     if (fullscreen) {
         fullscreen->rect = rect;
         x_raise_con(fullscreen);
-        render_con(fullscreen, true);
-        /* Fullscreen containers are either global (underneath the CT_ROOT
-         * container) or per-output (underneath the CT_CONTENT container). For
-         * global fullscreen containers, we cannot abort rendering here yet,
-         * because the floating windows (with popup_during_fullscreen smart)
-         * have not yet been rendered (see the CT_ROOT code path below). See
-         * also http://bugs.i3wm.org/1393 */
-        if (con->type != CT_ROOT) {
-            return;
-        }
+        render_con(fullscreen, true, false);
+        return;
     }
 
     /* find the height for the decorations */
@@ -232,7 +244,7 @@ void render_con(Con *con, bool render_fullscreen) {
         Con *child;
         int i = 0, assigned = 0;
         int total = con_orientation(con) == HORIZ ? rect.width : rect.height;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
             double percentage = child->percent > 0.0 ? child->percent : 1.0 / children;
             assigned += sizes[i++] = percentage * total;
         }
@@ -255,10 +267,9 @@ void render_con(Con *con, bool render_fullscreen) {
         render_l_output(con);
     } else if (con->type == CT_ROOT) {
         Con *output;
-        if (!fullscreen) {
-            TAILQ_FOREACH(output, &(con->nodes_head), nodes) {
-                render_con(output, false);
-            }
+
+        TAILQ_FOREACH (output, &(con->nodes_head), nodes) {
+            render_con(output, false, false);
         }
 
         /* We need to render floating windows after rendering all outputs’
@@ -266,7 +277,7 @@ void render_con(Con *con, bool render_fullscreen) {
          * all times. This is important when the user places floating
          * windows/containers so that they overlap on another output. */
         DLOG("Rendering floating windows:\n");
-        TAILQ_FOREACH(output, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (output, &(con->nodes_head), nodes) {
             if (con_is_internal(output))
                 continue;
             /* Get the active workspace of that output */
@@ -278,7 +289,7 @@ void render_con(Con *con, bool render_fullscreen) {
             Con *workspace = TAILQ_FIRST(&(content->focus_head));
             Con *fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
             Con *child;
-            TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
+            TAILQ_FOREACH (child, &(workspace->floating_head), floating_windows) {
                 /* Don’t render floating windows when there is a fullscreen window
                  * on that workspace. Necessary to make floating fullscreen work
                  * correctly (ticket #564). */
@@ -298,8 +309,6 @@ void render_con(Con *con, bool render_fullscreen) {
                     while (transient_con != NULL &&
                            transient_con->window != NULL &&
                            transient_con->window->transient_for != XCB_NONE) {
-                        DLOG("transient_con = 0x%08x, transient_con->window->transient_for = 0x%08x, fullscreen_id = 0x%08x\n",
-                                transient_con->window->id, transient_con->window->transient_for, fullscreen->window->id);
                         if (transient_con->window->transient_for == fullscreen->window->id) {
                             is_transient_for = true;
                             break;
@@ -326,14 +335,14 @@ void render_con(Con *con, bool render_fullscreen) {
                 DLOG("floating child at (%d,%d) with %d x %d\n",
                      child->rect.x, child->rect.y, child->rect.width, child->rect.height);
                 x_raise_con(child);
-                render_con(child, false);
+                render_con(child, false, true);
             }
         }
 
     } else {
         /* FIXME: refactor this into separate functions: */
         Con *child;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
             assert(children > 0);
 
             /* default layout */
@@ -434,20 +443,20 @@ void render_con(Con *con, bool render_fullscreen) {
             DLOG("child at (%d, %d) with (%d x %d)\n",
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
             x_raise_con(child);
-            render_con(child, false);
+            render_con(child, false, should_inset || already_inset);
             i++;
         }
 
         /* in a stacking or tabbed container, we ensure the focused client is raised */
         if (con->layout == L_STACKED || con->layout == L_TABBED) {
             TAILQ_FOREACH_REVERSE(child, &(con->focus_head), focus_head, focused)
-            x_raise_con(child);
+                x_raise_con(child);
             if ((child = TAILQ_FIRST(&(con->focus_head)))) {
                 /* By rendering the stacked container again, we handle the case
-             * that we have a non-leaf-container inside the stack. In that
-             * case, the children of the non-leaf-container need to be raised
-             * aswell. */
-                render_con(child, false);
+                 * that we have a non-leaf-container inside the stack. In that
+                 * case, the children of the non-leaf-container need to be raised
+                 * aswell. */
+                render_con(child, false, true);
             }
 
             if (children != 1)

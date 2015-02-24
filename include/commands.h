@@ -187,10 +187,10 @@ void cmd_focus_level(I3_CMD, char *level);
 void cmd_focus(I3_CMD);
 
 /**
- * Implementation of 'fullscreen [enable|disable|toggle] [global]'.
+ * Implementation of 'fullscreen [global]'.
  *
  */
-void cmd_fullscreen(I3_CMD, char *action, char *fullscreen_mode);
+void cmd_fullscreen(I3_CMD, char *fullscreen_mode);
 
 /**
  * Implementation of 'move <direction> [<pixels> [px]]'.
@@ -287,3 +287,10 @@ void cmd_shmlog(I3_CMD, char *argument);
  *
  */
 void cmd_debuglog(I3_CMD, char *argument);
+
+/**
+ * Implementation of 'gap_size <width>'
+ *
+ */
+
+void cmd_gap_size(I3_CMD, char *width);

@@ -23,7 +23,7 @@ $i3->connect()->recv;
 # Workspaces requests and events
 ################################
 
-my $old_ws = get_ws(focused_ws());
+my $focused = get_ws(focused_ws());
 
 # Events
 
@@ -36,11 +36,15 @@ $i3->subscribe({
     workspace => sub {
         my ($event) = @_;
         if ($event->{change} eq 'init') {
-            $init->send($event);
+            $init->send(1);
         } elsif ($event->{change} eq 'focus') {
-            $focus->send($event);
+            # Check that we have the old and new workspace
+            $focus->send(
+                $event->{current}->{name} == '2' &&
+                $event->{old}->{name} == $focused->{name}
+            );
         } elsif ($event->{change} eq 'empty') {
-            $empty->send($event);
+            $empty->send(1);
         }
     }
 })->recv;
@@ -57,20 +61,8 @@ $t = AnyEvent->timer(
     }
 );
 
-my $init_event = $init->recv;
-my $focus_event = $focus->recv;
-my $empty_event = $empty->recv;
-
-my $current_ws = get_ws(focused_ws());
-
-ok($init_event, 'workspace "init" event received');
-is($init_event->{current}->{id}, $current_ws->{id}, 'the "current" property should contain the initted workspace con');
-
-ok($focus_event, 'workspace "focus" event received');
-is($focus_event->{current}->{id}, $current_ws->{id}, 'the "current" property should contain the focused workspace con');
-is($focus_event->{old}->{id}, $old_ws->{id}, 'the "old" property should contain the workspace con that was focused last');
-
-ok($empty_event, 'workspace "empty" event received');
-is($empty_event->{current}->{id}, $old_ws->{id}, 'the "current" property should contain the emptied workspace con');
+ok($init->recv, 'Workspace "init" event received');
+ok($focus->recv, 'Workspace "focus" event received');
+ok($empty->recv, 'Workspace "empty" event received');
 
 done_testing;

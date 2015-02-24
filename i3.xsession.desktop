@@ -5,4 +5,3 @@ Exec=i3
 TryExec=i3
 Type=Application
 X-LightDM-DesktopName=i3
-DesktopNames=i3

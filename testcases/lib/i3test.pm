@@ -337,7 +337,6 @@ sub open_window {
     $args{name} //= 'Window ' . counter_window();
 
     my $window = $x->root->create_child(%args);
-    $window->add_hint('input');
 
     if ($before_map) {
         # TODO: investigate why _create is not needed

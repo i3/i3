@@ -8,8 +8,6 @@
  */
 #include "all.h"
 
-#include <xkbcommon/xkbcommon.h>
-
 pid_t command_error_nagbar_pid = -1;
 
 /*
@@ -27,7 +25,7 @@ static struct Mode *mode_from_name(const char *name) {
     struct Mode *mode;
 
     /* Try to find the mode in the list of modes and return it */
-    SLIST_FOREACH(mode, &modes, modes) {
+    SLIST_FOREACH (mode, &modes, modes) {
         if (strcmp(mode->name, name) == 0)
             return mode;
     }
@@ -49,11 +47,10 @@ static struct Mode *mode_from_name(const char *name) {
  *
  */
 Binding *configure_binding(const char *bindtype, const char *modifiers, const char *input_code,
-                           const char *release, const char *whole_window, const char *command, const char *modename) {
+                           const char *release, const char *command, const char *modename) {
     Binding *new_binding = scalloc(sizeof(Binding));
     DLOG("bindtype %s, modifiers %s, input code %s, release %s\n", bindtype, modifiers, input_code, release);
     new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
-    new_binding->whole_window = (whole_window != NULL);
     if (strcmp(bindtype, "bindsym") == 0) {
         new_binding->input_type = (strncasecmp(input_code, "button", (sizeof("button") - 1)) == 0
                                        ? B_MOUSE
@@ -107,7 +104,7 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
  */
 void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch) {
     Binding *bind;
-    TAILQ_FOREACH(bind, bindings, bindings) {
+    TAILQ_FOREACH (bind, bindings, bindings) {
         if (bind->input_type != B_KEYBOARD ||
             (bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) == 0) ||
             (!bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) != 0))
@@ -136,7 +133,7 @@ static Binding *get_binding(uint16_t modifiers, bool is_release, uint16_t input_
     if (!is_release) {
         /* On a press event, we first reset all B_UPON_KEYRELEASE_IGNORE_MODS
          * bindings back to B_UPON_KEYRELEASE */
-        TAILQ_FOREACH(bind, bindings, bindings) {
+        TAILQ_FOREACH (bind, bindings, bindings) {
             if (bind->input_type != input_type)
                 continue;
             if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
@@ -144,7 +141,7 @@ static Binding *get_binding(uint16_t modifiers, bool is_release, uint16_t input_
         }
     }
 
-    TAILQ_FOREACH(bind, bindings, bindings) {
+    TAILQ_FOREACH (bind, bindings, bindings) {
         /* First compare the modifiers (unless this is a
          * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
          * event) */
@@ -251,7 +248,7 @@ void translate_keysyms(void) {
     min_keycode = xcb_get_setup(conn)->min_keycode;
     max_keycode = xcb_get_setup(conn)->max_keycode;
 
-    TAILQ_FOREACH(bind, bindings, bindings) {
+    TAILQ_FOREACH (bind, bindings, bindings) {
         if (bind->input_type == B_MOUSE) {
             int button = atoi(bind->symbol + (sizeof("button") - 1));
             bind->keycode = button;
@@ -266,8 +263,8 @@ void translate_keysyms(void) {
             continue;
 
         /* We need to translate the symbol to a keycode */
-        keysym = xkb_keysym_from_name(bind->symbol, XKB_KEYSYM_NO_FLAGS);
-        if (keysym == XKB_KEY_NoSymbol) {
+        keysym = XStringToKeysym(bind->symbol);
+        if (keysym == NoSymbol) {
             ELOG("Could not translate string to key symbol: \"%s\"\n",
                  bind->symbol);
             continue;
@@ -307,7 +304,7 @@ void switch_mode(const char *new_mode) {
 
     DLOG("Switching to mode %s\n", new_mode);
 
-    SLIST_FOREACH(mode, &modes, modes) {
+    SLIST_FOREACH (mode, &modes, modes) {
         if (strcasecmp(mode->name, new_mode) != 0)
             continue;
 
@@ -337,8 +334,8 @@ void switch_mode(const char *new_mode) {
  */
 void check_for_duplicate_bindings(struct context *context) {
     Binding *bind, *current;
-    TAILQ_FOREACH(current, bindings, bindings) {
-        TAILQ_FOREACH(bind, bindings, bindings) {
+    TAILQ_FOREACH (current, bindings, bindings) {
+        TAILQ_FOREACH (bind, bindings, bindings) {
             /* Abort when we reach the current keybinding, only check the
              * bindings before */
             if (bind == current)
@@ -382,57 +379,18 @@ void check_for_duplicate_bindings(struct context *context) {
 }
 
 /*
- * Creates a dynamically allocated copy of bind.
- */
-static Binding *binding_copy(Binding *bind) {
-    Binding *ret = smalloc(sizeof(Binding));
-    *ret = *bind;
-    if (bind->symbol != NULL)
-        ret->symbol = strdup(bind->symbol);
-    if (bind->command != NULL)
-        ret->command = strdup(bind->command);
-    if (bind->translated_to != NULL) {
-        ret->translated_to = smalloc(sizeof(xcb_keycode_t) * bind->number_keycodes);
-        memcpy(ret->translated_to, bind->translated_to, sizeof(xcb_keycode_t) * bind->number_keycodes);
-    }
-    return ret;
-}
-
-/*
- * Frees the binding. If bind is null, it simply returns.
- */
-void binding_free(Binding *bind) {
-    if (bind == NULL) {
-        return;
-    }
-
-    FREE(bind->symbol);
-    FREE(bind->translated_to);
-    FREE(bind->command);
-    FREE(bind);
-}
-
-/*
- * Runs the given binding and handles parse errors. If con is passed, it will
- * execute the command binding with that container selected by criteria.
- * Returns a CommandResult for running the binding's command. Caller should
- * render tree if needs_tree_render is true. Free with command_result_free().
+ * Runs the given binding and handles parse errors. Returns a CommandResult for
+ * running the binding's command. Caller should render tree if
+ * needs_tree_render is true. Free with command_result_free().
  *
  */
-CommandResult *run_binding(Binding *bind, Con *con) {
-    char *command;
-
-    /* We need to copy the binding and command since “reload” may be part of
-     * the command, and then the memory that bind points to may not contain the
+CommandResult *run_binding(Binding *bind) {
+    /* We need to copy the command since “reload” may be part of the command,
+     * and then the memory that bind->command points to may not contain the
      * same data anymore. */
-    if (con == NULL)
-        command = sstrdup(bind->command);
-    else
-        sasprintf(&command, "[con_id=\"%d\"] %s", con, bind->command);
-
-    Binding *bind_cp = binding_copy(bind);
-    CommandResult *result = parse_command(command, NULL);
-    free(command);
+    char *command_copy = sstrdup(bind->command);
+    CommandResult *result = parse_command(command_copy, NULL);
+    free(command_copy);
 
     if (result->needs_tree_render)
         tree_render();
@@ -456,8 +414,7 @@ CommandResult *run_binding(Binding *bind, Con *con) {
         free(pageraction);
     }
 
-    ipc_send_binding_event("run", bind_cp);
-    binding_free(bind_cp);
+    /* TODO: emit event for running a binding */
 
     return result;
 }

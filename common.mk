@@ -92,7 +92,6 @@ else
 XCB_CFLAGS  += $(call cflags_for_lib, xcb-util)
 XCB_LIBS    += $(call ldflags_for_lib, xcb-util)
 endif
-XCB_XKB_LIBS := $(call ldflags_for_lib, xcb-xkb,xcb-xkb)
 
 # XCB keyboard stuff
 XCB_KBD_CFLAGS := $(call cflags_for_lib, xcb-keysyms)
@@ -106,10 +105,9 @@ XCB_WM_LIBS   := $(call ldflags_for_lib, xcb-icccm,xcb-icccm)
 XCB_WM_LIBS   += $(call ldflags_for_lib, xcb-xinerama,xcb-xinerama)
 XCB_WM_LIBS   += $(call ldflags_for_lib, xcb-randr,xcb-randr)
 
-XKB_COMMON_CFLAGS := $(call cflags_for_lib, xkbcommon,xkbcommon)
-XKB_COMMON_LIBS := $(call ldflags_for_lib, xkbcommon,xkbcommon)
-XKB_COMMON_X11_CFLAGS := $(call cflags_for_lib, xkbcommon-x11,xkbcommon-x11)
-XKB_COMMON_X11_LIBS := $(call ldflags_for_lib, xkbcommon-x11,xkbcommon-x11)
+# Xlib
+X11_CFLAGS := $(call cflags_for_lib, x11)
+X11_LIBS   := $(call ldflags_for_lib, x11,X11)
 
 # Xcursor
 XCURSOR_CFLAGS := $(call cflags_for_lib, xcb-cursor)
