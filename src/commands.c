@@ -900,11 +900,15 @@ void cmd_nop(I3_CMD, char *comment) {
 void cmd_append_layout(I3_CMD, char *path) {
     LOG("Appending layout \"%s\"\n", path);
 
+    /* Make sure we allow paths like '~/.i3/layout.json' */
+    path = resolve_tilde(path);
+
     json_content_t content = json_determine_content(path);
     LOG("JSON content = %d\n", content);
     if (content == JSON_CONTENT_UNKNOWN) {
         ELOG("Could not determine the contents of \"%s\", not loading.\n", path);
         ysuccess(false);
+        free(path);
         return;
     }
 
@@ -946,6 +950,7 @@ void cmd_append_layout(I3_CMD, char *path) {
     if (content == JSON_CONTENT_WORKSPACE)
         ipc_send_workspace_event("restored", parent, NULL);
 
+    free(path);
     cmd_output->needs_tree_render = true;
 }
 
