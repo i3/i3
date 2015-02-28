@@ -123,12 +123,12 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
 
             /* Offset may be equal to length, in which case display the number */
             params->workspaces_walk->name = (offset < len
-                                                 ? i3string_from_utf8_with_length(ws_name + offset, len - offset)
-                                                 : i3string_from_utf8(ws_num));
+                                                 ? i3string_from_markup_with_length(ws_name + offset, len - offset)
+                                                 : i3string_from_markup(ws_num));
 
         } else {
             /* Default case: just save the name */
-            params->workspaces_walk->name = i3string_from_utf8_with_length(ws_name, len);
+            params->workspaces_walk->name = i3string_from_markup_with_length(ws_name, len);
         }
 
         /* Save its rendered width */
@@ -266,9 +266,9 @@ void free_workspaces(void) {
     }
     i3_ws *ws_walk;
 
-    SLIST_FOREACH (outputs_walk, outputs, slist) {
+    SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (outputs_walk->workspaces != NULL && !TAILQ_EMPTY(outputs_walk->workspaces)) {
-            TAILQ_FOREACH (ws_walk, outputs_walk->workspaces, tailq) {
+            TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
                 I3STRING_FREE(ws_walk->name);
                 FREE(ws_walk->canonical_name);
             }

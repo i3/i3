@@ -71,6 +71,40 @@ is(current_desktop_index, 1, "Open on 0 and view 1");
 cmd 'workspace 2';
 is(current_desktop_index, 2, "Open and view empty");
 
+#########################################################
+# Test the _NET_CURRENT_DESKTOP client request
+# This request is sent by pagers and bars to switch the current desktop (which
+# is like an ersatz workspace) to the given index
+#########################################################
+
+sub send_current_desktop_request {
+    my ($idx) = @_;
+
+    my $msg = pack "CCSLLLLLL",
+        X11::XCB::CLIENT_MESSAGE, # response_type
+        32, # format
+        0, # sequence
+        0,
+        $_NET_CURRENT_DESKTOP,
+        $idx, # data32[0] (the desktop index)
+        0, # data32[1] (can be a timestamp)
+        0, # data32[2]
+        0, # data32[3]
+        0; # data32[4]
+
+    $x->send_event(0, $x->get_root_window(), X11::XCB::EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
+}
+
+send_current_desktop_request(1);
+is(current_desktop_index, 1, 'current desktop request switched to desktop 1');
+# note that _NET_CURRENT_DESKTOP is an index and that in this case, workspace 1
+# is at index 1 as a convenience for the test
+is(focused_ws, '1', 'current desktop request switched to workspace 1');
+
+send_current_desktop_request(0);
+is(current_desktop_index, 0, 'current desktop request switched to desktop 0');
+is(focused_ws, '0', 'current desktop request switched to workspace 0');
+
 exit_gracefully($pid);
 
 done_testing;

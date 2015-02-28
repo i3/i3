@@ -4,25 +4,27 @@
    "min" means minimum required version
    "lkgv" means last known good version
 
-┌─────────────┬────────┬────────┬────────────────────────────────────────┐
-│ dependency  │ min.   │ lkgv   │ URL                                    │
-├─────────────┼────────┼────────┼────────────────────────────────────────┤
-│ pkg-config  │ 0.25   │ 0.26   │ http://pkgconfig.freedesktop.org/      │
-│ libxcb      │ 1.1.93 │ 1.7    │ http://xcb.freedesktop.org/dist/       │
-│ xcb-util    │ 0.3.3  │ 0.3.8  │ http://xcb.freedesktop.org/dist/       │
-│ util-cursor³│ 0.0.99 │ 0.0.99 │ http://xcb.freedesktop.org/dist/       │
-│ libev       │ 4.0    │ 4.11   │ http://libev.schmorp.de/               │
-│ yajl        │ 2.0.1  │ 2.0.4  │ http://lloyd.github.com/yajl/          │
-│ asciidoc    │ 8.3.0  │ 8.6.4  │ http://www.methods.co.nz/asciidoc/     │
-│ xmlto       │ 0.0.23 │ 0.0.23 │ http://www.methods.co.nz/asciidoc/     │
-│ Pod::Simple²│ 3.22   │ 3.22   │ http://search.cpan.org/~dwheeler/Pod-Simple-3.23/
-│ docbook-xml │ 4.5    │ 4.5    │ http://www.methods.co.nz/asciidoc/     │
-│ Xlib        │ 1.3.3  │ 1.4.3  │ http://ftp.x.org/pub/current/src/lib/  │
-│ PCRE        │ 8.12   │ 8.12   │ http://www.pcre.org/                   │
-│ libsn¹      │ 0.10   │ 0.12   │ http://freedesktop.org/wiki/Software/startup-notification
-│ pango       │ 1.30.0 | 1.30.0 │ http://www.pango.org/                  │
-│ cairo       │ 1.12.2 │ 1.12.2 │ http://cairographics.org/              │
-└─────────────┴────────┴────────┴────────────────────────────────────────┘
+┌──────────────┬────────┬────────┬────────────────────────────────────────┐
+│ dependency   │ min.   │ lkgv   │ URL                                    │
+├──────────────┼────────┼────────┼────────────────────────────────────────┤
+│ pkg-config   │ 0.25   │ 0.26   │ http://pkgconfig.freedesktop.org/      │
+│ libxcb       │ 1.1.93 │ 1.10   │ http://xcb.freedesktop.org/dist/       │
+│ xcb-util     │ 0.3.3  │ 0.4.1  │ http://xcb.freedesktop.org/dist/       │
+│ xkbcommon    │ 0.4.0  │ 0.4.0  │ http://xkbcommon.org/                  │
+│ xkbcommon-x11│ 0.4.0  │ 0.4.0  │ http://xkbcommon.org/                  │
+│ util-cursor³ │ 0.0.99 │ 0.0.99 │ http://xcb.freedesktop.org/dist/       │
+│ libev        │ 4.0    │ 4.11   │ http://libev.schmorp.de/               │
+│ yajl         │ 2.0.1  │ 2.0.4  │ http://lloyd.github.com/yajl/          │
+│ asciidoc     │ 8.3.0  │ 8.6.4  │ http://www.methods.co.nz/asciidoc/     │
+│ xmlto        │ 0.0.23 │ 0.0.23 │ http://www.methods.co.nz/asciidoc/     │
+│ Pod::Simple² │ 3.22   │ 3.22   │ http://search.cpan.org/~dwheeler/Pod-Simple-3.23/
+│ docbook-xml  │ 4.5    │ 4.5    │ http://www.methods.co.nz/asciidoc/     │
+│ Xlib         │ 1.3.3  │ 1.4.3  │ http://ftp.x.org/pub/current/src/lib/  │
+│ PCRE         │ 8.12   │ 8.12   │ http://www.pcre.org/                   │
+│ libsn¹       │ 0.10   │ 0.12   │ http://freedesktop.org/wiki/Software/startup-notification
+│ pango        │ 1.30.0 | 1.30.0 │ http://www.pango.org/                  │
+│ cairo        │ 1.12.2 │ 1.12.2 │ http://cairographics.org/              │
+└──────────────┴────────┴────────┴────────────────────────────────────────┘
  ¹ libsn = libstartup-notification
  ² Pod::Simple is a Perl module required for converting the testsuite
    documentation to HTML. See http://michael.stapelberg.de/cpan/#Pod::Simple
@@ -35,6 +37,6 @@
  i3-migrate-config-to-v4 and i3-dmenu-desktop are implemented in Perl, but have
  no dependencies besides Perl 5.10.
 
- i3-save-tree is also implemented in Perl and needs AnyEvent::I3 and JSON::XS.
- While i3-save-tree is not required for running i3 itself, it is strongly
- recommended to provide it in distribution packages.
+ i3-save-tree is also implemented in Perl and needs AnyEvent::I3 (>= 0.12) and
+ JSON::XS. While i3-save-tree is not required for running i3 itself, it is
+ strongly recommended to provide it in distribution packages.

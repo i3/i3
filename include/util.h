@@ -15,43 +15,45 @@
 #include "data.h"
 
 #define die(...) errx(EXIT_FAILURE, __VA_ARGS__);
-#define exit_if_null(pointer, ...) { if (pointer == NULL) die(__VA_ARGS__); }
+#define exit_if_null(pointer, ...) \
+    {                              \
+        if (pointer == NULL)       \
+            die(__VA_ARGS__);      \
+    }
 #define STARTS_WITH(string, needle) (strncasecmp(string, needle, strlen(needle)) == 0)
-#define CIRCLEQ_NEXT_OR_NULL(head, elm, field) (CIRCLEQ_NEXT(elm, field) != CIRCLEQ_END(head) ? \
-                                                CIRCLEQ_NEXT(elm, field) : NULL)
-#define CIRCLEQ_PREV_OR_NULL(head, elm, field) (CIRCLEQ_PREV(elm, field) != CIRCLEQ_END(head) ? \
-                                                CIRCLEQ_PREV(elm, field) : NULL)
-#define FOR_TABLE(workspace) \
-                        for (int cols = 0; cols < (workspace)->cols; cols++) \
-                                for (int rows = 0; rows < (workspace)->rows; rows++)
+#define CIRCLEQ_NEXT_OR_NULL(head, elm, field) (CIRCLEQ_NEXT(elm, field) != CIRCLEQ_END(head) ? CIRCLEQ_NEXT(elm, field) : NULL)
+#define CIRCLEQ_PREV_OR_NULL(head, elm, field) (CIRCLEQ_PREV(elm, field) != CIRCLEQ_END(head) ? CIRCLEQ_PREV(elm, field) : NULL)
+#define FOR_TABLE(workspace)                             \
+    for (int cols = 0; cols < (workspace)->cols; cols++) \
+        for (int rows = 0; rows < (workspace)->rows; rows++)
 
-#define NODES_FOREACH(head) \
-    for (Con *child = (Con*)-1; (child == (Con*)-1) && ((child = 0), true);) \
-        TAILQ_FOREACH(child, &((head)->nodes_head), nodes)
+#define NODES_FOREACH(head)                                                    \
+    for (Con *child = (Con *)-1; (child == (Con *)-1) && ((child = 0), true);) \
+    TAILQ_FOREACH(child, &((head)->nodes_head), nodes)
 
-#define NODES_FOREACH_REVERSE(head) \
-    for (Con *child = (Con*)-1; (child == (Con*)-1) && ((child = 0), true);) \
-        TAILQ_FOREACH_REVERSE(child, &((head)->nodes_head), nodes_head, nodes)
+#define NODES_FOREACH_REVERSE(head)                                            \
+    for (Con *child = (Con *)-1; (child == (Con *)-1) && ((child = 0), true);) \
+    TAILQ_FOREACH_REVERSE(child, &((head)->nodes_head), nodes_head, nodes)
 
 /* greps the ->nodes of the given head and returns the first node that matches the given condition */
 #define GREP_FIRST(dest, head, condition) \
-    NODES_FOREACH(head) { \
-        if (!(condition)) \
-            continue; \
-        \
-        (dest) = child; \
-        break; \
+    NODES_FOREACH(head) {                 \
+        if (!(condition))                 \
+            continue;                     \
+                                          \
+        (dest) = child;                   \
+        break;                            \
     }
 
-#define FREE(pointer) do { \
+#define FREE(pointer)          \
+    do {                       \
         if (pointer != NULL) { \
-                free(pointer); \
-                pointer = NULL; \
-        } \
-} \
-while (0)
+            free(pointer);     \
+            pointer = NULL;    \
+        }                      \
+    } while (0)
 
-#define CALL(obj, member, ...) obj->member(obj, ## __VA_ARGS__)
+#define CALL(obj, member, ...) obj->member(obj, ##__VA_ARGS__)
 
 int min(int a, int b);
 int max(int a, int b);

@@ -50,9 +50,9 @@ EOT
 
 my $expected = <<'EOT';
 cfg_enter_mode(meh)
-cfg_mode_binding(bindsym, Mod1,Shift, x, (null), resize grow)
-cfg_mode_binding(bindcode, Mod1, 44, (null), resize shrink)
-cfg_mode_binding(bindsym, Mod1, x, --release, exec foo)
+cfg_mode_binding(bindsym, Mod1,Shift, x, (null), (null), resize grow)
+cfg_mode_binding(bindcode, Mod1, 44, (null), (null), resize shrink)
+cfg_mode_binding(bindsym, Mod1, x, --release, (null), exec foo)
 EOT
 
 is(parser_calls($config),
@@ -620,7 +620,7 @@ EOT
 
 $expected = <<'EOT';
 cfg_enter_mode(yo)
-cfg_mode_binding(bindsym, (null), x, (null), resize shrink left)
+cfg_mode_binding(bindsym, (null), x, (null), (null), resize shrink left)
 ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', '}'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: mode "yo" {
@@ -647,7 +647,7 @@ EOT
 
 $expected = <<'EOT';
 cfg_bar_output(LVDS-1)
-ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'i3bar_command', 'status_command', 'socket_path', 'mode', 'hidden_state', 'id', 'modifier', 'position', 'output', 'tray_output', 'font', 'binding_mode_indicator', 'workspace_buttons', 'strip_workspace_numbers', 'verbose', 'colors', '}'
+ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'i3bar_command', 'status_command', 'socket_path', 'mode', 'hidden_state', 'id', 'modifier', 'wheel_up_cmd', 'wheel_down_cmd', 'position', 'output', 'tray_output', 'font', 'binding_mode_indicator', 'workspace_buttons', 'strip_workspace_numbers', 'verbose', 'colors', '}'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: bar {
 ERROR: CONFIG: Line   2:     output LVDS-1

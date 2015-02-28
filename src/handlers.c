@@ -21,6 +21,8 @@
 #include <libsn/sn-monitor.h>
 
 int randr_base = -1;
+int xkb_base = -1;
+int xkb_current_group;
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -62,7 +64,7 @@ bool event_is_ignored(const int sequence, const int response_type) {
             event = SLIST_NEXT(event, ignore_events);
     }
 
-    SLIST_FOREACH (event, &ignore_events, ignore_events) {
+    SLIST_FOREACH(event, &ignore_events, ignore_events) {
         if (event->sequence != sequence)
             continue;
 
@@ -163,12 +165,12 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     layout_t layout = (enter_child ? con->parent->layout : con->layout);
     if (layout == L_DEFAULT) {
         Con *child;
-        TAILQ_FOREACH (child, &(con->nodes_head), nodes)
-            if (rect_contains(child->deco_rect, event->event_x, event->event_y)) {
-                LOG("using child %p / %s instead!\n", child, child->name);
-                con = child;
-                break;
-            }
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+        if (rect_contains(child->deco_rect, event->event_x, event->event_y)) {
+            LOG("using child %p / %s instead!\n", child, child->name);
+            con = child;
+            break;
+        }
     }
 
 #if 0
@@ -231,7 +233,7 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
 
     /* see over which rect the user is */
     Con *current;
-    TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
         if (!rect_contains(current->deco_rect, event->event_x, event->event_y))
             continue;
 
@@ -282,7 +284,6 @@ static void handle_map_request(xcb_map_request_event_t *event) {
     add_ignore_event(event->sequence, -1);
 
     manage_window(event->window, cookie, false);
-    x_push_changes(croot);
     return;
 }
 
@@ -487,7 +488,6 @@ static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
 
     tree_close(con, DONT_KILL_WINDOW, false, false);
     tree_render();
-    x_push_changes(croot);
 
 ignore_end:
     /* If the client (as opposed to i3) destroyed or unmapped a window, an
@@ -651,6 +651,19 @@ static void handle_expose_event(xcb_expose_event_t *event) {
     return;
 }
 
+#define _NET_WM_MOVERESIZE_SIZE_TOPLEFT      0
+#define _NET_WM_MOVERESIZE_SIZE_TOP          1
+#define _NET_WM_MOVERESIZE_SIZE_TOPRIGHT     2
+#define _NET_WM_MOVERESIZE_SIZE_RIGHT        3
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT  4
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOM       5
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT   6
+#define _NET_WM_MOVERESIZE_SIZE_LEFT         7
+#define _NET_WM_MOVERESIZE_MOVE              8  /* movement only */
+#define _NET_WM_MOVERESIZE_SIZE_KEYBOARD     9  /* size via keyboard */
+#define _NET_WM_MOVERESIZE_MOVE_KEYBOARD     10 /* move via keyboard */
+#define _NET_WM_MOVERESIZE_CANCEL            11 /* cancel operation */
+
 /*
  * Handle client messages (EWMH)
  *
@@ -791,6 +804,98 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             XCB_ATOM_CARDINAL, 32, 4,
             &r);
         xcb_flush(conn);
+    } else if (event->type == A_WM_CHANGE_STATE) {
+        /* http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.4 */
+        Con *con = con_by_window_id(event->window);
+
+        if (con && event->data.data32[0] == 3) {
+            /* this request is so we can play some animiation showing the
+             * window physically moving to the tray before we close it (I
+             * think) */
+            DLOG("Client has requested iconic state. Closing this con. (con = %p)\n", con);
+            tree_close(con, DONT_KILL_WINDOW, false, false);
+            tree_render();
+        } else {
+            DLOG("Not handling WM_CHANGE_STATE request. (window = %d, state = %d)\n", event->window, event->data.data32[0]);
+        }
+
+    } else if (event->type == A__NET_CURRENT_DESKTOP) {
+        /* This request is used by pagers and bars to change the current
+         * desktop likely as a result of some user action. We interpret this as
+         * a request to focus the given workspace. See
+         * http://standards.freedesktop.org/wm-spec/latest/ar01s03.html#idm140251368135008
+         * */
+        Con *output;
+        uint32_t idx = 0;
+        DLOG("Request to change current desktop to index %d\n", event->data.data32[0]);
+
+        TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+            Con *ws;
+            TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+                if (STARTS_WITH(ws->name, "__"))
+                    continue;
+
+                if (idx == event->data.data32[0]) {
+                    /* data32[1] is a timestamp used to prevent focus race conditions */
+                    if (event->data.data32[1])
+                        last_timestamp = event->data.data32[1];
+
+                    DLOG("Handling request to focus workspace %s\n", ws->name);
+
+                    workspace_show(ws);
+                    tree_render();
+
+                    return;
+                }
+
+                ++idx;
+            }
+        }
+    } else if (event->type == A__NET_CLOSE_WINDOW) {
+        /*
+         * Pagers wanting to close a window MUST send a _NET_CLOSE_WINDOW
+         * client message request to the root window.
+         * http://standards.freedesktop.org/wm-spec/wm-spec-latest.html#idm140200472668896
+         */
+        Con *con = con_by_window_id(event->window);
+        if (con) {
+            DLOG("Handling _NET_CLOSE_WINDOW request (con = %p)\n", con);
+
+            if (event->data.data32[0])
+                last_timestamp = event->data.data32[0];
+
+            tree_close(con, KILL_WINDOW, false, false);
+            tree_render();
+        } else {
+            DLOG("Couldn't find con for _NET_CLOSE_WINDOW request. (window = %d)\n", event->window);
+        }
+    } else if (event->type == A__NET_WM_MOVERESIZE) {
+        /*
+         * Client-side decorated Gtk3 windows emit this signal when being
+         * dragged by their GtkHeaderBar
+         */
+        Con *con = con_by_window_id(event->window);
+        if (!con || !con_is_floating(con)) {
+            DLOG("Couldn't find con for _NET_WM_MOVERESIZE request, or con not floating (window = %d)\n", event->window);
+            return;
+        }
+        DLOG("Handling _NET_WM_MOVERESIZE request (con = %p)\n", con);
+        uint32_t direction = event->data.data32[2];
+        uint32_t x_root = event->data.data32[0];
+        uint32_t y_root = event->data.data32[1];
+        /* construct fake xcb_button_press_event_t */
+        xcb_button_press_event_t fake = {
+            .root_x = x_root,
+            .root_y = y_root,
+            .event_x = x_root - (con->rect.x),
+            .event_y = y_root - (con->rect.y)};
+        if (direction == _NET_WM_MOVERESIZE_MOVE) {
+            floating_drag_window(con->parent, &fake);
+        } else if (direction >= _NET_WM_MOVERESIZE_SIZE_TOPLEFT && direction <= _NET_WM_MOVERESIZE_SIZE_LEFT) {
+            floating_resize_window(con->parent, FALSE, &fake);
+        } else {
+            DLOG("_NET_WM_MOVERESIZE direction %d not implemented\n", direction);
+        }
     } else {
         DLOG("unhandled clientmessage\n");
         return;
@@ -1045,6 +1150,30 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
     return;
 }
 
+/*
+ * Handles the WM_CLASS property for assignments and criteria selection.
+ *
+ */
+static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                                xcb_atom_t name, xcb_get_property_reply_t *prop) {
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
+        return false;
+
+    if (prop == NULL) {
+        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
+                                                                       false, window, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 0, 32),
+                                      NULL);
+
+        if (prop == NULL)
+            return false;
+    }
+
+    window_update_class(con->window, prop, false);
+
+    return true;
+}
+
 /* Returns false if the event could not be processed (e.g. the window could not
  * be found), true otherwise */
 typedef bool (*cb_property_handler_t)(void *data, xcb_connection_t *c, uint8_t state, xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *property);
@@ -1062,7 +1191,8 @@ static struct property_handler_t property_handlers[] = {
     {0, UINT_MAX, handle_normal_hints},
     {0, UINT_MAX, handle_clientleader_change},
     {0, UINT_MAX, handle_transient_for},
-    {0, 128, handle_windowrole_change}};
+    {0, 128, handle_windowrole_change},
+    {0, 128, handle_class_change}};
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
 /*
@@ -1080,6 +1210,7 @@ void property_handlers_init(void) {
     property_handlers[4].atom = A_WM_CLIENT_LEADER;
     property_handlers[5].atom = XCB_ATOM_WM_TRANSIENT_FOR;
     property_handlers[6].atom = A_WM_WINDOW_ROLE;
+    property_handlers[7].atom = XCB_ATOM_WM_CLASS;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
@@ -1115,9 +1246,47 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
  *
  */
 void handle_event(int type, xcb_generic_event_t *event) {
+    DLOG("event type %d, xkb_base %d\n", type, xkb_base);
     if (randr_base > -1 &&
         type == randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
         handle_screen_change(event);
+        return;
+    }
+
+    if (xkb_base > -1 && type == xkb_base) {
+        DLOG("xkb event, need to handle it.\n");
+
+        xcb_xkb_state_notify_event_t *state = (xcb_xkb_state_notify_event_t *)event;
+        if (state->xkbType == XCB_XKB_MAP_NOTIFY) {
+            if (event_is_ignored(event->sequence, type)) {
+                DLOG("Ignoring map notify event for sequence %d.\n", state->sequence);
+            } else {
+                DLOG("xkb map notify, sequence %d, time %d\n", state->sequence, state->time);
+                add_ignore_event(event->sequence, type);
+                ungrab_all_keys(conn);
+                translate_keysyms();
+                grab_all_keys(conn, false);
+            }
+        } else if (state->xkbType == XCB_XKB_STATE_NOTIFY) {
+            DLOG("xkb state group = %d\n", state->group);
+
+            /* See The XKB Extension: Library Specification, section 14.1 */
+            /* We check if the current group (each group contains
+             * two levels) has been changed. Mode_switch activates
+             * group XkbGroup2Index */
+            if (xkb_current_group == state->group)
+                return;
+            xkb_current_group = state->group;
+            if (state->group == XCB_XKB_GROUP_1) {
+                DLOG("Mode_switch disabled\n");
+                ungrab_all_keys(conn);
+                grab_all_keys(conn, false);
+            } else {
+                DLOG("Mode_switch enabled\n");
+                grab_all_keys(conn, false);
+            }
+        }
+
         return;
     }
 
@@ -1128,6 +1297,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
             break;
 
         case XCB_BUTTON_PRESS:
+        case XCB_BUTTON_RELEASE:
             handle_button_press((xcb_button_press_event_t *)event);
             break;
 

@@ -956,10 +956,10 @@ accepted. There are a few things which we don’t want to see in i3, e.g. a
 command which will focus windows in an alt+tab like way.
 
 When working on bugfixes, please make sure you mention that you are working on
-it in the corresponding bugreport at http://bugs.i3wm.org/. In case there is no
-bugreport yet, please create one.
+it in the corresponding bugreport at https://github.com/i3/i3/issues In case
+there is no bugreport yet, please create one.
 
-After you are done, please submit your work for review at http://cr.i3wm.org/
+After you are done, please submit your work for review at https://github.com/i3/i3
 
 Do not send emails to the mailing list or any author directly, and don’t submit
 them in the bugtracker, since all reviews should be done in public at

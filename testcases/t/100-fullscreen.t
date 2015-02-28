@@ -192,6 +192,26 @@ cmd 'focus left';
 is($x->input_focus, $window->id, 'fullscreen window still focused');
 
 ################################################################################
+# Verify that changing workspace while in global fullscreen does not work.
+################################################################################
+
+$tmp = fresh_workspace;
+$window = open_window;
+
+cmd 'fullscreen global';
+is($x->input_focus, $window->id, 'window focused');
+is(focused_ws(), $tmp, 'workspace selected');
+
+$other = get_unused_workspace;
+cmd "workspace $other";
+is($x->input_focus, $window->id, 'window still focused');
+is(focused_ws(), $tmp, 'workspace still selected');
+
+# leave global fullscreen so that is does not interfere with the other tests
+$window->fullscreen(0);
+sync_with_i3;
+
+################################################################################
 # Verify that fullscreening a window on a second workspace and moving it onto
 # the first workspace unfullscreens the first window.
 ################################################################################
@@ -234,5 +254,132 @@ $swindow = open_window({
 
 is(fullscreen_windows($tmp), 1, 'one fullscreen window on ws');
 is($x->input_focus, $swindow->id, 'fullscreen window focused');
+
+################################################################################
+# Verify that command ‘fullscreen enable’ works and is idempotent.
+################################################################################
+
+$tmp = fresh_workspace;
+
+$window = open_window;
+is($x->input_focus, $window->id, 'window focused');
+is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+
+cmd 'fullscreen enable';
+is($x->input_focus, $window->id, 'window still focused');
+is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+
+cmd 'fullscreen enable';
+is($x->input_focus, $window->id, 'window still focused');
+is(fullscreen_windows($tmp), 1, 'still one fullscreen window on workspace');
+
+$window->fullscreen(0);
+sync_with_i3;
+is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+
+################################################################################
+# Verify that command ‘fullscreen enable global’ works and is idempotent.
+################################################################################
+
+$tmp = fresh_workspace;
+
+$window = open_window;
+is($x->input_focus, $window->id, 'window focused');
+is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+
+cmd 'fullscreen enable global';
+is($x->input_focus, $window->id, 'window still focused');
+is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+
+cmd 'fullscreen enable global';
+is($x->input_focus, $window->id, 'window still focused');
+is(fullscreen_windows($tmp), 1, 'still one fullscreen window on workspace');
+
+$window->fullscreen(0);
+sync_with_i3;
+is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+
+################################################################################
+# Verify that command ‘fullscreen disable’ works and is idempotent.
+################################################################################
+
+$tmp = fresh_workspace;
+
+$window = open_window;
+is($x->input_focus, $window->id, 'window focused');
+is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+
+$window->fullscreen(1);
+sync_with_i3;
+is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+
+cmd 'fullscreen disable';
+is($x->input_focus, $window->id, 'window still focused');
+is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+
+cmd 'fullscreen disable';
+is($x->input_focus, $window->id, 'window still focused');
+is(fullscreen_windows($tmp), 0, 'still no fullscreen window on workspace');
+
+################################################################################
+# Verify that command ‘fullscreen toggle’ works.
+################################################################################
+
+$tmp = fresh_workspace;
+
+$window = open_window;
+is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+
+cmd 'fullscreen toggle';
+is($x->input_focus, $window->id, 'window still focused');
+is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+
+cmd 'fullscreen toggle';
+is($x->input_focus, $window->id, 'window still focused');
+is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+
+################################################################################
+# Verify that a window’s fullscreen is disabled when another one is enabled
+# on the same workspace. The new fullscreen window should be focused.
+################################################################################
+
+$tmp = fresh_workspace;
+
+$window = open_window;
+$other = open_window;
+
+is($x->input_focus, $other->id, 'other window focused');
+is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+
+cmd 'fullscreen enable';
+is($x->input_focus, $other->id, 'other window focused');
+is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+
+cmd '[id="' . $window->id . '"] fullscreen enable';
+is($x->input_focus, $window->id, 'window focused');
+is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+
+################################################################################
+# Verify that when a global fullscreen is enabled the window is focused and
+# its workspace is selected, so that disabling the fullscreen keeps the window
+# focused and visible.
+################################################################################
+
+$tmp = fresh_workspace;
+
+$window = open_window;
+
+is($x->input_focus, $window->id, 'window focused');
+
+cmd 'workspace ' . get_unused_workspace;
+isnt($x->input_focus, $window->id, 'window not focused');
+isnt(focused_ws(), $tmp, 'workspace not selected');
+
+cmd '[id="' . $window->id . '"] fullscreen enable global';
+is($x->input_focus, $window->id, 'window focused');
+
+cmd 'fullscreen disable';
+is($x->input_focus, $window->id, 'window still focused');
+is(focused_ws(), $tmp, 'workspace selected');
 
 done_testing;

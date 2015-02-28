@@ -1,7 +1,7 @@
 IPC interface (interprocess communication)
 ==========================================
 Michael Stapelberg <michael@i3wm.org>
-February 2014
+October 2014
 
 This document describes how to interface with i3 from a separate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
@@ -156,7 +156,7 @@ following properties:
 
 num (integer)::
 	The logical number of the workspace. Corresponds to the command
-	to switch to this workspace.
+	to switch to this workspace. For named workspaces, this will be -1.
 name (string)::
 	The name of this workspace (by default num+1), as changed by the
 	user. Encoded in UTF-8.
@@ -316,6 +316,10 @@ window_rect (map)::
 	So, when using the +default+ layout, you will have a 2 pixel border on
 	each side, making the window_rect +{ "x": 2, "y": 0, "width": 632,
 	"height": 366 }+ (for example).
+deco_rect (map)::
+	The coordinates of the *window decoration* inside its container. These
+	coordinates are relative to the container and do not include the actual
+	client window.
 geometry (map)::
 	The original geometry the window specified when i3 mapped it. Used when
 	switching a window to floating mode, for example.
@@ -613,7 +617,7 @@ you can register to an event.
 *Example:*
 ---------------------------------
 type: SUBSCRIBE
-payload: [ "workspace", "focus" ]
+payload: [ "workspace", "output" ]
 ---------------------------------
 
 
@@ -638,6 +642,9 @@ window (3)::
 barconfig_update (4)::
     Sent when the hidden_state or mode field in the barconfig of any bar
     instance was updated and when the config is reloaded.
+binding (5)::
+	Sent when a configured command binding is triggered with the keyboard or
+	mouse
 
 *Example:*
 --------------------------------------------------------------------
@@ -661,15 +668,16 @@ if ($is_event) {
 
 This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change ("focus", "init",
-"empty", "urgent").
+"empty", "urgent"). A +current (object)+ property will be present with the
+affected workspace whenever the type of event affects a workspace (otherwise,
+it will be +null).
 
-Moreover, when the change is "focus", an +old (object)+ and a +current
-(object)+ properties will be present with the previous and current
-workspace respectively.  When the first switch occurs (when i3 focuses
-the workspace visible at the beginning) there is no previous
-workspace, and the +old+ property will be set to +null+.  Also note
-that if the previous is empty it will get destroyed when switching,
-but will still be present in the "old" property.
+When the change is "focus", an +old (object)+ property will be present with the
+previous workspace.  When the first switch occurs (when i3 focuses the
+workspace visible at the beginning) there is no previous workspace, and the
++old+ property will be set to +null+.  Also note that if the previous is empty
+it will get destroyed when switching, but will still be present in the "old"
+property.
 
 *Example:*
 ---------------------
@@ -717,9 +725,13 @@ This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change
 
 * +new+ - the window has become managed by i3
+* +close+ - the window has closed
 * +focus+ - the window has received input focus
 * +title+ - the window's title has changed
 * +fullscreen_mode+ - the window has entered or exited fullscreen mode
+* +move+ - the window has changed its position in the tree
+* +floating+ - the window has transitioned to or from floating
+* +urgent+ - the window has become urgent or lost its urgent status
 
 Additionally a +container (object)+ field will be present, which consists
 of the window's parent container. Be aware that for the "new" event, the
@@ -745,6 +757,47 @@ This event consists of a single serialized map reporting on options from the
 barconfig of the specified bar_id that were updated in i3. This event is the
 same as a +GET_BAR_CONFIG+ reply for the bar with the given id.
 
+=== binding event
+
+This event consists of a single serialized map reporting on the details of a
+binding that ran a command because of user input. The +change (sring)+ field
+indicates what sort of binding event was triggered (right now it will always be
++"run"+ but may be expanded in the future).
+
+The +binding (object)+ field contains details about the binding that was run:
+
+command (string)::
+	The i3 command that is configured to run for this binding.
+mods (array of strings)::
+	The modifier keys that were configured with this binding.
+input_code (integer)::
+	If the binding was configured with +bindcode+, this will be the key code
+	that was given for the binding. If the binding is a mouse binding, it will be
+	the number of the mouse button that was pressed. Otherwise it will be 0.
+symbol (string or null)::
+	If this is a keyboard binding that was configured with +bindsym+, this
+	field will contain the given symbol. Otherwise it will be +null+.
+input_type (string)::
+	This will be +"keyboard"+ or +"mouse"+ depending on whether or not this was
+	a keyboard or a mouse binding.
+
+*Example:*
+---------------------------
+{
+ "change": "run",
+ "binding": {
+  "command": "nop",
+  "mods": [
+    "shift",
+    "ctrl"
+  ],
+  "input_code": 0,
+  "symbol": "t",
+  "input_type": "keyboard"
+ }
+}
+---------------------------
+
 == See also (existing libraries)
 
 [[libraries]]
@@ -754,15 +807,14 @@ all this on your own). This list names some (if you wrote one, please let me
 know):
 
 C::
-	i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
-
-	https://github.com/acrisci/i3ipc-glib
+	* i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
+	* https://github.com/acrisci/i3ipc-glib
 Go::
 	* https://github.com/proxypoke/i3ipc
 JavaScript::
 	* https://github.com/acrisci/i3ipc-gjs
 Lua::
-	* https:/github.com/acrisci/i3ipc-lua
+	* https://github.com/acrisci/i3ipc-lua
 Perl::
 	* https://metacpan.org/module/AnyEvent::I3
 Python::
@@ -770,4 +822,4 @@ Python::
 	* https://github.com/whitelynx/i3ipc (not maintained)
 	* https://github.com/ziberna/i3-py (not maintained)
 Ruby::
-	http://github.com/badboy/i3-ipc
+	* http://github.com/badboy/i3-ipc

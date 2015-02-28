@@ -30,15 +30,15 @@ void parse_workspaces_json(char *json);
 void free_workspaces(void);
 
 struct i3_ws {
-    int                num;         /* The internal number of the ws */
-    char          *canonical_name;  /* The true name of the ws according to the ipc */
-    i3String           *name;       /* The name of the ws that is displayed on the bar */
-    int                name_width;  /* The rendered width of the name */
-    bool               visible;     /* If the ws is currently visible on an output */
-    bool               focused;     /* If the ws is currently focused */
-    bool               urgent;      /* If the urgent-hint of the ws is set */
-    rect               rect;        /* The rect of the ws (not used (yet)) */
-    struct i3_output   *output;     /* The current output of the ws */
+    int num;                  /* The internal number of the ws */
+    char *canonical_name;     /* The true name of the ws according to the ipc */
+    i3String *name;           /* The name of the ws that is displayed on the bar */
+    int name_width;           /* The rendered width of the name */
+    bool visible;             /* If the ws is currently visible on an output */
+    bool focused;             /* If the ws is currently focused */
+    bool urgent;              /* If the urgent-hint of the ws is set */
+    rect rect;                /* The rect of the ws (not used (yet)) */
+    struct i3_output *output; /* The current output of the ws */
 
-    TAILQ_ENTRY(i3_ws) tailq;       /* Pointer for the TAILQ-Macro */
+    TAILQ_ENTRY(i3_ws) tailq; /* Pointer for the TAILQ-Macro */
 };

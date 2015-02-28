@@ -10,6 +10,9 @@ Build-Depends: debhelper (>= 7.0.50~),
                libxcb-randr0-dev,
                libxcb-icccm4-dev,
                libxcb-cursor-dev,
+               libxcb-xkb-dev,
+               libxkbcommon-dev (>= 0.4.0),
+               libxkbcommon-x11-dev (>= 0.4.0),
                asciidoc (>= 8.4.4),
                xmlto,
                docbook-xml,
@@ -21,7 +24,7 @@ Build-Depends: debhelper (>= 7.0.50~),
                libcairo2-dev,
                libpango1.0-dev,
                libpod-simple-perl
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 Homepage: http://i3wm.org/
 
 Package: i3
@@ -38,7 +41,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}, x11-utils
 Provides: x-window-manager
 Suggests: rxvt-unicode | x-terminal-emulator
-Recommends: xfonts-base, fonts-dejavu-core, libanyevent-i3-perl, libjson-xs-perl
+Recommends: xfonts-base, fonts-dejavu-core, libanyevent-i3-perl (>= 0.12), libjson-xs-perl
 Description: improved dynamic tiling window manager
  Key features of i3 are good documentation, reasonable defaults (changeable in
  a simple configuration file) and good multi-monitor support. The user

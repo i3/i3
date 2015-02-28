@@ -182,21 +182,21 @@ static int stdin_boolean(void *context, int val) {
 static int stdin_string(void *context, const unsigned char *val, size_t len) {
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "full_text") == 0) {
-        ctx->block.full_text = i3string_from_utf8_with_length((const char *)val, len);
+        ctx->block.full_text = i3string_from_markup_with_length((const char *)val, len);
     }
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
         sasprintf(&(ctx->block.color), "%.*s", len, val);
     }
     if (strcasecmp(ctx->last_map_key, "align") == 0) {
-        if (len == strlen("left") && !strncmp((const char *)val, "left", strlen("left"))) {
-            ctx->block.align = ALIGN_LEFT;
+        if (len == strlen("center") && !strncmp((const char *)val, "center", strlen("center"))) {
+            ctx->block.align = ALIGN_CENTER;
         } else if (len == strlen("right") && !strncmp((const char *)val, "right", strlen("right"))) {
             ctx->block.align = ALIGN_RIGHT;
         } else {
-            ctx->block.align = ALIGN_CENTER;
+            ctx->block.align = ALIGN_LEFT;
         }
     } else if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
-        i3String *text = i3string_from_utf8_with_length((const char *)val, len);
+        i3String *text = i3string_from_markup_with_length((const char *)val, len);
         ctx->block.min_width = (uint32_t)predict_text_width(text);
         i3string_free(text);
     }
@@ -233,7 +233,7 @@ static int stdin_end_map(void *context) {
     /* Ensure we have a full_text set, so that when it is missing (or null),
      * i3bar doesn’t crash and the user gets an annoying message. */
     if (!new_block->full_text)
-        new_block->full_text = i3string_from_utf8("SPEC VIOLATION (null)");
+        new_block->full_text = i3string_from_utf8("SPEC VIOLATION: full_text is NULL!");
     if (new_block->urgent)
         ctx->has_urgent = true;
     TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
@@ -243,7 +243,7 @@ static int stdin_end_map(void *context) {
 static int stdin_end_array(void *context) {
     DLOG("dumping statusline:\n");
     struct status_block *current;
-    TAILQ_FOREACH (current, &statusline_head, blocks) {
+    TAILQ_FOREACH(current, &statusline_head, blocks) {
         DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
         DLOG("color = %s\n", current->color);
     }
@@ -304,7 +304,7 @@ static void read_flat_input(char *buffer, int length) {
         buffer[length - 1] = '\0';
     else
         buffer[length] = '\0';
-    first->full_text = i3string_from_utf8(buffer);
+    first->full_text = i3string_from_markup(buffer);
 }
 
 static bool read_json_input(unsigned char *input, int length) {

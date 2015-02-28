@@ -59,6 +59,18 @@ subtest 'Window without WM_TAKE_FOCUS', sub {
     done_testing;
 };
 
+# http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.7
+# > Clients using the Globally Active model can only use a SetInputFocus request
+# > to acquire the input focus when they do not already have it on receipt of one
+# > of the following events:
+# > * ButtonPress
+# > * ButtonRelease
+# > * Passive-grabbed KeyPress
+# > * Passive-grabbed KeyRelease
+#
+# Since managing a window happens on a MapNotify (which is absent from this
+# list), the window cannot accept input focus, so we should not try to focus
+# the window at all.
 subtest 'Window with WM_TAKE_FOCUS and without InputHint', sub {
     fresh_workspace;
 
@@ -74,7 +86,7 @@ subtest 'Window with WM_TAKE_FOCUS and without InputHint', sub {
 
     $window->map;
 
-    ok(recv_take_focus($window), 'got ClientMessage with WM_TAKE_FOCUS atom');
+    ok(!recv_take_focus($window), 'did not receive ClientMessage');
 
     done_testing;
 };

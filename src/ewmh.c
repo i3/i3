@@ -24,9 +24,9 @@ void ewmh_update_current_desktop(void) {
     uint32_t idx = 0;
     /* We count to get the index of this workspace because named workspaces
      * don’t have the ->num property */
-    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         Con *ws;
-        TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) {
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
             if (STARTS_WITH(ws->name, "__"))
                 continue;
 
@@ -38,6 +38,102 @@ void ewmh_update_current_desktop(void) {
             ++idx;
         }
     }
+}
+
+/*
+ * Updates _NET_NUMBER_OF_DESKTOPS which we interpret as the number of
+ * noninternal workspaces.
+ */
+void ewmh_update_number_of_desktops(void) {
+    Con *output;
+    uint32_t idx = 0;
+
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *ws;
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+            if (STARTS_WITH(ws->name, "__"))
+                continue;
+            ++idx;
+        }
+    }
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
+                        A__NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1, &idx);
+}
+
+/*
+ * Updates _NET_DESKTOP_NAMES: "The names of all virtual desktops. This is a
+ * list of NULL-terminated strings in UTF-8 encoding"
+ */
+void ewmh_update_desktop_names(void) {
+    Con *output;
+    int msg_length = 0;
+
+    /* count the size of the property message to set */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *ws;
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+            if (STARTS_WITH(ws->name, "__"))
+                continue;
+            msg_length += strlen(ws->name) + 1;
+        }
+    }
+
+    char desktop_names[msg_length];
+    int current_position = 0;
+
+    /* fill the buffer with the names of the i3 workspaces */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *ws;
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+            if (STARTS_WITH(ws->name, "__"))
+                continue;
+
+            for (size_t i = 0; i < strlen(ws->name) + 1; i++) {
+                desktop_names[current_position++] = ws->name[i];
+            }
+        }
+    }
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
+                        A__NET_DESKTOP_NAMES, A_UTF8_STRING, 8, msg_length, desktop_names);
+}
+
+/*
+ * Updates _NET_DESKTOP_VIEWPORT, which is an array of pairs of cardinals that
+ * define the top left corner of each desktop's viewport.
+ */
+void ewmh_update_desktop_viewport(void) {
+    Con *output;
+    int num_desktops = 0;
+    /* count number of desktops */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *ws;
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+            if (STARTS_WITH(ws->name, "__"))
+                continue;
+
+            num_desktops++;
+        }
+    }
+
+    uint32_t viewports[num_desktops * 2];
+
+    int current_position = 0;
+    /* fill the viewport buffer */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *ws;
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+            if (STARTS_WITH(ws->name, "__"))
+                continue;
+
+            viewports[current_position++] = output->rect.x;
+            viewports[current_position++] = output->rect.y;
+        }
+    }
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
+                        A__NET_DESKTOP_VIEWPORT, XCB_ATOM_CARDINAL, 32, current_position, &viewports);
 }
 
 /*
@@ -138,5 +234,6 @@ void ewmh_setup_hints(void) {
     /* I’m not entirely sure if we need to keep _NET_WM_NAME on root. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, 19, supported_atoms);
+    /* only send the first 24 atoms (last one is _NET_CLOSE_WINDOW) increment that number when adding supported atoms */
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, 24, supported_atoms);
 }

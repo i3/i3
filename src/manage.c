@@ -56,16 +56,16 @@ void restore_geometry(void) {
     DLOG("Restoring geometry\n");
 
     Con *con;
-    TAILQ_FOREACH (con, &all_cons, all_cons)
-        if (con->window) {
-            DLOG("Re-adding X11 border of %d px\n", con->border_width);
-            con->window_rect.width += (2 * con->border_width);
-            con->window_rect.height += (2 * con->border_width);
-            xcb_set_window_rect(conn, con->window->id, con->window_rect);
-            DLOG("placing window %08x at %d %d\n", con->window->id, con->rect.x, con->rect.y);
-            xcb_reparent_window(conn, con->window->id, root,
-                                con->rect.x, con->rect.y);
-        }
+    TAILQ_FOREACH(con, &all_cons, all_cons)
+    if (con->window) {
+        DLOG("Re-adding X11 border of %d px\n", con->border_width);
+        con->window_rect.width += (2 * con->border_width);
+        con->window_rect.height += (2 * con->border_width);
+        xcb_set_window_rect(conn, con->window->id, con->window_rect);
+        DLOG("placing window %08x at %d %d\n", con->window->id, con->rect.x, con->rect.y);
+        xcb_reparent_window(conn, con->window->id, root,
+                            con->rect.x, con->rect.y);
+    }
 
     /* Strictly speaking, this line doesn’t really belong here, but since we
      * are syncing, let’s un-register as a window manager first */
@@ -436,11 +436,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (nc->geometry.width == 0)
         nc->geometry = (Rect) {geom->x, geom->y, geom->width, geom->height};
 
-    if (want_floating) {
-        DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
-        floating_enable(nc, true);
-    }
-
     if (motif_border_style != BS_NORMAL) {
         DLOG("MOTIF_WM_HINTS specifies decorations (border_style = %d)\n", motif_border_style);
         if (want_floating) {
@@ -450,11 +445,17 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         }
     }
 
-    if (nc->border_style == BS_PIXEL) {
-        /* if the border style is BS_PIXEL, explicitly set the border width of
-         * the new container */
-        nc->current_border_width = (want_floating ? config.default_floating_border_width : config.default_border_width);
+    if (want_floating) {
+        DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
+        /* automatically set the border to the default value if a motif border
+         * was not specified */
+        bool automatic_border = (motif_border_style == BS_NORMAL);
+
+        floating_enable(nc, automatic_border);
     }
+
+    /* explicitly set the border width to the default */
+    nc->current_border_width = (want_floating ? config.default_floating_border_width : config.default_border_width);
 
     /* to avoid getting an UnmapNotify event due to reparenting, we temporarily
      * declare no interest in any state change event of this window */
@@ -511,7 +512,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     /* Defer setting focus after the 'new' event has been sent to ensure the
      * proper window event sequence. */
-    if (set_focus && nc->mapped) {
+    if (set_focus && !nc->window->doesnt_accept_focus && nc->mapped) {
         DLOG("Now setting focus.\n");
         con_focus(nc);
     }

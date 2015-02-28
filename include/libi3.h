@@ -72,17 +72,17 @@ struct Font {
  * infrastructure, we define a fallback. */
 #if !defined(LOG)
 void verboselog(char *fmt, ...)
-    __attribute__ ((format (printf, 1, 2)));
+    __attribute__((format(printf, 1, 2)));
 #define LOG(fmt, ...) verboselog("[libi3] " __FILE__ " " fmt, ##__VA_ARGS__)
 #endif
 #if !defined(ELOG)
 void errorlog(char *fmt, ...)
-    __attribute__ ((format (printf, 1, 2)));
+    __attribute__((format(printf, 1, 2)));
 #define ELOG(fmt, ...) errorlog("[libi3] ERROR: " fmt, ##__VA_ARGS__)
 #endif
 #if !defined(DLOG)
 void debuglog(char *fmt, ...)
-    __attribute__ ((format (printf, 1, 2)));
+    __attribute__((format(printf, 1, 2)));
 #define DLOG(fmt, ...) debuglog("%s:%s:%d - " fmt, I3__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #endif
 
@@ -142,12 +142,25 @@ int sasprintf(char **strp, const char *fmt, ...);
 i3String *i3string_from_utf8(const char *from_utf8);
 
 /**
+ * Build an i3String from an UTF-8 encoded string in Pango markup.
+ *
+ */
+i3String *i3string_from_markup(const char *from_markup);
+
+/**
  * Build an i3String from an UTF-8 encoded string with fixed length.
  * To be used when no proper NUL-terminaison is available.
  * Returns the newly-allocated i3String.
  *
  */
 i3String *i3string_from_utf8_with_length(const char *from_utf8, size_t num_bytes);
+
+/**
+ * Build an i3String from an UTF-8 encoded string in Pango markup with fixed
+ * length.
+ *
+ */
+i3String *i3string_from_markup_with_length(const char *from_markup, size_t num_bytes);
 
 /**
  * Build an i3String from an UCS-2 encoded string.
@@ -167,13 +180,13 @@ void i3string_free(i3String *str);
  * to prevent accidentally using freed memory.
  *
  */
-#define I3STRING_FREE(str) \
-do { \
- if (str != NULL) { \
- i3string_free(str); \
- str = NULL; \
- } \
-} while (0)
+#define I3STRING_FREE(str)      \
+    do {                        \
+        if (str != NULL) {      \
+            i3string_free(str); \
+            str = NULL;         \
+        }                       \
+    } while (0)
 
 /**
  * Returns the UTF-8 encoded version of the i3String.
@@ -192,6 +205,11 @@ const xcb_char2b_t *i3string_as_ucs2(i3String *str);
  *
  */
 size_t i3string_get_num_bytes(i3String *str);
+
+/**
+ * Whether the given i3String is in Pango markup.
+ */
+bool i3string_is_markup(i3String *str);
 
 /**
  * Returns the number of glyphs in an i3String.
@@ -285,12 +303,13 @@ uint32_t aio_get_mod_mask_for(uint32_t keysym, xcb_key_symbols_t *symbols);
  *
  */
 uint32_t get_mod_mask_for(uint32_t keysym,
-                           xcb_key_symbols_t *symbols,
-                           xcb_get_modifier_mapping_reply_t *modmap_reply);
+                          xcb_key_symbols_t *symbols,
+                          xcb_get_modifier_mapping_reply_t *modmap_reply);
 
 /**
  * Loads a font for usage, also getting its height. If fallback is true,
- * the fonts 'fixed' or '-misc-*' will be loaded instead of exiting.
+ * the fonts 'fixed' or '-misc-*' will be loaded instead of exiting. If any
+ * font was previously loaded, it will be freed.
  *
  */
 i3Font load_font(const char *pattern, const bool fallback);
@@ -302,7 +321,8 @@ i3Font load_font(const char *pattern, const bool fallback);
 void set_font(i3Font *font);
 
 /**
- * Frees the resources taken by the current font.
+ * Frees the resources taken by the current font. If no font was previously
+ * loaded, it simply returns.
  *
  */
 void free_font(void);
@@ -338,14 +358,14 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
  *
  */
 void draw_text(i3String *text, xcb_drawable_t drawable,
-        xcb_gcontext_t gc, int x, int y, int max_width);
+               xcb_gcontext_t gc, int x, int y, int max_width);
 
 /**
  * ASCII version of draw_text to print static strings.
  *
  */
 void draw_text_ascii(const char *text, xcb_drawable_t drawable,
-        xcb_gcontext_t gc, int x, int y, int max_width);
+                     xcb_gcontext_t gc, int x, int y, int max_width);
 
 /**
  * Predict the text width in pixels for the given text. Text must be

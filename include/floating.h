@@ -12,18 +12,18 @@
 #include "tree.h"
 
 /** Callback for dragging */
-typedef void(*callback_t)(Con*, Rect*, uint32_t, uint32_t, const void*);
+typedef void (*callback_t)(Con *, Rect *, uint32_t, uint32_t, const void *);
 
 /** Macro to create a callback function for dragging */
-#define DRAGGING_CB(name) \
-        static void name(Con *con, Rect *old_rect, uint32_t new_x, \
-                         uint32_t new_y, const void *extra)
+#define DRAGGING_CB(name)                                      \
+    static void name(Con *con, Rect *old_rect, uint32_t new_x, \
+                     uint32_t new_y, const void *extra)
 
 /** On which border was the dragging initiated? */
-typedef enum { BORDER_LEFT   = (1 << 0),
-               BORDER_RIGHT  = (1 << 1),
-               BORDER_TOP    = (1 << 2),
-               BORDER_BOTTOM = (1 << 3)} border_t;
+typedef enum { BORDER_LEFT = (1 << 0),
+               BORDER_RIGHT = (1 << 1),
+               BORDER_TOP = (1 << 2),
+               BORDER_BOTTOM = (1 << 3) } border_t;
 
 /**
  * Enables floating mode for the given container by detaching it from its
@@ -164,8 +164,8 @@ typedef enum {
  *
  */
 drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
-                  xcb_window_t confine_to, border_t border, int cursor,
-                  callback_t callback, const void *extra);
+                           xcb_window_t confine_to, border_t border, int cursor,
+                           callback_t callback, const void *extra);
 
 /**
  * Repositions the CT_FLOATING_CON to have the coordinates specified by

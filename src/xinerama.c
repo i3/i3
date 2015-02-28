@@ -23,9 +23,9 @@ static int num_screens;
  */
 static Output *get_screen_at(unsigned int x, unsigned int y) {
     Output *output;
-    TAILQ_FOREACH (output, &outputs, outputs)
-        if (output->rect.x == x && output->rect.y == y)
-            return output;
+    TAILQ_FOREACH(output, &outputs, outputs)
+    if (output->rect.x == x && output->rect.y == y)
+        return output;
 
     return NULL;
 }

@@ -137,7 +137,7 @@ static void update_placeholder_contents(placeholder_state *state) {
 
     Match *swallows;
     int n = 0;
-    TAILQ_FOREACH (swallows, &(state->con->swallow_head), matches) {
+    TAILQ_FOREACH(swallows, &(state->con->swallow_head), matches) {
         char *serialized = NULL;
 
 #define APPEND_REGEX(re_name)                                                                                                                        \
@@ -197,8 +197,9 @@ static void open_placeholder_window(Con *con) {
         /* Set the same name as was stored in the layout file. While perhaps
          * slightly confusing in the first instant, this brings additional
          * clarity to which placeholder is waiting for which actual window. */
-        xcb_change_property(restore_conn, XCB_PROP_MODE_REPLACE, placeholder,
-                            A__NET_WM_NAME, A_UTF8_STRING, 8, strlen(con->name), con->name);
+        if (con->name != NULL)
+            xcb_change_property(restore_conn, XCB_PROP_MODE_REPLACE, placeholder,
+                                A__NET_WM_NAME, A_UTF8_STRING, 8, strlen(con->name), con->name);
         DLOG("Created placeholder window 0x%08x for leaf container %p / %s\n",
              placeholder, con, con->name);
 
@@ -222,10 +223,10 @@ static void open_placeholder_window(Con *con) {
     }
 
     Con *child;
-    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
         open_placeholder_window(child);
     }
-    TAILQ_FOREACH (child, &(con->floating_head), floating_windows) {
+    TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
         open_placeholder_window(child);
     }
 }
@@ -239,10 +240,10 @@ static void open_placeholder_window(Con *con) {
  */
 void restore_open_placeholder_windows(Con *parent) {
     Con *child;
-    TAILQ_FOREACH (child, &(parent->nodes_head), nodes) {
+    TAILQ_FOREACH(child, &(parent->nodes_head), nodes) {
         open_placeholder_window(child);
     }
-    TAILQ_FOREACH (child, &(parent->floating_head), floating_windows) {
+    TAILQ_FOREACH(child, &(parent->floating_head), floating_windows) {
         open_placeholder_window(child);
     }
 
@@ -258,7 +259,7 @@ void restore_open_placeholder_windows(Con *parent) {
  */
 bool restore_kill_placeholder(xcb_window_t placeholder) {
     placeholder_state *state;
-    TAILQ_FOREACH (state, &state_head, state) {
+    TAILQ_FOREACH(state, &state_head, state) {
         if (state->window != placeholder)
             continue;
 
@@ -277,7 +278,7 @@ bool restore_kill_placeholder(xcb_window_t placeholder) {
 
 static void expose_event(xcb_expose_event_t *event) {
     placeholder_state *state;
-    TAILQ_FOREACH (state, &state_head, state) {
+    TAILQ_FOREACH(state, &state_head, state) {
         if (state->window != event->window)
             continue;
 
@@ -305,7 +306,7 @@ static void expose_event(xcb_expose_event_t *event) {
  */
 static void configure_notify(xcb_configure_notify_event_t *event) {
     placeholder_state *state;
-    TAILQ_FOREACH (state, &state_head, state) {
+    TAILQ_FOREACH(state, &state_head, state) {
         if (state->window != event->window)
             continue;
 

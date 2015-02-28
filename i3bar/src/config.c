@@ -112,6 +112,20 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
         return 1;
     }
 
+    if (!strcmp(cur_key, "wheel_up_cmd")) {
+        DLOG("wheel_up_cmd = %.*s\n", len, val);
+        FREE(config.wheel_up_cmd);
+        sasprintf(&config.wheel_up_cmd, "%.*s", len, val);
+        return 1;
+    }
+
+    if (!strcmp(cur_key, "wheel_down_cmd")) {
+        DLOG("wheel_down_cmd = %.*s\n", len, val);
+        FREE(config.wheel_down_cmd);
+        sasprintf(&config.wheel_down_cmd, "%.*s", len, val);
+        return 1;
+    }
+
     if (!strcmp(cur_key, "position")) {
         DLOG("position = %.*s\n", len, val);
         config.position = (len == 3 && !strncmp((const char *)val, "top", strlen("top")) ? POS_TOP : POS_BOT);
@@ -246,9 +260,9 @@ void parse_config_json(char *json) {
  *
  */
 void free_colors(struct xcb_color_strings_t *colors) {
-#define FREE_COLOR(x)        \
-    do {                     \
-        FREE(colors->x);     \
+#define FREE_COLOR(x)    \
+    do {                 \
+        FREE(colors->x); \
     } while (0)
     FREE_COLOR(bar_fg);
     FREE_COLOR(bar_bg);

@@ -245,4 +245,20 @@ my $center_y = int($x->root->rect->height/2) - int($floatcon[0]->{rect}->{height
 is($floatcon[0]->{rect}->{x}, $center_x, "moved to center at position $center_x x");
 is($floatcon[0]->{rect}->{y}, $center_y, "moved to center at position $center_y y");
 
+# Make sure the command works with criteria
+open_floating_window;
+
+@floatcon = @{get_ws($tmp)->{floating_nodes}};
+
+cmd '[con_id="' . $floatcon[0]->{nodes}[0]->{id} . '"] move position 25 px 30 px';
+cmd '[con_id="' . $floatcon[1]->{nodes}[0]->{id} . '"] move position 35 px 40 px';
+
+@floatcon = @{get_ws($tmp)->{floating_nodes}};
+
+is($floatcon[0]->{rect}->{x}, 25, 'moved to position 25 x with criteria');
+is($floatcon[0]->{rect}->{y}, 30, 'moved to position 30 y with criteria');
+
+is($floatcon[1]->{rect}->{x}, 35, 'moved to position 35 x with criteria');
+is($floatcon[1]->{rect}->{y}, 40, 'moved to position 40 y with criteria');
+
 done_testing;

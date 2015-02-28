@@ -68,15 +68,15 @@ extern "C" {
 
 #ifndef _sd_printf_attr_
 #if __GNUC__ >= 4
-#define _sd_printf_attr_(a,b) __attribute__ ((format (printf, a, b)))
+#define _sd_printf_attr_(a, b) __attribute__((format(printf, a, b)))
 #else
-#define _sd_printf_attr_(a,b)
+#define _sd_printf_attr_(a, b)
 #endif
 #endif
 
 #ifndef _sd_hidden_
 #if (__GNUC__ >= 4) && !defined(SD_EXPORT_SYMBOLS)
-#define _sd_hidden_ __attribute__ ((visibility("hidden")))
+#define _sd_hidden_ __attribute__((visibility("hidden")))
 #else
 #define _sd_hidden_
 #endif
@@ -89,14 +89,14 @@ extern "C" {
 
   This is similar to printk() usage in the kernel.
 */
-#define SD_EMERG   "<0>"  /* system is unusable */
-#define SD_ALERT   "<1>"  /* action must be taken immediately */
-#define SD_CRIT    "<2>"  /* critical conditions */
-#define SD_ERR     "<3>"  /* error conditions */
-#define SD_WARNING "<4>"  /* warning conditions */
-#define SD_NOTICE  "<5>"  /* normal but significant condition */
-#define SD_INFO    "<6>"  /* informational */
-#define SD_DEBUG   "<7>"  /* debug-level messages */
+#define SD_EMERG "<0>"   /* system is unusable */
+#define SD_ALERT "<1>"   /* action must be taken immediately */
+#define SD_CRIT "<2>"    /* critical conditions */
+#define SD_ERR "<3>"     /* error conditions */
+#define SD_WARNING "<4>" /* warning conditions */
+#define SD_NOTICE "<5>"  /* normal but significant condition */
+#define SD_INFO "<6>"    /* informational */
+#define SD_DEBUG "<7>"   /* debug-level messages */
 
 /* The first passed file descriptor is fd 3 */
 #define SD_LISTEN_FDS_START 3
@@ -242,7 +242,7 @@ int sd_notify(int unset_environment, const char *state) _sd_hidden_;
 
   See sd_notifyf(3) for more information.
 */
-int sd_notifyf(int unset_environment, const char *format, ...) _sd_printf_attr_(2,3) _sd_hidden_;
+int sd_notifyf(int unset_environment, const char *format, ...) _sd_printf_attr_(2, 3) _sd_hidden_;
 
 /*
   Returns > 0 if the system was booted with systemd. Returns < 0 on

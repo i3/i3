@@ -22,6 +22,7 @@ is appropriate for the distribution.
 It tries to start one of the following (in that order):
 
 * $TERMINAL (this is a non-standard variable)
+* x-terminal-emulator (only present on Debian and derivatives)
 * urxvt
 * rxvt
 * terminator

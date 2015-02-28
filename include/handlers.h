@@ -13,6 +13,7 @@
 #include <xcb/randr.h>
 
 extern int randr_base;
+extern int xkb_base;
 
 /**
  * Adds the given sequence to the list of events which are ignored.

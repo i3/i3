@@ -99,4 +99,27 @@ is($x->input_focus, $child->id, "Child window focused");
 
 }
 
+################################################################################
+# Verify that transient_for can be set and unset.
+################################################################################
+
+$tmp = fresh_workspace;
+
+$fwindow = open_window({ dont_map => 1 });
+$fwindow->transient_for($right);
+$fwindow->map;
+
+wait_for_map($fwindow);
+
+my $floating_con = get_ws($tmp)->{floating_nodes}[0]->{nodes}[0];
+is($floating_con->{window_properties}->{transient_for}, $right->id, 'WM_TRANSIENT_FOR properly parsed');
+
+$x->delete_property($fwindow->id, $x->atom(name => 'WM_TRANSIENT_FOR')->id);
+$x->flush;
+
+sync_with_i3;
+
+$floating_con = get_ws($tmp)->{floating_nodes}[0]->{nodes}[0];
+is($floating_con->{window_properties}->{transient_for}, undef, 'WM_TRANSIENT_FOR properly removed');
+
 done_testing;

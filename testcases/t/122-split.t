@@ -48,7 +48,7 @@ sub verify_split_layout {
 
     is(@{$first->{nodes}}, 0, 'first container has no children');
     is(@{$second->{nodes}}, 0, 'second container has no children (yet)');
-    my $old_name = $second->{name};
+    my $old_id = $second->{id};
 
     cmd $args{split_command};
     cmd 'open';
@@ -60,10 +60,10 @@ sub verify_split_layout {
     $second = $content->[1];
 
     is(@{$first->{nodes}}, 0, 'first container has no children');
-    isnt($second->{name}, $old_name, 'second container was replaced');
+    isnt($second->{id}, $old_id, 'second container was replaced');
     is($second->{layout}, 'splith', 'orientation is horizontal');
     is(@{$second->{nodes}}, 2, 'second container has 2 children');
-    is($second->{nodes}->[0]->{name}, $old_name, 'found old second container');
+    is($second->{nodes}->[0]->{id}, $old_id, 'found old second container');
 }
 
 verify_split_layout(split_command => 'split h');

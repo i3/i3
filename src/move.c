@@ -128,22 +128,21 @@ static void move_to_output_directed(Con *con, direction_t direction) {
 
     tree_flatten(croot);
 
-    ipc_send_workspace_focus_event(ws, old_ws);
+    ipc_send_workspace_event("focus", ws, old_ws);
 }
 
 /*
- * Moves the current container in the given direction (D_LEFT, D_RIGHT,
+ * Moves the given container in the given direction (D_LEFT, D_RIGHT,
  * D_UP, D_DOWN).
  *
  */
-void tree_move(int direction) {
+void tree_move(Con *con, int direction) {
     position_t position;
     Con *target;
 
     DLOG("Moving in direction %d\n", direction);
 
     /* 1: get the first parent with the same orientation */
-    Con *con = focused;
 
     if (con->type == CT_WORKSPACE) {
         DLOG("Not moving workspace\n");
@@ -206,6 +205,7 @@ void tree_move(int direction) {
                 TAILQ_INSERT_HEAD(&(swap->parent->focus_head), con, focused);
 
                 DLOG("Swapped.\n");
+                ipc_send_window_event("move", con);
                 return;
             }
 
@@ -213,6 +213,7 @@ void tree_move(int direction) {
                 /*  If we couldn't find a place to move it on this workspace,
                  *  try to move it to a workspace on a different output */
                 move_to_output_directed(con, direction);
+                ipc_send_window_event("move", con);
                 return;
             }
 
@@ -264,4 +265,5 @@ end:
     FREE(con->deco_render_params);
 
     tree_flatten(croot);
+    ipc_send_window_event("move", con);
 }

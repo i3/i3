@@ -11,9 +11,7 @@
  *
  */
 #include "all.h"
-
-/* We need Xlib for XStringToKeysym */
-#include <X11/Xlib.h>
+#include <xkbcommon/xkbcommon.h>
 
 char *current_configpath = NULL;
 Config config;
@@ -36,7 +34,7 @@ void ungrab_all_keys(xcb_connection_t *conn) {
  */
 void update_barconfig() {
     Barconfig *current;
-    TAILQ_FOREACH (current, &barconfigs, configs) {
+    TAILQ_FOREACH(current, &barconfigs, configs) {
         ipc_send_barconfig_update_event(current);
     }
 }
@@ -114,12 +112,19 @@ static char *get_config_path(const char *override_configpath) {
  * parse_file().
  *
  */
-static void parse_configuration(const char *override_configpath) {
+bool parse_configuration(const char *override_configpath, bool use_nagbar) {
     char *path = get_config_path(override_configpath);
     LOG("Parsing configfile %s\n", path);
     FREE(current_configpath);
     current_configpath = path;
-    parse_file(path);
+
+    /* initialize default bindings if we're just validating the config file */
+    if (!use_nagbar && bindings == NULL) {
+        bindings = scalloc(sizeof(struct bindings_head));
+        TAILQ_INIT(bindings);
+    }
+
+    return parse_file(path, use_nagbar);
 }
 
 /*
@@ -142,9 +147,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             while (!TAILQ_EMPTY(bindings)) {
                 bind = TAILQ_FIRST(bindings);
                 TAILQ_REMOVE(bindings, bind, bindings);
-                FREE(bind->translated_to);
-                FREE(bind->command);
-                FREE(bind);
+                binding_free(bind);
             }
             FREE(bindings);
             SLIST_REMOVE(&modes, mode, Mode, modes);
@@ -204,8 +207,8 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
         /* Invalidate pixmap caches in case font or colors changed */
         Con *con;
-        TAILQ_FOREACH (con, &all_cons, all_cons)
-            FREE(con->deco_render_params);
+        TAILQ_FOREACH(con, &all_cons, all_cons)
+        FREE(con->deco_render_params);
 
         /* Get rid of the current font */
         free_font();
@@ -262,7 +265,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     if (config.workspace_urgency_timer == 0)
         config.workspace_urgency_timer = 0.5;
 
-    parse_configuration(override_configpath);
+    parse_configuration(override_configpath, true);
 
     if (reload) {
         translate_keysyms();

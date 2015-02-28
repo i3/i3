@@ -15,9 +15,9 @@
 
 typedef struct rect_t rect;
 
-struct ev_loop* main_loop;
-char            *statusline;
-char            *statusline_buffer;
+struct ev_loop *main_loop;
+char *statusline;
+char *statusline_buffer;
 
 struct rect_t {
     int x;
@@ -27,6 +27,7 @@ struct rect_t {
 };
 
 typedef enum {
+    /* First value to make it the default. */
     ALIGN_LEFT,
     ALIGN_CENTER,
     ALIGN_RIGHT

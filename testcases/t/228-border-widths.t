@@ -47,10 +47,12 @@ my $wscontent = get_ws($tmp);
 
 my @tiled = @{$wscontent->{nodes}};
 ok(@tiled == 1, 'one tiled container opened');
+is($tiled[0]->{current_border_width}, 5, 'tiled current border width set to 5');
 is($tilewindow->rect->width, $tiled[0]->{rect}->{width} - 2*5, 'tiled border width 5');
 
 my @floating = @{$wscontent->{floating_nodes}};
 ok(@floating == 1, 'one floating container opened');
+is($floating[0]->{nodes}[0]->{current_border_width}, 10, 'floating current border width set to 10');
 is($floatwindow->rect->width, $floating[0]->{rect}->{width} - 2*10, 'floating border width 10');
 
 exit_gracefully($pid);
@@ -80,11 +82,48 @@ $wscontent = get_ws($tmp);
 
 @tiled = @{$wscontent->{nodes}};
 ok(@tiled == 1, 'one tiled container opened');
+is($tiled[0]->{current_border_width}, 3, 'tiled current border width set to 3');
 is($tilewindow->rect->width, $tiled[0]->{rect}->{width} - 2*3, 'tiled border width 3');
 
 @floating = @{$wscontent->{floating_nodes}};
 ok(@floating == 1, 'one floating container opened');
+is($floating[0]->{nodes}[0]->{current_border_width}, 7, 'floating current border width set to 7');
 is($floatwindow->rect->width, $floating[0]->{rect}->{width} - 2*7, 'floating border width 7');
+
+exit_gracefully($pid);
+
+#####################################################################
+# 3: make sure normal border widths work as well
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+new_float normal 6
+new_window normal 4
+EOT
+
+$pid = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+
+$tilewindow = open_window;
+$floatwindow = open_floating_window;
+
+$wscontent = get_ws($tmp);
+
+@tiled = @{$wscontent->{nodes}};
+ok(@tiled == 1, 'one tiled container opened');
+is($tiled[0]->{current_border_width}, 4, 'tiled current border width set to 4');
+is($tilewindow->rect->width, $tiled[0]->{rect}->{width} - 2*4, 'tiled border width 4');
+
+@floating = @{$wscontent->{floating_nodes}};
+ok(@floating == 1, 'one floating container opened');
+is($floating[0]->{nodes}[0]->{current_border_width}, 6, 'floating current border width set to 6');
+is($floatwindow->rect->width, $floating[0]->{rect}->{width} - 2*6, 'floating border width 6');
 
 exit_gracefully($pid);
 

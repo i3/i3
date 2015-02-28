@@ -47,34 +47,42 @@ typedef struct Match Match;
 typedef struct Assignment Assignment;
 typedef struct Window i3Window;
 
-
 /******************************************************************************
  * Helper types
  *****************************************************************************/
-typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
-typedef enum { NO_ORIENTATION = 0, HORIZ, VERT } orientation_t;
-typedef enum { BS_NORMAL = 0, BS_NONE = 1, BS_PIXEL = 2 } border_style_t;
+typedef enum { D_LEFT,
+               D_RIGHT,
+               D_UP,
+               D_DOWN } direction_t;
+typedef enum { NO_ORIENTATION = 0,
+               HORIZ,
+               VERT } orientation_t;
+typedef enum { BS_NORMAL = 0,
+               BS_NONE = 1,
+               BS_PIXEL = 2 } border_style_t;
 
 /** parameter to specify whether tree_close() and x_window_kill() should kill
  * only this specific window or the whole X11 client */
-typedef enum { DONT_KILL_WINDOW = 0, KILL_WINDOW = 1, KILL_CLIENT = 2 } kill_window_t;
+typedef enum { DONT_KILL_WINDOW = 0,
+               KILL_WINDOW = 1,
+               KILL_CLIENT = 2 } kill_window_t;
 
 /** describes if the window is adjacent to the output (physical screen) edges. */
 typedef enum { ADJ_NONE = 0,
                ADJ_LEFT_SCREEN_EDGE = (1 << 0),
                ADJ_RIGHT_SCREEN_EDGE = (1 << 1),
                ADJ_UPPER_SCREEN_EDGE = (1 << 2),
-               ADJ_LOWER_SCREEN_EDGE = (1 << 4)} adjacent_t;
+               ADJ_LOWER_SCREEN_EDGE = (1 << 4) } adjacent_t;
 
 enum {
     BIND_NONE = 0,
-    BIND_SHIFT = XCB_MOD_MASK_SHIFT,        /* (1 << 0) */
-    BIND_CONTROL = XCB_MOD_MASK_CONTROL,    /* (1 << 2) */
-    BIND_MOD1 = XCB_MOD_MASK_1,             /* (1 << 3) */
-    BIND_MOD2 = XCB_MOD_MASK_2,             /* (1 << 4) */
-    BIND_MOD3 = XCB_MOD_MASK_3,             /* (1 << 5) */
-    BIND_MOD4 = XCB_MOD_MASK_4,             /* (1 << 6) */
-    BIND_MOD5 = XCB_MOD_MASK_5,             /* (1 << 7) */
+    BIND_SHIFT = XCB_MOD_MASK_SHIFT,     /* (1 << 0) */
+    BIND_CONTROL = XCB_MOD_MASK_CONTROL, /* (1 << 2) */
+    BIND_MOD1 = XCB_MOD_MASK_1,          /* (1 << 3) */
+    BIND_MOD2 = XCB_MOD_MASK_2,          /* (1 << 4) */
+    BIND_MOD3 = XCB_MOD_MASK_3,          /* (1 << 5) */
+    BIND_MOD4 = XCB_MOD_MASK_4,          /* (1 << 6) */
+    BIND_MOD5 = XCB_MOD_MASK_5,          /* (1 << 7) */
     BIND_MODE_SWITCH = (1 << 8)
 };
 
@@ -247,6 +255,11 @@ struct Binding {
         B_UPON_KEYRELEASE_IGNORE_MODS = 2,
     } release;
 
+    /** If this is true for a mouse binding, the binding should be executed
+     * when the button is pressed over any part of the window, not just the
+     * title bar (default). */
+    bool whole_window;
+
     uint32_t number_keycodes;
 
     /** Keycode to bind */
@@ -266,7 +279,6 @@ struct Binding {
      *
      * This is an array of number_keycodes size. */
     xcb_keycode_t *translated_to;
-
 
     /** Command, like in command mode */
     char *command;
@@ -367,7 +379,9 @@ struct Window {
     bool doesnt_accept_focus;
 
     /** Whether the window says it is a dock window */
-    enum { W_NODOCK = 0, W_DOCK_TOP = 1, W_DOCK_BOTTOM = 2 } dock;
+    enum { W_NODOCK = 0,
+           W_DOCK_TOP = 1,
+           W_DOCK_BOTTOM = 2 } dock;
 
     /** When this window was marked urgent. 0 means not urgent */
     struct timeval urgent;
@@ -407,7 +421,9 @@ struct Match {
         M_DOCK_BOTTOM = 3
     } dock;
     xcb_window_t id;
-    enum { M_ANY = 0, M_TILING, M_FLOATING } floating;
+    enum { M_ANY = 0,
+           M_TILING,
+           M_FLOATING } floating;
     Con *con_id;
 
     /* Where the window looking for a match should be inserted:
@@ -419,7 +435,9 @@ struct Match {
      *            (dockareas)
      *
      */
-    enum { M_HERE = 0, M_ASSIGN_WS, M_BELOW } insert_where;
+    enum { M_HERE = 0,
+           M_ASSIGN_WS,
+           M_BELOW } insert_where;
 
     TAILQ_ENTRY(Match) matches;
 
@@ -450,10 +468,10 @@ struct Assignment {
      *
      */
     enum {
-        A_ANY          = 0,
-        A_COMMAND      = (1 << 0),
+        A_ANY = 0,
+        A_COMMAND = (1 << 0),
         A_TO_WORKSPACE = (1 << 1),
-        A_TO_OUTPUT    = (1 << 2)
+        A_TO_OUTPUT = (1 << 2)
     } type;
 
     /** the criteria to check if a window matches */
@@ -470,7 +488,9 @@ struct Assignment {
 };
 
 /** Fullscreen modes. Used by Con.fullscreen_mode. */
-typedef enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode_t;
+typedef enum { CF_NONE = 0,
+               CF_OUTPUT = 1,
+               CF_GLOBAL = 2 } fullscreen_mode_t;
 
 /**
  * A 'Con' represents everything from the X11 root window down to a single X11 window.
@@ -596,7 +616,7 @@ struct Con {
     TAILQ_ENTRY(Con) floating_windows;
 
     /** callbacks */
-    void(*on_remove_child)(Con *);
+    void (*on_remove_child)(Con *);
 
     enum {
         /* Not a scratchpad window. */

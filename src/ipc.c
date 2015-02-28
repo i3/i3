@@ -74,7 +74,7 @@ bool mkdirp(const char *path) {
  */
 void ipc_send_event(const char *event, uint32_t message_type, const char *payload) {
     ipc_client *current;
-    TAILQ_FOREACH (current, &all_clients, clients) {
+    TAILQ_FOREACH(current, &all_clients, clients) {
         /* see if this client is interested in this event */
         bool interested = false;
         for (int i = 0; i < current->num_events; i++) {
@@ -148,6 +148,60 @@ static void dump_rect(yajl_gen gen, const char *name, Rect r) {
     y(integer, r.width);
     ystr("height");
     y(integer, r.height);
+    y(map_close);
+}
+
+static void dump_binding(yajl_gen gen, Binding *bind) {
+    y(map_open);
+    ystr("input_code");
+    y(integer, bind->keycode);
+
+    ystr("input_type");
+    ystr((const char*)(bind->input_type == B_KEYBOARD ? "keyboard" : "mouse"));
+
+    ystr("symbol");
+    if (bind->symbol == NULL)
+        y(null);
+    else
+        ystr(bind->symbol);
+
+    ystr("command");
+    ystr(bind->command);
+
+    ystr("mods");
+    y(array_open);
+    for (int i = 0; i < 8; i++) {
+        if (bind->mods & (1 << i)) {
+            switch (1 << i) {
+                case XCB_MOD_MASK_SHIFT:
+                    ystr("shift");
+                    break;
+                case XCB_MOD_MASK_LOCK:
+                    ystr("lock");
+                    break;
+                case XCB_MOD_MASK_CONTROL:
+                    ystr("ctrl");
+                    break;
+                case XCB_MOD_MASK_1:
+                    ystr("Mod1");
+                    break;
+                case XCB_MOD_MASK_2:
+                    ystr("Mod2");
+                    break;
+                case XCB_MOD_MASK_3:
+                    ystr("Mod3");
+                    break;
+                case XCB_MOD_MASK_4:
+                    ystr("Mod4");
+                    break;
+                case XCB_MOD_MASK_5:
+                    ystr("Mod5");
+                    break;
+            }
+        }
+    }
+    y(array_close);
+
     y(map_close);
 }
 
@@ -293,14 +347,17 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(integer, con->current_border_width);
 
     dump_rect(gen, "rect", con->rect);
+    dump_rect(gen, "deco_rect", con->deco_rect);
     dump_rect(gen, "window_rect", con->window_rect);
     dump_rect(gen, "geometry", con->geometry);
 
     ystr("name");
     if (con->window && con->window->name)
         ystr(i3string_as_utf8(con->window->name));
-    else
+    else if (con->name != NULL)
         ystr(con->name);
+    else
+        y(null);
 
     if (con->type == CT_WORKSPACE) {
         ystr("num");
@@ -337,6 +394,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
             ystr(i3string_as_utf8(con->window->name));
         }
 
+        ystr("transient_for");
+        if (con->window->transient_for == XCB_NONE)
+            y(null);
+        else y(integer, con->window->transient_for);
+
         y(map_close);
     }
 
@@ -344,7 +406,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(array_open);
     Con *node;
     if (con->type != CT_DOCKAREA || !inplace_restart) {
-        TAILQ_FOREACH (node, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH(node, &(con->nodes_head), nodes) {
             dump_node(gen, node, inplace_restart);
         }
     }
@@ -352,14 +414,14 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     ystr("floating_nodes");
     y(array_open);
-    TAILQ_FOREACH (node, &(con->floating_head), floating_windows) {
+    TAILQ_FOREACH(node, &(con->floating_head), floating_windows) {
         dump_node(gen, node, inplace_restart);
     }
     y(array_close);
 
     ystr("focus");
     y(array_open);
-    TAILQ_FOREACH (node, &(con->focus_head), focused) {
+    TAILQ_FOREACH(node, &(con->focus_head), focused) {
         y(integer, (long int)node);
     }
     y(array_close);
@@ -386,7 +448,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("swallows");
     y(array_open);
     Match *match;
-    TAILQ_FOREACH (match, &(con->swallow_head), matches) {
+    TAILQ_FOREACH(match, &(con->swallow_head), matches) {
         y(map_open);
         if (match->dock != -1) {
             ystr("dock");
@@ -512,6 +574,16 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
             break;
     }
 
+    if (config->wheel_up_cmd) {
+        ystr("wheel_up_cmd");
+        ystr(config->wheel_up_cmd);
+    }
+
+    if (config->wheel_down_cmd) {
+        ystr("wheel_down_cmd");
+        ystr(config->wheel_down_cmd);
+    }
+
     ystr("position");
     if (config->position == P_BOTTOM)
         ystr("bottom");
@@ -591,19 +663,16 @@ IPC_HANDLER(get_workspaces) {
     Con *focused_ws = con_get_workspace(focused);
 
     Con *output;
-    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         if (con_is_internal(output))
             continue;
         Con *ws;
-        TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) {
+        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
             assert(ws->type == CT_WORKSPACE);
             y(map_open);
 
             ystr("num");
-            if (ws->num == -1)
-                y(null);
-            else
-                y(integer, ws->num);
+            y(integer, ws->num);
 
             ystr("name");
             ystr(ws->name);
@@ -656,7 +725,7 @@ IPC_HANDLER(get_outputs) {
     y(array_open);
 
     Output *output;
-    TAILQ_FOREACH (output, &outputs, outputs) {
+    TAILQ_FOREACH(output, &outputs, outputs) {
         y(map_open);
 
         ystr("name");
@@ -710,9 +779,9 @@ IPC_HANDLER(get_marks) {
     y(array_open);
 
     Con *con;
-    TAILQ_FOREACH (con, &all_cons, all_cons)
-        if (con->mark != NULL)
-            ystr(con->mark);
+    TAILQ_FOREACH(con, &all_cons, all_cons)
+    if (con->mark != NULL)
+        ystr(con->mark);
 
     y(array_close);
 
@@ -766,7 +835,7 @@ IPC_HANDLER(get_bar_config) {
     if (message_size == 0) {
         y(array_open);
         Barconfig *current;
-        TAILQ_FOREACH (current, &barconfigs, configs) {
+        TAILQ_FOREACH(current, &barconfigs, configs) {
             ystr(current->id);
         }
         y(array_close);
@@ -786,7 +855,7 @@ IPC_HANDLER(get_bar_config) {
     strncpy(bar_id, (const char *)message, message_size);
     LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
     Barconfig *current, *config = NULL;
-    TAILQ_FOREACH (current, &barconfigs, configs) {
+    TAILQ_FOREACH(current, &barconfigs, configs) {
         if (strcmp(current->id, bar_id) != 0)
             continue;
 
@@ -852,7 +921,7 @@ IPC_HANDLER(subscribe) {
     ipc_client *current, *client = NULL;
 
     /* Search the ipc_client structure for this connection */
-    TAILQ_FOREACH (current, &all_clients, clients) {
+    TAILQ_FOREACH(current, &all_clients, clients) {
         if (current->fd != fd)
             continue;
 
@@ -932,7 +1001,7 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
 
         /* Delete the client from the list of clients */
         ipc_client *current;
-        TAILQ_FOREACH (current, &all_clients, clients) {
+        TAILQ_FOREACH(current, &all_clients, clients) {
             if (current->fd != w->fd)
                 continue;
 
@@ -1051,21 +1120,23 @@ int ipc_create_socket(const char *filename) {
 }
 
 /*
- * For the workspace "focus" event we send, along the usual "change" field,
- * also the current and previous workspace, in "current" and "old"
- * respectively.
+ * Generates a json workspace event. Returns a dynamically allocated yajl
+ * generator. Free with yajl_gen_free().
  */
-void ipc_send_workspace_focus_event(Con *current, Con *old) {
+yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old) {
     setlocale(LC_NUMERIC, "C");
     yajl_gen gen = ygenalloc();
 
     y(map_open);
 
     ystr("change");
-    ystr("focus");
+    ystr(change);
 
     ystr("current");
-    dump_node(gen, current, false);
+    if (current == NULL)
+        y(null);
+    else
+        dump_node(gen, current, false);
 
     ystr("old");
     if (old == NULL)
@@ -1075,13 +1146,26 @@ void ipc_send_workspace_focus_event(Con *current, Con *old) {
 
     y(map_close);
 
+    setlocale(LC_NUMERIC, "");
+
+    return gen;
+}
+
+/*
+ * For the workspace events we send, along with the usual "change" field, also
+ * the workspace container in "current". For focus events, we send the
+ * previously focused workspace in "old".
+ */
+void ipc_send_workspace_event(const char *change, Con *current, Con *old) {
+    yajl_gen gen = ipc_marshal_workspace_event(change, current, old);
+
     const unsigned char *payload;
     ylength length;
     y(get_buf, &payload, &length);
 
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
+
     y(free);
-    setlocale(LC_NUMERIC, "");
 }
 
 /**
@@ -1129,6 +1213,36 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig) {
     y(get_buf, &payload, &length);
 
     ipc_send_event("barconfig_update", I3_IPC_EVENT_BARCONFIG_UPDATE, (const char *)payload);
+    y(free);
+    setlocale(LC_NUMERIC, "");
+}
+
+/*
+ * For the binding events, we send the serialized binding struct.
+ */
+void ipc_send_binding_event(const char *event_type, Binding *bind) {
+    DLOG("Issue IPC binding %s event (sym = %s, code = %d)\n", event_type, bind->symbol, bind->keycode);
+
+    setlocale(LC_NUMERIC, "C");
+
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("change");
+    ystr(event_type);
+
+    ystr("binding");
+    dump_binding(gen, bind);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_event("binding", I3_IPC_EVENT_BINDING, (const char *)payload);
+
     y(free);
     setlocale(LC_NUMERIC, "");
 }

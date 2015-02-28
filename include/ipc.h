@@ -23,13 +23,13 @@
 extern char *current_socketpath;
 
 typedef struct ipc_client {
-        int fd;
+    int fd;
 
-        /* The events which this client wants to receive */
-        int num_events;
-        char **events;
+    /* The events which this client wants to receive */
+    int num_events;
+    char **events;
 
-        TAILQ_ENTRY(ipc_client) clients;
+    TAILQ_ENTRY(ipc_client) clients;
 } ipc_client;
 
 /*
@@ -42,13 +42,13 @@ typedef struct ipc_client {
  * message_type is the type of the message as the sender specified it.
  *
  */
-typedef void(*handler_t)(int, uint8_t*, int, uint32_t, uint32_t);
+typedef void (*handler_t)(int, uint8_t *, int, uint32_t, uint32_t);
 
 /* Macro to declare a callback */
-#define IPC_HANDLER(name) \
-        static void handle_ ## name (int fd, uint8_t *message, \
-                                     int size, uint32_t message_size, \
-                                     uint32_t message_type)
+#define IPC_HANDLER(name)                                      \
+    static void handle_##name(int fd, uint8_t *message,        \
+                              int size, uint32_t message_size, \
+                              uint32_t message_type)
 
 /**
  * Emulates mkdir -p (creates any missing folders)
@@ -89,11 +89,17 @@ void ipc_shutdown(void);
 void dump_node(yajl_gen gen, Con *con, bool inplace_restart);
 
 /**
- * For the workspace "focus" event we send, along the usual "change" field,
- * also the current and previous workspace, in "current" and "old"
- * respectively.
+ * Generates a json workspace event. Returns a dynamically allocated yajl
+ * generator. Free with yajl_gen_free().
  */
-void ipc_send_workspace_focus_event(Con *current, Con *old);
+yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old);
+
+/**
+ * For the workspace events we send, along with the usual "change" field, also
+ * the workspace container in "current". For focus events, we send the
+ * previously focused workspace in "old".
+ */
+void ipc_send_workspace_event(const char *change, Con *current, Con *old);
 
 /**
  * For the window events we send, along the usual "change" field,
@@ -105,3 +111,8 @@ void ipc_send_window_event(const char *property, Con *con);
  * For the barconfig update events, we send the serialized barconfig.
  */
 void ipc_send_barconfig_update_event(Barconfig *barconfig);
+
+/**
+ * For the binding events, we send the serialized binding struct.
+ */
+void ipc_send_binding_event(const char *event_type, Binding *bind);

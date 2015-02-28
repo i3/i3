@@ -119,7 +119,8 @@ click_events::
 full_text::
 	The most simple block you can think of is one which just includes the
 	only required key, the +full_text+ key. i3bar will display the string
-	value and that’s it.
+	value parsed as
+	https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup].
 short_text::
 	Where appropriate, the +short_text+ (string) entry should also be
 	provided. It will be used in case the status line needs to be shortened
@@ -148,7 +149,7 @@ min_width::
         when you want to set a sensible minimum width regardless of which font you
         are using, and at what particular size.
 align::
-	Align text on the +center+ (default), +right+ or +left+ of the block, when
+	Align text on the +center+, +right+ or +left+ (default) of the block, when
 	the minimum width of the latter, specified by the +min_width+ key, is not
 	reached.
 name and instance::

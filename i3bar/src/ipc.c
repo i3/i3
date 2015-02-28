@@ -67,7 +67,7 @@ void got_output_reply(char *reply) {
     reconfig_windows(false);
 
     i3_output *o_walk;
-    SLIST_FOREACH (o_walk, outputs, slist) {
+    SLIST_FOREACH(o_walk, outputs, slist) {
         kick_tray_clients(o_walk);
     }
 
@@ -159,6 +159,9 @@ void got_bar_config_update(char *event) {
     if (found_id == NULL)
         return;
 
+    /* reconfigure the bar based on the current outputs */
+    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
+
     free_colors(&(config.colors));
 
     /* update the configuration with the received settings */
@@ -169,6 +172,8 @@ void got_bar_config_update(char *event) {
         reconfig_windows(true);
     }
 
+    /* update fonts and colors */
+    init_xcb_late(config.fontname);
     init_colors(&(config.colors));
     realloc_sl_buffer();
 

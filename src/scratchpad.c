@@ -116,7 +116,7 @@ void scratchpad_show(Con *con) {
      * unfocused scratchpad on the current workspace and focus it */
     Con *walk_con;
     Con *focused_ws = con_get_workspace(focused);
-    TAILQ_FOREACH (walk_con, &(focused_ws->floating_head), floating_windows) {
+    TAILQ_FOREACH(walk_con, &(focused_ws->floating_head), floating_windows) {
         if (!con && (floating = con_inside_floating(walk_con)) &&
             floating->scratchpad_state != SCRATCHPAD_NONE &&
             floating != con_inside_floating(focused)) {
@@ -134,7 +134,7 @@ void scratchpad_show(Con *con) {
      * visible scratchpad window on another workspace. In this case we move it
      * to the current workspace. */
     focused_ws = con_get_workspace(focused);
-    TAILQ_FOREACH (walk_con, &all_cons, all_cons) {
+    TAILQ_FOREACH(walk_con, &all_cons, all_cons) {
         Con *walk_ws = con_get_workspace(walk_con);
         if (!con && walk_ws &&
             !con_is_internal(walk_ws) && focused_ws != walk_ws &&
@@ -257,7 +257,7 @@ void scratchpad_fix_resolution(void) {
     Con *output;
     int new_width = -1,
         new_height = -1;
-    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         if (output == __i3_output)
             continue;
         DLOG("output %s's resolution: (%d, %d) %d x %d\n",
@@ -288,7 +288,7 @@ void scratchpad_fix_resolution(void) {
 
     DLOG("Fixing coordinates of scratchpad windows\n");
     Con *con;
-    TAILQ_FOREACH (con, &(__i3_scratch->floating_head), floating_windows) {
+    TAILQ_FOREACH(con, &(__i3_scratch->floating_head), floating_windows) {
         floating_fix_coordinates(con, &old_rect, &new_rect);
     }
 }

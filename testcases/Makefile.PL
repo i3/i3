@@ -11,6 +11,7 @@ WriteMakefile(
         'AnyEvent::I3' => '0.15',
         'X11::XCB'     => '0.09',
         'Inline'       => 0,
+        'Inline::C'    => 0,
         'ExtUtils::PkgConfig' => 0,
         'Test::More'   => '0.94',
         'IPC::Run' => 0,

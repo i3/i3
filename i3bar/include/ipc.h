@@ -29,7 +29,7 @@ void destroy_connection(void);
  * type must be a valid I3_IPC_MESSAGE_TYPE (see i3/ipc.h for further information)
  *
  */
-int i3_send_msg(uint32_t type, const char* payload);
+int i3_send_msg(uint32_t type, const char *payload);
 
 /*
  * Subscribe to all the i3-events, we need

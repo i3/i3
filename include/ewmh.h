@@ -19,6 +19,24 @@
 void ewmh_update_current_desktop(void);
 
 /**
+ * Updates _NET_NUMBER_OF_DESKTOPS which we interpret as the number of
+ * noninternal workspaces.
+ */
+void ewmh_update_number_of_desktops(void);
+
+/**
+ * Updates _NET_DESKTOP_NAMES: "The names of all virtual desktops. This is a
+ * list of NULL-terminated strings in UTF-8 encoding"
+ */
+void ewmh_update_desktop_names(void);
+
+/**
+ * Updates _NET_DESKTOP_VIEWPORT, which is an array of pairs of cardinals that
+ * define the top left corner of each desktop's viewport.
+ */
+void ewmh_update_desktop_viewport(void);
+
+/**
  * Updates _NET_ACTIVE_WINDOW with the currently focused window.
  *
  * EWMH: The window ID of the currently active window or None if no window has

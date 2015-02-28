@@ -171,8 +171,8 @@ CFGFUN(font, const char *font) {
     font_pattern = sstrdup(font);
 }
 
-CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, command, DEFAULT_BINDING_MODE);
+CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *whole_window, const char *command) {
+    configure_binding(bindtype, modifiers, key, release, whole_window, command, DEFAULT_BINDING_MODE);
 }
 
 /*******************************************************************************
@@ -181,8 +181,8 @@ CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, co
 
 static char *current_mode;
 
-CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, command, current_mode);
+CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *whole_window, const char *command) {
+    configure_binding(bindtype, modifiers, key, release, whole_window, command, current_mode);
 }
 
 CFGFUN(enter_mode, const char *modename) {
@@ -271,13 +271,15 @@ CFGFUN(new_window, const char *windowtype, const char *border, const long width)
     }
 
     if (strcmp(windowtype, "new_window") == 0) {
-        DLOG("default tiled border style = %d and border width = %d\n", border_style, border_width);
+        DLOG("default tiled border style = %d and border width = %d (%d physical px)\n",
+             border_style, border_width, logical_px(border_width));
         config.default_border = border_style;
-        config.default_border_width = border_width;
+        config.default_border_width = logical_px(border_width);
     } else {
-        DLOG("default floating border style = %d and border width = %d\n", border_style, border_width);
+        DLOG("default floating border style = %d and border width = %d (%d physical px)\n",
+             border_style, border_width, logical_px(border_width));
         config.default_floating_border = border_style;
-        config.default_floating_border_width = border_width;
+        config.default_floating_border_width = logical_px(border_width);
     }
 }
 
@@ -334,7 +336,7 @@ CFGFUN(workspace, const char *workspace, const char *output) {
      * outputs */
     struct Workspace_Assignment *assignment;
     bool duplicate = false;
-    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
         if (strcasecmp(assignment->name, workspace) == 0) {
             ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
                  workspace);
@@ -458,6 +460,16 @@ CFGFUN(bar_modifier, const char *modifier) {
         current_bar.modifier = M_CONTROL;
     else if (strcmp(modifier, "Shift") == 0)
         current_bar.modifier = M_SHIFT;
+}
+
+CFGFUN(bar_wheel_up_cmd, const char *command) {
+    FREE(current_bar.wheel_up_cmd);
+    current_bar.wheel_up_cmd = sstrdup(command);
+}
+
+CFGFUN(bar_wheel_down_cmd, const char *command) {
+    FREE(current_bar.wheel_down_cmd);
+    current_bar.wheel_down_cmd = sstrdup(command);
 }
 
 CFGFUN(bar_position, const char *position) {
