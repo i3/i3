@@ -82,7 +82,7 @@ static void clear_statusline(struct statusline_head *head, bool free_resources) 
 
 static void copy_statusline(struct statusline_head *from, struct statusline_head *to) {
     struct status_block *current;
-    TAILQ_FOREACH (current, from, blocks) {
+    TAILQ_FOREACH(current, from, blocks) {
         struct status_block *new_block = smalloc(sizeof(struct status_block));
         memcpy(new_block, current, sizeof(struct status_block));
         TAILQ_INSERT_TAIL(to, new_block, blocks);
