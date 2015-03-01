@@ -157,7 +157,7 @@ static void dump_binding(yajl_gen gen, Binding *bind) {
     y(integer, bind->keycode);
 
     ystr("input_type");
-    ystr((const char*)(bind->input_type == B_KEYBOARD ? "keyboard" : "mouse"));
+    ystr((const char *)(bind->input_type == B_KEYBOARD ? "keyboard" : "mouse"));
 
     ystr("symbol");
     if (bind->symbol == NULL)
@@ -397,7 +397,8 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         ystr("transient_for");
         if (con->window->transient_for == XCB_NONE)
             y(null);
-        else y(integer, con->window->transient_for);
+        else
+            y(integer, con->window->transient_for);
 
         y(map_close);
     }

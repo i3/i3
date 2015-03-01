@@ -129,9 +129,9 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
     /* re-draw the background */
     xcb_rectangle_t border = {0, 0, width, height},
                     inner = {2, 2, width - 4, height - 4};
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#FF0000")});
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#FF0000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#000000")});
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#000000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */

@@ -192,12 +192,12 @@ void refresh_statusline(void) {
 
             /* Draw the background */
             uint32_t bg_color = colors.urgent_ws_bg;
-            uint32_t bg_values[] = { bg_color, bg_color };
+            uint32_t bg_values[] = {bg_color, bg_color};
             xcb_change_gc(xcb_connection, statusline_ctx, mask, bg_values);
 
             /* The urgent background “overshoots” by 2 px so that the text that
              * is printed onto it will not be look so cut off. */
-            xcb_rectangle_t bg_rect = { x - logical_px(2), logical_px(1), block->width + logical_px(4), bar_height - logical_px(2) };
+            xcb_rectangle_t bg_rect = {x - logical_px(2), logical_px(1), block->width + logical_px(4), bar_height - logical_px(2)};
             xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_ctx, 1, &bg_rect);
         } else {
             fg_color = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
@@ -215,8 +215,8 @@ void refresh_statusline(void) {
             xcb_change_gc(xcb_connection, statusline_ctx, mask, values);
             xcb_poly_line(xcb_connection, XCB_COORD_MODE_ORIGIN, statusline_pm,
                           statusline_ctx, 2,
-                          (xcb_point_t[]) { { x - sep_offset, logical_px(4) },
-                                            { x - sep_offset, bar_height - logical_px(4) } });
+                          (xcb_point_t[]){{x - sep_offset, logical_px(4)},
+                                          {x - sep_offset, bar_height - logical_px(4)}});
         }
     }
 }
@@ -367,13 +367,12 @@ void handle_button(xcb_button_press_event_t *event) {
             struct status_block *block;
             int sep_offset_remainder = 0;
 
-            TAILQ_FOREACH (block, &statusline_head, blocks) {
+            TAILQ_FOREACH(block, &statusline_head, blocks) {
                 if (i3string_get_num_bytes(block->full_text) == 0)
                     continue;
 
                 last_block_x = block_x;
-                block_x += block->width + block->x_offset + block->x_append
-                           + get_sep_offset(block) + sep_offset_remainder;
+                block_x += block->width + block->x_offset + block->x_append + get_sep_offset(block) + sep_offset_remainder;
 
                 if (x <= block_x && x >= last_block_x) {
                     send_block_clicked(event->detail, block->name, block->instance, event->root_x, event->root_y);
@@ -387,7 +386,7 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     /* TODO: Move this to extern get_ws_for_output() */
-    TAILQ_FOREACH (cur_ws, walk->workspaces, tailq) {
+    TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
         if (cur_ws->visible) {
             break;
         }
@@ -506,7 +505,7 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
     int num_visible = 0;
     i3_output *output;
 
-    SLIST_FOREACH (output, outputs, slist) {
+    SLIST_FOREACH(output, outputs, slist) {
         if (!output->active) {
             continue;
         }

@@ -125,9 +125,9 @@ void restore_connect(void) {
 
 static void update_placeholder_contents(placeholder_state *state) {
     xcb_change_gc(restore_conn, state->gc, XCB_GC_FOREGROUND,
-                  (uint32_t[]) {config.client.placeholder.background});
+                  (uint32_t[]){config.client.placeholder.background});
     xcb_poly_fill_rectangle(restore_conn, state->pixmap, state->gc, 1,
-                            (xcb_rectangle_t[]) {{0, 0, state->rect.width, state->rect.height}});
+                            (xcb_rectangle_t[]){{0, 0, state->rect.width, state->rect.height}});
 
     // TODO: make i3font functions per-connection, at least these two for now…?
     xcb_flush(restore_conn);
@@ -190,7 +190,7 @@ static void open_placeholder_window(Con *con) {
             XCURSOR_CURSOR_POINTER,
             true,
             XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
-            (uint32_t[]) {
+            (uint32_t[]){
                 config.client.placeholder.background,
                 XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
             });
@@ -211,7 +211,7 @@ static void open_placeholder_window(Con *con) {
         xcb_create_pixmap(restore_conn, root_depth, state->pixmap,
                           state->window, state->rect.width, state->rect.height);
         state->gc = xcb_generate_id(restore_conn);
-        xcb_create_gc(restore_conn, state->gc, state->pixmap, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]) {0});
+        xcb_create_gc(restore_conn, state->gc, state->pixmap, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){0});
         update_placeholder_contents(state);
         TAILQ_INSERT_TAIL(&state_head, state, state);
 
@@ -323,7 +323,7 @@ static void configure_notify(xcb_configure_notify_event_t *event) {
         xcb_create_pixmap(restore_conn, root_depth, state->pixmap,
                           state->window, state->rect.width, state->rect.height);
         state->gc = xcb_generate_id(restore_conn);
-        xcb_create_gc(restore_conn, state->gc, state->pixmap, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]) {0});
+        xcb_create_gc(restore_conn, state->gc, state->pixmap, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){0});
 
         update_placeholder_contents(state);
         xcb_copy_area(restore_conn, state->pixmap, state->window, state->gc,

@@ -56,7 +56,7 @@ void xcursor_load_cursors(void) {
  */
 void xcursor_set_root_cursor(int cursor_id) {
     xcb_change_window_attributes(conn, root, XCB_CW_CURSOR,
-                                 (uint32_t[]) {xcursor_get_cursor(cursor_id)});
+                                 (uint32_t[]){xcursor_get_cursor(cursor_id)});
 }
 
 xcb_cursor_t xcursor_get_cursor(enum xcursor_cursor_t c) {

@@ -69,7 +69,7 @@ void restore_geometry(void) {
 
     /* Strictly speaking, this line doesn’t really belong here, but since we
      * are syncing, let’s un-register as a window manager first */
-    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]) {XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT});
+    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT});
 
     /* Make sure our changes reach the X server, we restart/exit now */
     xcb_aux_sync(conn);
@@ -434,7 +434,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * which are not managed by the wm anyways). We store the original geometry
      * here because it’s used for dock clients. */
     if (nc->geometry.width == 0)
-        nc->geometry = (Rect) {geom->x, geom->y, geom->width, geom->height};
+        nc->geometry = (Rect){geom->x, geom->y, geom->width, geom->height};
 
     if (motif_border_style != BS_NORMAL) {
         DLOG("MOTIF_WM_HINTS specifies decorations (border_style = %d)\n", motif_border_style);

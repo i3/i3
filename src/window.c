@@ -189,7 +189,7 @@ void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop) 
     DLOG("Reserved pixels changed to: left = %d, right = %d, top = %d, bottom = %d\n",
          strut[0], strut[1], strut[2], strut[3]);
 
-    win->reserved = (struct reservedpx) {strut[0], strut[1], strut[2], strut[3]};
+    win->reserved = (struct reservedpx){strut[0], strut[1], strut[2], strut[3]};
 
     free(prop);
 }

@@ -494,7 +494,7 @@ static char *resolve_tilde(const char *path) {
 static int handle_expose() {
     /* re-draw the background */
     xcb_rectangle_t border = {0, 0, 300, (15 * font.height) + 8};
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#000000")});
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#000000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
 
     set_font(&font);
@@ -870,7 +870,7 @@ int main(int argc, char *argv[]) {
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
-        (uint32_t[]) {
+        (uint32_t[]){
             0, /* back pixel: black */
             XCB_EVENT_MASK_EXPOSURE |
                 XCB_EVENT_MASK_BUTTON_PRESS});

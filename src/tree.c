@@ -76,7 +76,7 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
 
     /* TODO: refactor the following */
     croot = con_new(NULL, NULL);
-    croot->rect = (Rect) {
+    croot->rect = (Rect){
         geometry->x,
         geometry->y,
         geometry->width,
@@ -118,7 +118,7 @@ void tree_init(xcb_get_geometry_reply_t *geometry) {
     croot->name = "root";
     croot->type = CT_ROOT;
     croot->layout = L_SPLITH;
-    croot->rect = (Rect) {
+    croot->rect = (Rect){
         geometry->x,
         geometry->y,
         geometry->width,
@@ -237,7 +237,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
              * unmap the window,
              * then reparent it to the root window. */
             xcb_change_window_attributes(conn, con->window->id,
-                                         XCB_CW_EVENT_MASK, (uint32_t[]) {XCB_NONE});
+                                         XCB_CW_EVENT_MASK, (uint32_t[]){XCB_NONE});
             xcb_unmap_window(conn, con->window->id);
             cookie = xcb_reparent_window(conn, con->window->id, root, 0, 0);
 

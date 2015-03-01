@@ -130,9 +130,9 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
 
     /* re-draw the background */
     xcb_rectangle_t border = {0, 0, 500, font.height + 8}, inner = {2, 2, 496, font.height + 8 - 4};
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#FF0000")});
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#FF0000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#000000")});
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#000000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
@@ -410,7 +410,7 @@ int main(int argc, char *argv[]) {
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK,
-        (uint32_t[]) {
+        (uint32_t[]){
             0, /* back pixel: black */
             1, /* override redirect: don’t manage this window */
             XCB_EVENT_MASK_EXPOSURE});

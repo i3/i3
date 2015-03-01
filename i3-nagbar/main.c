@@ -188,7 +188,7 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
  */
 static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     /* re-draw the background */
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {color_background});
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_background});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &rect);
 
     /* restore font color */
@@ -212,7 +212,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     xcb_rectangle_t close = {y - w - (2 * line_width), 0, w + (2 * line_width), rect.height};
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &close);
 
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {color_border});
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_border});
     xcb_point_t points[] = {
         {y - w - (2 * line_width), line_width / 2},
         {y - (line_width / 2), line_width / 2},
@@ -238,11 +238,11 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         /* account for left/right padding, which seems to be set to 12px (total) below */
         w += 12;
         y -= 30;
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {color_button_background});
-        close = (xcb_rectangle_t) {y - w - (2 * line_width), 2, w + (2 * line_width), rect.height - 6};
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_button_background});
+        close = (xcb_rectangle_t){y - w - (2 * line_width), 2, w + (2 * line_width), rect.height - 6};
         xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &close);
 
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {color_border});
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_border});
         buttons[c].x = y - w - (2 * line_width);
         buttons[c].width = w;
         xcb_point_t points2[] = {
@@ -415,7 +415,7 @@ int main(int argc, char *argv[]) {
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
-        (uint32_t[]) {
+        (uint32_t[]){
             0, /* back pixel: black */
             XCB_EVENT_MASK_EXPOSURE |
                 XCB_EVENT_MASK_STRUCTURE_NOTIFY |
@@ -512,7 +512,7 @@ int main(int argc, char *argv[]) {
 
             case XCB_CONFIGURE_NOTIFY: {
                 xcb_configure_notify_event_t *configure_notify = (xcb_configure_notify_event_t *)event;
-                rect = (xcb_rectangle_t) {
+                rect = (xcb_rectangle_t){
                     configure_notify->x,
                     configure_notify->y,
                     configure_notify->width,
