@@ -159,9 +159,10 @@ static Binding *get_binding(uint16_t modifiers, bool is_release, uint16_t input_
          * need to look in the array of translated keycodes for the event’s
          * keycode */
         if (input_type == B_KEYBOARD && bind->symbol != NULL) {
+            xcb_keycode_t input_keycode = (xcb_keycode_t)input_code;
             if (memmem(bind->translated_to,
                        bind->number_keycodes * sizeof(xcb_keycode_t),
-                       &input_code, sizeof(xcb_keycode_t)) == NULL)
+                       &input_keycode, sizeof(xcb_keycode_t)) == NULL)
                 continue;
         } else {
             /* This case is easier: The user specified a keycode */
