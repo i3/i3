@@ -380,11 +380,6 @@ int handle_button_press(xcb_button_press_event_t *event) {
         return 0;
     }
 
-    if (event->child != XCB_NONE) {
-        DLOG("event->child not XCB_NONE, so this is an event which originated from a click into the application, but the application did not handle it.\n");
-        return route_click(con, event, mod_pressed, CLICK_INSIDE);
-    }
-
     /* Check if the click was on the decoration of a child */
     Con *child;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
@@ -392,6 +387,11 @@ int handle_button_press(xcb_button_press_event_t *event) {
             continue;
 
         return route_click(child, event, mod_pressed, CLICK_DECORATION);
+    }
+
+    if (event->child != XCB_NONE) {
+        DLOG("event->child not XCB_NONE, so this is an event which originated from a click into the application, but the application did not handle it.\n");
+        return route_click(con, event, mod_pressed, CLICK_INSIDE);
     }
 
     return route_click(con, event, mod_pressed, CLICK_BORDER);
