@@ -1257,12 +1257,21 @@ void handle_event(int type, xcb_generic_event_t *event) {
         DLOG("xkb event, need to handle it.\n");
 
         xcb_xkb_state_notify_event_t *state = (xcb_xkb_state_notify_event_t *)event;
-        if (state->xkbType == XCB_XKB_MAP_NOTIFY) {
+        if (state->xkbType == XCB_XKB_NEW_KEYBOARD_NOTIFY) {
+            DLOG("xkb new keyboard notify, sequence %d, time %d\n", state->sequence, state->time);
+            xcb_key_symbols_free(keysyms);
+            keysyms = xcb_key_symbols_alloc(conn);
+            ungrab_all_keys(conn);
+            translate_keysyms();
+            grab_all_keys(conn, false);
+        } else if (state->xkbType == XCB_XKB_MAP_NOTIFY) {
             if (event_is_ignored(event->sequence, type)) {
                 DLOG("Ignoring map notify event for sequence %d.\n", state->sequence);
             } else {
                 DLOG("xkb map notify, sequence %d, time %d\n", state->sequence, state->time);
                 add_ignore_event(event->sequence, type);
+                xcb_key_symbols_free(keysyms);
+                keysyms = xcb_key_symbols_alloc(conn);
                 ungrab_all_keys(conn);
                 translate_keysyms();
                 grab_all_keys(conn, false);
