@@ -909,7 +909,7 @@ void cmd_append_layout(I3_CMD, char *path) {
     LOG("JSON content = %d\n", content);
     if (content == JSON_CONTENT_UNKNOWN) {
         ELOG("Could not determine the contents of \"%s\", not loading.\n", path);
-        ysuccess(false);
+        yerror("Could not determine the contents of \"%s\".", path);
         free(path);
         return;
     }
