@@ -27,16 +27,19 @@
             y(map_close);                   \
         }                                   \
     } while (0)
-#define yerror(message)                     \
-    do {                                    \
-        if (cmd_output->json_gen != NULL) { \
-            y(map_open);                    \
-            ystr("success");                \
-            y(bool, false);                 \
-            ystr("error");                  \
-            ystr(message);                  \
-            y(map_close);                   \
-        }                                   \
+#define yerror(format, ...)                             \
+    do {                                                \
+        if (cmd_output->json_gen != NULL) {             \
+            char *message;                              \
+            sasprintf(&message, format, ##__VA_ARGS__); \
+            y(map_open);                                \
+            ystr("success");                            \
+            y(bool, false);                             \
+            ystr("error");                              \
+            ystr(message);                              \
+            y(map_close);                               \
+            free(message);                              \
+        }                                               \
     } while (0)
 
 /** When the command did not include match criteria (!), we use the currently
@@ -574,8 +577,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
 
     if (parsed_num == -1) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
-        // TODO: better error message
-        yerror("Could not parse number");
+        yerror("Could not parse number \"%s\"", which);
         return;
     }
 
@@ -1002,8 +1004,7 @@ void cmd_workspace_number(I3_CMD, char *which) {
 
     if (parsed_num == -1) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
-        // TODO: better error message
-        yerror("Could not parse number");
+        yerror("Could not parse number \"%s\"", which);
         return;
     }
 
@@ -2002,10 +2003,7 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     }
 
     if (!workspace) {
-        // TODO: we should include the old workspace name here and use yajl for
-        // generating the reply.
-        // TODO: better error message
-        yerror("Old workspace not found");
+        yerror("Old workspace \"%s\" not found", old_name);
         return;
     }
 
@@ -2015,10 +2013,7 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
                !strcasecmp(child->name, new_name));
 
     if (check_dest != NULL) {
-        // TODO: we should include the new workspace name here and use yajl for
-        // generating the reply.
-        // TODO: better error message
-        yerror("New workspace already exists");
+        yerror("New workspace \"%s\" already exists", new_name);
         return;
     }
 
