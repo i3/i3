@@ -179,3 +179,10 @@ Con *workspace_attach_to(Con *ws);
  * The container inherits the layout from the workspace.
  */
 Con *workspace_encapsulate(Con *ws);
+
+/**
+ * Move the given workspace to the specified output.
+ * This returns true if and only if moving the workspace was successful.
+ *
+ */
+bool workspace_move_to_output(Con *ws, char *output);
