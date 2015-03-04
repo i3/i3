@@ -2034,6 +2034,24 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     Con *parent = workspace->parent;
     con_detach(workspace);
     con_attach(workspace, parent, false);
+
+    /* Move the workspace to the correct output if it has an assignment */
+    struct Workspace_Assignment *assignment = NULL;
+    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+        if (assignment->output == NULL)
+            continue;
+        if (strcmp(assignment->name, workspace->name) != 0
+            && (!name_is_digits(assignment->name) || ws_name_to_number(assignment->name) != workspace->num)) {
+
+            continue;
+        }
+
+        /* Focus this workspace for now, we will restore the previous focus anyway. */
+        con_focus(workspace);
+        cmd_move_workspace_to_output(current_match, cmd_output, assignment->output);
+        break;
+    }
+
     /* Restore the previous focus since con_attach messes with the focus. */
     con_focus(previously_focused);
 
