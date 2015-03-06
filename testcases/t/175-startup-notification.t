@@ -142,11 +142,16 @@ is_num_children($first_ws, 2, 'two containers on the first workspace');
 complete_startup();
 sync_with_i3;
 
+# even when renaming the workspace, windows should end up on the correct one
+cmd "rename workspace $first_ws to temp";
+
 # Startup has completed but the 30-second deletion time hasn't elapsed,
 # so this window should still go on the leader's initial workspace.
 $win = open_window({ dont_map => 1, client_leader => $leader });
 $win->map;
 sync_with_i3;
+
+cmd "rename workspace temp to $first_ws";
 
 is_num_children($first_ws, 3, 'three containers on the first workspace');
 
