@@ -219,7 +219,7 @@ static void open_placeholder_window(Con *con) {
         Match *temp_id = smalloc(sizeof(Match));
         match_init(temp_id);
         temp_id->id = placeholder;
-        TAILQ_INSERT_TAIL(&(con->swallow_head), temp_id, matches);
+        TAILQ_INSERT_HEAD(&(con->swallow_head), temp_id, matches);
     }
 
     Con *child;
