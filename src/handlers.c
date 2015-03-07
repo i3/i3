@@ -1267,7 +1267,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
             /* See The XKB Extension: Library Specification, section 14.1 */
             /* We check if the current group (each group contains
              * two levels) has been changed. Mode_switch activates
-             * group XkbGroup2Index */
+             * group XCB_XKB_GROUP_2 */
             if (xkb_current_group == state->group)
                 return;
             xkb_current_group = state->group;
@@ -1277,7 +1277,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
                 grab_all_keys(conn, false);
             } else {
                 DLOG("Mode_switch enabled\n");
-                grab_all_keys(conn, false);
+                grab_all_keys(conn, true);
             }
         }
 
