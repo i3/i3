@@ -433,8 +433,8 @@ void child_write_output(void) {
         size_t size;
 
         yajl_gen_get_buf(gen, &output, &size);
-        write(child_stdin, output, size);
-        write(child_stdin, "\n", 1);
+        swrite(child_stdin, output, size);
+        swrite(child_stdin, "\n", 1);
         yajl_gen_clear(gen);
     }
 }

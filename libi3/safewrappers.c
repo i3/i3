@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <err.h>
 
@@ -62,5 +63,13 @@ int sasprintf(char **strp, const char *fmt, ...) {
     if ((result = vasprintf(strp, fmt, args)) == -1)
         err(EXIT_FAILURE, "asprintf(%s)", fmt);
     va_end(args);
+    return result;
+}
+
+ssize_t swrite(int fd, const void *buf, size_t count) {
+    ssize_t result = write (fd, buf, count);
+    
+    if (-1 == result)
+        err(EXIT_FAILURE, "write(%d,...)", fd);
     return result;
 }

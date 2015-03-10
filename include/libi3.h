@@ -142,6 +142,13 @@ int svasprintf(char **strp, const char *fmt, va_list ap);
 int sasprintf(char **strp, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 
 /**
+ * Safe-wrapper around write which exits if it returns -1 (meaning that
+ * write failed)
+ *
+ */
+ssize_t swrite(int fd, const void *buf, size_t count);
+
+/**
  * Build an i3String from an UTF-8 encoded string.
  * Returns the newly-allocated i3String.
  *
