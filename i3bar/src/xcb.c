@@ -323,8 +323,6 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
  *
  */
 void handle_button(xcb_button_press_event_t *event) {
-    i3_ws *cur_ws;
-
     /* Determine, which bar was clicked */
     i3_output *walk;
     xcb_window_t bar = event->event;
@@ -344,7 +342,19 @@ void handle_button(xcb_button_press_event_t *event) {
 
     DLOG("Got button %d\n", event->detail);
 
-    if (child_want_click_events()) {
+    int wspx = 0;
+    i3_ws *cur_ws = NULL;
+    i3_ws *ws_walk;
+
+    TAILQ_FOREACH(ws_walk, walk->workspaces, tailq) {
+        wspx += logical_px(10) + ws_walk->name_width + logical_px(1);
+
+        if (ws_walk->visible) {
+            cur_ws = ws_walk;
+        }
+    }
+
+    if (x > wspx && child_want_click_events()) {
         /* If the child asked for click events,
          * check if a status block has been clicked. */
 
@@ -383,13 +393,6 @@ void handle_button(xcb_button_press_event_t *event) {
             }
         }
         x = original_x;
-    }
-
-    /* TODO: Move this to extern get_ws_for_output() */
-    TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
-        if (cur_ws->visible) {
-            break;
-        }
     }
 
     if (cur_ws == NULL) {
