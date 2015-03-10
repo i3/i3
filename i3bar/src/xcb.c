@@ -273,7 +273,7 @@ void unhide_bars(void) {
         values[2] = walk->rect.w;
         values[3] = bar_height;
         values[4] = XCB_STACK_MODE_ABOVE;
-        DLOG("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
+        DLOG("Reconfiguring window for output %s to %d,%d\n", walk->name, values[0], values[1]);
         cookie = xcb_configure_window_checked(xcb_connection,
                                               walk->bar,
                                               mask,
@@ -335,14 +335,14 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     if (walk == NULL) {
-        DLOG("Unknown Bar klicked!\n");
+        DLOG("Unknown bar clicked!\n");
         return;
     }
 
     int32_t x = event->event_x >= 0 ? event->event_x : 0;
     int32_t original_x = x;
 
-    DLOG("Got Button %d\n", event->detail);
+    DLOG("Got button %d\n", event->detail);
 
     if (child_want_click_events()) {
         /* If the child asked for click events,
@@ -393,7 +393,7 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     if (cur_ws == NULL) {
-        DLOG("No Workspace active?\n");
+        DLOG("No workspace active?\n");
         return;
     }
 
@@ -1170,7 +1170,7 @@ void init_xcb_late(char *fontname) {
     /* Load the font */
     font = load_font(fontname, true);
     set_font(&font);
-    DLOG("Calculated Font-height: %d\n", font.height);
+    DLOG("Calculated font height: %d\n", font.height);
     bar_height = font.height + logical_px(6);
 
     xcb_flush(xcb_connection);
@@ -1369,7 +1369,7 @@ void get_atoms(void) {
     free(reply);
 
 #include "xcb_atoms.def"
-    DLOG("Got Atoms\n");
+    DLOG("Got atoms\n");
 }
 
 /*
@@ -1495,7 +1495,7 @@ void reconfig_windows(bool redraw_bars) {
             continue;
         }
         if (walk->bar == XCB_NONE) {
-            DLOG("Creating Window for output %s\n", walk->name);
+            DLOG("Creating window for output %s\n", walk->name);
 
             walk->bar = xcb_generate_id(xcb_connection);
             walk->buffer = xcb_generate_id(xcb_connection);
@@ -1677,7 +1677,7 @@ void reconfig_windows(bool redraw_bars) {
             DLOG("Destroying buffer for output %s\n", walk->name);
             xcb_free_pixmap(xcb_connection, walk->buffer);
 
-            DLOG("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
+            DLOG("Reconfiguring window for output %s to %d,%d\n", walk->name, values[0], values[1]);
             xcb_void_cookie_t cfg_cookie = xcb_configure_window_checked(xcb_connection,
                                                                         walk->bar,
                                                                         mask,
@@ -1685,7 +1685,7 @@ void reconfig_windows(bool redraw_bars) {
 
             mask = XCB_CW_OVERRIDE_REDIRECT;
             values[0] = (config.hide_on_modifier == M_DOCK ? 0 : 1);
-            DLOG("Changing Window attribute override_redirect for output %s to %d\n", walk->name, values[0]);
+            DLOG("Changing window attribute override_redirect for output %s to %d\n", walk->name, values[0]);
             xcb_void_cookie_t chg_cookie = xcb_change_window_attributes(xcb_connection,
                                                                         walk->bar,
                                                                         mask,
@@ -1735,7 +1735,7 @@ void reconfig_windows(bool redraw_bars) {
  *
  */
 void draw_bars(bool unhide) {
-    DLOG("Drawing Bars...\n");
+    DLOG("Drawing bars...\n");
     int wspx = 0;
 
     refresh_statusline();
@@ -1766,7 +1766,7 @@ void draw_bars(bool unhide) {
         if (!config.disable_ws) {
             i3_ws *ws_walk;
             TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
-                DLOG("Drawing Button for WS %s at x = %d, len = %d\n",
+                DLOG("Drawing button for WS %s at x = %d, len = %d\n",
                      i3string_as_utf8(ws_walk->name), wspx, ws_walk->name_width);
                 uint32_t fg_color = colors.inactive_ws_fg;
                 uint32_t bg_color = colors.inactive_ws_bg;
