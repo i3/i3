@@ -156,6 +156,13 @@ ssize_t swrite(int fd, const void *buf, size_t count);
 int spipe(int pipefd[2]);
 
 /**
+ * Safe-wrapper around symlink which exits if it returns -1 (meaning that
+ * symlink failed)
+ *
+ */
+int ssymlink(const char *target, const char *linkpath);
+
+/**
  * Build an i3String from an UTF-8 encoded string.
  * Returns the newly-allocated i3String.
  *

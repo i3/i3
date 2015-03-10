@@ -81,3 +81,11 @@ int spipe(int pipefd[2]) {
         err(EXIT_FAILURE, "pipe((int[]){%d,%d})", pipefd[0], pipefd[1]);
     return result;
 }
+
+int ssymlink(const char *target, const char *linkpath) {
+    ssize_t result = symlink(target, linkpath);
+
+    if (-1 == result)
+        err(EXIT_FAILURE, "symlink(\"%s\", \"%s\")", target, linkpath);
+    return result;
+}
