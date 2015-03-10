@@ -128,11 +128,18 @@ void *srealloc(void *ptr, size_t size);
 char *sstrdup(const char *str);
 
 /**
+ * Safe-wrapper around vasprintf which exits if it returns -1 (meaning that
+ * there is no more memory available)
+ *
+ */
+int svasprintf(char **strp, const char *fmt, va_list ap);
+
+/**
  * Safe-wrapper around asprintf which exits if it returns -1 (meaning that
  * there is no more memory available)
  *
  */
-int sasprintf(char **strp, const char *fmt, ...);
+int sasprintf(char **strp, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 
 /**
  * Build an i3String from an UTF-8 encoded string.

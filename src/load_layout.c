@@ -105,7 +105,7 @@ static int json_end_map(void *ctx) {
             int cnt = 1;
             while (workspace != NULL) {
                 FREE(json_node->name);
-                asprintf(&(json_node->name), "%s_%d", base, cnt++);
+                sasprintf(&(json_node->name), "%s_%d", base, cnt++);
                 workspace = NULL;
                 TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
                 GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, json_node->name));
@@ -194,7 +194,7 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
     LOG("string: %.*s for key %s\n", (int)len, val, last_key);
     if (parsing_swallows) {
         char *sval;
-        sasprintf(&sval, "%.*s", len, val);
+        sasprintf(&sval, "%.*s", (int)len, val);
         if (strcasecmp(last_key, "class") == 0) {
             current_swallow->class = regex_new(sval);
         } else if (strcasecmp(last_key, "instance") == 0) {

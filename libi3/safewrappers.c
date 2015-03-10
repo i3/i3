@@ -46,6 +46,14 @@ char *sstrdup(const char *str) {
     return result;
 }
 
+int svasprintf(char **strp, const char *fmt, va_list ap) {
+    int result = vasprintf(strp, fmt, ap);
+    
+    if (-1 == result)
+        err(EXIT_FAILURE, "vasprintf(%s)", fmt);
+    return result;
+}
+
 int sasprintf(char **strp, const char *fmt, ...) {
     va_list args;
     int result;
