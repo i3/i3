@@ -73,3 +73,11 @@ ssize_t swrite(int fd, const void *buf, size_t count) {
         err(EXIT_FAILURE, "write(%d,...)", fd);
     return result;
 }
+
+int spipe(int pipefd[2]) {
+    ssize_t result = pipe(pipefd);
+    
+    if (-1 == result)
+        err(EXIT_FAILURE, "pipe((int[]){%d,%d})", pipefd[0], pipefd[1]);
+    return result;
+}

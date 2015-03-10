@@ -149,6 +149,13 @@ int sasprintf(char **strp, const char *fmt, ...) __attribute__((format(printf, 2
 ssize_t swrite(int fd, const void *buf, size_t count);
 
 /**
+ * Safe-wrapper around pipe which exits if it returns -1 (meaning that
+ * pipe failed)
+ *
+ */
+int spipe(int pipefd[2]);
+
+/**
  * Build an i3String from an UTF-8 encoded string.
  * Returns the newly-allocated i3String.
  *
