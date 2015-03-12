@@ -174,7 +174,7 @@ void refresh_statusline(void) {
         realloc_sl_buffer();
 
     /* Clear the statusline pixmap. */
-    xcb_rectangle_t rect = {0, 0, root_screen->width_in_pixels, bar_height};
+    xcb_rectangle_t rect = {0, 0, statusline_width, bar_height};
     xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
 
     /* Draw the text of each block. */
@@ -1786,7 +1786,7 @@ void draw_bars(bool unhide) {
                           statusline_pm,
                           outputs_walk->buffer,
                           outputs_walk->bargc,
-                          MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + logical_px(4))), 0,
+                          MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + traypx + logical_px(4))), 0,
                           MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - traypx - logical_px(4))), 0,
                           MIN(outputs_walk->rect.w - traypx - logical_px(4), (int)statusline_width), bar_height);
         }
