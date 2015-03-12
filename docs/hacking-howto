@@ -1012,7 +1012,7 @@ gets started in any way) and the window(s) which appear.
 
 Imagine for example using dmenu: The user starts dmenu by pressing Mod+d, dmenu
 gets started with PID 3390. The user then decides to launch Firefox, which
-takes a long time. So he enters firefox into dmenu and presses enter. Firefox
+takes a long time. So they enter firefox into dmenu and press enter. Firefox
 gets started with PID 4001. When it finally finishes loading, it creates an X11
 window and uses MapWindow to make it visible. This is the first time i3
 actually gets in touch with Firefox. It decides to map the window, but it has

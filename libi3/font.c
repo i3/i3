@@ -455,7 +455,7 @@ static int xcb_query_text_width(const xcb_char2b_t *text, size_t text_len) {
                                                                          cookie, &error);
     if (reply == NULL) {
         /* We return a safe estimate because a rendering error is better than
-         * a crash. Plus, the user will see the error in his log. */
+         * a crash. Plus, the user will see the error in their log. */
         fprintf(stderr, "Could not get text extents (X error code %d)\n",
                 error->error_code);
         return savedFont->specific.xcb.info->max_bounds.character_width * text_len;

@@ -823,11 +823,11 @@ static char *migrate_config(char *input, off_t size) {
         fprintf(stderr, "Migration process exit code was != 0\n");
         if (returncode == 2) {
             fprintf(stderr, "could not start the migration script\n");
-            /* TODO: script was not found. tell the user to fix his system or create a v4 config */
+            /* TODO: script was not found. tell the user to fix their system or create a v4 config */
         } else if (returncode == 1) {
             fprintf(stderr, "This already was a v4 config. Please add the following line to your config file:\n");
             fprintf(stderr, "# i3 config file (v4)\n");
-            /* TODO: nag the user with a message to include a hint for i3 in his config file */
+            /* TODO: nag the user with a message to include a hint for i3 in their config file */
         }
         return NULL;
     }

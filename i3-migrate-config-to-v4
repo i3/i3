@@ -341,7 +341,7 @@ sub convert_command {
             # NOTE: This is not 100% accurate, as it only works for one level
             # of nested containers. As this is a common use case, we use 'focus
             # parent; $command' nevertheless. For advanced use cases, the user
-            # has to modify his config.
+            # has to modify their config.
             print "$statement $key focus parent; $command\n";
         }
         return;
