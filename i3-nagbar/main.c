@@ -5,7 +5,7 @@
  * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-nagbar is a utility which displays a nag message, for example in the case
- * when the user has an error in his configuration file.
+ * when the user has an error in their configuration file.
  *
  */
 #include <stdio.h>

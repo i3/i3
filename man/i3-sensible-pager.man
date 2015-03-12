@@ -23,7 +23,7 @@ It tries to start one of the following (in that order):
 * w3m
 * i3-sensible-editor(1)
 
-Please don’t complain about the order: If the user has any preference, he will
+Please don’t complain about the order: If the user has any preference, they will
 have $PAGER set.
 
 == SEE ALSO

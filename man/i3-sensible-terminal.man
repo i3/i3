@@ -33,8 +33,8 @@ It tries to start one of the following (in that order):
 * roxterm
 * xfce4-terminal
 
-Please don’t complain about the order: If the user has any preference, she will
-have $TERMINAL set or modified her i3 configuration file.
+Please don’t complain about the order: If the user has any preference, they will
+have $TERMINAL set or modified their i3 configuration file.
 
 == SEE ALSO
 

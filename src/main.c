@@ -778,7 +778,7 @@ int main(int argc, char *argv[]) {
         ELOG("Could not setup signal handler");
 
     /* Ignore SIGPIPE to survive errors when an IPC client disconnects
-     * while we are sending him a message */
+     * while we are sending them a message */
     signal(SIGPIPE, SIG_IGN);
 
     /* Autostarting exec-lines */

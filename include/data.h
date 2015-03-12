@@ -450,7 +450,7 @@ struct Match {
 /**
  * An Assignment makes specific windows go to a specific workspace/output or
  * run a command for that window. With this mechanism, the user can -- for
- * example -- assign his browser to workspace "www". Checking if a window is
+ * example -- assign their browser to workspace "www". Checking if a window is
  * assigned works by comparing the Match data structure with the window (see
  * match_matches_window()).
  *

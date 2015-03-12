@@ -106,7 +106,7 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
         return;
     }
 
-    /* Focus the output on which the user moved his cursor */
+    /* Focus the output on which the user moved their cursor */
     Con *old_focused = focused;
     Con *next = con_descend_focused(output_get_content(output->con));
     /* Since we are switching outputs, this *must* be a different workspace, so
@@ -149,7 +149,7 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
         enter_child = true;
     }
 
-    /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
+    /* If not, then the user moved their cursor to the root window. In that case, we adjust c_ws */
     if (con == NULL) {
         DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
         check_crossing_screen_boundary(event->root_x, event->root_y);
@@ -1315,7 +1315,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
             handle_motion_notify((xcb_motion_notify_event_t *)event);
             break;
 
-        /* Enter window = user moved his mouse over the window */
+        /* Enter window = user moved their mouse over the window */
         case XCB_ENTER_NOTIFY:
             handle_enter_notify((xcb_enter_notify_event_t *)event);
             break;
