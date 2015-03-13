@@ -37,5 +37,6 @@ install:
   # Install as many dependencies as possible via apt because cpanm is not very reliable/easy to debug.
   - sudo apt-get install --no-install-recommends libanyevent-perl libanyevent-i3-perl libextutils-pkgconfig-perl xcb-proto cpanminus xvfb xserver-xephyr xauth libinline-perl libxml-simple-perl libmouse-perl libmousex-nativetraits-perl libextutils-depends-perl perl-modules libtest-deep-perl libtest-exception-perl libxml-parser-perl libtest-simple-perl libtest-fatal-perl libdata-dump-perl libtest-differences-perl libxml-tokeparser-perl libtest-use-ok-perl libipc-run-perl
   - sudo /bin/sh -c 'cpanm -n -v X11::XCB || true'
-script: make -j && (cd testcases && xvfb-run ./complete-run.pl)
+  - sudo /bin/sh -c 'cpanm -n -v AnyEvent::I3 || true'
+script: make -j && (cd testcases && xvfb-run ./complete-run.pl --parallel=1)
 after_failure: cat /home/travis/.cpanm/build.log
