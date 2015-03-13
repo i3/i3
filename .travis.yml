@@ -10,3 +10,4 @@ install:
   - sudo apt-get install --no-install-recommends -y libanyevent-perl libanyevent-i3-perl libextutils-pkgconfig-perl xcb-proto cpanminus xvfb xserver-xephyr xauth libinline-perl
   - sudo cpanm -n -v X11::XCB
 script: make -j && (cd testcases && xvfb-run ./complete-run.pl)
+after_failure: cat /home/travis/.cpanm/build.log
