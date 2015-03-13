@@ -5,12 +5,12 @@ compiler:
 before_install:
   # The travis VMs run on Ubuntu 12.04 which is very old and a huge pain to get
   # into a state where we can build a recent version of i3 :(.
-  - echo 'deb http://archive.ubuntu.com/ubuntu/ trusty main universe' | sudo tee /etc/apt/sources.list.d/trusty.list
-  - echo 'APT::Default-Release "precise";' | sudo tee /etc/apt/apt.conf.d/default-release
-  - echo -e "Package: libc6\nPin: release n=trusty\nPin-Priority: 999" | sudo tee /etc/apt/preferences.d/00-libc6
-  - echo -e "Package: libxkbcommon*\nPin: release n=trusty\nPin-Priority: 999" | sudo tee /etc/apt/preferences.d/01-xkbcommon
-  - echo -e "Package: libyajl*\nPin: release n=trusty\nPin-Priority: 999" | sudo tee /etc/apt/preferences.d/02-yajl
-  - echo -e "Package: libxcb-image*\nPin: release n=trusty\nPin-Priority: 999" | sudo tee /etc/apt/preferences.d/03-xcb-image
+  - "echo 'deb http://archive.ubuntu.com/ubuntu/ trusty main universe' | sudo tee /etc/apt/sources.list.d/trusty.list"
+  - "echo 'APT::Default-Release \"precise\";' | sudo tee /etc/apt/apt.conf.d/default-release"
+  - "echo -e \"Package: libc6\nPin: release n=trusty\nPin-Priority: 999\" | sudo tee /etc/apt/preferences.d/00-libc6"
+  - "echo -e \"Package: libxkbcommon*\nPin: release n=trusty\nPin-Priority: 999\" | sudo tee /etc/apt/preferences.d/01-xkbcommon"
+  - "echo -e \"Package: libyajl*\nPin: release n=trusty\nPin-Priority: 999\" | sudo tee /etc/apt/preferences.d/02-yajl"
+  - "echo -e \"Package: libxcb-image*\nPin: release n=trusty\nPin-Priority: 999\" | sudo tee /etc/apt/preferences.d/03-xcb-image"
   - sudo apt-get update
   - sudo apt-get install -t trusty libc6 libc6-dev
   - sudo apt-get install --no-install-recommends devscripts equivs
