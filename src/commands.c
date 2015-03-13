@@ -1155,28 +1155,13 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
 
     HANDLE_EMPTY_MATCH;
 
-    /* get the output */
     Output *current_output = NULL;
-    Output *output;
-
     // TODO: fix the handling of criteria
     TAILQ_FOREACH(current, &owindows, owindows)
     current_output = get_output_of_con(current->con);
-
     assert(current_output != NULL);
 
-    // TODO: clean this up with commands.spec as soon as we switched away from the lex/yacc command parser
-    if (strcasecmp(name, "up") == 0)
-        output = get_output_next_wrap(D_UP, current_output);
-    else if (strcasecmp(name, "down") == 0)
-        output = get_output_next_wrap(D_DOWN, current_output);
-    else if (strcasecmp(name, "left") == 0)
-        output = get_output_next_wrap(D_LEFT, current_output);
-    else if (strcasecmp(name, "right") == 0)
-        output = get_output_next_wrap(D_RIGHT, current_output);
-    else
-        output = get_output_by_name(name);
-
+    Output *output = get_output_from_string(current_output, name);
     if (!output) {
         LOG("No such output found.\n");
         ysuccess(false);
