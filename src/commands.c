@@ -1914,9 +1914,7 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
         if (assignment->output == NULL)
             continue;
-        if (strcmp(assignment->name, workspace->name) != 0
-            && (!name_is_digits(assignment->name) || ws_name_to_number(assignment->name) != workspace->num)) {
-
+        if (strcmp(assignment->name, workspace->name) != 0 && (!name_is_digits(assignment->name) || ws_name_to_number(assignment->name) != workspace->num)) {
             continue;
         }
 
