@@ -39,4 +39,4 @@ install:
   - sudo /bin/sh -c 'cpanm -n -v X11::XCB || true'
   - sudo /bin/sh -c 'cpanm -n -v AnyEvent::I3 || true'
 script: make -j && (cd testcases && xvfb-run ./complete-run.pl --parallel=1)
-after_failure: cat /home/travis/.cpanm/build.log
+after_failure: cat testcases/latest/complete-run.log
