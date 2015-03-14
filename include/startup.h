@@ -45,6 +45,12 @@ void startup_sequence_delete(struct Startup_Sequence *sequence);
 void startup_monitor_event(SnMonitorEvent *event, void *userdata);
 
 /**
+ * Renames workspaces that are mentioned in the startup sequences.
+ *
+ */
+void startup_sequence_rename_workspace(char *old_name, char *new_name);
+
+/**
  * Gets the stored startup sequence for the _NET_STARTUP_ID of a given window.
  *
  */

@@ -1934,6 +1934,8 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     ewmh_update_desktop_names();
     ewmh_update_desktop_viewport();
     ewmh_update_current_desktop();
+
+    startup_sequence_rename_workspace(old_name, new_name);
 }
 
 /*
