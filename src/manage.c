@@ -253,23 +253,20 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* See if any container swallows this new window */
     nc = con_for_window(search_at, cwindow, &match);
     if (nc == NULL) {
-        /* If not, check if it is assigned to a specific workspace / output */
-        if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE | A_TO_OUTPUT))) {
+        /* If not, check if it is assigned to a specific workspace */
+        if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE))) {
             DLOG("Assignment matches (%p)\n", match);
-            if (assignment->type == A_TO_WORKSPACE) {
-                Con *assigned_ws = workspace_get(assignment->dest.workspace, NULL);
-                nc = con_descend_tiling_focused(assigned_ws);
-                DLOG("focused on ws %s: %p / %s\n", assigned_ws->name, nc, nc->name);
-                if (nc->type == CT_WORKSPACE)
-                    nc = tree_open_con(nc, cwindow);
-                else
-                    nc = tree_open_con(nc->parent, cwindow);
+            Con *assigned_ws = workspace_get(assignment->dest.workspace, NULL);
+            nc = con_descend_tiling_focused(assigned_ws);
+            DLOG("focused on ws %s: %p / %s\n", assigned_ws->name, nc, nc->name);
+            if (nc->type == CT_WORKSPACE)
+                nc = tree_open_con(nc, cwindow);
+            else
+                nc = tree_open_con(nc->parent, cwindow);
 
-                /* set the urgency hint on the window if the workspace is not visible */
-                if (!workspace_is_visible(assigned_ws))
-                    urgency_hint = true;
-            }
-            /* TODO: handle assignments with type == A_TO_OUTPUT */
+            /* set the urgency hint on the window if the workspace is not visible */
+            if (!workspace_is_visible(assigned_ws))
+                urgency_hint = true;
         } else if (startup_ws) {
             /* If it’s not assigned, but was started on a specific workspace,
              * we want to open it there */
