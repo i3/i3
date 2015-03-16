@@ -19,7 +19,9 @@ sub noninteractive {
     # CONTINUOUS_INTEGRATION gets set when running under Travis, see
     # http://docs.travis-ci.com/user/ci-environment/ and
     # https://github.com/travis-ci/travis-ci/issues/1337
-    return (! -t STDOUT) || $ENV{CONTINUOUS_INTEGRATION} eq 'true';
+    return (! -t STDOUT) || (
+        defined($ENV{CONTINUOUS_INTEGRATION}) &&
+        $ENV{CONTINUOUS_INTEGRATION} eq 'true');
 }
 
 # setup %ansi_line_upwards to map all working displays to the
