@@ -1919,6 +1919,10 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
         }
 
         workspace_move_to_output(workspace, assignment->output);
+
+        if (previously_focused)
+            workspace_show(con_get_workspace(previously_focused));
+
         break;
     }
 
