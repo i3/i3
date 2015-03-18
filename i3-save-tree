@@ -13,6 +13,7 @@ use POSIX qw(locale_h);
 use File::Find;
 use File::Basename qw(basename);
 use File::Temp qw(tempfile);
+use List::Util qw(first);
 use Getopt::Long;
 use Pod::Usage;
 use AnyEvent::I3;
@@ -41,11 +42,7 @@ my $result = GetOptions(
 
 die "Could not parse command line options" unless $result;
 
-if (!defined($workspace) && !defined($output)) {
-    die "One of --workspace or --output need to be specified";
-}
-
-unless (defined($workspace) ^ defined($output)) {
+if (defined($workspace) && defined($output)) {
     die "Only one of --workspace or --output can be specified";
 }
 
@@ -55,6 +52,15 @@ $output = decode('utf-8', $output);
 my $i3 = i3();
 if (!$i3->connect->recv) {
     die "Could not connect to i3";
+}
+
+sub get_current_workspace {
+    my $current = first { $_->{focused} } @{$i3->get_workspaces->recv};
+    return $current->{name};
+}
+
+if (!defined($workspace) && !defined($output)) {
+    $workspace = get_current_workspace();
 }
 
 sub filter_containers {
