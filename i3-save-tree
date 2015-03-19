@@ -265,19 +265,19 @@ specification. When a window is mapped (made visible on the screen) that
 matches the specification, i3 will put it into that place and kill the
 placeholder.
 
+If neither argument is specified, the currently focused workspace will be used.
+
 =head1 OPTIONS
 
 =over
 
 =item B<--workspace=name>
 
-Specifies the workspace that should be dumped, e.g. 1. Either this or --output
-need to be specified.
+Specifies the workspace that should be dumped, e.g. 1.
 
 =item B<--output=name>
 
-Specifies the output that should be dumped, e.g. LVDS-1. Either this or
---workspace need to be specified.
+Specifies the output that should be dumped, e.g. LVDS-1.
 
 =back
 
