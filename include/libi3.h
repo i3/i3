@@ -170,6 +170,12 @@ i3String *i3string_from_markup_with_length(const char *from_markup, size_t num_b
 i3String *i3string_from_ucs2(const xcb_char2b_t *from_ucs2, size_t num_glyphs);
 
 /**
+ * Copies the given i3string.
+ * Note that this will not free the source string.
+ */
+i3String *i3string_copy(i3String *str);
+
+/**
  * Free an i3String.
  *
  */

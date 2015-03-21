@@ -109,6 +109,17 @@ i3String *i3string_from_ucs2(const xcb_char2b_t *from_ucs2, size_t num_glyphs) {
     return str;
 }
 
+/**
+ * Copies the given i3string.
+ * Note that this will not free the source string.
+ */
+i3String *i3string_copy(i3String *str) {
+    if (str->is_markup)
+        return i3string_from_markup(i3string_as_utf8(str));
+    else
+        return i3string_from_utf8(i3string_as_utf8(str));
+}
+
 /*
  * Free an i3String.
  *
