@@ -106,6 +106,14 @@ struct xcb_colors_t {
 };
 struct xcb_colors_t colors;
 
+const static int ws_hoff_px = 4,    /* Horizontal offset between a workspace label and button borders */
+                 ws_voff_px = 3,    /* Vertical offset between a workspace label and button borders */
+                 ws_spacing_px = 1, /* Offset between two workspace buttons */
+                 sb_hoff_px = 4,    /* Offset between the statusline and 1) workspace buttons on the left
+                                     *                                   2) the tray or screen edge on the right */
+                 tray_loff_px = 2,  /* Additional offset between the tray and the statusline, if the tray is not empty */
+                 sep_voff_px = 4;   /* Vertical offset between the bar and a separator */
+
 /* We define xcb_request_failed as a macro to include the relevant line-number */
 #define xcb_request_failed(cookie, err_msg) _xcb_request_failed(cookie, err_msg, __LINE__)
 int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
@@ -121,6 +129,19 @@ uint32_t get_sep_offset(struct status_block *block) {
     if (!block->no_separator && block->sep_block_width > 0)
         return block->sep_block_width / 2 + block->sep_block_width % 2;
     return 0;
+}
+
+int get_tray_width(struct tc_head* trayclients) {
+    trayclient *trayclient;
+    int tray_width = 0;
+    TAILQ_FOREACH_REVERSE(trayclient, trayclients, tc_head, tailq) {
+        if (!trayclient->mapped)
+            continue;
+        tray_width += font.height + logical_px(2);
+    }
+    if (tray_width > 0)
+        tray_width += logical_px(tray_loff_px);
+    return tray_width;
 }
 
 /*
@@ -174,7 +195,7 @@ void refresh_statusline(void) {
         realloc_sl_buffer();
 
     /* Clear the statusline pixmap. */
-    xcb_rectangle_t rect = {0, 0, root_screen->width_in_pixels, bar_height};
+    xcb_rectangle_t rect = {0, 0, MAX(root_screen->width_in_pixels, statusline_width), bar_height};
     xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
 
     /* Draw the text of each block. */
@@ -204,7 +225,7 @@ void refresh_statusline(void) {
         }
 
         set_font_colors(statusline_ctx, fg_color, colors.bar_bg);
-        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 3, block->width);
+        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, logical_px(ws_voff_px), block->width);
         x += block->width + block->sep_block_width + block->x_offset + block->x_append;
 
         uint32_t sep_offset = get_sep_offset(block);
@@ -215,8 +236,8 @@ void refresh_statusline(void) {
             xcb_change_gc(xcb_connection, statusline_ctx, mask, values);
             xcb_poly_line(xcb_connection, XCB_COORD_MODE_ORIGIN, statusline_pm,
                           statusline_ctx, 2,
-                          (xcb_point_t[]){{x - sep_offset, logical_px(4)},
-                                          {x - sep_offset, bar_height - logical_px(4)}});
+                          (xcb_point_t[]){{x - sep_offset, logical_px(sep_voff_px)},
+                                          {x - sep_offset, bar_height - logical_px(sep_voff_px)}});
         }
     }
 }
@@ -273,7 +294,7 @@ void unhide_bars(void) {
         values[2] = walk->rect.w;
         values[3] = bar_height;
         values[4] = XCB_STACK_MODE_ABOVE;
-        DLOG("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
+        DLOG("Reconfiguring window for output %s to %d,%d\n", walk->name, values[0], values[1]);
         cookie = xcb_configure_window_checked(xcb_connection,
                                               walk->bar,
                                               mask,
@@ -323,8 +344,6 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
  *
  */
 void handle_button(xcb_button_press_event_t *event) {
-    i3_ws *cur_ws;
-
     /* Determine, which bar was clicked */
     i3_output *walk;
     xcb_window_t bar = event->event;
@@ -335,32 +354,40 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     if (walk == NULL) {
-        DLOG("Unknown Bar klicked!\n");
+        DLOG("Unknown bar clicked!\n");
         return;
     }
 
     int32_t x = event->event_x >= 0 ? event->event_x : 0;
     int32_t original_x = x;
 
-    DLOG("Got Button %d\n", event->detail);
+    DLOG("Got button %d\n", event->detail);
 
-    if (child_want_click_events()) {
+    int wspx = 0;
+    i3_ws *cur_ws = NULL, *clicked_ws = NULL, *ws_walk;
+
+    TAILQ_FOREACH(ws_walk, walk->workspaces, tailq) {
+        int w = ws_walk->name_width + 2*logical_px(ws_hoff_px+1);
+        if (x >= wspx && x <= wspx + w) {
+            clicked_ws = ws_walk;
+        }
+        wspx += w;
+        if (TAILQ_NEXT(ws_walk, tailq) != NULL) {
+            wspx += logical_px(ws_spacing_px);
+        }
+
+        if (ws_walk->visible) {
+            cur_ws = ws_walk;
+        }
+    }
+
+    if (x > wspx && child_want_click_events()) {
         /* If the child asked for click events,
          * check if a status block has been clicked. */
 
-        /* First calculate width of tray area */
-        trayclient *trayclient;
-        int tray_width = 0;
-        TAILQ_FOREACH_REVERSE(trayclient, walk->trayclients, tc_head, tailq) {
-            if (!trayclient->mapped)
-                continue;
-            tray_width += (font.height + logical_px(2));
-        }
-        if (tray_width > 0)
-            tray_width += logical_px(2);
-
+        int tray_width = get_tray_width(walk->trayclients);
         int block_x = 0, last_block_x;
-        int offset = walk->rect.w - statusline_width - tray_width - logical_px(4);
+        int offset = walk->rect.w - statusline_width - tray_width - logical_px(sb_hoff_px);
 
         x = original_x - offset;
         if (x >= 0) {
@@ -385,15 +412,8 @@ void handle_button(xcb_button_press_event_t *event) {
         x = original_x;
     }
 
-    /* TODO: Move this to extern get_ws_for_output() */
-    TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
-        if (cur_ws->visible) {
-            break;
-        }
-    }
-
     if (cur_ws == NULL) {
-        DLOG("No Workspace active?\n");
+        DLOG("No workspace active?\n");
         return;
     }
 
@@ -435,17 +455,10 @@ void handle_button(xcb_button_press_event_t *event) {
             cur_ws = TAILQ_NEXT(cur_ws, tailq);
             break;
         case 1:
-            /* Check if this event regards a workspace button */
-            TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
-                DLOG("x = %d\n", x);
-                if (x >= 0 && x < cur_ws->name_width + logical_px(10)) {
-                    break;
-                }
-                x -= cur_ws->name_width + logical_px(11);
-            }
+            cur_ws = clicked_ws;
 
-            /* Otherwise, focus our currently visible workspace if it is not
-             * already focused */
+            /* if no workspace was clicked, focus our currently visible
+             * workspace if it is not already focused */
             if (cur_ws == NULL) {
                 TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
                     if (cur_ws->visible && !cur_ws->focused)
@@ -1170,8 +1183,8 @@ void init_xcb_late(char *fontname) {
     /* Load the font */
     font = load_font(fontname, true);
     set_font(&font);
-    DLOG("Calculated Font-height: %d\n", font.height);
-    bar_height = font.height + logical_px(6);
+    DLOG("Calculated font height: %d\n", font.height);
+    bar_height = font.height + 2*logical_px(ws_voff_px);
 
     xcb_flush(xcb_connection);
 
@@ -1369,7 +1382,7 @@ void get_atoms(void) {
     free(reply);
 
 #include "xcb_atoms.def"
-    DLOG("Got Atoms\n");
+    DLOG("Got atoms\n");
 }
 
 /*
@@ -1495,7 +1508,7 @@ void reconfig_windows(bool redraw_bars) {
             continue;
         }
         if (walk->bar == XCB_NONE) {
-            DLOG("Creating Window for output %s\n", walk->name);
+            DLOG("Creating window for output %s\n", walk->name);
 
             walk->bar = xcb_generate_id(xcb_connection);
             walk->buffer = xcb_generate_id(xcb_connection);
@@ -1677,7 +1690,7 @@ void reconfig_windows(bool redraw_bars) {
             DLOG("Destroying buffer for output %s\n", walk->name);
             xcb_free_pixmap(xcb_connection, walk->buffer);
 
-            DLOG("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
+            DLOG("Reconfiguring window for output %s to %d,%d\n", walk->name, values[0], values[1]);
             xcb_void_cookie_t cfg_cookie = xcb_configure_window_checked(xcb_connection,
                                                                         walk->bar,
                                                                         mask,
@@ -1685,7 +1698,7 @@ void reconfig_windows(bool redraw_bars) {
 
             mask = XCB_CW_OVERRIDE_REDIRECT;
             values[0] = (config.hide_on_modifier == M_DOCK ? 0 : 1);
-            DLOG("Changing Window attribute override_redirect for output %s to %d\n", walk->name, values[0]);
+            DLOG("Changing window attribute override_redirect for output %s to %d\n", walk->name, values[0]);
             xcb_void_cookie_t chg_cookie = xcb_change_window_attributes(xcb_connection,
                                                                         walk->bar,
                                                                         mask,
@@ -1735,8 +1748,8 @@ void reconfig_windows(bool redraw_bars) {
  *
  */
 void draw_bars(bool unhide) {
-    DLOG("Drawing Bars...\n");
-    int i = 0;
+    DLOG("Drawing bars...\n");
+    int wspx = 0;
 
     refresh_statusline();
 
@@ -1763,39 +1776,11 @@ void draw_bars(bool unhide) {
                                 1,
                                 &rect);
 
-        if (!TAILQ_EMPTY(&statusline_head)) {
-            DLOG("Printing statusline!\n");
-
-            /* Luckily we already prepared a seperate pixmap containing the rendered
-             * statusline, we just have to copy the relevant parts to the relevant
-             * position */
-            trayclient *trayclient;
-            int traypx = 0;
-            TAILQ_FOREACH(trayclient, outputs_walk->trayclients, tailq) {
-                if (!trayclient->mapped)
-                    continue;
-                /* We assume the tray icons are quadratic (we use the font
-                 * *height* as *width* of the icons) because we configured them
-                 * like this. */
-                traypx += font.height + logical_px(2);
-            }
-            /* Add 2px of padding if there are any tray icons */
-            if (traypx > 0)
-                traypx += logical_px(2);
-            xcb_copy_area(xcb_connection,
-                          statusline_pm,
-                          outputs_walk->buffer,
-                          outputs_walk->bargc,
-                          MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + logical_px(4))), 0,
-                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - traypx - logical_px(4))), 0,
-                          MIN(outputs_walk->rect.w - traypx - logical_px(4), (int)statusline_width), bar_height);
-        }
-
         if (!config.disable_ws) {
             i3_ws *ws_walk;
             TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
-                DLOG("Drawing Button for WS %s at x = %d, len = %d\n",
-                     i3string_as_utf8(ws_walk->name), i, ws_walk->name_width);
+                DLOG("Drawing button for WS %s at x = %d, len = %d\n",
+                     i3string_as_utf8(ws_walk->name), wspx, ws_walk->name_width);
                 uint32_t fg_color = colors.inactive_ws_fg;
                 uint32_t bg_color = colors.inactive_ws_bg;
                 uint32_t border_color = colors.inactive_ws_border;
@@ -1823,10 +1808,10 @@ void draw_bars(bool unhide) {
                               outputs_walk->bargc,
                               mask,
                               vals_border);
-                xcb_rectangle_t rect_border = {i,
+                xcb_rectangle_t rect_border = {wspx,
                                                logical_px(1),
-                                               ws_walk->name_width + logical_px(10),
-                                               font.height + logical_px(4)};
+                                               ws_walk->name_width + 2*logical_px(ws_hoff_px+1),
+                                               font.height + 2*logical_px(ws_voff_px-1)};
                 xcb_poly_fill_rectangle(xcb_connection,
                                         outputs_walk->buffer,
                                         outputs_walk->bargc,
@@ -1837,10 +1822,10 @@ void draw_bars(bool unhide) {
                               outputs_walk->bargc,
                               mask,
                               vals);
-                xcb_rectangle_t rect = {i + logical_px(1),
+                xcb_rectangle_t rect = {wspx + logical_px(1),
                                         2 * logical_px(1),
-                                        ws_walk->name_width + logical_px(8),
-                                        font.height + logical_px(2)};
+                                        ws_walk->name_width + 2*logical_px(ws_hoff_px),
+                                        font.height + 2*logical_px(ws_voff_px-2)};
                 xcb_poly_fill_rectangle(xcb_connection,
                                         outputs_walk->buffer,
                                         outputs_walk->bargc,
@@ -1848,12 +1833,18 @@ void draw_bars(bool unhide) {
                                         &rect);
                 set_font_colors(outputs_walk->bargc, fg_color, bg_color);
                 draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc,
-                          i + logical_px(5), 3 * logical_px(1), ws_walk->name_width);
-                i += logical_px(10) + ws_walk->name_width + logical_px(1);
+                          wspx + logical_px(ws_hoff_px+1), logical_px(ws_voff_px), ws_walk->name_width);
+
+                wspx += 2*logical_px(ws_hoff_px+1) + ws_walk->name_width;
+                if (TAILQ_NEXT(ws_walk, tailq) != NULL) {
+                    wspx += logical_px(ws_spacing_px);
+                }
             }
         }
 
         if (binding.name && !config.disable_binding_mode_indicator) {
+            wspx += logical_px(ws_spacing_px);
+
             uint32_t fg_color = colors.urgent_ws_fg;
             uint32_t bg_color = colors.urgent_ws_bg;
             uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
@@ -1863,7 +1854,10 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           mask,
                           vals_border);
-            xcb_rectangle_t rect_border = {i, 1, binding.width + 10, font.height + 4};
+            xcb_rectangle_t rect_border = {wspx,
+                                           logical_px(1),
+                                           binding.width + 2*logical_px(ws_hoff_px+1),
+                                           font.height + 2*logical_px(ws_voff_px-1)};
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1875,7 +1869,10 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           mask,
                           vals);
-            xcb_rectangle_t rect = {i + 1, 2, binding.width + 8, font.height + 2};
+            xcb_rectangle_t rect = {wspx + logical_px(1),
+                                    2 * logical_px(1),
+                                    binding.width + 2*logical_px(ws_hoff_px),
+                                    font.height + 2*logical_px(ws_voff_px-2)};
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1883,12 +1880,38 @@ void draw_bars(bool unhide) {
                                     &rect);
 
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
-            draw_text(binding.name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 3, binding.width);
+            draw_text(binding.name,
+                      outputs_walk->buffer,
+                      outputs_walk->bargc,
+                      wspx + logical_px(ws_hoff_px+1),
+                      logical_px(ws_voff_px),
+                      binding.width);
 
             unhide = true;
+            wspx += binding.width + 2*(ws_hoff_px+1);
         }
 
-        i = 0;
+        if (!TAILQ_EMPTY(&statusline_head)) {
+            DLOG("Printing statusline!\n");
+
+            /* Luckily we already prepared a seperate pixmap containing the rendered
+             * statusline, we just have to copy the relevant parts to the relevant
+             * position */
+            int tray_width = get_tray_width(outputs_walk->trayclients);
+            /* Visible statusline width */
+            int vslw = MIN(statusline_width,
+                           outputs_walk->rect.w - wspx - logical_px(sb_hoff_px) - tray_width - logical_px(sb_hoff_px));
+
+            xcb_copy_area(xcb_connection,
+                          statusline_pm,
+                          outputs_walk->buffer,
+                          outputs_walk->bargc,
+                          (int16_t)(statusline_width - vslw), 0,
+                          (int16_t)(outputs_walk->rect.w - tray_width - logical_px(sb_hoff_px) - vslw), 0,
+                          (int16_t)vslw, (int16_t)bar_height);
+        }
+
+        wspx = 0;
     }
 
     /* Assure the bar is hidden/unhidden according to the specified hidden_state and mode */
