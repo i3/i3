@@ -452,7 +452,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     }
 
     /* explicitly set the border width to the default */
-    nc->current_border_width = (want_floating ? config.default_floating_border_width : config.default_border_width);
+    if (nc->current_border_width == -1) {
+        nc->current_border_width = (want_floating ? config.default_floating_border_width : config.default_border_width);
+    }
 
     /* to avoid getting an UnmapNotify event due to reparenting, we temporarily
      * declare no interest in any state change event of this window */
