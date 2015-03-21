@@ -1665,7 +1665,10 @@ void reconfig_windows(bool redraw_bars) {
                    XCB_CONFIG_WINDOW_HEIGHT |
                    XCB_CONFIG_WINDOW_STACK_MODE;
             values[0] = walk->rect.x;
-            values[1] = walk->rect.y + walk->rect.h - bar_height;
+            if (config.position == POS_TOP)
+                values[1] = walk->rect.y;
+            else
+                values[1] = walk->rect.y + walk->rect.h - bar_height;
             values[2] = walk->rect.w;
             values[3] = bar_height;
             values[4] = XCB_STACK_MODE_ABOVE;
