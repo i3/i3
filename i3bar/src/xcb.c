@@ -174,7 +174,7 @@ void refresh_statusline(void) {
         realloc_sl_buffer();
 
     /* Clear the statusline pixmap. */
-    xcb_rectangle_t rect = {0, 0, root_screen->width_in_pixels, bar_height};
+    xcb_rectangle_t rect = {0, 0, MAX(root_screen->width_in_pixels, statusline_width), bar_height};
     xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
 
     /* Draw the text of each block. */
