@@ -1763,34 +1763,6 @@ void draw_bars(bool unhide) {
                                 1,
                                 &rect);
 
-        if (!TAILQ_EMPTY(&statusline_head)) {
-            DLOG("Printing statusline!\n");
-
-            /* Luckily we already prepared a seperate pixmap containing the rendered
-             * statusline, we just have to copy the relevant parts to the relevant
-             * position */
-            trayclient *trayclient;
-            int traypx = 0;
-            TAILQ_FOREACH(trayclient, outputs_walk->trayclients, tailq) {
-                if (!trayclient->mapped)
-                    continue;
-                /* We assume the tray icons are quadratic (we use the font
-                 * *height* as *width* of the icons) because we configured them
-                 * like this. */
-                traypx += font.height + logical_px(2);
-            }
-            /* Add 2px of padding if there are any tray icons */
-            if (traypx > 0)
-                traypx += logical_px(2);
-            xcb_copy_area(xcb_connection,
-                          statusline_pm,
-                          outputs_walk->buffer,
-                          outputs_walk->bargc,
-                          MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + logical_px(4))), 0,
-                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - traypx - logical_px(4))), 0,
-                          MIN(outputs_walk->rect.w - traypx - logical_px(4), (int)statusline_width), bar_height);
-        }
-
         if (!config.disable_ws) {
             i3_ws *ws_walk;
             TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
@@ -1886,6 +1858,38 @@ void draw_bars(bool unhide) {
             draw_text(binding.name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 3, binding.width);
 
             unhide = true;
+        }
+
+        if (!TAILQ_EMPTY(&statusline_head)) {
+            DLOG("Printing statusline!\n");
+
+            /* Luckily we already prepared a seperate pixmap containing the rendered
+             * statusline, we just have to copy the relevant parts to the relevant
+             * position */
+            trayclient *trayclient;
+            int traypx = 0;
+            TAILQ_FOREACH(trayclient, outputs_walk->trayclients, tailq) {
+                if (!trayclient->mapped)
+                    continue;
+                /* We assume the tray icons are quadratic (we use the font
+                 * *height* as *width* of the icons) because we configured them
+                 * like this. */
+                traypx += font.height + logical_px(2);
+            }
+            /* Add 2px of padding if there are any tray icons */
+            if (traypx > 0)
+                traypx += logical_px(2);
+
+            int edge_offset = logical_px(4);
+            int visible_statusline_width = MIN(statusline_width, outputs_walk->rect.w - i - traypx - 2*edge_offset);
+
+            xcb_copy_area(xcb_connection,
+                          statusline_pm,
+                          outputs_walk->buffer,
+                          outputs_walk->bargc,
+                          (int16_t)(statusline_width - visible_statusline_width), 0,
+                          (int16_t)(outputs_walk->rect.w - traypx - edge_offset - visible_statusline_width), 0,
+                          (int16_t)visible_statusline_width, (int16_t)bar_height);
         }
 
         i = 0;
