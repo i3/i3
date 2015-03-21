@@ -323,8 +323,6 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
  *
  */
 void handle_button(xcb_button_press_event_t *event) {
-    i3_ws *cur_ws;
-
     /* Determine, which bar was clicked */
     i3_output *walk;
     xcb_window_t bar = event->event;
@@ -344,7 +342,19 @@ void handle_button(xcb_button_press_event_t *event) {
 
     DLOG("Got button %d\n", event->detail);
 
-    if (child_want_click_events()) {
+    int workspace_width = 0;
+    i3_ws *cur_ws = NULL, *clicked_ws = NULL, *ws_walk;
+
+    TAILQ_FOREACH(ws_walk, walk->workspaces, tailq) {
+        int w = logical_px(10) + ws_walk->name_width;
+        if (x >= workspace_width && x <= workspace_width + w)
+            clicked_ws = ws_walk;
+        if (ws_walk->visible)
+            cur_ws = ws_walk;
+        workspace_width += w + logical_px(1);
+    }
+
+    if (x > workspace_width && child_want_click_events()) {
         /* If the child asked for click events,
          * check if a status block has been clicked. */
 
@@ -383,13 +393,6 @@ void handle_button(xcb_button_press_event_t *event) {
             }
         }
         x = original_x;
-    }
-
-    /* TODO: Move this to extern get_ws_for_output() */
-    TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
-        if (cur_ws->visible) {
-            break;
-        }
     }
 
     if (cur_ws == NULL) {
@@ -435,17 +438,10 @@ void handle_button(xcb_button_press_event_t *event) {
             cur_ws = TAILQ_NEXT(cur_ws, tailq);
             break;
         case 1:
-            /* Check if this event regards a workspace button */
-            TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
-                DLOG("x = %d\n", x);
-                if (x >= 0 && x < cur_ws->name_width + logical_px(10)) {
-                    break;
-                }
-                x -= cur_ws->name_width + logical_px(11);
-            }
+            cur_ws = clicked_ws;
 
-            /* Otherwise, focus our currently visible workspace if it is not
-             * already focused */
+            /* if no workspace was clicked, focus our currently visible
+             * workspace if it is not already focused */
             if (cur_ws == NULL) {
                 TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
                     if (cur_ws->visible && !cur_ws->focused)
