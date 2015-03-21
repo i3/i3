@@ -126,7 +126,10 @@ static void draw_text_pango(const char *text, size_t text_len,
     cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
     pango_cairo_update_layout(cr, layout);
     pango_layout_get_pixel_size(layout, NULL, &height);
-    cairo_move_to(cr, x, y - 0.5 * (height - savedFont->height));
+    /* Center the piece of text vertically if its height is smaller than the
+     * cached font height, and just let "high" symbols fall out otherwise. */
+    int yoffset = (height < savedFont->height ? 0.5 : 1) * (height - savedFont->height);
+    cairo_move_to(cr, x, y - yoffset);
     pango_cairo_show_layout(cr, layout);
 
     /* Free resources */
