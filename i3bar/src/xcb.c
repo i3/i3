@@ -1858,6 +1858,7 @@ void draw_bars(bool unhide) {
             draw_text(binding.name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 3, binding.width);
 
             unhide = true;
+            i += logical_px(10) + binding.width + logical_px(1);
         }
 
         if (!TAILQ_EMPTY(&statusline_head)) {
