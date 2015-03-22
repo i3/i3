@@ -131,6 +131,19 @@ uint32_t get_sep_offset(struct status_block *block) {
     return 0;
 }
 
+int get_tray_width(struct tc_head* trayclients) {
+    trayclient *trayclient;
+    int tray_width = 0;
+    TAILQ_FOREACH_REVERSE(trayclient, trayclients, tc_head, tailq) {
+        if (!trayclient->mapped)
+            continue;
+        tray_width += font.height + logical_px(2);
+    }
+    if (tray_width > 0)
+        tray_width += logical_px(tray_loff_px);
+    return tray_width;
+}
+
 /*
  * Redraws the statusline to the buffer
  *
@@ -367,18 +380,7 @@ void handle_button(xcb_button_press_event_t *event) {
     if (x > workspace_width && child_want_click_events()) {
         /* If the child asked for click events,
          * check if a status block has been clicked. */
-
-        /* First calculate width of tray area */
-        trayclient *trayclient;
-        int tray_width = 0;
-        TAILQ_FOREACH_REVERSE(trayclient, walk->trayclients, tc_head, tailq) {
-            if (!trayclient->mapped)
-                continue;
-            tray_width += (font.height + logical_px(2));
-        }
-        if (tray_width > 0)
-            tray_width += logical_px(tray_loff_px);
-
+        int tray_width = get_tray_width(walk->trayclients);
         int block_x = 0, last_block_x;
         int offset = walk->rect.w - statusline_width - tray_width - logical_px(sb_hoff_px);
 
@@ -1891,29 +1893,17 @@ void draw_bars(bool unhide) {
             /* Luckily we already prepared a seperate pixmap containing the rendered
              * statusline, we just have to copy the relevant parts to the relevant
              * position */
-            trayclient *trayclient;
-            int traypx = 0;
-            TAILQ_FOREACH(trayclient, outputs_walk->trayclients, tailq) {
-                if (!trayclient->mapped)
-                    continue;
-                /* We assume the tray icons are quadratic (we use the font
-                 * *height* as *width* of the icons) because we configured them
-                 * like this. */
-                traypx += font.height + logical_px(2);
-            }
-            /* Add 2px of padding if there are any tray icons */
-            if (traypx > 0)
-                traypx += logical_px(tray_loff_px);
+            int tray_width = get_tray_width(outputs_walk->trayclients);
 
             int visible_statusline_width = MIN(statusline_width,
-                                               outputs_walk->rect.w - workspace_width - traypx - 2*logical_px(sb_hoff_px));
+                                               outputs_walk->rect.w - workspace_width - tray_width - 2*logical_px(sb_hoff_px));
 
             xcb_copy_area(xcb_connection,
                           statusline_pm,
                           outputs_walk->buffer,
                           outputs_walk->bargc,
                           (int16_t)(statusline_width - visible_statusline_width), 0,
-                          (int16_t)(outputs_walk->rect.w - traypx - logical_px(sb_hoff_px) - visible_statusline_width), 0,
+                          (int16_t)(outputs_walk->rect.w - tray_width - logical_px(sb_hoff_px) - visible_statusline_width), 0,
                           (int16_t)visible_statusline_width, (int16_t)bar_height);
         }
 
