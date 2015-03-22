@@ -17,6 +17,12 @@ extern xcb_screen_t *root_screen;
  *
  */
 int logical_px(const int logical) {
+    if (root_screen == NULL) {
+        /* Dpi info may not be available when parsing a config without an X
+         * server, such as for config file validation. */
+        return logical;
+    }
+
     const int dpi = (double)root_screen->height_in_pixels * 25.4 /
                     (double)root_screen->height_in_millimeters;
     /* There are many misconfigurations out there, i.e. systems with screens
