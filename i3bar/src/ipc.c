@@ -32,11 +32,11 @@ typedef void (*handler_t)(char *);
  *
  */
 void got_command_reply(char *reply) {
-    /* TODO: Error handling for command-replies */
+    /* TODO: Error handling for command replies */
 }
 
 /*
- * Called, when we get a reply with workspaces-data
+ * Called, when we get a reply with workspaces data
  *
  */
 void got_workspace_reply(char *reply) {
@@ -52,11 +52,11 @@ void got_workspace_reply(char *reply) {
  */
 void got_subscribe_reply(char *reply) {
     DLOG("Got Subscribe Reply: %s\n", reply);
-    /* TODO: Error handling for subscribe-commands */
+    /* TODO: Error handling for subscribe commands */
 }
 
 /*
- * Called, when we get a reply with outputs-data
+ * Called, when we get a reply with outputs data
  *
  */
 void got_output_reply(char *reply) {
@@ -80,7 +80,7 @@ void got_output_reply(char *reply) {
  */
 void got_bar_config(char *reply) {
     DLOG("Received bar config \"%s\"\n", reply);
-    /* We initiate the main-function by requesting infos about the outputs and
+    /* We initiate the main function by requesting infos about the outputs and
      * workspaces. Everything else (creating the bars, showing the right workspace-
      * buttons and more) is taken care of by the event-drivenness of the code */
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
@@ -104,7 +104,7 @@ void got_bar_config(char *reply) {
     FREE(config.command);
 }
 
-/* Data-structure to easily call the reply-handlers later */
+/* Data-structure to easily call the reply handlers later */
 handler_t reply_handlers[] = {
     &got_command_reply,
     &got_workspace_reply,
@@ -116,7 +116,7 @@ handler_t reply_handlers[] = {
 };
 
 /*
- * Called, when a workspace-event arrives (i.e. the user changed the workspace)
+ * Called, when a workspace event arrives (i.e. the user changed the workspace)
  *
  */
 void got_workspace_event(char *event) {
@@ -125,7 +125,7 @@ void got_workspace_event(char *event) {
 }
 
 /*
- * Called, when an output-event arrives (i.e. the screen-configuration changed)
+ * Called, when an output event arrives (i.e. the screen-configuration changed)
  *
  */
 void got_output_event(char *event) {
@@ -137,7 +137,7 @@ void got_output_event(char *event) {
 }
 
 /*
- * Called, when a mode-event arrives (i3 changed binding mode).
+ * Called, when a mode event arrives (i3 changed binding mode).
  *
  */
 void got_mode_event(char *event) {
@@ -180,7 +180,7 @@ void got_bar_config_update(char *event) {
     draw_bars(false);
 }
 
-/* Data-structure to easily call the event-handlers later */
+/* Data-structure to easily call the event handlers later */
 handler_t event_handlers[] = {
     &got_workspace_event,
     &got_output_event,
@@ -316,7 +316,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
 
 /*
  * Initiate a connection to i3.
- * socket-path must be a valid path to the ipc_socket of i3
+ * socket_path must be a valid path to the ipc_socket of i3
  *
  */
 int init_connection(const char *socket_path) {

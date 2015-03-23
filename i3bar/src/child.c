@@ -30,7 +30,7 @@
 /* Global variables for child_*() */
 i3bar_child child;
 
-/* stdin- and sigchild-watchers */
+/* stdin- and SIGCHLD-watchers */
 ev_io *stdin_io;
 ev_child *child_sig;
 
@@ -124,7 +124,7 @@ __attribute__((format(printf, 1, 2))) static void set_statusline_error(const cha
 }
 
 /*
- * Stop and free() the stdin- and sigchild-watchers
+ * Stop and free() the stdin- and SIGCHLD-watchers
  *
  */
 void cleanup(void) {
@@ -407,8 +407,8 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 }
 
 /*
- * We received a sigchild, meaning, that the child-process terminated.
- * We simply free the respective data-structures and don't care for input
+ * We received a SIGCHLD, meaning, that the child process terminated.
+ * We simply free the respective data structures and don't care for input
  * anymore
  *
  */
@@ -445,7 +445,7 @@ void child_write_output(void) {
 }
 
 /*
- * Start a child-process with the specified command and reroute stdin.
+ * Start a child process with the specified command and reroute stdin.
  * We actually start a $SHELL to execute the command so we don't have to care
  * about arguments and such.
  *
@@ -573,7 +573,7 @@ void send_block_clicked(int button, const char *name, const char *instance, int 
 }
 
 /*
- * kill()s the child-process (if any). Called when exit()ing.
+ * kill()s the child process (if any). Called when exit()ing.
  *
  */
 void kill_child_at_exit(void) {
@@ -585,8 +585,8 @@ void kill_child_at_exit(void) {
 }
 
 /*
- * kill()s the child-process (if existent) and closes and
- * free()s the stdin- and sigchild-watchers
+ * kill()s the child process (if existent) and closes and
+ * free()s the stdin- and SIGCHLD-watchers
  *
  */
 void kill_child(void) {
@@ -601,7 +601,7 @@ void kill_child(void) {
 }
 
 /*
- * Sends a SIGSTOP to the child-process (if existent)
+ * Sends a SIGSTOP to the child process (if existent)
  *
  */
 void stop_child(void) {
@@ -612,7 +612,7 @@ void stop_child(void) {
 }
 
 /*
- * Sends a SIGCONT to the child-process (if existent)
+ * Sends a SIGCONT to the child process (if existent)
  *
  */
 void cont_child(void) {

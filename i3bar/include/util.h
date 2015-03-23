@@ -51,7 +51,7 @@
 #if defined(DLOG)
 #undef DLOG
 #endif
-/* Use cool logging-macros */
+/* Use cool logging macros */
 #define DLOG(fmt, ...)                                                 \
     do {                                                               \
         if (config.verbose) {                                          \

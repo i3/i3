@@ -4,7 +4,7 @@
  * i3bar - an xcb-based status- and ws-bar for i3
  * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
- * outputs.c: Maintaining the output-list
+ * outputs.c: Maintaining the outputs list
  *
  */
 #pragma once
@@ -19,13 +19,13 @@ SLIST_HEAD(outputs_head, i3_output);
 struct outputs_head* outputs;
 
 /*
- * Start parsing the received json-string
+ * Start parsing the received JSON string
  *
  */
 void parse_outputs_json(char* json);
 
 /*
- * Initiate the output-list
+ * Initiate the outputs list
  *
  */
 void init_outputs(void);
@@ -42,7 +42,7 @@ struct i3_output {
     bool primary; /* If it is the primary output */
     bool visible; /* If the bar is visible on this output */
     int ws;       /* The number of the currently visible ws */
-    rect rect;    /* The rect (relative to the root-win) */
+    rect rect;    /* The rect (relative to the root window) */
 
     xcb_window_t bar;     /* The id of the bar of the output */
     xcb_pixmap_t buffer;  /* An extra pixmap for double-buffering */

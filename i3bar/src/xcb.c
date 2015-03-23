@@ -125,7 +125,7 @@ const static int tray_loff_px = 2;
 /* Vertical offset between the bar and a separator */
 const static int sep_voff_px = 4;
 
-/* We define xcb_request_failed as a macro to include the relevant line-number */
+/* We define xcb_request_failed as a macro to include the relevant line number */
 #define xcb_request_failed(cookie, err_msg) _xcb_request_failed(cookie, err_msg, __LINE__)
 int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
     xcb_generic_error_t *err;
@@ -355,8 +355,8 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
 }
 
 /*
- * Handle a button-press-event (i.e. a mouse click on one of our bars).
- * We determine, whether the click occured on a ws-button or if the scroll-
+ * Handle a button press event (i.e. a mouse click on one of our bars).
+ * We determine, whether the click occured on a workspace button or if the scroll-
  * wheel was used and change the workspace appropriately
  *
  */
@@ -522,7 +522,7 @@ void handle_button(xcb_button_press_event_t *event) {
 
 /*
  * Handle visibility notifications: when none of the bars are visible, e.g.
- * if windows are in full-screen on each output, suspend the child process.
+ * if windows are in fullscreen on each output, suspend the child process.
  *
  */
 static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
@@ -887,7 +887,7 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
         DLOG("xembed version = %d\n", xembed[0]);
         DLOG("xembed flags = %d\n", xembed[1]);
         bool map_it = ((xembed[1] & XEMBED_MAPPED) == XEMBED_MAPPED);
-        DLOG("map-state now %d\n", map_it);
+        DLOG("map state now %d\n", map_it);
         if (trayclient->mapped && !map_it) {
             /* need to unmap the window */
             xcb_unmap_window(xcb_connection, trayclient->win);
@@ -1026,7 +1026,7 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
                 redraw_bars();
                 break;
             case XCB_BUTTON_PRESS:
-                /* Button-press-events are mouse-buttons clicked on one of our bars */
+                /* Button press events are mouse-buttons clicked on one of our bars */
                 handle_button((xcb_button_press_event_t *)event);
                 break;
             case XCB_CLIENT_MESSAGE:
@@ -1133,9 +1133,9 @@ char *init_xcb_early() {
 
     char *path = root_atom_contents("I3_SOCKET_PATH", xcb_connection, screen);
 
-    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer") ||
-        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline-buffer-clearcontext") ||
-        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline-buffer-context")) {
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline buffer") ||
+        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline buffer clearcontext") ||
+        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline buffer context")) {
         exit(EXIT_FAILURE);
     }
 
@@ -1143,7 +1143,7 @@ char *init_xcb_early() {
 }
 
 /*
- * Register for xkb keyevents. To grab modifiers without blocking other applications from receiving key-events
+ * Register for xkb keyevents. To grab modifiers without blocking other applications from receiving key events
  * involving that modifier, we sadly have to use xkb which is not yet fully supported
  * in xcb.
  *
@@ -1349,7 +1349,7 @@ void init_tray_colors(void) {
 }
 
 /*
- * Cleanup the xcb-stuff.
+ * Cleanup the xcb stuff.
  * Called once, before the program terminates.
  *
  */
@@ -1459,11 +1459,11 @@ void destroy_window(i3_output *output) {
 }
 
 /*
- * Reallocate the statusline-buffer
+ * Reallocate the statusline buffer
  *
  */
 void realloc_sl_buffer(void) {
-    DLOG("Re-allocating statusline-buffer, statusline_width = %d, root_screen->width_in_pixels = %d\n",
+    DLOG("Re-allocating statusline buffer, statusline_width = %d, root_screen->width_in_pixels = %d\n",
          statusline_width, root_screen->width_in_pixels);
     xcb_free_pixmap(xcb_connection, statusline_pm);
     statusline_pm = xcb_generate_id(xcb_connection);
@@ -1494,9 +1494,9 @@ void realloc_sl_buffer(void) {
                                                             mask,
                                                             vals);
 
-    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer") ||
-        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline-buffer-clearcontext") ||
-        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline-buffer-context")) {
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline buffer") ||
+        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline buffer clearcontext") ||
+        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline buffer context")) {
         exit(EXIT_FAILURE);
     }
 }
@@ -1527,7 +1527,7 @@ void reconfig_windows(bool redraw_bars) {
             mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
             /* Black background */
             values[0] = colors.bar_bg;
-            /* If hide_on_modifier is set to hide or invisible mode, i3 is not supposed to manage our bar-windows */
+            /* If hide_on_modifier is set to hide or invisible mode, i3 is not supposed to manage our bar windows */
             values[1] = (config.hide_on_modifier == M_DOCK ? 0 : 1);
             /* We enable the following EventMask fields:
              * EXPOSURE, to get expose events (we have to re-draw then)
@@ -1589,7 +1589,7 @@ void reconfig_windows(bool redraw_bars) {
                                               name);
             free(name);
 
-            /* We want dock-windows (for now). When override_redirect is set, i3 is ignoring
+            /* We want dock windows (for now). When override_redirect is set, i3 is ignoring
              * this one */
             xcb_void_cookie_t dock_cookie = xcb_change_property(xcb_connection,
                                                                 XCB_PROP_MODE_REPLACE,
@@ -1644,7 +1644,7 @@ void reconfig_windows(bool redraw_bars) {
                                                                  12,
                                                                  &strut_partial);
 
-            /* We also want a graphics-context for the bars (it defines the properties
+            /* We also want a graphics context for the bars (it defines the properties
              * with which we draw to them) */
             walk->bargc = xcb_generate_id(xcb_connection);
             xcb_void_cookie_t gc_cookie = xcb_create_gc_checked(xcb_connection,

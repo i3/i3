@@ -38,7 +38,7 @@ static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t 
 }
 
 /*
- * Parse a null-value (current_workspace)
+ * Parse a null value (current_workspace)
  *
  */
 static int config_null_cb(void *params_) {
@@ -231,7 +231,7 @@ static yajl_callbacks outputs_callbacks = {
 };
 
 /*
- * Start parsing the received bar configuration json-string
+ * Start parsing the received bar configuration JSON string
  *
  */
 void parse_config_json(char *json) {
@@ -247,7 +247,7 @@ void parse_config_json(char *json) {
             break;
         case yajl_status_client_canceled:
         case yajl_status_error:
-            ELOG("Could not parse config-reply!\n");
+            ELOG("Could not parse config reply!\n");
             exit(EXIT_FAILURE);
             break;
     }
