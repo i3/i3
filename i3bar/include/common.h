@@ -35,6 +35,7 @@ typedef enum {
  * up one status line. */
 struct status_block {
     i3String *full_text;
+    i3String *short_text;
 
     char *color;
     uint32_t min_width;

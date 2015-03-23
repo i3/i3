@@ -159,7 +159,7 @@ int get_tray_width(struct tc_head *trayclients) {
  * Redraws the statusline to the buffer
  *
  */
-void refresh_statusline(void) {
+void refresh_statusline(bool use_short_text) {
     struct status_block *block;
 
     uint32_t old_statusline_width = statusline_width;
@@ -167,6 +167,12 @@ void refresh_statusline(void) {
 
     /* Predict the text width of all blocks (in pixels). */
     TAILQ_FOREACH(block, &statusline_head, blocks) {
+        /* Try to use the shorter text if necessary and possible. */
+        if (use_short_text && block->short_text != NULL) {
+            I3STRING_FREE(block->full_text);
+            block->full_text = i3string_copy(block->short_text);
+        }
+
         if (i3string_get_num_bytes(block->full_text) == 0)
             continue;
 
@@ -1760,7 +1766,7 @@ void draw_bars(bool unhide) {
     DLOG("Drawing bars...\n");
     int workspace_width = 0;
 
-    refresh_statusline();
+    refresh_statusline(false);
 
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
@@ -1904,14 +1910,17 @@ void draw_bars(bool unhide) {
         if (!TAILQ_EMPTY(&statusline_head)) {
             DLOG("Printing statusline!\n");
 
+            int tray_width = get_tray_width(outputs_walk->trayclients);
+            int max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - 2 * logical_px(sb_hoff_px);
+
+            /* If the statusline is too long, try to use short texts. */
+            if (statusline_width > max_statusline_width)
+                refresh_statusline(true);
+
             /* Luckily we already prepared a seperate pixmap containing the rendered
              * statusline, we just have to copy the relevant parts to the relevant
              * position */
-            int tray_width = get_tray_width(outputs_walk->trayclients);
-
-            int visible_statusline_width = MIN(statusline_width,
-                                               outputs_walk->rect.w - workspace_width - tray_width - 2 * logical_px(sb_hoff_px));
-
+            int visible_statusline_width = MIN(statusline_width, max_statusline_width);
             xcb_copy_area(xcb_connection,
                           statusline_pm,
                           outputs_walk->buffer,
