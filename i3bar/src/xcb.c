@@ -106,13 +106,24 @@ struct xcb_colors_t {
 };
 struct xcb_colors_t colors;
 
-const static int ws_hoff_px = 4,    /* Horizontal offset between a workspace label and button borders */
-                 ws_voff_px = 3,    /* Vertical offset between a workspace label and button borders */
-                 ws_spacing_px = 1, /* Offset between two workspace buttons */
-                 sb_hoff_px = 4,    /* Offset between the statusline and 1) workspace buttons on the left
-                                     *                                   2) the tray or screen edge on the right */
-                 tray_loff_px = 2,  /* Additional offset between the tray and the statusline, if the tray is not empty */
-                 sep_voff_px = 4;   /* Vertical offset between the bar and a separator */
+/* Horizontal offset between a workspace label and button borders */
+const static int ws_hoff_px = 4;
+
+/* Vertical offset between a workspace label and button borders */
+const static int ws_voff_px = 3;
+
+/* Offset between two workspace buttons */
+const static int ws_spacing_px = 1;
+
+/* Offset between the statusline and 1) workspace buttons on the left
+ *                                   2) the tray or screen edge on the right */
+const static int sb_hoff_px = 4;
+
+/* Additional offset between the tray and the statusline, if the tray is not empty */
+const static int tray_loff_px = 2;
+
+/* Vertical offset between the bar and a separator */
+const static int sep_voff_px = 4;
 
 /* We define xcb_request_failed as a macro to include the relevant line-number */
 #define xcb_request_failed(cookie, err_msg) _xcb_request_failed(cookie, err_msg, __LINE__)
@@ -131,7 +142,7 @@ uint32_t get_sep_offset(struct status_block *block) {
     return 0;
 }
 
-int get_tray_width(struct tc_head* trayclients) {
+int get_tray_width(struct tc_head *trayclients) {
     trayclient *trayclient;
     int tray_width = 0;
     TAILQ_FOREACH_REVERSE(trayclient, trayclients, tc_head, tailq) {
@@ -367,7 +378,7 @@ void handle_button(xcb_button_press_event_t *event) {
     i3_ws *cur_ws = NULL, *clicked_ws = NULL, *ws_walk;
 
     TAILQ_FOREACH(ws_walk, walk->workspaces, tailq) {
-        int w = 2*logical_px(ws_hoff_px) + 2*logical_px(1) + ws_walk->name_width;
+        int w = 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + ws_walk->name_width;
         if (x >= workspace_width && x <= workspace_width + w)
             clicked_ws = ws_walk;
         if (ws_walk->visible)
@@ -1179,7 +1190,7 @@ void init_xcb_late(char *fontname) {
     font = load_font(fontname, true);
     set_font(&font);
     DLOG("Calculated font height: %d\n", font.height);
-    bar_height = font.height + 2*logical_px(ws_voff_px);
+    bar_height = font.height + 2 * logical_px(ws_voff_px);
 
     xcb_flush(xcb_connection);
 
@@ -1808,8 +1819,8 @@ void draw_bars(bool unhide) {
                               vals_border);
                 xcb_rectangle_t rect_border = {workspace_width,
                                                logical_px(1),
-                                               ws_walk->name_width + 2*logical_px(ws_hoff_px) + 2*logical_px(1),
-                                               font.height + 2*logical_px(ws_voff_px) - 2*logical_px(1)};
+                                               ws_walk->name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
+                                               font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1)};
                 xcb_poly_fill_rectangle(xcb_connection,
                                         outputs_walk->buffer,
                                         outputs_walk->bargc,
@@ -1822,8 +1833,8 @@ void draw_bars(bool unhide) {
                               vals);
                 xcb_rectangle_t rect = {workspace_width + logical_px(1),
                                         2 * logical_px(1),
-                                        ws_walk->name_width + 2*logical_px(ws_hoff_px),
-                                        font.height + 2*logical_px(ws_voff_px) - 4*logical_px(1)};
+                                        ws_walk->name_width + 2 * logical_px(ws_hoff_px),
+                                        font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1)};
                 xcb_poly_fill_rectangle(xcb_connection,
                                         outputs_walk->buffer,
                                         outputs_walk->bargc,
@@ -1835,7 +1846,7 @@ void draw_bars(bool unhide) {
                           logical_px(ws_voff_px),
                           ws_walk->name_width);
 
-                workspace_width += 2*logical_px(ws_hoff_px) + 2*logical_px(1) + ws_walk->name_width;
+                workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + ws_walk->name_width;
                 if (TAILQ_NEXT(ws_walk, tailq) != NULL)
                     workspace_width += logical_px(ws_spacing_px);
             }
@@ -1855,8 +1866,8 @@ void draw_bars(bool unhide) {
                           vals_border);
             xcb_rectangle_t rect_border = {workspace_width,
                                            logical_px(1),
-                                           binding.width + 2*logical_px(ws_hoff_px) + 2*logical_px(1),
-                                           font.height + 2*logical_px(ws_voff_px) - 2*logical_px(1)};
+                                           binding.width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
+                                           font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1)};
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1869,9 +1880,9 @@ void draw_bars(bool unhide) {
                           mask,
                           vals);
             xcb_rectangle_t rect = {workspace_width + logical_px(1),
-                                    2*logical_px(1),
-                                    binding.width + 2*logical_px(ws_hoff_px),
-                                    font.height + 2*logical_px(ws_voff_px) - 4*logical_px(1)};
+                                    2 * logical_px(1),
+                                    binding.width + 2 * logical_px(ws_hoff_px),
+                                    font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1)};
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1887,7 +1898,7 @@ void draw_bars(bool unhide) {
                       binding.width);
 
             unhide = true;
-            workspace_width += 2*logical_px(ws_hoff_px) + 2*logical_px(1) + binding.width;
+            workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + binding.width;
         }
 
         if (!TAILQ_EMPTY(&statusline_head)) {
@@ -1899,7 +1910,7 @@ void draw_bars(bool unhide) {
             int tray_width = get_tray_width(outputs_walk->trayclients);
 
             int visible_statusline_width = MIN(statusline_width,
-                                               outputs_walk->rect.w - workspace_width - tray_width - 2*logical_px(sb_hoff_px));
+                                               outputs_walk->rect.w - workspace_width - tray_width - 2 * logical_px(sb_hoff_px));
 
             xcb_copy_area(xcb_connection,
                           statusline_pm,
