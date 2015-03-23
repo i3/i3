@@ -13,7 +13,7 @@
 
 /*
  * Initiate a connection to i3.
- * socket-path must be a valid path to the ipc_socket of i3
+ * socket_path must be a valid path to the ipc_socket of i3
  *
  */
 int init_connection(const char *socket_path);

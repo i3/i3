@@ -49,7 +49,7 @@ typedef struct config_t {
 config_t config;
 
 /**
- * Start parsing the received bar configuration json-string
+ * Start parsing the received bar configuration JSON string
  *
  */
 void parse_config_json(char *json);

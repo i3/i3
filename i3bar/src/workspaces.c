@@ -4,7 +4,7 @@
  * i3bar - an xcb-based status- and ws-bar for i3
  * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
- * workspaces.c: Maintaining the workspace-lists
+ * workspaces.c: Maintaining the workspace lists
  *
  */
 #include <string.h>
@@ -167,7 +167,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
 }
 
 /*
- * We hit the start of a json-map (rect or a new output)
+ * We hit the start of a JSON map (rect or a new output)
  *
  */
 static int workspaces_start_map_cb(void *params_) {
@@ -195,7 +195,7 @@ static int workspaces_start_map_cb(void *params_) {
 /*
  * Parse a key.
  *
- * Essentially we just save it in the parsing-state
+ * Essentially we just save it in the parsing state
  *
  */
 static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
@@ -219,11 +219,11 @@ static yajl_callbacks workspaces_callbacks = {
 };
 
 /*
- * Start parsing the received json-string
+ * Start parsing the received JSON string
  *
  */
 void parse_workspaces_json(char *json) {
-    /* FIXME: Fasciliate stream-processing, i.e. allow starting to interpret
+    /* FIXME: Fasciliate stream processing, i.e. allow starting to interpret
      * JSON in chunks */
     struct workspaces_json_params params;
 
@@ -256,7 +256,7 @@ void parse_workspaces_json(char *json) {
 }
 
 /*
- * free() all workspace data-structures. Does not free() the heads of the tailqueues.
+ * free() all workspace data structures. Does not free() the heads of the tailqueues.
  *
  */
 void free_workspaces(void) {
