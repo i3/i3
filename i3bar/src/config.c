@@ -144,6 +144,13 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
         return 1;
     }
 
+    if (!strcmp(cur_key, "separator_symbol")) {
+        DLOG("separator = %.*s\n", len, val);
+        I3STRING_FREE(config.separator_symbol);
+        config.separator_symbol = i3string_from_utf8_with_length((const char *)val, len);
+        return 1;
+    }
+
     if (!strcmp(cur_key, "outputs")) {
         DLOG("+output %.*s\n", len, val);
         int new_num_outputs = config.num_outputs + 1;

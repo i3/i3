@@ -594,6 +594,11 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     YSTR_IF_SET(status_command);
     YSTR_IF_SET(font);
 
+    if (config->separator_symbol) {
+        ystr("separator_symbol");
+        ystr(config->separator_symbol);
+    }
+
     ystr("workspace_buttons");
     y(bool, !config->hide_workspace_buttons);
 

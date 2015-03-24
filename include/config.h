@@ -285,6 +285,9 @@ struct Barconfig {
     /** Font specification for all text rendered on the bar. */
     char *font;
 
+    /** A custom separator to use instead of a vertical line. */
+    char *separator_symbol;
+
     /** Hide workspace buttons? Configuration option is 'workspace_buttons no'
      * but we invert the bool to get the correct default when initializing with
      * zero. */

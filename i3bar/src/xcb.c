@@ -63,6 +63,9 @@ static i3Font font;
 /* Overall height of the bar (based on font size) */
 int bar_height;
 
+/* Cached width of the custom separator if one was set */
+int separator_symbol_width;
+
 /* These are only relevant for XKB, which we only need for grabbing modifiers */
 int xkb_base;
 int mod_pressed = 0;
@@ -156,6 +159,33 @@ int get_tray_width(struct tc_head *trayclients) {
 }
 
 /*
+ * Draws a separator for the given block if necessary.
+ *
+ */
+static void draw_separator(uint32_t x, struct status_block *block) {
+    uint32_t sep_offset = get_sep_offset(block);
+    if (TAILQ_NEXT(block, blocks) == NULL || sep_offset == 0)
+        return;
+
+    uint32_t center_x = x - sep_offset;
+    if (config.separator_symbol == NULL) {
+        /* Draw a classic one pixel, vertical separator. */
+        uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_LINE_WIDTH;
+        uint32_t values[] = {colors.sep_fg, colors.bar_bg, logical_px(1)};
+        xcb_change_gc(xcb_connection, statusline_ctx, mask, values);
+        xcb_poly_line(xcb_connection, XCB_COORD_MODE_ORIGIN, statusline_pm, statusline_ctx, 2,
+                      (xcb_point_t[]){{center_x, logical_px(sep_voff_px)},
+                                      {center_x, bar_height - logical_px(sep_voff_px)}});
+    } else {
+        /* Draw a custom separator. */
+        uint32_t separator_x = MAX(x - block->sep_block_width, center_x - separator_symbol_width / 2);
+        set_font_colors(statusline_ctx, colors.sep_fg, colors.bar_bg);
+        draw_text(config.separator_symbol, statusline_pm, statusline_ctx,
+                  separator_x, logical_px(ws_voff_px), x - separator_x);
+    }
+}
+
+/*
  * Redraws the statusline to the buffer
  *
  */
@@ -245,17 +275,8 @@ void refresh_statusline(bool use_short_text) {
         draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, logical_px(ws_voff_px), block->width);
         x += block->width + block->sep_block_width + block->x_offset + block->x_append;
 
-        uint32_t sep_offset = get_sep_offset(block);
-        if (TAILQ_NEXT(block, blocks) != NULL && sep_offset > 0) {
-            /* This is not the last block, draw a separator. */
-            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_LINE_WIDTH;
-            uint32_t values[] = {colors.sep_fg, colors.bar_bg, logical_px(1)};
-            xcb_change_gc(xcb_connection, statusline_ctx, mask, values);
-            xcb_poly_line(xcb_connection, XCB_COORD_MODE_ORIGIN, statusline_pm,
-                          statusline_ctx, 2,
-                          (xcb_point_t[]){{x - sep_offset, logical_px(sep_voff_px)},
-                                          {x - sep_offset, bar_height - logical_px(sep_voff_px)}});
-        }
+        /* If this is not the last block, draw a separator. */
+        draw_separator(x, block);
     }
 }
 
@@ -1197,6 +1218,9 @@ void init_xcb_late(char *fontname) {
     set_font(&font);
     DLOG("Calculated font height: %d\n", font.height);
     bar_height = font.height + 2 * logical_px(ws_voff_px);
+
+    if (config.separator_symbol)
+        separator_symbol_width = predict_text_width(config.separator_symbol);
 
     xcb_flush(xcb_connection);
 
