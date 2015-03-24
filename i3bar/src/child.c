@@ -74,6 +74,7 @@ static void clear_statusline(struct statusline_head *head, bool free_resources) 
             FREE(first->color);
             FREE(first->name);
             FREE(first->instance);
+            FREE(first->min_width_str);
         }
 
         TAILQ_REMOVE(head, first, blocks);
@@ -163,6 +164,9 @@ static int stdin_start_map(void *context) {
     /* Default width of the separator block. */
     ctx->block.sep_block_width = logical_px(9);
 
+    /* Use markup by default */
+    ctx->block.is_markup = true;
+
     return 1;
 }
 
@@ -195,6 +199,9 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
         sasprintf(&(ctx->block.color), "%.*s", len, val);
     }
+    if (strcasecmp(ctx->last_map_key, "markup") == 0) {
+        ctx->block.is_markup = (len == strlen("pango") && !strncasecmp((const char *)val, "pango", strlen("pango")));
+    }
     if (strcasecmp(ctx->last_map_key, "align") == 0) {
         if (len == strlen("center") && !strncmp((const char *)val, "center", strlen("center"))) {
             ctx->block.align = ALIGN_CENTER;
@@ -204,9 +211,10 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
             ctx->block.align = ALIGN_LEFT;
         }
     } else if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
-        i3String *text = i3string_from_markup_with_length((const char *)val, len);
-        ctx->block.min_width = (uint32_t)predict_text_width(text);
-        i3string_free(text);
+        char *copy = (char *)malloc(len + 1);
+        strncpy(copy, (const char *)val, len);
+        copy[len] = 0;
+        ctx->block.min_width_str = copy;
     }
     if (strcasecmp(ctx->last_map_key, "name") == 0) {
         char *copy = (char *)malloc(len + 1);
@@ -248,6 +256,17 @@ static int stdin_end_map(void *context) {
         new_block->full_text = i3string_from_utf8("SPEC VIOLATION: full_text is NULL!");
     if (new_block->urgent)
         ctx->has_urgent = true;
+
+    if (new_block->min_width_str) {
+        i3String *text = i3string_from_utf8(new_block->min_width_str);
+        i3string_set_markup(text, new_block->is_markup);
+        new_block->min_width = (uint32_t)predict_text_width(text);
+        i3string_free(text);
+    }
+
+    i3string_set_markup(new_block->full_text, new_block->is_markup);
+    i3string_set_markup(new_block->short_text, new_block->is_markup);
+
     TAILQ_INSERT_TAIL(&statusline_buffer, new_block, blocks);
     return 1;
 }

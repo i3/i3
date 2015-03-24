@@ -218,6 +218,11 @@ size_t i3string_get_num_bytes(i3String *str);
 bool i3string_is_markup(i3String *str);
 
 /**
+ * Set whether the i3String should use Pango markup.
+ */
+void i3string_set_markup(i3String *str, bool is_markup);
+
+/**
  * Returns the number of glyphs in an i3String.
  *
  */
