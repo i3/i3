@@ -286,7 +286,7 @@ static int stdin_end_array(void *context) {
     struct status_block *current;
     TAILQ_FOREACH(current, &statusline_head, blocks) {
         DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
-        DLOG("short_text = %s\n", i3string_as_utf8(current->short_text));
+        DLOG("short_text = %s\n", (current->short_text == NULL ? NULL : i3string_as_utf8(current->short_text)));
         DLOG("color = %s\n", current->color);
     }
     DLOG("end of dump\n");
