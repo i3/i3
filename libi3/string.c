@@ -179,6 +179,13 @@ bool i3string_is_markup(i3String *str) {
 }
 
 /*
+ * Set whether the i3String should use Pango markup.
+ */
+void i3string_set_markup(i3String *str, bool is_markup) {
+    str->is_markup = is_markup;
+}
+
+/*
  * Returns the number of glyphs in an i3String.
  *
  */
