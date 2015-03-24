@@ -135,6 +135,20 @@ char *sstrdup(const char *str);
 int sasprintf(char **strp, const char *fmt, ...);
 
 /**
+ * Wrapper around correct write which returns -1 (meaning that
+ * write failed) or count (meaning that all bytes were written)
+ *
+ */
+ssize_t writeall(int fd, const void *buf, size_t count);
+
+/**
+ * Safe-wrapper around writeall which exits if it returns -1 (meaning that
+ * write failed)
+ *
+ */
+ssize_t swrite(int fd, const void *buf, size_t count);
+
+/**
  * Build an i3String from an UTF-8 encoded string.
  * Returns the newly-allocated i3String.
  *
