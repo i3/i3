@@ -265,7 +265,9 @@ static int stdin_end_map(void *context) {
     }
 
     i3string_set_markup(new_block->full_text, new_block->is_markup);
-    i3string_set_markup(new_block->short_text, new_block->is_markup);
+
+    if (new_block->short_text != NULL)
+        i3string_set_markup(new_block->short_text, new_block->is_markup);
 
     TAILQ_INSERT_TAIL(&statusline_buffer, new_block, blocks);
     return 1;
