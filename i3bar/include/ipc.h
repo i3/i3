@@ -25,7 +25,7 @@ int init_connection(const char *socket_path);
 void destroy_connection(void);
 
 /*
- * Sends a Message to i3.
+ * Sends a message to i3.
  * type must be a valid I3_IPC_MESSAGE_TYPE (see i3/ipc.h for further information)
  *
  */

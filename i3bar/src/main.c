@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
     }
 
     if (socket_path == NULL) {
-        ELOG("No Socket Path Specified, default to %s\n", i3_default_sock_path);
+        ELOG("No socket path specified, default to %s\n", i3_default_sock_path);
         socket_path = expand_path(i3_default_sock_path);
     }
 

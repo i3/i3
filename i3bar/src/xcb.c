@@ -34,7 +34,7 @@
 #include "common.h"
 #include "libi3.h"
 
-/* We save the Atoms in an easy to access array, indexed by an enum */
+/* We save the atoms in an easy to access array, indexed by an enum */
 enum {
 #define ATOM_DO(name) name,
 #include "xcb_atoms.def"
@@ -74,7 +74,7 @@ xcb_gcontext_t statusline_clear;
 xcb_pixmap_t statusline_pm;
 uint32_t statusline_width;
 
-/* Event-Watchers, to interact with the user */
+/* Event watchers, to interact with the user */
 ev_prepare *xcb_prep;
 ev_check *xcb_chk;
 ev_io *xcb_io;
@@ -1020,7 +1020,7 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
                 redraw_bars();
                 break;
             case XCB_BUTTON_PRESS:
-                /* Button press events are mouse-buttons clicked on one of our bars */
+                /* Button press events are mouse buttons clicked on one of our bars */
                 handle_button((xcb_button_press_event_t *)event);
                 break;
             case XCB_CLIENT_MESSAGE:
@@ -1053,7 +1053,7 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
 }
 
 /*
- * Dummy Callback. We only need this, so that the Prepare- and Check-Watchers
+ * Dummy callback. We only need this, so that the prepare and check watchers
  * are triggered
  *
  */
@@ -1066,7 +1066,7 @@ void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  *
  */
 char *init_xcb_early() {
-    /* FIXME: xcb_connect leaks Memory */
+    /* FIXME: xcb_connect leaks memory */
     xcb_connection = xcb_connect(NULL, &screen);
     if (xcb_connection_has_error(xcb_connection)) {
         ELOG("Cannot open display\n");
@@ -1109,7 +1109,7 @@ char *init_xcb_early() {
                                                                root_screen->width_in_pixels,
                                                                root_screen->height_in_pixels);
 
-    /* The various Watchers to communicate with xcb */
+    /* The various watchers to communicate with xcb */
     xcb_io = smalloc(sizeof(ev_io));
     xcb_prep = smalloc(sizeof(ev_prepare));
     xcb_chk = smalloc(sizeof(ev_check));
@@ -1303,7 +1303,7 @@ void init_tray(void) {
 
 /*
  * We need to set the _NET_SYSTEM_TRAY_COLORS atom on the tray selection window
- * to make GTK+ 3 applets with Symbolic Icons visible. If the colors are unset,
+ * to make GTK+ 3 applets with symbolic icons visible. If the colors are unset,
  * they assume a light background.
  * See also https://bugzilla.gnome.org/show_bug.cgi?id=679591
  *
