@@ -450,6 +450,10 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(array_open);
     Match *match;
     TAILQ_FOREACH(match, &(con->swallow_head), matches) {
+        /* We will generate a new restart_mode match specification after this
+         * loop, so skip this one. */
+        if (match->restart_mode)
+            continue;
         y(map_open);
         if (match->dock != -1) {
             ystr("dock");
