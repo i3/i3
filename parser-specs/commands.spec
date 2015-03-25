@@ -353,6 +353,8 @@ state MODE:
 state NOP:
   comment = string
       -> call cmd_nop($comment)
+  end
+      -> call cmd_nop(NULL)
 
 state SCRATCHPAD:
   'show'

@@ -2011,6 +2011,27 @@ bindsym $mod+minus scratchpad show
 bindsym mod4+s [title="^Sup ::"] scratchpad show
 ------------------------------------------------
 
+=== Nop
+
+There is a no operation command +nop+ which allows you to override default
+behavior. This can be useful for, e.g., disabling a focus change on clicks with
+the middle mouse button.
+
+The optional +comment+ argument is ignored, but will be printed to the log file
+for debugging purposes.
+
+*Syntax*:
+---------------
+nop [<comment>]
+---------------
+
+*Example*:
+----------------------------------------------
+# Disable focus change for clicks on titlebars
+# with the middle mouse button
+bindsym button2 nop
+----------------------------------------------
+
 === i3bar control
 
 There are two options in the configuration of each i3bar instance that can be
