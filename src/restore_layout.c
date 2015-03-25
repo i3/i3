@@ -196,6 +196,11 @@ static void open_placeholder_window(Con *con) {
                 config.client.placeholder.background,
                 XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
             });
+        /* Make i3 not focus this window. */
+        xcb_icccm_wm_hints_t hints;
+        xcb_icccm_wm_hints_set_none(&hints);
+        xcb_icccm_wm_hints_set_input(&hints, 0);
+        xcb_icccm_set_wm_hints(restore_conn, placeholder, &hints);
         /* Set the same name as was stored in the layout file. While perhaps
          * slightly confusing in the first instant, this brings additional
          * clarity to which placeholder is waiting for which actual window. */
