@@ -156,7 +156,7 @@ is(parser_calls('move something to somewhere'),
    'error for unknown literal ok');
 
 ################################################################################
-# 3: Verify that escaping of double quotes works correctly
+# 3: Verify that escaping works correctly
 ################################################################################
 
 is(parser_calls('workspace "foo"'),
@@ -170,6 +170,18 @@ is(parser_calls('workspace "foo'),
 is(parser_calls('workspace "foo \"bar"'),
    'cmd_workspace_name(foo "bar)',
    'Command with escaped double quotes ok');
+
+is(parser_calls('workspace "foo \\'),
+   'cmd_workspace_name(foo \\)',
+   'Command with single backslash in the end ok');
+
+is(parser_calls('workspace "foo\\\\bar"'),
+   'cmd_workspace_name(foo\\bar)',
+   'Command with escaped backslashes ok');
+
+is(parser_calls('workspace "foo\\\\\\"bar"'),
+   'cmd_workspace_name(foo\\"bar)',
+   'Command with escaped double quotes after escaped backslashes ok');
 
 ################################################################################
 # 4: Verify that resize commands with a "px or ppt"-construction are parsed
