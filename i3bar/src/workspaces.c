@@ -135,7 +135,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
         params->workspaces_walk->name_width =
             predict_text_width(params->workspaces_walk->name);
 
-        DLOG("Got Workspace canonical: %s, name: '%s', name_width: %d, glyphs: %zu\n",
+        DLOG("Got workspace canonical: %s, name: '%s', name_width: %d, glyphs: %zu\n",
              params->workspaces_walk->canonical_name,
              i3string_as_utf8(params->workspaces_walk->name),
              params->workspaces_walk->name_width,
@@ -239,13 +239,13 @@ void parse_workspaces_json(char *json) {
 
     state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
-    /* FIXME: Propper errorhandling for JSON-parsing */
+    /* FIXME: Propper error handling for JSON parsing */
     switch (state) {
         case yajl_status_ok:
             break;
         case yajl_status_client_canceled:
         case yajl_status_error:
-            ELOG("Could not parse workspaces-reply!\n");
+            ELOG("Could not parse workspaces reply!\n");
             exit(EXIT_FAILURE);
             break;
     }

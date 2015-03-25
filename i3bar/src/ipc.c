@@ -40,7 +40,7 @@ void got_command_reply(char *reply) {
  *
  */
 void got_workspace_reply(char *reply) {
-    DLOG("Got Workspace-Data!\n");
+    DLOG("Got workspace data!\n");
     parse_workspaces_json(reply);
     draw_bars(false);
 }
@@ -51,7 +51,7 @@ void got_workspace_reply(char *reply) {
  *
  */
 void got_subscribe_reply(char *reply) {
-    DLOG("Got Subscribe Reply: %s\n", reply);
+    DLOG("Got subscribe reply: %s\n", reply);
     /* TODO: Error handling for subscribe commands */
 }
 
@@ -60,9 +60,9 @@ void got_subscribe_reply(char *reply) {
  *
  */
 void got_output_reply(char *reply) {
-    DLOG("Parsing Outputs-JSON...\n");
+    DLOG("Parsing outputs JSON...\n");
     parse_outputs_json(reply);
-    DLOG("Reconfiguring Windows...\n");
+    DLOG("Reconfiguring windows...\n");
     realloc_sl_buffer();
     reconfig_windows(false);
 
@@ -104,7 +104,7 @@ void got_bar_config(char *reply) {
     FREE(config.command);
 }
 
-/* Data-structure to easily call the reply handlers later */
+/* Data structure to easily call the reply handlers later */
 handler_t reply_handlers[] = {
     &got_command_reply,
     &got_workspace_reply,
@@ -120,16 +120,16 @@ handler_t reply_handlers[] = {
  *
  */
 void got_workspace_event(char *event) {
-    DLOG("Got Workspace Event!\n");
+    DLOG("Got workspace event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
 }
 
 /*
- * Called, when an output event arrives (i.e. the screen-configuration changed)
+ * Called, when an output event arrives (i.e. the screen configuration changed)
  *
  */
 void got_output_event(char *event) {
-    DLOG("Got Output Event!\n");
+    DLOG("Got output event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
     if (!config.disable_ws) {
         i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
@@ -141,7 +141,7 @@ void got_output_event(char *event) {
  *
  */
 void got_mode_event(char *event) {
-    DLOG("Got Mode Event!\n");
+    DLOG("Got mode event!\n");
     parse_mode_json(event);
     draw_bars(false);
 }
@@ -180,7 +180,7 @@ void got_bar_config_update(char *event) {
     draw_bars(false);
 }
 
-/* Data-structure to easily call the event handlers later */
+/* Data structure to easily call the event handlers later */
 handler_t event_handlers[] = {
     &got_workspace_event,
     &got_output_event,
@@ -201,7 +201,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t) * 2;
     char *header = smalloc(header_len);
 
-    /* We first parse the fixed-length IPC-header, to know, how much data
+    /* We first parse the fixed-length IPC header, to know, how much data
      * we have to expect */
     uint32_t rec = 0;
     while (rec < header_len) {
@@ -268,7 +268,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
 }
 
 /*
- * Sends a Message to i3.
+ * Sends a message to i3.
  * type must be a valid I3_IPC_MESSAGE_TYPE (see i3/ipc.h for further information)
  *
  */
