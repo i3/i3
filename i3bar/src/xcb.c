@@ -1525,6 +1525,50 @@ void realloc_sl_buffer(void) {
     }
 }
 
+/* Strut partial tells i3 where to reserve space for i3bar. This is determined
+ * by the `position` bar config directive. */
+xcb_void_cookie_t config_strut_partial(i3_output *output) {
+    /* A local struct to save the strut_partial property */
+    struct {
+        uint32_t left;
+        uint32_t right;
+        uint32_t top;
+        uint32_t bottom;
+        uint32_t left_start_y;
+        uint32_t left_end_y;
+        uint32_t right_start_y;
+        uint32_t right_end_y;
+        uint32_t top_start_x;
+        uint32_t top_end_x;
+        uint32_t bottom_start_x;
+        uint32_t bottom_end_x;
+    } __attribute__((__packed__)) strut_partial;
+    memset(&strut_partial, 0, sizeof(strut_partial));
+
+    switch (config.position) {
+        case POS_NONE:
+            break;
+        case POS_TOP:
+            strut_partial.top = bar_height;
+            strut_partial.top_start_x = output->rect.x;
+            strut_partial.top_end_x = output->rect.x + output->rect.w;
+            break;
+        case POS_BOT:
+            strut_partial.bottom = bar_height;
+            strut_partial.bottom_start_x = output->rect.x;
+            strut_partial.bottom_end_x = output->rect.x + output->rect.w;
+            break;
+    }
+    return xcb_change_property(xcb_connection,
+                               XCB_PROP_MODE_REPLACE,
+                               output->bar,
+                               atoms[_NET_WM_STRUT_PARTIAL],
+                               XCB_ATOM_CARDINAL,
+                               32,
+                               12,
+                               &strut_partial);
+}
+
 /*
  * Reconfigure all bars and create new bars for recently activated outputs
  *
@@ -1624,49 +1668,7 @@ void reconfig_windows(bool redraw_bars) {
                                                                 1,
                                                                 (unsigned char *)&atoms[_NET_WM_WINDOW_TYPE_DOCK]);
 
-            /* We need to tell i3, where to reserve space for i3bar */
-            /* left, right, top, bottom, left_start_y, left_end_y,
-             * right_start_y, right_end_y, top_start_x, top_end_x, bottom_start_x,
-             * bottom_end_x */
-            /* A local struct to save the strut_partial property */
-            struct {
-                uint32_t left;
-                uint32_t right;
-                uint32_t top;
-                uint32_t bottom;
-                uint32_t left_start_y;
-                uint32_t left_end_y;
-                uint32_t right_start_y;
-                uint32_t right_end_y;
-                uint32_t top_start_x;
-                uint32_t top_end_x;
-                uint32_t bottom_start_x;
-                uint32_t bottom_end_x;
-            } __attribute__((__packed__)) strut_partial;
-            memset(&strut_partial, 0, sizeof(strut_partial));
-
-            switch (config.position) {
-                case POS_NONE:
-                    break;
-                case POS_TOP:
-                    strut_partial.top = bar_height;
-                    strut_partial.top_start_x = walk->rect.x;
-                    strut_partial.top_end_x = walk->rect.x + walk->rect.w;
-                    break;
-                case POS_BOT:
-                    strut_partial.bottom = bar_height;
-                    strut_partial.bottom_start_x = walk->rect.x;
-                    strut_partial.bottom_end_x = walk->rect.x + walk->rect.w;
-                    break;
-            }
-            xcb_void_cookie_t strut_cookie = xcb_change_property(xcb_connection,
-                                                                 XCB_PROP_MODE_REPLACE,
-                                                                 walk->bar,
-                                                                 atoms[_NET_WM_STRUT_PARTIAL],
-                                                                 XCB_ATOM_CARDINAL,
-                                                                 32,
-                                                                 12,
-                                                                 &strut_partial);
+            xcb_void_cookie_t strut_cookie = config_strut_partial(walk);
 
             /* We also want a graphics context for the bars (it defines the properties
              * with which we draw to them) */
@@ -1726,6 +1728,9 @@ void reconfig_windows(bool redraw_bars) {
             values[3] = bar_height;
             values[4] = XCB_STACK_MODE_ABOVE;
 
+            DLOG("Reconfiguring strut partial property for output %s\n", walk->name);
+            xcb_void_cookie_t strut_cookie = config_strut_partial(walk);
+
             DLOG("Destroying buffer for output %s\n", walk->name);
             xcb_free_pixmap(xcb_connection, walk->buffer);
 
@@ -1774,6 +1779,7 @@ void reconfig_windows(bool redraw_bars) {
             if (xcb_request_failed(cfg_cookie, "Could not reconfigure window") ||
                 xcb_request_failed(chg_cookie, "Could not change window") ||
                 xcb_request_failed(pm_cookie, "Could not create pixmap") ||
+                xcb_request_failed(strut_cookie, "Could not set strut") ||
                 (redraw_bars && (xcb_request_failed(umap_cookie, "Could not unmap window") ||
                                  (config.hide_on_modifier == M_DOCK && xcb_request_failed(map_cookie, "Could not map window"))))) {
                 exit(EXIT_FAILURE);
