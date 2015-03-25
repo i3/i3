@@ -1249,6 +1249,24 @@ bar {
 }
 --------------------------------------------------------------
 
+=== Custom separator symbol
+
+Specifies a custom symbol to be used for the separator as opposed to the vertical,
+one pixel thick separator. Note that you may have to adjust the +sep_block_width+ 
+property.
+
+*Syntax*:
+-------------------------
+separator_symbol <symbol>
+-------------------------
+
+*Example*:
+------------------------
+bar {
+    separator_symbol ":|:"
+}
+------------------------
+
 === Workspace buttons
 
 Specifies whether workspace buttons should be shown or not. This is useful if

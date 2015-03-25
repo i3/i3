@@ -370,6 +370,7 @@ state BAR:
   'output'                 -> BAR_OUTPUT
   'tray_output'            -> BAR_TRAY_OUTPUT
   'font'                   -> BAR_FONT
+  'separator_symbol'       -> BAR_SEPARATOR_SYMBOL
   'binding_mode_indicator' -> BAR_BINDING_MODE_INDICATOR
   'workspace_buttons'      -> BAR_WORKSPACE_BUTTONS
   'strip_workspace_numbers' -> BAR_STRIP_WORKSPACE_NUMBERS
@@ -434,6 +435,10 @@ state BAR_TRAY_OUTPUT:
 state BAR_FONT:
   font = string
       -> call cfg_bar_font($font); BAR
+
+state BAR_SEPARATOR_SYMBOL:
+  separator = string
+      -> call cfg_bar_separator_symbol($separator); BAR
 
 state BAR_BINDING_MODE_INDICATOR:
   value = word

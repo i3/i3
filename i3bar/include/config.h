@@ -35,6 +35,7 @@ typedef struct config_t {
     char *bar_id;
     char *command;
     char *fontname;
+    i3String *separator_symbol;
     char *tray_output;
     int num_outputs;
     char **outputs;
