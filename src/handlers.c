@@ -1159,6 +1159,87 @@ static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t stat
     return true;
 }
 
+/*
+ * Handles the _NET_WM_STRUT_PARTIAL property for allocating space for dock clients.
+ *
+ */
+static bool handle_strut_partial_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                                        xcb_atom_t name, xcb_get_property_reply_t *prop) {
+    DLOG("strut partial change for window 0x%08x\n", window);
+
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL) {
+        return false;
+    }
+
+    if (prop == NULL) {
+        xcb_generic_error_t *err = NULL;
+        xcb_get_property_cookie_t strut_cookie = xcb_get_property(conn, false, window, A__NET_WM_STRUT_PARTIAL,
+                                                                  XCB_GET_PROPERTY_TYPE_ANY, 0, UINT32_MAX);
+        prop = xcb_get_property_reply(conn, strut_cookie, &err);
+
+        if (err != NULL) {
+            DLOG("got error when getting strut partial property: %d\n", err->error_code);
+            free(err);
+            return false;
+        }
+
+        if (prop == NULL) {
+            return false;
+        }
+    }
+
+    DLOG("That is con %p / %s\n", con, con->name);
+
+    window_update_strut_partial(con->window, prop);
+
+    /* we only handle this change for dock clients */
+    if (con->parent == NULL || con->parent->type != CT_DOCKAREA) {
+        return true;
+    }
+
+    Con *search_at = croot;
+    Con *output = con_get_output(con);
+    if (output != NULL) {
+        DLOG("Starting search at output %s\n", output->name);
+        search_at = output;
+    }
+
+    /* find out the desired position of this dock window */
+    if (con->window->reserved.top > 0 && con->window->reserved.bottom == 0) {
+        DLOG("Top dock client\n");
+        con->window->dock = W_DOCK_TOP;
+    } else if (con->window->reserved.top == 0 && con->window->reserved.bottom > 0) {
+        DLOG("Bottom dock client\n");
+        con->window->dock = W_DOCK_BOTTOM;
+    } else {
+        DLOG("Ignoring invalid reserved edges (_NET_WM_STRUT_PARTIAL), using position as fallback:\n");
+        if (con->geometry.y < (int16_t)(search_at->rect.height / 2)) {
+            DLOG("geom->y = %d < rect.height / 2 = %d, it is a top dock client\n",
+                 con->geometry.y, (search_at->rect.height / 2));
+            con->window->dock = W_DOCK_TOP;
+        } else {
+            DLOG("geom->y = %d >= rect.height / 2 = %d, it is a bottom dock client\n",
+                 con->geometry.y, (search_at->rect.height / 2));
+            con->window->dock = W_DOCK_BOTTOM;
+        }
+    }
+
+    /* find the dockarea */
+    Con *dockarea = con_for_window(search_at, con->window, NULL);
+    assert(dockarea != NULL);
+
+    /* attach the dock to the dock area */
+    con_detach(con);
+    con->parent = dockarea;
+    TAILQ_INSERT_HEAD(&(dockarea->focus_head), con, focused);
+    TAILQ_INSERT_HEAD(&(dockarea->nodes_head), con, nodes);
+
+    tree_render();
+
+    return true;
+}
+
 /* Returns false if the event could not be processed (e.g. the window could not
  * be found), true otherwise */
 typedef bool (*cb_property_handler_t)(void *data, xcb_connection_t *c, uint8_t state, xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *property);
@@ -1177,7 +1258,8 @@ static struct property_handler_t property_handlers[] = {
     {0, UINT_MAX, handle_clientleader_change},
     {0, UINT_MAX, handle_transient_for},
     {0, 128, handle_windowrole_change},
-    {0, 128, handle_class_change}};
+    {0, 128, handle_class_change},
+    {0, UINT_MAX, handle_strut_partial_change}};
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
 /*
@@ -1196,6 +1278,7 @@ void property_handlers_init(void) {
     property_handlers[5].atom = XCB_ATOM_WM_TRANSIENT_FOR;
     property_handlers[6].atom = A_WM_WINDOW_ROLE;
     property_handlers[7].atom = XCB_ATOM_WM_CLASS;
+    property_handlers[8].atom = A__NET_WM_STRUT_PARTIAL;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
