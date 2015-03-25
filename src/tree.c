@@ -104,6 +104,8 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
         TAILQ_INSERT_HEAD(&(croot->nodes_head), __i3, nodes);
     }
 
+    restore_open_placeholder_windows(croot);
+
     return true;
 }
 
