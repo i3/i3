@@ -493,7 +493,7 @@ static char *resolve_tilde(const char *path) {
  */
 static int handle_expose() {
     /* re-draw the background */
-    xcb_rectangle_t border = {0, 0, 300, (15 * font.height) + 8};
+    xcb_rectangle_t border = {0, 0, logical_px(300), (logical_px(15) * font.height) + logical_px(8)};
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#000000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
 
@@ -501,62 +501,62 @@ static int handle_expose() {
 
 #define txt(x, row, text)                    \
     draw_text_ascii(text, pixmap, pixmap_gc, \
-                    x, (row - 1) * font.height + 4, 300 - x * 2)
+                    x, (row - 1) * font.height + logical_px(4), logical_px(500) - x * 2)
 
     if (current_step == STEP_WELCOME) {
         /* restore font color */
         set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
-        txt(10, 2, "You have not configured i3 yet.");
-        txt(10, 3, "Do you want me to generate ~/.i3/config?");
-        txt(85, 5, "Yes, generate ~/.i3/config");
-        txt(85, 7, "No, I will use the defaults");
+        txt(logical_px(10), 2, "You have not configured i3 yet.");
+        txt(logical_px(10), 3, "Do you want me to generate ~/.i3/config?");
+        txt(logical_px(85), 5, "Yes, generate ~/.i3/config");
+        txt(logical_px(85), 7, "No, I will use the defaults");
 
         /* green */
         set_font_colors(pixmap_gc, get_colorpixel("#00FF00"), get_colorpixel("#000000"));
-        txt(25, 5, "<Enter>");
+        txt(logical_px(25), 5, "<Enter>");
 
         /* red */
         set_font_colors(pixmap_gc, get_colorpixel("#FF0000"), get_colorpixel("#000000"));
-        txt(31, 7, "<ESC>");
+        txt(logical_px(31), 7, "<ESC>");
     }
 
     if (current_step == STEP_GENERATE) {
         set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
-        txt(10, 2, "Please choose either:");
-        txt(85, 4, "Win as default modifier");
-        txt(85, 5, "Alt as default modifier");
-        txt(10, 7, "Afterwards, press");
-        txt(85, 9, "to write ~/.i3/config");
-        txt(85, 10, "to abort");
+        txt(logical_px(10), 2, "Please choose either:");
+        txt(logical_px(85), 4, "Win as default modifier");
+        txt(logical_px(85), 5, "Alt as default modifier");
+        txt(logical_px(10), 7, "Afterwards, press");
+        txt(logical_px(85), 9, "to write ~/.i3/config");
+        txt(logical_px(85), 10, "to abort");
 
         /* the not-selected modifier */
         if (modifier == MOD_Mod4)
-            txt(31, 5, "<Alt>");
+            txt(logical_px(31), 5, "<Alt>");
         else
-            txt(31, 4, "<Win>");
+            txt(logical_px(31), 4, "<Win>");
 
         /* the selected modifier */
         set_font(&bold_font);
         set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
         if (modifier == MOD_Mod4)
-            txt(10, 4, "-> <Win>");
+            txt(logical_px(10), 4, "-> <Win>");
         else
-            txt(10, 5, "-> <Alt>");
+            txt(logical_px(10), 5, "-> <Alt>");
 
         /* green */
         set_font(&font);
         set_font_colors(pixmap_gc, get_colorpixel("#00FF00"), get_colorpixel("#000000"));
-        txt(25, 9, "<Enter>");
+        txt(logical_px(25), 9, "<Enter>");
 
         /* red */
         set_font_colors(pixmap_gc, get_colorpixel("#FF0000"), get_colorpixel("#000000"));
-        txt(31, 10, "<ESC>");
+        txt(logical_px(31), 10, "<ESC>");
     }
 
     /* Copy the contents of the pixmap to the real window */
-    xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, 500);
+    xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, logical_px(500), logical_px(500));
     xcb_flush(conn);
 
     return 1;
@@ -637,14 +637,14 @@ static void handle_button_press(xcb_button_press_event_t *event) {
     if (current_step != STEP_GENERATE)
         return;
 
-    if (event->event_x >= 32 && event->event_x <= 68 &&
-        event->event_y >= 45 && event->event_y <= 54) {
+    if (event->event_x >= logical_px(32) && event->event_x <= logical_px(68) &&
+        event->event_y >= logical_px(45) && event->event_y <= logical_px(54)) {
         modifier = MOD_Mod4;
         handle_expose();
     }
 
-    if (event->event_x >= 32 && event->event_x <= 68 &&
-        event->event_y >= 56 && event->event_y <= 70) {
+    if (event->event_x >= logical_px(32) && event->event_x <= logical_px(68) &&
+        event->event_y >= logical_px(56) && event->event_y <= logical_px(70)) {
         modifier = MOD_Mod1;
         handle_expose();
     }
@@ -863,10 +863,10 @@ int main(int argc, char *argv[]) {
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,
-        win,                /* the window id */
-        root,               /* parent == root */
-        490, 297, 300, 205, /* dimensions */
-        0,                  /* X11 border = 0, we draw our own */
+        win,                                                                /* the window id */
+        root,                                                               /* parent == root */
+        logical_px(490), logical_px(297), logical_px(300), logical_px(205), /* dimensions */
+        0,                                                                  /* X11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
@@ -914,7 +914,7 @@ int main(int argc, char *argv[]) {
     /* Create pixmap */
     pixmap = xcb_generate_id(conn);
     pixmap_gc = xcb_generate_id(conn);
-    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, 500);
+    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, logical_px(500), logical_px(500));
     xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
     /* Grab the keyboard to get all input */
