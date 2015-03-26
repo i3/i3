@@ -317,7 +317,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 int main(int argc, char *argv[]) {
     format = strdup("%s");
     socket_path = getenv("I3SOCK");
-    char *pattern = sstrdup("-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1");
+    char *pattern = sstrdup("pango:monospace 8");
     int o, option_index = 0;
 
     static struct option long_options[] = {

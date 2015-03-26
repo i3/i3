@@ -760,8 +760,8 @@ static void finish() {
 int main(int argc, char *argv[]) {
     config_path = resolve_tilde("~/.i3/config");
     socket_path = getenv("I3SOCK");
-    char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-    char *patternbold = "-misc-fixed-bold-r-normal--13-120-75-75-C-70-iso10646-1";
+    char *pattern = "pango:monospace 8";
+    char *patternbold = "pango:monospace bold 8";
     int o, option_index = 0;
 
     static struct option long_options[] = {

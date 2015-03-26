@@ -322,7 +322,7 @@ int main(int argc, char *argv[]) {
 
     argv0 = argv[0];
 
-    char *pattern = sstrdup("-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1");
+    char *pattern = sstrdup("pango:monospace 8");
     int o, option_index = 0;
     enum { TYPE_ERROR = 0,
            TYPE_WARNING = 1 } bar_type = TYPE_ERROR;
