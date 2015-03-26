@@ -131,7 +131,7 @@ void startup_sequence_delete(struct Startup_Sequence *sequence) {
  *
  */
 void start_application(const char *command, bool no_startup_id) {
-    SnLauncherContext *context;
+    SnLauncherContext *context = NULL;
 
     if (!no_startup_id) {
         /* Create a startup notification context to monitor the progress of this

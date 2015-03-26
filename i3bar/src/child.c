@@ -103,7 +103,7 @@ __attribute__((format(printf, 1, 2))) static void set_statusline_error(const cha
     char *message;
     va_list args;
     va_start(args, format);
-    vasprintf(&message, format, args);
+    svasprintf(&message, format, args);
 
     struct status_block *err_block = scalloc(sizeof(struct status_block));
     err_block->full_text = i3string_from_utf8("Error: ");
@@ -173,7 +173,7 @@ static int stdin_start_map(void *context) {
 static int stdin_map_key(void *context, const unsigned char *key, size_t len) {
     parser_ctx *ctx = context;
     FREE(ctx->last_map_key);
-    sasprintf(&(ctx->last_map_key), "%.*s", len, key);
+    sasprintf(&(ctx->last_map_key), "%.*s", (int)len, key);
     return 1;
 }
 
@@ -197,7 +197,7 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         ctx->block.short_text = i3string_from_markup_with_length((const char *)val, len);
     }
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
-        sasprintf(&(ctx->block.color), "%.*s", len, val);
+        sasprintf(&(ctx->block.color), "%.*s", (int)len, val);
     }
     if (strcasecmp(ctx->last_map_key, "markup") == 0) {
         ctx->block.is_markup = (len == strlen("pango") && !strncasecmp((const char *)val, "pango", strlen("pango")));
@@ -459,8 +459,8 @@ void child_write_output(void) {
         size_t size;
 
         yajl_gen_get_buf(gen, &output, &size);
-        write(child_stdin, output, size);
-        write(child_stdin, "\n", 1);
+        swrite(child_stdin, output, size);
+        swrite(child_stdin, "\n", 1);
         yajl_gen_clear(gen);
     }
 }

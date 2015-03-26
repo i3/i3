@@ -128,11 +128,39 @@ void *srealloc(void *ptr, size_t size);
 char *sstrdup(const char *str);
 
 /**
+ * Safe-wrapper around vasprintf which exits if it returns -1 (meaning that
+ * there is no more memory available)
+ *
+ */
+int svasprintf(char **strp, const char *fmt, va_list ap);
+
+/**
  * Safe-wrapper around asprintf which exits if it returns -1 (meaning that
  * there is no more memory available)
  *
  */
-int sasprintf(char **strp, const char *fmt, ...);
+int sasprintf(char **strp, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+
+/**
+ * Safe-wrapper around write which exits if it returns -1 (meaning that
+ * write failed)
+ *
+ */
+ssize_t swrite(int fd, const void *buf, size_t count);
+
+/**
+ * Safe-wrapper around pipe which exits if it returns -1 (meaning that
+ * pipe failed)
+ *
+ */
+int spipe(int pipefd[2]);
+
+/**
+ * Safe-wrapper around symlink which exits if it returns -1 (meaning that
+ * symlink failed)
+ *
+ */
+int ssymlink(const char *target, const char *linkpath);
 
 /**
  * Build an i3String from an UTF-8 encoded string.

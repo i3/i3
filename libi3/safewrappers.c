@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <err.h>
 
@@ -46,6 +47,14 @@ char *sstrdup(const char *str) {
     return result;
 }
 
+int svasprintf(char **strp, const char *fmt, va_list ap) {
+    int result = vasprintf(strp, fmt, ap);
+    
+    if (-1 == result)
+        err(EXIT_FAILURE, "vasprintf(%s)", fmt);
+    return result;
+}
+
 int sasprintf(char **strp, const char *fmt, ...) {
     va_list args;
     int result;
@@ -54,5 +63,29 @@ int sasprintf(char **strp, const char *fmt, ...) {
     if ((result = vasprintf(strp, fmt, args)) == -1)
         err(EXIT_FAILURE, "asprintf(%s)", fmt);
     va_end(args);
+    return result;
+}
+
+ssize_t swrite(int fd, const void *buf, size_t count) {
+    ssize_t result = write (fd, buf, count);
+    
+    if (-1 == result)
+        err(EXIT_FAILURE, "write(%d,...)", fd);
+    return result;
+}
+
+int spipe(int pipefd[2]) {
+    ssize_t result = pipe(pipefd);
+    
+    if (-1 == result)
+        err(EXIT_FAILURE, "pipe((int[]){%d,%d})", pipefd[0], pipefd[1]);
+    return result;
+}
+
+int ssymlink(const char *target, const char *linkpath) {
+    ssize_t result = symlink(target, linkpath);
+
+    if (-1 == result)
+        err(EXIT_FAILURE, "symlink(\"%s\", \"%s\")", target, linkpath);
     return result;
 }

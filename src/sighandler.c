@@ -70,8 +70,8 @@ static int backtrace(void) {
         int stdin_pipe[2],
             stdout_pipe[2];
 
-        pipe(stdin_pipe);
-        pipe(stdout_pipe);
+        spipe(stdin_pipe);
+        spipe(stdout_pipe);
 
         /* close standard streams in case i3 is started from a terminal; gdb
          * needs to run without controlling terminal for it to work properly in
