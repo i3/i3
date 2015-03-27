@@ -164,9 +164,6 @@ static int stdin_start_map(void *context) {
     /* Default width of the separator block. */
     ctx->block.sep_block_width = logical_px(9);
 
-    /* Use markup by default */
-    ctx->block.is_markup = true;
-
     return 1;
 }
 
