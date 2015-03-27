@@ -181,10 +181,13 @@ static int stdin_boolean(void *context, int val) {
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "urgent") == 0) {
         ctx->block.urgent = val;
+        return 1;
     }
     if (strcasecmp(ctx->last_map_key, "separator") == 0) {
         ctx->block.no_separator = !val;
+        return 1;
     }
+
     return 1;
 }
 
@@ -192,15 +195,19 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "full_text") == 0) {
         ctx->block.full_text = i3string_from_markup_with_length((const char *)val, len);
+        return 1;
     }
     if (strcasecmp(ctx->last_map_key, "short_text") == 0) {
         ctx->block.short_text = i3string_from_markup_with_length((const char *)val, len);
+        return 1;
     }
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
         sasprintf(&(ctx->block.color), "%.*s", len, val);
+        return 1;
     }
     if (strcasecmp(ctx->last_map_key, "markup") == 0) {
         ctx->block.is_markup = (len == strlen("pango") && !strncasecmp((const char *)val, "pango", strlen("pango")));
+        return 1;
     }
     if (strcasecmp(ctx->last_map_key, "align") == 0) {
         if (len == strlen("center") && !strncmp((const char *)val, "center", strlen("center"))) {
@@ -210,24 +217,30 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         } else {
             ctx->block.align = ALIGN_LEFT;
         }
-    } else if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
         char *copy = (char *)malloc(len + 1);
         strncpy(copy, (const char *)val, len);
         copy[len] = 0;
         ctx->block.min_width_str = copy;
+        return 1;
     }
     if (strcasecmp(ctx->last_map_key, "name") == 0) {
         char *copy = (char *)malloc(len + 1);
         strncpy(copy, (const char *)val, len);
         copy[len] = 0;
         ctx->block.name = copy;
+        return 1;
     }
     if (strcasecmp(ctx->last_map_key, "instance") == 0) {
         char *copy = (char *)malloc(len + 1);
         strncpy(copy, (const char *)val, len);
         copy[len] = 0;
         ctx->block.instance = copy;
+        return 1;
     }
+
     return 1;
 }
 
@@ -235,10 +248,13 @@ static int stdin_integer(void *context, long long val) {
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
         ctx->block.min_width = (uint32_t)val;
+        return 1;
     }
     if (strcasecmp(ctx->last_map_key, "separator_block_width") == 0) {
         ctx->block.sep_block_width = (uint32_t)val;
+        return 1;
     }
+
     return 1;
 }
 
