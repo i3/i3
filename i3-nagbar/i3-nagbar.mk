@@ -4,7 +4,7 @@ CLEAN_TARGETS += clean-i3-nagbar
 
 i3_nagbar_SOURCES := $(wildcard i3-nagbar/*.c)
 i3_nagbar_HEADERS := $(wildcard i3-nagbar/*.h)
-i3_nagbar_CFLAGS   = $(XCB_CFLAGS) $(XCB_WB_CFLAGS) $(PANGO_CFLAGS)
+i3_nagbar_CFLAGS   = $(XCB_CFLAGS) $(XCB_WM_CFLAGS) $(PANGO_CFLAGS)
 i3_nagbar_LIBS     = $(XCB_LIBS) $(XCB_WM_LIBS) $(PANGO_LIBS)
 
 i3_nagbar_OBJECTS := $(i3_nagbar_SOURCES:.c=.o)
