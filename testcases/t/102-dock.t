@@ -143,6 +143,22 @@ wait_for_map $window;
 @docked = get_dock_clients('top');
 is(@docked, 1, 'dock client on top');
 
+# now change strut_partial to reserve space on the bottom and the dock should
+# be moved to the bottom dock area
+$x->change_property(
+    PROP_MODE_REPLACE,
+    $window->id,
+    $atomname->id,
+    $atomtype->id,
+    32,         # 32 bit integer
+    12,
+    pack('L12', 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 1280, 0)
+);
+
+sync_with_i3;
+@docked = get_dock_clients('bottom');
+is(@docked, 1, 'dock client on bottom');
+
 $window->destroy;
 
 wait_for_unmap $window;
