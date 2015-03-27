@@ -516,7 +516,7 @@ void handle_button(xcb_button_press_event_t *event) {
     size_t namelen = 0;
     const char *utf8_name = cur_ws->canonical_name;
     for (const char *walk = utf8_name; *walk != '\0'; walk++) {
-        if (*walk == '"')
+        if (*walk == '"' || *walk == '\\')
             num_quotes++;
         /* While we’re looping through the name anyway, we can save one
          * strlen(). */
@@ -530,7 +530,7 @@ void handle_button(xcb_button_press_event_t *event) {
     for (inpos = 0, outpos = strlen("workspace \"");
          inpos < namelen;
          inpos++, outpos++) {
-        if (utf8_name[inpos] == '"') {
+        if (utf8_name[inpos] == '"' || utf8_name[inpos] == '\\') {
             buffer[outpos] = '\\';
             outpos++;
         }

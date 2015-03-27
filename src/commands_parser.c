@@ -216,8 +216,9 @@ char *parse_string(const char **walk, bool as_word) {
     if (**walk == '"') {
         beginning++;
         (*walk)++;
-        while (**walk != '\0' && (**walk != '"' || *(*walk - 1) == '\\'))
-            (*walk)++;
+        for (; **walk != '\0' && **walk != '"'; (*walk)++)
+            if (**walk == '\\' && *(*walk + 1) != '\0')
+                (*walk)++;
     } else {
         if (!as_word) {
             /* For a string (starting with 's'), the delimiters are
@@ -248,10 +249,10 @@ char *parse_string(const char **walk, bool as_word) {
     for (inpos = 0, outpos = 0;
          inpos < (*walk - beginning);
          inpos++, outpos++) {
-        /* We only handle escaped double quotes to not break
-         * backwards compatibility with people using \w in
-         * regular expressions etc. */
-        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"')
+        /* We only handle escaped double quotes and backslashes to not break
+         * backwards compatibility with people using \w in regular expressions
+         * etc. */
+        if (beginning[inpos] == '\\' && (beginning[inpos + 1] == '"' || beginning[inpos + 1] == '\\'))
             inpos++;
         str[outpos] = beginning[inpos];
     }
