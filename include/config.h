@@ -179,6 +179,10 @@ struct Config {
         FOWA_NONE
     } focus_on_window_activation;
 
+    /** Specifies whether or not marks should be displayed in the window
+     * decoration. Marks starting with a "_" will be ignored either way. */
+    bool show_marks;
+
     /** The default border style for new windows. */
     border_style_t default_border;
 

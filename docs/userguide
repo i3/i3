@@ -1006,6 +1006,24 @@ focus::
 none::
     The window will neither be focused, nor be marked urgent.
 
+=== Drawing marks on window decoration
+
+If activated, marks on windows are drawn in their window decoration. However,
+any mark starting with an underscore in its name (+_+) will not be drawn even if
+this option is activated.
+
+The default for this option is +no+.
+
+*Syntax*:
+-------------------
+show_marks [yes|no]
+-------------------
+
+*Example*:
+--------------
+show_marks yes
+--------------
+
 == Configuring i3bar
 
 The bar at the bottom of your monitor is drawn by a separate process called
@@ -1885,6 +1903,8 @@ can also prefix this command and display a custom prompt for the input dialog.
 The additional +--toggle+ option will remove the mark if the window already has
 this mark, add it if the window has none or replace the current mark if it has
 another mark.
+
+Refer to +show_marks+ if you want marks to be shown in the window decoration.
 
 *Syntax*:
 ------------------------------
