@@ -531,10 +531,25 @@ void x_draw_decoration(Con *con) {
     //DLOG("indent_level = %d, indent_mult = %d\n", indent_level, indent_mult);
     int indent_px = (indent_level * 5) * indent_mult;
 
+    int mark_width = 0;
+    if (con->mark != NULL && (con->mark)[0] != '_') {
+        char *formatted_mark;
+        sasprintf(&formatted_mark, "[%s]", con->mark);
+        i3String *mark = i3string_from_utf8(formatted_mark);
+        FREE(formatted_mark);
+        mark_width = predict_text_width(mark) + logical_px(2);
+
+        draw_text(mark, parent->pixmap, parent->pm_gc,
+                  con->deco_rect.x + con->deco_rect.width - mark_width,
+                  con->deco_rect.y + text_offset_y, mark_width - logical_px(2));
+
+        I3STRING_FREE(mark);
+    }
+
     draw_text(win->name,
               parent->pixmap, parent->pm_gc,
-              con->deco_rect.x + 2 + indent_px, con->deco_rect.y + text_offset_y,
-              con->deco_rect.width - 2 - indent_px);
+              con->deco_rect.x + logical_px(2) + indent_px, con->deco_rect.y + text_offset_y,
+              con->deco_rect.width - logical_px(2) - indent_px - mark_width);
 
 after_title:
     /* Since we don’t clip the text at all, it might in some cases be painted
