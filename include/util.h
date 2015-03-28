@@ -107,14 +107,6 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie,
                  char *err_message);
 
 /**
- * This function resolves ~ in pathnames.
- * It may resolve wildcards in the first part of the path, but if no match
- * or multiple matches are found, it just returns a copy of path as given.
- *
- */
-char *resolve_tilde(const char *path);
-
-/**
  * Checks if the given path exists by calling stat().
  *
  */

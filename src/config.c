@@ -40,80 +40,18 @@ void update_barconfig() {
 }
 
 /*
- * Get the path of the first configuration file found. If override_configpath
- * is specified, that path is returned and saved for further calls. Otherwise,
- * checks the home directory first, then the system directory first, always
- * taking into account the XDG Base Directory Specification ($XDG_CONFIG_HOME,
- * $XDG_CONFIG_DIRS)
- *
- */
-static char *get_config_path(const char *override_configpath) {
-    char *xdg_config_home, *xdg_config_dirs, *config_path;
-
-    static const char *saved_configpath = NULL;
-
-    if (override_configpath != NULL) {
-        saved_configpath = override_configpath;
-        return sstrdup(saved_configpath);
-    }
-
-    if (saved_configpath != NULL)
-        return sstrdup(saved_configpath);
-
-    /* 1: check the traditional path under the home directory */
-    config_path = resolve_tilde("~/.i3/config");
-    if (path_exists(config_path))
-        return config_path;
-    free(config_path);
-
-    /* 2: check for $XDG_CONFIG_HOME/i3/config */
-    if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL)
-        xdg_config_home = "~/.config";
-
-    xdg_config_home = resolve_tilde(xdg_config_home);
-    sasprintf(&config_path, "%s/i3/config", xdg_config_home);
-    free(xdg_config_home);
-
-    if (path_exists(config_path))
-        return config_path;
-    free(config_path);
-
-    /* 3: check the traditional path under /etc */
-    config_path = SYSCONFDIR "/i3/config";
-    if (path_exists(config_path))
-        return sstrdup(config_path);
-
-    /* 4: check for $XDG_CONFIG_DIRS/i3/config */
-    if ((xdg_config_dirs = getenv("XDG_CONFIG_DIRS")) == NULL)
-        xdg_config_dirs = "/etc/xdg";
-
-    char *buf = sstrdup(xdg_config_dirs);
-    char *tok = strtok(buf, ":");
-    while (tok != NULL) {
-        tok = resolve_tilde(tok);
-        sasprintf(&config_path, "%s/i3/config", tok);
-        free(tok);
-        if (path_exists(config_path)) {
-            free(buf);
-            return config_path;
-        }
-        free(config_path);
-        tok = strtok(NULL, ":");
-    }
-    free(buf);
-
-    die("Unable to find the configuration file (looked at "
-        "~/.i3/config, $XDG_CONFIG_HOME/i3/config, " SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
-}
-
-/*
  * Finds the configuration file to use (either the one specified by
  * override_configpath), the user’s one or the system default) and calls
  * parse_file().
  *
  */
 bool parse_configuration(const char *override_configpath, bool use_nagbar) {
-    char *path = get_config_path(override_configpath);
+    char *path = get_config_path(override_configpath, true);
+    if (path == NULL) {
+        die("Unable to find the configuration file (looked at "
+            "~/.i3/config, $XDG_CONFIG_HOME/i3/config, " SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
+    }
+
     LOG("Parsing configfile %s\n", path);
     FREE(current_configpath);
     current_configpath = path;
