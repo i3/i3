@@ -109,10 +109,10 @@ void cmd_workspace_back_and_forth(I3_CMD);
 void cmd_workspace_name(I3_CMD, char *name);
 
 /**
- * Implementation of 'mark <mark>'
+ * Implementation of 'mark [--toggle] <mark>'
  *
  */
-void cmd_mark(I3_CMD, char *mark);
+void cmd_mark(I3_CMD, char *mark, char *toggle);
 
 /**
  * Implementation of 'unmark [mark]'

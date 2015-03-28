@@ -189,10 +189,12 @@ state FLOATING:
   floating = 'enable', 'disable', 'toggle'
       -> call cmd_floating($floating)
 
-# mark <mark>
+# mark [--toggle] <mark>
 state MARK:
+  toggle = '--toggle'
+      ->
   mark = string
-      -> call cmd_mark($mark)
+      -> call cmd_mark($mark, $toggle)
 
 # unmark [mark]
 state UNMARK:
