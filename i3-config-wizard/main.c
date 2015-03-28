@@ -592,6 +592,12 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
             finish();
     }
 
+    /* Swap between modifiers when up or down is pressed. */
+    if (sym == XK_Up || sym == XK_Down) {
+        modifier = (modifier == MOD_Mod1) ? MOD_Mod4 : MOD_Mod1;
+        handle_expose();
+    }
+
     /* cancel any time */
     if (sym == XK_Escape)
         exit(0);
