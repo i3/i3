@@ -1857,9 +1857,13 @@ window, you cannot simply bind it to a key.  +i3-input+ is a tool created
 for this purpose: It lets you input a command and sends the command to i3. It
 can also prefix this command and display a custom prompt for the input dialog.
 
+The additional +--toggle+ option will remove the mark if the window already has
+this mark, add it if the window has none or replace the current mark if it has
+another mark.
+
 *Syntax*:
 ------------------------------
-mark identifier
+mark [--toggle] identifier
 [con_mark="identifier"] focus
 unmark identifier
 ------------------------------
