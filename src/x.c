@@ -363,6 +363,7 @@ void x_draw_decoration(Con *con) {
         (con->window == NULL || !con->window->name_x_changed) &&
         !parent->pixmap_recreated &&
         !con->pixmap_recreated &&
+        !con->mark_changed &&
         memcmp(p, con->deco_render_params, sizeof(struct deco_render_params)) == 0) {
         free(p);
         goto copy_pixmaps;
@@ -381,6 +382,7 @@ void x_draw_decoration(Con *con) {
 
     parent->pixmap_recreated = false;
     con->pixmap_recreated = false;
+    con->mark_changed = false;
 
     /* 2: draw the client.background, but only for the parts around the client_rect */
     if (con->window != NULL) {

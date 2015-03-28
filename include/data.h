@@ -543,6 +543,8 @@ struct Con {
 
     /* user-definable mark to jump to this container later */
     char *mark;
+    /* cached to decide whether a redraw is needed */
+    bool mark_changed;
 
     double percent;
 
