@@ -1061,10 +1061,11 @@ void cmd_mark(I3_CMD, char *mark, char *toggle) {
     TAILQ_FOREACH(con, &all_cons, all_cons) {
         /* Skip matched windows, we took care of them already. */
         bool matched = false;
-        TAILQ_FOREACH(current, &owindows, owindows)
-        if (current->con == con) {
-            matched = true;
-            break;
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            if (current->con == con) {
+                matched = true;
+                break;
+            }
         }
         if (matched)
             continue;
