@@ -300,8 +300,8 @@ static xcb_rectangle_t get_window_position(void) {
     xcb_randr_get_screen_resources_current_cookie_t rcookie = xcb_randr_get_screen_resources_current(conn, root);
     xcb_randr_get_output_primary_cookie_t pcookie = xcb_randr_get_output_primary(conn, root);
 
-    xcb_randr_get_output_primary_reply_t *primary;
-    xcb_randr_get_screen_resources_current_reply_t *res;
+    xcb_randr_get_output_primary_reply_t *primary = NULL;
+    xcb_randr_get_screen_resources_current_reply_t *res = NULL;
 
     if ((primary = xcb_randr_get_output_primary_reply(conn, pcookie, NULL)) == NULL) {
         DLOG("Could not determine the primary output.\n");
