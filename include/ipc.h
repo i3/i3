@@ -51,12 +51,6 @@ typedef void (*handler_t)(int, uint8_t *, int, uint32_t, uint32_t);
                               uint32_t message_type)
 
 /**
- * Emulates mkdir -p (creates any missing folders)
- *
- */
-bool mkdirp(const char *path);
-
-/**
  * Handler for activity on the listening socket, meaning that a new client
  * has just connected and we should accept() him. Sets up the event handler
  * for activity on the new connection and inserts the file descriptor into

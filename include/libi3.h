@@ -434,3 +434,9 @@ char *get_exe_path(const char *argv0);
  *
  */
 int logical_px(const int logical);
+
+/**
+ * Emulates mkdir -p (creates any missing folders)
+ *
+ */
+bool mkdirp(const char *path);
