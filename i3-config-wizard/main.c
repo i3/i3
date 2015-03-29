@@ -67,6 +67,11 @@
 #include "xcb.h"
 #include "libi3.h"
 
+#define row_y(row) \
+    (((row)-1) * font.height + logical_px(4))
+#define window_height() \
+    (row_y(15) + font.height)
+
 enum { STEP_WELCOME,
        STEP_GENERATE } current_step = STEP_WELCOME;
 enum { MOD_Mod1,
@@ -80,6 +85,7 @@ xcb_screen_t *root_screen;
 static xcb_get_modifier_mapping_reply_t *modmap_reply;
 static i3Font font;
 static i3Font bold_font;
+static int char_width;
 static char *socket_path;
 static xcb_window_t win;
 static xcb_pixmap_t pixmap;
@@ -493,7 +499,7 @@ static char *resolve_tilde(const char *path) {
  */
 static int handle_expose() {
     /* re-draw the background */
-    xcb_rectangle_t border = {0, 0, logical_px(300), (logical_px(15) * font.height) + logical_px(8)};
+    xcb_rectangle_t border = {0, 0, logical_px(300), window_height()};
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#000000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
 
@@ -501,7 +507,7 @@ static int handle_expose() {
 
 #define txt(x, row, text)                    \
     draw_text_ascii(text, pixmap, pixmap_gc, \
-                    x, (row - 1) * font.height + logical_px(4), logical_px(500) - x * 2)
+                    x, row_y(row), logical_px(500) - x * 2)
 
     if (current_step == STEP_WELCOME) {
         /* restore font color */
@@ -643,14 +649,16 @@ static void handle_button_press(xcb_button_press_event_t *event) {
     if (current_step != STEP_GENERATE)
         return;
 
-    if (event->event_x >= logical_px(32) && event->event_x <= logical_px(68) &&
-        event->event_y >= logical_px(45) && event->event_y <= logical_px(54)) {
+    if (event->event_x < logical_px(32) ||
+        event->event_x > (logical_px(32) + char_width * 5))
+        return;
+
+    if (event->event_y >= row_y(4) && event->event_y <= (row_y(4) + font.height)) {
         modifier = MOD_Mod4;
         handle_expose();
     }
 
-    if (event->event_x >= logical_px(32) && event->event_x <= logical_px(68) &&
-        event->event_y >= logical_px(56) && event->event_y <= logical_px(70)) {
+    if (event->event_y >= row_y(5) && event->event_y <= (row_y(5) + font.height)) {
         modifier = MOD_Mod1;
         handle_expose();
     }
@@ -864,6 +872,10 @@ int main(int argc, char *argv[]) {
     font = load_font(pattern, true);
     bold_font = load_font(patternbold, true);
 
+    /* Determine character width in the default font. */
+    set_font(&font);
+    char_width = predict_text_width(i3string_from_utf8("a"));
+
     /* Open an input window */
     win = xcb_generate_id(conn);
     xcb_create_window(
@@ -871,7 +883,7 @@ int main(int argc, char *argv[]) {
         XCB_COPY_FROM_PARENT,
         win,                                                                /* the window id */
         root,                                                               /* parent == root */
-        logical_px(490), logical_px(297), logical_px(300), logical_px(205), /* dimensions */
+        logical_px(490), logical_px(297), logical_px(300), window_height(), /* dimensions */
         0,                                                                  /* X11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
