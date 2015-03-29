@@ -512,8 +512,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* Defer setting focus after the 'new' event has been sent to ensure the
      * proper window event sequence. */
     if (set_focus && !nc->window->doesnt_accept_focus && nc->mapped) {
-        DLOG("Now setting focus.\n");
-        con_focus(nc);
+        if (assignment_for(cwindow, A_NO_FOCUS) == NULL) {
+            DLOG("Now setting focus.\n");
+            con_focus(nc);
+        }
     }
 
     tree_render();
