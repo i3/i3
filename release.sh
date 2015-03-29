@@ -82,6 +82,12 @@ else
 	git merge --no-ff next -m "Merge branch 'next' into master"
 fi
 
+git remote remove origin
+git remote add origin git@github.com:i3/i3.git
+git config --add remote.origin.push "+refs/tags/*:refs/tags/*"
+git config --add remote.origin.push "+refs/heads/next:refs/heads/next"
+git config --add remote.origin.push "+refs/heads/master:refs/heads/master"
+
 ################################################################################
 # Section 2: Debian packaging
 ################################################################################
@@ -164,6 +170,9 @@ done
 
 git commit -a -m "update docs for ${RELEASE_VERSION}"
 
+git remote remove origin
+git remote add origin git@github.com:i3/i3.github.io.git
+
 ################################################################################
 # Section 4: final push instructions
 ################################################################################
@@ -174,14 +183,10 @@ echo "When satisfied, run:"
 echo "  cd ${TMPDIR}/i3"
 echo "  git checkout next"
 echo "  vi debian/changelog"
-# TODO: can we just set up the remote spec properly?
-echo "  git push git@github.com:i3/i3 next"
-echo "  git push git@github.com:i3/i3 master"
-echo "  git push git@github.com:i3/i3 --tags"
+echo "  git push"
 echo ""
 echo "  cd ${TMPDIR}/i3.github.io"
-# TODO: can we just set up the remote spec properly?
-echo "  git push git@github.com:i3/i3.github.io master"
+echo "  git push"
 echo ""
 echo "  cd ${TMPDIR}/debian"
 echo "  dput *.changes"
