@@ -26,13 +26,16 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool bef
     /* We cannot use asprintf here since this property contains two
      * null-terminated strings (for compatibility reasons). Instead, we
      * use strdup() on both strings */
-    char *new_class = xcb_get_property_value(prop);
+    const size_t prop_length = xcb_get_property_value_length(prop);
+    char *new_class = smalloc(prop_length + 1);
+    memcpy(new_class, xcb_get_property_value(prop), prop_length);
+    new_class[prop_length] = '\0';
 
     FREE(win->class_instance);
     FREE(win->class_class);
 
     win->class_instance = sstrdup(new_class);
-    if ((strlen(new_class) + 1) < (size_t)xcb_get_property_value_length(prop))
+    if ((strlen(new_class) + 1) < prop_length)
         win->class_class = sstrdup(new_class + strlen(new_class) + 1);
     else
         win->class_class = NULL;
@@ -40,12 +43,14 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool bef
         win->class_instance, win->class_class);
 
     if (before_mgmt) {
+        free(new_class);
         free(prop);
         return;
     }
 
     run_assignments(win);
 
+    free(new_class);
     free(prop);
 }
 
