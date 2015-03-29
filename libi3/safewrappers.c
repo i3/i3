@@ -60,7 +60,7 @@ int sasprintf(char **strp, const char *fmt, ...) {
 }
 
 ssize_t writeall(int fd, const void *buf, size_t count) {
-    int written = 0;
+    size_t written = 0;
     ssize_t n = 0;
 
     while (written < count) {
@@ -70,7 +70,7 @@ ssize_t writeall(int fd, const void *buf, size_t count) {
                 continue;
             return n;
         }
-        written += n;
+        written += (size_t)n;
     }
 
     return written;

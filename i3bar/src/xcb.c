@@ -110,23 +110,23 @@ struct xcb_colors_t {
 struct xcb_colors_t colors;
 
 /* Horizontal offset between a workspace label and button borders */
-const static int ws_hoff_px = 4;
+static const int ws_hoff_px = 4;
 
 /* Vertical offset between a workspace label and button borders */
-const static int ws_voff_px = 3;
+static const int ws_voff_px = 3;
 
 /* Offset between two workspace buttons */
-const static int ws_spacing_px = 1;
+static const int ws_spacing_px = 1;
 
 /* Offset between the statusline and 1) workspace buttons on the left
  *                                   2) the tray or screen edge on the right */
-const static int sb_hoff_px = 4;
+static const int sb_hoff_px = 4;
 
 /* Additional offset between the tray and the statusline, if the tray is not empty */
-const static int tray_loff_px = 2;
+static const int tray_loff_px = 2;
 
 /* Vertical offset between the bar and a separator */
-const static int sep_voff_px = 4;
+static const int sep_voff_px = 4;
 
 /* We define xcb_request_failed as a macro to include the relevant line number */
 #define xcb_request_failed(cookie, err_msg) _xcb_request_failed(cookie, err_msg, __LINE__)
@@ -1941,7 +1941,7 @@ void draw_bars(bool unhide) {
             DLOG("Printing statusline!\n");
 
             int tray_width = get_tray_width(outputs_walk->trayclients);
-            int max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - 2 * logical_px(sb_hoff_px);
+            uint32_t max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - 2 * logical_px(sb_hoff_px);
 
             /* If the statusline is too long, try to use short texts. */
             if (statusline_width > max_statusline_width)

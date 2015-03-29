@@ -874,12 +874,16 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             .root_y = y_root,
             .event_x = x_root - (con->rect.x),
             .event_y = y_root - (con->rect.y)};
-        if (direction == _NET_WM_MOVERESIZE_MOVE) {
-            floating_drag_window(con->parent, &fake);
-        } else if (direction >= _NET_WM_MOVERESIZE_SIZE_TOPLEFT && direction <= _NET_WM_MOVERESIZE_SIZE_LEFT) {
-            floating_resize_window(con->parent, FALSE, &fake);
-        } else {
-            DLOG("_NET_WM_MOVERESIZE direction %d not implemented\n", direction);
+        switch (direction) {
+            case _NET_WM_MOVERESIZE_MOVE:
+                floating_drag_window(con->parent, &fake);
+                break;
+            case _NET_WM_MOVERESIZE_SIZE_TOPLEFT... _NET_WM_MOVERESIZE_SIZE_LEFT:
+                floating_resize_window(con->parent, FALSE, &fake);
+                break;
+            default:
+                DLOG("_NET_WM_MOVERESIZE direction %d not implemented\n", direction);
+                break;
         }
     } else {
         DLOG("unhandled clientmessage\n");
@@ -1214,7 +1218,7 @@ static bool handle_strut_partial_change(void *data, xcb_connection_t *conn, uint
         con->window->dock = W_DOCK_BOTTOM;
     } else {
         DLOG("Ignoring invalid reserved edges (_NET_WM_STRUT_PARTIAL), using position as fallback:\n");
-        if (con->geometry.y < (int16_t)(search_at->rect.height / 2)) {
+        if (con->geometry.y < (search_at->rect.height / 2)) {
             DLOG("geom->y = %d < rect.height / 2 = %d, it is a top dock client\n",
                  con->geometry.y, (search_at->rect.height / 2));
             con->window->dock = W_DOCK_TOP;
