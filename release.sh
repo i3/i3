@@ -3,7 +3,7 @@
 
 export RELEASE_VERSION="4.10"
 export PREVIOUS_VERSION="4.9.1"
-export RELEASE_BRANCH="master"
+export RELEASE_BRANCH="next"
 
 if [ ! -e "../i3.github.io" ]
 then
