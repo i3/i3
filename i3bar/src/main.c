@@ -60,7 +60,7 @@ void print_usage(char *elf_name) {
     printf("\n");
     printf("-b, --bar_id  <bar_id>\tBar ID for which to get the configuration\n");
     printf("-s, --socket  <sock_path>\tConnect to i3 via <sock_path>\n");
-    printf("-h, --help    Display this help-message and exit\n");
+    printf("-h, --help    Display this help message and exit\n");
     printf("-v, --version Display version number and exit\n");
     printf("\n");
     printf(" PLEASE NOTE that i3bar will be automatically started by i3\n"
@@ -71,7 +71,7 @@ void print_usage(char *elf_name) {
 
 /*
  * We watch various signals, that are there to make our application stop.
- * If we get one of those, we ev_unloop() and invoke the cleanup-routines
+ * If we get one of those, we ev_unloop() and invoke the cleanup routines
  * in main() with that
  *
  */
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
     }
 
     if (socket_path == NULL) {
-        ELOG("No Socket Path Specified, default to %s\n", i3_default_sock_path);
+        ELOG("No socket path specified, default to %s\n", i3_default_sock_path);
         socket_path = expand_path(i3_default_sock_path);
     }
 
@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
         i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG, config.bar_id);
     }
 
-    /* We listen to SIGTERM/QUIT/INT and try to exit cleanly, by stopping the main-loop.
+    /* We listen to SIGTERM/QUIT/INT and try to exit cleanly, by stopping the main loop.
      * We only need those watchers on the stack, so putting them on the stack saves us
      * some calls to free() */
     ev_signal *sig_term = smalloc(sizeof(ev_signal));
@@ -166,12 +166,10 @@ int main(int argc, char **argv) {
     ev_signal_start(main_loop, sig_hup);
 
     /* From here on everything should run smooth for itself, just start listening for
-     * events. We stop simply stop the event-loop, when we are finished */
+     * events. We stop simply stop the event loop, when we are finished */
     ev_loop(main_loop, 0);
 
     kill_child();
-
-    FREE(statusline_buffer);
 
     clean_xcb();
     ev_default_destroy();

@@ -67,6 +67,7 @@ CFGFUN(enter_mode, const char *mode);
 CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *whole_window, const char *command);
 
 CFGFUN(bar_font, const char *font);
+CFGFUN(bar_separator_symbol, const char *separator);
 CFGFUN(bar_mode, const char *mode);
 CFGFUN(bar_hidden_state, const char *hidden_state);
 CFGFUN(bar_id, const char *bar_id);

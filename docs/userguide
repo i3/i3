@@ -1249,6 +1249,24 @@ bar {
 }
 --------------------------------------------------------------
 
+=== Custom separator symbol
+
+Specifies a custom symbol to be used for the separator as opposed to the vertical,
+one pixel thick separator. Note that you may have to adjust the +sep_block_width+ 
+property.
+
+*Syntax*:
+-------------------------
+separator_symbol <symbol>
+-------------------------
+
+*Example*:
+------------------------
+bar {
+    separator_symbol ":|:"
+}
+------------------------
+
 === Workspace buttons
 
 Specifies whether workspace buttons should be shown or not. This is useful if
@@ -2010,6 +2028,27 @@ bindsym $mod+minus scratchpad show
 # Show the sup-mail scratchpad window, if any.
 bindsym mod4+s [title="^Sup ::"] scratchpad show
 ------------------------------------------------
+
+=== Nop
+
+There is a no operation command +nop+ which allows you to override default
+behavior. This can be useful for, e.g., disabling a focus change on clicks with
+the middle mouse button.
+
+The optional +comment+ argument is ignored, but will be printed to the log file
+for debugging purposes.
+
+*Syntax*:
+---------------
+nop [<comment>]
+---------------
+
+*Example*:
+----------------------------------------------
+# Disable focus change for clicks on titlebars
+# with the middle mouse button
+bindsym button2 nop
+----------------------------------------------
 
 === i3bar control
 

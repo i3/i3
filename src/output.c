@@ -24,3 +24,25 @@ Con *output_get_content(Con *output) {
 
     return NULL;
 }
+
+/*
+ * Returns an 'output' corresponding to one of left/right/down/up or a specific
+ * output name.
+ *
+ */
+Output *get_output_from_string(Output *current_output, const char *output_str) {
+    Output *output;
+
+    if (strcasecmp(output_str, "left") == 0)
+        output = get_output_next_wrap(D_LEFT, current_output);
+    else if (strcasecmp(output_str, "right") == 0)
+        output = get_output_next_wrap(D_RIGHT, current_output);
+    else if (strcasecmp(output_str, "up") == 0)
+        output = get_output_next_wrap(D_UP, current_output);
+    else if (strcasecmp(output_str, "down") == 0)
+        output = get_output_next_wrap(D_DOWN, current_output);
+    else
+        output = get_output_by_name(output_str);
+
+    return output;
+}

@@ -1,0 +1,47 @@
+language: c
+compiler:
+  - gcc
+  - clang
+before_install:
+  # The travis VMs run on Ubuntu 12.04 which is very old and a huge pain to get
+  # into a state where we can build a recent version of i3 :(.
+  - "echo 'deb http://archive.ubuntu.com/ubuntu/ trusty main universe' | sudo tee /etc/apt/sources.list.d/trusty.list"
+  - "echo 'APT::Default-Release \"precise\";' | sudo tee /etc/apt/apt.conf.d/default-release"
+  - "echo 'deb http://archive.ubuntu.com/ubuntu/ utopic main universe' | sudo tee /etc/apt/sources.list.d/utopic.list"
+
+  - "echo 'Package: libc6' > /tmp/pin"
+  - "echo 'Pin: release n=trusty' >> /tmp/pin"
+  - "echo 'Pin-Priority: 999' >> /tmp/pin"
+  - "echo '' >> /tmp/pin"
+
+  - "echo 'Package: libxkbcommon*' >> /tmp/pin"
+  - "echo 'Pin: release n=trusty' >> /tmp/pin"
+  - "echo 'Pin-Priority: 999' >> /tmp/pin"
+  - "echo '' >> /tmp/pin"
+
+  - "echo 'Package: libyajl*' >> /tmp/pin"
+  - "echo 'Pin: release n=trusty' >> /tmp/pin"
+  - "echo 'Pin-Priority: 999' >> /tmp/pin"
+  - "echo '' >> /tmp/pin"
+
+  - "echo 'Package: libxcb-image*' >> /tmp/pin"
+  - "echo 'Pin: release n=trusty' >> /tmp/pin"
+  - "echo 'Pin-Priority: 999' >> /tmp/pin"
+  - "echo '' >> /tmp/pin"
+
+  - sudo cp /tmp/pin /etc/apt/preferences.d/trustypin
+  - sudo apt-get update
+  - sudo apt-get install -t trusty libc6 libc6-dev
+  - sudo apt-get install --no-install-recommends devscripts equivs
+  - sudo apt-get install -t utopic clang-format-3.5
+  - clang-format-3.5 --version
+install:
+  - sudo mk-build-deps --install --remove --tool 'apt-get --no-install-recommends' debian/control
+  # Install as many dependencies as possible via apt because cpanm is not very reliable/easy to debug.
+  - sudo apt-get install --no-install-recommends libanyevent-perl libanyevent-i3-perl libextutils-pkgconfig-perl xcb-proto cpanminus xvfb xserver-xephyr xauth libinline-perl libxml-simple-perl libmouse-perl libmousex-nativetraits-perl libextutils-depends-perl perl-modules libtest-deep-perl libtest-exception-perl libxml-parser-perl libtest-simple-perl libtest-fatal-perl libdata-dump-perl libtest-differences-perl libxml-tokeparser-perl libtest-use-ok-perl libipc-run-perl
+  - sudo /bin/sh -c 'cpanm -n -v X11::XCB || true'
+  - sudo /bin/sh -c 'cpanm -n -v AnyEvent::I3 || true'
+script:
+  - CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Werror" make -j
+  - (cd testcases && xvfb-run ./complete-run.pl --parallel=1 || (cat latest/complete-run.log; false))
+  - clang-format-3.5 -i $(find . -name "*.[ch]" | tr '\n' ' ') && git diff --exit-code || (echo 'Code was not formatted using clang-format!'; false)

@@ -70,9 +70,9 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims,
  */
 void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t to_x, uint32_t to_y) {
-    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]) {colorpixel});
+    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]){colorpixel});
     xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, drawable, gc, 2,
-                  (xcb_point_t[]) {{x, y}, {to_x, to_y}});
+                  (xcb_point_t[]){{x, y}, {to_x, to_y}});
 }
 
 /*
@@ -81,7 +81,7 @@ void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext
  */
 void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
-    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]) {colorpixel});
+    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]){colorpixel});
     xcb_rectangle_t rect = {x, y, width, height};
     xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
 }

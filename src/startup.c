@@ -258,6 +258,22 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
 }
 
 /**
+ * Renames workspaces that are mentioned in the startup sequences.
+ *
+ */
+void startup_sequence_rename_workspace(char *old_name, char *new_name) {
+    struct Startup_Sequence *current;
+    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+        if (strcmp(current->workspace, old_name) != 0)
+            continue;
+        DLOG("Renaming workspace \"%s\" to \"%s\" in startup sequence %s.\n",
+             old_name, new_name, current->id);
+        free(current->workspace);
+        current->workspace = sstrdup(new_name);
+    }
+}
+
+/**
  * Gets the stored startup sequence for the _NET_STARTUP_ID of a given window.
  *
  */

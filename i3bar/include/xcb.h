@@ -65,14 +65,14 @@ void init_xcb_late(char *fontname);
 void init_colors(const struct xcb_color_strings_t *colors);
 
 /*
- * Cleanup the xcb-stuff.
+ * Cleanup the xcb stuff.
  * Called once, before the program terminates.
  *
  */
 void clean_xcb(void);
 
 /*
- * Get the earlier requested atoms and save them in the prepared data-structure
+ * Get the earlier requested atoms and save them in the prepared data structure
  *
  */
 void get_atoms(void);
@@ -90,7 +90,7 @@ void kick_tray_clients(i3_output *output);
 
 /*
  * We need to set the _NET_SYSTEM_TRAY_COLORS atom on the tray selection window
- * to make GTK+ 3 applets with Symbolic Icons visible. If the colors are unset,
+ * to make GTK+ 3 applets with symbolic icons visible. If the colors are unset,
  * they assume a light background.
  * See also https://bugzilla.gnome.org/show_bug.cgi?id=679591
  *
@@ -104,7 +104,7 @@ void init_tray_colors(void);
 void destroy_window(i3_output *output);
 
 /*
- * Reallocate the statusline-buffer
+ * Reallocate the statusline buffer
  *
  */
 void realloc_sl_buffer(void);

@@ -4,7 +4,7 @@
  * i3bar - an xcb-based status- and ws-bar for i3
  * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
- * mode.c: Handle mode-event and show current binding mode in the bar
+ * mode.c: Handle mode event and show current binding mode in the bar
  *
  */
 #include <string.h>
@@ -48,7 +48,7 @@ static int mode_string_cb(void *params_, const unsigned char *val, size_t len) {
 /*
  * Parse a key.
  *
- * Essentially we just save it in the parsing-state
+ * Essentially we just save it in the parsing state
  *
  */
 static int mode_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
@@ -69,11 +69,11 @@ static yajl_callbacks mode_callbacks = {
 };
 
 /*
- * Start parsing the received json-string
+ * Start parsing the received JSON string
  *
  */
 void parse_mode_json(char *json) {
-    /* FIXME: Fasciliate stream-processing, i.e. allow starting to interpret
+    /* FIXME: Fasciliate stream processing, i.e. allow starting to interpret
      * JSON in chunks */
     struct mode_json_params params;
 
@@ -90,13 +90,13 @@ void parse_mode_json(char *json) {
 
     state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
-    /* FIXME: Propper errorhandling for JSON-parsing */
+    /* FIXME: Propper error handling for JSON parsing */
     switch (state) {
         case yajl_status_ok:
             break;
         case yajl_status_client_canceled:
         case yajl_status_error:
-            ELOG("Could not parse mode-event!\n");
+            ELOG("Could not parse mode event!\n");
             exit(EXIT_FAILURE);
             break;
     }

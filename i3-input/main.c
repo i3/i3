@@ -129,10 +129,11 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
     printf("expose!\n");
 
     /* re-draw the background */
-    xcb_rectangle_t border = {0, 0, 500, font.height + 8}, inner = {2, 2, 496, font.height + 8 - 4};
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#FF0000")});
+    xcb_rectangle_t border = {0, 0, logical_px(500), font.height + logical_px(8)},
+                    inner = {logical_px(2), logical_px(2), logical_px(496), font.height + logical_px(8) - logical_px(4)};
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#FF0000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#000000")});
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#000000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
@@ -140,17 +141,17 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
 
     /* draw the prompt … */
     if (prompt != NULL) {
-        draw_text(prompt, pixmap, pixmap_gc, 4, 4, 492);
+        draw_text(prompt, pixmap, pixmap_gc, logical_px(4), logical_px(4), logical_px(492));
     }
     /* … and the text */
     if (input_position > 0) {
         i3String *input = i3string_from_ucs2(glyphs_ucs, input_position);
-        draw_text(input, pixmap, pixmap_gc, prompt_offset + 4, 4, 492);
+        draw_text(input, pixmap, pixmap_gc, prompt_offset + logical_px(4), logical_px(4), logical_px(492));
         i3string_free(input);
     }
 
     /* Copy the contents of the pixmap to the real window */
-    xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, font.height + 8);
+    xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, logical_px(500), font.height + logical_px(8));
     xcb_flush(conn);
 
     return 1;
@@ -234,6 +235,9 @@ static void finish_input() {
 static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
     printf("Keypress %d, state raw = %d\n", event->detail, event->state);
 
+    // TODO: port the input handling code from i3lock once libxkbcommon ≥ 0.5.0
+    // is available in distros.
+
     /* See the documentation of xcb_key_symbols_get_keysym for this one.
      * Basically: We get either col 0 or col 1, depending on whether shift is
      * pressed. */
@@ -313,7 +317,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 int main(int argc, char *argv[]) {
     format = strdup("%s");
     socket_path = getenv("I3SOCK");
-    char *pattern = sstrdup("-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1");
+    char *pattern = sstrdup("pango:monospace 8");
     int o, option_index = 0;
 
     static struct option long_options[] = {
@@ -403,14 +407,14 @@ int main(int argc, char *argv[]) {
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,
-        win,                          /* the window id */
-        root,                         /* parent == root */
-        50, 50, 500, font.height + 8, /* dimensions */
-        0,                            /* X11 border = 0, we draw our own */
+        win,                                                                          /* the window id */
+        root,                                                                         /* parent == root */
+        logical_px(50), logical_px(50), logical_px(500), font.height + logical_px(8), /* dimensions */
+        0,                                                                            /* X11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK,
-        (uint32_t[]) {
+        (uint32_t[]){
             0, /* back pixel: black */
             1, /* override redirect: don’t manage this window */
             XCB_EVENT_MASK_EXPOSURE});
@@ -421,7 +425,7 @@ int main(int argc, char *argv[]) {
     /* Create pixmap */
     pixmap = xcb_generate_id(conn);
     pixmap_gc = xcb_generate_id(conn);
-    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, font.height + 8);
+    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, logical_px(500), font.height + logical_px(8));
     xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
     /* Set input focus (we have override_redirect=1, so the wm will not do

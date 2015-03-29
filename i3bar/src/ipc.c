@@ -32,15 +32,15 @@ typedef void (*handler_t)(char *);
  *
  */
 void got_command_reply(char *reply) {
-    /* TODO: Error handling for command-replies */
+    /* TODO: Error handling for command replies */
 }
 
 /*
- * Called, when we get a reply with workspaces-data
+ * Called, when we get a reply with workspaces data
  *
  */
 void got_workspace_reply(char *reply) {
-    DLOG("Got Workspace-Data!\n");
+    DLOG("Got workspace data!\n");
     parse_workspaces_json(reply);
     draw_bars(false);
 }
@@ -51,18 +51,18 @@ void got_workspace_reply(char *reply) {
  *
  */
 void got_subscribe_reply(char *reply) {
-    DLOG("Got Subscribe Reply: %s\n", reply);
-    /* TODO: Error handling for subscribe-commands */
+    DLOG("Got subscribe reply: %s\n", reply);
+    /* TODO: Error handling for subscribe commands */
 }
 
 /*
- * Called, when we get a reply with outputs-data
+ * Called, when we get a reply with outputs data
  *
  */
 void got_output_reply(char *reply) {
-    DLOG("Parsing Outputs-JSON...\n");
+    DLOG("Parsing outputs JSON...\n");
     parse_outputs_json(reply);
-    DLOG("Reconfiguring Windows...\n");
+    DLOG("Reconfiguring windows...\n");
     realloc_sl_buffer();
     reconfig_windows(false);
 
@@ -80,7 +80,7 @@ void got_output_reply(char *reply) {
  */
 void got_bar_config(char *reply) {
     DLOG("Received bar config \"%s\"\n", reply);
-    /* We initiate the main-function by requesting infos about the outputs and
+    /* We initiate the main function by requesting infos about the outputs and
      * workspaces. Everything else (creating the bars, showing the right workspace-
      * buttons and more) is taken care of by the event-drivenness of the code */
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
@@ -104,7 +104,7 @@ void got_bar_config(char *reply) {
     FREE(config.command);
 }
 
-/* Data-structure to easily call the reply-handlers later */
+/* Data structure to easily call the reply handlers later */
 handler_t reply_handlers[] = {
     &got_command_reply,
     &got_workspace_reply,
@@ -116,20 +116,20 @@ handler_t reply_handlers[] = {
 };
 
 /*
- * Called, when a workspace-event arrives (i.e. the user changed the workspace)
+ * Called, when a workspace event arrives (i.e. the user changed the workspace)
  *
  */
 void got_workspace_event(char *event) {
-    DLOG("Got Workspace Event!\n");
+    DLOG("Got workspace event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
 }
 
 /*
- * Called, when an output-event arrives (i.e. the screen-configuration changed)
+ * Called, when an output event arrives (i.e. the screen configuration changed)
  *
  */
 void got_output_event(char *event) {
-    DLOG("Got Output Event!\n");
+    DLOG("Got output event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
     if (!config.disable_ws) {
         i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
@@ -137,11 +137,11 @@ void got_output_event(char *event) {
 }
 
 /*
- * Called, when a mode-event arrives (i3 changed binding mode).
+ * Called, when a mode event arrives (i3 changed binding mode).
  *
  */
 void got_mode_event(char *event) {
-    DLOG("Got Mode Event!\n");
+    DLOG("Got mode event!\n");
     parse_mode_json(event);
     draw_bars(false);
 }
@@ -180,7 +180,7 @@ void got_bar_config_update(char *event) {
     draw_bars(false);
 }
 
-/* Data-structure to easily call the event-handlers later */
+/* Data structure to easily call the event handlers later */
 handler_t event_handlers[] = {
     &got_workspace_event,
     &got_output_event,
@@ -201,7 +201,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t) * 2;
     char *header = smalloc(header_len);
 
-    /* We first parse the fixed-length IPC-header, to know, how much data
+    /* We first parse the fixed-length IPC header, to know, how much data
      * we have to expect */
     uint32_t rec = 0;
     while (rec < header_len) {
@@ -268,7 +268,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
 }
 
 /*
- * Sends a Message to i3.
+ * Sends a message to i3.
  * type must be a valid I3_IPC_MESSAGE_TYPE (see i3/ipc.h for further information)
  *
  */
@@ -296,18 +296,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
     if (payload != NULL)
         strncpy(walk, payload, len);
 
-    uint32_t written = 0;
-
-    while (to_write > 0) {
-        int n = write(i3_connection->fd, buffer + written, to_write);
-        if (n == -1) {
-            ELOG("write() failed: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-
-        to_write -= n;
-        written += n;
-    }
+    swrite(i3_connection->fd, buffer, to_write);
 
     FREE(buffer);
 
@@ -316,7 +305,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
 
 /*
  * Initiate a connection to i3.
- * socket-path must be a valid path to the ipc_socket of i3
+ * socket_path must be a valid path to the ipc_socket of i3
  *
  */
 int init_connection(const char *socket_path) {

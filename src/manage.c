@@ -69,7 +69,7 @@ void restore_geometry(void) {
 
     /* Strictly speaking, this line doesn’t really belong here, but since we
      * are syncing, let’s un-register as a window manager first */
-    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]) {XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT});
+    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT});
 
     /* Make sure our changes reach the X server, we restart/exit now */
     xcb_aux_sync(conn);
@@ -253,23 +253,20 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* See if any container swallows this new window */
     nc = con_for_window(search_at, cwindow, &match);
     if (nc == NULL) {
-        /* If not, check if it is assigned to a specific workspace / output */
-        if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE | A_TO_OUTPUT))) {
+        /* If not, check if it is assigned to a specific workspace */
+        if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE))) {
             DLOG("Assignment matches (%p)\n", match);
-            if (assignment->type == A_TO_WORKSPACE) {
-                Con *assigned_ws = workspace_get(assignment->dest.workspace, NULL);
-                nc = con_descend_tiling_focused(assigned_ws);
-                DLOG("focused on ws %s: %p / %s\n", assigned_ws->name, nc, nc->name);
-                if (nc->type == CT_WORKSPACE)
-                    nc = tree_open_con(nc, cwindow);
-                else
-                    nc = tree_open_con(nc->parent, cwindow);
+            Con *assigned_ws = workspace_get(assignment->dest.workspace, NULL);
+            nc = con_descend_tiling_focused(assigned_ws);
+            DLOG("focused on ws %s: %p / %s\n", assigned_ws->name, nc, nc->name);
+            if (nc->type == CT_WORKSPACE)
+                nc = tree_open_con(nc, cwindow);
+            else
+                nc = tree_open_con(nc->parent, cwindow);
 
-                /* set the urgency hint on the window if the workspace is not visible */
-                if (!workspace_is_visible(assigned_ws))
-                    urgency_hint = true;
-            }
-            /* TODO: handle assignments with type == A_TO_OUTPUT */
+            /* set the urgency hint on the window if the workspace is not visible */
+            if (!workspace_is_visible(assigned_ws))
+                urgency_hint = true;
         } else if (startup_ws) {
             /* If it’s not assigned, but was started on a specific workspace,
              * we want to open it there */
@@ -434,7 +431,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * which are not managed by the wm anyways). We store the original geometry
      * here because it’s used for dock clients. */
     if (nc->geometry.width == 0)
-        nc->geometry = (Rect) {geom->x, geom->y, geom->width, geom->height};
+        nc->geometry = (Rect){geom->x, geom->y, geom->width, geom->height};
 
     if (motif_border_style != BS_NORMAL) {
         DLOG("MOTIF_WM_HINTS specifies decorations (border_style = %d)\n", motif_border_style);
@@ -455,7 +452,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     }
 
     /* explicitly set the border width to the default */
-    nc->current_border_width = (want_floating ? config.default_floating_border_width : config.default_border_width);
+    if (nc->current_border_width == -1) {
+        nc->current_border_width = (want_floating ? config.default_floating_border_width : config.default_border_width);
+    }
 
     /* to avoid getting an UnmapNotify event due to reparenting, we temporarily
      * declare no interest in any state change event of this window */

@@ -421,6 +421,11 @@ CFGFUN(bar_font, const char *font) {
     current_bar.font = sstrdup(font);
 }
 
+CFGFUN(bar_separator_symbol, const char *separator) {
+    FREE(current_bar.separator_symbol);
+    current_bar.separator_symbol = sstrdup(separator);
+}
+
 CFGFUN(bar_mode, const char *mode) {
     current_bar.mode = (strcmp(mode, "dock") == 0 ? M_DOCK : (strcmp(mode, "hide") == 0 ? M_HIDE : M_INVISIBLE));
 }

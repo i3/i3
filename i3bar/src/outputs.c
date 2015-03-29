@@ -4,7 +4,7 @@
  * i3bar - an xcb-based status- and ws-bar for i3
  * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
- * outputs.c: Maintaining the output-list
+ * outputs.c: Maintaining the outputs list
  *
  */
 #include <string.h>
@@ -27,7 +27,7 @@ struct outputs_json_params {
 };
 
 /*
- * Parse a null-value (current_workspace)
+ * Parse a null value (current_workspace)
  *
  */
 static int outputs_null_cb(void *params_) {
@@ -139,7 +139,7 @@ static int outputs_string_cb(void *params_, const unsigned char *val, size_t len
 }
 
 /*
- * We hit the start of a json-map (rect or a new output)
+ * We hit the start of a JSON map (rect or a new output)
  *
  */
 static int outputs_start_map_cb(void *params_) {
@@ -221,7 +221,7 @@ static int outputs_end_map_cb(void *params_) {
 /*
  * Parse a key.
  *
- * Essentially we just save it in the parsing-state
+ * Essentially we just save it in the parsing state
  *
  */
 static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
@@ -247,7 +247,7 @@ static yajl_callbacks outputs_callbacks = {
 };
 
 /*
- * Initiate the output-list
+ * Initiate the outputs list
  *
  */
 void init_outputs(void) {
@@ -256,7 +256,7 @@ void init_outputs(void) {
 }
 
 /*
- * Start parsing the received json-string
+ * Start parsing the received JSON string
  *
  */
 void parse_outputs_json(char *json) {
@@ -279,7 +279,7 @@ void parse_outputs_json(char *json) {
             break;
         case yajl_status_client_canceled:
         case yajl_status_error:
-            ELOG("Could not parse outputs-reply!\n");
+            ELOG("Could not parse outputs reply!\n");
             exit(EXIT_FAILURE);
             break;
     }

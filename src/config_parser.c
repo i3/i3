@@ -778,14 +778,9 @@ static char *migrate_config(char *input, off_t size) {
 
     /* write the whole config file to the pipe, the script will read everything
      * immediately */
-    int written = 0;
-    int ret;
-    while (written < size) {
-        if ((ret = write(writepipe[1], input + written, size - written)) < 0) {
-            warn("Could not write to pipe");
-            return NULL;
-        }
-        written += ret;
+    if (writeall(writepipe[1], input, size) == -1) {
+        warn("Could not write to pipe");
+        return NULL;
     }
     close(writepipe[1]);
 
@@ -795,7 +790,7 @@ static char *migrate_config(char *input, off_t size) {
     /* read the script’s output */
     int conv_size = 65535;
     char *converted = malloc(conv_size);
-    int read_bytes = 0;
+    int read_bytes = 0, ret;
     do {
         if (read_bytes == conv_size) {
             conv_size += 65535;
@@ -823,11 +818,11 @@ static char *migrate_config(char *input, off_t size) {
         fprintf(stderr, "Migration process exit code was != 0\n");
         if (returncode == 2) {
             fprintf(stderr, "could not start the migration script\n");
-            /* TODO: script was not found. tell the user to fix his system or create a v4 config */
+            /* TODO: script was not found. tell the user to fix their system or create a v4 config */
         } else if (returncode == 1) {
             fprintf(stderr, "This already was a v4 config. Please add the following line to your config file:\n");
             fprintf(stderr, "# i3 config file (v4)\n");
-            /* TODO: nag the user with a message to include a hint for i3 in his config file */
+            /* TODO: nag the user with a message to include a hint for i3 in their config file */
         }
         return NULL;
     }

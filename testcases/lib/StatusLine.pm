@@ -15,12 +15,23 @@ my %ansi_line_upwards;
 
 my $tests_total;
 
+sub noninteractive {
+    # CONTINUOUS_INTEGRATION gets set when running under Travis, see
+    # http://docs.travis-ci.com/user/ci-environment/ and
+    # https://github.com/travis-ci/travis-ci/issues/1337
+    return (! -t STDOUT) || (
+        defined($ENV{CONTINUOUS_INTEGRATION}) &&
+        $ENV{CONTINUOUS_INTEGRATION} eq 'true');
+}
+
 # setup %ansi_line_upwards to map all working displays to the
 # specific movement commands and initialize all status lines
 sub status_init {
     my %args = @_;
     my $displays = $args{displays};
     $tests_total = $args{tests};
+
+    return if noninteractive();
 
     for my $n (1 .. @$displays) {
         # since we are moving upwards, get $display in reverse order
@@ -41,6 +52,8 @@ sub status {
     my ($display, $msg) = @_;
     my $status = "[$display] $msg";
 
+    return $status if noninteractive();
+
     print
         $ansi_save_cursor,
         $ansi_line_upwards{$display},
@@ -53,6 +66,9 @@ sub status {
 
 sub status_completed {
     my $num = shift;
+
+    return if noninteractive();
+
     print
         $ansi_save_cursor,
         $ansi_clear_line,

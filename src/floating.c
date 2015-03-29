@@ -511,7 +511,7 @@ DRAGGING_CB(resize_window_callback) {
         dest_height = max(dest_height, (int)(dest_width / ratio));
     }
 
-    con->rect = (Rect) {dest_x, dest_y, dest_width, dest_height};
+    con->rect = (Rect){dest_x, dest_y, dest_width, dest_height};
 
     /* Obey window size */
     floating_check_size(con);

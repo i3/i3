@@ -13,6 +13,7 @@ use POSIX qw(locale_h);
 use File::Find;
 use File::Basename qw(basename);
 use File::Temp qw(tempfile);
+use List::Util qw(first);
 use Getopt::Long;
 use Pod::Usage;
 use AnyEvent::I3;
@@ -41,11 +42,7 @@ my $result = GetOptions(
 
 die "Could not parse command line options" unless $result;
 
-if (!defined($workspace) && !defined($output)) {
-    die "One of --workspace or --output need to be specified";
-}
-
-unless (defined($workspace) ^ defined($output)) {
+if (defined($workspace) && defined($output)) {
     die "Only one of --workspace or --output can be specified";
 }
 
@@ -55,6 +52,15 @@ $output = decode('utf-8', $output);
 my $i3 = i3();
 if (!$i3->connect->recv) {
     die "Could not connect to i3";
+}
+
+sub get_current_workspace {
+    my $current = first { $_->{focused} } @{$i3->get_workspaces->recv};
+    return $current->{name};
+}
+
+if (!defined($workspace) && !defined($output)) {
+    $workspace = get_current_workspace();
 }
 
 sub filter_containers {
@@ -216,7 +222,7 @@ my $tree = $i3->get_tree->recv;
 my $dump;
 if (defined($workspace)) {
     $dump = filter_containers($tree, sub {
-        $_->{type} eq 'workspace' && $_->{name} eq $workspace
+        $_->{type} eq 'workspace' && ($_->{name} eq $workspace || ($workspace =~ /^\d+$/ && $_->{num} eq $workspace))
     });
 } else {
     $dump = filter_containers($tree, sub {
@@ -246,7 +252,7 @@ for my $key (qw(nodes floating_nodes)) {
 
 =head1 SYNOPSIS
 
-    i3-save-tree [--workspace=name] [--output=name]
+    i3-save-tree [--workspace=name|number] [--output=name]
 
 =head1 DESCRIPTION
 
@@ -259,19 +265,20 @@ specification. When a window is mapped (made visible on the screen) that
 matches the specification, i3 will put it into that place and kill the
 placeholder.
 
+If neither argument is specified, the currently focused workspace will be used.
+
 =head1 OPTIONS
 
 =over
 
-=item B<--workspace=name>
+=item B<--workspace=name|number>
 
-Specifies the workspace that should be dumped, e.g. 1. Either this or --output
-need to be specified.
+Specifies the workspace that should be dumped, e.g. 1. This can either be a
+name or the number of a workspace.
 
 =item B<--output=name>
 
-Specifies the output that should be dumped, e.g. LVDS-1. Either this or
---workspace need to be specified.
+Specifies the output that should be dumped, e.g. LVDS-1.
 
 =back
 

@@ -117,10 +117,8 @@ click_events::
 === Blocks in detail
 
 full_text::
-	The most simple block you can think of is one which just includes the
-	only required key, the +full_text+ key. i3bar will display the string
-	value parsed as
-	https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup].
+	The +full_text+ will be displayed by i3bar on the status line. This is the
+	only required key.
 short_text::
 	Where appropriate, the +short_text+ (string) entry should also be
 	provided. It will be used in case the status line needs to be shortened
@@ -172,6 +170,10 @@ separator_block_width::
 	this gap, a separator line will be drawn unless +separator+ is
 	disabled. Normally, you want to set this to an odd value (the default
 	is 9 pixels), since the separator line is drawn in the middle.
+markup::
+	A string that indicates how the text of the block should be parsed. Set to
+	+"pango"+ to use https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup].
+	Set to +"none"+ to not use any markup (default).
 
 If you want to put in your own entries into a block, prefix the key with an
 underscore (_). i3bar will ignore all keys it doesn’t understand, and prefixing

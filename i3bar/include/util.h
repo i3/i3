@@ -26,7 +26,7 @@
         }                \
     } while (0)
 
-/* Securely fee single-linked list */
+/* Securely free single-linked list */
 #define FREE_SLIST(l, type)              \
     do {                                 \
         type *walk = SLIST_FIRST(l);     \
@@ -37,7 +37,7 @@
         }                                \
     } while (0)
 
-/* Securely fee tail-queues */
+/* Securely free tail queue */
 #define FREE_TAILQ(l, type)                         \
     do {                                            \
         type *walk = TAILQ_FIRST(l);                \
@@ -51,7 +51,7 @@
 #if defined(DLOG)
 #undef DLOG
 #endif
-/* Use cool logging-macros */
+/* Use cool logging macros */
 #define DLOG(fmt, ...)                                                 \
     do {                                                               \
         if (config.verbose) {                                          \

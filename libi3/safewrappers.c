@@ -8,8 +8,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <err.h>
+#include <errno.h>
 
 #include "libi3.h"
 
@@ -55,4 +57,31 @@ int sasprintf(char **strp, const char *fmt, ...) {
         err(EXIT_FAILURE, "asprintf(%s)", fmt);
     va_end(args);
     return result;
+}
+
+ssize_t writeall(int fd, const void *buf, size_t count) {
+    size_t written = 0;
+    ssize_t n = 0;
+
+    while (written < count) {
+        n = write(fd, buf + written, count - written);
+        if (n == -1) {
+            if (errno == EINTR || errno == EAGAIN)
+                continue;
+            return n;
+        }
+        written += (size_t)n;
+    }
+
+    return written;
+}
+
+ssize_t swrite(int fd, const void *buf, size_t count) {
+    ssize_t n;
+
+    n = writeall(fd, buf, count);
+    if (n == -1)
+        err(EXIT_FAILURE, "Failed to write %d", fd);
+    else
+        return n;
 }

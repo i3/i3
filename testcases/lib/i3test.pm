@@ -226,7 +226,7 @@ you might have to map it on your own and use this function:
 sub wait_for_map {
     my ($win) = @_;
     my $id = (blessed($win) && $win->isa('X11::XCB::Window')) ? $win->id : $win;
-    wait_for_event 2, sub {
+    wait_for_event 4, sub {
         $_[0]->{response_type} == MAP_NOTIFY and $_[0]->{window} == $id
     };
 }
@@ -248,7 +248,7 @@ event.
 sub wait_for_unmap {
     my ($win) = @_;
     # my $id = (blessed($win) && $win->isa('X11::XCB::Window')) ? $win->id : $win;
-    wait_for_event 2, sub {
+    wait_for_event 4, sub {
         $_[0]->{response_type} == UNMAP_NOTIFY # and $_[0]->{window} == $id
     };
     sync_with_i3();
@@ -718,7 +718,7 @@ sub sync_with_i3 {
     return $myrnd if $args{dont_wait_for_event};
 
     # now wait until the reply is here
-    return wait_for_event 2, sub {
+    return wait_for_event 4, sub {
         my ($event) = @_;
         # TODO: const
         return 0 unless $event->{response_type} == 161;

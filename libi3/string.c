@@ -109,6 +109,16 @@ i3String *i3string_from_ucs2(const xcb_char2b_t *from_ucs2, size_t num_glyphs) {
     return str;
 }
 
+/**
+ * Copies the given i3string.
+ * Note that this will not free the source string.
+ */
+i3String *i3string_copy(i3String *str) {
+    i3String *copy = i3string_from_utf8(i3string_as_utf8(str));
+    copy->is_markup = str->is_markup;
+    return copy;
+}
+
 /*
  * Free an i3String.
  *
@@ -166,6 +176,13 @@ size_t i3string_get_num_bytes(i3String *str) {
  */
 bool i3string_is_markup(i3String *str) {
     return str->is_markup;
+}
+
+/*
+ * Set whether the i3String should use Pango markup.
+ */
+void i3string_set_markup(i3String *str, bool is_markup) {
+    str->is_markup = is_markup;
 }
 
 /*

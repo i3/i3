@@ -31,7 +31,7 @@ my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
-force_display_urgency_hint 150ms
+force_display_urgency_hint 500ms
 EOT
 my $pid = launch_with_config($config);
 
@@ -70,7 +70,7 @@ is(@urgent, 1, 'window still marked as urgent');
 # now check if the timer was triggered
 cmd "workspace $tmp2";
 
-sleep(0.1);
+sleep(0.5);
 @content = @{get_ws_content($tmp1)};
 @urgent = grep { $_->{urgent} } @content;
 is(@urgent, 0, 'window not marked as urgent anymore');
@@ -142,7 +142,7 @@ cmd "workspace $tmp3";
 $split_left->delete_hint('urgency');
 sync_with_i3;
 
-sleep(0.2);
+sleep(0.6);
 is(count_total_urgent(get_ws($tmp3)), 0, "no more urgent windows on workspace $tmp3");
 
 exit_gracefully($pid);

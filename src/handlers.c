@@ -106,7 +106,7 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
         return;
     }
 
-    /* Focus the output on which the user moved his cursor */
+    /* Focus the output on which the user moved their cursor */
     Con *old_focused = focused;
     Con *next = con_descend_focused(output_get_content(output->con));
     /* Since we are switching outputs, this *must* be a different workspace, so
@@ -149,7 +149,7 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
         enter_child = true;
     }
 
-    /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
+    /* If not, then the user moved their cursor to the root window. In that case, we adjust c_ws */
     if (con == NULL) {
         DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
         check_crossing_screen_boundary(event->root_x, event->root_y);
@@ -651,18 +651,18 @@ static void handle_expose_event(xcb_expose_event_t *event) {
     return;
 }
 
-#define _NET_WM_MOVERESIZE_SIZE_TOPLEFT      0
-#define _NET_WM_MOVERESIZE_SIZE_TOP          1
-#define _NET_WM_MOVERESIZE_SIZE_TOPRIGHT     2
-#define _NET_WM_MOVERESIZE_SIZE_RIGHT        3
-#define _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT  4
-#define _NET_WM_MOVERESIZE_SIZE_BOTTOM       5
-#define _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT   6
-#define _NET_WM_MOVERESIZE_SIZE_LEFT         7
-#define _NET_WM_MOVERESIZE_MOVE              8  /* movement only */
-#define _NET_WM_MOVERESIZE_SIZE_KEYBOARD     9  /* size via keyboard */
-#define _NET_WM_MOVERESIZE_MOVE_KEYBOARD     10 /* move via keyboard */
-#define _NET_WM_MOVERESIZE_CANCEL            11 /* cancel operation */
+#define _NET_WM_MOVERESIZE_SIZE_TOPLEFT 0
+#define _NET_WM_MOVERESIZE_SIZE_TOP 1
+#define _NET_WM_MOVERESIZE_SIZE_TOPRIGHT 2
+#define _NET_WM_MOVERESIZE_SIZE_RIGHT 3
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT 4
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOM 5
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT 6
+#define _NET_WM_MOVERESIZE_SIZE_LEFT 7
+#define _NET_WM_MOVERESIZE_MOVE 8           /* movement only */
+#define _NET_WM_MOVERESIZE_SIZE_KEYBOARD 9  /* size via keyboard */
+#define _NET_WM_MOVERESIZE_MOVE_KEYBOARD 10 /* move via keyboard */
+#define _NET_WM_MOVERESIZE_CANCEL 11        /* cancel operation */
 
 /*
  * Handle client messages (EWMH)
@@ -874,12 +874,16 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             .root_y = y_root,
             .event_x = x_root - (con->rect.x),
             .event_y = y_root - (con->rect.y)};
-        if (direction == _NET_WM_MOVERESIZE_MOVE) {
-            floating_drag_window(con->parent, &fake);
-        } else if (direction >= _NET_WM_MOVERESIZE_SIZE_TOPLEFT && direction <= _NET_WM_MOVERESIZE_SIZE_LEFT) {
-            floating_resize_window(con->parent, FALSE, &fake);
-        } else {
-            DLOG("_NET_WM_MOVERESIZE direction %d not implemented\n", direction);
+        switch (direction) {
+            case _NET_WM_MOVERESIZE_MOVE:
+                floating_drag_window(con->parent, &fake);
+                break;
+            case _NET_WM_MOVERESIZE_SIZE_TOPLEFT... _NET_WM_MOVERESIZE_SIZE_LEFT:
+                floating_resize_window(con->parent, FALSE, &fake);
+                break;
+            default:
+                DLOG("_NET_WM_MOVERESIZE direction %d not implemented\n", direction);
+                break;
         }
     } else {
         DLOG("unhandled clientmessage\n");
@@ -1159,6 +1163,87 @@ static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t stat
     return true;
 }
 
+/*
+ * Handles the _NET_WM_STRUT_PARTIAL property for allocating space for dock clients.
+ *
+ */
+static bool handle_strut_partial_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                                        xcb_atom_t name, xcb_get_property_reply_t *prop) {
+    DLOG("strut partial change for window 0x%08x\n", window);
+
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL) {
+        return false;
+    }
+
+    if (prop == NULL) {
+        xcb_generic_error_t *err = NULL;
+        xcb_get_property_cookie_t strut_cookie = xcb_get_property(conn, false, window, A__NET_WM_STRUT_PARTIAL,
+                                                                  XCB_GET_PROPERTY_TYPE_ANY, 0, UINT32_MAX);
+        prop = xcb_get_property_reply(conn, strut_cookie, &err);
+
+        if (err != NULL) {
+            DLOG("got error when getting strut partial property: %d\n", err->error_code);
+            free(err);
+            return false;
+        }
+
+        if (prop == NULL) {
+            return false;
+        }
+    }
+
+    DLOG("That is con %p / %s\n", con, con->name);
+
+    window_update_strut_partial(con->window, prop);
+
+    /* we only handle this change for dock clients */
+    if (con->parent == NULL || con->parent->type != CT_DOCKAREA) {
+        return true;
+    }
+
+    Con *search_at = croot;
+    Con *output = con_get_output(con);
+    if (output != NULL) {
+        DLOG("Starting search at output %s\n", output->name);
+        search_at = output;
+    }
+
+    /* find out the desired position of this dock window */
+    if (con->window->reserved.top > 0 && con->window->reserved.bottom == 0) {
+        DLOG("Top dock client\n");
+        con->window->dock = W_DOCK_TOP;
+    } else if (con->window->reserved.top == 0 && con->window->reserved.bottom > 0) {
+        DLOG("Bottom dock client\n");
+        con->window->dock = W_DOCK_BOTTOM;
+    } else {
+        DLOG("Ignoring invalid reserved edges (_NET_WM_STRUT_PARTIAL), using position as fallback:\n");
+        if (con->geometry.y < (search_at->rect.height / 2)) {
+            DLOG("geom->y = %d < rect.height / 2 = %d, it is a top dock client\n",
+                 con->geometry.y, (search_at->rect.height / 2));
+            con->window->dock = W_DOCK_TOP;
+        } else {
+            DLOG("geom->y = %d >= rect.height / 2 = %d, it is a bottom dock client\n",
+                 con->geometry.y, (search_at->rect.height / 2));
+            con->window->dock = W_DOCK_BOTTOM;
+        }
+    }
+
+    /* find the dockarea */
+    Con *dockarea = con_for_window(search_at, con->window, NULL);
+    assert(dockarea != NULL);
+
+    /* attach the dock to the dock area */
+    con_detach(con);
+    con->parent = dockarea;
+    TAILQ_INSERT_HEAD(&(dockarea->focus_head), con, focused);
+    TAILQ_INSERT_HEAD(&(dockarea->nodes_head), con, nodes);
+
+    tree_render();
+
+    return true;
+}
+
 /* Returns false if the event could not be processed (e.g. the window could not
  * be found), true otherwise */
 typedef bool (*cb_property_handler_t)(void *data, xcb_connection_t *c, uint8_t state, xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *property);
@@ -1177,7 +1262,8 @@ static struct property_handler_t property_handlers[] = {
     {0, UINT_MAX, handle_clientleader_change},
     {0, UINT_MAX, handle_transient_for},
     {0, 128, handle_windowrole_change},
-    {0, 128, handle_class_change}};
+    {0, 128, handle_class_change},
+    {0, UINT_MAX, handle_strut_partial_change}};
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
 /*
@@ -1196,6 +1282,7 @@ void property_handlers_init(void) {
     property_handlers[5].atom = XCB_ATOM_WM_TRANSIENT_FOR;
     property_handlers[6].atom = A_WM_WINDOW_ROLE;
     property_handlers[7].atom = XCB_ATOM_WM_CLASS;
+    property_handlers[8].atom = A__NET_WM_STRUT_PARTIAL;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
@@ -1315,7 +1402,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
             handle_motion_notify((xcb_motion_notify_event_t *)event);
             break;
 
-        /* Enter window = user moved his mouse over the window */
+        /* Enter window = user moved their mouse over the window */
         case XCB_ENTER_NOTIFY:
             handle_enter_notify((xcb_enter_notify_event_t *)event);
             break;

@@ -4,7 +4,7 @@
  * i3bar - an xcb-based status- and ws-bar for i3
  * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
- * mode.c: Handle mode-event and show current binding mode in the bar
+ * mode.c: Handle "mode" event and show current binding mode in the bar
  *
  */
 #pragma once
@@ -22,7 +22,7 @@ struct mode {
 typedef struct mode mode;
 
 /*
- * Start parsing the received json-string
+ * Start parsing the received JSON string
  *
  */
 void parse_mode_json(char *json);

@@ -231,3 +231,31 @@ layouts, you can either use a JSON parser that supports these deviations (for
 example libyajl), transform the layout file to a JSON-conforming file, or
 link:http://cr.i3wm.org/[submit a patch] to make +i3-save-tree(1)+ optionally
 output standard-conforming JSON.
+
+== Troubleshooting
+
+=== Restoring a vertically split workspace
+
+When using +i3-save-tree+ with the +--workspace+ switch, only the *contents* of
+the workspace will be dumped. This means that properties of the workspace
+itself will be lost.
+
+This is relevant for, e.g., a vertically split container as the base container of
+a workspace. Since the split mode is a property of the workspace, it will not be
+stored. In this case, you will have to manually wrap your layout in such a
+container:
+
+--------------------------------------------------------------------------------
+// vim:ts=4:sw=4:et
+{
+    // this is a manually added container to restore the vertical split
+    "layout": "splitv",
+    "percent": 0.5,
+    "type": "con",
+    "nodes": [
+
+        // the dumped workspace layout goes here
+
+    ]
+}
+--------------------------------------------------------------------------------

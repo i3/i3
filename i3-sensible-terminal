@@ -13,3 +13,5 @@ for terminal in $TERMINAL x-terminal-emulator urxvt rxvt terminator Eterm aterm 
         exec $terminal "$@"
     fi
 done
+
+i3-nagbar -m 'i3-sensible-terminal could not find a terminal emulator. Please install one.'

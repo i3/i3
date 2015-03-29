@@ -105,7 +105,7 @@ static int json_end_map(void *ctx) {
             int cnt = 1;
             while (workspace != NULL) {
                 FREE(json_node->name);
-                asprintf(&(json_node->name), "%s_%d", base, cnt++);
+                sasprintf(&(json_node->name), "%s_%d", base, cnt++);
                 workspace = NULL;
                 TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
                 GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, json_node->name));
