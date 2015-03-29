@@ -736,6 +736,9 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         }
     }
 
+    /* Save the urgency state so that we can restore it. */
+    bool urgent = con->urgent;
+
     /* Save the current workspace. So we can call workspace_show() by the end
      * of this function. */
     Con *current_ws = con_get_workspace(focused);
@@ -843,7 +846,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     if (source_ws == current_ws)
         con_focus(con_descend_focused(focus_next));
 
-    /* If anything within the container is associated with a startup sequence,
+    /* 9. If anything within the container is associated with a startup sequence,
      * delete it so child windows won't be created on the old workspace. */
     struct Startup_Sequence *sequence;
     xcb_get_property_cookie_t cookie;
@@ -876,6 +879,12 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     }
 
     CALL(parent, on_remove_child);
+
+    /* 10. If the container was marked urgent, move the urgency hint. */
+    if (urgent) {
+        workspace_update_urgent_flag(source_ws);
+        con_set_urgency(con, true);
+    }
 
     ipc_send_window_event("move", con);
 }

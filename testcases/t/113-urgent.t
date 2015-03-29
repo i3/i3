@@ -307,6 +307,33 @@ for ($type = 1; $type <= 2; $type++) {
     my $ws = get_ws($tmp);
     ok(!$ws->{urgent}, 'urgent flag not set on workspace');
 
+##############################################################################
+# Regression test for #1187: Urgency hint moves to new workspace when moving
+# a container to another workspace.
+##############################################################################
+
+    my $tmp_source = fresh_workspace;
+    my $tmp_target = fresh_workspace;
+    cmd 'workspace ' . $tmp_source;
+    sync_with_i3;
+    my $w1 = open_window;
+    my $w2 = open_window;
+    sync_with_i3;
+    cmd '[id="' . $w1->id . '"] focus';
+    sync_with_i3;
+    cmd 'mark urgent_con';
+    cmd '[id="' . $w2->id . '"] focus';
+    set_urgency($w1, 1, $type);
+    sync_with_i3;
+    cmd '[con_mark="urgent_con"] move container to workspace ' . $tmp_target;
+    sync_with_i3;
+    my $source_ws = get_ws($tmp_source);
+    my $target_ws = get_ws($tmp_target);
+    ok(!$source_ws->{urgent}, 'Source workspace is no longer marked urgent');
+    is($target_ws->{urgent}, 1, 'Target workspace is now marked urgent');
+
+##############################################################################
+
     exit_gracefully($pid);
 }
 
