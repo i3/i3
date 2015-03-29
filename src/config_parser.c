@@ -778,14 +778,9 @@ static char *migrate_config(char *input, off_t size) {
 
     /* write the whole config file to the pipe, the script will read everything
      * immediately */
-    int written = 0;
-    int ret;
-    while (written < size) {
-        if ((ret = write(writepipe[1], input + written, size - written)) < 0) {
-            warn("Could not write to pipe");
-            return NULL;
-        }
-        written += ret;
+    if (writeall(writepipe[1], input, size) == -1) {
+        warn("Could not write to pipe");
+        return NULL;
     }
     close(writepipe[1]);
 
@@ -795,7 +790,7 @@ static char *migrate_config(char *input, off_t size) {
     /* read the script’s output */
     int conv_size = 65535;
     char *converted = malloc(conv_size);
-    int read_bytes = 0;
+    int read_bytes = 0, ret;
     do {
         if (read_bytes == conv_size) {
             conv_size += 65535;

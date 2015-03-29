@@ -70,8 +70,14 @@ static int backtrace(void) {
         int stdin_pipe[2],
             stdout_pipe[2];
 
-        pipe(stdin_pipe);
-        pipe(stdout_pipe);
+        if (pipe(stdin_pipe) == -1) {
+            ELOG("Failed to init stdin_pipe\n");
+            return -1;
+        }
+        if (pipe(stdout_pipe) == -1) {
+            ELOG("Failed to init stdout_pipe\n");
+            return -1;
+        }
 
         /* close standard streams in case i3 is started from a terminal; gdb
          * needs to run without controlling terminal for it to work properly in

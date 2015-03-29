@@ -32,33 +32,11 @@ int ipc_send_message(int sockfd, const uint32_t message_size,
         .size = message_size,
         .type = message_type};
 
-    size_t sent_bytes = 0;
-    int n = 0;
+    if (writeall(sockfd, ((void *)&header), sizeof(i3_ipc_header_t)) == -1)
+        return -1;
 
-    /* This first loop is basically unnecessary. No operating system has
-     * buffers which cannot fit 14 bytes into them, so the write() will only be
-     * called once. */
-    while (sent_bytes < sizeof(i3_ipc_header_t)) {
-        if ((n = write(sockfd, ((void *)&header) + sent_bytes, sizeof(i3_ipc_header_t) - sent_bytes)) == -1) {
-            if (errno == EAGAIN)
-                continue;
-            return -1;
-        }
-
-        sent_bytes += n;
-    }
-
-    sent_bytes = 0;
-
-    while (sent_bytes < message_size) {
-        if ((n = write(sockfd, payload + sent_bytes, message_size - sent_bytes)) == -1) {
-            if (errno == EAGAIN)
-                continue;
-            return -1;
-        }
-
-        sent_bytes += n;
-    }
+    if (writeall(sockfd, payload, message_size) == -1)
+        return -1;
 
     return 0;
 }

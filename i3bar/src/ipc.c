@@ -296,18 +296,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
     if (payload != NULL)
         strncpy(walk, payload, len);
 
-    uint32_t written = 0;
-
-    while (to_write > 0) {
-        int n = write(i3_connection->fd, buffer + written, to_write);
-        if (n == -1) {
-            ELOG("write() failed: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-
-        to_write -= n;
-        written += n;
-    }
+    swrite(i3_connection->fd, buffer, to_write);
 
     FREE(buffer);
 

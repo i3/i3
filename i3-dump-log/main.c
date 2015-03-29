@@ -43,8 +43,7 @@ static int check_for_wrap(void) {
      * of the log. */
     wrap_count = header->wrap_count;
     const int len = (logbuffer + header->offset_last_wrap) - walk;
-    if (write(STDOUT_FILENO, walk, len) != len)
-        err(EXIT_FAILURE, "write()");
+    swrite(STDOUT_FILENO, walk, len);
     walk = logbuffer + sizeof(i3_shmlog_header);
     return 1;
 }
@@ -52,12 +51,8 @@ static int check_for_wrap(void) {
 static void print_till_end(void) {
     check_for_wrap();
     const int len = (logbuffer + header->offset_next_write) - walk;
-    const int n = write(STDOUT_FILENO, walk, len);
-    if (len != n)
-        err(EXIT_FAILURE, "write()");
-    if (n > 0) {
-        walk += n;
-    }
+    swrite(STDOUT_FILENO, walk, len);
+    walk += len;
 }
 
 int main(int argc, char *argv[]) {

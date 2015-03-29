@@ -103,7 +103,7 @@ __attribute__((format(printf, 1, 2))) static void set_statusline_error(const cha
     char *message;
     va_list args;
     va_start(args, format);
-    vasprintf(&message, format, args);
+    (void)vasprintf(&message, format, args);
 
     struct status_block *err_block = scalloc(sizeof(struct status_block));
     err_block->full_text = i3string_from_utf8("Error: ");
@@ -470,11 +470,22 @@ void child_write_output(void) {
     if (child.click_events) {
         const unsigned char *output;
         size_t size;
+        ssize_t n;
 
         yajl_gen_get_buf(gen, &output, &size);
-        write(child_stdin, output, size);
-        write(child_stdin, "\n", 1);
+
+        n = writeall(child_stdin, output, size);
+        if (n != -1)
+            n = writeall(child_stdin, "\n", 1);
+
         yajl_gen_clear(gen);
+
+        if (n == -1) {
+            child.click_events = false;
+            kill_child();
+            set_statusline_error("child_write_output failed");
+            draw_bars(false);
+        }
     }
 }
 
