@@ -174,7 +174,23 @@ git remote remove origin
 git remote add origin git@github.com:i3/i3.github.io.git
 
 ################################################################################
-# Section 4: final push instructions
+# Section 4: prepare release announcement email
+################################################################################
+
+cd ${TMPDIR}
+cat >email.txt <<EOT
+From: Michael Stapelberg <michael@i3wm.org>
+To: i3-announce@i3.zekjur.net
+Subject: i3 v${RELEASE_VERSION} released
+
+Hi,
+
+I just released i3 v${RELEASE_VERSION}. Release notes follow:
+EOT
+cat ${TMPDIR}/i3/RELEASE-NOTES-${RELEASE_VERSION}.txt >>email.txt
+
+################################################################################
+# Section 5: final push instructions
 ################################################################################
 
 echo "As a final sanity check, install the debian package and see whether i3 works."
@@ -190,6 +206,9 @@ echo "  git push"
 echo ""
 echo "  cd ${TMPDIR}/debian"
 echo "  dput *.changes"
+echo ""
+echo "  cd ${TMPDIR}"
+echo "  sendmail < email.txt"
 echo ""
 echo "Announce on:"
 echo "  twitter"
