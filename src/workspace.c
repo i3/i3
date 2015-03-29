@@ -846,6 +846,9 @@ Con *workspace_attach_to(Con *ws) {
     DLOG("Attaching new split %p to workspace %p\n", new, ws);
     con_attach(new, ws, false);
 
+    /* 5: fix the percentages */
+    con_fix_percent(ws);
+
     return new;
 }
 
