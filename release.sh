@@ -1,8 +1,8 @@
 #!/bin/zsh
 # This script is used to prepare a new release of i3.
 
-export RELEASE_VERSION="4.9.1"
-export PREVIOUS_VERSION="4.9"
+export RELEASE_VERSION="4.10"
+export PREVIOUS_VERSION="4.9.1"
 export RELEASE_BRANCH="master"
 
 if [ ! -e "../i3.github.io" ]
