@@ -452,3 +452,9 @@ char *resolve_tilde(const char *path);
  *
  */
 char *get_config_path(const char *override_configpath, bool use_system_paths);
+
+/**
+ * Emulates mkdir -p (creates any missing folders)
+ *
+ */
+bool mkdirp(const char *path);
