@@ -1836,6 +1836,7 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
                    !strcasecmp(child->name, old_name));
     } else {
         workspace = con_get_workspace(focused);
+        old_name = workspace->name;
     }
 
     if (!workspace) {
