@@ -155,6 +155,11 @@ cmd "rename workspace temp to $first_ws";
 
 is_num_children($first_ws, 3, 'three containers on the first workspace');
 
+# empty 'from' workspaces should not crash the renaming of startup sequences
+cmd "workspace $first_ws";
+cmd "rename workspace to temp";
+cmd "rename workspace to $first_ws";
+
 # Switch to the first workspace and move the focused window to the
 # second workspace.
 cmd "workspace $first_ws";
