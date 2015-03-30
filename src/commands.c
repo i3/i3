@@ -1776,8 +1776,8 @@ void cmd_move_window_to_center(I3_CMD, char *method) {
         Rect newrect = focused->parent->rect;
 
         DLOG("moving to center\n");
-        newrect.x = wsrect->width / 2 - newrect.width / 2;
-        newrect.y = wsrect->height / 2 - newrect.height / 2;
+        newrect.x = wsrect->x + wsrect->width / 2 - newrect.width / 2;
+        newrect.y = wsrect->y + wsrect->height / 2 - newrect.height / 2;
 
         floating_reposition(focused->parent, newrect);
     }
