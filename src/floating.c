@@ -246,12 +246,10 @@ void floating_enable(Con *con, bool automatic) {
         if (con->window && con->window->leader != XCB_NONE &&
             (leader = con_by_window_id(con->window->leader)) != NULL) {
             DLOG("Centering above leader\n");
-            nc->rect.x = leader->rect.x + (leader->rect.width / 2) - (nc->rect.width / 2);
-            nc->rect.y = leader->rect.y + (leader->rect.height / 2) - (nc->rect.height / 2);
+            floating_center(nc, leader->rect);
         } else {
             /* center the window on workspace as fallback */
-            nc->rect.x = ws->rect.x + (ws->rect.width / 2) - (nc->rect.width / 2);
-            nc->rect.y = ws->rect.y + (ws->rect.height / 2) - (nc->rect.height / 2);
+            floating_center(nc, ws->rect);
         }
     }
 
@@ -310,8 +308,7 @@ void floating_enable(Con *con, bool automatic) {
     }
 
     ELOG("No output found at destination coordinates, centering floating window on current ws\n");
-    nc->rect.x = ws->rect.x + (ws->rect.width / 2) - (nc->rect.width / 2);
-    nc->rect.y = ws->rect.y + (ws->rect.height / 2) - (nc->rect.height / 2);
+    floating_center(nc, ws->rect);
 
     ipc_send_window_event("floating", con);
 }
@@ -418,6 +415,15 @@ bool floating_maybe_reassign_ws(Con *con) {
     con_move_to_workspace(con, ws, false, true);
     con_focus(con_descend_focused(con));
     return true;
+}
+
+/*
+ * Centers a floating con above the specified rect.
+ *
+ */
+void floating_center(Con *con, Rect rect) {
+    con->rect.x = rect.x + (rect.width / 2) - (con->rect.width / 2);
+    con->rect.y = rect.y + (rect.height / 2) - (con->rect.height / 2);
 }
 
 DRAGGING_CB(drag_window_callback) {

@@ -64,6 +64,12 @@ void floating_raise_con(Con *con);
  */
 bool floating_maybe_reassign_ws(Con *con);
 
+/**
+ * Centers a floating con above the specified rect.
+ *
+ */
+void floating_center(Con *con, Rect rect);
+
 #if 0
 /**
  * Removes the floating client from its workspace and attaches it to the new

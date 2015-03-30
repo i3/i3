@@ -198,10 +198,7 @@ void scratchpad_show(Con *con) {
         con->rect.width = output->rect.width * 0.5;
         con->rect.height = output->rect.height * 0.75;
         floating_check_size(con);
-        con->rect.x = output->rect.x +
-                      ((output->rect.width / 2.0) - (con->rect.width / 2.0));
-        con->rect.y = output->rect.y +
-                      ((output->rect.height / 2.0) - (con->rect.height / 2.0));
+        floating_center(con, con_get_workspace(con)->rect);
     }
 
     /* Activate active workspace if window is from another workspace to ensure
