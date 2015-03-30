@@ -395,8 +395,10 @@ Exits i3 cleanly (instead of kill -9) to make coverage testing work properly.
 
 =item B<--parallel>
 
-Number of Xephyr instances to start (if you don’t want to start num_cores * 2
+Number of Xephyr instances to start (if you don't want to start num_cores * 2
 instances for some reason).
 
   # Run all tests on a single Xephyr instance
   ./complete-run.pl -p 1
+
+=back
