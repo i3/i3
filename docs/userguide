@@ -981,6 +981,31 @@ force_display_urgency_hint <timeout> ms
 force_display_urgency_hint 500 ms
 ---------------------------------
 
+=== Focus on window activation
+
+If a window is activated, e.g., via +google-chrome www.google.com+, it may request
+to take focus. Since this may not preferable, different reactions can be configured.
+
+Note that this does not apply to any window that is opened, i.e., typically opening
+an application will focus that window independent of this configuration.
+
+*Syntax*:
+----------------------------------------------------
+focus_on_window_activation <smart|urgent|focus|none>
+----------------------------------------------------
+
+The different modes will act as follows:
+
+smart::
+    This is the default behavior. If the window requesting focus is on an active
+    workspace, it will receive the focus. Otherwise, the urgency hint will be set.
+urgent::
+    The window will always be marked urgent, but the focus will not be stolen.
+focus::
+    The window will always be focused and not be marked urgent.
+none::
+    The window will neither be focused, nor be marked urgent.
+
 == Configuring i3bar
 
 The bar at the bottom of your monitor is drawn by a separate process called
