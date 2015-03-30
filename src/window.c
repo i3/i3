@@ -27,30 +27,27 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool bef
      * null-terminated strings (for compatibility reasons). Instead, we
      * use strdup() on both strings */
     const size_t prop_length = xcb_get_property_value_length(prop);
-    char *new_class = smalloc(prop_length + 1);
-    memcpy(new_class, xcb_get_property_value(prop), prop_length);
-    new_class[prop_length] = '\0';
+    char *new_class = xcb_get_property_value(prop);
+    const size_t class_class_index = strnlen(new_class, prop_length) + 1;
 
     FREE(win->class_instance);
     FREE(win->class_class);
 
-    win->class_instance = sstrdup(new_class);
-    if ((strlen(new_class) + 1) < prop_length)
-        win->class_class = sstrdup(new_class + strlen(new_class) + 1);
+    win->class_instance = sstrndup(new_class, prop_length);
+    if (class_class_index < prop_length)
+        win->class_class = sstrndup(new_class + class_class_index, prop_length - class_class_index);
     else
         win->class_class = NULL;
     LOG("WM_CLASS changed to %s (instance), %s (class)\n",
         win->class_instance, win->class_class);
 
     if (before_mgmt) {
-        free(new_class);
         free(prop);
         return;
     }
 
     run_assignments(win);
 
-    free(new_class);
     free(prop);
 }
 
