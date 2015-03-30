@@ -329,6 +329,23 @@ CFGFUN(force_display_urgency_hint, const long duration_ms) {
     config.workspace_urgency_timer = duration_ms / 1000.0;
 }
 
+CFGFUN(focus_on_window_activation, const char *mode) {
+    if (strcmp(mode, "smart") == 0)
+        config.focus_on_window_activation = FOWA_SMART;
+    else if (strcmp(mode, "urgent") == 0)
+        config.focus_on_window_activation = FOWA_URGENT;
+    else if (strcmp(mode, "focus") == 0)
+        config.focus_on_window_activation = FOWA_FOCUS;
+    else if (strcmp(mode, "none") == 0)
+        config.focus_on_window_activation = FOWA_NONE;
+    else {
+        ELOG("Unknown focus_on_window_activation mode \"%s\", ignoring it.\n", mode);
+        return;
+    }
+
+    DLOG("Set new focus_on_window_activation mode = %i", config.focus_on_window_activation);
+}
+
 CFGFUN(workspace, const char *workspace, const char *output) {
     DLOG("Assigning workspace \"%s\" to output \"%s\"\n", workspace, output);
     /* Check for earlier assignments of the same workspace so that we

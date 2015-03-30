@@ -743,16 +743,17 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             workspace_show(ws);
             con_focus(con);
         } else {
-            /* If the request is from an application, only focus if the
-             * workspace is visible. Otherwise set the urgency hint. */
-            if (workspace_is_visible(ws)) {
-                DLOG("Request to focus con on a visible workspace. Focusing con = %p\n", con);
+            /* Request is from an application. */
+
+            if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
+                DLOG("Focusing con = %p\n", con);
                 workspace_show(ws);
                 con_focus(con);
-            } else {
-                DLOG("Request to focus con on a hidden workspace. Setting urgent con = %p\n", con);
+            } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(ws))) {
+                DLOG("Marking con = %p urgent\n", con);
                 con_set_urgency(con, true);
-            }
+            } else
+                DLOG("Ignoring request for con = %p", con);
         }
 
         tree_render();
