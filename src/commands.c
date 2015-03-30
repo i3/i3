@@ -1761,25 +1761,18 @@ void cmd_move_window_to_center(I3_CMD, char *method) {
     }
 
     if (strcmp(method, "absolute") == 0) {
-        Rect *rect = &focused->parent->rect;
-
         DLOG("moving to absolute center\n");
-        rect->x = croot->rect.width / 2 - rect->width / 2;
-        rect->y = croot->rect.height / 2 - rect->height / 2;
+        floating_center(focused->parent, croot->rect);
 
         floating_maybe_reassign_ws(focused->parent);
         cmd_output->needs_tree_render = true;
     }
 
     if (strcmp(method, "position") == 0) {
-        Rect *wsrect = &con_get_workspace(focused)->rect;
-        Rect newrect = focused->parent->rect;
-
         DLOG("moving to center\n");
-        newrect.x = wsrect->x + wsrect->width / 2 - newrect.width / 2;
-        newrect.y = wsrect->y + wsrect->height / 2 - newrect.height / 2;
+        floating_center(focused->parent, con_get_workspace(focused)->rect);
 
-        floating_reposition(focused->parent, newrect);
+        cmd_output->needs_tree_render = true;
     }
 
     // XXX: default reply for now, make this a better reply
