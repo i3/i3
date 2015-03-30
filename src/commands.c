@@ -1046,7 +1046,7 @@ void cmd_mark(I3_CMD, char *mark, char *toggle) {
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        current->con->mark_changed=true;
+        current->con->mark_changed = true;
         if (toggle != NULL && current->con->mark && strcmp(current->con->mark, mark) == 0) {
             DLOG("removing window mark %s\n", mark);
             FREE(current->con->mark);

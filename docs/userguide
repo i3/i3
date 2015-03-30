@@ -1012,7 +1012,7 @@ If activated, marks on windows are drawn in their window decoration. However,
 any mark starting with an underscore in its name (+_+) will not be drawn even if
 this option is activated.
 
-The default for this option is +no+.
+The default for this option is +yes+.
 
 *Syntax*:
 -------------------
@@ -1904,7 +1904,7 @@ The additional +--toggle+ option will remove the mark if the window already has
 this mark, add it if the window has none or replace the current mark if it has
 another mark.
 
-Refer to +show_marks+ if you want marks to be shown in the window decoration.
+Refer to +show_marks+ if you don't want marks to be shown in the window decoration.
 
 *Syntax*:
 ------------------------------
