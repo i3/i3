@@ -346,6 +346,10 @@ CFGFUN(focus_on_window_activation, const char *mode) {
     DLOG("Set new focus_on_window_activation mode = %i", config.focus_on_window_activation);
 }
 
+CFGFUN(show_marks, const char *value) {
+    config.show_marks = eval_boolstr(value);
+}
+
 CFGFUN(workspace, const char *workspace, const char *output) {
     DLOG("Assigning workspace \"%s\" to output \"%s\"\n", workspace, output);
     /* Check for earlier assignments of the same workspace so that we

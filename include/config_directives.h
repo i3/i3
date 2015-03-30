@@ -52,6 +52,7 @@ CFGFUN(force_xinerama, const char *value);
 CFGFUN(fake_outputs, const char *outputs);
 CFGFUN(force_display_urgency_hint, const long duration_ms);
 CFGFUN(focus_on_window_activation, const char *mode);
+CFGFUN(show_marks, const char *value);
 CFGFUN(hide_edge_borders, const char *borders);
 CFGFUN(assign, const char *workspace);
 CFGFUN(ipc_socket, const char *path);

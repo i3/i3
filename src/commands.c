@@ -1046,6 +1046,7 @@ void cmd_mark(I3_CMD, char *mark, char *toggle) {
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
+        current->con->mark_changed = true;
         if (toggle != NULL && current->con->mark && strcmp(current->con->mark, mark) == 0) {
             DLOG("removing window mark %s\n", mark);
             FREE(current->con->mark);
@@ -1070,8 +1071,10 @@ void cmd_mark(I3_CMD, char *mark, char *toggle) {
         if (matched)
             continue;
 
-        if (con->mark && strcmp(con->mark, mark) == 0)
+        if (con->mark && strcmp(con->mark, mark) == 0) {
             FREE(con->mark);
+            con->mark_changed = true;
+        }
     }
 
     cmd_output->needs_tree_render = true;
@@ -1087,14 +1090,20 @@ void cmd_unmark(I3_CMD, char *mark) {
     if (mark == NULL) {
         Con *con;
         TAILQ_FOREACH(con, &all_cons, all_cons) {
+            if (con->mark == NULL)
+                continue;
+
             FREE(con->mark);
+            con->mark_changed = true;
         }
         DLOG("removed all window marks");
     } else {
         Con *con;
         TAILQ_FOREACH(con, &all_cons, all_cons) {
-            if (con->mark && strcmp(con->mark, mark) == 0)
+            if (con->mark && strcmp(con->mark, mark) == 0) {
                 FREE(con->mark);
+                con->mark_changed = true;
+            }
         }
         DLOG("removed window mark %s\n", mark);
     }

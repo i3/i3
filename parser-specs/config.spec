@@ -39,6 +39,7 @@ state INITIAL:
   'fake_outputs', 'fake-outputs'           -> FAKE_OUTPUTS
   'force_display_urgency_hint'             -> FORCE_DISPLAY_URGENCY_HINT
   'focus_on_window_activation'             -> FOCUS_ON_WINDOW_ACTIVATION
+  'show_marks'                             -> SHOW_MARKS
   'workspace'                              -> WORKSPACE
   'ipc_socket', 'ipc-socket'               -> IPC_SOCKET
   'restart_state'                          -> RESTART_STATE
@@ -204,6 +205,11 @@ state FAKE_OUTPUTS:
 state FORCE_DISPLAY_URGENCY_HINT:
   duration_ms = number
       -> FORCE_DISPLAY_URGENCY_HINT_MS
+
+# show_marks
+state SHOW_MARKS:
+  value = word
+      -> call cfg_show_marks($value)
 
 state FORCE_DISPLAY_URGENCY_HINT_MS:
   'ms'
