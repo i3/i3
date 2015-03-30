@@ -167,6 +167,18 @@ struct Config {
      * flag can be delayed using an urgency timer. */
     float workspace_urgency_timer;
 
+    /** Behavior when a window sends a NET_ACTIVE_WINDOW message. */
+    enum {
+        /* Focus if the target workspace is visible, set urgency hint otherwise. */
+        FOWA_SMART,
+        /* Always set the urgency hint. */
+        FOWA_URGENT,
+        /* Always focus the window. */
+        FOWA_FOCUS,
+        /* Ignore the request (no focus, no urgency hint). */
+        FOWA_NONE
+    } focus_on_window_activation;
+
     /** The default border style for new windows. */
     border_style_t default_border;
 
