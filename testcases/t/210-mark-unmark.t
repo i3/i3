@@ -141,4 +141,21 @@ cmd 'mark --toggle important';
 is(get_mark_for_window_on_workspace($tmp, $first), 'important', 'left container has the mark now');
 ok(!get_mark_for_window_on_workspace($tmp, $second), 'second containr no longer has the mark');
 
+##############################################################
+# 9: try to mark two cons with the same mark and check that
+#    it fails
+##############################################################
+
+my $first = open_window(wm_class => 'iamnotunique');
+my $second = open_window(wm_class => 'iamnotunique');
+
+my $result = cmd "[instance=iamnotunique] mark important";
+
+is($result->[0]->{success}, 0, 'command was unsuccessful');
+is($result->[0]->{error}, 'A mark must not be put onto more than one window', 'correct error is returned');
+ok(!get_mark_for_window_on_workspace($tmp, $first), 'first container is not marked');
+ok(!get_mark_for_window_on_workspace($tmp, $second), 'second containr is not marked');
+
+##############################################################
+
 done_testing;
