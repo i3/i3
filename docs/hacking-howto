@@ -729,11 +729,14 @@ features. This is its definition:
 # workspace next|prev|next_on_output|prev_on_output
 # workspace back_and_forth
 # workspace <name>
+# workspace number <number>
 state WORKSPACE:
   direction = 'next_on_output', 'prev_on_output', 'next', 'prev'
       -> call cmd_workspace($direction)
   'back_and_forth'
       -> call cmd_workspace_back_and_forth()
+  'number'
+      -> WORKSPACE_NUMBER
   workspace = string
       -> call cmd_workspace_name($workspace)
 ----------------------------------------------------------------
@@ -772,6 +775,10 @@ workspace <name>::
 	single quotes), but just called string. Other possible tokens are word
 	(the same as string, but stops matching at a whitespace) and end
 	(matches the end of the input).
+workspace number <number>::
+        The workspace command has to be followed by the keyword +number+. It
+        then transitions into the state +WORKSPACE_NUMBER+, where the actual
+        parameter will be read.
 
 === Introducing a new command
 
