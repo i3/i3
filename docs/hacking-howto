@@ -404,10 +404,14 @@ can reconfigure themselves).
 
 == _NET_WM_STATE
 
-Only the _NET_WM_STATE_FULLSCREEN atom is handled. It calls
-``toggle_fullscreen()'' for the specific client which just configures the
-client to use the whole screen on which it currently is. Also, it is set as
-fullscreen_client for the i3Screen.
+Only the _NET_WM_STATE_FULLSCREEN and _NET_WM_STATE_DEMANDS_ATTENTION atoms
+are handled.
+
+The former calls ``toggle_fullscreen()'' for the specific client which just
+configures the client to use the whole screen on which it currently is.
+Also, it is set as fullscreen_client for the i3Screen.
+
+The latter is used to set, read and display urgency hints.
 
 == WM_NAME
 
