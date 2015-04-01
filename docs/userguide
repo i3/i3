@@ -256,8 +256,9 @@ workspace node’s orientation will be changed to +vertical+. The terminal windo
 you moved down is directly attached to the workspace and appears on the bottom
 of the screen. A new (horizontal) container was created to accommodate the
 other two terminal windows. You will notice this when switching to tabbed mode
-(for example). You would end up having one tab called "another container" and
-the other one being the terminal window you moved down.
+(for example). You would end up having one tab with a representation of the split
+container (e.g., "H[urxvt firefox]") and the other one being the terminal window
+you moved down.
 
 [[configuring]]
 == Configuring i3

@@ -629,8 +629,8 @@ unmapped if it should not be visible anymore. +WM_STATE+ will be set to
 +x_draw_decoration+ draws window decorations. It is run for every leaf
 container (representing an actual X11 window) and for every non-leaf container
 which is in a stacked/tabbed container (because stacked/tabbed containers
-display a window decoration for split containers, which at the moment just says
-"another container").
+display a window decoration for split containers, which consists of a representation
+of the child container's names.
 
 Then, parameters are collected to be able to determine whether this decoration
 drawing is actually necessary or was already done. This saves a substantial
