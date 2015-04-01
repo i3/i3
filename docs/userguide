@@ -589,6 +589,27 @@ for_window [title="x200: ~/work"] floating enable
 
 The valid criteria are the same as those for commands, see <<command_criteria>>.
 
+=== Don't focus window upon opening
+
+[[no_focus]]
+
+When a new window appears, it will be focused. The +no_focus+ directive allows preventing
+this from happening and can be used in combination with <<command_criteria>>.
+
+Note that this does not apply to all cases, e.g., when feeding data into a running application
+causing it to request being focused. To configure the behavior in such cases, refer to
+<<focus_on_window_activation>>.
+
+*Syntax*:
+-------------------
+no_focus <criteria>
+-------------------
+
+*Example*:
+-------------------------------
+no_focus [window_role="pop-up"]
+-------------------------------
+
 === Variables
 
 As you learned in the section about keyboard bindings, you will have
@@ -983,11 +1004,13 @@ force_display_urgency_hint 500 ms
 
 === Focus on window activation
 
+[[focus_on_window_activation]]
+
 If a window is activated, e.g., via +google-chrome www.google.com+, it may request
 to take focus. Since this may not preferable, different reactions can be configured.
 
-Note that this does not apply to any window that is opened, i.e., typically opening
-an application will focus that window independent of this configuration.
+Note that this may not affect windows that are being opened. To prevent new windows
+from being focused, see <<no_focus>>.
 
 *Syntax*:
 ----------------------------------------------------
