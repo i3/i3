@@ -1043,32 +1043,34 @@ void cmd_workspace_name(I3_CMD, char *name) {
 void cmd_mark(I3_CMD, char *mark, char *toggle) {
     HANDLE_EMPTY_MATCH;
 
-    owindow *current;
-    TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        current->con->mark_changed = true;
-        if (toggle != NULL && current->con->mark && strcmp(current->con->mark, mark) == 0) {
-            DLOG("removing window mark %s\n", mark);
-            FREE(current->con->mark);
-        } else {
-            DLOG("marking window with str %s\n", mark);
-            FREE(current->con->mark);
-            current->con->mark = sstrdup(mark);
-        }
+    owindow *current = TAILQ_FIRST(&owindows);
+    if (current == NULL) {
+        ysuccess(false);
+        return;
+    }
+
+    /* Marks must be unique, i.e., no two windows must have the same mark. */
+    if (current != TAILQ_LAST(&owindows, owindows_head)) {
+        yerror("A mark must not be put onto more than one window");
+        return;
+    }
+
+    DLOG("matching: %p / %s\n", current->con, current->con->name);
+    current->con->mark_changed = true;
+    if (toggle != NULL && current->con->mark && strcmp(current->con->mark, mark) == 0) {
+        DLOG("removing window mark %s\n", mark);
+        FREE(current->con->mark);
+    } else {
+        DLOG("marking window with str %s\n", mark);
+        FREE(current->con->mark);
+        current->con->mark = sstrdup(mark);
     }
 
     DLOG("Clearing all non-matched windows with this mark\n");
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons) {
-        /* Skip matched windows, we took care of them already. */
-        bool matched = false;
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            if (current->con == con) {
-                matched = true;
-                break;
-            }
-        }
-        if (matched)
+        /* Skip matched window, we took care of it already. */
+        if (current->con == con)
             continue;
 
         if (con->mark && strcmp(con->mark, mark) == 0) {
