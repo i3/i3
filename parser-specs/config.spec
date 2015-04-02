@@ -349,6 +349,8 @@ state MODE_IGNORE_LINE:
 state MODE_BINDING:
   release = '--release'
       ->
+  whole_window = '--whole-window'
+      ->
   modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl', 'Mode_switch', '$mod'
       ->
   '+'
