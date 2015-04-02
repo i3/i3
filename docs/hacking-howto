@@ -404,10 +404,14 @@ can reconfigure themselves).
 
 == _NET_WM_STATE
 
-Only the _NET_WM_STATE_FULLSCREEN atom is handled. It calls
-``toggle_fullscreen()'' for the specific client which just configures the
-client to use the whole screen on which it currently is. Also, it is set as
-fullscreen_client for the i3Screen.
+Only the _NET_WM_STATE_FULLSCREEN and _NET_WM_STATE_DEMANDS_ATTENTION atoms
+are handled.
+
+The former calls ``toggle_fullscreen()'' for the specific client which just
+configures the client to use the whole screen on which it currently is.
+Also, it is set as fullscreen_client for the i3Screen.
+
+The latter is used to set, read and display urgency hints.
 
 == WM_NAME
 
@@ -629,8 +633,8 @@ unmapped if it should not be visible anymore. +WM_STATE+ will be set to
 +x_draw_decoration+ draws window decorations. It is run for every leaf
 container (representing an actual X11 window) and for every non-leaf container
 which is in a stacked/tabbed container (because stacked/tabbed containers
-display a window decoration for split containers, which at the moment just says
-"another container").
+display a window decoration for split containers, which consists of a representation
+of the child container's names.
 
 Then, parameters are collected to be able to determine whether this decoration
 drawing is actually necessary or was already done. This saves a substantial
@@ -686,9 +690,9 @@ all commands.
 In earlier versions of i3, interpreting these commands was done using lex and
 yacc, but experience has shown that lex and yacc are not well suited for our
 command language. Therefore, starting from version 4.2, we use a custom parser
-for user commands (not yet for the configuration file).
+for user commands and the configuration file.
 The input specification for this parser can be found in the file
-+parser-specs/commands.spec+. Should you happen to use Vim as an editor, use
++parser-specs/*.spec+. Should you happen to use Vim as an editor, use
 :source parser-specs/highlighting.vim to get syntax highlighting for this file
 (highlighting files for other editors are welcome).
 
@@ -729,11 +733,14 @@ features. This is its definition:
 # workspace next|prev|next_on_output|prev_on_output
 # workspace back_and_forth
 # workspace <name>
+# workspace number <number>
 state WORKSPACE:
   direction = 'next_on_output', 'prev_on_output', 'next', 'prev'
       -> call cmd_workspace($direction)
   'back_and_forth'
       -> call cmd_workspace_back_and_forth()
+  'number'
+      -> WORKSPACE_NUMBER
   workspace = string
       -> call cmd_workspace_name($workspace)
 ----------------------------------------------------------------
@@ -772,6 +779,10 @@ workspace <name>::
 	single quotes), but just called string. Other possible tokens are word
 	(the same as string, but stops matching at a whitespace) and end
 	(matches the end of the input).
+workspace number <number>::
+        The workspace command has to be followed by the keyword +number+. It
+        then transitions into the state +WORKSPACE_NUMBER+, where the actual
+        parameter will be read.
 
 === Introducing a new command
 
@@ -952,18 +963,21 @@ http://web.archive.org/web/20121024222556/http://www.spheredev.org/wiki/Git_for_
 or, for more documentation, see http://git-scm.com/documentation
 
 Please talk to us before working on new features to see whether they will be
-accepted. There are a few things which we don’t want to see in i3, e.g. a
-command which will focus windows in an alt+tab like way.
+accepted. A good way for this is to open an issue and asking for opinions on it.
+Even for accepted features, this can be a good way to refine an idea upfront. However,
+we don't want to see certain features in i3, e.g., switching window focus in an
+Alt+Tab like way.
 
 When working on bugfixes, please make sure you mention that you are working on
-it in the corresponding bugreport at https://github.com/i3/i3/issues In case
-there is no bugreport yet, please create one.
+it in the corresponding bug report at https://github.com/i3/i3/issues. In case
+there is no bug report yet, please create one.
 
-After you are done, please submit your work for review at https://github.com/i3/i3
+After you are done, please submit your work for review as a pull request at
+https://github.com/i3/i3.
 
 Do not send emails to the mailing list or any author directly, and don’t submit
 them in the bugtracker, since all reviews should be done in public at
-http://cr.i3wm.org/. In order to make your review go as fast as possible, you
+https://github.com/i3/i3. In order to make your review go as fast as possible, you
 could have a look at previous reviews and see what the common mistakes are.
 
 === Which branch to use?
