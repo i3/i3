@@ -47,6 +47,8 @@ mode "meh" {
     bindsym --release Mod1+x exec foo
     bindsym --whole-window button3 nop
     bindsym --release --whole-window button3 nop
+    bindsym --border button3 nop
+    bindsym --release --border button3 nop
 }
 EOT
 
@@ -57,6 +59,8 @@ cfg_mode_binding(bindcode, Mod1, 44, (null), (null), (null), resize shrink)
 cfg_mode_binding(bindsym, Mod1, x, --release, (null), (null), exec foo)
 cfg_mode_binding(bindsym, (null), button3, (null), (null), --whole-window, nop)
 cfg_mode_binding(bindsym, (null), button3, --release, (null), --whole-window, nop)
+cfg_mode_binding(bindsym, (null), button3, (null), --border, (null), nop)
+cfg_mode_binding(bindsym, (null), button3, --release, --border, (null), nop)
 EOT
 
 is(parser_calls($config),
