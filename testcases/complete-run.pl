@@ -86,6 +86,16 @@ foreach my $binary (@binaries) {
     die "$binary is not an executable" unless -x $binary;
 }
 
+if ($options{coverage}) {
+    qx(command -v lcov &> /dev/null);
+    die "Cannot find lcov needed for coverage testing." if $?;
+    qx(command -v genhtml &> /dev/null);
+    die "Cannot find genhtml needed for coverage testing." if $?;
+
+    # clean out the counters that may be left over from previous tests.
+    qx(lcov -d ../ --zerocounters &> /dev/null);
+}
+
 qx(Xephyr -help 2>&1);
 die "Xephyr was not found in your path. Please install Xephyr (xserver-xephyr on Debian)." if $?;
 
@@ -226,6 +236,17 @@ if ($numtests == 1) {
 }
 
 END { cleanup() }
+
+if ($options{coverage}) {
+    print("\nGenerating test coverage report...\n");
+    qx(lcov -d ../ -b ../ --capture -o latest/i3-coverage.info);
+    qx(genhtml -o latest/i3-coverage latest/i3-coverage.info);
+    if ($?) {
+        print("Could not generate test coverage html. Did you compile i3 with test coverage support?\n");
+    } else {
+        print("Test coverage report generated in latest/i3-coverage\n");
+    }
+}
 
 exit ($aggregator->failed > 0);
 
@@ -391,7 +412,8 @@ available in C<latest/xtrace-for-$test.log>.
 
 =item B<--coverage-testing>
 
-Exits i3 cleanly (instead of kill -9) to make coverage testing work properly.
+Generates a test coverage report at C<latest/i3-coverage>. Exits i3 cleanly
+during tests (instead of kill -9) to make coverage testing work properly.
 
 =item B<--parallel>
 
