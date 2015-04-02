@@ -431,6 +431,19 @@ CFGFUN(assign, const char *workspace) {
     TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
 }
 
+CFGFUN(no_focus) {
+    if (match_is_empty(current_match)) {
+        ELOG("Match is empty, ignoring this assignment\n");
+        return;
+    }
+
+    DLOG("new assignment, using above criteria, to ignore focus on manage");
+    Assignment *assignment = scalloc(sizeof(Assignment));
+    match_copy(&(assignment->match), current_match);
+    assignment->type = A_NO_FOCUS;
+    TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
+}
+
 /*******************************************************************************
  * Bar configuration (i3bar)
  ******************************************************************************/

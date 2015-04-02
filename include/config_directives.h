@@ -55,6 +55,7 @@ CFGFUN(focus_on_window_activation, const char *mode);
 CFGFUN(show_marks, const char *value);
 CFGFUN(hide_edge_borders, const char *borders);
 CFGFUN(assign, const char *workspace);
+CFGFUN(no_focus);
 CFGFUN(ipc_socket, const char *path);
 CFGFUN(restart_state, const char *path);
 CFGFUN(popup_during_fullscreen, const char *value);

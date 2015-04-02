@@ -460,6 +460,7 @@ struct Assignment {
      *
      * A_COMMAND = run the specified command for the matching window
      * A_TO_WORKSPACE = assign the matching window to the specified workspace
+     * A_NO_FOCUS = don't focus matched window when it is managed
      *
      * While the type is a bitmask, only one value can be set at a time. It is
      * a bitmask to allow filtering for multiple types, for example in the
@@ -469,7 +470,8 @@ struct Assignment {
     enum {
         A_ANY = 0,
         A_COMMAND = (1 << 0),
-        A_TO_WORKSPACE = (1 << 1)
+        A_TO_WORKSPACE = (1 << 1),
+        A_NO_FOCUS = (1 << 2)
     } type;
 
     /** the criteria to check if a window matches */
