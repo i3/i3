@@ -314,6 +314,50 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     return 1;
 }
 
+static xcb_rectangle_t get_window_position(void) {
+    xcb_rectangle_t result = (xcb_rectangle_t){logical_px(50), logical_px(50), logical_px(500), font.height + logical_px(8)};
+
+    xcb_get_input_focus_reply_t *input_focus = NULL;
+    xcb_get_geometry_reply_t *geometry = NULL;
+    xcb_translate_coordinates_reply_t *coordinates = NULL;
+
+    /* In rare cases, the window holding the input focus might disappear while we are figuring out its
+     * position. To avoid this, we grab the server in the meantime. */
+    xcb_grab_server(conn);
+
+    input_focus = xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL);
+    if (input_focus == NULL || input_focus->focus == XCB_NONE) {
+        DLOG("Failed to receive the current input focus or no window has the input focus right now.\n");
+        goto free_resources;
+    }
+
+    geometry = xcb_get_geometry_reply(conn, xcb_get_geometry(conn, input_focus->focus), NULL);
+    if (geometry == NULL) {
+        DLOG("Failed to received window geometry.\n");
+        goto free_resources;
+    }
+
+    coordinates = xcb_translate_coordinates_reply(
+        conn, xcb_translate_coordinates(conn, input_focus->focus, root, geometry->x, geometry->y), NULL);
+    if (coordinates == NULL) {
+        DLOG("Failed to translate coordinates.\n");
+        goto free_resources;
+    }
+
+    DLOG("Determined coordinates of window with input focus at x = %i / y = %i", coordinates->dst_x, coordinates->dst_y);
+    result.x += coordinates->dst_x;
+    result.y += coordinates->dst_y;
+
+free_resources:
+    xcb_ungrab_server(conn);
+    xcb_flush(conn);
+
+    FREE(input_focus);
+    FREE(geometry);
+    FREE(coordinates);
+    return result;
+}
+
 int main(int argc, char *argv[]) {
     format = strdup("%s");
     socket_path = getenv("I3SOCK");
@@ -402,15 +446,17 @@ int main(int argc, char *argv[]) {
     if (prompt != NULL)
         prompt_offset = predict_text_width(prompt);
 
+    const xcb_rectangle_t win_pos = get_window_position();
+
     /* Open an input window */
     win = xcb_generate_id(conn);
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,
-        win,                                                                          /* the window id */
-        root,                                                                         /* parent == root */
-        logical_px(50), logical_px(50), logical_px(500), font.height + logical_px(8), /* dimensions */
-        0,                                                                            /* X11 border = 0, we draw our own */
+        win,                                                 /* the window id */
+        root,                                                /* parent == root */
+        win_pos.x, win_pos.y, win_pos.width, win_pos.height, /* dimensions */
+        0,                                                   /* X11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK,
