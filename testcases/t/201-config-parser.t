@@ -45,6 +45,8 @@ mode "meh" {
     bindsym Mod1 + Shift +   x resize grow
     bindcode Mod1+44 resize shrink
     bindsym --release Mod1+x exec foo
+    bindsym --whole-window button3 nop
+    bindsym --release --whole-window button3 nop
 }
 EOT
 
@@ -53,11 +55,13 @@ cfg_enter_mode(meh)
 cfg_mode_binding(bindsym, Mod1,Shift, x, (null), (null), resize grow)
 cfg_mode_binding(bindcode, Mod1, 44, (null), (null), resize shrink)
 cfg_mode_binding(bindsym, Mod1, x, --release, (null), exec foo)
+cfg_mode_binding(bindsym, (null), button3, (null), --whole-window, nop)
+cfg_mode_binding(bindsym, (null), button3, --release, --whole-window, nop)
 EOT
 
 is(parser_calls($config),
    $expected,
-   'single number (move workspace 3) ok');
+   'mode bindings ok');
 
 ################################################################################
 # exec and exec_always
