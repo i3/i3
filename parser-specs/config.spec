@@ -290,6 +290,8 @@ state FONT:
 state BINDING:
   release = '--release'
       ->
+  border = '--border'
+      ->
   whole_window = '--whole-window'
       ->
   modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl', 'Mode_switch', '$mod'
@@ -302,10 +304,12 @@ state BINDING:
 state BINDCOMMAND:
   release = '--release'
       ->
+  border = '--border'
+      ->
   whole_window = '--whole-window'
       ->
   command = string
-      -> call cfg_binding($bindtype, $modifiers, $key, $release, $whole_window, $command)
+      -> call cfg_binding($bindtype, $modifiers, $key, $release, $border, $whole_window, $command)
 
 ################################################################################
 # Mode configuration
@@ -339,6 +343,8 @@ state MODE_IGNORE_LINE:
 state MODE_BINDING:
   release = '--release'
       ->
+  border = '--border'
+      ->
   modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl', 'Mode_switch', '$mod'
       ->
   '+'
@@ -352,7 +358,7 @@ state MODE_BINDCOMMAND:
   whole_window = '--whole-window'
       ->
   command = string
-      -> call cfg_mode_binding($bindtype, $modifiers, $key, $release, $whole_window, $command); MODE
+      -> call cfg_mode_binding($bindtype, $modifiers, $key, $release, $border, $whole_window, $command); MODE
 
 ################################################################################
 # Bar configuration (i3bar)

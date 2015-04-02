@@ -256,6 +256,10 @@ struct Binding {
     } release;
 
     /** If this is true for a mouse binding, the binding should be executed
+     * when the button is pressed over the window border. */
+    bool border;
+
+    /** If this is true for a mouse binding, the binding should be executed
      * when the button is pressed over any part of the window, not just the
      * title bar (default). */
     bool whole_window;
