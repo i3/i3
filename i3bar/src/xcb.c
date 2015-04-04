@@ -63,9 +63,6 @@ static i3Font font;
 /* Overall height of the bar (based on font size) */
 int bar_height;
 
-/* Cached width of the custom separator if one was set */
-int separator_symbol_width;
-
 /* These are only relevant for XKB, which we only need for grabbing modifiers */
 int xkb_base;
 int mod_pressed = 0;
