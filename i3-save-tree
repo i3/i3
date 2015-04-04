@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
 #
-# © 2013-2014 Michael Stapelberg
+# © 2013 Michael Stapelberg
 #
 # Requires perl ≥ v5.10, AnyEvent::I3 and JSON::XS
 

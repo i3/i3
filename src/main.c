@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * main.c: Initialization, main loop
  *
@@ -261,11 +261,11 @@ int main(int argc, char *argv[]) {
                 only_check_config = true;
                 break;
             case 'v':
-                printf("i3 version %s © 2009-2014 Michael Stapelberg and contributors\n", i3_version);
+                printf("i3 version %s © 2009 Michael Stapelberg and contributors\n", i3_version);
                 exit(EXIT_SUCCESS);
                 break;
             case 'm':
-                printf("Binary i3 version:  %s © 2009-2014 Michael Stapelberg and contributors\n", i3_version);
+                printf("Binary i3 version:  %s © 2009 Michael Stapelberg and contributors\n", i3_version);
                 display_running_version();
                 exit(EXIT_SUCCESS);
                 break;

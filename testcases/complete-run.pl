@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
-# © 2010-2012 Michael Stapelberg and contributors
+# © 2010 Michael Stapelberg and contributors
 package complete_run;
 use strict;
 use warnings;

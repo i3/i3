@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
 #
-# © 2012-2014 Michael Stapelberg
+# © 2012 Michael Stapelberg
 #
 # No dependencies except for perl ≥ v5.10
 
@@ -45,7 +45,7 @@ my $result = GetOptions(
     'dmenu=s' => \$dmenu_cmd,
     'entry-type=s' => \@entry_types,
     'version' => sub {
-        say "dmenu-desktop 1.5 © 2012-2013 Michael Stapelberg";
+        say "dmenu-desktop 1.5 © 2012 Michael Stapelberg";
         exit 0;
     },
     'help' => sub {
