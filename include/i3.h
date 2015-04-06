@@ -24,6 +24,9 @@
 #include "data.h"
 #include "xcb.h"
 
+/** Git commit identifier, from version.c */
+extern const char *i3_version;
+
 /** The original value of RLIMIT_CORE when i3 was started. We need to restore
  * this before starting any other process, since we set RLIMIT_CORE to
  * RLIM_INFINITY for i3 debugging versions. */

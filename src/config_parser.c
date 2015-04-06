@@ -996,7 +996,7 @@ bool parse_file(const char *f, bool use_nagbar) {
     check_for_duplicate_bindings(context);
 
     if (use_nagbar && (context->has_errors || context->has_warnings)) {
-        ELOG("FYI: You are using i3 version " I3_VERSION "\n");
+        ELOG("FYI: You are using i3 version %s\n", i3_version);
         if (version == 3)
             ELOG("Please convert your configfile first, then fix any remaining errors (see above).\n");
 

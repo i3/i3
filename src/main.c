@@ -188,7 +188,7 @@ static void handle_signal(int sig, siginfo_t *info, void *data) {
 int main(int argc, char *argv[]) {
     /* Keep a symbol pointing to the I3_VERSION string constant so that we have
      * it in gdb backtraces. */
-    const char *i3_version __attribute__((unused)) = I3_VERSION;
+    const char *_i3_version __attribute__((unused)) = i3_version;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
@@ -261,11 +261,11 @@ int main(int argc, char *argv[]) {
                 only_check_config = true;
                 break;
             case 'v':
-                printf("i3 version " I3_VERSION " © 2009-2014 Michael Stapelberg and contributors\n");
+                printf("i3 version %s © 2009-2014 Michael Stapelberg and contributors\n", i3_version);
                 exit(EXIT_SUCCESS);
                 break;
             case 'm':
-                printf("Binary i3 version:  " I3_VERSION " © 2009-2014 Michael Stapelberg and contributors\n");
+                printf("Binary i3 version:  %s © 2009-2014 Michael Stapelberg and contributors\n", i3_version);
                 display_running_version();
                 exit(EXIT_SUCCESS);
                 break;
@@ -456,7 +456,7 @@ int main(int argc, char *argv[]) {
         free(cwd);
     }
 
-    LOG("i3 " I3_VERSION " starting\n");
+    LOG("i3 %s starting\n", i3_version);
 
     conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn))
