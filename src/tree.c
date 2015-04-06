@@ -253,6 +253,13 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
             cookie = xcb_change_property(conn, XCB_PROP_MODE_REPLACE,
                                          con->window->id, A_WM_STATE, A_WM_STATE, 32, 2, data);
 
+            /* Remove the window from the save set. All windows in the save set
+             * will be mapped when i3 closes its connection (e.g. when
+             * restarting). This is not what we want, since some apps keep
+             * unmapped windows around and don’t expect them to suddenly be
+             * mapped. See http://bugs.i3wm.org/1617 */
+            xcb_change_save_set(conn, XCB_SET_MODE_DELETE, con->window->id);
+
             /* Ignore X11 errors for the ReparentWindow request.
              * X11 Errors are returned when the window was already destroyed */
             add_ignore_event(cookie.sequence, 0);
