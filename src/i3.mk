@@ -32,6 +32,10 @@ include/all.h.pch: $(i3_HEADERS)
 	echo "[i3] PCH all.h"
 	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -x c-header include/all.h -o include/all.h.pch
 
+src/version.o: src/version.c LAST_VERSION $(i3_HEADERS_DEP)
+	echo "[i3] CC $<"
+	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ ${canonical_path}/$<
+
 src/%.o: src/%.c $(i3_HEADERS_DEP)
 	echo "[i3] CC $<"
 	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ ${canonical_path}/$<
@@ -92,4 +96,4 @@ install-i3: i3
 
 clean-i3:
 	echo "[i3] Clean"
-	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) include/loglevels.h loglevels.tmp include/all.h.pch i3-command-parser.stamp i3-config-parser.stamp i3 test.config_parser test.commands_parser src/*.gcno src/cfgparse.* src/cmdparse.*
+	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) include/loglevels.h loglevels.tmp include/all.h.pch i3-command-parser.stamp i3-config-parser.stamp i3 test.config_parser test.commands_parser src/*.gcno src/cfgparse.* src/cmdparse.* LAST_VERSION
