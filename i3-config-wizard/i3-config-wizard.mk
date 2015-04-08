@@ -20,8 +20,8 @@ i3-config-wizard/i3-config-wizard: libi3.a $(i3_config_wizard_OBJECTS)
 
 install-i3-config-wizard: i3-config-wizard/i3-config-wizard
 	echo "[i3-config-wizard] Install"
-	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
-	$(INSTALL) -m 0755 i3-config-wizard/i3-config-wizard $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(EXEC_PREFIX)/bin
+	$(INSTALL) -m 0755 i3-config-wizard/i3-config-wizard $(DESTDIR)$(EXEC_PREFIX)/bin/
 
 clean-i3-config-wizard:
 	echo "[i3-config-wizard] Clean"
