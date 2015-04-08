@@ -66,7 +66,7 @@ ifndef PKG_CONFIG
 ifeq ($(shell which pkg-config 2>/dev/null 1>/dev/null || echo 1),1)
 $(error "pkg-config was not found")
 else
-PKG_CONFIG = $(which pkg-config)
+PKG_CONFIG = `which pkg-config`
 endif
 endif
 
