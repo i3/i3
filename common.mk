@@ -6,7 +6,7 @@ ifndef PREFIX
   PREFIX=/usr
 endif
 ifndef EXEC_PREFIX
-  EXEC_PREFIX=/usr
+  EXEC_PREFIX=$(PREFIX)
 endif
 ifndef SYSCONFDIR
   ifeq ($(PREFIX),/usr)
