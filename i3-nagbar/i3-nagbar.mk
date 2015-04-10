@@ -20,8 +20,8 @@ i3-nagbar/i3-nagbar: libi3.a $(i3_nagbar_OBJECTS)
 
 install-i3-nagbar: i3-nagbar/i3-nagbar
 	echo "[i3-nagbar] Install"
-	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
-	$(INSTALL) -m 0755 i3-nagbar/i3-nagbar $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(EXEC_PREFIX)/bin
+	$(INSTALL) -m 0755 i3-nagbar/i3-nagbar $(DESTDIR)$(EXEC_PREFIX)/bin/
 
 clean-i3-nagbar:
 	echo "[i3-nagbar] Clean"

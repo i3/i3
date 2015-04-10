@@ -20,8 +20,8 @@ i3-dump-log/i3-dump-log: libi3.a $(i3_dump_log_OBJECTS)
 
 install-i3-dump-log: i3-dump-log/i3-dump-log
 	echo "[i3-dump-log] Install"
-	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
-	$(INSTALL) -m 0755 i3-dump-log/i3-dump-log $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(EXEC_PREFIX)/bin
+	$(INSTALL) -m 0755 i3-dump-log/i3-dump-log $(DESTDIR)$(EXEC_PREFIX)/bin/
 
 clean-i3-dump-log:
 	echo "[i3-dump-log] Clean"
