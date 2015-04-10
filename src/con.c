@@ -186,6 +186,31 @@ void con_detach(Con *con) {
 }
 
 /*
+ * Set or remove the _NET_WM_STATE_HIDDEN atom for the container's
+ * _NET_WM_STATE property.
+ * This is called on the children of stacked and tabbed containers
+ * since unfocused containers are not currently visible.
+ */
+static void set_hidden_state(Con *con, bool hidden) {
+    /* During a restart, the container may not have a window. */
+    if (con->window == NULL)
+        return;
+
+    /* This should only be called for children of stacked/tabbed containers. */
+    assert(con->parent->layout == L_TABBED || con->parent->layout == L_STACKED);
+
+    unsigned int num = 0;
+    uint32_t values[1];
+    if (hidden) {
+        DLOG("setting _NET_WM_STATE_HIDDEN for con = %p\n", con);
+        values[num++] = A__NET_WM_STATE_HIDDEN;
+    } else
+        DLOG("removing _NET_WM_STATE_HIDDEN for con = %p\n", con);
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id, A__NET_WM_STATE, XCB_ATOM_ATOM, 32, num, values);
+}
+
+/*
  * Sets input focus to the given container. Will be updated in X11 in the next
  * run of x_push_changes().
  *
@@ -193,6 +218,8 @@ void con_detach(Con *con) {
 void con_focus(Con *con) {
     assert(con != NULL);
     DLOG("con_focus = %p\n", con);
+
+    Con *previous = TAILQ_FIRST(&(con->parent->focus_head));
 
     /* 1: set focused-pointer to the new con */
     /* 2: exchange the position of the container in focus stack of the parent all the way up */
@@ -202,6 +229,12 @@ void con_focus(Con *con) {
         con_focus(con->parent);
 
     focused = con;
+
+    if (con->parent->layout == L_STACKED || con->parent->layout == L_TABBED) {
+        set_hidden_state(previous, true);
+        set_hidden_state(focused, false);
+    }
+
     /* We can't blindly reset non-leaf containers since they might have
      * other urgent children. Therefore we only reset leafs and propagate
      * the changes upwards via con_update_parents_urgency() which does proper
