@@ -1355,11 +1355,7 @@ void con_set_layout(Con *con, layout_t layout) {
          * with an orientation). Since we switched to splith/splitv layouts,
          * using the "default" layout (which "only" should happen when using
          * legacy configs) is using the last split layout (either splith or
-         * splitv) in order to still do the same thing.
-         *
-         * Starting from v4.6 though, we will nag users about using "layout
-         * default", and in v4.9 we will remove it entirely (with an
-         * appropriate i3-migrate-config mechanism). */
+         * splitv) in order to still do the same thing. */
         con->layout = con->last_split_layout;
         /* In case last_split_layout was not initialized… */
         if (con->layout == L_DEFAULT)
