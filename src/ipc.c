@@ -791,7 +791,7 @@ IPC_HANDLER(get_version) {
     y(integer, PATCH_VERSION);
 
     ystr("human_readable");
-    ystr(I3_VERSION);
+    ystr(i3_version);
 
     y(map_close);
 

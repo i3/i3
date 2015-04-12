@@ -22,6 +22,12 @@ include i3-dump-log/i3-dump-log.mk
 include docs/docs.mk
 include man/man.mk
 
+# Update $(TOPDIR)/LAST_VERSION if it differs from $I3_VERSION
+CACHED_VERSION := '$(shell [ -f $(TOPDIR)/LAST_VERSION ] && cat $(TOPDIR)/LAST_VERSION)'
+ifneq ($(CACHED_VERSION),$(I3_VERSION))
+$(shell echo -n ${I3_VERSION} > $(TOPDIR)/LAST_VERSION)
+endif
+
 real-all: $(ALL_TARGETS)
 
 install: $(INSTALL_TARGETS)
