@@ -265,6 +265,7 @@ state RENAME_WORKSPACE_NEW_NAME:
 # move <direction> [<pixels> [px]]
 # move [window|container] [to] workspace [<str>|next|prev|next_on_output|prev_on_output|current]
 # move [window|container] [to] output <str>
+# move [window|container] [to] mark <str>
 # move [window|container] [to] scratchpad
 # move workspace to [output] <str>
 # move scratchpad
@@ -280,6 +281,8 @@ state MOVE:
       -> MOVE_WORKSPACE
   'output'
       -> MOVE_TO_OUTPUT
+  'mark'
+      -> MOVE_TO_MARK
   'scratchpad'
       -> call cmd_move_scratchpad()
   direction = 'left', 'right', 'up', 'down'
@@ -320,6 +323,10 @@ state MOVE_WORKSPACE_NUMBER:
 state MOVE_TO_OUTPUT:
   output = string
       -> call cmd_move_con_to_output($output)
+
+state MOVE_TO_MARK:
+  mark = string
+      -> call cmd_move_con_to_mark($mark)
 
 state MOVE_WORKSPACE_TO_OUTPUT:
   'output'
