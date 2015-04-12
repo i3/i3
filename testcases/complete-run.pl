@@ -8,7 +8,6 @@ use v5.10;
 use utf8;
 # the following are modules which ship with Perl (>= 5.10):
 use Pod::Usage;
-use Cwd qw(abs_path);
 use File::Temp qw(tempfile tempdir);
 use Getopt::Long;
 use POSIX ();
@@ -17,8 +16,20 @@ use TAP::Parser;
 use TAP::Parser::Aggregator;
 use Time::HiRes qw(time);
 use IO::Handle;
+
+my $dirname;
+
+BEGIN {
+    use File::Basename;
+    use Cwd qw(abs_path);
+
+    # fileparse()[1] contains the directory portion of the specified path.
+    # See File::Basename(3p) for more details.
+    $dirname = (fileparse(abs_path($0)))[1];
+}
+
 # these are shipped with the testsuite
-use lib qw(lib);
+use lib $dirname . 'lib';
 use StartXServer;
 use StatusLine;
 use TestWorker;
@@ -69,6 +80,8 @@ my $result = GetOptions(
 );
 
 pod2usage(-verbose => 2, -exitcode => 0) if $help;
+
+chdir $dirname or die "Could not chdir into $dirname";
 
 # Check for missing executables
 my @binaries = qw(
