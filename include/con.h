@@ -127,6 +127,13 @@ Con *con_by_window_id(xcb_window_t window);
 Con *con_by_frame_id(xcb_window_t frame);
 
 /**
+ * Returns the container with the given mark or NULL if no such container
+ * exists.
+ *
+ */
+Con *con_by_mark(const char *mark);
+
+/**
  * Returns the first container below 'con' which wants to swallow this window
  * TODO: priority
  *

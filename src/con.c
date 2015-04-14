@@ -461,6 +461,21 @@ Con *con_by_frame_id(xcb_window_t frame) {
 }
 
 /*
+ * Returns the container with the given mark or NULL if no such container
+ * exists.
+ *
+ */
+Con *con_by_mark(const char *mark) {
+    Con *con;
+    TAILQ_FOREACH(con, &all_cons, all_cons) {
+        if (con->mark != NULL && strcmp(con->mark, mark) == 0)
+            return con;
+    }
+
+    return NULL;
+}
+
+/*
  * Returns the first container below 'con' which wants to swallow this window
  * TODO: priority
  *
