@@ -697,28 +697,12 @@ void con_disable_fullscreen(Con *con) {
     con_set_fullscreen_mode(con, CF_NONE);
 }
 
-/*
- * Moves the given container to the currently focused container on the given
- * workspace.
- *
- * The fix_coordinates flag will translate the current coordinates (offset from
- * the monitor position basically) to appropriate coordinates on the
- * destination workspace.
- * Not enabling this behaviour comes in handy when this function gets called by
- * floating_maybe_reassign_ws, which will only "move" a floating window when it
- * *already* changed its coordinates to a different output.
- *
- * The dont_warp flag disables pointer warping and will be set when this
- * function is called while dragging a floating window.
- *
- * TODO: is there a better place for this function?
- *
- */
-void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp) {
+static bool _con_move_to_con(Con *con, Con *target, bool fix_coordinates, bool dont_warp) {
     /* Prevent moving if this would violate the fullscreen focus restrictions. */
-    if (!con_fullscreen_permits_focusing(workspace)) {
+    Con *target_ws = con_get_workspace(target);
+    if (!con_fullscreen_permits_focusing(target_ws)) {
         LOG("Cannot move out of a fullscreen container");
-        return;
+        return false;
     }
 
     if (con_is_floating(con)) {
@@ -727,27 +711,23 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     }
 
     Con *source_ws = con_get_workspace(con);
-    if (workspace == source_ws) {
-        DLOG("Not moving, already there\n");
-        return;
-    }
 
     if (con->type == CT_WORKSPACE) {
         /* Re-parent all of the old workspace's floating windows. */
         Con *child;
         while (!TAILQ_EMPTY(&(source_ws->floating_head))) {
             child = TAILQ_FIRST(&(source_ws->floating_head));
-            con_move_to_workspace(child, workspace, true, true);
+            con_move_to_workspace(child, target_ws, true, true);
         }
 
         /* If there are no non-floating children, ignore the workspace. */
         if (con_is_leaf(con))
-            return;
+            return false;
 
         con = workspace_encapsulate(con);
         if (con == NULL) {
             ELOG("Workspace failed to move its contents into a container!\n");
-            return;
+            return false;
         }
     }
 
@@ -759,34 +739,31 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     Con *current_ws = con_get_workspace(focused);
 
     Con *source_output = con_get_output(con),
-        *dest_output = con_get_output(workspace);
+        *dest_output = con_get_output(target_ws);
 
     /* 1: save the container which is going to be focused after the current
      * container is moved away */
     Con *focus_next = con_next_focused(con);
 
-    /* 2: get the focused container of this workspace */
-    Con *next = con_descend_focused(workspace);
-
-    /* 3: we go up one level, but only when next is a normal container */
-    if (next->type != CT_WORKSPACE) {
-        DLOG("next originally = %p / %s / type %d\n", next, next->name, next->type);
-        next = next->parent;
+    /* 2: we go up one level, but only when target is a normal container */
+    if (target->type != CT_WORKSPACE) {
+        DLOG("target originally = %p / %s / type %d\n", target, target->name, target->type);
+        target = target->parent;
     }
 
-    /* 4: if the target container is floating, we get the workspace instead.
+    /* 3: if the target container is floating, we get the workspace instead.
      * Only tiling windows need to get inserted next to the current container.
      * */
-    Con *floatingcon = con_inside_floating(next);
+    Con *floatingcon = con_inside_floating(target);
     if (floatingcon != NULL) {
         DLOG("floatingcon, going up even further\n");
-        next = floatingcon->parent;
+        target = floatingcon->parent;
     }
 
     if (con->type == CT_FLOATING_CON) {
-        Con *ws = con_get_workspace(next);
+        Con *ws = con_get_workspace(target);
         DLOG("This is a floating window, using workspace %p / %s\n", ws, ws->name);
-        next = ws;
+        target = ws;
     }
 
     if (source_output != dest_output) {
@@ -800,8 +777,8 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         /* If moving to a visible workspace, call show so it can be considered
          * focused. Must do before attaching because workspace_show checks to see
          * if focused container is in its area. */
-        if (workspace_is_visible(workspace)) {
-            workspace_show(workspace);
+        if (workspace_is_visible(target_ws)) {
+            workspace_show(target_ws);
 
             /* Don’t warp if told so (when dragging floating windows with the
              * mouse for example) */
@@ -814,29 +791,29 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
 
     /* If moving a fullscreen container and the destination already has a
      * fullscreen window on it, un-fullscreen the target's fullscreen con. */
-    Con *fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
+    Con *fullscreen = con_get_fullscreen_con(target_ws, CF_OUTPUT);
     if (con->fullscreen_mode != CF_NONE && fullscreen != NULL) {
         con_toggle_fullscreen(fullscreen, CF_OUTPUT);
         fullscreen = NULL;
     }
 
-    DLOG("Re-attaching container to %p / %s\n", next, next->name);
-    /* 5: re-attach the con to the parent of this focused container */
+    DLOG("Re-attaching container to %p / %s\n", target, target->name);
+    /* 4: re-attach the con to the parent of this focused container */
     Con *parent = con->parent;
     con_detach(con);
-    con_attach(con, next, false);
+    con_attach(con, target, false);
 
-    /* 6: fix the percentages */
+    /* 5: fix the percentages */
     con_fix_percent(parent);
     con->percent = 0.0;
-    con_fix_percent(next);
+    con_fix_percent(target);
 
-    /* 7: focus the con on the target workspace, but only within that
+    /* 6: focus the con on the target workspace, but only within that
      * workspace, that is, don’t move focus away if the target workspace is
      * invisible.
      * We don’t focus the con for i3 pseudo workspaces like __i3_scratch and
      * we don’t focus when there is a fullscreen con on that workspace. */
-    if (!con_is_internal(workspace) && !fullscreen) {
+    if (!con_is_internal(target_ws) && !fullscreen) {
         /* We need to save the focused workspace on the output in case the
          * new workspace is hidden and it's necessary to immediately switch
          * back to the originally-focused workspace. */
@@ -848,7 +825,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
             con_focus(old_focus);
     }
 
-    /* 8: when moving to another workspace, we leave the focus on the current
+    /* 7: when moving to another workspace, we leave the focus on the current
      * workspace. (see also #809) */
 
     /* Descend focus stack in case focus_next is a workspace which can
@@ -861,7 +838,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     if (source_ws == current_ws)
         con_focus(con_descend_focused(focus_next));
 
-    /* 9. If anything within the container is associated with a startup sequence,
+    /* 8. If anything within the container is associated with a startup sequence,
      * delete it so child windows won't be created on the old workspace. */
     struct Startup_Sequence *sequence;
     xcb_get_property_cookie_t cookie;
@@ -895,13 +872,42 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
 
     CALL(parent, on_remove_child);
 
-    /* 10. If the container was marked urgent, move the urgency hint. */
+    /* 9. If the container was marked urgent, move the urgency hint. */
     if (urgent) {
         workspace_update_urgent_flag(source_ws);
         con_set_urgency(con, true);
     }
 
     ipc_send_window_event("move", con);
+    return true;
+}
+
+/*
+ * Moves the given container to the currently focused container on the given
+ * workspace.
+ *
+ * The fix_coordinates flag will translate the current coordinates (offset from
+ * the monitor position basically) to appropriate coordinates on the
+ * destination workspace.
+ * Not enabling this behaviour comes in handy when this function gets called by
+ * floating_maybe_reassign_ws, which will only "move" a floating window when it
+ * *already* changed its coordinates to a different output.
+ *
+ * The dont_warp flag disables pointer warping and will be set when this
+ * function is called while dragging a floating window.
+ *
+ * TODO: is there a better place for this function?
+ *
+ */
+void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp) {
+    Con *source_ws = con_get_workspace(con);
+    if (workspace == source_ws) {
+        DLOG("Not moving, already there\n");
+        return;
+    }
+
+    Con *target = con_descend_focused(workspace);
+    _con_move_to_con(con, target, fix_coordinates, dont_warp);
 }
 
 /*
