@@ -114,8 +114,8 @@ $S = open_window;
 
 # open tabbed container ['A' 'M' 'B']
 $target_ws = fresh_workspace;
-cmd 'layout tabbed';
 $A = open_window;
+cmd 'layout tabbed';
 $M = open_window;
 cmd 'mark target';
 $B = open_window;
@@ -143,8 +143,8 @@ $source_ws = fresh_workspace;
 $S = open_window;
 
 $target_ws = fresh_workspace;
-cmd 'layout tabbed';
 $A = open_window;
+cmd 'layout tabbed';
 cmd 'focus parent';
 cmd 'mark target';
 cmd 'focus child';
@@ -175,8 +175,8 @@ $S = open_window;
 
 # open tabbed container ['A'['B' 'M']]
 $target_ws = fresh_workspace;
-cmd 'layout tabbed';
 $A = open_window;
+cmd 'layout tabbed';
 $B = open_window;
 cmd 'split h';
 $M = open_window;
@@ -205,8 +205,8 @@ is($nodes->[2]->{window}, $S->{id}, 'S is the third tab');
 $source_ws = fresh_workspace;
 $S = open_window;
 $target_ws = fresh_workspace;
-cmd 'layout tabbed';
 $A = open_window;
+cmd 'layout tabbed';
 $B = open_window;
 cmd 'focus parent';
 cmd 'mark target';
@@ -224,6 +224,31 @@ is(@{$nodes}, 3, 'there are three tabs');
 is($nodes->[0]->{window}, $A->{id}, 'A is the first tab');
 is($nodes->[1]->{window}, $B->{id}, 'B is the second tab');
 is($nodes->[2]->{window}, $S->{id}, 'S is the third tab');
+
+###############################################################################
+# Given 'S', 'A', 'F' and 'M', where 'M' is a workspace containing a tabbed
+# container, when 'S' is moved to 'M', then 'S' does not end up as a tab, but
+# rather as a new window next to the tabbed container.
+###############################################################################
+
+$source_ws = fresh_workspace;
+$S = open_window;
+$target_ws = fresh_workspace;
+$A = open_window;
+cmd 'layout tabbed';
+$F = open_window;
+$M = $target_ws;
+cmd 'focus parent';
+cmd 'focus parent';
+cmd 'mark target';
+cmd 'focus ' . $source_ws;
+
+cmd '[id="' . $S->{id} . '"] move container to mark target';
+sync_with_i3;
+
+($nodes, $focus) = get_ws_content($target_ws);
+is(@{$nodes}, 2, 'there is a tabbed container and a window');
+is($nodes->[1]->{window}, $S->{id}, 'S is the second window');
 
 ###############################################################################
 # Given 'S', 'F' and 'M' where 'F' and 'M' are containers inside the same
