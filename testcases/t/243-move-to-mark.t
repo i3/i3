@@ -269,5 +269,20 @@ sync_with_i3;
 is(@{$nodes}, 1, 'tiling container moved to the target workspace');
 
 ###############################################################################
+# Given 'S' and 'M' are the same container, when 'S' is moved to 'M', then
+# the command is ignored.
+###############################################################################
+
+$ws = fresh_workspace;
+$S = open_window;
+$M = $S;
+cmd 'mark target';
+
+cmd '[id="' . $S->{id} . '"] move container to mark target';
+sync_with_i3;
+
+does_i3_live;
+
+###############################################################################
 
 done_testing;
