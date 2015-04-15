@@ -70,20 +70,10 @@ Con *con_new(Con *parent, i3Window *window) {
     return new;
 }
 
-/*
- * Attaches the given container to the given parent. This happens when moving
- * a container or when inserting a new container at a specific place in the
- * tree.
- *
- * ignore_focus is to just insert the Con at the end (useful when creating a
- * new split container *around* some containers, that is, detaching and
- * attaching them in order without wanting to mess with the focus in between).
- *
- */
-void con_attach(Con *con, Con *parent, bool ignore_focus) {
+static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus) {
     con->parent = parent;
     Con *loop;
-    Con *current = NULL;
+    Con *current = previous;
     struct nodes_head *nodes_head = &(parent->nodes_head);
     struct focus_head *focus_head = &(parent->focus_head);
 
@@ -168,6 +158,20 @@ add_to_focus_head:
      * to focus them. */
     TAILQ_INSERT_TAIL(focus_head, con, focused);
     con_force_split_parents_redraw(con);
+}
+
+/*
+ * Attaches the given container to the given parent. This happens when moving
+ * a container or when inserting a new container at a specific place in the
+ * tree.
+ *
+ * ignore_focus is to just insert the Con at the end (useful when creating a
+ * new split container *around* some containers, that is, detaching and
+ * attaching them in order without wanting to mess with the focus in between).
+ *
+ */
+void con_attach(Con *con, Con *parent, bool ignore_focus) {
+    _con_attach(con, parent, NULL, ignore_focus);
 }
 
 /*
@@ -697,7 +701,9 @@ void con_disable_fullscreen(Con *con) {
     con_set_fullscreen_mode(con, CF_NONE);
 }
 
-static bool _con_move_to_con(Con *con, Con *target, bool fix_coordinates, bool dont_warp) {
+static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fix_coordinates, bool dont_warp) {
+    Con *orig_target = target;
+
     /* Prevent moving if this would violate the fullscreen focus restrictions. */
     Con *target_ws = con_get_workspace(target);
     if (!con_fullscreen_permits_focusing(target_ws)) {
@@ -801,7 +807,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool fix_coordinates, bool d
     /* 4: re-attach the con to the parent of this focused container */
     Con *parent = con->parent;
     con_detach(con);
-    con_attach(con, target, false);
+    _con_attach(con, target, behind_focused ? NULL : orig_target, !behind_focused);
 
     /* 5: fix the percentages */
     con_fix_percent(parent);
@@ -883,6 +889,35 @@ static bool _con_move_to_con(Con *con, Con *target, bool fix_coordinates, bool d
 }
 
 /*
+ * Moves the given container to the given mark.
+ *
+ */
+bool con_move_to_mark(Con *con, const char *mark) {
+    Con *target = con_by_mark(mark);
+    if (target == NULL) {
+        DLOG("found no container with mark \"%s\"\n", mark);
+        return false;
+    }
+
+    /* For floating target containers, we just send the window to the same workspace. */
+    if (con_is_floating(target)) {
+        DLOG("target container is floating, moving container to target's workspace.\n");
+        con_move_to_workspace(con, con_get_workspace(target), true, false);
+        return true;
+    }
+
+    /* For split containers, we use the currently focused container within it.
+     * This allows setting marks on, e.g., tabbed containers which will move
+     * con to a new tab behind the focused tab. */
+    if (con_is_split(target)) {
+        DLOG("target is a split container, descending to the currently focused child.\n");
+        target = TAILQ_FIRST(&(target->focus_head));
+    }
+
+    return _con_move_to_con(con, target, false, true, false);
+}
+
+/*
  * Moves the given container to the currently focused container on the given
  * workspace.
  *
@@ -900,6 +935,8 @@ static bool _con_move_to_con(Con *con, Con *target, bool fix_coordinates, bool d
  *
  */
 void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp) {
+    assert(workspace->type == CT_WORKSPACE);
+
     Con *source_ws = con_get_workspace(con);
     if (workspace == source_ws) {
         DLOG("Not moving, already there\n");
@@ -907,7 +944,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     }
 
     Con *target = con_descend_focused(workspace);
-    _con_move_to_con(con, target, fix_coordinates, dont_warp);
+    _con_move_to_con(con, target, true, fix_coordinates, dont_warp);
 }
 
 /*

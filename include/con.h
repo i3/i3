@@ -211,6 +211,12 @@ void con_disable_fullscreen(Con *con);
 void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp);
 
 /**
+ * Moves the given container to the given mark.
+ *
+ */
+bool con_move_to_mark(Con *con, const char *mark);
+
+/**
  * Returns the orientation of the given container (for stacked containers,
  * vertical orientation is used regardless of the actual orientation of the
  * container).

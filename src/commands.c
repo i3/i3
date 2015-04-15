@@ -1100,12 +1100,10 @@ void cmd_unmark(I3_CMD, char *mark) {
         }
         DLOG("removed all window marks");
     } else {
-        Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            if (con->mark && strcmp(con->mark, mark) == 0) {
-                FREE(con->mark);
-                con->mark_changed = true;
-            }
+        Con *con = con_by_mark(mark);
+        if (con != NULL) {
+            FREE(con->mark);
+            con->mark_changed = true;
         }
         DLOG("removed window mark %s\n", mark);
     }
