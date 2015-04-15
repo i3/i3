@@ -26,6 +26,27 @@ my ($A, $B, $S, $M, $F, $source_ws, $target_ws, $ws);
 my ($nodes, $focus);
 my $cmd_result;
 
+my $_NET_WM_STATE_REMOVE = 0;
+my $_NET_WM_STATE_ADD = 1;
+my $_NET_WM_STATE_TOGGLE = 2;
+
+sub set_urgency {
+    my ($win, $urgent_flag) = @_; 
+    my $msg = pack "CCSLLLLLL",
+        X11::XCB::CLIENT_MESSAGE, # response_type
+        32, # format
+        0, # sequence
+        $win->id, # window
+        $x->atom(name => '_NET_WM_STATE')->id, # message type
+        ($urgent_flag ? $_NET_WM_STATE_ADD : $_NET_WM_STATE_REMOVE), # data32[0]
+        $x->atom(name => '_NET_WM_STATE_DEMANDS_ATTENTION')->id, # data32[1]
+        0, # data32[2]
+        0, # data32[3]
+        0; # data32[4]
+
+    $x->send_event(0, $x->get_root_window(), X11::XCB::EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
+}
+
 ###############################################################################
 # Given 'M' and 'S' in a horizontal split, when 'S' is moved to 'M', then
 # verify that nothing changed.
@@ -102,7 +123,22 @@ is($nodes->[1]->{window}, $S->{id}, 'S is right of M');
 # moved to 'M', then the urgency flag is transferred to the target workspace.
 ###############################################################################
 
-# TODO
+$source_ws = fresh_workspace;
+$S = open_window;
+$F = open_window;
+$target_ws = fresh_workspace;
+$M = open_window;
+cmd 'mark target';
+cmd 'workspace ' . $source_ws;
+set_urgency($S, 1);
+
+cmd '[id="' . $S->{id} . '"] move container to mark target';
+sync_with_i3;
+
+$source_ws = get_ws($source_ws);
+$target_ws = get_ws($target_ws);
+ok(!$source_ws->{urgent}, 'source workspace is no longer urgent');
+ok($target_ws->{urgent}, 'target workspace is urgent');
 
 ###############################################################################
 # Given 'S' and 'M' where 'M' is inside a tabbed container, when 'S' is moved
@@ -249,14 +285,6 @@ sync_with_i3;
 ($nodes, $focus) = get_ws_content($target_ws);
 is(@{$nodes}, 2, 'there is a tabbed container and a window');
 is($nodes->[1]->{window}, $S->{id}, 'S is the second window');
-
-###############################################################################
-# Given 'S', 'F' and 'M' where 'F' and 'M' are containers inside the same
-# tabbed container and where 'F' has the focus within that container, when
-# 'S' is moved to 'M', then 'S' ends up behind 'F'.
-###############################################################################
-
-# TODO needs to be clarified whether this is the behavior we want
 
 ###############################################################################
 # Given 'S' and 'M' where 'S' is floating and 'M' on a different workspace,

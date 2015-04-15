@@ -145,8 +145,7 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
         /* Insert the container after the tiling container, if found.
          * When adding to a CT_OUTPUT, just append one after another. */
         if (current && parent->type != CT_OUTPUT) {
-            DLOG("Inserting con = %p after last focused tiling con %p\n",
-                 con, current);
+            DLOG("Inserting con = %p after con %p\n", con, current);
             TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
         } else
             TAILQ_INSERT_TAIL(nodes_head, con, nodes);
