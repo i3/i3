@@ -187,12 +187,14 @@ cat >email.txt <<EOT
 From: Michael Stapelberg <michael@i3wm.org>
 To: i3-announce@i3.zekjur.net
 Subject: i3 v${RELEASE_VERSION} released
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 
 Hi,
 
 I just released i3 v${RELEASE_VERSION}. Release notes follow:
 EOT
-cat ${TMPDIR}/i3/RELEASE-NOTES-${RELEASE_VERSION}.txt >>email.txt
+cat ${TMPDIR}/i3/RELEASE-NOTES-${RELEASE_VERSION} >>email.txt
 
 ################################################################################
 # Section 5: final push instructions
