@@ -20,8 +20,8 @@ i3-input/i3-input: libi3.a $(i3_input_OBJECTS)
 
 install-i3-input: i3-input/i3-input
 	echo "[i3-input] Install"
-	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
-	$(INSTALL) -m 0755 i3-input/i3-input $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(EXEC_PREFIX)/bin
+	$(INSTALL) -m 0755 i3-input/i3-input $(DESTDIR)$(EXEC_PREFIX)/bin/
 
 clean-i3-input:
 	echo "[i3-input] Clean"
