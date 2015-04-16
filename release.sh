@@ -176,6 +176,7 @@ git commit -a -m "update docs for ${RELEASE_VERSION}"
 
 git remote remove origin
 git remote add origin git@github.com:i3/i3.github.io.git
+git config --add remote.origin.push "+refs/heads/master:refs/heads/master"
 
 ################################################################################
 # Section 4: prepare release announcement email
