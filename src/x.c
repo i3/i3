@@ -36,6 +36,7 @@ typedef struct con_state {
     bool mapped;
     bool unmap_now;
     bool child_mapped;
+    bool is_hidden;
 
     /** The con for which this state is. */
     Con *con;
@@ -612,6 +613,33 @@ void x_deco_recurse(Con *con) {
 }
 
 /*
+ * Sets or removes the _NET_WM_STATE_HIDDEN property on con if necessary.
+ *
+ */
+static void set_hidden_state(Con *con) {
+    if (con->window == NULL) {
+        return;
+    }
+
+    con_state *state = state_for_frame(con->frame);
+    bool should_be_hidden = con_is_hidden(con);
+    if (should_be_hidden == state->is_hidden)
+        return;
+
+    unsigned int num = 0;
+    uint32_t values[1];
+    if (should_be_hidden) {
+        DLOG("setting _NET_WM_STATE_HIDDEN for con = %p\n", con);
+        values[num++] = A__NET_WM_STATE_HIDDEN;
+    } else {
+        DLOG("removing _NET_WM_STATE_HIDDEN for con = %p\n", con);
+    }
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id, A__NET_WM_STATE, XCB_ATOM_ATOM, 32, num, values);
+    state->is_hidden = should_be_hidden;
+}
+
+/*
  * This function pushes the properties of each node of the layout tree to
  * X11 if they have changed (like the map state, position of the window, …).
  * It recursively traverses all children of the given node.
@@ -813,6 +841,8 @@ void x_push_node(Con *con) {
         DLOG("Sending fake configure notify\n");
         fake_absolute_configure_notify(con);
     }
+
+    set_hidden_state(con);
 
     /* Handle all children and floating windows of this node. We recurse
      * in focus order to display the focused client in a stack first when
