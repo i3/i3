@@ -135,6 +135,10 @@ debsign -k4AC8EE1D ${TMPDIR}/debian/*.changes
 # Section 3: website
 ################################################################################
 
+# Ensure we are in the correct branch for copying the docs.
+cd ${TMPDIR}/i3
+git checkout ${RELEASE_BRANCH}
+
 cd ${TMPDIR}
 git clone --quiet ${STARTDIR}/../i3.github.io
 cd i3.github.io
