@@ -892,15 +892,15 @@ static void handle_client_message(xcb_client_message_event_t *event) {
     }
 }
 
-#if 0
-int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                        xcb_atom_t atom, xcb_get_property_reply_t *property) {
-        /* TODO: Implement this one. To do this, implement a little test program which sleep(1)s
-         before changing this property. */
-        ELOG("_NET_WM_WINDOW_TYPE changed, this is not yet implemented.\n");
-        return 0;
+bool handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                        xcb_atom_t atom, xcb_get_property_reply_t *reply) {
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
+        return false;
+
+    window_update_type(con->window, reply);
+    return true;
 }
-#endif
 
 /*
  * Handles the size hints set by a window, but currently only the part necessary for displaying
@@ -1264,7 +1264,8 @@ static struct property_handler_t property_handlers[] = {
     {0, UINT_MAX, handle_transient_for},
     {0, 128, handle_windowrole_change},
     {0, 128, handle_class_change},
-    {0, UINT_MAX, handle_strut_partial_change}};
+    {0, UINT_MAX, handle_strut_partial_change},
+    {0, UINT_MAX, handle_window_type}};
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
 /*
@@ -1284,6 +1285,7 @@ void property_handlers_init(void) {
     property_handlers[6].atom = A_WM_WINDOW_ROLE;
     property_handlers[7].atom = XCB_ATOM_WM_CLASS;
     property_handlers[8].atom = A__NET_WM_STRUT_PARTIAL;
+    property_handlers[9].atom = A__NET_WM_WINDOW_TYPE;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
