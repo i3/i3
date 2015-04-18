@@ -409,5 +409,38 @@ EOT
 }
 
 ##############################################################
+# 11: check that the criterion 'window_type' works if the
+#     _NET_WM_WINDOW_TYPE is changed after managing.
+##############################################################
+
+while (my ($window_type, $atom) = each %window_types) {
+
+    $config = <<"EOT";
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [window_type="$window_type"] floating enable, mark branded
+EOT
+
+    $pid = launch_with_config($config);
+    $tmp = fresh_workspace;
+
+    $window = open_window();
+
+    my $atomname = $x->atom(name => '_NET_WM_WINDOW_TYPE');
+    my $atomtype = $x->atom(name => 'ATOM');
+    $x->change_property(PROP_MODE_REPLACE, $window->id, $atomname->id, $atomtype->id,
+      32, 1, pack('L1', $x->atom(name => $atom)->id));
+    $x->flush;
+    sync_with_i3;
+
+    my @nodes = @{get_ws($tmp)->{floating_nodes}};
+    cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
+    is($nodes[0]->{nodes}[0]->{mark}, 'branded', "mark set (window_type = $atom)");
+
+    exit_gracefully($pid);
+
+}
+
+##############################################################
 
 done_testing;
