@@ -370,5 +370,44 @@ is($content[0]->{border}, 'none', 'no border (window_role 2)');
 
 exit_gracefully($pid);
 
+##############################################################
+# 10: check that the criterion 'window_type' works
+##############################################################
+
+# test all window types
+my %window_types = (
+    'normal'        => '_NET_WM_WINDOW_TYPE_NORMAL',
+    'dialog'        => '_NET_WM_WINDOW_TYPE_DIALOG',
+    'utility'       => '_NET_WM_WINDOW_TYPE_UTILITY',
+    'toolbar'       => '_NET_WM_WINDOW_TYPE_TOOLBAR',
+    'splash'        => '_NET_WM_WINDOW_TYPE_SPLASH',
+    'menu'          => '_NET_WM_WINDOW_TYPE_MENU',
+    'dropdown_menu' => '_NET_WM_WINDOW_TYPE_DROPDOWN_MENU',
+    'popup_menu'    => '_NET_WM_WINDOW_TYPE_POPUP_MENU',
+    'tooltip'       => '_NET_WM_WINDOW_TYPE_TOOLTIP'
+);
+
+while (my ($window_type, $atom) = each %window_types) {
+
+    $config = <<"EOT";
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [window_type="$window_type"] floating enable, mark branded
+EOT
+
+    $pid = launch_with_config($config);
+    $tmp = fresh_workspace;
+
+    $window = open_window(window_type => $x->atom(name => $atom));
+
+    my @nodes = @{get_ws($tmp)->{floating_nodes}};
+    cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
+    is($nodes[0]->{nodes}[0]->{mark}, 'branded', "mark set (window_type = $atom)");
+
+    exit_gracefully($pid);
+
+}
+
+##############################################################
 
 done_testing;
