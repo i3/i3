@@ -210,6 +210,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* check if the window needs WM_TAKE_FOCUS */
     cwindow->needs_take_focus = window_supports_protocol(cwindow->id, A_WM_TAKE_FOCUS);
 
+    /* read the preferred _NET_WM_WINDOW_TYPE atom */
+    cwindow->window_type = xcb_get_preferred_window_type(type_reply);
+
     /* Where to start searching for a container that swallows the new one? */
     Con *search_at = croot;
 

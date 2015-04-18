@@ -378,6 +378,9 @@ struct Window {
      * default will be 'accepts focus'. */
     bool doesnt_accept_focus;
 
+    /** The _NET_WM_WINDOW_TYPE for this window. */
+    xcb_atom_t window_type;
+
     /** Whether the window says it is a dock window */
     enum { W_NODOCK = 0,
            W_DOCK_TOP = 1,
@@ -408,6 +411,7 @@ struct Match {
     struct regex *instance;
     struct regex *mark;
     struct regex *window_role;
+    xcb_atom_t window_type;
     enum {
         U_DONTCHECK = -1,
         U_LATEST = 0,

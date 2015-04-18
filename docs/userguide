@@ -1508,6 +1508,10 @@ instance::
 	Compares the window instance (the first part of WM_CLASS)
 window_role::
 	Compares the window role (WM_WINDOW_ROLE).
+window_type::
+        Compare the window type (_NET_WM_WINDOW_TYPE). Possible values are
+        +normal+, +dialog+, +utility+, +toolbar+, +splash+, +menu+, +dropdown_menu+,
+        +popup_menu+ and +toolti+.
 id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
