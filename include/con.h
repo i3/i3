@@ -127,6 +127,13 @@ Con *con_by_window_id(xcb_window_t window);
 Con *con_by_frame_id(xcb_window_t frame);
 
 /**
+ * Returns the container with the given mark or NULL if no such container
+ * exists.
+ *
+ */
+Con *con_by_mark(const char *mark);
+
+/**
  * Returns the first container below 'con' which wants to swallow this window
  * TODO: priority
  *
@@ -202,6 +209,12 @@ void con_disable_fullscreen(Con *con);
  *
  */
 void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp);
+
+/**
+ * Moves the given container to the given mark.
+ *
+ */
+bool con_move_to_mark(Con *con, const char *mark);
 
 /**
  * Returns the orientation of the given container (for stacked containers,

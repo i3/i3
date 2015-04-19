@@ -1100,12 +1100,10 @@ void cmd_unmark(I3_CMD, char *mark) {
         }
         DLOG("removed all window marks");
     } else {
-        Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            if (con->mark && strcmp(con->mark, mark) == 0) {
-                FREE(con->mark);
-                con->mark_changed = true;
-            }
+        Con *con = con_by_mark(mark);
+        if (con != NULL) {
+            FREE(con->mark);
+            con->mark_changed = true;
         }
         DLOG("removed window mark %s\n", mark);
     }
@@ -1167,6 +1165,26 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
+}
+
+/*
+ * Implementation of 'move [container|window] [to] mark <str>'.
+ *
+ */
+void cmd_move_con_to_mark(I3_CMD, char *mark) {
+    DLOG("moving window to mark \"%s\"\n", mark);
+
+    HANDLE_EMPTY_MATCH;
+
+    bool result = true;
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        DLOG("moving matched window %p / %s to mark \"%s\"\n", current->con, current->con->name, mark);
+        result &= con_move_to_mark(current->con, mark);
+    }
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(result);
 }
 
 /*

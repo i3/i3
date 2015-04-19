@@ -133,6 +133,12 @@ void cmd_mode(I3_CMD, char *mode);
 void cmd_move_con_to_output(I3_CMD, char *name);
 
 /**
+ * Implementation of 'move [window|container] [to] mark <str>'.
+ *
+ */
+void cmd_move_con_to_mark(I3_CMD, char *mark);
+
+/**
  * Implementation of 'floating enable|disable|toggle'
  *
  */
