@@ -287,9 +287,6 @@ exit_gracefully($pid);
 # 8: check that the role criterion works properly
 ##############################################################
 
-# this configuration is broken because "asdf" is not a valid integer
-# the for_window should therefore recognize this error and don’t add the
-# assignment
 $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
@@ -329,9 +326,6 @@ exit_gracefully($pid);
 #    *after* the window has been mapped
 ##############################################################
 
-# this configuration is broken because "asdf" is not a valid integer
-# the for_window should therefore recognize this error and don’t add the
-# assignment
 $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
