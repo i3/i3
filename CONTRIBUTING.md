@@ -9,6 +9,11 @@ and https://github.com/i3/i3lock
 1. Read http://i3wm.org/docs/debugging.html
 2. Make sure you include a link to your logfile in your report (section 3).
 3. Make sure you include the i3 version number in your report (section 1).
+4. Please be aware that we cannot support compatibility issues with
+   closed-source software, as digging into compatibility problems without
+   having access to the source code is too time-consuming. Additionally,
+   experience has shown that often, the software in question is responsible for
+   the issue. Please raise an issue with the software in question, not i3.
 
 # Pull requests
 
