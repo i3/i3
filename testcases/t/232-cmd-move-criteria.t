@@ -18,21 +18,23 @@
 # Bug still in: 4.8-16-g6888a1f
 use i3test;
 
+my ($ws, $win1, $win2, $win3, $ws_con);
+
 ###############################################################################
 # Tets moving with 'id' criterion.
 ###############################################################################
 
-my $ws = fresh_workspace;
+$ws = fresh_workspace;
 
-my $win1 = open_window;
-my $win2 = open_window;
-my $win3 = open_window;
+$win1 = open_window;
+$win2 = open_window;
+$win3 = open_window;
 
 # move win1 from the left to the right
 cmd '[id="' . $win1->{id} . '"] move right';
 
 # now they should be switched, with win2 still being focused
-my $ws_con = get_ws($ws);
+$ws_con = get_ws($ws);
 
 # win2 should be on the left
 is($ws_con->{nodes}[0]->{window}, $win2->{id}, 'the `move [direction]` command should work with criteria');

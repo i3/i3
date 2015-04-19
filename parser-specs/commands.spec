@@ -41,15 +41,15 @@ state INITIAL:
   'bar' -> BAR
 
 state CRITERIA:
-  ctype = 'class' -> CRITERION
-  ctype = 'instance' -> CRITERION
+  ctype = 'class'       -> CRITERION
+  ctype = 'instance'    -> CRITERION
   ctype = 'window_role' -> CRITERION
-  ctype = 'con_id' -> CRITERION
-  ctype = 'id' -> CRITERION
-  ctype = 'con_mark' -> CRITERION
-  ctype = 'title' -> CRITERION
-  ctype = 'urgent' -> CRITERION
+  ctype = 'con_id'      -> CRITERION
+  ctype = 'id'          -> CRITERION
   ctype = 'window_type' -> CRITERION
+  ctype = 'con_mark'    -> CRITERION
+  ctype = 'title'       -> CRITERION
+  ctype = 'urgent'      -> CRITERION
   ']' -> call cmd_criteria_match_windows(); INITIAL
 
 state CRITERION:
