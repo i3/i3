@@ -1648,6 +1648,13 @@ mode_toggle::
 output::
 	Followed by a direction or an output name, this will focus the
 	corresponding output.
+local::
+        Followed by a number, this will focus the n-th child of the currently
+        focused container's parent.
+global::
+        Followed by a number, this works similarly to +local+, but instead of
+        focusing the n-th child of the parent, it focuses the n-th child of the
+        currently focused container's workspace.
 
 For moving, use +move left+, +move right+, +move down+ and +move up+.
 
@@ -1656,6 +1663,7 @@ For moving, use +move left+, +move right+, +move down+ and +move up+.
 focus <left|right|down|up>
 focus <parent|child|floating|tiling|mode_toggle>
 focus output <<left|right|down|up>|output>
+focus local|global <number>
 move <left|right|down|up> [<px> px]
 move [absolute] position [[<px> px] [<px> px]|center]
 -----------------------------------

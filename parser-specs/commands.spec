@@ -133,6 +133,7 @@ state WORKSPACE_NUMBER:
 # focus output <output>
 # focus tiling|floating|mode_toggle
 # focus parent|child
+# focus local|global <n>
 # focus
 state FOCUS:
   direction = 'left', 'right', 'up', 'down'
@@ -143,12 +144,18 @@ state FOCUS:
       -> call cmd_focus_window_mode($window_mode)
   level = 'parent', 'child'
       -> call cmd_focus_level($level)
+  context = 'local', 'global'
+      -> FOCUS_NUMBER
   end
       -> call cmd_focus()
 
 state FOCUS_OUTPUT:
   output = string
       -> call cmd_focus_output($output)
+
+state FOCUS_NUMBER:
+  n = word
+      -> call cmd_focus_number($context, $n)
 
 # kill [window|client]
 state KILL:

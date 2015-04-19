@@ -1819,3 +1819,37 @@ char *con_get_tree_representation(Con *con) {
 
     return complete_buf;
 }
+
+static Con *_con_get_nth(Con *con, int *n) {
+    Con *current;
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+        /* We consider leaf containers and tabbed / stacked containers to be
+         * actual window like containers since this is how it appears to the user. */
+        if (con_is_leaf(current) ||
+                current->layout == L_STACKED || current->layout == L_TABBED) {
+            if (*n == 1)
+                return current;
+
+            (*n)--;
+            continue;
+        }
+
+        /* For other split containers, we don't consider the split container itself,
+         * but instead go through its children. */
+        Con *recursed = _con_get_nth(current, n);
+        if (recursed != NULL)
+            return recursed;
+    }
+
+    return NULL;
+}
+
+/**
+ * Returns the n-th child window of con.
+ * Tabbed and stacked containers are considered one window
+ * while for all other split containers, it will descend recursively.
+ *
+ */
+Con *con_get_nth(Con *con, int n) {
+    return _con_get_nth(con, &n);
+}
