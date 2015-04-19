@@ -121,3 +121,19 @@ When debugging with us in IRC, be prepared to use a so called nopaste service
 such as http://nopaste.info or http://pastebin.com because pasting large
 amounts of text in IRC sometimes leads to incomplete lines (servers have line
 length limitations) or flood kicks.
+
+== Debugging i3bar
+
+To debug i3bar problems, add +verbose yes+ to all +bar {}+ blocks in your i3 config
+and then restart all i3bar instances like this:
+
+---------------------------------------------------------------------
+$ killall i3bar
+$ for c in $(i3-msg -t get_bar_config | python -c \
+      'import json,sys;print("\n".join(json.load(sys.stdin)))'); do \
+    (i3bar --bar_id=$c >i3bar.$c.log 2>&1) & \
+  done;
+---------------------------------------------------------------------
+
+There will now be +i3bar.*.log+ files in your current directory that you can provide
+in your bug report.
