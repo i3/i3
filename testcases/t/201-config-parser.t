@@ -47,16 +47,20 @@ mode "meh" {
     bindsym --release Mod1+x exec foo
     bindsym --whole-window button3 nop
     bindsym --release --whole-window button3 nop
+    bindsym --border button3 nop
+    bindsym --release --border button3 nop
 }
 EOT
 
 my $expected = <<'EOT';
 cfg_enter_mode(meh)
-cfg_mode_binding(bindsym, Mod1,Shift, x, (null), (null), resize grow)
-cfg_mode_binding(bindcode, Mod1, 44, (null), (null), resize shrink)
-cfg_mode_binding(bindsym, Mod1, x, --release, (null), exec foo)
-cfg_mode_binding(bindsym, (null), button3, (null), --whole-window, nop)
-cfg_mode_binding(bindsym, (null), button3, --release, --whole-window, nop)
+cfg_mode_binding(bindsym, Mod1,Shift, x, (null), (null), (null), resize grow)
+cfg_mode_binding(bindcode, Mod1, 44, (null), (null), (null), resize shrink)
+cfg_mode_binding(bindsym, Mod1, x, --release, (null), (null), exec foo)
+cfg_mode_binding(bindsym, (null), button3, (null), (null), --whole-window, nop)
+cfg_mode_binding(bindsym, (null), button3, --release, (null), --whole-window, nop)
+cfg_mode_binding(bindsym, (null), button3, (null), --border, (null), nop)
+cfg_mode_binding(bindsym, (null), button3, --release, --border, (null), nop)
 EOT
 
 is(parser_calls($config),
@@ -624,7 +628,7 @@ EOT
 
 $expected = <<'EOT';
 cfg_enter_mode(yo)
-cfg_mode_binding(bindsym, (null), x, (null), (null), resize shrink left)
+cfg_mode_binding(bindsym, (null), x, (null), (null), (null), resize shrink left)
 ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', '}'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: mode "yo" {
