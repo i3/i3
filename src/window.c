@@ -233,6 +233,23 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
 }
 
 /*
+ * Updates the _NET_WM_WINDOW_TYPE property.
+ *
+ */
+void window_update_type(i3Window *window, xcb_get_property_reply_t *reply) {
+    xcb_atom_t new_type = xcb_get_preferred_window_type(reply);
+    if (new_type == XCB_NONE) {
+        DLOG("cannot read _NET_WM_WINDOW_TYPE from window.\n");
+        return;
+    }
+
+    window->window_type = new_type;
+    LOG("_NET_WM_WINDOW_TYPE changed to %i", window->window_type);
+
+    run_assignments(window);
+}
+
+/*
  * Updates the WM_HINTS (we only care about the input focus handling part).
  *
  */

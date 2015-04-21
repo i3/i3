@@ -27,8 +27,10 @@
  */
 void match_init(Match *match) {
     memset(match, 0, sizeof(Match));
-    match->dock = -1;
+    match->dock = M_DONTCHECK;
     match->urgent = U_DONTCHECK;
+    /* we use this as the placeholder value for "not set". */
+    match->window_type = UINT32_MAX;
 }
 
 /*
@@ -48,6 +50,7 @@ bool match_is_empty(Match *match) {
             match->window_role == NULL &&
             match->urgent == U_DONTCHECK &&
             match->id == XCB_NONE &&
+            match->window_type == UINT32_MAX &&
             match->con_id == NULL &&
             match->dock == -1 &&
             match->floating == M_ANY);
@@ -129,6 +132,14 @@ bool match_matches_window(Match *match, i3Window *window) {
         }
     }
 
+    if (match->window_type != UINT32_MAX) {
+        if (window->window_type == match->window_type) {
+            LOG("window_type matches (%i)\n", match->window_type);
+        } else {
+            return false;
+        }
+    }
+
     Con *con = NULL;
     if (match->urgent == U_LATEST) {
         /* if the window isn't urgent, no sense in searching */
@@ -161,7 +172,7 @@ bool match_matches_window(Match *match, i3Window *window) {
         LOG("urgent matches oldest\n");
     }
 
-    if (match->dock != -1) {
+    if (match->dock != M_DONTCHECK) {
         if ((window->dock == W_DOCK_TOP && match->dock == M_DOCK_TOP) ||
             (window->dock == W_DOCK_BOTTOM && match->dock == M_DOCK_BOTTOM) ||
             ((window->dock == W_DOCK_TOP || window->dock == W_DOCK_BOTTOM) &&

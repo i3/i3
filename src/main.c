@@ -474,6 +474,12 @@ int main(int argc, char *argv[]) {
     root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
 
+/* Place requests for the atoms we need as soon as possible */
+#define xmacro(atom) \
+    xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
+#include "atoms.xmacro"
+#undef xmacro
+
     /* By default, we use the same depth and visual as the root window, which
      * usually is TrueColor (24 bit depth) and the corresponding visual.
      * However, we also check if a 32 bit depth and visual are available (for
@@ -490,6 +496,20 @@ int main(int argc, char *argv[]) {
 
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
     xcb_query_pointer_cookie_t pointercookie = xcb_query_pointer(conn, root);
+
+/* Setup NetWM atoms */
+#define xmacro(name)                                                                       \
+    do {                                                                                   \
+        xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name##_cookie, NULL); \
+        if (!reply) {                                                                      \
+            ELOG("Could not get atom " #name "\n");                                        \
+            exit(-1);                                                                      \
+        }                                                                                  \
+        A_##name = reply->atom;                                                            \
+        free(reply);                                                                       \
+    } while (0);
+#include "atoms.xmacro"
+#undef xmacro
 
     load_configuration(conn, override_configpath, false);
 
@@ -511,12 +531,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     DLOG("root geometry reply: (%d, %d) %d x %d\n", greply->x, greply->y, greply->width, greply->height);
-
-/* Place requests for the atoms we need as soon as possible */
-#define xmacro(atom) \
-    xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-#include "atoms.xmacro"
-#undef xmacro
 
     xcursor_load_cursors();
 
@@ -546,20 +560,6 @@ int main(int argc, char *argv[]) {
     }
 
     restore_connect();
-
-/* Setup NetWM atoms */
-#define xmacro(name)                                                                       \
-    do {                                                                                   \
-        xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name##_cookie, NULL); \
-        if (!reply) {                                                                      \
-            ELOG("Could not get atom " #name "\n");                                        \
-            exit(-1);                                                                      \
-        }                                                                                  \
-        A_##name = reply->atom;                                                            \
-        free(reply);                                                                       \
-    } while (0);
-#include "atoms.xmacro"
-#undef xmacro
 
     property_handlers_init();
 

@@ -155,6 +155,35 @@ void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r) {
 }
 
 /*
+ * Returns the first supported _NET_WM_WINDOW_TYPE atom.
+ *
+ */
+xcb_atom_t xcb_get_preferred_window_type(xcb_get_property_reply_t *reply) {
+    if (reply == NULL || xcb_get_property_value_length(reply) == 0)
+        return XCB_NONE;
+
+    xcb_atom_t *atoms;
+    if ((atoms = xcb_get_property_value(reply)) == NULL)
+        return XCB_NONE;
+
+    for (int i = 0; i < xcb_get_property_value_length(reply) / (reply->format / 8); i++) {
+        if (atoms[i] == A__NET_WM_WINDOW_TYPE_NORMAL ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_DIALOG ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_UTILITY ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_TOOLBAR ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_SPLASH ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_MENU ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_POPUP_MENU ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_TOOLTIP) {
+            return atoms[i];
+        }
+    }
+
+    return XCB_NONE;
+}
+
+/*
  * Returns true if the given reply contains the given atom.
  *
  */
