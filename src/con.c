@@ -261,6 +261,29 @@ bool con_is_split(Con *con) {
 }
 
 /*
+ * This will only return true for containers which have some parent with
+ * a tabbed / stacked parent of which they are not the currently focused child.
+ *
+ */
+bool con_is_hidden(Con *con) {
+    Con *current = con;
+
+    /* ascend to the workspace level and memorize the highest-up container
+     * which is stacked or tabbed. */
+    while (current != NULL && current->type != CT_WORKSPACE) {
+        Con *parent = current->parent;
+        if (parent != NULL && (parent->layout == L_TABBED || parent->layout == L_STACKED)) {
+            if (TAILQ_FIRST(&(parent->focus_head)) != current)
+                return true;
+        }
+
+        current = parent;
+    }
+
+    return false;
+}
+
+/*
  * Returns true if this node accepts a window (if the node swallows windows,
  * it might already have swallowed enough and cannot hold any more).
  *
