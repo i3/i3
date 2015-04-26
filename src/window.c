@@ -271,8 +271,10 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *ur
         return;
     }
 
-    win->doesnt_accept_focus = !hints.input;
-    LOG("WM_HINTS.input changed to \"%d\"\n", hints.input);
+    if (hints.flags & XCB_ICCCM_WM_HINT_INPUT) {
+        win->doesnt_accept_focus = !hints.input;
+        LOG("WM_HINTS.input changed to \"%d\"\n", hints.input);
+    }
 
     if (urgency_hint != NULL)
         *urgency_hint = (xcb_icccm_wm_hints_get_urgency(&hints) != 0);
