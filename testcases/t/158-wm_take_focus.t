@@ -50,11 +50,14 @@ sub recv_take_focus {
 }
 
 subtest 'Window without WM_TAKE_FOCUS', sub {
-    fresh_workspace;
+    my $ws = fresh_workspace;
 
     my $window = open_window;
 
     ok(!recv_take_focus($window), 'did not receive ClientMessage');
+
+    my $con = shift get_ws_content($ws);
+    ok($con->{focused}, 'con is focused');
 
     done_testing;
 };
@@ -72,7 +75,7 @@ subtest 'Window without WM_TAKE_FOCUS', sub {
 # list), the window cannot accept input focus, so we should not try to focus
 # the window at all.
 subtest 'Window with WM_TAKE_FOCUS and without InputHint', sub {
-    fresh_workspace;
+    my $ws = fresh_workspace;
 
     my $take_focus = $x->atom(name => 'WM_TAKE_FOCUS');
 
@@ -88,6 +91,9 @@ subtest 'Window with WM_TAKE_FOCUS and without InputHint', sub {
 
     ok(!recv_take_focus($window), 'did not receive ClientMessage');
 
+    my $con = shift get_ws_content($ws);
+    ok($con->{focused}, 'con is focused');
+
     done_testing;
 };
 
@@ -97,13 +103,16 @@ subtest 'Window with WM_TAKE_FOCUS and without InputHint', sub {
 # nearly identical presently, so this is currently used also as a proxy test
 # for the latter case.
 subtest 'Window with WM_TAKE_FOCUS and unspecified InputHint', sub {
-    fresh_workspace;
+    my $ws = fresh_workspace;
 
     my $take_focus = $x->atom(name => 'WM_TAKE_FOCUS');
 
     my $window = open_window({ protocols => [ $take_focus ] });
 
     ok(!recv_take_focus($window), 'did not receive ClientMessage');
+
+    my $con = shift get_ws_content($ws);
+    ok($con->{focused}, 'con is focused');
 
     done_testing;
 };
