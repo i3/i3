@@ -1792,6 +1792,8 @@ void reconfig_windows(bool redraw_bars) {
 void draw_bars(bool unhide) {
     DLOG("Drawing bars...\n");
     int workspace_width = 0;
+    /* Is the currently-rendered statusline using short_text items? */
+    bool rendered_statusline_is_short = false;
 
     refresh_statusline(false);
 
@@ -1941,8 +1943,15 @@ void draw_bars(bool unhide) {
             uint32_t max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - 2 * logical_px(sb_hoff_px);
 
             /* If the statusline is too long, try to use short texts. */
-            if (statusline_width > max_statusline_width)
+            if (statusline_width > max_statusline_width) {
+                /* If the currently rendered statusline is long, render a short status line */
                 refresh_statusline(true);
+                rendered_statusline_is_short = true;
+            } else if (rendered_statusline_is_short) {
+                /* If the currently rendered statusline is short, render a long status line */
+                refresh_statusline(false);
+                rendered_statusline_is_short = false;
+            }
 
             /* Luckily we already prepared a seperate pixmap containing the rendered
              * statusline, we just have to copy the relevant parts to the relevant
