@@ -431,7 +431,7 @@ CommandResult *run_binding(Binding *bind, Con *con) {
     if (con == NULL)
         command = sstrdup(bind->command);
     else
-        sasprintf(&command, "[con_id=\"%d\"] %s", con, bind->command);
+        sasprintf(&command, "[con_id=\"%p\"] %s", con, bind->command);
 
     Binding *bind_cp = binding_copy(bind);
     CommandResult *result = parse_command(command, NULL);
