@@ -420,7 +420,7 @@ void handle_button(xcb_button_press_event_t *event) {
         int offset = walk->rect.w - statusline_width - tray_width - logical_px(sb_hoff_px);
 
         x = original_x - offset;
-        if (x >= 0) {
+        if (x >= 0 && (size_t)x < statusline_width) {
             struct status_block *block;
             int sep_offset_remainder = 0;
 
