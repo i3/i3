@@ -69,6 +69,11 @@ i3-msg 'debuglog on; shmlog on; reload'
 
 == Obtaining the debug logfile
 
+Please note that log files may contain sensitive data such as window titles.
+The best way to avoid submitting such information is to only run the necessary
+applications to reproduce the behavior when saving the log file. This will also
+make analyzing the log file easier.
+
 No matter whether i3 misbehaved in some way without crashing or whether it just
 crashed, the logfile provides all information necessary to debug the problem.
 
