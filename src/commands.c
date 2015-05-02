@@ -1428,6 +1428,43 @@ void cmd_focus_level(I3_CMD, char *level) {
 }
 
 /*
+ * Implementation of 'focus local|global <n>'
+ *
+ */
+void cmd_focus_number(I3_CMD, char *context, char *_n) {
+    DLOG("Focusing %s-th container on %s level\n", _n, context);
+
+    /* parse into a number. */
+    char *endptr = NULL;
+    long n = strtol(_n, &endptr, 10);
+    if (n == LONG_MIN || n == LONG_MAX || n <= 0 || endptr == _n) {
+        ELOG("failed to parse \"%s\" into a number", _n);
+        yerror("failed to parse \"%s\" into a number", _n);
+        return;
+    }
+
+    Con *con;
+    if (strcmp(context, "global") == 0 || focused->type == CT_WORKSPACE)
+        con = con_get_workspace(focused);
+    else
+        con = focused->parent;
+
+    Con *target = con_get_nth(con, n);
+    if (target == NULL) {
+        DLOG("there is no %lu-th container within %p\n", n, con);
+        ysuccess(false);
+        return;
+    }
+
+    /* make sure we select the focused container within the target. */
+    target = con_descend_focused(target);
+    con_focus(target);
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'focus'.
  *
  */

@@ -382,3 +382,11 @@ char *con_get_tree_representation(Con *con);
  *
  */
 void con_force_split_parents_redraw(Con *con);
+
+/**
+ * Returns the n-th child window of con.
+ * Tabbed and stacked containers are considered one window
+ * while for all other split containers, it will descend recursively.
+ *
+ */
+Con *con_get_nth(Con *con, int n);

@@ -187,6 +187,12 @@ void cmd_focus_window_mode(I3_CMD, char *window_mode);
 void cmd_focus_level(I3_CMD, char *level);
 
 /**
+ * Implementation of 'focus local|global <n>'
+ *
+ */
+void cmd_focus_number(I3_CMD, char *context, char *_n);
+
+/**
  * Implementation of 'focus'.
  *
  */
