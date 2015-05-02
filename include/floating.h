@@ -70,6 +70,12 @@ bool floating_maybe_reassign_ws(Con *con);
  */
 void floating_center(Con *con, Rect rect);
 
+/**
+ * Moves the given floating con to the current pointer position.
+ *
+ */
+void floating_move_to_pointer(Con *con);
+
 #if 0
 /**
  * Removes the floating client from its workspace and attaches it to the new

@@ -271,6 +271,7 @@ state RENAME_WORKSPACE_NEW_NAME:
 # move workspace to [output] <str>
 # move scratchpad
 # move [window|container] [to] [absolute] position [ [<pixels> [px] <pixels> [px]] | center ]
+# move [window|container] [to] position mouse|cursor|pointer
 state MOVE:
   'window'
       ->
@@ -342,6 +343,8 @@ state MOVE_TO_ABSOLUTE_POSITION:
 state MOVE_TO_POSITION:
   'center'
       -> call cmd_move_window_to_center($method)
+  'mouse', 'cursor', 'pointer'
+      -> call cmd_move_window_to_mouse()
   coord_x = word
       -> MOVE_TO_POSITION_X
 
