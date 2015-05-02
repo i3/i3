@@ -1209,23 +1209,41 @@ Available modifiers are Mod1-Mod5, Shift, Control (see +xmodmap(1)+).
 === Mouse button commands
 
 Specifies a command to run when a button was pressed on i3bar to override the
-default behavior. Currently only the mouse wheel buttons are supported. This is
-useful for disabling the scroll wheel action or running scripts that implement
-custom behavior for these buttons.
+default behavior. This is useful, e.g., for disabling the scroll wheel action
+or running scripts that implement custom behavior for these buttons.
+
+A button is always named +button<n>+, where 1 to 5 are default buttons as follows and higher
+numbers can be special buttons on devices offering more buttons:
+
+button1::
+    Left mouse button.
+button2::
+    Middle mouse button.
+button3::
+    Right mouse button.
+button4::
+    Scroll wheel up.
+button5::
+    Scroll wheel down.
+
+Please note that the old +wheel_up_cmd+ and +wheel_down_cmd+ commands are deprecated
+and will be removed in a future release. We strongly recommend using the more general
++bindsym+ with +button4+ and +button5+ instead.
 
 *Syntax*:
----------------------
-wheel_up_cmd <command>
-wheel_down_cmd <command>
----------------------
+----------------------------
+bindsym button<n> <command>
+----------------------------
 
 *Example*:
----------------------
+---------------------------------------------------------
 bar {
-    wheel_up_cmd nop
-    wheel_down_cmd exec ~/.i3/scripts/custom_wheel_down
+    # disable clicking on workspace buttons
+    bindsym button1 nop
+    # execute custom script when scrolling downwards
+    bindsym button5 exec ~/.i3/scripts/custom_wheel_down
 }
----------------------
+---------------------------------------------------------
 
 === Bar ID
 
