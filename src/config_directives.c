@@ -530,14 +530,21 @@ CFGFUN(bar_modifier, const char *modifier) {
         current_bar.modifier = M_SHIFT;
 }
 
+static void bar_configure_mouse_command(const char *button, const char *command) {
+}
+
 CFGFUN(bar_wheel_up_cmd, const char *command) {
-    FREE(current_bar.wheel_up_cmd);
-    current_bar.wheel_up_cmd = sstrdup(command);
+    ELOG("'wheel_up_cmd' is deprecated. Please us 'bindsym button4 %s' instead.\n", command);
+    bar_configure_mouse_command("button4", command);
 }
 
 CFGFUN(bar_wheel_down_cmd, const char *command) {
-    FREE(current_bar.wheel_down_cmd);
-    current_bar.wheel_down_cmd = sstrdup(command);
+    ELOG("'wheel_down_cmd' is deprecated. Please us 'bindsym button5 %s' instead.\n", command);
+    bar_configure_mouse_command("button5", command);
+}
+
+CFGFUN(bar_bindsym, const char *button, const char *command) {
+    bar_configure_mouse_command(button, command);
 }
 
 CFGFUN(bar_position, const char *position) {
@@ -609,6 +616,10 @@ CFGFUN(bar_workspace_buttons, const char *value) {
 
 CFGFUN(bar_strip_workspace_numbers, const char *value) {
     current_bar.strip_workspace_numbers = eval_boolstr(value);
+}
+
+CFGFUN(bar_start) {
+    TAILQ_INIT(&(current_bar.mouse_commands));
 }
 
 CFGFUN(bar_finish) {

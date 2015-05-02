@@ -393,7 +393,7 @@ state BARBRACE:
   end
       ->
   '{'
-      -> BAR
+      -> call cfg_bar_start(); BAR
 
 state BAR:
   end ->
@@ -409,6 +409,7 @@ state BAR:
   'modifier'               -> BAR_MODIFIER
   'wheel_up_cmd'           -> BAR_WHEEL_UP_CMD
   'wheel_down_cmd'         -> BAR_WHEEL_DOWN_CMD
+  'bindsym'                -> BAR_BINDSYM
   'position'               -> BAR_POSITION
   'output'                 -> BAR_OUTPUT
   'tray_output'            -> BAR_TRAY_OUTPUT
@@ -462,6 +463,14 @@ state BAR_WHEEL_UP_CMD:
 state BAR_WHEEL_DOWN_CMD:
   command = string
       -> call cfg_bar_wheel_down_cmd($command); BAR
+
+state BAR_BINDSYM:
+  button = word
+      -> BAR_BINDSYM_COMMAND
+
+state BAR_BINDSYM_COMMAND:
+  command = string
+      -> call cfg_bar_bindsym($button, $command); BAR
 
 state BAR_POSITION:
   position = 'top', 'bottom'
