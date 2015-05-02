@@ -29,6 +29,7 @@ static void _workspace_apply_default_orientation(Con *ws) {
     if (config.default_orientation == NO_ORIENTATION) {
         Con *output = con_get_output(ws);
         ws->layout = (output->rect.height > output->rect.width) ? L_SPLITV : L_SPLITH;
+        ws->rect = output->rect;
         DLOG("Auto orientation. Workspace size set to (%d,%d), setting layout to %d.\n",
              output->rect.width, output->rect.height, ws->layout);
     } else {
