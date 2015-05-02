@@ -281,13 +281,7 @@ struct Barconfig {
         M_MOD5 = 7
     } modifier;
 
-    /** Command that should be run when mouse wheel up button is pressed over
-     * i3bar to override the default behavior. */
-    char *wheel_up_cmd;
-
-    /** Command that should be run when mouse wheel down button is pressed over
-     * i3bar to override the default behavior. */
-    char *wheel_down_cmd;
+    TAILQ_HEAD(mouse_commands_head, Mousecommand) mouse_commands;
 
     /** Bar position (bottom by default). */
     enum { P_BOTTOM = 0,
@@ -351,6 +345,21 @@ struct Barconfig {
     } colors;
 
     TAILQ_ENTRY(Barconfig) configs;
+};
+
+/**
+ * Defines a mouse command to be executed instead of the default behavior when
+ * clicking on the non-statusline part of i3bar.
+ *
+ */
+struct Mousecommand {
+    /** The button for this command (e.g., "button1") */
+    char *button;
+
+    /** The command which is to be executed for this button. */
+    char *command;
+
+    TAILQ_ENTRY(Mousecommand) commands;
 };
 
 /**

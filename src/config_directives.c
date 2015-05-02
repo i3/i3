@@ -531,6 +531,23 @@ CFGFUN(bar_modifier, const char *modifier) {
 }
 
 static void bar_configure_mouse_command(const char *button, const char *command) {
+    if (strncasecmp(button, "button", sizeof("button") - 1) != 0) {
+        ELOG("unknown button \"%s\" for mouse command, ignoring.\n", button);
+        return;
+    }
+
+    struct Mousecommand *current;
+    TAILQ_FOREACH(current, &(current_bar.mouse_commands), commands) {
+        if (strcasecmp(current->button, button) == 0) {
+            ELOG("command for button %s was already specified, ignoring.\n", button);
+            return;
+        }
+    }
+
+    struct Mousecommand *new_command = scalloc(sizeof(struct Mousecommand));
+    new_command->button = sstrdup(button);
+    new_command->command = sstrdup(command);
+    TAILQ_INSERT_TAIL(&(current_bar.mouse_commands), new_command, commands);
 }
 
 CFGFUN(bar_wheel_up_cmd, const char *command) {
