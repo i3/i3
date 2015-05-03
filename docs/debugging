@@ -67,6 +67,30 @@ fly:
 i3-msg 'debuglog on; shmlog on; reload'
 ---------------------------------------
 
+== Reproducing the problem
+
+Before submitting an issue, please make sure to close down on the problem as
+much as you can yourself. Here are some steps you should consider:
+
+* Find a deterministic, reliable way to reproduce the problem and provide it
+  with your bug report.
+* Try using the default i3 config to reproduce the problem. If the issue does
+  not appear with the default config, gradually adapt it to track down what 
+  change(s) to the config introduce the problem.
+* Reproduce the problem with a minimal setup, i.e., only use as few applications,
+  windows and steps as necessary.
+* In addition, try to stick to applications that are common and, even more
+  importantly, free / open source.
+* Before obtaining the log file, restart i3 in-place, execute the steps to
+  reproduce the problem and then save the logs. This keeps the log file as
+  small as possible and necessary.
+
+Please be aware that we cannot support compatibility issues with closed-source
+software, as digging into compatibility problems without having access to the
+source code is too time-consuming. Additionally, experience has shown that
+often, the software in question is responsible for the issue. Please raise an
+issue with the software in question, not i3.
+
 == Obtaining the debug logfile
 
 Please note that log files may contain sensitive data such as window titles.
