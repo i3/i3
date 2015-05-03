@@ -699,6 +699,10 @@ commands will not run when restarting i3, if you need a command to run
 also when restarting i3 you should use the +exec_always+
 keyword. These commands will be run in order.
 
+See <<command_chaining>> for details on the special meaning of +;+ (semicolon)
+and +,+ (comma): they chain commands together in i3, so you need to use quoted
+strings if they appear in your command.
+
 *Syntax*:
 -------------------
 exec [--no-startup-id] command
@@ -1466,7 +1470,11 @@ information on how to use them.
 What good is a window manager if you can’t actually start any applications?
 The exec command starts an application by passing the command you specify to a
 shell. This implies that you can use globbing (wildcards) and programs will be
-searched in your $PATH.
+searched in your +$PATH+.
+
+See <<command_chaining>> for details on the special meaning of +;+ (semicolon)
+and +,+ (comma): they chain commands together in i3, so you need to use quoted
+strings if they appear in your command.
 
 *Syntax*:
 ------------------------------
