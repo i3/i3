@@ -725,8 +725,8 @@ also when restarting i3 you should use the +exec_always+
 keyword. These commands will be run in order.
 
 See <<command_chaining>> for details on the special meaning of +;+ (semicolon)
-and +,+ (comma): they chain commands together in i3 and need to be escaped if
-you want to use them in your command.
+and +,+ (comma): they chain commands together in i3, so you need to use quoted
+strings if they appear in your command.
 
 *Syntax*:
 -------------------
@@ -1549,8 +1549,8 @@ shell. This implies that you can use globbing (wildcards) and programs will be
 searched in your +$PATH+.
 
 See <<command_chaining>> for details on the special meaning of +;+ (semicolon)
-and +,+ (comma): they chain commands together in i3 and need to be escaped if
-you want to use them in your command.
+and +,+ (comma): they chain commands together in i3, so you need to use quoted
+strings if they appear in your command.
 
 *Syntax*:
 ------------------------------
