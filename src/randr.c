@@ -69,7 +69,7 @@ Output *get_first_output(void) {
     if (output->active)
         return output;
 
-    die("No usable outputs available.\n");
+    return NULL;
 }
 
 /*
@@ -570,6 +570,8 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
     if (!new->active) {
         DLOG("width/height 0/0, disabling output\n");
         return;
+    } else {
+        new->to_be_disabled = false;
     }
 
     DLOG("mode: %dx%d+%d+%d\n", new->rect.width, new->rect.height,
@@ -591,11 +593,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
     new->changed = true;
 }
 
-/*
- * (Re-)queries the outputs via RandR and stores them in the list of outputs.
- *
- */
-void randr_query_outputs(void) {
+static bool __randr_query_outputs(void) {
     Output *output, *other, *first;
     xcb_randr_get_output_primary_cookie_t pcookie;
     xcb_randr_get_screen_resources_current_cookie_t rcookie;
@@ -609,7 +607,7 @@ void randr_query_outputs(void) {
     xcb_randr_output_t *randr_outputs;
 
     if (randr_disabled)
-        return;
+        return true;
 
     /* Get screen resources (primary output, crtcs, outputs, modes) */
     rcookie = xcb_randr_get_screen_resources_current(conn, root);
@@ -621,7 +619,7 @@ void randr_query_outputs(void) {
         DLOG("primary output is %08x\n", primary->output);
     if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
         disable_randr(conn);
-        return;
+        return true;
     }
     cts = res->config_timestamp;
 
@@ -703,6 +701,11 @@ void randr_query_outputs(void) {
             DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
 
             first = get_first_output();
+            if (!first) {
+                FREE(res);
+                FREE(primary);
+                return false;
+            }
 
             /* TODO: refactor the following code into a nice function. maybe
              * use an on_destroy callback which is implement differently for
@@ -818,6 +821,32 @@ void randr_query_outputs(void) {
 
     FREE(res);
     FREE(primary);
+
+    return true;
+}
+
+/*
+ * (Re-)queries the outputs via RandR and stores them in the list of outputs.
+ *
+ */
+void randr_query_outputs(void) {
+    static bool first_query = true;
+
+    if (first_query) {
+        /* find monitors at least once via RandR */
+        if (!__randr_query_outputs())
+            die("No usable outputs available.\n");
+        first_query = false;
+    } else {
+        /* requery */
+        if (!__randr_query_outputs()) {
+            DLOG("sleep %f ms due to zero displays\n", config.zero_disp_exit_timer_ms);
+            usleep(config.zero_disp_exit_timer_ms * 1000);
+
+            if (!__randr_query_outputs())
+                die("No usable outputs available.\n");
+        }
+    }
 }
 
 /*

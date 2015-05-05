@@ -354,6 +354,10 @@ CFGFUN(force_display_urgency_hint, const long duration_ms) {
     config.workspace_urgency_timer = duration_ms / 1000.0;
 }
 
+CFGFUN(delay_exit_on_zero_displays, const long duration_ms) {
+    config.zero_disp_exit_timer_ms = duration_ms;
+}
+
 CFGFUN(focus_on_window_activation, const char *mode) {
     if (strcmp(mode, "smart") == 0)
         config.focus_on_window_activation = FOWA_SMART;

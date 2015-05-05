@@ -39,6 +39,7 @@ state INITIAL:
   'workspace_auto_back_and_forth'          -> WORKSPACE_BACK_AND_FORTH
   'fake_outputs', 'fake-outputs'           -> FAKE_OUTPUTS
   'force_display_urgency_hint'             -> FORCE_DISPLAY_URGENCY_HINT
+  'delay_exit_on_zero_displays'            -> DELAY_EXIT_ON_ZERO_DISPLAYS
   'focus_on_window_activation'             -> FOCUS_ON_WINDOW_ACTIVATION
   'show_marks'                             -> SHOW_MARKS
   'workspace'                              -> WORKSPACE
@@ -227,6 +228,17 @@ state FORCE_DISPLAY_URGENCY_HINT_MS:
       ->
   end
       -> call cfg_force_display_urgency_hint(&duration_ms)
+
+# delay_exit_on_zero_displays <delay> ms
+state DELAY_EXIT_ON_ZERO_DISPLAYS:
+  duration_ms = number
+      -> DELAY_EXIT_ON_ZERO_DISPLAYS_MS
+
+state DELAY_EXIT_ON_ZERO_DISPLAYS_MS:
+  'ms'
+      ->
+  end
+      -> call cfg_delay_exit_on_zero_displays(&duration_ms)
 
 # focus_on_window_activation <smart|urgent|focus|none>
 state FOCUS_ON_WINDOW_ACTIVATION:

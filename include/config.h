@@ -167,6 +167,10 @@ struct Config {
      * flag can be delayed using an urgency timer. */
     float workspace_urgency_timer;
 
+    /** Use a timer to delay exiting when no output is available.
+      * This can prevent i3 from exiting when all outputs disappear momentarily. */
+    float zero_disp_exit_timer_ms;
+
     /** Behavior when a window sends a NET_ACTIVE_WINDOW message. */
     enum {
         /* Focus if the target workspace is visible, set urgency hint otherwise. */
