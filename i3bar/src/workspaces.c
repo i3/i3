@@ -106,7 +106,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
 
     if (!strcmp(params->cur_key, "name")) {
         const char *ws_name = (const char *)val;
-        params->workspaces_walk->canonical_name = strndup(ws_name, len);
+        params->workspaces_walk->canonical_name = sstrndup(ws_name, len);
 
         if (config.strip_ws_numbers && params->workspaces_walk->num >= 0) {
             /* Special case: strip off the workspace number */

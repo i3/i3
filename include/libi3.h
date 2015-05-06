@@ -128,6 +128,13 @@ void *srealloc(void *ptr, size_t size);
 char *sstrdup(const char *str);
 
 /**
+ * Safe-wrapper around strndup which exits if strndup returns NULL (meaning that
+ * there is no more memory available)
+ *
+ */
+char *sstrndup(const char *str, size_t size);
+
+/**
  * Safe-wrapper around asprintf which exits if it returns -1 (meaning that
  * there is no more memory available)
  *

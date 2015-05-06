@@ -48,6 +48,13 @@ char *sstrdup(const char *str) {
     return result;
 }
 
+char *sstrndup(const char *str, size_t size) {
+    char *result = strndup(str, size);
+    if (result == NULL)
+        err(EXIT_FAILURE, "strndup()");
+    return result;
+}
+
 int sasprintf(char **strp, const char *fmt, ...) {
     va_list args;
     int result;
