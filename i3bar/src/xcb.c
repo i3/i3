@@ -60,6 +60,9 @@ xcb_connection_t *conn;
 /* The font we'll use */
 static i3Font font;
 
+/* Icon size (based on font size) */
+int icon_size;
+
 /* Overall height of the bar (based on font size) */
 int bar_height;
 
@@ -122,6 +125,9 @@ static const int sb_hoff_px = 4;
 /* Additional offset between the tray and the statusline, if the tray is not empty */
 static const int tray_loff_px = 2;
 
+/* Padding around the tray icons */
+static const int tray_spacing_px = 2;
+
 /* Vertical offset between the bar and a separator */
 static const int sep_voff_px = 4;
 
@@ -148,7 +154,7 @@ int get_tray_width(struct tc_head *trayclients) {
     TAILQ_FOREACH_REVERSE(trayclient, trayclients, tc_head, tailq) {
         if (!trayclient->mapped)
             continue;
-        tray_width += font.height + logical_px(2);
+        tray_width += icon_size + logical_px(tray_spacing_px);
     }
     if (tray_width > 0)
         tray_width += logical_px(tray_loff_px);
@@ -591,8 +597,8 @@ static void configure_trayclients(void) {
             clients++;
 
             DLOG("Configuring tray window %08x to x=%d\n",
-                 trayclient->win, output->rect.w - (clients * (font.height + logical_px(2))));
-            uint32_t x = output->rect.w - (clients * (font.height + logical_px(2)));
+                 trayclient->win, output->rect.w - (clients * (icon_size + logical_px(tray_spacing_px))));
+            uint32_t x = output->rect.w - (clients * (icon_size + logical_px(tray_spacing_px)));
             xcb_configure_window(xcb_connection,
                                  trayclient->win,
                                  XCB_CONFIG_WINDOW_X,
@@ -702,16 +708,16 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             xcb_reparent_window(xcb_connection,
                                 client,
                                 output->bar,
-                                output->rect.w - font.height - 2,
-                                2);
+                                output->rect.w - icon_size - logical_px(tray_spacing_px),
+                                logical_px(tray_spacing_px));
             /* We reconfigure the window to use a reasonable size. The systray
              * specification explicitly says:
              *   Tray icons may be assigned any size by the system tray, and
              *   should do their best to cope with any size effectively
              */
             mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
-            values[0] = font.height;
-            values[1] = font.height;
+            values[0] = icon_size;
+            values[1] = icon_size;
             xcb_configure_window(xcb_connection,
                                  client,
                                  mask,
@@ -941,10 +947,10 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
                 continue;
 
             xcb_rectangle_t rect;
-            rect.x = output->rect.w - (clients * (font.height + 2));
-            rect.y = 2;
-            rect.width = font.height;
-            rect.height = font.height;
+            rect.x = output->rect.w - (clients * (icon_size + logical_px(tray_spacing_px)));
+            rect.y = logical_px(tray_spacing_px);
+            rect.width = icon_size;
+            rect.height = icon_size;
 
             DLOG("This is a tray window. x = %d\n", rect.x);
             fake_configure_notify(xcb_connection, rect, event->window, 0);
@@ -1215,6 +1221,7 @@ void init_xcb_late(char *fontname) {
     set_font(&font);
     DLOG("Calculated font height: %d\n", font.height);
     bar_height = font.height + 2 * logical_px(ws_voff_px);
+    icon_size = bar_height - 2 * logical_px(tray_spacing_px);
 
     if (config.separator_symbol)
         separator_symbol_width = predict_text_width(config.separator_symbol);
