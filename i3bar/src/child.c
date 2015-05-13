@@ -167,6 +167,12 @@ static int stdin_start_map(void *context) {
     else
         ctx->block.sep_block_width = logical_px(8) + separator_symbol_width;
 
+    ctx->block.graph_width = 64;
+    ctx->block.graph_reset = 0;
+    ctx->block.graph_colorA = "#99FFFF";
+    ctx->block.graph_colorB = "#FF99FF";
+    ctx->block.graph_colorC = "#FFFF99";
+
     return 1;
 }
 
@@ -185,6 +191,10 @@ static int stdin_boolean(void *context, int val) {
     }
     if (strcasecmp(ctx->last_map_key, "separator") == 0) {
         ctx->block.no_separator = !val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "graph_reset") == 0) {
+        ctx->block.graph_reset = !val;
         return 1;
     }
 
@@ -240,6 +250,25 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         ctx->block.instance = copy;
         return 1;
     }
+    if (strcasecmp(ctx->last_map_key, "graph_type") == 0) {
+        char *copy = (char *)malloc(len + 1);
+        strncpy(copy, (const char *)val, len);
+        copy[len] = 0;
+        ctx->block.graph_type = copy;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "graph_colorA") == 0) {
+        sasprintf(&(ctx->block.graph_colorA), "%.*s", len, val);
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "graph_colorB") == 0) {
+        sasprintf(&(ctx->block.graph_colorB), "%.*s", len, val);
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "graph_colorC") == 0) {
+        sasprintf(&(ctx->block.graph_colorC), "%.*s", len, val);
+        return 1;
+    }
 
     return 1;
 }
@@ -252,6 +281,22 @@ static int stdin_integer(void *context, long long val) {
     }
     if (strcasecmp(ctx->last_map_key, "separator_block_width") == 0) {
         ctx->block.sep_block_width = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "graph_min") == 0) {
+        ctx->block.graph_min = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "graph_max") == 0) {
+        ctx->block.graph_max = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "graph_width") == 0) {
+        ctx->block.graph_width = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "graph_value") == 0) {
+        ctx->block.graph_value = (uint32_t)val;
         return 1;
     }
 

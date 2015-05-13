@@ -206,17 +206,20 @@ void refresh_statusline(bool use_short_text) {
             block->full_text = i3string_copy(block->short_text);
         }
 
-        if (i3string_get_num_bytes(block->full_text) == 0)
+        if (i3string_get_num_bytes(block->full_text) == 0
+            && !block->graph_type)
             continue;
 
-        block->width = predict_text_width(block->full_text);
+        block->block_width = block->text_width = predict_text_width(block->full_text);
+        if (block->graph_type)
+            block->block_width += block->graph_width;
 
         /* Compute offset and append for text aligment in min_width. */
-        if (block->min_width <= block->width) {
+        if (block->min_width <= block->block_width) {
             block->x_offset = 0;
             block->x_append = 0;
         } else {
-            uint32_t padding_width = block->min_width - block->width;
+            uint32_t padding_width = block->min_width - block->block_width;
             switch (block->align) {
                 case ALIGN_LEFT:
                     block->x_append = padding_width;
@@ -235,7 +238,7 @@ void refresh_statusline(bool use_short_text) {
         if (TAILQ_NEXT(block, blocks) != NULL)
             statusline_width += block->sep_block_width;
 
-        statusline_width += block->width + block->x_offset + block->x_append;
+        statusline_width += block->block_width + block->x_offset + block->x_append;
     }
 
     /* If the statusline is bigger than our screen we need to make sure that
@@ -251,32 +254,49 @@ void refresh_statusline(bool use_short_text) {
     /* Draw the text of each block. */
     uint32_t x = 0;
     TAILQ_FOREACH(block, &statusline_head, blocks) {
-        if (i3string_get_num_bytes(block->full_text) == 0)
-            continue;
-        uint32_t fg_color;
+        if (block->text_width > 0) {
+            uint32_t fg_color;
 
-        /* If this block is urgent, draw it with the defined color and border. */
-        if (block->urgent) {
-            fg_color = colors.urgent_ws_fg;
+            /* If this block is urgent, draw it with the defined color and border. */
+            if (block->urgent) {
+                fg_color = colors.urgent_ws_fg;
 
-            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+                uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
 
-            /* Draw the background */
-            uint32_t bg_color = colors.urgent_ws_bg;
-            uint32_t bg_values[] = {bg_color, bg_color};
-            xcb_change_gc(xcb_connection, statusline_ctx, mask, bg_values);
+                /* Draw the background */
+                uint32_t bg_color = colors.urgent_ws_bg;
+                uint32_t bg_values[] = {bg_color, bg_color};
+                xcb_change_gc(xcb_connection, statusline_ctx, mask, bg_values);
 
-            /* The urgent background “overshoots” by 2 px so that the text that
-             * is printed onto it will not be look so cut off. */
-            xcb_rectangle_t bg_rect = {x - logical_px(2), logical_px(1), block->width + logical_px(4), bar_height - logical_px(2)};
-            xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_ctx, 1, &bg_rect);
-        } else {
-            fg_color = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
+                /* The urgent background “overshoots” by 2 px so that the text that
+                 * is printed onto it will not be look so cut off. */
+                xcb_rectangle_t bg_rect = {x - logical_px(2), logical_px(1), block->block_width + logical_px(4), bar_height - logical_px(2)};
+                xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_ctx, 1, &bg_rect);
+            } else {
+                fg_color = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
+            }
+
+            set_font_colors(statusline_ctx, fg_color, colors.bar_bg);
+            draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, logical_px(ws_voff_px), block->text_width);
         }
-
-        set_font_colors(statusline_ctx, fg_color, colors.bar_bg);
-        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, logical_px(ws_voff_px), block->width);
-        x += block->width + block->sep_block_width + block->x_offset + block->x_append;
+        if (block->graph_type) {
+            if (block->text_width > 0) {
+                uint32_t green = get_colorpixel("#FFAAFF");
+                set_font_colors(statusline_ctx, green, colors.bar_bg);
+                xcb_change_gc(xcb_connection,
+                              statusline_ctx,
+                              XCB_GC_FOREGROUND,
+                              &green);
+                draw_graph(block,
+                           statusline_pm,
+                           statusline_ctx,
+                           x + block->x_offset + block->text_width,
+                           logical_px(1),
+                           block->graph_width,
+                           bar_height - logical_px(2));
+            }
+        }
+        x += block->block_width + block->sep_block_width + block->x_offset + block->x_append;
 
         /* If this is not the last block, draw a separator. */
         draw_separator(x, block);
@@ -435,7 +455,7 @@ void handle_button(xcb_button_press_event_t *event) {
                     continue;
 
                 last_block_x = block_x;
-                block_x += block->width + block->x_offset + block->x_append + get_sep_offset(block) + sep_offset_remainder;
+                block_x += block->block_width + block->x_offset + block->x_append + get_sep_offset(block) + sep_offset_remainder;
 
                 if (x <= block_x && x >= last_block_x) {
                     send_block_clicked(event->detail, block->name, block->instance, event->root_x, event->root_y);
@@ -2019,4 +2039,10 @@ void set_current_mode(struct mode *current) {
     binding = *current;
     activated_mode = binding.name != NULL;
     return;
+}
+
+void draw_graph(struct status_block* block, xcb_drawable_t drawable,
+                xcb_gcontext_t gc, int x, int y, int max_width, int height) {
+    xcb_rectangle_t rect = {x, y, block->graph_width, height};
+    xcb_poly_fill_rectangle(xcb_connection, drawable, gc, 1, &rect);
 }

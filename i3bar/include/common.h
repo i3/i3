@@ -56,13 +56,25 @@ struct status_block {
 
     /* The amount of pixels necessary to render this block. These variables are
      * only temporarily used in refresh_statusline(). */
-    uint32_t width;
+    uint32_t text_width;
     uint32_t x_offset;
     uint32_t x_append;
+    uint32_t block_width;
 
     /* Optional */
     char *name;
     char *instance;
+
+    char *graph_instance;
+    char *graph_type;
+    uint32_t graph_min;
+    uint32_t graph_max;
+    uint32_t graph_width;
+    char *graph_colorA;
+    char *graph_colorB;
+    char *graph_colorC;
+    uint32_t graph_value;
+    bool graph_reset;
 
     TAILQ_ENTRY(status_block) blocks;
 };
