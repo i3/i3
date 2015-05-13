@@ -335,7 +335,7 @@ void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue) {
 
     if (strcmp(ctype, "con_id") == 0) {
         char *end;
-        long parsed = strtol(cvalue, &end, 10);
+        long parsed = strtol(cvalue, &end, 0);
         if (parsed == LONG_MIN ||
             parsed == LONG_MAX ||
             parsed < 0 ||
@@ -350,7 +350,7 @@ void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue) {
 
     if (strcmp(ctype, "id") == 0) {
         char *end;
-        long parsed = strtol(cvalue, &end, 10);
+        long parsed = strtol(cvalue, &end, 0);
         if (parsed == LONG_MIN ||
             parsed == LONG_MAX ||
             parsed < 0 ||
