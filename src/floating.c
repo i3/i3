@@ -440,6 +440,10 @@ void floating_move_to_pointer(Con *con) {
     }
 
     Output *output = get_output_containing(reply->root_x, reply->root_y);
+    if (output == NULL) {
+        ELOG("The pointer is not on any output, cannot move the container here.");
+        return;
+    }
 
     /* Determine where to put the window. */
     int32_t x = reply->root_x - con->rect.width / 2;
