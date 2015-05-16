@@ -616,6 +616,8 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
 #undef YSTR_IF_SET
 
     TAILQ_FOREACH(graphconfig, &config->graph_configs, configs) {
+        ystr("graph");
+        y(map_open);
 #define YSTR_IF_SET(name)              \
     do {                               \
         if (graphconfig->name) {       \
@@ -623,12 +625,10 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
             ystr(graphconfig->name);   \
         }                              \
     } while (0)
-        ystr("graph");
-        y(map_open);
-        YSTR_IF_SET(instance);
-        YSTR_IF_SET(colorA);
-        YSTR_IF_SET(colorB);
-        YSTR_IF_SET(colorC);
+        YSTR_IF_SET(graph_config);
+        YSTR_IF_SET(colorTOP);
+        YSTR_IF_SET(colorMIDDLE);
+        YSTR_IF_SET(colorBOTTOM);
 #undef YSTR_IF_SET
 #define YSTR_SET(name)                 \
     do {                               \
@@ -639,10 +639,9 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
         YSTR_SET(min);
         YSTR_SET(max);
         YSTR_SET(time_range);
-        y(map_close);
 #undef YSTR_SET
+        y(map_close);
     }
-
 
     y(map_close);
 }

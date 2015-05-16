@@ -65,10 +65,14 @@ struct status_block {
     char *name;
     char *instance;
 
-    struct graph_config_t *graph_instance;
+    char *graph_config;
     uint32_t graph_value;
     uint32_t graph_timestamp;
     bool graph_reset;
+
+    /* temporary variables used during rendering */
+    struct graph_config_t *graph_config_ptr;
+    struct graph_t *graph;
 
     TAILQ_ENTRY(status_block) blocks;
 };

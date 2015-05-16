@@ -554,10 +554,10 @@ state BAR_GRAPH:
       ->
   '#' -> BAR_GRAPH_IGNORE_LINE
   'set' -> BAR_GRAPH_IGNORE_LINE
-  'instance' -> BAR_GRAPH_INSTANCE
+  'graph_config' -> BAR_GRAPH_GRAPH_CONFIG
   graphclass = 'width', 'min', 'max', 'time_range'
       -> BAR_GRAPH_NUMBER
-  graphcolorclass = 'colorA', 'colorB', 'colorC'
+  graphcolorclass = 'colorTOP', 'colorMIDDLE', 'colorBOTTOM'
       -> BAR_GRAPH_COLOR
   '}'
       -> call cfg_bar_graph_finish(); BAR
@@ -575,6 +575,6 @@ state BAR_GRAPH_COLOR:
   value = word
       -> call cfg_bar_graph_color($graphcolorclass, $value); BAR_GRAPH
 
-state BAR_GRAPH_INSTANCE:
+state BAR_GRAPH_GRAPH_CONFIG:
   instance = word
-      -> call cfg_bar_graph_instance($instance); BAR_GRAPH
+      -> call cfg_bar_graph_graph_config($instance); BAR_GRAPH

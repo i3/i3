@@ -633,15 +633,15 @@ CFGFUN(bar_graph_color, const char *colorclass, const char *color) {
             return;                                 \
         }                                           \
     } while (0)
-    HANDLE_COLOR(colorA);
-    HANDLE_COLOR(colorB);
-    HANDLE_COLOR(colorC);
+    HANDLE_COLOR(colorTOP);
+    HANDLE_COLOR(colorMIDDLE);
+    HANDLE_COLOR(colorBOTTOM);
     #undef HANDLE_COLOR
 }
 
-CFGFUN(bar_graph_instance, const char *instance) {
-    FREE(current_graph.instance);
-    current_graph.instance = strdup(instance);
+CFGFUN(bar_graph_graph_config, const char *graph_config) {
+    FREE(current_graph.graph_config);
+    current_graph.graph_config = strdup(graph_config);
 }
 
 CFGFUN(bar_graph_finish) {

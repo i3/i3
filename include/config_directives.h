@@ -93,6 +93,6 @@ CFGFUN(bar_workspace_buttons, const char *value);
 CFGFUN(bar_strip_workspace_numbers, const char *value);
 CFGFUN(bar_graph_attribute, const char* attribute, long value);
 CFGFUN(bar_graph_color, const char* colorclass, const char *color);
-CFGFUN(bar_graph_instance, const char* instance);
+CFGFUN(bar_graph_graph_config, const char* graph_config);
 CFGFUN(bar_graph_finish);
 CFGFUN(bar_finish);

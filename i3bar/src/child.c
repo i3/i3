@@ -244,15 +244,11 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         ctx->block.instance = copy;
         return 1;
     }
-
-    if (strcasecmp(ctx->last_map_key, "graph_instance") == 0) {
-        graph_config_t* graph_instance;;
-        TAILQ_FOREACH(graph_instance, &config.graph_configs, configs) {
-            if (!strncmp((const char*)val, graph_instance->instance, len)) {
-                ctx->block.graph_instance = graph_instance;
-                break;
-            }
-        }
+    if (strcasecmp(ctx->last_map_key, "graph_config") == 0) {
+        char *copy = (char *)malloc(len + 1);
+        strncpy(copy, (const char *)val, len);
+        copy[len] = 0;
+        ctx->block.graph_config = copy;
         return 1;
     }
 

@@ -237,10 +237,10 @@ struct Config {
 };
 
 struct Graphconfig {
-    char *instance;
-    char *colorA;
-    char *colorB;
-    char *colorC;
+    char *graph_config;
+    char *colorTOP;
+    char *colorMIDDLE;
+    char *colorBOTTOM;
     long min;
     long max;
     long width;

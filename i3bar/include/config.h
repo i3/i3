@@ -23,10 +23,10 @@ typedef enum { M_DOCK = 0,
                M_INVISIBLE = 2 } bar_display_mode_t;
 
 typedef struct graph_config_t {
-    char *instance;
-    char *colorA;
-    char *colorB;
-    char *colorC;
+    char *graph_config;
+    uint32_t colorTOP;
+    uint32_t colorMIDDLE;
+    uint32_t colorBOTTOM;
     int width;
     int min;
     int max;

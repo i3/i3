@@ -74,10 +74,19 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
                 return 1;                                             \
             }                                                         \
         } while (0)
-        HANDLE_ATTR(instance);
-        HANDLE_ATTR(colorA);
-        HANDLE_ATTR(colorB);
-        HANDLE_ATTR(colorC);
+        HANDLE_ATTR(graph_config);
+        #undef HANDLE_ATTR
+
+        #define HANDLE_ATTR(name) do {                                \
+            if (!strcmp(cur_key, #name)) {                            \
+                DLOG("name = %s, value = %*.s\n", cur_key, len, val); \
+                graph_config.name = get_colorpixel((const char*)val); \
+                return 1;                                             \
+            }                                                         \
+        } while (0)
+        HANDLE_ATTR(colorTOP);
+        HANDLE_ATTR(colorMIDDLE);
+        HANDLE_ATTR(colorBOTTOM);
         #undef HANDLE_ATTR
         printf("got unexpected string %.*s for cur_key = %s in scope of graph\n",
                len, val, cur_key);
