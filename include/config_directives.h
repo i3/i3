@@ -70,6 +70,7 @@ CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, co
 CFGFUN(enter_mode, const char *mode);
 CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command);
 
+CFGFUN(bar_start);
 CFGFUN(bar_font, const char *font);
 CFGFUN(bar_separator_symbol, const char *separator);
 CFGFUN(bar_mode, const char *mode);
@@ -90,4 +91,8 @@ CFGFUN(bar_status_command, const char *command);
 CFGFUN(bar_binding_mode_indicator, const char *value);
 CFGFUN(bar_workspace_buttons, const char *value);
 CFGFUN(bar_strip_workspace_numbers, const char *value);
+CFGFUN(bar_graph_attribute, const char* attribute, long value);
+CFGFUN(bar_graph_color, const char* colorclass, const char *color);
+CFGFUN(bar_graph_instance, const char* instance);
+CFGFUN(bar_graph_finish);
 CFGFUN(bar_finish);

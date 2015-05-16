@@ -421,6 +421,7 @@ state BAR:
   'strip_workspace_numbers' -> BAR_STRIP_WORKSPACE_NUMBERS
   'verbose'                -> BAR_VERBOSE
   'colors'                 -> BAR_COLORS_BRACE
+  'graph'                  -> BAR_GRAPH_BRACE
   '}'
       -> call cfg_bar_finish(); INITIAL
 
@@ -540,3 +541,40 @@ state BAR_COLORS_TEXT:
       -> call cfg_bar_color($colorclass, $border, $background, NULL); BAR_COLORS
   text = word
       -> call cfg_bar_color($colorclass, $border, $background, $text); BAR_COLORS
+
+
+state BAR_GRAPH_BRACE:
+  end
+      ->
+  '{'
+      -> BAR_GRAPH
+
+state BAR_GRAPH:
+  end
+      ->
+  '#' -> BAR_GRAPH_IGNORE_LINE
+  'set' -> BAR_GRAPH_IGNORE_LINE
+  'instance' -> BAR_GRAPH_INSTANCE
+  graphclass = 'width', 'min', 'max', 'time_range'
+      -> BAR_GRAPH_NUMBER
+  graphcolorclass = 'colorA', 'colorB', 'colorC'
+      -> BAR_GRAPH_COLOR
+  '}'
+      -> call cfg_bar_graph_finish(); BAR
+
+# We ignore comments and 'set' lines (variables).
+state BAR_GRAPH_IGNORE_LINE:
+  line
+      -> BAR_GRAPH
+
+state BAR_GRAPH_NUMBER:
+  value = number
+      -> call cfg_bar_graph_attribute($graphclass, &value); BAR_GRAPH
+
+state BAR_GRAPH_COLOR:
+  value = word
+      -> call cfg_bar_graph_color($graphcolorclass, $value); BAR_GRAPH
+
+state BAR_GRAPH_INSTANCE:
+  instance = word
+      -> call cfg_bar_graph_instance($instance); BAR_GRAPH

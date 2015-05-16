@@ -105,8 +105,18 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
         /* Clear bar configs */
         Barconfig *barconfig;
+        Graphconfig *graphconfig;
         while (!TAILQ_EMPTY(&barconfigs)) {
             barconfig = TAILQ_FIRST(&barconfigs);
+            while (!TAILQ_EMPTY(&barconfig->graph_configs)) {
+                graphconfig = TAILQ_FIRST(&barconfig->graph_configs);
+                TAILQ_REMOVE(&barconfig->graph_configs, graphconfig, configs);
+                FREE(graphconfig->instance);
+                FREE(graphconfig->colorA);
+                FREE(graphconfig->colorB);
+                FREE(graphconfig->colorC);
+                FREE(graphconfig);
+            }
             FREE(barconfig->id);
             for (int c = 0; c < barconfig->num_outputs; c++)
                 free(barconfig->outputs[c]);

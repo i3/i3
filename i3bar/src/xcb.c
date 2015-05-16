@@ -207,12 +207,12 @@ void refresh_statusline(bool use_short_text) {
         }
 
         if (i3string_get_num_bytes(block->full_text) == 0
-            && !block->graph_type)
+            && !block->graph_instance)
             continue;
 
         block->block_width = block->text_width = predict_text_width(block->full_text);
-        if (block->graph_type)
-            block->block_width += block->graph_width;
+        if (block->graph_instance)
+            block->block_width += block->graph_instance->width;
 
         /* Compute offset and append for text aligment in min_width. */
         if (block->min_width <= block->block_width) {
@@ -279,8 +279,8 @@ void refresh_statusline(bool use_short_text) {
             set_font_colors(statusline_ctx, fg_color, colors.bar_bg);
             draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, logical_px(ws_voff_px), block->text_width);
         }
-        if (block->graph_type) {
-            if (block->text_width > 0) {
+        if (block->graph_instance) {
+            if (block->graph_instance->width > 0) {
                 uint32_t green = get_colorpixel("#FFAAFF");
                 set_font_colors(statusline_ctx, green, colors.bar_bg);
                 xcb_change_gc(xcb_connection,
@@ -292,7 +292,7 @@ void refresh_statusline(bool use_short_text) {
                            statusline_ctx,
                            x + block->x_offset + block->text_width,
                            logical_px(1),
-                           block->graph_width,
+                           block->graph_instance->width,
                            bar_height - logical_px(2));
             }
         }
@@ -2043,6 +2043,6 @@ void set_current_mode(struct mode *current) {
 
 void draw_graph(struct status_block* block, xcb_drawable_t drawable,
                 xcb_gcontext_t gc, int x, int y, int max_width, int height) {
-    xcb_rectangle_t rect = {x, y, block->graph_width, height};
+    xcb_rectangle_t rect = {x, y, block->graph_instance->width, height};
     xcb_poly_fill_rectangle(xcb_connection, drawable, gc, 1, &rect);
 }

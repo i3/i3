@@ -65,15 +65,9 @@ struct status_block {
     char *name;
     char *instance;
 
-    char *graph_instance;
-    char *graph_type;
-    uint32_t graph_min;
-    uint32_t graph_max;
-    uint32_t graph_width;
-    char *graph_colorA;
-    char *graph_colorB;
-    char *graph_colorC;
+    struct graph_config_t *graph_instance;
     uint32_t graph_value;
+    uint32_t graph_timestamp;
     bool graph_reset;
 
     TAILQ_ENTRY(status_block) blocks;
@@ -92,3 +86,4 @@ TAILQ_HEAD(statusline_head, status_block) statusline_head;
 #include "config.h"
 #include "libi3.h"
 #include "parse_json_header.h"
+#include "graph.h"
