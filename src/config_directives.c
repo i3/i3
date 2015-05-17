@@ -477,8 +477,8 @@ CFGFUN(no_focus) {
  * Bar configuration (i3bar)
  ******************************************************************************/
 
-static Barconfig current_bar = { 0 };
-static Graphconfig current_graph = { 0 };
+static Barconfig current_bar;
+static Graphconfig current_graph;
 
 CFGFUN(bar_font, const char *font) {
     FREE(current_bar.font);
