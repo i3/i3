@@ -2079,7 +2079,7 @@ static void generate_grandient(xcb_pixmap_t gradient,
     for (int phaze = 0; phaze < 2; ++phaze) {
         int32_t from = phaze == 0 ? colorA : colorB;
         int32_t to = phaze == 0 ? colorB : colorC;
-        int32_t steps = phaze == 0 ? stepsAB : (stepsBC + 1);
+        uint32_t steps = phaze == 0 ? stepsAB : (stepsBC + 1);
         int32_t from1 = from & 0x000000ff;
         int32_t from2 = (from & 0x0000ff00) >> 8;
         int32_t from3 = (from & 0x00ff0000) >> 16;
@@ -2096,7 +2096,7 @@ static void generate_grandient(xcb_pixmap_t gradient,
         int32_t next2 = from2;
         int32_t next3 = from3;
         int32_t next4 = from4;
-        for (size_t y = 0; y < steps; ++y) {
+        for (uint32_t y = 0; y < steps; ++y) {
         int32_t color = next1 | next2 << 8 | next3 << 16 | next4 << 24;
 
         uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH;
@@ -2150,7 +2150,7 @@ void draw_graph(struct status_block* block, xcb_drawable_t drawable,
     }
 
     struct graph_data *data = block->graph->values;
-    for (int idx = 0; idx < block->graph->width; ++idx) {
+    for (uint32_t idx = 0; idx < block->graph->width; ++idx) {
         uint32_t h = (height * data[idx].value) /
                      (block->graph->config->max - block->graph->config->min);
 

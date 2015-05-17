@@ -36,7 +36,7 @@ static void free_graph(struct graph_t* graph) {
 struct graph_t* get_graph_and_mark(char* instance, char* gconfig) {
     struct graph_t* graph;
     graph_config_t* graph_config;
-    int idx;
+    uint32_t idx;
     TAILQ_FOREACH(graph_config, &config.graph_configs, configs) {
         if (!strcmp(gconfig, graph_config->graph_config)) {
             break;
@@ -114,7 +114,7 @@ void update_graph_with_value(struct graph_t* graph, uint32_t value, uint32_t tim
         return;
     }
     probes = (timediff*graph->width)/graph->config->time_range;
-    for (int idx = 0; idx < graph->width - 1 - probes; ++idx) {
+    for (uint32_t idx = 0; idx < graph->width - 1 - probes; ++idx) {
         graph->values[idx] = graph->values[idx + probes];
     }
     long long value_diff = (long long)value - (long long) last_value;
