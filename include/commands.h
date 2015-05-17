@@ -259,6 +259,12 @@ void cmd_move_window_to_position(I3_CMD, char *method, char *x, char *y);
 void cmd_move_window_to_center(I3_CMD, char *method);
 
 /**
+ * Implementation of 'move [window|container] [to] position mouse'
+ *
+ */
+void cmd_move_window_to_mouse(I3_CMD);
+
+/**
  * Implementation of 'move scratchpad'.
  *
  */

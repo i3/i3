@@ -1662,15 +1662,17 @@ bindsym $mod+f fullscreen toggle
 bindsym $mod+t floating toggle
 --------------
 
-=== Focusing/Moving containers
+[[_focusing_moving_containers]]
 
-To change the focus, use the focus command: +focus left+, +focus right+, +focus
-down+ and +focus up+.
+=== Focusing containers
 
-There are a few special parameters you can use for the focus command:
+To change focus, you can use the +focus+ command. The following options are
+available:
 
+left|right|up|down::
+        Sets focus to the nearest container in the given direction.
 parent::
-	Sets focus to the +Parent Container+ of the current +Container+.
+	Sets focus to the parent container of the current container.
 child::
 	The opposite of +focus parent+, sets the focus to the last focused
 	child container.
@@ -1684,23 +1686,16 @@ output::
 	Followed by a direction or an output name, this will focus the
 	corresponding output.
 
-For moving, use +move left+, +move right+, +move down+ and +move up+.
-
 *Syntax*:
------------------------------------
-focus <left|right|down|up>
-focus <parent|child|floating|tiling|mode_toggle>
-focus output <<left|right|down|up>|output>
-move <left|right|down|up> [<px> px]
-move [absolute] position [[<px> px] [<px> px]|center]
------------------------------------
-
-Note that the amount of pixels you can specify for the +move+ command is only
-relevant for floating containers. The default amount is 10 pixels.
+----------------------------------------------
+focus left|right|down|up
+focus parent|child|floating|tiling|mode_toggle
+focus output left|right|up|down|<output>
+----------------------------------------------
 
 *Examples*:
-----------------------
-# Focus container on the left, bottom, top, right:
+-------------------------------------------------
+# Focus container on the left, bottom, top, right
 bindsym $mod+j focus left
 bindsym $mod+k focus down
 bindsym $mod+l focus up
@@ -1717,8 +1712,33 @@ bindsym $mod+x focus output right
 
 # Focus the big output
 bindsym $mod+x focus output HDMI-2
+-------------------------------------------------
 
-# Move container to the left, bottom, top, right:
+=== Moving containers
+
+Use the +move+ command to move a container.
+
+*Syntax*:
+-----------------------------------------------------
+# Moves the container into the given direction.
+# The optional pixel argument specifies how far the
+# container should be moved if it is floating and
+# defaults to 10 pixels.
+move <left|right|down|up> [<px> px]
+
+# Moves the container either to a specific location
+# or to the center of the screen. If 'absolute' is
+# used, it is moved to the center of all outputs.
+move [absolute] position [[<px> px] [<px> px]|center]
+
+# Moves the container to the current position of the
+# mouse cursor. Only affects floating containers.
+move position mouse
+-----------------------------------------------------
+
+*Examples*:
+-------------------------------------------------------
+# Move container to the left, bottom, top, right
 bindsym $mod+j move left
 bindsym $mod+k move down
 bindsym $mod+l move up
@@ -1728,10 +1748,12 @@ bindsym $mod+semicolon move right
 # move more than the default
 bindsym $mod+j move left 20 px
 
-# Move floating container to the center
-# of all outputs
+# Move floating container to the center of all outputs
 bindsym $mod+c move absolute position center
-----------------------
+
+# Move container to the current position of the cursor
+bindsym $mod+m move position mouse
+-------------------------------------------------------
 
 === Changing (named) workspaces/moving to workspaces
 
