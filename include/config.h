@@ -18,6 +18,7 @@
 #include "libi3.h"
 
 typedef struct Config Config;
+typedef struct Graphconfig Graphconfig;
 typedef struct Barconfig Barconfig;
 extern char *current_configpath;
 extern Config config;
@@ -235,6 +236,19 @@ struct Config {
     int number_barconfigs;
 };
 
+struct Graphconfig {
+    char *graph_config;
+    char *colorTOP;
+    char *colorMIDDLE;
+    char *colorBOTTOM;
+    long min;
+    long max;
+    long width;
+    long time_range;
+
+    TAILQ_ENTRY(Graphconfig) configs;
+};
+
 /**
  * Holds the status bar configuration (i3bar). One of these structures is
  * created for each 'bar' block in the config.
@@ -345,6 +359,8 @@ struct Barconfig {
         char *urgent_workspace_bg;
         char *urgent_workspace_text;
     } colors;
+
+    TAILQ_HEAD(graphconfig_head, Graphconfig) graph_configs;
 
     TAILQ_ENTRY(Barconfig) configs;
 };

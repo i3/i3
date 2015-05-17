@@ -135,3 +135,9 @@ void redraw_bars(void);
  *
  */
 void set_current_mode(struct mode *mode);
+
+/*
+ * Draw a graph
+ */
+void draw_graph(struct status_block *block, xcb_drawable_t drawable,
+                int x, int y, int max_width, int height);

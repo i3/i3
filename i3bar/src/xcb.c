@@ -206,17 +206,27 @@ void refresh_statusline(bool use_short_text) {
             block->full_text = i3string_copy(block->short_text);
         }
 
-        if (i3string_get_num_bytes(block->full_text) == 0)
+        if (block->instance && block->graph_config && (block->graph_timestamp > 0)) {
+            block->graph = get_graph_and_mark(block->instance, block->graph_config);
+            if (block->graph) {
+                block->graph_config_ptr = block->graph->config;
+                update_graph_with_value(block->graph, block->graph_value, block->graph_timestamp);
+            }
+        }
+
+        if (i3string_get_num_bytes(block->full_text) == 0 && !block->graph_config_ptr)
             continue;
 
-        block->width = predict_text_width(block->full_text);
+        block->block_width = block->text_width = predict_text_width(block->full_text);
+        if (block->graph_config_ptr)
+            block->block_width += block->graph_config_ptr->width;
 
         /* Compute offset and append for text aligment in min_width. */
-        if (block->min_width <= block->width) {
+        if (block->min_width <= block->block_width) {
             block->x_offset = 0;
             block->x_append = 0;
         } else {
-            uint32_t padding_width = block->min_width - block->width;
+            uint32_t padding_width = block->min_width - block->block_width;
             switch (block->align) {
                 case ALIGN_LEFT:
                     block->x_append = padding_width;
@@ -235,7 +245,7 @@ void refresh_statusline(bool use_short_text) {
         if (TAILQ_NEXT(block, blocks) != NULL)
             statusline_width += block->sep_block_width;
 
-        statusline_width += block->width + block->x_offset + block->x_append;
+        statusline_width += block->block_width + block->x_offset + block->x_append;
     }
 
     /* If the statusline is bigger than our screen we need to make sure that
@@ -251,32 +261,48 @@ void refresh_statusline(bool use_short_text) {
     /* Draw the text of each block. */
     uint32_t x = 0;
     TAILQ_FOREACH(block, &statusline_head, blocks) {
-        if (i3string_get_num_bytes(block->full_text) == 0)
-            continue;
-        uint32_t fg_color;
+        if (block->text_width > 0) {
+            uint32_t fg_color;
 
-        /* If this block is urgent, draw it with the defined color and border. */
-        if (block->urgent) {
-            fg_color = colors.urgent_ws_fg;
+            /* If this block is urgent, draw it with the defined color and border. */
+            if (block->urgent) {
+                fg_color = colors.urgent_ws_fg;
 
-            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+                uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
 
-            /* Draw the background */
-            uint32_t bg_color = colors.urgent_ws_bg;
-            uint32_t bg_values[] = {bg_color, bg_color};
-            xcb_change_gc(xcb_connection, statusline_ctx, mask, bg_values);
+                /* Draw the background */
+                uint32_t bg_color = colors.urgent_ws_bg;
+                uint32_t bg_values[] = {bg_color, bg_color};
+                xcb_change_gc(xcb_connection, statusline_ctx, mask, bg_values);
 
-            /* The urgent background “overshoots” by 2 px so that the text that
-             * is printed onto it will not be look so cut off. */
-            xcb_rectangle_t bg_rect = {x - logical_px(2), logical_px(1), block->width + logical_px(4), bar_height - logical_px(2)};
-            xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_ctx, 1, &bg_rect);
-        } else {
-            fg_color = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
+                /* The urgent background “overshoots” by 2 px so that the text that
+                 * is printed onto it will not be look so cut off. */
+                xcb_rectangle_t bg_rect = {x - logical_px(2), logical_px(1), block->block_width + logical_px(4), bar_height - logical_px(2)};
+                xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_ctx, 1, &bg_rect);
+            } else {
+                fg_color = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
+            }
+
+            set_font_colors(statusline_ctx, fg_color, colors.bar_bg);
+            draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, logical_px(ws_voff_px), block->text_width);
         }
-
-        set_font_colors(statusline_ctx, fg_color, colors.bar_bg);
-        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, logical_px(ws_voff_px), block->width);
-        x += block->width + block->sep_block_width + block->x_offset + block->x_append;
+        if (block->graph_config_ptr) {
+            if (block->graph_config_ptr->width > 0) {
+                uint32_t green = get_colorpixel("#FFAAFF");
+                set_font_colors(statusline_ctx, green, colors.bar_bg);
+                xcb_change_gc(xcb_connection,
+                              statusline_ctx,
+                              XCB_GC_FOREGROUND,
+                              &green);
+                draw_graph(block,
+                           statusline_pm,
+                           x + block->x_offset + block->text_width,
+                           logical_px(1),
+                           block->graph_config_ptr->width,
+                           bar_height - logical_px(2));
+            }
+        }
+        x += block->block_width + block->sep_block_width + block->x_offset + block->x_append;
 
         /* If this is not the last block, draw a separator. */
         draw_separator(x, block);
@@ -435,7 +461,7 @@ void handle_button(xcb_button_press_event_t *event) {
                     continue;
 
                 last_block_x = block_x;
-                block_x += block->width + block->x_offset + block->x_append + get_sep_offset(block) + sep_offset_remainder;
+                block_x += block->block_width + block->x_offset + block->x_append + get_sep_offset(block) + sep_offset_remainder;
 
                 if (x <= block_x && x >= last_block_x) {
                     send_block_clicked(event->detail, block->name, block->instance, event->root_x, event->root_y);
@@ -2019,4 +2045,118 @@ void set_current_mode(struct mode *current) {
     binding = *current;
     activated_mode = binding.name != NULL;
     return;
+}
+
+static void generate_grandient(xcb_pixmap_t gradient,
+                               uint32_t height,
+                               uint32_t colorA,
+                               uint32_t colorB,
+                               uint32_t colorC) {
+    xcb_gcontext_t gc = xcb_generate_id(xcb_connection);
+    uint32_t mask = XCB_GC_LINE_WIDTH | XCB_GC_FILL_STYLE;
+    uint32_t values[] = {logical_px(1),
+                         XCB_FILL_STYLE_SOLID};
+    xcb_void_cookie_t clear_ctx_cookie = xcb_create_gc_checked(xcb_connection,
+                                                               gc,
+                                                               xcb_root,
+                                                               mask,
+                                                               values);
+    xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(
+        xcb_connection,
+        root_screen->root_depth,
+        gradient,
+        xcb_root,
+        1,
+        height);
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate gradient buffer") || xcb_request_failed(clear_ctx_cookie, "Could not allocate gc")) {
+        exit(EXIT_FAILURE);
+    }
+    int stepsAB = height / 2;
+    int stepsBC = height - stepsAB;
+    uint32_t next_pixel = 0;
+    for (int phaze = 0; phaze < 2; ++phaze) {
+        int32_t from = phaze == 0 ? colorA : colorB;
+        int32_t to = phaze == 0 ? colorB : colorC;
+        int32_t steps = phaze == 0 ? stepsAB : (stepsBC + 1);
+        int32_t from1 = from & 0x000000ff;
+        int32_t from2 = (from & 0x0000ff00) >> 8;
+        int32_t from3 = (from & 0x00ff0000) >> 16;
+        int32_t from4 = (from & 0xff000000) >> 24;
+        int32_t to1 = to & 0x000000ff;
+        int32_t to2 = (to & 0x0000ff00) >> 8;
+        int32_t to3 = (to & 0x00ff0000) >> 16;
+        int32_t to4 = (to & 0xff000000) >> 24;
+        int32_t diff1 = (to1 - from1) / steps;
+        int32_t diff2 = (to2 - from2) / steps;
+        int32_t diff3 = (to3 - from3) / steps;
+        int32_t diff4 = (to4 - from4) / steps;
+        int32_t next1 = from1;
+        int32_t next2 = from2;
+        int32_t next3 = from3;
+        int32_t next4 = from4;
+        for (int32_t y = 0; y < steps; ++y) {
+            int32_t color = next1 | next2 << 8 | next3 << 16 | next4 << 24;
+
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH;
+            uint32_t values[] = {color, logical_px(1)};
+            xcb_change_gc(xcb_connection, gc, mask, values);
+
+            xcb_rectangle_t rect[] = {{0, next_pixel, 1, 1}};
+            xcb_poly_fill_rectangle(xcb_connection,
+                                    gradient,
+                                    gc, 1,
+                                    rect);
+            next_pixel++;
+            next1 += diff1;
+            next2 += diff2;
+            next3 += diff3;
+            next4 += diff4;
+        }
+    }
+
+    xcb_flush(xcb_connection);
+    xcb_free_gc(xcb_connection, gc);
+}
+
+void draw_graph(struct status_block *block, xcb_drawable_t drawable,
+                int x, int y, int max_width, int height) {
+    if (!block->graph->gradient) {
+        block->graph->gradient = xcb_generate_id(xcb_connection);
+        generate_grandient(block->graph->gradient,
+                           height + 1,
+                           block->graph_config_ptr->colorTOP,
+                           block->graph_config_ptr->colorMIDDLE,
+                           block->graph_config_ptr->colorBOTTOM);
+    }
+    if (!block->graph_config_ptr)
+        return;
+
+    xcb_gcontext_t gc = xcb_generate_id(xcb_connection);
+    uint32_t mask = XCB_GC_LINE_WIDTH | XCB_GC_FILL_STYLE | XCB_GC_TILE |
+                    XCB_GC_TILE_STIPPLE_ORIGIN_X | XCB_GC_TILE_STIPPLE_ORIGIN_Y;
+    uint32_t values[] = {logical_px(1),
+                         XCB_FILL_STYLE_TILED,
+                         block->graph->gradient,
+                         0, 0};
+    xcb_void_cookie_t create_gc_cookie = xcb_create_gc_checked(xcb_connection,
+                                                               gc,
+                                                               xcb_root,
+                                                               mask,
+                                                               values);
+    if (xcb_request_failed(create_gc_cookie, "Could not create gcx")) {
+        exit(EXIT_FAILURE);
+    }
+
+    struct graph_data *data = block->graph->values;
+    for (uint32_t idx = 0; idx < block->graph->width; ++idx) {
+        uint32_t h = (height * data[idx].value) /
+                     (block->graph->config->max - block->graph->config->min);
+
+        xcb_point_t points[] = {{x + idx, height}, {x + idx, height - h}};
+        xcb_poly_line(xcb_connection,
+                      XCB_COORD_MODE_ORIGIN,
+                      drawable,
+                      gc, 2,
+                      points);
+    }
 }

@@ -22,6 +22,19 @@ typedef enum { M_DOCK = 0,
                M_HIDE = 1,
                M_INVISIBLE = 2 } bar_display_mode_t;
 
+typedef struct graph_config_t {
+    char *graph_config;
+    uint32_t colorTOP;
+    uint32_t colorMIDDLE;
+    uint32_t colorBOTTOM;
+    int width;
+    int min;
+    int max;
+    int time_range;
+
+    TAILQ_ENTRY(graph_config_t) configs;
+} graph_config_t;
+
 typedef struct config_t {
     int modifier;
     char *wheel_up_cmd;
@@ -45,6 +58,7 @@ typedef struct config_t {
     /* The current hidden_state of the bar, which indicates whether it is hidden or shown */
     enum { S_HIDE = 0,
            S_SHOW = 1 } hidden_state;
+    TAILQ_HEAD(graph_configs_head, graph_config_t) graph_configs;
 } config_t;
 
 config_t config;

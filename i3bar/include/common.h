@@ -56,13 +56,23 @@ struct status_block {
 
     /* The amount of pixels necessary to render this block. These variables are
      * only temporarily used in refresh_statusline(). */
-    uint32_t width;
+    uint32_t text_width;
     uint32_t x_offset;
     uint32_t x_append;
+    uint32_t block_width;
 
     /* Optional */
     char *name;
     char *instance;
+
+    char *graph_config;
+    uint32_t graph_value;
+    uint32_t graph_timestamp;
+    bool graph_reset;
+
+    /* temporary variables used during rendering */
+    struct graph_config_t *graph_config_ptr;
+    struct graph_t *graph;
 
     TAILQ_ENTRY(status_block) blocks;
 };
@@ -80,3 +90,4 @@ TAILQ_HEAD(statusline_head, status_block) statusline_head;
 #include "config.h"
 #include "libi3.h"
 #include "parse_json_header.h"
+#include "graph.h"

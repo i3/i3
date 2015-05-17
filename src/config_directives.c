@@ -478,6 +478,7 @@ CFGFUN(no_focus) {
  ******************************************************************************/
 
 static Barconfig current_bar;
+static Graphconfig current_graph;
 
 CFGFUN(bar_font, const char *font) {
     FREE(current_bar.font);
@@ -608,6 +609,51 @@ CFGFUN(bar_workspace_buttons, const char *value) {
 
 CFGFUN(bar_strip_workspace_numbers, const char *value) {
     current_bar.strip_workspace_numbers = eval_boolstr(value);
+}
+
+CFGFUN(bar_graph_attribute, const char *attribute, long value) {
+#define HANDLE_ATTR(name)                        \
+    do {                                         \
+        if (0 == strcasecmp(#name, attribute)) { \
+            current_graph.name = value;          \
+            return;                              \
+        }                                        \
+    } while (0)
+    HANDLE_ATTR(width);
+    HANDLE_ATTR(min);
+    HANDLE_ATTR(max);
+    HANDLE_ATTR(time_range);
+#undef HANDLE_ATTR
+}
+
+CFGFUN(bar_graph_color, const char *colorclass, const char *color) {
+#define HANDLE_COLOR(name)                        \
+    do {                                          \
+        if (0 == strcasecmp(#name, colorclass)) { \
+            FREE(current_graph.name);             \
+            current_graph.name = strdup(color);   \
+            return;                               \
+        }                                         \
+    } while (0)
+    HANDLE_COLOR(colorTOP);
+    HANDLE_COLOR(colorMIDDLE);
+    HANDLE_COLOR(colorBOTTOM);
+#undef HANDLE_COLOR
+}
+
+CFGFUN(bar_graph_graph_config, const char *graph_config) {
+    FREE(current_graph.graph_config);
+    current_graph.graph_config = strdup(graph_config);
+}
+
+CFGFUN(bar_graph_finish) {
+    Graphconfig *graph_config = scalloc(sizeof(Graphconfig));
+    memcpy(graph_config, &current_graph, sizeof(Graphconfig));
+    if (current_bar.graph_configs.tqh_last == NULL) {
+        TAILQ_INIT(&current_bar.graph_configs);
+    }
+    TAILQ_INSERT_TAIL(&current_bar.graph_configs, graph_config, configs);
+    memset(&current_graph, '\0', sizeof(Graphconfig));
 }
 
 CFGFUN(bar_finish) {

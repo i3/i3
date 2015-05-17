@@ -470,6 +470,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 }
 
 static void dump_bar_config(yajl_gen gen, Barconfig *config) {
+    Graphconfig *graphconfig;
     y(map_open);
 
     ystr("id");
@@ -612,9 +613,37 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     YSTR_IF_SET(urgent_workspace_bg);
     YSTR_IF_SET(urgent_workspace_text);
     y(map_close);
+#undef YSTR_IF_SET
+
+    TAILQ_FOREACH(graphconfig, &config->graph_configs, configs) {
+        ystr("graph");
+        y(map_open);
+#define YSTR_IF_SET(name)            \
+    do {                             \
+        if (graphconfig->name) {     \
+            ystr(#name);             \
+            ystr(graphconfig->name); \
+        }                            \
+    } while (0)
+        YSTR_IF_SET(graph_config);
+        YSTR_IF_SET(colorTOP);
+        YSTR_IF_SET(colorMIDDLE);
+        YSTR_IF_SET(colorBOTTOM);
+#undef YSTR_IF_SET
+#define YSTR_SET(name)                 \
+    do {                               \
+        ystr(#name);                   \
+        y(integer, graphconfig->name); \
+    } while (0)
+        YSTR_SET(width);
+        YSTR_SET(min);
+        YSTR_SET(max);
+        YSTR_SET(time_range);
+#undef YSTR_SET
+        y(map_close);
+    }
 
     y(map_close);
-#undef YSTR_IF_SET
 }
 
 IPC_HANDLER(tree) {
