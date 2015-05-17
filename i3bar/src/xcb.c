@@ -214,8 +214,7 @@ void refresh_statusline(bool use_short_text) {
             }
         }
 
-        if (i3string_get_num_bytes(block->full_text) == 0
-            && !block->graph_config_ptr)
+        if (i3string_get_num_bytes(block->full_text) == 0 && !block->graph_config_ptr)
             continue;
 
         block->block_width = block->text_width = predict_text_width(block->full_text);
@@ -2056,12 +2055,12 @@ static void generate_grandient(xcb_pixmap_t gradient,
     xcb_gcontext_t gc = xcb_generate_id(xcb_connection);
     uint32_t mask = XCB_GC_LINE_WIDTH | XCB_GC_FILL_STYLE;
     uint32_t values[] = {logical_px(1),
-                        XCB_FILL_STYLE_SOLID};
+                         XCB_FILL_STYLE_SOLID};
     xcb_void_cookie_t clear_ctx_cookie = xcb_create_gc_checked(xcb_connection,
-                                                                gc,
-                                                                xcb_root,
-                                                                mask,
-                                                                values);
+                                                               gc,
+                                                               xcb_root,
+                                                               mask,
+                                                               values);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(
         xcb_connection,
         root_screen->root_depth,
@@ -2069,11 +2068,10 @@ static void generate_grandient(xcb_pixmap_t gradient,
         xcb_root,
         1,
         height);
-    if (xcb_request_failed(sl_pm_cookie, "Could not allocate gradient buffer")
-        || xcb_request_failed(clear_ctx_cookie, "Could not allocate gc")) {
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate gradient buffer") || xcb_request_failed(clear_ctx_cookie, "Could not allocate gc")) {
         exit(EXIT_FAILURE);
     }
-    int stepsAB = height/2;
+    int stepsAB = height / 2;
     int stepsBC = height - stepsAB;
     uint32_t next_pixel = 0;
     for (int phaze = 0; phaze < 2; ++phaze) {
@@ -2084,54 +2082,54 @@ static void generate_grandient(xcb_pixmap_t gradient,
         int32_t from2 = (from & 0x0000ff00) >> 8;
         int32_t from3 = (from & 0x00ff0000) >> 16;
         int32_t from4 = (from & 0xff000000) >> 24;
-        int32_t to1 =  to & 0x000000ff;
+        int32_t to1 = to & 0x000000ff;
         int32_t to2 = (to & 0x0000ff00) >> 8;
         int32_t to3 = (to & 0x00ff0000) >> 16;
         int32_t to4 = (to & 0xff000000) >> 24;
-        int32_t diff1 = (to1 - from1)/steps;
-        int32_t diff2 = (to2 - from2)/steps;
-        int32_t diff3 = (to3 - from3)/steps;
-        int32_t diff4 = (to4 - from4)/steps;
+        int32_t diff1 = (to1 - from1) / steps;
+        int32_t diff2 = (to2 - from2) / steps;
+        int32_t diff3 = (to3 - from3) / steps;
+        int32_t diff4 = (to4 - from4) / steps;
         int32_t next1 = from1;
         int32_t next2 = from2;
         int32_t next3 = from3;
         int32_t next4 = from4;
         for (int32_t y = 0; y < steps; ++y) {
-        int32_t color = next1 | next2 << 8 | next3 << 16 | next4 << 24;
+            int32_t color = next1 | next2 << 8 | next3 << 16 | next4 << 24;
 
-        uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH;
-        uint32_t values[] = { color, logical_px(1) };
-        xcb_change_gc(xcb_connection, gc, mask, values);
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH;
+            uint32_t values[] = {color, logical_px(1)};
+            xcb_change_gc(xcb_connection, gc, mask, values);
 
-        xcb_rectangle_t rect[] = {{0, next_pixel, 1, 1}};
-        xcb_poly_fill_rectangle(xcb_connection,
-                                gradient,
-                                gc, 1,
-                                rect);
-        next_pixel++;
-        next1 += diff1;
-        next2 += diff2;
-        next3 += diff3;
-        next4 += diff4;
+            xcb_rectangle_t rect[] = {{0, next_pixel, 1, 1}};
+            xcb_poly_fill_rectangle(xcb_connection,
+                                    gradient,
+                                    gc, 1,
+                                    rect);
+            next_pixel++;
+            next1 += diff1;
+            next2 += diff2;
+            next3 += diff3;
+            next4 += diff4;
         }
     }
 
-    xcb_flush (xcb_connection);
+    xcb_flush(xcb_connection);
     xcb_free_gc(xcb_connection, gc);
 }
 
-void draw_graph(struct status_block* block, xcb_drawable_t drawable,
+void draw_graph(struct status_block *block, xcb_drawable_t drawable,
                 int x, int y, int max_width, int height) {
-
     if (!block->graph->gradient) {
         block->graph->gradient = xcb_generate_id(xcb_connection);
         generate_grandient(block->graph->gradient,
-                           height+1,
+                           height + 1,
                            block->graph_config_ptr->colorTOP,
                            block->graph_config_ptr->colorMIDDLE,
                            block->graph_config_ptr->colorBOTTOM);
     }
-    if (!block->graph_config_ptr) return;
+    if (!block->graph_config_ptr)
+        return;
 
     xcb_gcontext_t gc = xcb_generate_id(xcb_connection);
     uint32_t mask = XCB_GC_LINE_WIDTH | XCB_GC_FILL_STYLE | XCB_GC_TILE |
@@ -2154,7 +2152,7 @@ void draw_graph(struct status_block* block, xcb_drawable_t drawable,
         uint32_t h = (height * data[idx].value) /
                      (block->graph->config->max - block->graph->config->min);
 
-        xcb_point_t points[] = { {x+idx, height} , {x+idx, height - h} };
+        xcb_point_t points[] = {{x + idx, height}, {x + idx, height - h}};
         xcb_poly_line(xcb_connection,
                       XCB_COORD_MODE_ORIGIN,
                       drawable,

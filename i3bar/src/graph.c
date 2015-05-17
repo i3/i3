@@ -43,20 +43,20 @@ struct graph_t* get_graph_and_mark(char* instance, char* gconfig) {
         }
     }
     TAILQ_FOREACH(graph, graphs, entries) {
-      if (0 == strcmp(graph->instance, instance)) {
-        if (graph_config != graph->config) {
-          free_graph(graph);
-          break;
+        if (0 == strcmp(graph->instance, instance)) {
+            if (graph_config != graph->config) {
+                free_graph(graph);
+                break;
+            }
+            TAILQ_REMOVE(graphs, graph, entries);
+            TAILQ_INSERT_TAIL(graphs, graph, entries);
+            graph->marked = true;
+            return graph;
         }
-        TAILQ_REMOVE(graphs, graph, entries);
-        TAILQ_INSERT_TAIL(graphs, graph, entries);
-        graph->marked = true;
-        return graph;
-      }
     }
 
     if (!graph_config)
-      return NULL;
+        return NULL;
 
     graph = malloc(sizeof(struct graph_t));
     memset(graph, 0, sizeof(struct graph_t));
@@ -65,8 +65,8 @@ struct graph_t* get_graph_and_mark(char* instance, char* gconfig) {
     graph->time_range = graph_config->time_range;
     graph->values = smalloc(sizeof(struct graph_data) * graph->width);
     for (idx = 0; idx < graph->width; ++idx) {
-      graph->values[idx].value = graph->config->min;
-      graph->values[idx].timestamp = 0;
+        graph->values[idx].value = graph->config->min;
+        graph->values[idx].timestamp = 0;
     }
 
     graph->instance = strdup(instance);
@@ -98,29 +98,29 @@ void release_module() {
 void update_graph_with_value(struct graph_t* graph, uint32_t value, uint32_t timestamp) {
     int probes;
     uint32_t timediff;
-    uint32_t last_value = graph->values[graph->width-1].value;
-    uint32_t last_timestamp = graph->values[graph->width-1].timestamp;
+    uint32_t last_value = graph->values[graph->width - 1].value;
+    uint32_t last_timestamp = graph->values[graph->width - 1].timestamp;
     if (last_timestamp == 0) {
-        graph->values[graph->width-1].timestamp = timestamp;
-        graph->values[graph->width-1].value = value;
+        graph->values[graph->width - 1].timestamp = timestamp;
+        graph->values[graph->width - 1].value = value;
         return;
     }
     if (timestamp < last_timestamp)
         return;
     timediff = timestamp - last_timestamp;
-    if (timediff < (graph->time_range/graph->width)) {
+    if (timediff < (graph->time_range / graph->width)) {
         graph->values[graph->width - 1].timestamp = timestamp;
         graph->values[graph->width - 1].value = value;
         return;
     }
-    probes = (timediff*graph->width)/graph->config->time_range;
+    probes = (timediff * graph->width) / graph->config->time_range;
     for (uint32_t idx = 0; idx < graph->width - 1 - probes; ++idx) {
         graph->values[idx] = graph->values[idx + probes];
     }
-    long long value_diff = (long long)value - (long long) last_value;
+    long long value_diff = (long long)value - (long long)last_value;
     int value_diff_step = value_diff / probes;
     uint32_t time_diff = timestamp - last_timestamp;
-    uint32_t time_diff_step = time_diff/probes;
+    uint32_t time_diff_step = time_diff / probes;
     for (int idx = 0; idx <= probes; ++idx) {
         int insert_idx = graph->width - idx - 1;
         uint32_t insert_value = value - value_diff_step;

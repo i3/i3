@@ -612,31 +612,33 @@ CFGFUN(bar_strip_workspace_numbers, const char *value) {
 }
 
 CFGFUN(bar_graph_attribute, const char *attribute, long value) {
-    #define HANDLE_ATTR(name) do {                  \
-        if (0 == strcasecmp(#name, attribute)) {    \
-            current_graph.name = value;             \
-            return;                                 \
-        }                                           \
+#define HANDLE_ATTR(name)                        \
+    do {                                         \
+        if (0 == strcasecmp(#name, attribute)) { \
+            current_graph.name = value;          \
+            return;                              \
+        }                                        \
     } while (0)
     HANDLE_ATTR(width);
     HANDLE_ATTR(min);
     HANDLE_ATTR(max);
     HANDLE_ATTR(time_range);
-    #undef HANDLE_ATTR
+#undef HANDLE_ATTR
 }
 
 CFGFUN(bar_graph_color, const char *colorclass, const char *color) {
-    #define HANDLE_COLOR(name) do {                 \
-        if (0 == strcasecmp(#name, colorclass)) {   \
-            FREE(current_graph.name);               \
-            current_graph.name = strdup(color);     \
-            return;                                 \
-        }                                           \
+#define HANDLE_COLOR(name)                        \
+    do {                                          \
+        if (0 == strcasecmp(#name, colorclass)) { \
+            FREE(current_graph.name);             \
+            current_graph.name = strdup(color);   \
+            return;                               \
+        }                                         \
     } while (0)
     HANDLE_COLOR(colorTOP);
     HANDLE_COLOR(colorMIDDLE);
     HANDLE_COLOR(colorBOTTOM);
-    #undef HANDLE_COLOR
+#undef HANDLE_COLOR
 }
 
 CFGFUN(bar_graph_graph_config, const char *graph_config) {
@@ -645,7 +647,7 @@ CFGFUN(bar_graph_graph_config, const char *graph_config) {
 }
 
 CFGFUN(bar_graph_finish) {
-    Graphconfig* graph_config = scalloc(sizeof(Graphconfig));
+    Graphconfig *graph_config = scalloc(sizeof(Graphconfig));
     memcpy(graph_config, &current_graph, sizeof(Graphconfig));
     if (current_bar.graph_configs.tqh_last == NULL) {
         TAILQ_INIT(&current_bar.graph_configs);

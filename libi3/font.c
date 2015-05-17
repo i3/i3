@@ -520,7 +520,8 @@ static int predict_text_width_xcb(const xcb_char2b_t *input, size_t text_len) {
  */
 int predict_text_width(i3String *text) {
     assert(savedFont != NULL);
-    if (!text) return 0;
+    if (!text)
+        return 0;
 
     switch (savedFont->type) {
         case FONT_TYPE_NONE:

@@ -67,27 +67,29 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
         return 1;
 
     if (last_key && !strcmp(last_key, "graph")) {
-        #define HANDLE_ATTR(name) do {                                \
-            if (!strcmp(cur_key, #name)) {                            \
-                DLOG("name = %s, value = %*.s\n", cur_key, len, val); \
-                graph_config.name = strndup((const char*)val, _len);  \
-                return 1;                                             \
-            }                                                         \
-        } while (0)
+#define HANDLE_ATTR(name)                                         \
+    do {                                                          \
+        if (!strcmp(cur_key, #name)) {                            \
+            DLOG("name = %s, value = %*.s\n", cur_key, len, val); \
+            graph_config.name = strndup((const char *)val, _len); \
+            return 1;                                             \
+        }                                                         \
+    } while (0)
         HANDLE_ATTR(graph_config);
-        #undef HANDLE_ATTR
+#undef HANDLE_ATTR
 
-        #define HANDLE_ATTR(name) do {                                \
-            if (!strcmp(cur_key, #name)) {                            \
-                DLOG("name = %s, value = %*.s\n", cur_key, len, val); \
-                graph_config.name = get_colorpixel((const char*)val); \
-                return 1;                                             \
-            }                                                         \
-        } while (0)
+#define HANDLE_ATTR(name)                                          \
+    do {                                                           \
+        if (!strcmp(cur_key, #name)) {                             \
+            DLOG("name = %s, value = %*.s\n", cur_key, len, val);  \
+            graph_config.name = get_colorpixel((const char *)val); \
+            return 1;                                              \
+        }                                                          \
+    } while (0)
         HANDLE_ATTR(colorTOP);
         HANDLE_ATTR(colorMIDDLE);
         HANDLE_ATTR(colorBOTTOM);
-        #undef HANDLE_ATTR
+#undef HANDLE_ATTR
         printf("got unexpected string %.*s for cur_key = %s in scope of graph\n",
                len, val, cur_key);
         return 0;
@@ -198,14 +200,14 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
     }
 
     if (last_key && !strcmp(last_key, "colors")) {
-        #define COLOR(json_name, struct_name)                               \
-        do {                                                                \
-            if (cur_key && !strcmp(cur_key, #json_name)) {                  \
-                DLOG(#json_name " = " #struct_name " = %.*s\n", len, val);  \
-                sasprintf(&(config.colors.struct_name), "%.*s", len, val);  \
-                return 1;                                                   \
-            }                                                               \
-        } while (0)
+#define COLOR(json_name, struct_name)                                  \
+    do {                                                               \
+        if (cur_key && !strcmp(cur_key, #json_name)) {                 \
+            DLOG(#json_name " = " #struct_name " = %.*s\n", len, val); \
+            sasprintf(&(config.colors.struct_name), "%.*s", len, val); \
+            return 1;                                                  \
+        }                                                              \
+    } while (0)
 
         COLOR(statusline, bar_fg);
         COLOR(background, bar_bg);
@@ -225,7 +227,7 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
         printf("got unexpected string %.*s for cur_key = %s in scope of colors\n",
                len, val, cur_key);
         return 0;
-        #undef COLOR
+#undef COLOR
     }
 
     printf("got unexpected string %.*s for cur_key = %s\n", len, val, cur_key);
@@ -267,21 +269,22 @@ static int config_boolean_cb(void *params_, int val) {
 
 static int config_integer_cb(void *ctx, long long val) {
     if (!strcmp(last_key, "graph")) {
-      #define HANDLE_ATTR(name) do {              \
-            if (!strcmp(cur_key, #name)) {        \
-                DLOG("%s = %lld\n", #name, val);  \
-                graph_config.name = val;          \
-                return 1;                         \
-            }                                     \
-        } while (0)
-      HANDLE_ATTR(min);
-      HANDLE_ATTR(max);
-      HANDLE_ATTR(width);
-      HANDLE_ATTR(time_range);
-      #undef HANDLE_ATTR
-      printf("got unexpected value %lld for cur_key = %s in scope of graph\n",
-             val, cur_key);
-      return 0;
+#define HANDLE_ATTR(name)                    \
+    do {                                     \
+        if (!strcmp(cur_key, #name)) {       \
+            DLOG("%s = %lld\n", #name, val); \
+            graph_config.name = val;         \
+            return 1;                        \
+        }                                    \
+    } while (0)
+        HANDLE_ATTR(min);
+        HANDLE_ATTR(max);
+        HANDLE_ATTR(width);
+        HANDLE_ATTR(time_range);
+#undef HANDLE_ATTR
+        printf("got unexpected value %lld for cur_key = %s in scope of graph\n",
+               val, cur_key);
+        return 0;
     }
     return 0;
 }
@@ -314,7 +317,7 @@ static int config_start_map(void *ctx) {
 static int config_end_map(void *ctx) {
     DLOG("MAP END %s:\n", last_key ? last_key : "null");
     if (last_key && !strcmp(last_key, "graph")) {
-        graph_config_t* gconfig = smalloc(sizeof(graph_config_t));
+        graph_config_t *gconfig = smalloc(sizeof(graph_config_t));
         memcpy(gconfig, &graph_config, sizeof(graph_config_t));
         memset(&graph_config, '\0', sizeof(graph_config_t));
         TAILQ_INSERT_HEAD(&config.graph_configs, gconfig, configs);

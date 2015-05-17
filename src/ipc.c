@@ -470,7 +470,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 }
 
 static void dump_bar_config(yajl_gen gen, Barconfig *config) {
-    Graphconfig* graphconfig;
+    Graphconfig *graphconfig;
     y(map_open);
 
     ystr("id");
@@ -618,12 +618,12 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     TAILQ_FOREACH(graphconfig, &config->graph_configs, configs) {
         ystr("graph");
         y(map_open);
-#define YSTR_IF_SET(name)              \
-    do {                               \
-        if (graphconfig->name) {       \
-            ystr(#name);               \
-            ystr(graphconfig->name);   \
-        }                              \
+#define YSTR_IF_SET(name)            \
+    do {                             \
+        if (graphconfig->name) {     \
+            ystr(#name);             \
+            ystr(graphconfig->name); \
+        }                            \
     } while (0)
         YSTR_IF_SET(graph_config);
         YSTR_IF_SET(colorTOP);
