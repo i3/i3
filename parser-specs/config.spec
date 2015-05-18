@@ -104,8 +104,6 @@ state WORKSPACE_LAYOUT:
 
 # new_window <normal|1pixel|none>
 # new_float <normal|1pixel|none>
-# TODO: new_float is not in the userguide yet
-# TODO: pixel is not in the userguide yet
 state NEW_WINDOW:
   border = 'normal', 'pixel'
       -> NEW_WINDOW_PIXELS

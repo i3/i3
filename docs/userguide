@@ -320,7 +320,7 @@ and fall back to a working font.
 *Syntax*:
 ------------------------------
 font <X core font description>
-font pango:[family list] [style options] [size]
+font pango:<family list> [<style options>] <size>
 ------------------------------
 
 *Examples*:
@@ -361,8 +361,8 @@ after the keys have been released.
 
 *Syntax*:
 ----------------------------------
-bindsym [--release] [Modifiers+]keysym command
-bindcode [--release] [Modifiers+]keycode command
+bindsym [--release] [<Modifiers>+]<keysym> command
+bindcode [--release] [<Modifiers>+]<keycode> command
 ----------------------------------
 
 *Examples*:
@@ -404,9 +404,9 @@ button in the scope of the clicked container (see <<command_criteria>>). You
 can configure mouse bindings in a similar way to key bindings.
 
 *Syntax*:
-----------------------------------
-bindsym [--release] [--border] [--whole-window] [Modifiers+]button[n] command
-----------------------------------
+-------------------------------------------------------------------------------
+bindsym [--release] [--border] [--whole-window] [<Modifiers>+]button<n> command
+-------------------------------------------------------------------------------
 
 By default, the binding will only run when you click on the titlebar of the
 window. If the +--release+ flag is given, it will run when the mouse button
@@ -451,7 +451,7 @@ ratio will be preserved).
 
 *Syntax*:
 --------------------------------
-floating_modifier <Modifiers>
+floating_modifier <Modifier>
 --------------------------------
 
 *Example*:
@@ -490,9 +490,9 @@ With the +default_orientation+ configuration directive, you can override that
 behavior.
 
 *Syntax*:
-----------------------------------------------
-default_orientation <horizontal|vertical|auto>
-----------------------------------------------
+--------------------------------------------
+default_orientation horizontal|vertical|auto
+--------------------------------------------
 
 *Example*:
 ----------------------------
@@ -509,7 +509,7 @@ See also <<stack-limit>>.
 
 *Syntax*:
 ---------------------------------------------
-workspace_layout <default|stacking|tabbed>
+workspace_layout default|stacking|tabbed
 ---------------------------------------------
 /////////////////////////////////////////////
 new_container stack-limit <cols|rows> <value>
@@ -528,8 +528,10 @@ floating windows, e.g. dialog windows.
 
 *Syntax*:
 ---------------------------------------------
-new_window <normal|1pixel|none|pixel>
-new_float <normal|1pixel|none|pixel>
+new_window normal|1pixel|none|pixel
+new_window normal|pixel <px>
+new_float normal|1pixel|none|pixel
+new_float normal|pixel <px>
 ---------------------------------------------
 
 *Example*:
@@ -557,9 +559,9 @@ You can hide vertical borders adjacent to the screen edges using
 to waste even two pixels in displayspace. Default is none.
 
 *Syntax*:
-----------------------------
-hide_edge_borders <none|vertical|horizontal|both>
-----------------------------
+-----------------------------------------------
+hide_edge_borders none|vertical|horizontal|both
+-----------------------------------------------
 
 *Example*:
 ----------------------
@@ -573,9 +575,9 @@ encounters a specific window. This can be used to set windows to floating or to
 change their border style, for example.
 
 *Syntax*:
------------------------------
-for_window <criteria> command
------------------------------
+-------------------------------
+for_window <criteria> <command>
+-------------------------------
 
 *Examples*:
 ------------------------------------------------
@@ -622,9 +624,9 @@ yourself some typing and be able to change the modifier you use later,
 variables can be handy.
 
 *Syntax*:
---------------
-set $name value
---------------
+-------------------
+set $<name> <value>
+-------------------
 
 *Example*:
 ------------------------
@@ -660,7 +662,7 @@ considered.
 
 *Syntax*:
 ------------------------------------------------------------
-assign <criteria> [→] workspace
+assign <criteria> [→] [workspace] <workspace>
 ------------------------------------------------------------
 
 *Examples*:
@@ -729,10 +731,10 @@ and +,+ (comma): they chain commands together in i3, so you need to use quoted
 strings if they appear in your command.
 
 *Syntax*:
--------------------
-exec [--no-startup-id] command
-exec_always [--no-startup-id] command
--------------------
+---------------------------------------
+exec [--no-startup-id] <command>
+exec_always [--no-startup-id] <command>
+---------------------------------------
 
 *Examples*:
 --------------------------------
@@ -756,9 +758,9 @@ or when starting (e.g., by default it will use 1 for the first screen, 2 for
 the second screen and so on).
 
 *Syntax*:
-----------------------------------
+-------------------------------------
 workspace <workspace> output <output>
-----------------------------------
+-------------------------------------
 
 The 'output' is the name of the RandR output you attach your screen to. On a
 laptop, you might have VGA1 and LVDS1 as output names. You can see the
@@ -778,9 +780,9 @@ workspace "2: vim" output VGA1
 You can change all colors which i3 uses to draw the window decorations.
 
 *Syntax*:
---------------------------------------------
-colorclass border background text indicator
---------------------------------------------
+------------------------------------------------------
+<colorclass> <border> <background> <text> <indicator>
+------------------------------------------------------
 
 Where colorclass can be one of:
 
@@ -802,9 +804,9 @@ windows. This color will be used to paint the window on top of which the client
 will be rendered.
 
 *Syntax*:
------------------------
-client.background color
------------------------
+-------------------------
+client.background <color>
+-------------------------
 
 Only clients that do not cover the whole area of this window expose the color
 used to paint it.
@@ -866,9 +868,9 @@ still be useful inside the currently active window (for example to click on
 links in your browser window).
 
 *Syntax*:
-----------------------------
-focus_follows_mouse <yes|no>
-----------------------------
+--------------------------
+focus_follows_mouse yes|no
+--------------------------
 
 *Example*:
 ----------------------
@@ -886,9 +888,9 @@ be warped. +none+ disables warping entirely, whereas +output+ is the default
 behavior described above.
 
 *Syntax*:
----------------------------
-mouse_warping <output|none>
----------------------------
+-------------------------
+mouse_warping output|none
+-------------------------
 
 *Example*:
 ------------------
@@ -910,9 +912,9 @@ There are three things which are possible to do in this situation:
 3. Leave fullscreen mode.
 
 *Syntax*:
--------------------------------------------------
-popup_during_fullscreen <smart|ignore|leave_fullscreen>
--------------------------------------------------
+-----------------------------------------------------
+popup_during_fullscreen smart|ignore|leave_fullscreen
+-----------------------------------------------------
 
 *Example*:
 ------------------------------
@@ -933,9 +935,9 @@ parent+ to switch to different containers, you can use the
 will always wrap.
 
 *Syntax*:
------------------------------
-force_focus_wrapping <yes|no>
------------------------------
+---------------------------
+force_focus_wrapping yes|no
+---------------------------
 
 *Example*:
 ------------------------
@@ -955,9 +957,9 @@ For people who cannot modify their +~/.xsession+ to add the
 +--force-xinerama+ commandline parameter, a configuration option is provided:
 
 *Syntax*:
------------------------
-force_xinerama <yes|no>
------------------------
+---------------------
+force_xinerama yes|no
+---------------------
 
 *Example*:
 ------------------
@@ -977,9 +979,9 @@ mod+2 because somebody sent you a message. You don’t need to remember where yo
 came from now, you can just press $mod+2 again to switch back to "1: www".
 
 *Syntax*:
---------------------------------------
-workspace_auto_back_and_forth <yes|no>
---------------------------------------
+------------------------------------
+workspace_auto_back_and_forth yes|no
+------------------------------------
 
 *Example*:
 ---------------------------------
@@ -1046,9 +1048,9 @@ Note that this may not affect windows that are being opened. To prevent new wind
 from being focused, see <<no_focus>>.
 
 *Syntax*:
-----------------------------------------------------
-focus_on_window_activation <smart|urgent|focus|none>
-----------------------------------------------------
+--------------------------------------------------
+focus_on_window_activation smart|urgent|focus|none
+--------------------------------------------------
 
 The different modes will act as follows:
 
@@ -1071,9 +1073,9 @@ this option is activated.
 The default for this option is +yes+.
 
 *Syntax*:
--------------------
-show_marks [yes|no]
--------------------
+-----------------
+show_marks yes|no
+-----------------
 
 *Example*:
 --------------
@@ -1122,9 +1124,9 @@ The specified command will be passed to +sh -c+, so you can use globbing and
 have to have correct quoting etc.
 
 *Syntax*:
-----------------------
-i3bar_command command
-----------------------
+-----------------------
+i3bar_command <command>
+-----------------------
 
 *Example*:
 -------------------------------------------------
@@ -1144,9 +1146,9 @@ The specified command will be passed to +sh -c+, so you can use globbing and
 have to have correct quoting etc.
 
 *Syntax*:
-----------------------
-status_command command
-----------------------
+------------------------
+status_command <command>
+------------------------
 
 *Example*:
 -------------------------------------------------
@@ -1187,11 +1189,11 @@ The default mode is dock mode; in hide mode, the default modifier is Mod4 (usual
 the windows key). The default value for the hidden_state is hide.
 
 *Syntax*:
-----------------
-mode <dock|hide|invisible>
-hidden_state <hide|show>
+-------------------------
+mode dock|hide|invisible
+hidden_state hide|show
 modifier <Modifier>
-----------------
+------------------------
 
 *Example*:
 ----------------
@@ -1251,9 +1253,9 @@ This option determines in which edge of the screen i3bar should show up.
 The default is bottom.
 
 *Syntax*:
----------------------
-position <top|bottom>
----------------------
+-------------------
+position top|bottom
+-------------------
 
 *Example*:
 ---------------------
@@ -1306,9 +1308,9 @@ You can configure on which output (monitor) the icons should be displayed or
 you can turn off the functionality entirely.
 
 *Syntax*:
--------------------------
-tray_output <none|primary|output>
--------------------------
+-------------------------------
+tray_output none|primary|output
+-------------------------------
 
 *Example*:
 -------------------------
@@ -1373,9 +1375,9 @@ you want to display a statusline-only bar containing additional information.
 The default is to show workspace buttons.
 
 *Syntax*:
---------------------------
-workspace_buttons <yes|no>
---------------------------
+------------------------
+workspace_buttons yes|no
+------------------------
 
 *Example*:
 ------------------------
@@ -1398,9 +1400,9 @@ workspaces to "1:I", "2:II", "3:III", "4:IV", ...
 The default is to display the full name within the workspace button.
 
 *Syntax*:
-----------------------------------
-strip_workspace_numbers <yes|no>
-----------------------------------
+------------------------------
+strip_workspace_numbers yes|no
+------------------------------
 
 *Example*:
 ----------------------------
@@ -1419,9 +1421,9 @@ For an example of a +mode+ definition, see <<resizingconfig>>.
 The default is to show the mode indicator.
 
 *Syntax*:
--------------------------------
-binding_mode_indicator <yes|no>
--------------------------------
+-----------------------------
+binding_mode_indicator yes|no
+-----------------------------
 
 *Example*:
 -----------------------------
@@ -1464,7 +1466,7 @@ colors {
     statusline <color>
     separator <color>
 
-    colorclass <border> <background> <text>
+    <colorclass> <border> <background> <text>
 }
 ----------------------------------------
 
@@ -1578,9 +1580,9 @@ and +,+ (comma): they chain commands together in i3, so you need to use quoted
 strings if they appear in your command.
 
 *Syntax*:
-------------------------------
-exec [--no-startup-id] command
-------------------------------
+--------------------------------
+exec [--no-startup-id] <command>
+--------------------------------
 
 *Example*:
 ------------------------------
@@ -1613,9 +1615,9 @@ orientation will be changed (if it does not have more than one window). Use
 to splith or vice-versa.
 
 *Syntax*:
----------------------------
-split <vertical|horizontal>
----------------------------
+-------------------------
+split vertical|horizontal
+-------------------------
 
 *Example*:
 ------------------------------
@@ -1638,10 +1640,10 @@ Likewise, to make the current window floating (or tiling again) use +floating
 enable+ respectively +floating disable+ (or +floating toggle+):
 
 *Syntax*:
---------------
-layout <default|tabbed|stacking|splitv|splith>
+--------------------------------------------
+layout default|tabbed|stacking|splitv|splith
 layout toggle [split|all]
---------------
+--------------------------------------------
 
 *Examples*:
 --------------
@@ -1784,14 +1786,14 @@ workspace using +move container to workspace back_and_forth+.
 
 *Syntax*:
 -----------------------------------
-workspace <next|prev|next_on_output|prev_on_output>
+workspace next|prev|next_on_output|prev_on_output
 workspace back_and_forth
 workspace <name>
 workspace number <name>
 
 move [window|container] [to] workspace <name>
 move [window|container] [to] workspace number <name>
-move [window|container] [to] workspace <prev|next|current>
+move [window|container] [to] workspace prev|next|current
 -----------------------------------
 
 *Examples*:
@@ -1883,10 +1885,10 @@ To move a container to another RandR output (addressed by names like +LVDS1+ or
 +right+, +up+ or +down+), there are two commands:
 
 *Syntax*:
---------------------------------------------------------
-move container to output <<left|right|down|up>|<output>>
-move workspace to output <<left|right|down|up>|<output>>
---------------------------------------------------------
+----------------------------------------------------
+move container to output left|right|down|up|<output>
+move workspace to output left|right|down|up|<output>
+----------------------------------------------------
 
 *Examples*:
 --------------------------------------------------------
@@ -1926,9 +1928,9 @@ If you want to resize containers/windows using your keyboard, you can use the
 +resize+ command:
 
 *Syntax*:
----------------------------------------------------------
-resize <grow|shrink> <direction> [<px> px [or <ppt> ppt]]
----------------------------------------------------------
+-------------------------------------------------------
+resize grow|shrink <direction> [<px> px [or <ppt> ppt]]
+-------------------------------------------------------
 
 Direction can either be one of +up+, +down+, +left+ or +right+. Or you can be
 less specific and use +width+ or +height+, in which case i3 will take/give
@@ -2015,9 +2017,9 @@ Refer to +show_marks+ if you don't want marks to be shown in the window decorati
 
 *Syntax*:
 ------------------------------
-mark [--toggle] identifier
+mark [--toggle] <identifier>
 [con_mark="identifier"] focus
-unmark identifier
+unmark <identifier>
 ------------------------------
 
 *Example (in a terminal)*:
@@ -2073,9 +2075,9 @@ in a stacking container. i3 will create columns or rows (depending on what
 you limited) automatically as needed.
 
 *Syntax*:
---------------------------------
-stack-limit <cols|rows> <value>
---------------------------------
+-----------------------------
+stack-limit cols|rows <value>
+-----------------------------
 
 *Examples*:
 -------------------
@@ -2103,7 +2105,7 @@ discarded and a new one will be started.
 *Syntax*:
 ------------------------------
 shmlog <size_in_bytes>
-shmlog <on|off|toggle>
+shmlog on|off|toggle
 ------------------------------
 
 *Examples*:
@@ -2124,9 +2126,9 @@ command does not activate shared memory logging (shmlog), and as such is most
 likely useful in combination with the above-described <<shmlog>> command.
 
 *Syntax*:
-------------------------
-debuglog <on|off|toggle>
-------------------------
+----------------------
+debuglog on|off|toggle
+----------------------
 
 *Examples*:
 ------------------------
