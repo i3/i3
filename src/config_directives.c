@@ -530,38 +530,44 @@ CFGFUN(bar_modifier, const char *modifier) {
         current_bar.modifier = M_SHIFT;
 }
 
-static void bar_configure_mouse_command(const char *button, const char *command) {
-    if (strncasecmp(button, "button", sizeof("button") - 1) != 0) {
-        ELOG("unknown button \"%s\" for mouse command, ignoring.\n", button);
+static void bar_configure_binding(const char *button, const char *command) {
+    if (strncasecmp(button, "button", strlen("button")) != 0) {
+        ELOG("Bindings for a bar can only be mouse bindings, not \"%s\", ignoring.\n", button);
         return;
     }
 
-    struct Mousecommand *current;
-    TAILQ_FOREACH(current, &(current_bar.mouse_commands), commands) {
-        if (strcasecmp(current->button, button) == 0) {
+    int input_code = atoi(button + strlen("button"));
+    if (input_code < 1) {
+        ELOG("Button \"%s\" does not seem to be in format 'buttonX'.\n", button);
+        return;
+    }
+
+    struct Barbinding *current;
+    TAILQ_FOREACH(current, &(current_bar.bar_bindings), bindings) {
+        if (current->input_code == input_code) {
             ELOG("command for button %s was already specified, ignoring.\n", button);
             return;
         }
     }
 
-    struct Mousecommand *new_command = scalloc(sizeof(struct Mousecommand));
-    new_command->button = sstrdup(button);
-    new_command->command = sstrdup(command);
-    TAILQ_INSERT_TAIL(&(current_bar.mouse_commands), new_command, commands);
+    struct Barbinding *new_binding = scalloc(sizeof(struct Barbinding));
+    new_binding->input_code = input_code;
+    new_binding->command = sstrdup(command);
+    TAILQ_INSERT_TAIL(&(current_bar.bar_bindings), new_binding, bindings);
 }
 
 CFGFUN(bar_wheel_up_cmd, const char *command) {
     ELOG("'wheel_up_cmd' is deprecated. Please us 'bindsym button4 %s' instead.\n", command);
-    bar_configure_mouse_command("button4", command);
+    bar_configure_binding("button4", command);
 }
 
 CFGFUN(bar_wheel_down_cmd, const char *command) {
     ELOG("'wheel_down_cmd' is deprecated. Please us 'bindsym button5 %s' instead.\n", command);
-    bar_configure_mouse_command("button5", command);
+    bar_configure_binding("button5", command);
 }
 
 CFGFUN(bar_bindsym, const char *button, const char *command) {
-    bar_configure_mouse_command(button, command);
+    bar_configure_binding(button, command);
 }
 
 CFGFUN(bar_position, const char *position) {
@@ -636,7 +642,7 @@ CFGFUN(bar_strip_workspace_numbers, const char *value) {
 }
 
 CFGFUN(bar_start) {
-    TAILQ_INIT(&(current_bar.mouse_commands));
+    TAILQ_INIT(&(current_bar.bar_bindings));
 }
 
 CFGFUN(bar_finish) {

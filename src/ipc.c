@@ -469,17 +469,26 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(map_close);
 }
 
-static void dump_mouse_commands(yajl_gen gen, Barconfig *config) {
-    ystr("mouse_commands");
-    y(map_open);
+static void dump_bar_bindings(yajl_gen gen, Barconfig *config) {
+    if (TAILQ_EMPTY(&(config->bar_bindings)))
+        return;
 
-    struct Mousecommand *current;
-    TAILQ_FOREACH(current, &(config->mouse_commands), commands) {
-        ystr(current->button);
+    ystr("bindings");
+    y(array_open);
+
+    struct Barbinding *current;
+    TAILQ_FOREACH(current, &(config->bar_bindings), bindings) {
+        y(map_open);
+
+        ystr("input_code");
+        y(integer, current->input_code);
+        ystr("command");
         ystr(current->command);
+
+        y(map_close);
     }
 
-    y(map_close);
+    y(array_close);
 }
 
 static void dump_bar_config(yajl_gen gen, Barconfig *config) {
@@ -562,7 +571,7 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
             break;
     }
 
-    dump_mouse_commands(gen, config);
+    dump_bar_bindings(gen, config);
 
     ystr("position");
     if (config->position == P_BOTTOM)

@@ -281,7 +281,7 @@ struct Barconfig {
         M_MOD5 = 7
     } modifier;
 
-    TAILQ_HEAD(mouse_commands_head, Mousecommand) mouse_commands;
+    TAILQ_HEAD(bar_bindings_head, Barbinding) bar_bindings;
 
     /** Bar position (bottom by default). */
     enum { P_BOTTOM = 0,
@@ -352,14 +352,14 @@ struct Barconfig {
  * clicking on the non-statusline part of i3bar.
  *
  */
-struct Mousecommand {
-    /** The button for this command (e.g., "button1") */
-    char *button;
+struct Barbinding {
+    /** The button to be used (e.g., 1 for "button1"). */
+    int input_code;
 
     /** The command which is to be executed for this button. */
     char *command;
 
-    TAILQ_ENTRY(Mousecommand) commands;
+    TAILQ_ENTRY(Barbinding) bindings;
 };
 
 /**

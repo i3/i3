@@ -22,16 +22,16 @@ typedef enum { M_DOCK = 0,
                M_HIDE = 1,
                M_INVISIBLE = 2 } bar_display_mode_t;
 
-typedef struct mouse_command_t {
-    int button;
+typedef struct binding_t {
+    int input_code;
     char *command;
 
-    TAILQ_ENTRY(mouse_command_t) commands;
-} mouse_command_t;
+    TAILQ_ENTRY(binding_t) bindings;
+} binding_t;
 
 typedef struct config_t {
     int modifier;
-    TAILQ_HEAD(mouse_commands_head, mouse_command_t) mouse_commands;
+    TAILQ_HEAD(bindings_head, binding_t) bindings;
     position_t position;
     int verbose;
     struct xcb_color_strings_t colors;

@@ -470,12 +470,12 @@ void handle_button(xcb_button_press_event_t *event) {
 
     /* If a custom command was specified for this mouse button, it overrides
      * the default behavior. */
-    mouse_command_t *command;
-    TAILQ_FOREACH(command, &(config.mouse_commands), commands) {
-        if (command->button != event->detail)
+    binding_t *binding;
+    TAILQ_FOREACH(binding, &(config.bindings), bindings) {
+        if (binding->input_code != event->detail)
             continue;
 
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, command->command);
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, binding->command);
         return;
     }
 

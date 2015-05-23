@@ -20,7 +20,7 @@
 #include "common.h"
 
 static char *cur_key;
-static bool parsing_mouse_commands;
+static bool parsing_bindings;
 
 /*
  * Parse a key.
@@ -35,14 +35,14 @@ static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t 
     strncpy(cur_key, (const char *)keyVal, keyLen);
     cur_key[keyLen] = '\0';
 
-    if (strcmp(cur_key, "mouse_commands") == 0)
-        parsing_mouse_commands = true;
+    if (strcmp(cur_key, "bindings") == 0)
+        parsing_bindings = true;
 
     return 1;
 }
 
-static int config_end_map_cb(void *params_) {
-    parsing_mouse_commands = false;
+static int config_end_array_cb(void *params_) {
+    parsing_bindings = false;
     return 1;
 }
 
@@ -72,23 +72,25 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
     if (!strcmp(cur_key, "id") || !strcmp(cur_key, "socket_path"))
         return 1;
 
-    if (parsing_mouse_commands) {
-        int button = atoi(cur_key + sizeof("button") - 1);
-
-        mouse_command_t *current;
-        TAILQ_FOREACH(current, &(config.mouse_commands), commands) {
-            if (current->button == button) {
-                FREE(current->command);
-                sasprintf(&(current->command), "%.*s", len, val);
-                return 1;
+    if (parsing_bindings) {
+        if (strcmp(cur_key, "command") == 0) {
+            binding_t *binding = TAILQ_LAST(&(config.bindings), bindings_head);
+            if (binding == NULL) {
+                ELOG("There is no binding to put the current command onto. This is a bug in i3.\n");
+                return 0;
             }
+
+            if (binding->command != NULL) {
+                ELOG("The binding for input_code = %d already has a command. This is a bug in i3.\n", binding->input_code);
+                return 0;
+            }
+
+            sasprintf(&(binding->command), "%.*s", len, val);
+            return 1;
         }
 
-        mouse_command_t *command = scalloc(sizeof(mouse_command_t));
-        command->button = button;
-        sasprintf(&(command->command), "%.*s", len, val);
-        TAILQ_INSERT_TAIL(&(config.mouse_commands), command, commands);
-        return 1;
+        ELOG("Unknown key \"%s\" while parsing bar bindings.\n", cur_key);
+        return 0;
     }
 
     if (!strcmp(cur_key, "mode")) {
@@ -268,12 +270,34 @@ static int config_boolean_cb(void *params_, int val) {
     return 0;
 }
 
+/*
+ * Parse an integer value
+ *
+ */
+static int config_integer_cb(void *params_, long long val) {
+    if (parsing_bindings) {
+        if (strcmp(cur_key, "input_code") == 0) {
+            binding_t *binding = scalloc(sizeof(binding_t));
+            binding->input_code = val;
+            TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
+
+            return 1;
+        }
+
+        ELOG("Unknown key \"%s\" while parsing bar bindings.\n", cur_key);
+        return 0;
+    }
+
+    return 0;
+}
+
 /* A datastructure to pass all these callbacks to yajl */
 static yajl_callbacks outputs_callbacks = {
     .yajl_null = config_null_cb,
     .yajl_boolean = config_boolean_cb,
+    .yajl_integer = config_integer_cb,
     .yajl_string = config_string_cb,
-    .yajl_end_map = config_end_map_cb,
+    .yajl_end_array = config_end_array_cb,
     .yajl_map_key = config_map_key_cb,
 };
 
@@ -286,7 +310,7 @@ void parse_config_json(char *json) {
     yajl_status state;
     handle = yajl_alloc(&outputs_callbacks, NULL, NULL);
 
-    TAILQ_INIT(&(config.mouse_commands));
+    TAILQ_INIT(&(config.bindings));
 
     state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
