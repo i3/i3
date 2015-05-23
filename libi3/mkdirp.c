@@ -11,7 +11,19 @@
 bool mkdirp(const char *path) {
     if (mkdir(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0)
         return true;
-    if (errno != ENOENT) {
+    if (errno == EEXIST) {
+        struct stat st;
+        /* Check that the named file actually is a directory. */
+        if (stat(path, &st)) {
+            ELOG("stat(%s) failed: %s\n", path, strerror(errno));
+            return false;
+        }
+        if (!S_ISDIR(st.st_mode)) {
+            ELOG("mkdir(%s) failed: %s\n", path, strerror(ENOTDIR));
+            return false;
+        }
+        return true;
+    } else if (errno != ENOENT) {
         ELOG("mkdir(%s) failed: %s\n", path, strerror(errno));
         return false;
     }
