@@ -1308,9 +1308,9 @@ You can configure on which output (monitor) the icons should be displayed or
 you can turn off the functionality entirely.
 
 *Syntax*:
--------------------------------
-tray_output none|primary|output
--------------------------------
+---------------------------------
+tray_output none|primary|<output>
+---------------------------------
 
 *Example*:
 -------------------------
