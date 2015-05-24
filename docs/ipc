@@ -822,4 +822,5 @@ Python::
 	* https://github.com/whitelynx/i3ipc (not maintained)
 	* https://github.com/ziberna/i3-py (not maintained)
 Ruby::
-	* http://github.com/badboy/i3-ipc
+	* https://github.com/veelenga/i3ipc-ruby
+	* https://github.com/badboy/i3-ipc (not maintained)
