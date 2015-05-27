@@ -168,20 +168,11 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     cwindow->id = window;
     cwindow->depth = get_visual_depth(attr->visual);
 
-    /* We need to grab the mouse buttons for click to focus */
+    /* We need to grab buttons 1-3 for click-to-focus and buttons 1-5
+     * to allow for mouse bindings using --whole-window to work correctly. */
     xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS,
                     XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                    1 /* left mouse button */,
-                    XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
-
-    xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS,
-                    XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                    2 /* middle mouse button */,
-                    XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
-
-    xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS,
-                    XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                    3 /* right mouse button */,
+                    XCB_BUTTON_INDEX_ANY,
                     XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
     /* update as much information as possible so far (some replies may be NULL) */

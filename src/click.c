@@ -349,8 +349,8 @@ done:
  */
 int handle_button_press(xcb_button_press_event_t *event) {
     Con *con;
-    DLOG("Button %d %s on window 0x%08x (child 0x%08x) at (%d, %d) (root %d, %d)\n",
-         event->state, (event->response_type == XCB_BUTTON_PRESS ? "press" : "release"),
+    DLOG("Button %d (state %d) %s on window 0x%08x (child 0x%08x) at (%d, %d) (root %d, %d)\n",
+         event->detail, event->state, (event->response_type == XCB_BUTTON_PRESS ? "press" : "release"),
          event->event, event->child, event->event_x, event->event_y, event->root_x,
          event->root_y);
 
