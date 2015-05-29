@@ -215,7 +215,7 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
 
     /* Skip events where the pointer was over a child window, we are only
      * interested in events on the root window. */
-    if (event->child != 0)
+    if (event->child != XCB_NONE)
         return;
 
     Con *con;
