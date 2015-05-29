@@ -228,7 +228,7 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
     if (config.disable_focus_follows_mouse)
         return;
 
-    if (con->layout != L_DEFAULT)
+    if (con->layout != L_DEFAULT && con->layout != L_SPLITV && con->layout != L_SPLITH)
         return;
 
     /* see over which rect the user is */
@@ -245,8 +245,6 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
         x_push_changes(croot);
         return;
     }
-
-    return;
 }
 
 /*
