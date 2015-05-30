@@ -1728,10 +1728,11 @@ Use the +move+ command to move a container.
 # defaults to 10 pixels.
 move <left|right|down|up> [<px> px]
 
-# Moves the container either to a specific location
-# or to the center of the screen. If 'absolute' is
-# used, it is moved to the center of all outputs.
-move [absolute] position [[<px> px] [<px> px]|center]
+# Moves the container either to a specific location,
+# by a specific offset or to the center of the screen.
+# If 'absolute' is used, it is moved to the center
+# of all outputs.
+move [absolute|relative] position [[<px> px] [<px> px]|center]
 
 # Moves the container to the current position of the
 # mouse cursor. Only affects floating containers.

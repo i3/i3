@@ -1755,7 +1755,7 @@ void cmd_focus_output(I3_CMD, char *name) {
 }
 
 /*
- * Implementation of 'move [window|container] [to] [absolute] position <px> [px] <px> [px]
+ * Implementation of 'move [window|container] [to] [absolute|relative] position <px> [px] <px> [px]
  *
  */
 void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
@@ -1783,6 +1783,15 @@ void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
             current->con->parent->rect.y = y;
 
             DLOG("moving to absolute position %d %d\n", x, y);
+            floating_maybe_reassign_ws(current->con->parent);
+            cmd_output->needs_tree_render = true;
+        }
+
+        if (strcmp(method, "relative") == 0) {
+            current->con->parent->rect.x += x;
+            current->con->parent->rect.y += y;
+
+            DLOG("moving by relative offset %d %d\n", x, y);
             floating_maybe_reassign_ws(current->con->parent);
             cmd_output->needs_tree_render = true;
         }
