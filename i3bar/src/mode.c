@@ -32,7 +32,7 @@ static int mode_string_cb(void *params_, const unsigned char *val, size_t len) {
 
     if (!strcmp(params->cur_key, "change")) {
         /* Save the name */
-        params->mode->name = i3string_from_utf8_with_length((const char *)val, len);
+        params->mode->name = i3string_from_markup_with_length((const char *)val, len);
         /* Save its rendered width */
         params->mode->width = predict_text_width(params->mode->name);
 
