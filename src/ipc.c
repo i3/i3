@@ -611,6 +611,9 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     YSTR_IF_SET(urgent_workspace_border);
     YSTR_IF_SET(urgent_workspace_bg);
     YSTR_IF_SET(urgent_workspace_text);
+    YSTR_IF_SET(binding_mode_border);
+    YSTR_IF_SET(binding_mode_bg);
+    YSTR_IF_SET(binding_mode_text);
     y(map_close);
 
     y(map_close);

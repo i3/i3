@@ -344,6 +344,10 @@ struct Barconfig {
         char *urgent_workspace_border;
         char *urgent_workspace_bg;
         char *urgent_workspace_text;
+
+        char *binding_mode_border;
+        char *binding_mode_bg;
+        char *binding_mode_text;
     } colors;
 
     TAILQ_ENTRY(Barconfig) configs;

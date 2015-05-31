@@ -130,6 +130,9 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(barconfig->colors.urgent_workspace_border);
             FREE(barconfig->colors.urgent_workspace_bg);
             FREE(barconfig->colors.urgent_workspace_text);
+            FREE(barconfig->colors.binding_mode_border);
+            FREE(barconfig->colors.binding_mode_bg);
+            FREE(barconfig->colors.binding_mode_text);
             TAILQ_REMOVE(&barconfigs, barconfig, configs);
             FREE(barconfig);
         }
