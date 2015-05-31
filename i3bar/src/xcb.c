@@ -1912,11 +1912,11 @@ void draw_bars(bool unhide) {
         if (binding.name && !config.disable_binding_mode_indicator) {
             workspace_width += logical_px(ws_spacing_px);
 
-            uint32_t fg_color = colors.urgent_ws_fg;
-            uint32_t bg_color = colors.urgent_ws_bg;
+            uint32_t fg_color = colors.binding_mode_fg;
+            uint32_t bg_color = colors.binding_mode_bg;
             uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
 
-            uint32_t vals_border[] = {colors.urgent_ws_border, colors.urgent_ws_border};
+            uint32_t vals_border[] = {colors.binding_mode_border, colors.binding_mode_border};
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
                           mask,
