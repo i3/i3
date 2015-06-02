@@ -112,6 +112,7 @@ bar {
         active_workspace    #333333 #222222 #888888
         inactive_workspace  #333333 #222222 #888888
         urgent_workspace    #2f343a #900000 #ffffff
+        binding_mode        #abc123 #123abc #ababab
     }
 }
 EOT
@@ -151,6 +152,9 @@ is_deeply($bar_config->{colors},
         urgent_workspace_border => '#2f343a',
         urgent_workspace_text => '#ffffff',
         urgent_workspace_bg => '#900000',
+        binding_mode_border => '#abc123',
+        binding_mode_text => '#ababab',
+        binding_mode_bg => '#123abc',
     }, 'colors ok');
 
 exit_gracefully($pid);

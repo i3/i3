@@ -1457,7 +1457,10 @@ inactive_workspace::
 	will be the case for most workspaces.
 urgent_workspace::
 	Border, background and text color for a workspace button when the workspace
-	contains a window with the urgency hint set. Also applies to +mode+ indicators.
+	contains a window with the urgency hint set.
+binding_mode::
+        Border, background and text color for the binding mode indicator. If not used,
+        the colors will be taken from +urgent_workspace+.
 
 *Syntax*:
 ----------------------------------------
@@ -1482,6 +1485,7 @@ bar {
         active_workspace   #333333 #5f676a #ffffff
         inactive_workspace #333333 #222222 #888888
         urgent_workspace   #2f343a #900000 #ffffff
+        binding_mode       #2f343a #900000 #ffffff
     }
 }
 --------------------------------------

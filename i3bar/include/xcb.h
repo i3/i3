@@ -40,6 +40,9 @@ struct xcb_color_strings_t {
     char *urgent_ws_bg;
     char *urgent_ws_fg;
     char *urgent_ws_border;
+    char *binding_mode_bg;
+    char *binding_mode_fg;
+    char *binding_mode_border;
 };
 
 typedef struct xcb_colors_t xcb_colors_t;

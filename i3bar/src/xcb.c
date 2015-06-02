@@ -106,6 +106,9 @@ struct xcb_colors_t {
     uint32_t focus_ws_bg;
     uint32_t focus_ws_fg;
     uint32_t focus_ws_border;
+    uint32_t binding_mode_bg;
+    uint32_t binding_mode_fg;
+    uint32_t binding_mode_border;
 };
 struct xcb_colors_t colors;
 
@@ -373,6 +376,18 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(focus_ws_bg, "#285577");
     PARSE_COLOR(focus_ws_border, "#4c7899");
 #undef PARSE_COLOR
+
+#define PARSE_COLOR_FALLBACK(name, fallback)                                                 \
+    do {                                                                                     \
+        colors.name = new_colors->name ? get_colorpixel(new_colors->name) : colors.fallback; \
+    } while (0)
+
+    /* For the binding mode indicator colors, we don't hardcode a default.
+     * Instead, we fall back to urgent_ws_* colors. */
+    PARSE_COLOR_FALLBACK(binding_mode_fg, urgent_ws_fg);
+    PARSE_COLOR_FALLBACK(binding_mode_bg, urgent_ws_bg);
+    PARSE_COLOR_FALLBACK(binding_mode_border, urgent_ws_border);
+#undef PARSE_COLOR_FALLBACK
 
     init_tray_colors();
     xcb_flush(xcb_connection);
@@ -1897,11 +1912,11 @@ void draw_bars(bool unhide) {
         if (binding.name && !config.disable_binding_mode_indicator) {
             workspace_width += logical_px(ws_spacing_px);
 
-            uint32_t fg_color = colors.urgent_ws_fg;
-            uint32_t bg_color = colors.urgent_ws_bg;
+            uint32_t fg_color = colors.binding_mode_fg;
+            uint32_t bg_color = colors.binding_mode_bg;
             uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
 
-            uint32_t vals_border[] = {colors.urgent_ws_border, colors.urgent_ws_border};
+            uint32_t vals_border[] = {colors.binding_mode_border, colors.binding_mode_border};
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
                           mask,
