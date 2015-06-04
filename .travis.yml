@@ -32,7 +32,7 @@ before_install:
   - sudo cp /tmp/pin /etc/apt/preferences.d/trustypin
   - sudo apt-get update
   - sudo apt-get install -t trusty libc6 libc6-dev
-  - sudo apt-get install --no-install-recommends devscripts equivs
+  - sudo apt-get install --no-install-recommends devscripts equivs xdotool
   - sudo apt-get install -t utopic clang-format-3.5
   - clang-format-3.5 --version
 install:
