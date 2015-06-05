@@ -270,7 +270,7 @@ state RENAME_WORKSPACE_NEW_NAME:
 # move [window|container] [to] scratchpad
 # move workspace to [output] <str>
 # move scratchpad
-# move [window|container] [to] [absolute] position [ [<pixels> [px] <pixels> [px]] | center ]
+# move [window|container] [to] [absolute|relative] position [ [<pixels> [px] <pixels> [px]] | center ]
 # move [window|container] [to] position mouse|cursor|pointer
 state MOVE:
   'window'
@@ -293,6 +293,8 @@ state MOVE:
       -> MOVE_TO_POSITION
   method = 'absolute'
       -> MOVE_TO_ABSOLUTE_POSITION
+  method = 'relative'
+      -> MOVE_TO_RELATIVE_POSITION
 
 state MOVE_DIRECTION:
   pixels = word
@@ -337,6 +339,10 @@ state MOVE_WORKSPACE_TO_OUTPUT:
       -> call cmd_move_workspace_to_output($output)
 
 state MOVE_TO_ABSOLUTE_POSITION:
+  'position'
+      -> MOVE_TO_POSITION
+
+state MOVE_TO_RELATIVE_POSITION:
   'position'
       -> MOVE_TO_POSITION
 

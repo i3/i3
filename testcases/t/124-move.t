@@ -235,6 +235,13 @@ cmd 'move position 5 px 15 px';
 is($floatcon[0]->{rect}->{x}, 5, 'moved to position 5 x');
 is($floatcon[0]->{rect}->{y}, 15, 'moved to position 15 y');
 
+cmd 'move relative position +3 px -12 px';
+
+@floatcon = @{get_ws($tmp)->{floating_nodes}};
+
+is($floatcon[0]->{rect}->{x}, 8, 'moved by offset 3 x');
+is($floatcon[0]->{rect}->{y}, 3, 'moved by offset -12 y');
+
 cmd 'move absolute position center';
 
 @floatcon = @{get_ws($tmp)->{floating_nodes}};
