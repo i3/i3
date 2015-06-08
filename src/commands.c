@@ -791,6 +791,35 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
 }
 
 /*
+ * Implementation of 'resize <px> [px] <px> [px]'.
+ *
+ */
+void cmd_size(I3_CMD, char *cwidth, char *cheight) {
+    DLOG("resizing to %sx%s px\n", cwidth, cheight);
+    // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
+    int x = atoi(cwidth);
+    int y = atoi(cheight);
+    if (x <= 0 || y <= 0) {
+        ELOG("Resize failed: dimensions cannot be negative (was %sx%s)\n", cwidth, cheight);
+        return;
+    }
+
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        Con *floating_con;
+        if ((floating_con = con_inside_floating(current->con))) {
+            floating_resize(floating_con, x, y);
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'border normal|none|1pixel|toggle|pixel'.
  *
  */

@@ -205,6 +205,8 @@ state UNMARK:
 state RESIZE:
   way = 'grow', 'shrink'
       -> RESIZE_DIRECTION
+  width = word
+      -> RESIZE_WIDTH
 
 state RESIZE_DIRECTION:
   direction = 'up', 'down', 'left', 'right', 'width', 'height'
@@ -231,6 +233,16 @@ state RESIZE_TILING_OR:
 state RESIZE_TILING_FINAL:
   'ppt', end
       -> call cmd_resize($way, $direction, $resize_px, $resize_ppt)
+
+state RESIZE_WIDTH:
+  'px'
+      ->
+  height = word
+      -> RESIZE_HEIGHT
+
+state RESIZE_HEIGHT:
+  'px', end
+      -> call cmd_size($width, $height)
 
 # rename workspace <name> to <name>
 # rename workspace to <name>

@@ -1818,6 +1818,23 @@ mode "resize" {
 bindsym $mod+r mode "resize"
 ----------------------------------------------------------------------
 
+=== Resizing containers/windows
+
+If you want to give a window a specific size, you can use the +resize+ command,
+which takes the desired size as its argument. This command will only work on
+floating containers.
+
+*Syntax*:
+---------------------------------------------------------
+resize <width> [px] <height> [px]
+---------------------------------------------------------
+
+*Examples*:
+------------------------------------------------
+# Set urxvt size to 640x480
+for_window [class="urxvt"] resize 640 480
+------------------------------------------------
+
 === Jumping to specific windows
 
 Often when in a multi-monitor environment, you want to quickly jump to a
