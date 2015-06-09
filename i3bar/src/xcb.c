@@ -128,9 +128,6 @@ static const int sb_hoff_px = 4;
 /* Additional offset between the tray and the statusline, if the tray is not empty */
 static const int tray_loff_px = 2;
 
-/* Padding around the tray icons */
-static const int tray_spacing_px = 2;
-
 /* Vertical offset between the bar and a separator */
 static const int sep_voff_px = 4;
 
@@ -157,7 +154,7 @@ int get_tray_width(struct tc_head *trayclients) {
     TAILQ_FOREACH_REVERSE(trayclient, trayclients, tc_head, tailq) {
         if (!trayclient->mapped)
             continue;
-        tray_width += icon_size + logical_px(tray_spacing_px);
+        tray_width += icon_size + logical_px(config.tray_padding);
     }
     if (tray_width > 0)
         tray_width += logical_px(tray_loff_px);
@@ -607,8 +604,8 @@ static void configure_trayclients(void) {
             clients++;
 
             DLOG("Configuring tray window %08x to x=%d\n",
-                 trayclient->win, output->rect.w - (clients * (icon_size + logical_px(tray_spacing_px))));
-            uint32_t x = output->rect.w - (clients * (icon_size + logical_px(tray_spacing_px)));
+                 trayclient->win, output->rect.w - (clients * (icon_size + logical_px(config.tray_padding))));
+            uint32_t x = output->rect.w - (clients * (icon_size + logical_px(config.tray_padding)));
             xcb_configure_window(xcb_connection,
                                  trayclient->win,
                                  XCB_CONFIG_WINDOW_X,
@@ -718,8 +715,8 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             xcb_reparent_window(xcb_connection,
                                 client,
                                 output->bar,
-                                output->rect.w - icon_size - logical_px(tray_spacing_px),
-                                logical_px(tray_spacing_px));
+                                output->rect.w - icon_size - logical_px(config.tray_padding),
+                                logical_px(config.tray_padding));
             /* We reconfigure the window to use a reasonable size. The systray
              * specification explicitly says:
              *   Tray icons may be assigned any size by the system tray, and
@@ -957,8 +954,8 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
                 continue;
 
             xcb_rectangle_t rect;
-            rect.x = output->rect.w - (clients * (icon_size + logical_px(tray_spacing_px)));
-            rect.y = logical_px(tray_spacing_px);
+            rect.x = output->rect.w - (clients * (icon_size + logical_px(config.tray_padding)));
+            rect.y = logical_px(config.tray_padding);
             rect.width = icon_size;
             rect.height = icon_size;
 
@@ -1231,7 +1228,7 @@ void init_xcb_late(char *fontname) {
     set_font(&font);
     DLOG("Calculated font height: %d\n", font.height);
     bar_height = font.height + 2 * logical_px(ws_voff_px);
-    icon_size = bar_height - 2 * logical_px(tray_spacing_px);
+    icon_size = bar_height - 2 * logical_px(config.tray_padding);
 
     if (config.separator_symbol)
         separator_symbol_width = predict_text_width(config.separator_symbol);

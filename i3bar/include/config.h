@@ -43,6 +43,7 @@ typedef struct config_t {
     char *fontname;
     i3String *separator_symbol;
     char *tray_output;
+    int tray_padding;
     int num_outputs;
     char **outputs;
 

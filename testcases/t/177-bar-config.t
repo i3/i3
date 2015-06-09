@@ -66,6 +66,7 @@ ok($bar_config->{workspace_buttons}, 'workspace buttons enabled per default');
 ok($bar_config->{binding_mode_indicator}, 'mode indicator enabled per default');
 is($bar_config->{mode}, 'dock', 'dock mode by default');
 is($bar_config->{position}, 'bottom', 'position bottom by default');
+is($bar_config->{tray_padding}, 2, 'tray_padding ok');
 
 #####################################################################
 # ensure that reloading cleans up the old bar configs
@@ -96,6 +97,7 @@ bar {
 
     tray_output LVDS1
     tray_output HDMI2
+    tray_padding 0
     position top
     mode dock
     font Terminus
@@ -134,6 +136,7 @@ is($bar_config->{mode}, 'dock', 'dock mode');
 is($bar_config->{position}, 'top', 'position top');
 is_deeply($bar_config->{outputs}, [ 'HDMI1', 'HDMI2' ], 'outputs ok');
 is($bar_config->{tray_output}, 'HDMI2', 'tray_output ok');
+is($bar_config->{tray_padding}, 0, 'tray_padding ok');
 is($bar_config->{font}, 'Terminus', 'font ok');
 is($bar_config->{socket_path}, '/tmp/foobar', 'socket_path ok');
 is_deeply($bar_config->{colors},

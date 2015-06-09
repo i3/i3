@@ -514,6 +514,10 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     } while (0)
 
     YSTR_IF_SET(tray_output);
+
+    ystr("tray_padding");
+    y(integer, config->tray_padding);
+
     YSTR_IF_SET(socket_path);
 
     ystr("mode");
