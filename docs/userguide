@@ -503,17 +503,11 @@ default_orientation vertical
 
 This option determines in which mode new containers on workspace level will
 start.
-///////////////////////////////
-See also <<stack-limit>>.
-//////////////////////////////
 
 *Syntax*:
 ---------------------------------------------
 workspace_layout default|stacking|tabbed
 ---------------------------------------------
-/////////////////////////////////////////////
-new_container stack-limit <cols|rows> <value>
-/////////////////////////////////////////////
 
 *Example*:
 ---------------------
@@ -2063,37 +2057,9 @@ bindsym $mod+y border 1pixel
 bindsym $mod+u border none
 ----------------------------
 
-[[stack-limit]]
-
-///////////////////////////////////////////////////////////////////////////////
-TODO: not yet implemented
-=== Changing the stack-limit of a container
-
-If you have a single container with a lot of windows inside it (say, more than
-10), the default layout of a stacking container can get a little unhandy.
-Depending on your screen’s size, you might end up with only half of the title
-lines being actually used, wasting a lot of screen space.
-
-Using the +stack-limit+ command, you can limit the number of rows or columns
-in a stacking container. i3 will create columns or rows (depending on what
-you limited) automatically as needed.
-
 *Syntax*:
------------------------------
-stack-limit cols|rows <value>
------------------------------
 
 *Examples*:
--------------------
-# I always want to have two window titles in one line
-stack-limit cols 2
-
-# Not more than 5 rows in this stacking container
-stack-limit rows 5
--------------------
-
-image:stacklimit.png[Container limited to two columns]
-///////////////////////////////////////////////////////////////////////////////
 
 [[shmlog]]
 

@@ -117,7 +117,6 @@ for my $line (@lines) {
 
     # new_container changed only the statement name to workspace_layout
     if ($statement eq 'new_container') {
-        # TODO: new_container stack-limit
         print "workspace_layout$parameters\n";
         next;
     }
@@ -184,7 +183,6 @@ sub convert_command {
         restart
         reload
         exit
-        stack-limit
     );
 
     my ($statement, $key, $command) = ($line =~ /([a-zA-Z_-]+)\s+([^\s]+)\s+(.*)/);
