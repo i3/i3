@@ -129,7 +129,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
             continue;
         DLOG("relevant command = %s\n", bind->command);
         const char *target = bind->command + strlen("workspace ");
-        while ((*target == ' ' || *target == '\t') && target != '\0')
+        while (*target == ' ' || *target == '\t')
             target++;
         /* We check if this is the workspace
          * next/prev/next_on_output/prev_on_output/back_and_forth/number command.
