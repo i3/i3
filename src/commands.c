@@ -816,7 +816,7 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
 }
 
 /*
- * Implementation of 'border normal|none|1pixel|toggle|pixel'.
+ * Implementation of 'border normal|pixel [<n>]', 'border none|1pixel|toggle'.
  *
  */
 void cmd_border(I3_CMD, char *border_style_str, char *border_width) {

@@ -77,7 +77,8 @@ state DEBUGLOG:
   argument = 'toggle', 'on', 'off'
     -> call cmd_debuglog($argument)
 
-# border normal|none|1pixel|toggle|1pixel
+# border normal|pixel [<n>]
+# border none|1pixel|toggle
 state BORDER:
   border_style = 'normal', 'pixel'
     -> BORDER_WIDTH
