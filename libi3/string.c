@@ -13,6 +13,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if PANGO_SUPPORT
+#include <glib.h>
+#endif
+
 #include "libi3.h"
 
 struct _i3String {
@@ -183,6 +187,18 @@ bool i3string_is_markup(i3String *str) {
  */
 void i3string_set_markup(i3String *str, bool is_markup) {
     str->is_markup = is_markup;
+}
+
+/*
+ * Escape pango markup characters in the given string.
+ */
+i3String *i3string_escape_markup(i3String *str) {
+#if PANGO_SUPPORT
+    const char *text = i3string_as_utf8(str);
+    return i3string_from_utf8(g_markup_escape_text(text, -1));
+#else
+    return str;
+#endif
 }
 
 /*

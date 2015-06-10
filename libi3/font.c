@@ -340,6 +340,18 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
     }
 }
 
+/*
+ * Returns true if and only if the current font is a pango font.
+ *
+ */
+bool font_is_pango(void) {
+#if PANGO_SUPPORT
+    return savedFont->type == FONT_TYPE_PANGO;
+#else
+    return false;
+#endif
+}
+
 static int predict_text_width_xcb(const xcb_char2b_t *text, size_t text_len);
 
 static void draw_text_xcb(const xcb_char2b_t *text, size_t text_len, xcb_drawable_t drawable,

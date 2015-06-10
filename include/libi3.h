@@ -244,6 +244,11 @@ bool i3string_is_markup(i3String *str);
 void i3string_set_markup(i3String *str, bool is_markup);
 
 /**
+ * Escape pango markup characters in the given string.
+ */
+i3String *i3string_escape_markup(i3String *str);
+
+/**
  * Returns the number of glyphs in an i3String.
  *
  */
@@ -380,6 +385,12 @@ xcb_char2b_t *convert_utf8_to_ucs2(char *input, size_t *real_strlen);
  *
  */
 void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background);
+
+/**
+ * Returns true if and only if the current font is a pango font.
+ *
+ */
+bool font_is_pango(void);
 
 /**
  * Draws text onto the specified X drawable (normally a pixmap) at the
