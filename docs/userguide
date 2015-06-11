@@ -564,6 +564,8 @@ hide_edge_borders vertical
 
 === Arbitrary commands for specific windows (for_window)
 
+[[for_window]]
+
 With the +for_window+ command, you can let i3 execute any command when it
 encounters a specific window. This can be used to set windows to floating or to
 change their border style, for example.
@@ -2065,6 +2067,37 @@ bindsym $mod+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
 Alternatively, if you do not want to mess with +i3-input+, you could create
 seperate bindings for a specific set of labels and then only use those labels.
 ///////////////////////////////////////////////////////////////////
+
+=== Window title format
+
+By default, i3 will simply print the X11 window title. Using +title_format+,
+this can be customized by setting the format to the desired output. This
+directive supports
+https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup]
+and the following placeholders which will be replaced:
+
++%title+::
+    The X11 window title (_NET_WM_NAME or WM_NAME as fallback).
+
+Using the <<for_window>> directive, you can set the title format for any window
+based on <<command_criteria>>.
+
+*Syntax*:
+---------------------
+title_format <format>
+---------------------
+
+*Examples*:
+-------------------------------------------------------------------------------------
+# give the focused window a prefix
+bindsym $mod+p title_format "Important | %title"
+
+# print all window titles bold
+for_window [class=".*"] title_format "<b>%title</b>"
+
+# print window titles of firefox windows red
+for_window [class="(?i)firefox"] title_format "<span foreground='red'>%title</span>"
+-------------------------------------------------------------------------------------
 
 === Changing border style
 
