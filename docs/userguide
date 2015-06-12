@@ -1143,7 +1143,10 @@ right hand side of the bar. This is useful to display system information like
 your current IP address, battery status or date/time.
 
 The specified command will be passed to +sh -c+, so you can use globbing and
-have to have correct quoting etc.
+have to have correct quoting etc. Note that for signal handling, depending on
+your shell (users of dash(1) are known to be affected), you have to use the
+shell’s exec command so that signals are passed to your program, not to the
+shell.
 
 *Syntax*:
 ------------------------
@@ -1154,6 +1157,9 @@ status_command <command>
 -------------------------------------------------
 bar {
     status_command i3status --config ~/.i3status.conf
+
+    # For dash(1) users who want signal handling to work:
+    status_command exec ~/.bin/my_status_command
 }
 -------------------------------------------------
 
