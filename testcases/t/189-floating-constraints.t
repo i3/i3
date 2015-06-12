@@ -186,4 +186,36 @@ is($rect->{y}, $old_y, 'window did not move when trying to resize');
 
 exit_gracefully($pid);
 
+################################################################################
+# 7: check floating_maximum_size with cmd_size
+################################################################################
+
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+# Test with different dimensions than the i3 default.
+floating_minimum_size 80 x 70
+floating_maximum_size 100 x 90
+EOT
+
+$pid = launch_with_config($config);
+
+my $window = open_floating_window(rect => [ 0, 0, 90, 80 ]);
+cmd 'border none';
+
+cmd 'resize 101 91';
+sync_with_i3;
+my $rect = $window->rect;
+is($rect->{width}, 100, 'width did not exceed maximum width');
+is($rect->{height}, 90, 'height did not exceed maximum height');
+
+cmd 'resize 79 69';
+sync_with_i3;
+$rect = $window->rect;
+is($rect->{width}, 80, 'width did not exceed minimum width');
+is($rect->{height}, 70, 'height did not exceed minimum height');
+
+exit_gracefully($pid);
+
 done_testing;
