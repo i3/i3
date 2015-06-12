@@ -59,7 +59,7 @@ is($event->{container}->{urgent}, 1, 'the container should be urgent');
 
 $cv = AnyEvent->condvar;
 $win->delete_hint('urgency');
-my $event = $cv->recv;
+$event = $cv->recv;
 
 isnt($event, 0, 'an urgent con should emit the window::urgent event');
 is($event->{container}->{window}, $win->{id}, 'the event should contain information about the window');

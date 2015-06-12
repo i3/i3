@@ -50,7 +50,7 @@ is($e->{container}->{floating}, 'user_on', 'the container should be floating');
 
 $cv = AnyEvent->condvar;
 cmd '[id="' . $win->{id} . '"] floating disable';
-my $e = $cv->recv;
+$e = $cv->recv;
 
 isnt($e, 0, 'disabling floating on a container should send an ipc window event');
 is($e->{container}->{window}, $win->{id}, 'the event should contain information about the window');
