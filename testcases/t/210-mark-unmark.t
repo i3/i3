@@ -18,6 +18,8 @@
 use i3test;
 use List::Util qw(first);
 
+my ($con, $first, $second);
+
 sub get_marks {
     return i3(get_socket_path())->get_marks->recv;
 }
@@ -89,8 +91,8 @@ is_deeply(get_marks(), [], 'all marks removed');
 #    check that only the latter is marked
 ##############################################################
 
-my $first = open_window;
-my $second = open_window;
+$first = open_window;
+$second = open_window;
 
 cmd 'mark important';
 cmd 'focus left';
@@ -103,7 +105,7 @@ ok(!get_mark_for_window_on_workspace($tmp, $second), 'second container lost the 
 # 5: mark a con, toggle the mark, check that the mark is gone
 ##############################################################
 
-my $con = open_window;
+$con = open_window;
 cmd 'mark important';
 cmd 'mark --toggle important';
 ok(!get_mark_for_window_on_workspace($tmp, $con), 'container no longer has the mark');
@@ -112,7 +114,7 @@ ok(!get_mark_for_window_on_workspace($tmp, $con), 'container no longer has the m
 # 6: toggle a mark on an unmarked con, check it is marked
 ##############################################################
 
-my $con = open_window;
+$con = open_window;
 cmd 'mark --toggle important';
 is(get_mark_for_window_on_workspace($tmp, $con), 'important', 'container now has the mark');
 
@@ -121,7 +123,7 @@ is(get_mark_for_window_on_workspace($tmp, $con), 'important', 'container now has
 #    with the new mark
 ##############################################################
 
-my $con = open_window;
+$con = open_window;
 cmd 'mark boring';
 cmd 'mark --toggle important';
 is(get_mark_for_window_on_workspace($tmp, $con), 'important', 'container has the most recent mark');
@@ -131,8 +133,8 @@ is(get_mark_for_window_on_workspace($tmp, $con), 'important', 'container has the
 #    check only the latter has the mark
 ##############################################################
 
-my $first = open_window;
-my $second = open_window;
+$first = open_window;
+$second = open_window;
 
 cmd 'mark important';
 cmd 'focus left';
@@ -146,8 +148,8 @@ ok(!get_mark_for_window_on_workspace($tmp, $second), 'second containr no longer 
 #    it fails
 ##############################################################
 
-my $first = open_window(wm_class => 'iamnotunique');
-my $second = open_window(wm_class => 'iamnotunique');
+$first = open_window(wm_class => 'iamnotunique');
+$second = open_window(wm_class => 'iamnotunique');
 
 my $result = cmd "[instance=iamnotunique] mark important";
 

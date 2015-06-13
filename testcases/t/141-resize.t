@@ -17,6 +17,7 @@
 # Tests resizing tiling containers
 use i3test;
 
+my ($left, $right);
 my $tmp = fresh_workspace;
 
 cmd 'split v';
@@ -84,8 +85,8 @@ cmp_float($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
 
 $tmp = fresh_workspace;
 
-my $left = open_window;
-my $right = open_window;
+$left = open_window;
+$right = open_window;
 
 cmd 'split v';
 
@@ -261,8 +262,8 @@ cmp_ok($content[0]->{rect}->{width}, '==', $oldrect->{width}, 'width the same as
 
 $tmp = fresh_workspace;
 
-my $left = open_floating_window;
-my $right = open_floating_window;
+$left = open_floating_window;
+$right = open_floating_window;
 
 sub get_floating_rect {
     my ($window_id) = @_;

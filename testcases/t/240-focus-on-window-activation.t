@@ -19,6 +19,8 @@
 use i3test i3_autostart => 0;
 use List::Util qw(first);
 
+my ($config, $pid, $first, $second, $ws1, $ws2);
+
 sub send_net_active_window {
     my ($id) = @_; 
 
@@ -46,18 +48,18 @@ sub get_urgency_for_window_on_workspace {
 #    check that the urgent flag is set and focus is not lost.
 #####################################################################
 
-my $config = <<EOT;
+$config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation urgent
 EOT
 
-my $pid = launch_with_config($config);
+$pid = launch_with_config($config);
 
 my $ws = fresh_workspace;
-my $first = open_window;
-my $second = open_window;
+$first = open_window;
+$second = open_window;
 
 send_net_active_window($first->id);
 sync_with_i3;
@@ -72,19 +74,19 @@ exit_gracefully($pid);
 #    visible, check that the urgent flag is set and focus is not lost.
 #####################################################################
 
-my $config = <<EOT;
+$config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation urgent
 EOT
 
-my $pid = launch_with_config($config);
+$pid = launch_with_config($config);
 
-my $ws1 = fresh_workspace;
-my $first = open_window;
-my $ws2 = fresh_workspace;
-my $second = open_window;
+$ws1 = fresh_workspace;
+$first = open_window;
+$ws2 = fresh_workspace;
+$second = open_window;
 
 send_net_active_window($first->id);
 sync_with_i3;
@@ -100,18 +102,18 @@ exit_gracefully($pid);
 #    check that the focus is switched.
 #####################################################################
 
-my $config = <<EOT;
+$config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation focus
 EOT
 
-my $pid = launch_with_config($config);
+$pid = launch_with_config($config);
 
 my $ws = fresh_workspace;
-my $first = open_window;
-my $second = open_window;
+$first = open_window;
+$second = open_window;
 
 send_net_active_window($first->id);
 sync_with_i3;
@@ -126,19 +128,19 @@ exit_gracefully($pid);
 #    visible, check that the focus switched.
 #####################################################################
 
-my $config = <<EOT;
+$config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation focus
 EOT
 
-my $pid = launch_with_config($config);
+$pid = launch_with_config($config);
 
-my $ws1 = fresh_workspace;
-my $first = open_window;
-my $ws2 = fresh_workspace;
-my $second = open_window;
+$ws1 = fresh_workspace;
+$first = open_window;
+$ws2 = fresh_workspace;
+$second = open_window;
 
 send_net_active_window($first->id);
 sync_with_i3;
@@ -154,18 +156,18 @@ exit_gracefully($pid);
 #    check that nothing happens.
 #####################################################################
 
-my $config = <<EOT;
+$config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation none
 EOT
 
-my $pid = launch_with_config($config);
+$pid = launch_with_config($config);
 
 my $ws = fresh_workspace;
-my $first = open_window;
-my $second = open_window;
+$first = open_window;
+$second = open_window;
 
 send_net_active_window($first->id);
 sync_with_i3;
@@ -180,19 +182,19 @@ exit_gracefully($pid);
 #    visible, check that nothing happens.
 #####################################################################
 
-my $config = <<EOT;
+$config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation none
 EOT
 
-my $pid = launch_with_config($config);
+$pid = launch_with_config($config);
 
-my $ws1 = fresh_workspace;
-my $first = open_window;
-my $ws2 = fresh_workspace;
-my $second = open_window;
+$ws1 = fresh_workspace;
+$first = open_window;
+$ws2 = fresh_workspace;
+$second = open_window;
 
 send_net_active_window($first->id);
 sync_with_i3;

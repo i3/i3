@@ -18,21 +18,23 @@
 # Ticket: #1416
 use i3test i3_autostart => 0;
 
+my ($config, $pid, $ws, $first, $second, $focused);
+
 #####################################################################
 # 1: open a window and check that it takes focus
 #####################################################################
 
-my $config = <<EOT;
+$config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
-my $pid = launch_with_config($config);
+$pid = launch_with_config($config);
  
-my $ws = fresh_workspace;
-my $first = open_window;
-my $focused = get_focused($ws);
-my $second = open_window;
+$ws = fresh_workspace;
+$first = open_window;
+$focused = get_focused($ws);
+$second = open_window;
 
 isnt(get_focused($ws), $focused, 'focus has changed');
 
@@ -43,19 +45,19 @@ exit_gracefully($pid);
 #    it doesn't take focus
 #####################################################################
 
-my $config = <<EOT;
+$config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 no_focus [instance=notme]
 EOT
 
-my $pid = launch_with_config($config);
+$pid = launch_with_config($config);
  
-my $ws = fresh_workspace;
-my $first = open_window;
-my $focused = get_focused($ws);
-my $second = open_window(wm_class => 'notme');
+$ws = fresh_workspace;
+$first = open_window;
+$focused = get_focused($ws);
+$second = open_window(wm_class => 'notme');
 
 is(get_focused($ws), $focused, 'focus has not changed');
 
