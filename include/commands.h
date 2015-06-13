@@ -67,7 +67,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which);
 void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resize_ppt);
 
 /**
- * Implementation of 'border normal|none|1pixel|toggle'.
+ * Implementation of 'border normal|pixel [<n>]', 'border none|1pixel|toggle'.
  *
  */
 void cmd_border(I3_CMD, char *border_style_str, char *border_width);

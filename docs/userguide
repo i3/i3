@@ -503,17 +503,11 @@ default_orientation vertical
 
 This option determines in which mode new containers on workspace level will
 start.
-///////////////////////////////
-See also <<stack-limit>>.
-//////////////////////////////
 
 *Syntax*:
 ---------------------------------------------
 workspace_layout default|stacking|tabbed
 ---------------------------------------------
-/////////////////////////////////////////////
-new_container stack-limit <cols|rows> <value>
-/////////////////////////////////////////////
 
 *Example*:
 ---------------------
@@ -523,20 +517,20 @@ workspace_layout tabbed
 === Border style for new windows
 
 This option determines which border style new windows will have. The default is
-"normal". Note that new_float applies only to windows which are starting out as
-floating windows, e.g. dialog windows.
++normal+. Note that new_float applies only to windows which are starting out as
+floating windows, e.g., dialog windows, but not windows that are floated later on.
 
 *Syntax*:
 ---------------------------------------------
-new_window normal|1pixel|none|pixel
+new_window normal|none|pixel
 new_window normal|pixel <px>
-new_float normal|1pixel|none|pixel
+new_float normal|none|pixel
 new_float normal|pixel <px>
 ---------------------------------------------
 
 *Example*:
 ---------------------
-new_window 1pixel
+new_window pixel
 ---------------------
 
 The "normal" and "pixel" border styles support an optional border width in
@@ -585,7 +579,7 @@ for_window <criteria> <command>
 for_window [class="XTerm"] floating enable
 
 # Make all urxvts use a 1-pixel border:
-for_window [class="urxvt"] border 1pixel
+for_window [class="urxvt"] border pixel 1
 
 # A less useful, but rather funny example:
 # makes the window floating as soon as I change
@@ -2057,49 +2051,29 @@ seperate bindings for a specific set of labels and then only use those labels.
 === Changing border style
 
 To change the border of the current client, you can use +border normal+ to use the normal
-border (including window title), +border 1pixel+ to use a 1-pixel border (no window title)
+border (including window title), +border pixel 1+ to use a 1-pixel border (no window title)
 and +border none+ to make the client borderless.
 
 There is also +border toggle+ which will toggle the different border styles.
 
-*Examples*:
-----------------------------
-bindsym $mod+t border normal
-bindsym $mod+y border 1pixel
-bindsym $mod+u border none
-----------------------------
-
-[[stack-limit]]
-
-///////////////////////////////////////////////////////////////////////////////
-TODO: not yet implemented
-=== Changing the stack-limit of a container
-
-If you have a single container with a lot of windows inside it (say, more than
-10), the default layout of a stacking container can get a little unhandy.
-Depending on your screen’s size, you might end up with only half of the title
-lines being actually used, wasting a lot of screen space.
-
-Using the +stack-limit+ command, you can limit the number of rows or columns
-in a stacking container. i3 will create columns or rows (depending on what
-you limited) automatically as needed.
-
 *Syntax*:
------------------------------
-stack-limit cols|rows <value>
------------------------------
+-----------------------------------------------
+border normal|pixel [<n>]
+border none|toggle
+
+# legacy syntax, equivalent to "border pixel 1"
+border 1pixel
+-----------------------------------------------
 
 *Examples*:
--------------------
-# I always want to have two window titles in one line
-stack-limit cols 2
-
-# Not more than 5 rows in this stacking container
-stack-limit rows 5
--------------------
-
-image:stacklimit.png[Container limited to two columns]
-///////////////////////////////////////////////////////////////////////////////
+----------------------------------------------
+# use window title, but no border
+bindsym $mod+t border normal 0
+# use no window title and a thick border
+bindsym $mod+y border pixel 3
+# use neither window title nor border
+bindsym $mod+u border none
+----------------------------------------------
 
 [[shmlog]]
 

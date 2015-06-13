@@ -147,8 +147,6 @@ $input = <<EOT;
     bindsym Mod1+s restart
     bindsym Mod1+s reload
     bindsym Mod1+s exit
-    bindsym Mod1+s stack-limit cols 2
-    bindsym Mod1+s stack-limit rows 3
     bind Mod1+c exec /usr/bin/urxvt
     mode "asdf" {
         bind 36 mode default
@@ -161,8 +159,6 @@ ok(line_exists($output, qr|^bindsym Mod1\+s mark foo$|), 'mark unchanged');
 ok(line_exists($output, qr|^bindsym Mod1\+s restart$|), 'restart unchanged');
 ok(line_exists($output, qr|^bindsym Mod1\+s reload$|), 'reload unchanged');
 ok(line_exists($output, qr|^bindsym Mod1\+s exit$|), 'exit unchanged');
-ok(line_exists($output, qr|^bindsym Mod1\+s stack-limit cols 2$|), 'stack-limit unchanged');
-ok(line_exists($output, qr|^bindsym Mod1\+s stack-limit rows 3$|), 'stack-limit unchanged');
 ok(line_exists($output, qr|^bindcode Mod1\+c exec /usr/bin/urxvt$|), 'bind changed to bindcode');
 ok(line_exists($output, qr|^mode "asdf" {$|), 'mode asdf unchanged');
 ok(line_exists($output, qr|^bindcode 36 mode \"default\"$|), 'mode default unchanged');
