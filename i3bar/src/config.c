@@ -20,6 +20,7 @@
 #include "common.h"
 
 static char *cur_key;
+static bool parsing_mouse_commands;
 
 /*
  * Parse a key.
@@ -34,6 +35,14 @@ static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t 
     strncpy(cur_key, (const char *)keyVal, keyLen);
     cur_key[keyLen] = '\0';
 
+    if (strcmp(cur_key, "mouse_commands") == 0)
+        parsing_mouse_commands = true;
+
+    return 1;
+}
+
+static int config_end_map_cb(void *params_) {
+    parsing_mouse_commands = false;
     return 1;
 }
 
@@ -62,6 +71,25 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
     /* The id and socket_path are ignored, we already know them. */
     if (!strcmp(cur_key, "id") || !strcmp(cur_key, "socket_path"))
         return 1;
+
+    if (parsing_mouse_commands) {
+        int button = atoi(cur_key + sizeof("button") - 1);
+
+        mouse_command_t *current;
+        TAILQ_FOREACH(current, &(config.mouse_commands), commands) {
+            if (current->button == button) {
+                FREE(current->command);
+                sasprintf(&(current->command), "%.*s", len, val);
+                return 1;
+            }
+        }
+
+        mouse_command_t *command = scalloc(sizeof(mouse_command_t));
+        command->button = button;
+        sasprintf(&(command->command), "%.*s", len, val);
+        TAILQ_INSERT_TAIL(&(config.mouse_commands), command, commands);
+        return 1;
+    }
 
     if (!strcmp(cur_key, "mode")) {
         DLOG("mode = %.*s, len = %d\n", len, val, len);
@@ -112,17 +140,25 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
         return 1;
     }
 
+    /* This key was sent in <= 4.10.2. We keep it around to avoid breakage for
+     * users updating from that version and restarting i3bar before i3. */
     if (!strcmp(cur_key, "wheel_up_cmd")) {
         DLOG("wheel_up_cmd = %.*s\n", len, val);
-        FREE(config.wheel_up_cmd);
-        sasprintf(&config.wheel_up_cmd, "%.*s", len, val);
+        binding_t *binding = scalloc(sizeof(binding_t));
+        binding->input_code = 4;
+        sasprintf(&(binding->command), "%.*s", len, val);
+        TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
         return 1;
     }
 
+    /* This key was sent in <= 4.10.2. We keep it around to avoid breakage for
+     * users updating from that version and restarting i3bar before i3. */
     if (!strcmp(cur_key, "wheel_down_cmd")) {
         DLOG("wheel_down_cmd = %.*s\n", len, val);
-        FREE(config.wheel_down_cmd);
-        sasprintf(&config.wheel_down_cmd, "%.*s", len, val);
+        binding_t *binding = scalloc(sizeof(binding_t));
+        binding->input_code = 5;
+        sasprintf(&(binding->command), "%.*s", len, val);
+        TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
         return 1;
     }
 
@@ -237,6 +273,7 @@ static yajl_callbacks outputs_callbacks = {
     .yajl_null = config_null_cb,
     .yajl_boolean = config_boolean_cb,
     .yajl_string = config_string_cb,
+    .yajl_end_map = config_end_map_cb,
     .yajl_map_key = config_map_key_cb,
 };
 
@@ -248,6 +285,8 @@ void parse_config_json(char *json) {
     yajl_handle handle;
     yajl_status state;
     handle = yajl_alloc(&outputs_callbacks, NULL, NULL);
+
+    TAILQ_INIT(&(config.mouse_commands));
 
     state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
