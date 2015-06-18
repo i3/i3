@@ -469,6 +469,28 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(map_close);
 }
 
+static void dump_bar_bindings(yajl_gen gen, Barconfig *config) {
+    if (TAILQ_EMPTY(&(config->bar_bindings)))
+        return;
+
+    ystr("bindings");
+    y(array_open);
+
+    struct Barbinding *current;
+    TAILQ_FOREACH(current, &(config->bar_bindings), bindings) {
+        y(map_open);
+
+        ystr("input_code");
+        y(integer, current->input_code);
+        ystr("command");
+        ystr(current->command);
+
+        y(map_close);
+    }
+
+    y(array_close);
+}
+
 static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     y(map_open);
 
@@ -549,15 +571,7 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
             break;
     }
 
-    if (config->wheel_up_cmd) {
-        ystr("wheel_up_cmd");
-        ystr(config->wheel_up_cmd);
-    }
-
-    if (config->wheel_down_cmd) {
-        ystr("wheel_down_cmd");
-        ystr(config->wheel_down_cmd);
-    }
+    dump_bar_bindings(gen, config);
 
     ystr("position");
     if (config->position == P_BOTTOM)

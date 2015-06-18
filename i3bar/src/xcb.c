@@ -468,20 +468,23 @@ void handle_button(xcb_button_press_event_t *event) {
         return;
     }
 
+    /* If a custom command was specified for this mouse button, it overrides
+     * the default behavior. */
+    binding_t *binding;
+    TAILQ_FOREACH(binding, &(config.bindings), bindings) {
+        if (binding->input_code != event->detail)
+            continue;
+
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, binding->command);
+        return;
+    }
+
     switch (event->detail) {
         case 4:
             /* Mouse wheel up. We select the previous ws, if any.
              * If there is no more workspace, don’t even send the workspace
              * command, otherwise (with workspace auto_back_and_forth) we’d end
              * up on the wrong workspace. */
-
-            /* If `wheel_up_cmd [COMMAND]` was specified, it should override
-             * the default behavior */
-            if (config.wheel_up_cmd) {
-                i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, config.wheel_up_cmd);
-                return;
-            }
-
             if (cur_ws == TAILQ_FIRST(walk->workspaces))
                 return;
 
@@ -492,14 +495,6 @@ void handle_button(xcb_button_press_event_t *event) {
              * If there is no more workspace, don’t even send the workspace
              * command, otherwise (with workspace auto_back_and_forth) we’d end
              * up on the wrong workspace. */
-
-            /* if `wheel_down_cmd [COMMAND]` was specified, it should override
-             * the default behavior */
-            if (config.wheel_down_cmd) {
-                i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, config.wheel_down_cmd);
-                return;
-            }
-
             if (cur_ws == TAILQ_LAST(walk->workspaces, ws_head))
                 return;
 

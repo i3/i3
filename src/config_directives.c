@@ -530,14 +530,44 @@ CFGFUN(bar_modifier, const char *modifier) {
         current_bar.modifier = M_SHIFT;
 }
 
+static void bar_configure_binding(const char *button, const char *command) {
+    if (strncasecmp(button, "button", strlen("button")) != 0) {
+        ELOG("Bindings for a bar can only be mouse bindings, not \"%s\", ignoring.\n", button);
+        return;
+    }
+
+    int input_code = atoi(button + strlen("button"));
+    if (input_code < 1) {
+        ELOG("Button \"%s\" does not seem to be in format 'buttonX'.\n", button);
+        return;
+    }
+
+    struct Barbinding *current;
+    TAILQ_FOREACH(current, &(current_bar.bar_bindings), bindings) {
+        if (current->input_code == input_code) {
+            ELOG("command for button %s was already specified, ignoring.\n", button);
+            return;
+        }
+    }
+
+    struct Barbinding *new_binding = scalloc(sizeof(struct Barbinding));
+    new_binding->input_code = input_code;
+    new_binding->command = sstrdup(command);
+    TAILQ_INSERT_TAIL(&(current_bar.bar_bindings), new_binding, bindings);
+}
+
 CFGFUN(bar_wheel_up_cmd, const char *command) {
-    FREE(current_bar.wheel_up_cmd);
-    current_bar.wheel_up_cmd = sstrdup(command);
+    ELOG("'wheel_up_cmd' is deprecated. Please us 'bindsym button4 %s' instead.\n", command);
+    bar_configure_binding("button4", command);
 }
 
 CFGFUN(bar_wheel_down_cmd, const char *command) {
-    FREE(current_bar.wheel_down_cmd);
-    current_bar.wheel_down_cmd = sstrdup(command);
+    ELOG("'wheel_down_cmd' is deprecated. Please us 'bindsym button5 %s' instead.\n", command);
+    bar_configure_binding("button5", command);
+}
+
+CFGFUN(bar_bindsym, const char *button, const char *command) {
+    bar_configure_binding(button, command);
 }
 
 CFGFUN(bar_position, const char *position) {
@@ -609,6 +639,10 @@ CFGFUN(bar_workspace_buttons, const char *value) {
 
 CFGFUN(bar_strip_workspace_numbers, const char *value) {
     current_bar.strip_workspace_numbers = eval_boolstr(value);
+}
+
+CFGFUN(bar_start) {
+    TAILQ_INIT(&(current_bar.bar_bindings));
 }
 
 CFGFUN(bar_finish) {
