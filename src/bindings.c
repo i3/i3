@@ -63,10 +63,11 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
 
         new_binding->symbol = sstrdup(input_code);
     } else {
-        // TODO: strtol with proper error handling
-        new_binding->keycode = atoi(input_code);
+        char *endptr;
+        long keycode = strtol(input_code, &endptr, 10);
+        new_binding->keycode = keycode;
         new_binding->input_type = B_KEYBOARD;
-        if (new_binding->keycode == 0) {
+        if (keycode == LONG_MAX || keycode == LONG_MIN || keycode < 0 || *endptr != '\0' || endptr == input_code) {
             ELOG("Could not parse \"%s\" as an input code, ignoring this binding.\n", input_code);
             FREE(new_binding);
             return NULL;
@@ -256,10 +257,11 @@ void translate_keysyms(void) {
 
     TAILQ_FOREACH(bind, bindings, bindings) {
         if (bind->input_type == B_MOUSE) {
-            int button = atoi(bind->symbol + (sizeof("button") - 1));
+            char *endptr;
+            long button = strtol(bind->symbol + (sizeof("button") - 1), &endptr, 10);
             bind->keycode = button;
 
-            if (button < 1)
+            if (button == LONG_MAX || button == LONG_MIN || button < 0 || *endptr != '\0' || endptr == bind->symbol)
                 ELOG("Could not translate string to button: \"%s\"\n", bind->symbol);
 
             continue;
