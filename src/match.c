@@ -48,6 +48,7 @@ bool match_is_empty(Match *match) {
             match->class == NULL &&
             match->instance == NULL &&
             match->window_role == NULL &&
+            match->workspace == NULL &&
             match->urgent == U_DONTCHECK &&
             match->id == XCB_NONE &&
             match->window_type == UINT32_MAX &&
@@ -78,6 +79,7 @@ void match_copy(Match *dest, Match *src) {
     DUPLICATE_REGEX(class);
     DUPLICATE_REGEX(instance);
     DUPLICATE_REGEX(window_role);
+    DUPLICATE_REGEX(workspace);
 }
 
 /*
@@ -170,6 +172,19 @@ bool match_matches_window(Match *match, i3Window *window) {
             }
         }
         LOG("urgent matches oldest\n");
+    }
+
+    if (match->workspace != NULL) {
+        Con *con = con_by_window_id(window->id);
+        assert(con != NULL);
+        Con *ws = con_get_workspace(con);
+        assert(ws != NULL);
+
+        if (regex_matches(match->workspace, ws->name)) {
+            LOG("workspace matches (%s)\n", ws->name);
+        } else {
+            return false;
+        }
     }
 
     if (match->dock != M_DONTCHECK) {

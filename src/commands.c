@@ -411,6 +411,11 @@ void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue) {
         return;
     }
 
+    if (strcmp(ctype, "workspace") == 0) {
+        current_match->workspace = regex_new(cvalue);
+        return;
+    }
+
     ELOG("Unknown criterion: %s\n", ctype);
 }
 

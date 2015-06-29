@@ -170,6 +170,7 @@ state CRITERIA:
   ctype = 'con_mark'    -> CRITERION
   ctype = 'title'       -> CRITERION
   ctype = 'urgent'      -> CRITERION
+  ctype = 'workspace'   -> CRITERION
   ']'
       -> call cfg_criteria_pop_state()
 

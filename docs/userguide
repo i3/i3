@@ -1597,14 +1597,16 @@ urgent::
 	Compares the urgent state of the window. Can be "latest" or "oldest".
 	Matches the latest or oldest urgent window, respectively.
 	(The following aliases are also available: newest, last, recent, first)
+workspace::
+	Compares the workspace name of the workspace the window belongs to.
 con_mark::
 	Compares the mark set for this container, see <<vim_like_marks>>.
 con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
 	interface. Handy for scripting.
 
-The criteria +class+, +instance+, +role+, +title+ and +mark+ are actually
-regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
+The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
+actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
 information on how to use them.
 
 [[exec]]

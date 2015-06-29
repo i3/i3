@@ -17,6 +17,8 @@
 use i3test i3_autostart => 0;
 use X11::XCB qw(PROP_MODE_REPLACE);
 
+my (@nodes);
+
 ##############################################################
 # 1: test the following directive:
 #    for_window [class="borderless"] border none
@@ -434,6 +436,27 @@ EOT
     exit_gracefully($pid);
 
 }
+
+##############################################################
+# 12: check that the criterion 'workspace' works
+##############################################################
+
+$config = <<"EOT";
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [workspace="trigger"] floating enable, mark triggered
+EOT
+
+$pid = launch_with_config($config);
+
+cmd 'workspace trigger';
+$window = open_window;
+
+@nodes = @{get_ws('trigger')->{floating_nodes}};
+cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
+is($nodes[0]->{nodes}[0]->{mark}, 'triggered', "mark set for workspace criterion");
+
+exit_gracefully($pid);
 
 ##############################################################
 

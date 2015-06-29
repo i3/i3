@@ -51,6 +51,7 @@ state CRITERIA:
   ctype = 'con_mark'    -> CRITERION
   ctype = 'title'       -> CRITERION
   ctype = 'urgent'      -> CRITERION
+  ctype = 'workspace'   -> CRITERION
   ']' -> call cmd_criteria_match_windows(); INITIAL
 
 state CRITERION:
