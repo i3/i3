@@ -288,6 +288,12 @@ static int config_integer_cb(void *params_, long long val) {
         return 0;
     }
 
+    if (!strcmp(cur_key, "tray_padding")) {
+        DLOG("tray_padding = %lld\n", val);
+        config.tray_padding = val;
+        return 1;
+    }
+
     return 0;
 }
 

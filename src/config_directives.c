@@ -615,6 +615,10 @@ CFGFUN(bar_tray_output, const char *output) {
     current_bar.tray_output = sstrdup(output);
 }
 
+CFGFUN(bar_tray_padding, const long padding_px) {
+    current_bar.tray_padding = padding_px;
+}
+
 CFGFUN(bar_color_single, const char *colorclass, const char *color) {
     if (strcmp(colorclass, "background") == 0)
         current_bar.colors.background = sstrdup(color);
@@ -643,6 +647,7 @@ CFGFUN(bar_strip_workspace_numbers, const char *value) {
 
 CFGFUN(bar_start) {
     TAILQ_INIT(&(current_bar.bar_bindings));
+    current_bar.tray_padding = 2;
 }
 
 CFGFUN(bar_finish) {

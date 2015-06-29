@@ -1351,6 +1351,23 @@ Note that you might not have a primary output configured yet. To do so, run:
 xrandr --output <output> --primary
 -------------------------
 
+=== Tray padding
+
+The tray is shown on the right-hand side of the bar. By default, a padding of 2
+pixels is used for the upper, lower and right-hand side of the tray area and
+between the individual icons.
+
+*Syntax*:
+-------------------------
+tray_padding <px> [px]
+-------------------------
+
+*Example*:
+-------------------------
+# Obey Fitts's law
+tray_padding 0
+-------------------------
+
 === Font
 
 Specifies the font to be used in the bar. See <<fonts>>.
