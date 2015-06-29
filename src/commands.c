@@ -1900,6 +1900,35 @@ void cmd_scratchpad_show(I3_CMD) {
 }
 
 /*
+ * Implementation of 'title_format <format>'
+ *
+ */
+void cmd_title_format(I3_CMD, char *format) {
+    DLOG("setting title_format to \"%s\"\n", format);
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        if (current->con->window == NULL)
+            continue;
+
+        DLOG("setting title_format for %p / %s\n", current->con, current->con->name);
+        FREE(current->con->window->title_format);
+
+        /* If we only display the title without anything else, we can skip the parsing step,
+         * so we remove the title format altogether. */
+        if (strcasecmp(format, "%title") != 0)
+            current->con->window->title_format = sstrdup(format);
+
+        /* Make sure the window title is redrawn immediately. */
+        current->con->window->name_x_changed = true;
+    }
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'rename workspace [<name>] to <name>'
  *
  */

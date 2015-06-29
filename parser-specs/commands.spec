@@ -37,6 +37,7 @@ state INITIAL:
   'rename' -> RENAME
   'nop' -> NOP
   'scratchpad' -> SCRATCHPAD
+  'title_format' -> TITLE_FORMAT
   'mode' -> MODE
   'bar' -> BAR
 
@@ -373,6 +374,10 @@ state NOP:
 state SCRATCHPAD:
   'show'
       -> call cmd_scratchpad_show()
+
+state TITLE_FORMAT:
+  format = string
+      -> call cmd_title_format($format)
 
 # bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]
 state BAR:

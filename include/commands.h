@@ -277,6 +277,12 @@ void cmd_move_scratchpad(I3_CMD);
 void cmd_scratchpad_show(I3_CMD);
 
 /**
+ * Implementation of 'title_format <format>'
+ *
+ */
+void cmd_title_format(I3_CMD, char *format);
+
+/**
  * Implementation of 'rename workspace <name> to <name>'
  *
  */
