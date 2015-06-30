@@ -417,6 +417,7 @@ struct Match {
     struct regex *instance;
     struct regex *mark;
     struct regex *window_role;
+    struct regex *workspace;
     xcb_atom_t window_type;
     enum {
         U_DONTCHECK = -1,
