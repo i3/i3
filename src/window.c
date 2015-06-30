@@ -241,7 +241,7 @@ void window_update_type(i3Window *window, xcb_get_property_reply_t *reply) {
     }
 
     window->window_type = new_type;
-    LOG("_NET_WM_WINDOW_TYPE changed to %i", window->window_type);
+    LOG("_NET_WM_WINDOW_TYPE changed to %i.\n", window->window_type);
 
     run_assignments(window);
 }

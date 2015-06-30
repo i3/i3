@@ -1123,14 +1123,14 @@ void cmd_unmark(I3_CMD, char *mark) {
             FREE(con->mark);
             con->mark_changed = true;
         }
-        DLOG("removed all window marks");
+        DLOG("Removed all window marks.\n");
     } else {
         Con *con = con_by_mark(mark);
         if (con != NULL) {
             FREE(con->mark);
             con->mark_changed = true;
         }
-        DLOG("removed window mark %s\n", mark);
+        DLOG("Removed window mark \"%s\".\n", mark);
     }
 
     cmd_output->needs_tree_render = true;
@@ -1934,7 +1934,7 @@ void cmd_title_format(I3_CMD, char *format) {
  */
 void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     if (strncasecmp(new_name, "__", strlen("__")) == 0) {
-        LOG("Cannot rename workspace to \"%s\": names starting with __ are i3-internal.", new_name);
+        LOG("Cannot rename workspace to \"%s\": names starting with __ are i3-internal.\n", new_name);
         ysuccess(false);
         return;
     }

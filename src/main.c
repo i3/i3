@@ -450,7 +450,7 @@ int main(int argc, char *argv[]) {
             memset(cwd, '\0', cwd_size);
             if (read(patternfd, cwd, cwd_size) > 0)
                 /* a trailing newline is included in cwd */
-                LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
+                LOG("CORE DUMPS: Your core_pattern is: \"%s\".\n", cwd);
             close(patternfd);
         }
         free(cwd);
@@ -574,7 +574,7 @@ int main(int argc, char *argv[]) {
 
     bool needs_tree_init = true;
     if (layout_path) {
-        LOG("Trying to restore the layout from %s...", layout_path);
+        LOG("Trying to restore the layout from \"%s\".\n", layout_path);
         needs_tree_init = !tree_restore(layout_path, greply);
         if (delete_layout_path) {
             unlink(layout_path);
@@ -768,7 +768,7 @@ int main(int argc, char *argv[]) {
             sigaction(SIGABRT, &action, NULL) == -1 ||
             sigaction(SIGFPE, &action, NULL) == -1 ||
             sigaction(SIGSEGV, &action, NULL) == -1)
-            ELOG("Could not setup signal handler");
+            ELOG("Could not setup signal handler.\n");
     }
 
     /* Catch all signals with default action "Term", see signal(7) */
@@ -777,7 +777,7 @@ int main(int argc, char *argv[]) {
         sigaction(SIGALRM, &action, NULL) == -1 ||
         sigaction(SIGUSR1, &action, NULL) == -1 ||
         sigaction(SIGUSR2, &action, NULL) == -1)
-        ELOG("Could not setup signal handler");
+        ELOG("Could not setup signal handler.\n");
 
     /* Ignore SIGPIPE to survive errors when an IPC client disconnects
      * while we are sending them a message */

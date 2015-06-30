@@ -88,7 +88,7 @@ bool resize_find_tiling_participants(Con **current, Con **other, direction_t dir
         }
     }
 
-    DLOG("Found participants: first=%p and second=%p.", first, second);
+    DLOG("Found participants: first=%p and second=%p.\n", first, second);
     *current = first;
     *other = second;
     if (first == NULL || second == NULL) {
