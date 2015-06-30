@@ -326,7 +326,7 @@ static xcb_rectangle_t get_window_position(void) {
     if (crtc == NULL)
         goto free_resources;
 
-    DLOG("Found primary output on position x = %i / y = %i / w = %i / h = %i",
+    DLOG("Found primary output on position x = %i / y = %i / w = %i / h = %i.\n",
          crtc->x, crtc->y, crtc->width, crtc->height);
     if (crtc->width == 0 || crtc->height == 0) {
         DLOG("Primary output is not active, ignoring it.\n");

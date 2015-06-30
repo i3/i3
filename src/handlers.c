@@ -751,7 +751,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 DLOG("Marking con = %p urgent\n", con);
                 con_set_urgency(con, true);
             } else
-                DLOG("Ignoring request for con = %p", con);
+                DLOG("Ignoring request for con = %p.\n", con);
         }
 
         tree_render();

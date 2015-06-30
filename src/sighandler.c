@@ -327,5 +327,5 @@ void setup_signal_handler(void) {
         sigaction(SIGABRT, &action, NULL) == -1 ||
         sigaction(SIGFPE, &action, NULL) == -1 ||
         sigaction(SIGSEGV, &action, NULL) == -1)
-        ELOG("Could not setup signal handler");
+        ELOG("Could not setup signal handler.\n");
 }

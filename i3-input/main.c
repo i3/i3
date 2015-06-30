@@ -344,7 +344,7 @@ static xcb_rectangle_t get_window_position(void) {
         goto free_resources;
     }
 
-    DLOG("Determined coordinates of window with input focus at x = %i / y = %i", coordinates->dst_x, coordinates->dst_y);
+    DLOG("Determined coordinates of window with input focus at x = %i / y = %i.\n", coordinates->dst_x, coordinates->dst_y);
     result.x += coordinates->dst_x;
     result.y += coordinates->dst_y;
 

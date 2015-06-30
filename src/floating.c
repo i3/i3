@@ -441,7 +441,7 @@ void floating_move_to_pointer(Con *con) {
 
     Output *output = get_output_containing(reply->root_x, reply->root_y);
     if (output == NULL) {
-        ELOG("The pointer is not on any output, cannot move the container here.");
+        ELOG("The pointer is not on any output, cannot move the container here.\n");
         return;
     }
 
@@ -663,7 +663,7 @@ static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
                 break;
 
             case XCB_KEY_PRESS:
-                DLOG("A key was pressed during drag, reverting changes.");
+                DLOG("A key was pressed during drag, reverting changes.\n");
                 dragloop->result = DRAG_REVERT;
                 handle_event(type, event);
                 break;
