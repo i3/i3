@@ -175,10 +175,12 @@ bool match_matches_window(Match *match, i3Window *window) {
     }
 
     if (match->workspace != NULL) {
-        Con *con = con_by_window_id(window->id);
-        assert(con != NULL);
+        if ((con = con_by_window_id(window->id)) == NULL)
+            return false;
+
         Con *ws = con_get_workspace(con);
-        assert(ws != NULL);
+        if (ws == NULL)
+            return false;
 
         if (regex_matches(match->workspace, ws->name)) {
             LOG("workspace matches (%s)\n", ws->name);
