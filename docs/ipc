@@ -582,11 +582,14 @@ human_readable (string)::
 	build date and branch name. When you need to display the i3 version to
 	your users, use the human-readable version whenever possible (since
 	this is what +i3 --version+ displays, too).
+loaded_config_file_name (string)::
+	The current config path.
 
 *Example:*
 -------------------
 {
    "human_readable" : "4.2-169-gf80b877 (2012-08-05, branch \"next\")",
+   "loaded_config_file_name" : "/home/hwangcc23/.i3/config",
    "minor" : 2,
    "patch" : 0,
    "major" : 4
