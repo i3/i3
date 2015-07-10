@@ -814,6 +814,9 @@ IPC_HANDLER(get_version) {
     ystr("human_readable");
     ystr(i3_version);
 
+    ystr("loaded_config_file_name");
+    ystr(current_configpath);
+
     y(map_close);
 
     const unsigned char *payload;
