@@ -11,7 +11,7 @@
 # Hopefully one of these is installed (no flamewars about preference please!):
 # We don't use 'more' because it will exit if the file is too short.
 # Worst case scenario we'll open the file in your editor.
-for pager in $PAGER less most w3m i3-sensible-editor; do
+for pager in $PAGER less most w3m pg i3-sensible-editor; do
     if command -v $pager > /dev/null 2>&1; then
         exec $pager "$@"
     fi
