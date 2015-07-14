@@ -1078,6 +1078,19 @@ show_marks yes|no
 show_marks yes
 --------------
 
+[[line_continuation]]
+
+=== Line continuation
+
+Config files support line continuation, which is indicated by \ before the
+new line character.
+
+*Examples*:
+-------------------
+bindsym Mod1+f \
+fullscreen toggle
+-------------------
+
 == Configuring i3bar
 
 The bar at the bottom of your monitor is drawn by a separate process called
