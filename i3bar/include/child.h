@@ -46,7 +46,7 @@ typedef struct {
  * about arguments and such
  *
  */
-void start_child(char *command);
+void start_child(const char *command);
 
 /*
  * kill()s the child process (if any). Called when exit()ing.

@@ -501,7 +501,7 @@ void child_write_output(void) {
  * in the bar config, no child will be started.
  *
  */
-void start_child(char *command) {
+void start_child(const char *command) {
     if (command == NULL)
         return;
 
