@@ -40,6 +40,7 @@ state INITIAL:
   'title_format' -> TITLE_FORMAT
   'mode' -> MODE
   'bar' -> BAR
+  'setenv' -> SETENV
 
 state CRITERIA:
   ctype = 'class'       -> CRITERION
@@ -400,3 +401,12 @@ state BAR_W_ID:
       ->
   end
       -> call cmd_bar($bar_type, $bar_value, $bar_id)
+
+# setenv <key> <value>
+state SETENV:
+  key = word
+      -> SETENV_VALUE
+
+state SETENV_VALUE:
+  value = string
+      -> call cmd_setenv($key, $value)
