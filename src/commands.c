@@ -11,6 +11,7 @@
  */
 #include <float.h>
 #include <stdarg.h>
+#include <wordexp.h>
 
 #include "all.h"
 #include "shmlog.h"
@@ -2176,5 +2177,41 @@ void cmd_debuglog(I3_CMD, char *argument) {
         set_debug_logging(false);
     }
     // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'setenv <key> <value>'
+ *
+ */
+void cmd_setenv(I3_CMD, char *key, char *value) {
+    wordexp_t p;
+
+    switch (wordexp(value, &p, WRDE_NOCMD)) {
+        case 0:
+            break;
+        case WRDE_BADCHAR:
+            yerror("Bad character in expansion of \"%s\" in setenv command\n", value);
+            return;
+        case WRDE_CMDSUB:
+            yerror("Command substitution not allowed in setenv\n");
+            return;
+        case WRDE_NOSPACE:
+            yerror("Out of memory when expanding \"%s\"\n", value);
+            return;
+        case WRDE_SYNTAX:
+            yerror("Syntax error when expanding \"%s\"\n", value);
+            return;
+        default:
+            yerror("Unknown error when expanding \"%s\"\n", value);
+            return;
+    }
+
+    if (p.we_wordc == 0) {
+        setenv(key, value, 1);
+    } else {
+        setenv(key, p.we_wordv[0], 1);
+    }
+    wordfree(&p);
     ysuccess(true);
 }

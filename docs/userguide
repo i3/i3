@@ -2241,6 +2241,27 @@ bindsym $mod+minus scratchpad show
 bindsym mod4+s [title="^Sup ::"] scratchpad show
 ------------------------------------------------
 
+=== Setting environment variables
+
+There is a command to set environment variables for the i3 process. This is
+useful if you want some environment for everything in your i3 session but
+don't have the means to do so from your display manager (or what you might
+otherwise use to start i3). Environment variables in the value are expanded.
+
+*Syntax*:
+--------------------
+setenv <key> <value>
+--------------------
+
+*Example*:
+
+---------------------------
+# Set language
+setenv LANG=de_DE.utf8
+# Amend PATH by ~/bin
+setenv PATH=$PATH:$HOME/bin
+---------------------------
+
 === Nop
 
 There is a no operation command +nop+ which allows you to override default

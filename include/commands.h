@@ -305,3 +305,9 @@ void cmd_shmlog(I3_CMD, char *argument);
  *
  */
 void cmd_debuglog(I3_CMD, char *argument);
+
+/*
+ * Implementation of 'setenv <key> <value>'
+ *
+ */
+void cmd_setenv(I3_CMD, char *key, char *value);
