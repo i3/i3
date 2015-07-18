@@ -1219,7 +1219,9 @@ bar {
 }
 
 # show tray icons on the primary monitor
-tray_output primary
+bar {
+    tray_output primary
+}
 
 # show tray icons on the big monitor
 bar {
