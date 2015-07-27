@@ -1082,8 +1082,9 @@ show_marks yes
 
 === Line continuation
 
-Config files support line continuation, which is indicated by \ before the
-new line character.
+Config files support line continuation, meaning when you end a line in a
+backslash character (`\`), the line-break will be ignored by the parser. This
+feature can be used to create more readable configuration files.
 
 *Examples*:
 -------------------
