@@ -837,11 +837,11 @@ static char *migrate_config(char *input, off_t size) {
  */
 bool parse_file(const char *f, bool use_nagbar) {
     SLIST_HEAD(variables_head, Variable) variables = SLIST_HEAD_INITIALIZER(&variables);
-    int fd, ret, read_bytes = 0;
+    int fd;
     struct stat stbuf;
     char *buf;
     FILE *fstr;
-    char buffer[1026], key[512], value[512];
+    char buffer[4096], key[512], value[512], *continuation = NULL;
 
     if ((fd = open(f, O_RDONLY)) == -1)
         die("Could not open configuration file: %s\n", strerror(errno));
@@ -850,27 +850,30 @@ bool parse_file(const char *f, bool use_nagbar) {
         die("Could not fstat file: %s\n", strerror(errno));
 
     buf = scalloc((stbuf.st_size + 1) * sizeof(char));
-    while (read_bytes < stbuf.st_size) {
-        if ((ret = read(fd, buf + read_bytes, (stbuf.st_size - read_bytes))) < 0)
-            die("Could not read(): %s\n", strerror(errno));
-        read_bytes += ret;
-    }
-
-    if (lseek(fd, 0, SEEK_SET) == (off_t)-1)
-        die("Could not lseek: %s\n", strerror(errno));
 
     if ((fstr = fdopen(fd, "r")) == NULL)
         die("Could not fdopen: %s\n", strerror(errno));
 
     while (!feof(fstr)) {
-        if (fgets(buffer, 1024, fstr) == NULL) {
+        if (!continuation)
+            continuation = buffer;
+        if (fgets(continuation, sizeof(buffer) - (continuation - buffer), fstr) == NULL) {
             if (feof(fstr))
                 break;
             die("Could not read configuration file\n");
         }
+        if (buffer[strlen(buffer) - 1] != '\n') {
+            ELOG("Use continuation with too many lines\n");
+        }
+        continuation = strstr(buffer, "\\\n");
+        if (continuation) {
+            continue;
+        }
+
+        strncpy(buf + strlen(buf), buffer, strlen(buffer) + 1);
 
         /* sscanf implicitly strips whitespace. Also, we skip comments and empty lines. */
-        if (sscanf(buffer, "%s %[^\n]", key, value) < 1 ||
+        if (sscanf(buffer, "%511s %511[^\n]", key, value) < 1 ||
             key[0] == '#' || strlen(key) < 3)
             continue;
 
