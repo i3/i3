@@ -156,6 +156,9 @@ struct Config {
      * is fetched once and never updated. */
     bool force_xinerama;
 
+    /** Don’t use RandR 1.5 for querying outputs. */
+    bool disable_randr15;
+
     /** Overwrites output detection (for testing), see src/fake_outputs.c */
     char *fake_outputs;
 

@@ -66,7 +66,42 @@ close($outfh);
 
 my $pid = launch_with_config($config, inject_randr15 => $outname);
 
-cmd 'nop';
+my $tree = i3->get_tree->recv;
+my @outputs = map { $_->{name} } @{$tree->{nodes}};
+is_deeply(\@outputs, [ '__i3', 'DP3' ], 'outputs are __i3 and DP3');
+
+my ($dp3) = grep { $_->{name} eq 'DP3' } @{$tree->{nodes}};
+is_deeply($dp3->{rect}, {
+        width => 3840,
+        height => 2160,
+        x => 0,
+        y => 0,
+    }, 'Output DP3 at 3840x2160+0+0');
+
+exit_gracefully($pid);
+
+################################################################################
+# Verify that adding monitors with RandR 1.5 results in i3 outputs.
+################################################################################
+
+# When inject_randr15 is defined but false, fake-xinerama will be turned off,
+# but inject_randr15 will not actually be used.
+my $pid = launch_with_config($config, inject_randr15 => '');
+
+$tree = i3->get_tree->recv;
+@outputs = map { $_->{name} } @{$tree->{nodes}};
+is_deeply(\@outputs, [ '__i3', 'default' ], 'outputs are __i3 and default');
+
+SKIP: {
+    skip 'xrandr --setmonitor failed (xrandr too old?)', 1 unless
+        system(q|xrandr --setmonitor up2414q 3840/527x2160/296+1280+0 none|) == 0;
+
+    sync_with_i3;
+
+    $tree = i3->get_tree->recv;
+    @outputs = map { $_->{name} } @{$tree->{nodes}};
+    is_deeply(\@outputs, [ '__i3', 'default', 'up2414q' ], 'outputs are __i3, default and up2414q');
+}
 
 exit_gracefully($pid);
 

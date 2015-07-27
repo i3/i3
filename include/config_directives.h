@@ -51,6 +51,7 @@ CFGFUN(focus_follows_mouse, const char *value);
 CFGFUN(mouse_warping, const char *value);
 CFGFUN(force_focus_wrapping, const char *value);
 CFGFUN(force_xinerama, const char *value);
+CFGFUN(disable_randr15, const char *value);
 CFGFUN(fake_outputs, const char *outputs);
 CFGFUN(force_display_urgency_hint, const long duration_ms);
 CFGFUN(focus_on_window_activation, const char *mode);

@@ -37,6 +37,7 @@ state INITIAL:
   'mouse_warping'                          -> MOUSE_WARPING
   'force_focus_wrapping'                   -> FORCE_FOCUS_WRAPPING
   'force_xinerama', 'force-xinerama'       -> FORCE_XINERAMA
+  'disable_randr15', 'disable-randr15'     -> DISABLE_RANDR15
   'workspace_auto_back_and_forth'          -> WORKSPACE_BACK_AND_FORTH
   'fake_outputs', 'fake-outputs'           -> FAKE_OUTPUTS
   'force_display_urgency_hint'             -> FORCE_DISPLAY_URGENCY_HINT
@@ -204,6 +205,11 @@ state FORCE_FOCUS_WRAPPING:
 state FORCE_XINERAMA:
   value = word
       -> call cfg_force_xinerama($value)
+
+# disable_randr15
+state DISABLE_RANDR15:
+  value = word
+      -> call cfg_disable_randr15($value)
 
 # workspace_back_and_forth
 state WORKSPACE_BACK_AND_FORTH:

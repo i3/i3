@@ -1151,6 +1151,21 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
 }
 
 /*
+ * Handles ConfigureNotify events for the root window, which are generated when
+ * the monitor configuration changed.
+ *
+ */
+static void handle_configure_notify(xcb_configure_notify_event_t *event) {
+    if (event->event != root) {
+        DLOG("ConfigureNotify for non-root window 0x%08x, ignoring\n", event->event);
+        return;
+    }
+    DLOG("ConfigureNotify for root window 0x%08x\n", event->event);
+
+    randr_query_outputs();
+}
+
+/*
  * Handles the WM_CLASS property for assignments and criteria selection.
  *
  */
@@ -1475,6 +1490,10 @@ void handle_event(int type, xcb_generic_event_t *event) {
             property_notify(e->state, e->window, e->atom);
             break;
         }
+
+        case XCB_CONFIGURE_NOTIFY:
+            handle_configure_notify((xcb_configure_notify_event_t *)event);
+            break;
 
         default:
             //DLOG("Unhandled event of type %d\n", type);
