@@ -21,6 +21,8 @@
 #include <pango/pango.h>
 #endif
 
+#define DEFAULT_DIR_MODE (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
+
 /**
  * Opaque data structure for storing strings.
  *
@@ -471,8 +473,10 @@ char *resolve_tilde(const char *path);
  */
 char *get_config_path(const char *override_configpath, bool use_system_paths);
 
+#if !defined(__sun)
 /**
  * Emulates mkdir -p (creates any missing folders)
  *
  */
-bool mkdirp(const char *path);
+int mkdirp(const char *path, mode_t mode);
+#endif
