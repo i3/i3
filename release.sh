@@ -98,6 +98,7 @@ mkdir debian
 # Copy over the changelog because we expect it to be locally modified in the
 # start directory.
 cp "${STARTDIR}/debian/changelog" i3/debian/changelog
+(cd i3 && git add debian/changelog && git commit -m 'Update debian/changelog')
 
 cat > ${TMPDIR}/Dockerfile <<EOT
 FROM debian:sid
