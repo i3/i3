@@ -163,7 +163,7 @@ git commit -a -m "save docs for ${PREVIOUS_VERSION}"
 for i in $(find _docs -maxdepth 1 -and -type f -and \! -regex ".*\.\(html\|man\)$" -and \! -name "Makefile")
 do
 	base="$(basename $i)"
-	[ -e "${STARTDIR}/docs/${base}" ] && cp "${STARTDIR}/docs/${base}" "_docs/${base}"
+	[ -e "${TMPDIR}/i3/docs/${base}" ] && cp "${TMPDIR}/i3/docs/${base}" "_docs/${base}"
 done
 
 (cd _docs && make)
@@ -171,7 +171,7 @@ done
 for i in $(find _docs -maxdepth 1 -and -type f -and \! -regex ".*\.\(html\|man\)$" -and \! -name "Makefile")
 do
 	base="$(basename $i)"
-	[ -e "${STARTDIR}/docs/${base}" ] && cp "_docs/${base}.html" docs/
+	[ -e "${TMPDIR}/i3/docs/${base}" ] && cp "_docs/${base}.html" docs/
 done
 
 git commit -a -m "update docs for ${RELEASE_VERSION}"
