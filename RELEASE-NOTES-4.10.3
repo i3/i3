@@ -1,19 +1,23 @@
 
  ┌──────────────────────────────┐
- │ Release notes for i3 v4.10.2 │
+ │ Release notes for i3 v4.10.3 │
  └──────────────────────────────┘
 
-This is i3 v4.10.2. This version is considered stable. All users of i3 are
+This is i3 v4.10.3. This version is considered stable. All users of i3 are
 strongly encouraged to upgrade.
 
  ┌────────────────────────────┐
  │ Bugfixes                   │
  └────────────────────────────┘
 
-  • Cope with non-null-terminated x class properties.
-  • Get workspace name when renaming current workspace (fixes crash).
-  • Use a reasonable default sep_block_width if a separator_symbol is given.
-  • Remove windows from the save set when unmapping.
+  • serialize con_id with %p in run_binding() (For FreeBSD)
+  • ignore InputHint when not in WM_HINTS (fixes e.g. mupdf focus)
+  • disable physically disconnect RandR outputs
+  • initialize workspace rect to the output's upon creation
+  • userguide: quoted strings need to be used, escaping isn’t possible
+  • mkdirp: do not throw an error if directory exists (fixes layout loss for
+    in-place restarts)
+  • i3bar: fix freeing static strings
 
  ┌────────────────────────────┐
  │ Thanks!                    │
@@ -21,6 +25,6 @@ strongly encouraged to upgrade.
 
 Thanks for testing, bugfixes, discussions and everything I forgot go out to:
 
-  Ingo Bürk, Michael Hofmann,
+  Tony Crisci, Deiz, Theo Buehler, shdown
 
--- Michael Stapelberg, 2015-04-16
+-- Michael Stapelberg, 2015-07-30
