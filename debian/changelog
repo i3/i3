@@ -1,8 +1,22 @@
-i3-wm (4.10.3-1) experimental; urgency=medium
+i3-wm (4.10.4-1) unstable; urgency=medium
 
   * NOT YET RELEASED.
 
- -- Michael Stapelberg <stapelberg@debian.org>  Thu, 16 Apr 2015 09:08:30 +0200
+ -- Michael Stapelberg <stapelberg@debian.org>  Thu, 30 Jul 2015 22:30:45 +0200
+
+i3-wm (4.10.3-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Thu, 30 Jul 2015 21:51:27 +0200
+
+i3-wm (4.10.2-2) unstable; urgency=medium
+
+  * New upstream release.
+  * experimental to unstable because i3-wm 4.10.2-1 was only in experimental
+    due to the freeze.
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Fri, 01 May 2015 20:21:18 +0200
 
 i3-wm (4.10.2-1) experimental; urgency=medium
 
