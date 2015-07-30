@@ -74,12 +74,12 @@ if [ "${RELEASE_BRANCH}" = "master" ]; then
 	git checkout master
 	git merge --no-ff release-${RELEASE_VERSION} -m "Merge branch 'release-${RELEASE_VERSION}'"
 	git checkout next
-	git merge --no-ff master -m "Merge branch 'master' into next"
+	git merge --no-ff -X ours master -m "Merge branch 'master' into next"
 else
 	git checkout next
 	git merge --no-ff release-${RELEASE_VERSION} -m "Merge branch 'release-${RELEASE_VERSION}'"
 	git checkout master
-	git merge --no-ff next -m "Merge branch 'next' into master"
+	git merge --no-ff -X theirs next -m "Merge branch 'next' into master"
 fi
 
 git remote remove origin
