@@ -12,6 +12,12 @@ then
 	exit 1
 fi
 
+if ! (cd ../i3.github.io && git pull)
+then
+	echo "Could not update ../i3.github.io repository"
+	exit 1
+fi
+
 if [ ! -e "RELEASE-NOTES-${RELEASE_VERSION}" ]
 then
 	echo "RELEASE-NOTES-${RELEASE_VERSION} not found."
