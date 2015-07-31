@@ -1319,7 +1319,9 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
  *
  */
 void handle_event(int type, xcb_generic_event_t *event) {
-    DLOG("event type %d, xkb_base %d\n", type, xkb_base);
+    if (type != XCB_MOTION_NOTIFY)
+        DLOG("event type %d, xkb_base %d\n", type, xkb_base);
+
     if (randr_base > -1 &&
         type == randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
         handle_screen_change(event);
