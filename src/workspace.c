@@ -322,17 +322,17 @@ static void workspace_reassign_sticky(Con *con) {
 static void workspace_defer_update_urgent_hint_cb(EV_P_ ev_timer *w, int revents) {
     Con *con = w->data;
 
+    ev_timer_stop(main_loop, con->urgency_timer);
+    FREE(con->urgency_timer);
+
     if (con->urgent) {
         DLOG("Resetting urgency flag of con %p by timer\n", con);
-        con->urgent = false;
+        con_set_urgency(con, false);
         con_update_parents_urgency(con);
         workspace_update_urgent_flag(con_get_workspace(con));
         ipc_send_window_event("urgent", con);
         tree_render();
     }
-
-    ev_timer_stop(main_loop, con->urgency_timer);
-    FREE(con->urgency_timer);
 }
 
 static void _workspace_show(Con *workspace) {

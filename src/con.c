@@ -211,7 +211,7 @@ void con_focus(Con *con) {
      * checks before resetting the urgency.
      */
     if (con->urgent && con_is_leaf(con)) {
-        con->urgent = false;
+        con_set_urgency(con, false);
         con_update_parents_urgency(con);
         workspace_update_urgent_flag(con_get_workspace(con));
         ipc_send_window_event("urgent", con);
@@ -1722,12 +1722,12 @@ void con_update_parents_urgency(Con *con) {
  *
  */
 void con_set_urgency(Con *con, bool urgent) {
-    if (focused == con) {
+    if (urgent && focused == con) {
         DLOG("Ignoring urgency flag for current client\n");
-        con->window->urgent.tv_sec = 0;
-        con->window->urgent.tv_usec = 0;
         return;
     }
+
+    const bool old_urgent = con->urgent;
 
     if (con->urgency_timer == NULL) {
         con->urgent = urgent;
@@ -1752,7 +1752,7 @@ void con_set_urgency(Con *con, bool urgent) {
     if ((ws = con_get_workspace(con)) != NULL)
         workspace_update_urgent_flag(ws);
 
-    if (con->urgent == urgent) {
+    if (con->urgent != old_urgent) {
         LOG("Urgency flag changed to %d\n", con->urgent);
         ipc_send_window_event("urgent", con);
     }
