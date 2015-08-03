@@ -109,9 +109,9 @@ void restore_connect(void) {
     if (restore_conn == NULL || xcb_connection_has_error(restore_conn))
         errx(EXIT_FAILURE, "Cannot open display\n");
 
-    xcb_watcher = scalloc(sizeof(struct ev_io));
-    xcb_check = scalloc(sizeof(struct ev_check));
-    xcb_prepare = scalloc(sizeof(struct ev_prepare));
+    xcb_watcher = scalloc(1, sizeof(struct ev_io));
+    xcb_check = scalloc(1, sizeof(struct ev_check));
+    xcb_prepare = scalloc(1, sizeof(struct ev_prepare));
 
     ev_io_init(xcb_watcher, restore_xcb_got_event, xcb_get_file_descriptor(restore_conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);
@@ -210,7 +210,7 @@ static void open_placeholder_window(Con *con) {
         DLOG("Created placeholder window 0x%08x for leaf container %p / %s\n",
              placeholder, con, con->name);
 
-        placeholder_state *state = scalloc(sizeof(placeholder_state));
+        placeholder_state *state = scalloc(1, sizeof(placeholder_state));
         state->window = placeholder;
         state->con = con;
         state->rect = con->rect;

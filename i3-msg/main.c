@@ -77,7 +77,7 @@ static int reply_boolean_cb(void *params, int val) {
 }
 
 static int reply_string_cb(void *params, const unsigned char *val, size_t len) {
-    char *str = scalloc(len + 1);
+    char *str = scalloc(len + 1, 1);
     strncpy(str, (const char *)val, len);
     if (strcmp(last_key, "error") == 0)
         last_reply.error = str;
@@ -105,7 +105,7 @@ static int reply_end_map_cb(void *params) {
 
 static int reply_map_key_cb(void *params, const unsigned char *keyVal, size_t keyLen) {
     free(last_key);
-    last_key = scalloc(keyLen + 1);
+    last_key = scalloc(keyLen + 1, 1);
     strncpy(last_key, (const char *)keyVal, keyLen);
     return 1;
 }
@@ -187,8 +187,7 @@ int main(int argc, char *argv[]) {
             payload = sstrdup(argv[optind]);
         } else {
             char *both;
-            if (asprintf(&both, "%s %s", payload, argv[optind]) == -1)
-                err(EXIT_FAILURE, "asprintf");
+            sasprintf(&both, "%s %s", payload, argv[optind]);
             free(payload);
             payload = both;
         }

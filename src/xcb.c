@@ -114,7 +114,7 @@ void send_take_focus(xcb_window_t window, xcb_timestamp_t timestamp) {
     /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
      * In order to properly initialize these bytes, we allocate 32 bytes even
      * though we only need less for an xcb_configure_notify_event_t */
-    void *event = scalloc(32);
+    void *event = scalloc(32, 1);
     xcb_client_message_event_t *ev = event;
 
     ev->response_type = XCB_CLIENT_MESSAGE;

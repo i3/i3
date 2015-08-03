@@ -56,7 +56,7 @@ static void query_screens(xcb_connection_t *conn) {
             s->rect.width = min(s->rect.width, screen_info[screen].width);
             s->rect.height = min(s->rect.height, screen_info[screen].height);
         } else {
-            s = scalloc(sizeof(Output));
+            s = scalloc(1, sizeof(Output));
             sasprintf(&(s->name), "xinerama-%d", num_screens);
             DLOG("Created new Xinerama screen %s (%p)\n", s->name, s);
             s->active = true;

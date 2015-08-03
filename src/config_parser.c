@@ -202,9 +202,9 @@ static TAILQ_HEAD(criteria_head, criterion) criteria =
  */
 static void push_criterion(void *unused_criteria, const char *type,
                            const char *value) {
-    struct criterion *criterion = malloc(sizeof(struct criterion));
-    criterion->type = strdup(type);
-    criterion->value = strdup(value);
+    struct criterion *criterion = smalloc(sizeof(struct criterion));
+    criterion->type = sstrdup(type);
+    criterion->value = sstrdup(value);
     TAILQ_INSERT_TAIL(&criteria, criterion, criteria);
 }
 
@@ -414,7 +414,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
                     }
                 }
                 if (walk != beginning) {
-                    char *str = scalloc(walk - beginning + 1);
+                    char *str = scalloc(walk - beginning + 1, 1);
                     /* We copy manually to handle escaping of characters. */
                     int inpos, outpos;
                     for (inpos = 0, outpos = 0;
@@ -519,7 +519,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
 
             /* Contains the same amount of characters as 'input' has, but with
              * the unparseable part highlighted using ^ characters. */
-            char *position = scalloc(strlen(error_line) + 1);
+            char *position = scalloc(strlen(error_line) + 1, 1);
             const char *copywalk;
             for (copywalk = error_line;
                  *copywalk != '\n' && *copywalk != '\r' && *copywalk != '\0';
@@ -789,12 +789,12 @@ static char *migrate_config(char *input, off_t size) {
 
     /* read the script’s output */
     int conv_size = 65535;
-    char *converted = malloc(conv_size);
+    char *converted = smalloc(conv_size);
     int read_bytes = 0, ret;
     do {
         if (read_bytes == conv_size) {
             conv_size += 65535;
-            converted = realloc(converted, conv_size);
+            converted = srealloc(converted, conv_size);
         }
         ret = read(readpipe[0], converted + read_bytes, conv_size - read_bytes);
         if (ret == -1) {
@@ -849,7 +849,7 @@ bool parse_file(const char *f, bool use_nagbar) {
     if (fstat(fd, &stbuf) == -1)
         die("Could not fstat file: %s\n", strerror(errno));
 
-    buf = scalloc((stbuf.st_size + 1) * sizeof(char));
+    buf = scalloc(stbuf.st_size + 1, 1);
 
     if ((fstr = fdopen(fd, "r")) == NULL)
         die("Could not fdopen: %s\n", strerror(errno));
@@ -897,7 +897,7 @@ bool parse_file(const char *f, bool use_nagbar) {
             while (*v_value == '\t' || *v_value == ' ')
                 v_value++;
 
-            struct Variable *new = scalloc(sizeof(struct Variable));
+            struct Variable *new = scalloc(1, sizeof(struct Variable));
             new->key = sstrdup(v_key);
             new->value = sstrdup(v_value);
             SLIST_INSERT_HEAD(&variables, new, variables);
@@ -931,7 +931,7 @@ bool parse_file(const char *f, bool use_nagbar) {
     /* Then, allocate a new buffer and copy the file over to the new one,
      * but replace occurences of our variables */
     char *walk = buf, *destwalk;
-    char *new = smalloc((stbuf.st_size + extra_bytes + 1) * sizeof(char));
+    char *new = smalloc(stbuf.st_size + extra_bytes + 1);
     destwalk = new;
     while (walk < (buf + stbuf.st_size)) {
         /* Find the next variable */
@@ -990,7 +990,7 @@ bool parse_file(const char *f, bool use_nagbar) {
         }
     }
 
-    context = scalloc(sizeof(struct context));
+    context = scalloc(1, sizeof(struct context));
     context->filename = f;
 
     struct ConfigResultIR *config_output = parse_config(new, context);

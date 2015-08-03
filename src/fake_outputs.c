@@ -49,7 +49,7 @@ void fake_outputs_init(const char *output_spec) {
             new_output->rect.width = min(new_output->rect.width, width);
             new_output->rect.height = min(new_output->rect.height, height);
         } else {
-            new_output = scalloc(sizeof(Output));
+            new_output = scalloc(1, sizeof(Output));
             sasprintf(&(new_output->name), "fake-%d", num_screens);
             DLOG("Created new fake output %s (%p)\n", new_output->name, new_output);
             new_output->active = true;

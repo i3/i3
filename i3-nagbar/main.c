@@ -371,7 +371,7 @@ int main(int argc, char *argv[]) {
     if (argv0_len > strlen(".nagbar_cmd") &&
         strcmp(argv[0] + argv0_len - strlen(".nagbar_cmd"), ".nagbar_cmd") == 0) {
         unlink(argv[0]);
-        cmd = strdup(argv[0]);
+        cmd = sstrdup(argv[0]);
         *(cmd + argv0_len - strlen(".nagbar_cmd")) = '\0';
         execl("/bin/sh", "/bin/sh", cmd, NULL);
         err(EXIT_FAILURE, "execv(/bin/sh, /bin/sh, %s)", cmd);
@@ -418,7 +418,7 @@ int main(int argc, char *argv[]) {
                 printf("i3-nagbar [-m <message>] [-b <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
                 return 0;
             case 'b':
-                buttons = realloc(buttons, sizeof(button_t) * (buttoncnt + 1));
+                buttons = srealloc(buttons, sizeof(button_t) * (buttoncnt + 1));
                 buttons[buttoncnt].label = i3string_from_utf8(optarg);
                 buttons[buttoncnt].action = argv[optind];
                 printf("button with label *%s* and action *%s*\n",

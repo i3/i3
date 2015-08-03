@@ -73,7 +73,7 @@ char *get_exe_path(const char *argv0) {
         }
         sasprintf(&path, ":%s", tmp);
     } else {
-        path = strdup(path);
+        path = sstrdup(path);
     }
     const char *component;
     char *str = path;

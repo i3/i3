@@ -392,7 +392,7 @@ static char *rewrite_binding(const char *input) {
                     }
                 }
                 if (walk != beginning) {
-                    char *str = scalloc(walk - beginning + 1);
+                    char *str = scalloc(walk - beginning + 1, 1);
                     /* We copy manually to handle escaping of characters. */
                     int inpos, outpos;
                     for (inpos = 0, outpos = 0;
@@ -768,7 +768,7 @@ int main(int argc, char *argv[]) {
         switch (o) {
             case 's':
                 FREE(socket_path);
-                socket_path = strdup(optarg);
+                socket_path = sstrdup(optarg);
                 break;
             case 'v':
                 printf("i3-config-wizard " I3_VERSION "\n");

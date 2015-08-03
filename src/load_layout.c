@@ -167,7 +167,7 @@ static int json_end_array(void *ctx) {
 static int json_key(void *ctx, const unsigned char *val, size_t len) {
     LOG("key: %.*s\n", (int)len, val);
     FREE(last_key);
-    last_key = scalloc((len + 1) * sizeof(char));
+    last_key = scalloc(len + 1, 1);
     memcpy(last_key, val, len);
     if (strcasecmp(last_key, "swallows") == 0)
         parsing_swallows = true;
@@ -209,10 +209,10 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         free(sval);
     } else {
         if (strcasecmp(last_key, "name") == 0) {
-            json_node->name = scalloc((len + 1) * sizeof(char));
+            json_node->name = scalloc(len + 1, 1);
             memcpy(json_node->name, val, len);
         } else if (strcasecmp(last_key, "sticky_group") == 0) {
-            json_node->sticky_group = scalloc((len + 1) * sizeof(char));
+            json_node->sticky_group = scalloc(len + 1, 1);
             memcpy(json_node->sticky_group, val, len);
             LOG("sticky_group of this container is %s\n", json_node->sticky_group);
         } else if (strcasecmp(last_key, "orientation") == 0) {
@@ -361,7 +361,7 @@ static int json_int(void *ctx, long long val) {
         json_node->old_id = val;
 
     if (parsing_focus) {
-        struct focus_mapping *focus_mapping = scalloc(sizeof(struct focus_mapping));
+        struct focus_mapping *focus_mapping = scalloc(1, sizeof(struct focus_mapping));
         focus_mapping->old_id = val;
         TAILQ_INSERT_TAIL(&focus_mappings, focus_mapping, focus_mappings);
     }

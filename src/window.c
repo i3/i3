@@ -208,13 +208,8 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     }
 
     char *new_role;
-    if (asprintf(&new_role, "%.*s", xcb_get_property_value_length(prop),
-                 (char *)xcb_get_property_value(prop)) == -1) {
-        perror("asprintf()");
-        DLOG("Could not get WM_WINDOW_ROLE\n");
-        free(prop);
-        return;
-    }
+    sasprintf(&new_role, "%.*s", xcb_get_property_value_length(prop),
+              (char *)xcb_get_property_value(prop));
     FREE(win->role);
     win->role = new_role;
     LOG("WM_WINDOW_ROLE changed to \"%s\"\n", win->role);

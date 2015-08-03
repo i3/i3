@@ -533,7 +533,7 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     const size_t len = namelen + strlen("workspace \"\"") + 1;
-    char *buffer = scalloc(len + num_quotes);
+    char *buffer = scalloc(len + num_quotes, 1);
     strncpy(buffer, "workspace \"", strlen("workspace \""));
     size_t inpos, outpos;
     for (inpos = 0, outpos = strlen("workspace \"");
@@ -730,7 +730,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                                  values);
 
             /* send the XEMBED_EMBEDDED_NOTIFY message */
-            void *event = scalloc(32);
+            void *event = scalloc(32, 1);
             xcb_client_message_event_t *ev = event;
             ev->response_type = XCB_CLIENT_MESSAGE;
             ev->window = client;
@@ -1654,8 +1654,7 @@ void reconfig_windows(bool redraw_bars) {
                                                "i3bar\0i3bar\0");
 
             char *name;
-            if (asprintf(&name, "i3bar for output %s", walk->name) == -1)
-                err(EXIT_FAILURE, "asprintf()");
+            sasprintf(&name, "i3bar for output %s", walk->name);
             xcb_void_cookie_t name_cookie;
             name_cookie = xcb_change_property(xcb_connection,
                                               XCB_PROP_MODE_REPLACE,

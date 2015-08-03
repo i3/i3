@@ -84,7 +84,7 @@ void ipc_shutdown(void) {
 IPC_HANDLER(command) {
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
-    char *command = scalloc(message_size + 1);
+    char *command = scalloc(message_size + 1, 1);
     strncpy(command, (const char *)message, message_size);
     LOG("IPC: received: *%s*\n", command);
     yajl_gen gen = yajl_gen_alloc(NULL);
@@ -855,7 +855,7 @@ IPC_HANDLER(get_bar_config) {
 
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
-    char *bar_id = scalloc(message_size + 1);
+    char *bar_id = scalloc(message_size + 1, 1);
     strncpy(bar_id, (const char *)message, message_size);
     LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
     Barconfig *current, *config = NULL;
@@ -900,10 +900,10 @@ static int add_subscription(void *extra, const unsigned char *s,
     int event = client->num_events;
 
     client->num_events++;
-    client->events = realloc(client->events, client->num_events * sizeof(char *));
+    client->events = srealloc(client->events, client->num_events * sizeof(char *));
     /* We copy the string because it is not null-terminated and strndup()
      * is missing on some BSD systems */
-    client->events[event] = scalloc(len + 1);
+    client->events[event] = scalloc(len + 1, 1);
     memcpy(client->events[event], s, len);
 
     DLOG("client is now subscribed to:\n");
@@ -1060,13 +1060,13 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
 
     set_nonblock(client);
 
-    struct ev_io *package = scalloc(sizeof(struct ev_io));
+    struct ev_io *package = scalloc(1, sizeof(struct ev_io));
     ev_io_init(package, ipc_receive_message, client, EV_READ);
     ev_io_start(EV_A_ package);
 
     DLOG("IPC: new client connected on fd %d\n", w->fd);
 
-    ipc_client *new = scalloc(sizeof(ipc_client));
+    ipc_client *new = scalloc(1, sizeof(ipc_client));
     new->fd = client;
 
     TAILQ_INSERT_TAIL(&all_clients, new, clients);

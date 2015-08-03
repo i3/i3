@@ -227,7 +227,7 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
 void disable_randr(xcb_connection_t *conn) {
     DLOG("RandR extension unusable, disabling.\n");
 
-    Output *s = scalloc(sizeof(Output));
+    Output *s = scalloc(1, sizeof(Output));
 
     s->active = true;
     s->rect.x = 0;
@@ -292,7 +292,7 @@ void output_init_con(Output *output) {
     topdock->type = CT_DOCKAREA;
     topdock->layout = L_DOCKAREA;
     /* this container swallows dock clients */
-    Match *match = scalloc(sizeof(Match));
+    Match *match = scalloc(1, sizeof(Match));
     match_init(match);
     match->dock = M_DOCK_TOP;
     match->insert_where = M_BELOW;
@@ -326,7 +326,7 @@ void output_init_con(Output *output) {
     bottomdock->type = CT_DOCKAREA;
     bottomdock->layout = L_DOCKAREA;
     /* this container swallows dock clients */
-    match = scalloc(sizeof(Match));
+    match = scalloc(1, sizeof(Match));
     match_init(match);
     match->dock = M_DOCK_BOTTOM;
     match->insert_where = M_BELOW;
@@ -522,7 +522,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
     Output *new = get_output_by_id(id);
     bool existing = (new != NULL);
     if (!existing)
-        new = scalloc(sizeof(Output));
+        new = scalloc(1, sizeof(Output));
     new->id = id;
     new->primary = (primary && primary->output == id);
     FREE(new->name);

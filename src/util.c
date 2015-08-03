@@ -122,7 +122,7 @@ void exec_i3_utility(char *name, char *argv[]) {
     /* if the script is not in path, maybe the user installed to a strange
      * location and runs the i3 binary with an absolute path. We use
      * argv[0]’s dirname */
-    char *pathbuf = strdup(start_argv[0]);
+    char *pathbuf = sstrdup(start_argv[0]);
     char *dir = dirname(pathbuf);
     sasprintf(&migratepath, "%s/%s", dir, name);
     argv[0] = migratepath;
@@ -276,7 +276,7 @@ void i3_restart(bool forget_layout) {
         int num_args;
         for (num_args = 0; start_argv[num_args] != NULL; num_args++)
             ;
-        char **new_argv = scalloc((num_args + 3) * sizeof(char *));
+        char **new_argv = scalloc(num_args + 3, sizeof(char *));
 
         /* copy the arguments, but skip the ones we'll replace */
         int write_index = 0;
