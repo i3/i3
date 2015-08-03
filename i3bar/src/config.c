@@ -146,7 +146,7 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
      * users updating from that version and restarting i3bar before i3. */
     if (!strcmp(cur_key, "wheel_up_cmd")) {
         DLOG("wheel_up_cmd = %.*s\n", len, val);
-        binding_t *binding = scalloc(sizeof(binding_t));
+        binding_t *binding = scalloc(1, sizeof(binding_t));
         binding->input_code = 4;
         sasprintf(&(binding->command), "%.*s", len, val);
         TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
@@ -157,7 +157,7 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
      * users updating from that version and restarting i3bar before i3. */
     if (!strcmp(cur_key, "wheel_down_cmd")) {
         DLOG("wheel_down_cmd = %.*s\n", len, val);
-        binding_t *binding = scalloc(sizeof(binding_t));
+        binding_t *binding = scalloc(1, sizeof(binding_t));
         binding->input_code = 5;
         sasprintf(&(binding->command), "%.*s", len, val);
         TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
@@ -277,7 +277,7 @@ static int config_boolean_cb(void *params_, int val) {
 static int config_integer_cb(void *params_, long long val) {
     if (parsing_bindings) {
         if (strcmp(cur_key, "input_code") == 0) {
-            binding_t *binding = scalloc(sizeof(binding_t));
+            binding_t *binding = scalloc(1, sizeof(binding_t));
             binding->input_code = val;
             TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
 

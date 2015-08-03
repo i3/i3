@@ -33,7 +33,7 @@ struct _i3String {
  *
  */
 i3String *i3string_from_utf8(const char *from_utf8) {
-    i3String *str = scalloc(sizeof(i3String));
+    i3String *str = scalloc(1, sizeof(i3String));
 
     /* Get the text */
     str->utf8 = sstrdup(from_utf8);
@@ -64,10 +64,10 @@ i3String *i3string_from_markup(const char *from_markup) {
  *
  */
 i3String *i3string_from_utf8_with_length(const char *from_utf8, size_t num_bytes) {
-    i3String *str = scalloc(sizeof(i3String));
+    i3String *str = scalloc(1, sizeof(i3String));
 
     /* Copy the actual text to our i3String */
-    str->utf8 = scalloc(sizeof(char) * (num_bytes + 1));
+    str->utf8 = scalloc(num_bytes + 1, 1);
     strncpy(str->utf8, from_utf8, num_bytes);
     str->utf8[num_bytes] = '\0';
 
@@ -97,12 +97,11 @@ i3String *i3string_from_markup_with_length(const char *from_markup, size_t num_b
  *
  */
 i3String *i3string_from_ucs2(const xcb_char2b_t *from_ucs2, size_t num_glyphs) {
-    i3String *str = scalloc(sizeof(i3String));
+    i3String *str = scalloc(1, sizeof(i3String));
 
     /* Copy the actual text to our i3String */
-    size_t num_bytes = num_glyphs * sizeof(xcb_char2b_t);
-    str->ucs2 = scalloc(num_bytes);
-    memcpy(str->ucs2, from_ucs2, num_bytes);
+    str->ucs2 = scalloc(num_glyphs, sizeof(xcb_char2b_t));
+    memcpy(str->ucs2, from_ucs2, num_glyphs * sizeof(xcb_char2b_t));
 
     /* Store the length */
     str->num_glyphs = num_glyphs;

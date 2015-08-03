@@ -147,7 +147,7 @@ void x_con_init(Con *con, uint16_t depth) {
     if (win_colormap != XCB_NONE)
         xcb_free_colormap(conn, win_colormap);
 
-    struct con_state *state = scalloc(sizeof(struct con_state));
+    struct con_state *state = scalloc(1, sizeof(struct con_state));
     state->id = con->frame;
     state->mapped = false;
     state->initial = true;
@@ -286,7 +286,7 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
     /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
      * In order to properly initialize these bytes, we allocate 32 bytes even
      * though we only need less for an xcb_configure_notify_event_t */
-    void *event = scalloc(32);
+    void *event = scalloc(32, 1);
     xcb_client_message_event_t *ev = event;
 
     ev->response_type = XCB_CLIENT_MESSAGE;
@@ -376,7 +376,7 @@ void x_draw_decoration(Con *con) {
         return;
 
     /* 1: build deco_params and compare with cache */
-    struct deco_render_params *p = scalloc(sizeof(struct deco_render_params));
+    struct deco_render_params *p = scalloc(1, sizeof(struct deco_render_params));
 
     /* find out which colors to use */
     if (con->urgent)

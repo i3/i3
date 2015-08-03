@@ -760,7 +760,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         uint32_t rnd = event->data.data32[1];
         DLOG("[i3 sync protocol] Sending random value %d back to X11 window 0x%08x\n", rnd, window);
 
-        void *reply = scalloc(32);
+        void *reply = scalloc(32, 1);
         xcb_client_message_event_t *ev = reply;
 
         ev->response_type = XCB_CLIENT_MESSAGE;

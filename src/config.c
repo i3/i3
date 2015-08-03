@@ -58,7 +58,7 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
 
     /* initialize default bindings if we're just validating the config file */
     if (!use_nagbar && bindings == NULL) {
-        bindings = scalloc(sizeof(struct bindings_head));
+        bindings = scalloc(1, sizeof(struct bindings_head));
         TAILQ_INIT(bindings);
     }
 
@@ -155,9 +155,9 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
     SLIST_INIT(&modes);
 
-    struct Mode *default_mode = scalloc(sizeof(struct Mode));
+    struct Mode *default_mode = scalloc(1, sizeof(struct Mode));
     default_mode->name = sstrdup("default");
-    default_mode->bindings = scalloc(sizeof(struct bindings_head));
+    default_mode->bindings = scalloc(1, sizeof(struct bindings_head));
     TAILQ_INIT(default_mode->bindings);
     SLIST_INSERT_HEAD(&modes, default_mode, modes);
 

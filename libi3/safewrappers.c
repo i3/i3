@@ -27,10 +27,10 @@ void *smalloc(size_t size) {
     return result;
 }
 
-void *scalloc(size_t size) {
-    void *result = calloc(size, 1);
+void *scalloc(size_t num, size_t size) {
+    void *result = calloc(num, size);
     if (result == NULL)
-        err(EXIT_FAILURE, "calloc(%zd)", size);
+        err(EXIT_FAILURE, "calloc(%zd, %zd)", num, size);
     return result;
 }
 

@@ -105,13 +105,13 @@ __attribute__((format(printf, 1, 2))) static void set_statusline_error(const cha
     va_start(args, format);
     (void)vasprintf(&message, format, args);
 
-    struct status_block *err_block = scalloc(sizeof(struct status_block));
+    struct status_block *err_block = scalloc(1, sizeof(struct status_block));
     err_block->full_text = i3string_from_utf8("Error: ");
     err_block->name = sstrdup("error");
     err_block->color = sstrdup("red");
     err_block->no_separator = true;
 
-    struct status_block *message_block = scalloc(sizeof(struct status_block));
+    struct status_block *message_block = scalloc(1, sizeof(struct status_block));
     message_block->full_text = i3string_from_utf8(message);
     message_block->name = sstrdup("error_message");
     message_block->color = sstrdup("red");
@@ -433,7 +433,7 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     } else {
         /* In case of plaintext, we just add a single block and change its
          * full_text pointer later. */
-        struct status_block *new_block = scalloc(sizeof(struct status_block));
+        struct status_block *new_block = scalloc(1, sizeof(struct status_block));
         TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
         read_flat_input((char *)buffer, rec);
     }

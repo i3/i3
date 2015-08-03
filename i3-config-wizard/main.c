@@ -392,7 +392,7 @@ static char *rewrite_binding(const char *input) {
                     }
                 }
                 if (walk != beginning) {
-                    char *str = scalloc(walk - beginning + 1);
+                    char *str = scalloc(walk - beginning + 1, 1);
                     /* We copy manually to handle escaping of characters. */
                     int inpos, outpos;
                     for (inpos = 0, outpos = 0;

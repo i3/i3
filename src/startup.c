@@ -149,7 +149,7 @@ void start_application(const char *command, bool no_startup_id) {
         free(first_word);
 
         /* Trigger a timeout after 60 seconds */
-        struct ev_timer *timeout = scalloc(sizeof(struct ev_timer));
+        struct ev_timer *timeout = scalloc(1, sizeof(struct ev_timer));
         ev_timer_init(timeout, startup_timeout, 60.0, 0.);
         timeout->data = context;
         ev_timer_start(main_loop, timeout);
@@ -159,7 +159,7 @@ void start_application(const char *command, bool no_startup_id) {
         /* Save the ID and current workspace in our internal list of startup
          * sequences */
         Con *ws = con_get_workspace(focused);
-        struct Startup_Sequence *sequence = scalloc(sizeof(struct Startup_Sequence));
+        struct Startup_Sequence *sequence = scalloc(1, sizeof(struct Startup_Sequence));
         sequence->id = sstrdup(sn_launcher_context_get_startup_id(context));
         sequence->workspace = sstrdup(ws->name);
         sequence->context = context;

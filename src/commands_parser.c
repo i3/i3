@@ -243,7 +243,7 @@ char *parse_string(const char **walk, bool as_word) {
     if (*walk == beginning)
         return NULL;
 
-    char *str = scalloc(*walk - beginning + 1);
+    char *str = scalloc(*walk - beginning + 1, 1);
     /* We copy manually to handle escaping of characters. */
     int inpos, outpos;
     for (inpos = 0, outpos = 0;
@@ -270,7 +270,7 @@ char *parse_string(const char **walk, bool as_word) {
 CommandResult *parse_command(const char *input, yajl_gen gen) {
     DLOG("COMMAND: *%s*\n", input);
     state = INITIAL;
-    CommandResult *result = scalloc(sizeof(CommandResult));
+    CommandResult *result = scalloc(1, sizeof(CommandResult));
 
     /* A YAJL JSON generator used for formatting replies. */
     command_output.json_gen = gen;

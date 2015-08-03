@@ -276,7 +276,7 @@ void i3_restart(bool forget_layout) {
         int num_args;
         for (num_args = 0; start_argv[num_args] != NULL; num_args++)
             ;
-        char **new_argv = scalloc((num_args + 3) * sizeof(char *));
+        char **new_argv = scalloc(num_args + 3, sizeof(char *));
 
         /* copy the arguments, but skip the ones we'll replace */
         int write_index = 0;

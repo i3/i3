@@ -397,7 +397,7 @@ static void _workspace_show(Con *workspace) {
         if (focused->urgency_timer == NULL) {
             DLOG("Deferring reset of urgency flag of con %p on newly shown workspace %p\n",
                  focused, workspace);
-            focused->urgency_timer = scalloc(sizeof(struct ev_timer));
+            focused->urgency_timer = scalloc(1, sizeof(struct ev_timer));
             /* use a repeating timer to allow for easy resets */
             ev_timer_init(focused->urgency_timer, workspace_defer_update_urgent_hint_cb,
                           config.workspace_urgency_timer, config.workspace_urgency_timer);

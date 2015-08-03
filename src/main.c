@@ -635,7 +635,7 @@ int main(int argc, char *argv[]) {
     if (ipc_socket == -1) {
         ELOG("Could not create the IPC socket, IPC disabled\n");
     } else {
-        struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
+        struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
         ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
         ev_io_start(main_loop, ipc_io);
     }
@@ -663,7 +663,7 @@ int main(int argc, char *argv[]) {
                 ELOG("Could not disable FD_CLOEXEC on fd %d\n", fd);
             }
 
-            struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
+            struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
             ev_io_init(ipc_io, ipc_new_client, fd, EV_READ);
             ev_io_start(main_loop, ipc_io);
         }
@@ -679,9 +679,9 @@ int main(int argc, char *argv[]) {
     ewmh_update_desktop_names();
     ewmh_update_desktop_viewport();
 
-    struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
-    xcb_check = scalloc(sizeof(struct ev_check));
-    struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
+    struct ev_io *xcb_watcher = scalloc(1, sizeof(struct ev_io));
+    xcb_check = scalloc(1, sizeof(struct ev_check));
+    struct ev_prepare *xcb_prepare = scalloc(1, sizeof(struct ev_prepare));
 
     ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);

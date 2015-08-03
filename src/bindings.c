@@ -33,9 +33,9 @@ static struct Mode *mode_from_name(const char *name) {
     }
 
     /* If the mode was not found, create a new one */
-    mode = scalloc(sizeof(struct Mode));
+    mode = scalloc(1, sizeof(struct Mode));
     mode->name = sstrdup(name);
-    mode->bindings = scalloc(sizeof(struct bindings_head));
+    mode->bindings = scalloc(1, sizeof(struct bindings_head));
     TAILQ_INIT(mode->bindings);
     SLIST_INSERT_HEAD(&modes, mode, modes);
 
@@ -51,7 +51,7 @@ static struct Mode *mode_from_name(const char *name) {
 Binding *configure_binding(const char *bindtype, const char *modifiers, const char *input_code,
                            const char *release, const char *border, const char *whole_window,
                            const char *command, const char *modename) {
-    Binding *new_binding = scalloc(sizeof(Binding));
+    Binding *new_binding = scalloc(1, sizeof(Binding));
     DLOG("bindtype %s, modifiers %s, input code %s, release %s\n", bindtype, modifiers, input_code, release);
     new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
     new_binding->border = (border != NULL);

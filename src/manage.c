@@ -164,7 +164,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     DLOG("Managing window 0x%08x\n", window);
 
-    i3Window *cwindow = scalloc(sizeof(i3Window));
+    i3Window *cwindow = scalloc(1, sizeof(i3Window));
     cwindow->id = window;
     cwindow->depth = get_visual_depth(attr->visual);
 

@@ -111,7 +111,7 @@ void *smalloc(size_t size);
  * there is no more memory available)
  *
  */
-void *scalloc(size_t size);
+void *scalloc(size_t num, size_t size);
 
 /**
  * Safe-wrapper around realloc which exits if realloc returns NULL (meaning
