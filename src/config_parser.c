@@ -202,9 +202,9 @@ static TAILQ_HEAD(criteria_head, criterion) criteria =
  */
 static void push_criterion(void *unused_criteria, const char *type,
                            const char *value) {
-    struct criterion *criterion = malloc(sizeof(struct criterion));
-    criterion->type = strdup(type);
-    criterion->value = strdup(value);
+    struct criterion *criterion = smalloc(sizeof(struct criterion));
+    criterion->type = sstrdup(type);
+    criterion->value = sstrdup(value);
     TAILQ_INSERT_TAIL(&criteria, criterion, criteria);
 }
 
