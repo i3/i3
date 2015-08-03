@@ -789,12 +789,12 @@ static char *migrate_config(char *input, off_t size) {
 
     /* read the script’s output */
     int conv_size = 65535;
-    char *converted = malloc(conv_size);
+    char *converted = smalloc(conv_size);
     int read_bytes = 0, ret;
     do {
         if (read_bytes == conv_size) {
             conv_size += 65535;
-            converted = realloc(converted, conv_size);
+            converted = srealloc(converted, conv_size);
         }
         ret = read(readpipe[0], converted + read_bytes, conv_size - read_bytes);
         if (ret == -1) {

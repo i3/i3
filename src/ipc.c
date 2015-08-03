@@ -900,7 +900,7 @@ static int add_subscription(void *extra, const unsigned char *s,
     int event = client->num_events;
 
     client->num_events++;
-    client->events = realloc(client->events, client->num_events * sizeof(char *));
+    client->events = srealloc(client->events, client->num_events * sizeof(char *));
     /* We copy the string because it is not null-terminated and strndup()
      * is missing on some BSD systems */
     client->events[event] = scalloc(len + 1, 1);

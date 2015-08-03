@@ -187,8 +187,7 @@ int main(int argc, char *argv[]) {
             payload = sstrdup(argv[optind]);
         } else {
             char *both;
-            if (asprintf(&both, "%s %s", payload, argv[optind]) == -1)
-                err(EXIT_FAILURE, "asprintf");
+            sasprintf(&both, "%s %s", payload, argv[optind]);
             free(payload);
             payload = both;
         }

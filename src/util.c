@@ -122,7 +122,7 @@ void exec_i3_utility(char *name, char *argv[]) {
     /* if the script is not in path, maybe the user installed to a strange
      * location and runs the i3 binary with an absolute path. We use
      * argv[0]’s dirname */
-    char *pathbuf = strdup(start_argv[0]);
+    char *pathbuf = sstrdup(start_argv[0]);
     char *dir = dirname(pathbuf);
     sasprintf(&migratepath, "%s/%s", dir, name);
     argv[0] = migratepath;

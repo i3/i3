@@ -393,9 +393,9 @@ static Binding *binding_copy(Binding *bind) {
     Binding *ret = smalloc(sizeof(Binding));
     *ret = *bind;
     if (bind->symbol != NULL)
-        ret->symbol = strdup(bind->symbol);
+        ret->symbol = sstrdup(bind->symbol);
     if (bind->command != NULL)
-        ret->command = strdup(bind->command);
+        ret->command = sstrdup(bind->command);
     if (bind->translated_to != NULL) {
         ret->translated_to = smalloc(sizeof(xcb_keycode_t) * bind->number_keycodes);
         memcpy(ret->translated_to, bind->translated_to, sizeof(xcb_keycode_t) * bind->number_keycodes);

@@ -768,7 +768,7 @@ int main(int argc, char *argv[]) {
         switch (o) {
             case 's':
                 FREE(socket_path);
-                socket_path = strdup(optarg);
+                socket_path = sstrdup(optarg);
                 break;
             case 'v':
                 printf("i3-config-wizard " I3_VERSION "\n");

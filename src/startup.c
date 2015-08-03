@@ -316,14 +316,8 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
     }
 
     char *startup_id;
-    if (asprintf(&startup_id, "%.*s", xcb_get_property_value_length(startup_id_reply),
-                 (char *)xcb_get_property_value(startup_id_reply)) == -1) {
-        perror("asprintf()");
-        DLOG("Could not get _NET_STARTUP_ID\n");
-        free(startup_id_reply);
-        return NULL;
-    }
-
+    sasprintf(&startup_id, "%.*s", xcb_get_property_value_length(startup_id_reply),
+              (char *)xcb_get_property_value(startup_id_reply));
     struct Startup_Sequence *current, *sequence = NULL;
     TAILQ_FOREACH(current, &startup_sequences, sequences) {
         if (strcmp(current->id, startup_id) != 0)

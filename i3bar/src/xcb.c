@@ -1654,8 +1654,7 @@ void reconfig_windows(bool redraw_bars) {
                                                "i3bar\0i3bar\0");
 
             char *name;
-            if (asprintf(&name, "i3bar for output %s", walk->name) == -1)
-                err(EXIT_FAILURE, "asprintf()");
+            sasprintf(&name, "i3bar for output %s", walk->name);
             xcb_void_cookie_t name_cookie;
             name_cookie = xcb_change_property(xcb_connection,
                                               XCB_PROP_MODE_REPLACE,
