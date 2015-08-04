@@ -207,6 +207,18 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* Where to start searching for a container that swallows the new one? */
     Con *search_at = croot;
 
+    /* Ignore DESKTOP windows and move them to the bottom of the stack. */
+    if (xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_DESKTOP)) {
+        LOG("Ignoring window of type desktop\n");
+        xcb_map_window(conn, window);
+        uint32_t values[] = {XCB_STACK_MODE_BELOW};
+        xcb_configure_window(conn, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
+
+        FREE(state_reply);
+        FREE(type_reply);
+        goto geom_out;
+    }
+
     if (xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_DOCK)) {
         LOG("This window is of type dock\n");
         Output *output = get_output_containing(geom->x, geom->y);
