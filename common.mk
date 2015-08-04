@@ -178,6 +178,10 @@ else ifneq ($(UNAME),OpenBSD)
 LIBS += -lrt
 endif
 
+ifeq ($(UNAME),SunOS)
+LIBS += -lsocket -liconv -lgen
+endif
+
 ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
 I3_CPPFLAGS += -D_GNU_SOURCE
 endif

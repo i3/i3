@@ -799,7 +799,7 @@ int main(int argc, char *argv[]) {
     struct stat stbuf;
     sasprintf(&config_dir, "%s/i3", xdg_config_home);
     if (stat(config_dir, &stbuf) != 0)
-        if (!mkdirp(config_dir))
+        if (mkdirp(config_dir, DEFAULT_DIR_MODE) != 0)
             err(EXIT_FAILURE, "mkdirp(%s) failed", config_dir);
     free(config_dir);
     free(xdg_config_home);

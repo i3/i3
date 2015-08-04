@@ -222,7 +222,7 @@ char *store_restart_layout(void) {
     char *filenamecopy = sstrdup(filename);
     char *base = dirname(filenamecopy);
     DLOG("Creating \"%s\" for storing the restart layout\n", base);
-    if (!mkdirp(base))
+    if (mkdirp(base, DEFAULT_DIR_MODE) != 0)
         ELOG("Could not create \"%s\" for storing the restart layout, layout will be lost.\n", base);
     free(filenamecopy);
 
