@@ -112,7 +112,7 @@ for my $line (@lines) {
 # We sort descendingly by length to be able to replace occurences of the state
 # name even when one state’s name is included in another one’s (like FOR_WINDOW
 # is in FOR_WINDOW_COMMAND).
-my @keys = sort { length($b) <=> length($a) } keys %states;
+my @keys = sort { (length($b) <=> length($a)) or ($a cmp $b) } keys %states;
 
 open(my $enumfh, '>', "GENERATED_${prefix}_enums.h");
 
