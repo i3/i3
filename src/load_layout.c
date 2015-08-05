@@ -116,6 +116,33 @@ static int json_end_map(void *ctx) {
             json_node->num = ws_name_to_number(json_node->name);
         }
 
+        // When appending JSON layout files that only contain the workspace
+        // _contents_, we might not have an upfront signal that the
+        // container we’re currently parsing is a floating container (like
+        // the “floating_nodes” key of the workspace container itself).
+        // That’s why we make sure the con is attached at the right place
+        // in the hierarchy in case it’s floating.
+        if (json_node->type == CT_FLOATING_CON) {
+            DLOG("fixing parent which currently is %p / %s\n", json_node->parent, json_node->parent->name);
+            json_node->parent = con_get_workspace(json_node->parent);
+
+            // Also set a size if none was supplied, otherwise the placeholder
+            // window cannot be created as X11 requests with width=0 or
+            // height=0 are invalid.
+            const Rect zero = {0,0,0,0};
+            if (memcmp(&(json_node->rect), &zero, sizeof(Rect)) == 0) {
+                DLOG("Geometry not set, combining children\n");
+                Con *child;
+                TAILQ_FOREACH(child, &(json_node->nodes_head), nodes) {
+                    DLOG("child geometry: %d x %d\n", child->geometry.width, child->geometry.height);
+                    json_node->rect.width += child->geometry.width;
+                    json_node->rect.height = max(json_node->rect.height, child->geometry.height);
+                }
+            }
+
+            floating_check_size(json_node);
+        }
+
         LOG("attaching\n");
         con_attach(json_node, json_node->parent, true);
         LOG("Creating window\n");
