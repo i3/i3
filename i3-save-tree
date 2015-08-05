@@ -99,6 +99,7 @@ my %allowed_keys = map { ($_, 1) } qw(
     geometry
     window_properties
     mark
+    rect
 );
 
 sub strip_containers {
@@ -115,6 +116,9 @@ sub strip_containers {
     delete $tree->{name} unless leaf_node($tree);
 
     delete $tree->{geometry} if zero_rect($tree->{geometry});
+
+    # Retain the rect for floating containers to keep their positions.
+    delete $tree->{rect} unless $tree->{type} eq 'floating_con';
 
     delete $tree->{current_border_width} if $tree->{current_border_width} == -1;
 
