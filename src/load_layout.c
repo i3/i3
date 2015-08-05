@@ -129,7 +129,7 @@ static int json_end_map(void *ctx) {
             // Also set a size if none was supplied, otherwise the placeholder
             // window cannot be created as X11 requests with width=0 or
             // height=0 are invalid.
-            const Rect zero = {0,0,0,0};
+            const Rect zero = {0, 0, 0, 0};
             if (memcmp(&(json_node->rect), &zero, sizeof(Rect)) == 0) {
                 DLOG("Geometry not set, combining children\n");
                 Con *child;
