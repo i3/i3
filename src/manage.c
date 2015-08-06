@@ -301,6 +301,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (nc->window != NULL && nc->window != cwindow) {
         if (!restore_kill_placeholder(nc->window->id)) {
             DLOG("Uh?! Container without a placeholder, but with a window, has swallowed this to-be-managed window?!\n");
+        } else {
+            /* Remove remaining criteria, the first swallowed window wins. */
+            while (!TAILQ_EMPTY(&(nc->swallow_head))) {
+                Match *first = TAILQ_FIRST(&(nc->swallow_head));
+                TAILQ_REMOVE(&(nc->swallow_head), first, matches);
+                match_free(first);
+            }
         }
     }
     nc->window = cwindow;
