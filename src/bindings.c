@@ -111,9 +111,7 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
 void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch) {
     Binding *bind;
     TAILQ_FOREACH(bind, bindings, bindings) {
-        if (bind->input_type != B_KEYBOARD ||
-            (bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) == 0) ||
-            (!bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) != 0))
+        if (bind->input_type != B_KEYBOARD)
             continue;
 
         /* The easy case: the user specified a keycode directly. */
@@ -225,7 +223,7 @@ Binding *get_binding_from_xcb_event(xcb_generic_event_t *event) {
     /* No match? Then the user has Mode_switch enabled but does not have a
      * specific keybinding. Fall back to the default keybindings (without
      * Mode_switch). Makes it much more convenient for users of a hybrid
-     * layout (like ru). */
+     * layout (like {us, ru} or {dvorak, us}, see e.g. ticket #1775). */
     if (bind == NULL) {
         state_filtered &= ~(BIND_MODE_SWITCH);
         DLOG("no match, new state_filtered = %d\n", state_filtered);
@@ -251,6 +249,8 @@ void translate_keysyms(void) {
     xcb_keysym_t keysym;
     int col;
     xcb_keycode_t i, min_keycode, max_keycode;
+
+    const bool mode_switch = (xkb_current_group == XCB_XKB_GROUP_2);
 
     min_keycode = xcb_get_setup(conn)->min_keycode;
     max_keycode = xcb_get_setup(conn)->max_keycode;
@@ -282,7 +282,7 @@ void translate_keysyms(void) {
          * the base column and the corresponding shift column, so without
          * mode_switch, we look in 0 and 1, with mode_switch we look in 2 and
          * 3. */
-        col = (bind->mods & BIND_MODE_SWITCH ? 2 : 0);
+        col = (bind->mods & BIND_MODE_SWITCH || mode_switch ? 2 : 0);
 
         FREE(bind->translated_to);
         bind->number_keycodes = 0;

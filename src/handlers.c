@@ -1361,14 +1361,10 @@ void handle_event(int type, xcb_generic_event_t *event) {
             if (xkb_current_group == state->group)
                 return;
             xkb_current_group = state->group;
-            if (state->group == XCB_XKB_GROUP_1) {
-                DLOG("Mode_switch disabled\n");
-                ungrab_all_keys(conn);
-                grab_all_keys(conn, false);
-            } else {
-                DLOG("Mode_switch enabled\n");
-                grab_all_keys(conn, true);
-            }
+            DLOG("Mode_switch %s\n", (xkb_current_group == XCB_XKB_GROUP_1 ? "disabled" : "enabled"));
+            ungrab_all_keys(conn);
+            translate_keysyms();
+            grab_all_keys(conn, (xkb_current_group == XCB_XKB_GROUP_2));
         }
 
         return;
