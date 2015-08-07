@@ -23,6 +23,13 @@ image:keyboard-layer2.png["Keys to use with Shift+$mod",width=600,link="keyboard
 The red keys are the modifiers you need to press (by default), the blue keys
 are your homerow.
 
+Note that when starting i3 without a config file, i3-config-wizard will offer
+you to create a config file in which the key positions (!) match what you see
+in the image above, regardless of the keyboard layout you are using. If you
+prefer to use a config file where the key letters match what you are seeing
+above, just decline i3-config-wizard’s offer and base your config on
++/etc/i3/config+.
+
 == Using i3
 
 Throughout this guide, the keyword +$mod+ will be used to refer to the
