@@ -793,9 +793,6 @@ static bool __randr_query_outputs(void) {
         disable_randr(conn);
     }
 
-    /* Verifies that there is at least one active output as a side-effect. */
-    get_first_output();
-
     /* Just go through each active output and assign one workspace */
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (!output->active)
