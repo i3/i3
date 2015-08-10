@@ -982,14 +982,16 @@ could have a look at previous reviews and see what the common mistakes are.
 
 === Which branch to use?
 
-Work on i3 generally happens in two branches: “master” and “next”. Since
-“master” is what people get when they check out the git repository, its
-contents are always stable. That is, it contains the source code of the latest
-release, plus any bugfixes that were applied since that release.
+Work on i3 generally happens in two branches: “master” and “next” (the latter
+being the default branch, the one that people get when they check out the git
+repository).
+
+The contents of “master” are always stable. That is, it contains the source code
+of the latest release, plus any bugfixes that were applied since that release.
 
 New features are only found in the “next” branch. Therefore, if you are working
-on a new feature, use the “next” branch. If you are working on a bugfix, use
-the “next” branch, too, but make sure your code also works on “master”.
+on a new feature, use the “next” branch. If you are working on a bugfix, use the
+“next” branch, too, but make sure your code also works on “master”.
 
 == Thought experiments
 
