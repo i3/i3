@@ -392,8 +392,8 @@ bindsym --release $mod+x exec --no-startup-id import /tmp/latest-screenshot.png
 
 Available Modifiers:
 
-Mod1-Mod5, Shift, Control::
-Standard modifiers, see +xmodmap(1)+
+Mod1, Mod2, Mod3, Mod4, Mod5, Shift, Control::
+Standard modifiers, see +xmodmap(1)+. Ctrl is an alias for Control.
 
 Mode_switch::
 Unlike other window managers, i3 can use Mode_switch as a modifier. This allows
