@@ -392,8 +392,11 @@ bindsym --release $mod+x exec --no-startup-id import /tmp/latest-screenshot.png
 
 Available Modifiers:
 
-Mod1-Mod5, Shift, Control::
+Mod1, Mod2, Mod3, Mod4, Mod5, Shift, Control::
 Standard modifiers, see +xmodmap(1)+
+
+Ctrl::
+An alias for +Control+.
 
 Mode_switch::
 Unlike other window managers, i3 can use Mode_switch as a modifier. This allows
@@ -1018,14 +1021,14 @@ force_display_urgency_hint 500 ms
 === Delaying exiting on zero displays
 
 Outputs may disappear momentarily and come back later. For example,
-using a docking station that does not announce the undock (e.g. ACPI Undock 
-event triggered through manually pushing a button before actually ejecting 
+using a docking station that does not announce the undock (e.g. ACPI Undock
+event triggered through manually pushing a button before actually ejecting
 the notebook). During the removal of the notebook from the docking station,
 all outputs disappear momentarily.
 
-To prevent i3 from exiting when no output is available momentarily, you can 
-tell i3 to delay a certain time first and check available outputs again using 
-the +delay_exit_on_zero_displays+ directive. Setting the value to 0 disables 
+To prevent i3 from exiting when no output is available momentarily, you can
+tell i3 to delay a certain time first and check available outputs again using
+the +delay_exit_on_zero_displays+ directive. Setting the value to 0 disables
 this feature.
 
 The default is 500ms.
