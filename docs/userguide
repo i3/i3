@@ -1667,6 +1667,9 @@ launching. So, if an application is not startup-notification aware (most GTK
 and Qt using applications seem to be, though), you will end up with a watch
 cursor for 60 seconds.
 
+You might want to consider using +.xinitrc+ (for launching programs at startup) and
++.xbindkeysrc+ (for keybindings) instead.
+
 === Splitting containers
 
 The split command makes the current window a split container. Split containers
