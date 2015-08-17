@@ -801,18 +801,11 @@ client.urgent::
 client.placeholder::
 	Background and text color are used to draw placeholder window contents
 	(when restoring layouts). Border and indicator are ignored.
-
-You can also specify the color to be used to paint the background of the client
-windows. This color will be used to paint the window on top of which the client
-will be rendered.
-
-*Syntax*:
--------------------------
-client.background <color>
--------------------------
-
-Only clients that do not cover the whole area of this window expose the color
-used to paint it.
+client.background::
+        Background color which will be used to paint the background of the
+        client window on top of which the client will be rendered. Only clients
+        which do not cover the whole area of this window expose the color. Note
+        that this colorclass only takes a single color.
 
 Colors are in HTML hex format (#rrggbb), see the following example:
 
@@ -824,6 +817,8 @@ client.focused_inactive #333333 #5f676a #ffffff #484e50
 client.unfocused        #333333 #222222 #888888 #292d2e
 client.urgent           #2f343a #900000 #ffffff #900000
 client.placeholder      #000000 #0c0c0c #ffffff #000000
+
+client.background       #ffffff
 ---------------------------------------------------------
 
 Note that for the window decorations, the color around the child window is the
