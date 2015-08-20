@@ -119,7 +119,11 @@ static yajl_callbacks reply_callbacks = {
 };
 
 int main(int argc, char *argv[]) {
-    socket_path = getenv("I3SOCK");
+    char *env_socket_path = getenv("I3SOCK");
+    if (env_socket_path)
+        socket_path = sstrdup(env_socket_path);
+    else
+        socket_path = NULL;
     int o, option_index = 0;
     uint32_t message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
     char *payload = NULL;
