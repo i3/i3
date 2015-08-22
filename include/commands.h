@@ -205,6 +205,12 @@ void cmd_focus(I3_CMD);
 void cmd_fullscreen(I3_CMD, char *action, char *fullscreen_mode);
 
 /**
+ * Implementation of 'sticky enable|disable|toggle'.
+ *
+ */
+void cmd_sticky(I3_CMD, char *action);
+
+/**
  * Implementation of 'move <direction> [<pixels> [px]]'.
  *
  */

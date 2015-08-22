@@ -1834,6 +1834,27 @@ bindsym $mod+c move absolute position center
 bindsym $mod+m move position mouse
 -------------------------------------------------------
 
+=== Sticky floating windows
+
+If you want a window to stick to the glass, i.e., have it stay on screen even
+if you switch to another workspace, you can use the +sticky+ command. For
+example, this can be useful for notepads, a media player or a video chat
+window.
+
+Note that while any window can be made sticky through this command, it will
+only take effect if the window is floating.
+
+*Syntax*:
+----------------------------
+sticky enable|disable|toggle
+----------------------------
+
+*Examples*:
+------------------------------------------------------
+# make a terminal sticky that was started as a notepad
+for_window [instance=notepad] sticky enable
+------------------------------------------------------
+
 === Changing (named) workspaces/moving to workspaces
 
 To change to a specific workspace, use the +workspace+ command, followed by the

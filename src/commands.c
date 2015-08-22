@@ -1570,6 +1570,37 @@ void cmd_fullscreen(I3_CMD, char *action, char *fullscreen_mode) {
 }
 
 /*
+ * Implementation of 'sticky enable|disable|toggle'.
+ *
+ */
+void cmd_sticky(I3_CMD, char *action) {
+    DLOG("%s sticky on window\n", action);
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        if (current->con->window == NULL) {
+            ELOG("only containers holding a window can be made sticky, skipping con = %p\n", current->con);
+            continue;
+        }
+        DLOG("setting sticky for container = %p / %s\n", current->con, current->con->name);
+
+        bool sticky = false;
+        if (strcmp(action, "enable") == 0)
+            sticky = true;
+        else if (strcmp(action, "disable") == 0)
+            sticky = false;
+        else if (strcmp(action, "toggle") == 0)
+            sticky = !current->con->sticky;
+
+        current->con->sticky = sticky;
+        ewmh_update_sticky(current->con->window->id, sticky);
+    }
+
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'move <direction> [<pixels> [px]]'.
  *
  */
