@@ -997,6 +997,7 @@ bool parse_file(const char *f, bool use_nagbar) {
     yajl_gen_free(config_output->json_gen);
 
     check_for_duplicate_bindings(context);
+    reorder_bindings();
 
     if (use_nagbar && (context->has_errors || context->has_warnings)) {
         ELOG("FYI: You are using i3 version %s\n", i3_version);

@@ -556,6 +556,37 @@ int main(int argc, char *argv[]) {
                               0xff,
                               0xff,
                               NULL);
+
+        /* Setting both, XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE and
+         * XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED, will lead to the
+         * X server sending us the full XKB state in KeyPress and KeyRelease:
+         * https://sources.debian.net/src/xorg-server/2:1.17.2-1.1/xkb/xkbEvents.c/?hl=927#L927
+         */
+        xcb_xkb_per_client_flags_reply_t *pcf_reply;
+        /* The last three parameters are unset because they are only relevant
+         * when using a feature called “automatic reset of boolean controls”:
+         * http://www.x.org/releases/X11R7.7/doc/kbproto/xkbproto.html#Automatic_Reset_of_Boolean_Controls
+         * */
+        pcf_reply = xcb_xkb_per_client_flags_reply(
+            conn,
+            xcb_xkb_per_client_flags(
+                conn,
+                XCB_XKB_ID_USE_CORE_KBD,
+                XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE | XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED,
+                XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE | XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED,
+                0 /* uint32_t ctrlsToChange */,
+                0 /* uint32_t autoCtrls */,
+                0 /* uint32_t autoCtrlsValues */),
+            NULL);
+        if (pcf_reply == NULL ||
+            !(pcf_reply->value & XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE)) {
+            ELOG("Could not set XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE\n");
+        }
+        if (pcf_reply == NULL ||
+            !(pcf_reply->value & XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED)) {
+            ELOG("Could not set XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED\n");
+        }
+        free(pcf_reply);
         xkb_base = extreply->first_event;
     }
 
@@ -569,8 +600,11 @@ int main(int argc, char *argv[]) {
 
     xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
 
+    if (!load_keymap())
+        die("Could not load keymap\n");
+
     translate_keysyms();
-    grab_all_keys(conn, false);
+    grab_all_keys(conn);
 
     bool needs_tree_init = true;
     if (layout_path) {

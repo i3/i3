@@ -31,7 +31,7 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
  * Grab the bound keys (tell X to send us keypress events for those keycodes)
  *
  */
-void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);
+void grab_all_keys(xcb_connection_t *conn);
 
 /**
  * Returns a pointer to the Binding that matches the given xcb event or NULL if
@@ -51,6 +51,21 @@ void translate_keysyms(void);
  *
  */
 void switch_mode(const char *new_mode);
+
+/**
+ * Reorders bindings by event_state_mask descendingly so that get_binding()
+ * correctly matches more specific bindings before more generic bindings. Take
+ * the following binding configuration as an example:
+ *
+ *   bindsym n nop lower-case n pressed
+ *   bindsym Shift+n nop upper-case n pressed
+ *
+ * Without reordering, the first binding’s event_state_mask of 0x0 would match
+ * the actual event_stat_mask of 0x1 and hence trigger instead of the second
+ * keybinding.
+ *
+ */
+void reorder_bindings(void);
 
 /**
  * Checks for duplicate key bindings (the same keycode or keysym is configured
@@ -74,3 +89,9 @@ void binding_free(Binding *bind);
  *
  */
 CommandResult *run_binding(Binding *bind, Con *con);
+
+/**
+ * Loads the XKB keymap from the X11 server and feeds it to xkbcommon.
+ *
+ */
+bool load_keymap(void);

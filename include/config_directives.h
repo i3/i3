@@ -12,10 +12,10 @@
 #include "config_parser.h"
 
 /**
- * A utility function to convert a string of modifiers to the corresponding bit
- * mask.
+ * A utility function to convert a string containing the group and modifiers to
+ * the corresponding bit mask.
  */
-uint32_t modifiers_from_str(const char *str);
+i3_event_state_mask_t event_state_from_str(const char *str);
 
 /** The beginning of the prototype for every cfg_ function. */
 #define I3_CFG Match *current_match, struct ConfigResultIR *result

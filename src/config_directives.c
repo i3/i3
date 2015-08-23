@@ -161,32 +161,40 @@ static bool eval_boolstr(const char *str) {
 }
 
 /*
- * A utility function to convert a string of modifiers to the corresponding bit
- * mask.
+ * A utility function to convert a string containing the group and modifiers to
+ * the corresponding bit mask.
  */
-uint32_t modifiers_from_str(const char *str) {
+i3_event_state_mask_t event_state_from_str(const char *str) {
     /* It might be better to use strtok() here, but the simpler strstr() should
      * do for now. */
-    uint32_t result = 0;
+    i3_event_state_mask_t result = 0;
     if (str == NULL)
         return result;
     if (strstr(str, "Mod1") != NULL)
-        result |= BIND_MOD1;
+        result |= XCB_KEY_BUT_MASK_MOD_1;
     if (strstr(str, "Mod2") != NULL)
-        result |= BIND_MOD2;
+        result |= XCB_KEY_BUT_MASK_MOD_2;
     if (strstr(str, "Mod3") != NULL)
-        result |= BIND_MOD3;
+        result |= XCB_KEY_BUT_MASK_MOD_3;
     if (strstr(str, "Mod4") != NULL)
-        result |= BIND_MOD4;
+        result |= XCB_KEY_BUT_MASK_MOD_4;
     if (strstr(str, "Mod5") != NULL)
-        result |= BIND_MOD5;
+        result |= XCB_KEY_BUT_MASK_MOD_5;
     if (strstr(str, "Control") != NULL ||
         strstr(str, "Ctrl") != NULL)
-        result |= BIND_CONTROL;
+        result |= XCB_KEY_BUT_MASK_CONTROL;
     if (strstr(str, "Shift") != NULL)
-        result |= BIND_SHIFT;
-    if (strstr(str, "Mode_switch") != NULL)
-        result |= BIND_MODE_SWITCH;
+        result |= XCB_KEY_BUT_MASK_SHIFT;
+
+    if (strstr(str, "Group1") != NULL)
+        result |= (I3_XKB_GROUP_MASK_1 << 16);
+    if (strstr(str, "Group2") != NULL ||
+        strstr(str, "Mode_switch") != NULL)
+        result |= (I3_XKB_GROUP_MASK_2 << 16);
+    if (strstr(str, "Group3") != NULL)
+        result |= (I3_XKB_GROUP_MASK_3 << 16);
+    if (strstr(str, "Group4") != NULL)
+        result |= (I3_XKB_GROUP_MASK_4 << 16);
     return result;
 }
 
@@ -260,7 +268,7 @@ CFGFUN(floating_maximum_size, const long width, const long height) {
 }
 
 CFGFUN(floating_modifier, const char *modifiers) {
-    config.floating_modifier = modifiers_from_str(modifiers);
+    config.floating_modifier = event_state_from_str(modifiers);
 }
 
 CFGFUN(default_orientation, const char *orientation) {
