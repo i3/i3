@@ -450,6 +450,45 @@ static void _workspace_show(Con *workspace) {
 
     /* Update the EWMH hints */
     ewmh_update_current_desktop();
+
+    /* Floating containers which are sticky need to be moved to the new workspace,
+     * but only on the same output. */
+    if (current != NULL && old_output == new_output) {
+        Con *prev = focused;
+        Con *child;
+
+        /* We can't simply iterate over the floating containers since moving a
+         * sticky container to the target workspace will modify that list.
+         * Instead, we first count the number of sticky containers, then memorize
+         * all of them and finally loop over that list to move them to the new
+         * workspace. */
+        int num_sticky = 0;
+        TAILQ_FOREACH(child, &(current->floating_head), floating_windows) {
+            if (con_is_sticky(child))
+                num_sticky++;
+        }
+
+        Con *sticky_cons[num_sticky];
+        int ctr = 0;
+        TAILQ_FOREACH(child, &(current->floating_head), floating_windows) {
+            if (con_is_sticky(child))
+                sticky_cons[ctr++] = child;
+        }
+
+        for (int i = 0; i < num_sticky; i++) {
+            con_move_to_workspace(sticky_cons[i], workspace, true, false);
+
+            /* We want sticky containers to be at the end of the focus head. */
+            TAILQ_REMOVE(&(workspace->focus_head), sticky_cons[i], focused);
+            TAILQ_INSERT_TAIL(&(workspace->focus_head), sticky_cons[i], focused);
+        }
+
+        /* Focus the correct container since moving the sticky containers
+         * changed the focus. However, if no container was focused before,
+         * we can leave the focus at the sticky container. */
+        if (prev != croot)
+            con_focus(prev);
+    }
 }
 
 /*

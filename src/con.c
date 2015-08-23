@@ -285,6 +285,23 @@ bool con_is_hidden(Con *con) {
 }
 
 /*
+ * Returns whether the container or any of its children is sticky.
+ *
+ */
+bool con_is_sticky(Con *con) {
+    if (con->sticky)
+        return true;
+
+    Con *child;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        if (con_is_sticky(child))
+            return true;
+    }
+
+    return false;
+}
+
+/*
  * Returns true if this node accepts a window (if the node swallows windows,
  * it might already have swallowed enough and cannot hold any more).
  *

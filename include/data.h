@@ -603,6 +603,12 @@ struct Con {
     TAILQ_HEAD(swallow_head, Match) swallow_head;
 
     fullscreen_mode_t fullscreen_mode;
+
+    /* Whether this window should stick to the glass. This corresponds to
+     * the _NET_WM_STATE_STICKY atom and will only be respected if the
+     * window is floating. */
+    bool sticky;
+
     /* layout is the layout of this container: one of split[v|h], stacked or
      * tabbed. Special containers in the tree (above workspaces) have special
      * layouts like dockarea or output.

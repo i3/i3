@@ -56,6 +56,12 @@ bool con_is_split(Con *con);
 bool con_is_hidden(Con *con);
 
 /**
+ * Returns whether the container or any of its children is sticky.
+ *
+ */
+bool con_is_sticky(Con *con);
+
+/**
  * Returns true if this node has regular or floating children.
  *
  */

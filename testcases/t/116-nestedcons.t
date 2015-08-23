@@ -47,6 +47,7 @@ my $ignore = \"";
 
 my $expected = {
     fullscreen_mode => 0,
+    sticky => $ignore,
     nodes => $ignore,
     window => undef,
     name => 'root',
