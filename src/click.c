@@ -229,7 +229,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
 
     /* get the floating con */
     Con *floatingcon = con_inside_floating(con);
-    const bool proportional = (event->state & BIND_SHIFT);
+    const bool proportional = (event->state & XCB_KEY_BUT_MASK_SHIFT) == XCB_KEY_BUT_MASK_SHIFT;
     const bool in_stacked = (con->parent->layout == L_STACKED || con->parent->layout == L_TABBED);
 
     /* 1: see if the user scrolled on the decoration of a stacked/tabbed con */

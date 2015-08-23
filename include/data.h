@@ -74,18 +74,6 @@ typedef enum { ADJ_NONE = 0,
                ADJ_UPPER_SCREEN_EDGE = (1 << 2),
                ADJ_LOWER_SCREEN_EDGE = (1 << 4) } adjacent_t;
 
-enum {
-    BIND_NONE = 0,
-    BIND_SHIFT = XCB_MOD_MASK_SHIFT,     /* (1 << 0) */
-    BIND_CONTROL = XCB_MOD_MASK_CONTROL, /* (1 << 2) */
-    BIND_MOD1 = XCB_MOD_MASK_1,          /* (1 << 3) */
-    BIND_MOD2 = XCB_MOD_MASK_2,          /* (1 << 4) */
-    BIND_MOD3 = XCB_MOD_MASK_3,          /* (1 << 5) */
-    BIND_MOD4 = XCB_MOD_MASK_4,          /* (1 << 6) */
-    BIND_MOD5 = XCB_MOD_MASK_5,          /* (1 << 7) */
-    BIND_MODE_SWITCH = (1 << 8)
-};
-
 /**
  * Container layouts. See Con::layout.
  */
@@ -106,6 +94,25 @@ typedef enum {
     B_KEYBOARD = 0,
     B_MOUSE = 1
 } input_type_t;
+
+/**
+ * Bitmask for matching XCB_XKB_GROUP_1 to XCB_XKB_GROUP_4.
+ */
+typedef enum {
+    I3_XKB_GROUP_MASK_ANY = 0,
+    I3_XKB_GROUP_MASK_1 = (1 << 0),
+    I3_XKB_GROUP_MASK_2 = (1 << 1),
+    I3_XKB_GROUP_MASK_3 = (1 << 2),
+    I3_XKB_GROUP_MASK_4 = (1 << 3)
+} i3_xkb_group_mask_t;
+
+/**
+ * The lower 16 bits contain a xcb_key_but_mask_t, the higher 16 bits contain
+ * an i3_xkb_group_mask_t. This type is necessary for the fallback logic to
+ * work when handling XKB groups (see ticket #1775) and makes the code which
+ * locates keybindings upon KeyPress/KeyRelease events simpler.
+ */
+typedef uint32_t i3_event_state_mask_t;
 
 /**
  * Mouse pointer warping modes.
@@ -269,8 +276,10 @@ struct Binding {
     /** Keycode to bind */
     uint32_t keycode;
 
-    /** Bitmask consisting of BIND_MOD_1, BIND_MODE_SWITCH, … */
-    uint32_t mods;
+    /** Bitmask which is applied against event->state for KeyPress and
+     * KeyRelease events to determine whether this binding applies to the
+     * current state. */
+    i3_event_state_mask_t event_state_mask;
 
     /** Symbol the user specified in configfile, if any. This needs to be
      * stored with the binding to be able to re-convert it into a keycode

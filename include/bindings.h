@@ -31,7 +31,7 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
  * Grab the bound keys (tell X to send us keypress events for those keycodes)
  *
  */
-void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);
+void grab_all_keys(xcb_connection_t *conn);
 
 /**
  * Returns a pointer to the Binding that matches the given xcb event or NULL if
@@ -74,3 +74,9 @@ void binding_free(Binding *bind);
  *
  */
 CommandResult *run_binding(Binding *bind, Con *con);
+
+/**
+ * Loads the XKB keymap from the X11 server and feeds it to xkbcommon.
+ *
+ */
+bool load_keymap(void);
