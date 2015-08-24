@@ -153,10 +153,11 @@ length limitations) or flood kicks.
 
 == Debugging i3bar
 
-To debug i3bar problems, add +verbose yes+ to all +bar {}+ blocks in your i3 config
-and then restart all i3bar instances like this:
+To debug i3bar problems, add +verbose yes+ to all +bar {}+ blocks in your i3
+config, reload your config and then restart all i3bar instances like this:
 
 ---------------------------------------------------------------------
+$ i3 reload
 $ killall i3bar
 $ for c in $(i3-msg -t get_bar_config | python -c \
       'import json,sys;print("\n".join(json.load(sys.stdin)))'); do \
