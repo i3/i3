@@ -368,8 +368,8 @@ after the keys have been released.
 
 *Syntax*:
 ----------------------------------
-bindsym [--release] [<Modifiers>+]<keysym> command
-bindcode [--release] [<Modifiers>+]<keycode> command
+bindsym [--release] [<Group>+][<Modifiers>+]<keysym> command
+bindcode [--release] [<Group>+][<Modifiers>+]<keycode> command
 ----------------------------------
 
 *Examples*:
@@ -395,12 +395,13 @@ Available Modifiers:
 Mod1-Mod5, Shift, Control::
 Standard modifiers, see +xmodmap(1)+
 
-Mode_switch::
-Unlike other window managers, i3 can use Mode_switch as a modifier. This allows
-you to remap capslock (for example) to Mode_switch and use it for both: typing
-umlauts or special characters 'and' having some comfortably reachable key
-bindings. For example, when typing, capslock+1 or capslock+2 for switching
-workspaces is totally convenient. Try it :-).
+Group1, Group2, Group3, Group4::
+When using multiple keyboard layouts (e.g. with `setxkbmap -layout us,ru`), you
+can specify in which XKB group (also called “layout”) a keybinding should be
+active. By default, keybindings are translated in Group1 and are active in all
+groups. If you want to override keybindings in one of your layouts, specify the
+corresponding group. For backwards compatibility, the group “Mode_switch” is an
+alias for Group2.
 
 [[mousebindings]]
 

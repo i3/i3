@@ -16,7 +16,6 @@
 #include <float.h>
 #include <sys/time.h>
 #include <xcb/randr.h>
-#include <X11/XKBlib.h>
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-monitor.h>
 
@@ -264,7 +263,7 @@ static void handle_mapping_notify(xcb_mapping_notify_event_t *event) {
 
     ungrab_all_keys(conn);
     translate_keysyms();
-    grab_all_keys(conn, false);
+    grab_all_keys(conn);
 
     return;
 }
@@ -1338,7 +1337,9 @@ void handle_event(int type, xcb_generic_event_t *event) {
             keysyms = xcb_key_symbols_alloc(conn);
             ungrab_all_keys(conn);
             translate_keysyms();
-            grab_all_keys(conn, false);
+            grab_all_keys(conn);
+            if (((xcb_xkb_new_keyboard_notify_event_t *)event)->changed & XCB_XKB_NKN_DETAIL_KEYCODES)
+                (void)load_keymap();
         } else if (state->xkbType == XCB_XKB_MAP_NOTIFY) {
             if (event_is_ignored(event->sequence, type)) {
                 DLOG("Ignoring map notify event for sequence %d.\n", state->sequence);
@@ -1349,22 +1350,16 @@ void handle_event(int type, xcb_generic_event_t *event) {
                 keysyms = xcb_key_symbols_alloc(conn);
                 ungrab_all_keys(conn);
                 translate_keysyms();
-                grab_all_keys(conn, false);
+                grab_all_keys(conn);
+                (void)load_keymap();
             }
         } else if (state->xkbType == XCB_XKB_STATE_NOTIFY) {
             DLOG("xkb state group = %d\n", state->group);
-
-            /* See The XKB Extension: Library Specification, section 14.1 */
-            /* We check if the current group (each group contains
-             * two levels) has been changed. Mode_switch activates
-             * group XCB_XKB_GROUP_2 */
             if (xkb_current_group == state->group)
                 return;
             xkb_current_group = state->group;
-            DLOG("Mode_switch %s\n", (xkb_current_group == XCB_XKB_GROUP_1 ? "disabled" : "enabled"));
             ungrab_all_keys(conn);
-            translate_keysyms();
-            grab_all_keys(conn, (xkb_current_group == XCB_XKB_GROUP_2));
+            grab_all_keys(conn);
         }
 
         return;

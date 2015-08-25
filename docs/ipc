@@ -773,8 +773,8 @@ The +binding (object)+ field contains details about the binding that was run:
 
 command (string)::
 	The i3 command that is configured to run for this binding.
-mods (array of strings)::
-	The modifier keys that were configured with this binding.
+event_state_mask (array of strings)::
+	The group and modifier keys that were configured with this binding.
 input_code (integer)::
 	If the binding was configured with +bindcode+, this will be the key code
 	that was given for the binding. If the binding is a mouse binding, it will be
@@ -792,7 +792,7 @@ input_type (string)::
  "change": "run",
  "binding": {
   "command": "nop",
-  "mods": [
+  "event_state_mask": [
     "shift",
     "ctrl"
   ],
