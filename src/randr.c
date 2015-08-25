@@ -555,12 +555,6 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         return;
     }
 
-    if (output->connection == XCB_RANDR_CONNECTION_DISCONNECTED) {
-        DLOG("Disabling output %s: it is disconnected\n", new->name);
-        new->to_be_disabled = true;
-        return;
-    }
-
     bool updated = update_if_necessary(&(new->rect.x), crtc->x) |
                    update_if_necessary(&(new->rect.y), crtc->y) |
                    update_if_necessary(&(new->rect.width), crtc->width) |
