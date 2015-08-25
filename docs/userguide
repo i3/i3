@@ -1371,6 +1371,11 @@ Note that you might not have a primary output configured yet. To do so, run:
 xrandr --output <output> --primary
 -------------------------
 
+Note that when you use multiple bar configuration blocks, either specify
+`tray_output primary` in all of them or explicitly specify `tray_output none`
+in bars which should not display the tray, otherwise the different instances
+might race each other in trying to display tray icons.
+
 === Tray padding
 
 The tray is shown on the right-hand side of the bar. By default, a padding of 2
