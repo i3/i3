@@ -2120,6 +2120,12 @@ and the following placeholders which will be replaced:
 
 +%title+::
     The X11 window title (_NET_WM_NAME or WM_NAME as fallback).
++%class+:
+    The X11 window class (second part of WM_CLASS). This corresponds to the
+    +class+ criterion, see <<command_criteria>>.
++%instance+:
+    The X11 window instance (first part of WM_CLASS). This corresponds to the
+    +instance+ criterion, see <<command_criteria>>.
 
 Using the <<for_window>> directive, you can set the title format for any window
 based on <<command_criteria>>.
