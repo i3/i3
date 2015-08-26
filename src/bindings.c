@@ -434,7 +434,7 @@ static void reorder_bindings_of_mode(struct Mode *mode) {
     /* 20 bits are in use in an i3_event_state_mask_t. */
     for (int n = 19; n >= 0; n--) {
         Binding *current;
-        for (current = TAILQ_FIRST(mode->bindings); current != TAILQ_END(mode->bindings); ) {
+        for (current = TAILQ_FIRST(mode->bindings); current != TAILQ_END(mode->bindings);) {
             /* Advance |current| so that we can use TAILQ_REMOVE safely. */
             Binding *bind = current;
             current = TAILQ_NEXT(current, bindings);
@@ -446,7 +446,7 @@ static void reorder_bindings_of_mode(struct Mode *mode) {
     }
     /* Move over the bindings with event_state_mask == 0x0. */
     Binding *current;
-    for (current = TAILQ_FIRST(mode->bindings); current != TAILQ_END(mode->bindings); ) {
+    for (current = TAILQ_FIRST(mode->bindings); current != TAILQ_END(mode->bindings);) {
         /* Advance |current| so that we can use TAILQ_REMOVE safely. */
         Binding *bind = current;
         current = TAILQ_NEXT(current, bindings);
