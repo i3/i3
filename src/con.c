@@ -741,7 +741,7 @@ void con_disable_fullscreen(Con *con) {
     con_set_fullscreen_mode(con, CF_NONE);
 }
 
-static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fix_coordinates, bool dont_warp) {
+static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fix_coordinates, bool dont_warp, bool ignore_focus) {
     Con *orig_target = target;
 
     /* Prevent moving if this would violate the fullscreen focus restrictions. */
@@ -763,7 +763,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
         Con *child;
         while (!TAILQ_EMPTY(&(source_ws->floating_head))) {
             child = TAILQ_FIRST(&(source_ws->floating_head));
-            con_move_to_workspace(child, target_ws, true, true);
+            con_move_to_workspace(child, target_ws, true, true, false);
         }
 
         /* If there are no non-floating children, ignore the workspace. */
@@ -823,7 +823,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
         /* If moving to a visible workspace, call show so it can be considered
          * focused. Must do before attaching because workspace_show checks to see
          * if focused container is in its area. */
-        if (workspace_is_visible(target_ws)) {
+        if (!ignore_focus && workspace_is_visible(target_ws)) {
             workspace_show(target_ws);
 
             /* Don’t warp if told so (when dragging floating windows with the
@@ -858,8 +858,9 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
      * workspace, that is, don’t move focus away if the target workspace is
      * invisible.
      * We don’t focus the con for i3 pseudo workspaces like __i3_scratch and
-     * we don’t focus when there is a fullscreen con on that workspace. */
-    if (!con_is_internal(target_ws) && !fullscreen) {
+     * we don’t focus when there is a fullscreen con on that workspace. We
+     * also don't do it if the caller requested to ignore focus. */
+    if (!ignore_focus && !con_is_internal(target_ws) && !fullscreen) {
         /* We need to save the focused workspace on the output in case the
          * new workspace is hidden and it's necessary to immediately switch
          * back to the originally-focused workspace. */
@@ -877,11 +878,12 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
     /* Descend focus stack in case focus_next is a workspace which can
      * occur if we move to the same workspace.  Also show current workspace
      * to ensure it is focused. */
-    workspace_show(current_ws);
+    if (!ignore_focus)
+        workspace_show(current_ws);
 
     /* Set focus only if con was on current workspace before moving.
      * Otherwise we would give focus to some window on different workspace. */
-    if (source_ws == current_ws)
+    if (!ignore_focus && source_ws == current_ws)
         con_focus(con_descend_focused(focus_next));
 
     /* 8. If anything within the container is associated with a startup sequence,
@@ -942,7 +944,7 @@ bool con_move_to_mark(Con *con, const char *mark) {
     /* For floating target containers, we just send the window to the same workspace. */
     if (con_is_floating(target)) {
         DLOG("target container is floating, moving container to target's workspace.\n");
-        con_move_to_workspace(con, con_get_workspace(target), true, false);
+        con_move_to_workspace(con, con_get_workspace(target), true, false, false);
         return true;
     }
 
@@ -959,7 +961,7 @@ bool con_move_to_mark(Con *con, const char *mark) {
         return false;
     }
 
-    return _con_move_to_con(con, target, false, true, false);
+    return _con_move_to_con(con, target, false, true, false, false);
 }
 
 /*
@@ -976,10 +978,13 @@ bool con_move_to_mark(Con *con, const char *mark) {
  * The dont_warp flag disables pointer warping and will be set when this
  * function is called while dragging a floating window.
  *
+ * If ignore_focus is set, the container will be moved without modifying focus
+ * at all.
+ *
  * TODO: is there a better place for this function?
  *
  */
-void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp) {
+void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp, bool ignore_focus) {
     assert(workspace->type == CT_WORKSPACE);
 
     Con *source_ws = con_get_workspace(con);
@@ -989,7 +994,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     }
 
     Con *target = con_descend_focused(workspace);
-    _con_move_to_con(con, target, true, fix_coordinates, dont_warp);
+    _con_move_to_con(con, target, true, fix_coordinates, dont_warp, ignore_focus);
 }
 
 /*

@@ -78,5 +78,19 @@ is(get_focused($ws), $focused, 'the tiling container has focus');
 cmd '[class="findme"] kill';
 
 ###############################################################################
+# 5: Given a floating container on a non-visible workspace, when the window
+#    is made sticky, then the window immediately jumps to the currently
+#    visible workspace.
+###############################################################################
+fresh_workspace;
+open_floating_window(wm_class => 'findme');
+cmd 'mark sticky';
+$ws = fresh_workspace;
+cmd '[con_mark=sticky] sticky enable';
+
+is(@{get_ws($ws)->{floating_nodes}}, 1, 'the sticky window jumps to the front');
+cmd '[class="findme"] kill';
+
+###############################################################################
 
 done_testing;

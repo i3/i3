@@ -218,10 +218,14 @@ void con_disable_fullscreen(Con *con);
  * The dont_warp flag disables pointer warping and will be set when this
  * function is called while dragging a floating window.
  *
+ * If ignore_focus is set, the container will be moved without modifying focus
+ * at all.
+ *
  * TODO: is there a better place for this function?
  *
  */
-void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp);
+void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates,
+                           bool dont_warp, bool ignore_focus);
 
 /**
  * Moves the given container to the given mark.

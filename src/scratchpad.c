@@ -60,7 +60,7 @@ void scratchpad_move(Con *con) {
 
     /* 2: Send the window to the __i3_scratch workspace, mainting its
      * coordinates and not warping the pointer. */
-    con_move_to_workspace(con, __i3_scratch, true, true);
+    con_move_to_workspace(con, __i3_scratch, true, true, false);
 
     /* 3: If this is the first time this window is used as a scratchpad, we set
      * the scratchpad_state to SCRATCHPAD_FRESH. The window will then be
@@ -142,7 +142,7 @@ void scratchpad_show(Con *con) {
             floating->scratchpad_state != SCRATCHPAD_NONE) {
             DLOG("Found a visible scratchpad window on another workspace,\n");
             DLOG("moving it to this workspace: con = %p\n", walk_con);
-            con_move_to_workspace(walk_con, focused_ws, true, false);
+            con_move_to_workspace(walk_con, focused_ws, true, false, false);
             return;
         }
     }
@@ -189,7 +189,7 @@ void scratchpad_show(Con *con) {
     }
 
     /* 1: Move the window from __i3_scratch to the current workspace. */
-    con_move_to_workspace(con, active, true, false);
+    con_move_to_workspace(con, active, true, false, false);
 
     /* 2: Adjust the size if this window was not adjusted yet. */
     if (con->scratchpad_state == SCRATCHPAD_FRESH) {
