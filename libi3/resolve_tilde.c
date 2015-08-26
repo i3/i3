@@ -8,7 +8,6 @@
 
 #include "libi3.h"
 #include <err.h>
-#include <glob.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -19,27 +18,21 @@
  *
  */
 char *resolve_tilde(const char *path) {
-    static glob_t globbuf;
-    char *head, *tail, *result;
+    char *home_dir = getenv("HOME");
+    char *result, *tilde, *npath;
 
-    tail = strchr(path, '/');
-    head = sstrndup(path, tail ? (size_t)(tail - path) : strlen(path));
-
-    int res = glob(head, GLOB_TILDE, NULL, &globbuf);
-    free(head);
-    /* no match, or many wildcard matches are bad */
-    if (res == GLOB_NOMATCH || globbuf.gl_pathc != 1)
-        result = sstrdup(path);
-    else if (res != 0) {
-        err(EXIT_FAILURE, "glob() failed");
+    tilde = strchr(path, '~');
+    if (tilde == NULL) {
+        return sstrdup(path);
     } else {
-        head = globbuf.gl_pathv[0];
-        result = scalloc(strlen(head) + (tail ? strlen(tail) : 0) + 1, 1);
-        strncpy(result, head, strlen(head));
-        if (tail)
-            strncat(result, tail, strlen(tail));
+        result = sstrndup(path, (size_t)(tilde - path));
+        result = strcat(result, home_dir);
     }
-    globfree(&globbuf);
 
-    return result;
+    npath = tilde + 1;
+    if (strchr(npath, '~')) {
+        return sstrdup(path);
+    }
+
+    return strcat(result, npath);
 }
