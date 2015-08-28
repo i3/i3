@@ -90,8 +90,12 @@ bool match_matches_window(Match *match, i3Window *window) {
     LOG("Checking window 0x%08x (class %s)\n", window->id, window->class_class);
 
     if (match->class != NULL) {
-        if (window->class_class != NULL &&
-            regex_matches(match->class, window->class_class)) {
+        if (window->class_class == NULL)
+            return false;
+        if (strcmp(match->class->pattern, "__focused__") == 0 &&
+            strcmp(window->class_class, focused->window->class_class) == 0) {
+            LOG("window class matches focused window\n");
+        } else if (regex_matches(match->class, window->class_class)) {
             LOG("window class matches (%s)\n", window->class_class);
         } else {
             return false;
@@ -99,8 +103,12 @@ bool match_matches_window(Match *match, i3Window *window) {
     }
 
     if (match->instance != NULL) {
-        if (window->class_instance != NULL &&
-            regex_matches(match->instance, window->class_instance)) {
+        if (window->class_instance == NULL)
+            return false;
+        if (strcmp(match->instance->pattern, "__focused__") == 0 &&
+            strcmp(window->class_instance, focused->window->class_instance) == 0) {
+            LOG("window instance matches focused window\n");
+        } else if (regex_matches(match->instance, window->class_instance)) {
             LOG("window instance matches (%s)\n", window->class_instance);
         } else {
             return false;
@@ -117,17 +125,27 @@ bool match_matches_window(Match *match, i3Window *window) {
     }
 
     if (match->title != NULL) {
-        if (window->name != NULL &&
-            regex_matches(match->title, i3string_as_utf8(window->name))) {
-            LOG("title matches (%s)\n", i3string_as_utf8(window->name));
+        if (window->name == NULL)
+            return false;
+
+        const char *title = i3string_as_utf8(window->name);
+        if (strcmp(match->title->pattern, "__focused__") == 0 &&
+            strcmp(title, i3string_as_utf8(focused->window->name)) == 0) {
+            LOG("window title matches focused window\n");
+        } else if (regex_matches(match->title, title)) {
+            LOG("title matches (%s)\n", title);
         } else {
             return false;
         }
     }
 
     if (match->window_role != NULL) {
-        if (window->role != NULL &&
-            regex_matches(match->window_role, window->role)) {
+        if (window->role == NULL)
+            return false;
+        if (strcmp(match->window_role->pattern, "__focused__") == 0 &&
+            strcmp(window->role, focused->window->role) == 0) {
+            LOG("window role matches focused window\n");
+        } else if (regex_matches(match->window_role, window->role)) {
             LOG("window_role matches (%s)\n", window->role);
         } else {
             return false;
@@ -182,7 +200,10 @@ bool match_matches_window(Match *match, i3Window *window) {
         if (ws == NULL)
             return false;
 
-        if (regex_matches(match->workspace, ws->name)) {
+        if (strcmp(match->workspace->pattern, "__focused__") == 0 &&
+            strcmp(ws->name, con_get_workspace(focused)->name) == 0) {
+            LOG("workspace matches focused workspace\n");
+        } else if (regex_matches(match->workspace, ws->name)) {
             LOG("workspace matches (%s)\n", ws->name);
         } else {
             return false;
