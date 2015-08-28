@@ -288,7 +288,7 @@ static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key,
         const xkb_layout_index_t layout = xkb_state_key_get_layout(resolving->xkb_state, key);
         if (layout == XKB_LAYOUT_INVALID)
             return;
-        if (xkb_state_key_get_level(resolving->xkb_state, key, layout) != 1)
+        if (xkb_state_key_get_level(resolving->xkb_state, key, layout) > 1)
             return;
         sym = xkb_state_key_get_one_sym(resolving->xkb_state_no_shift, key);
         if (sym != resolving->keysym)
@@ -367,7 +367,7 @@ void translate_keysyms(void) {
 
         (void)xkb_state_update_mask(
             dummy_state_no_shift,
-            (bind->event_state_mask & 0x1FFF) & ~XCB_KEY_BUT_MASK_SHIFT /* xkb_mod_mask_t base_mods, */,
+            (bind->event_state_mask & 0x1FFF) ^ XCB_KEY_BUT_MASK_SHIFT /* xkb_mod_mask_t base_mods, */,
             0 /* xkb_mod_mask_t latched_mods, */,
             0 /* xkb_mod_mask_t locked_mods, */,
             0 /* xkb_layout_index_t base_group, */,
