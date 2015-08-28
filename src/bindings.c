@@ -428,32 +428,41 @@ void switch_mode(const char *new_mode) {
     ELOG("ERROR: Mode not found\n");
 }
 
+static int reorder_binding_cmp(const void *a, const void *b) {
+    Binding *first = *((Binding **)a);
+    Binding *second = *((Binding **)b);
+    if (first->event_state_mask < second->event_state_mask) {
+        return 1;
+    } else if (first->event_state_mask == second->event_state_mask) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 static void reorder_bindings_of_mode(struct Mode *mode) {
+    /* Copy the bindings into an array, so that we can use qsort(3). */
+    int n = 0;
+    Binding *current;
+    TAILQ_FOREACH(current, mode->bindings, bindings) {
+        n++;
+    }
+    Binding **tmp = scalloc(n, sizeof(Binding *));
+    n = 0;
+    TAILQ_FOREACH(current, mode->bindings, bindings) {
+        tmp[n++] = current;
+    }
+
+    qsort(tmp, n, sizeof(Binding *), reorder_binding_cmp);
+
     struct bindings_head *reordered = scalloc(1, sizeof(struct bindings_head));
     TAILQ_INIT(reordered);
-    /* 20 bits are in use in an i3_event_state_mask_t. */
-    for (int n = 19; n >= 0; n--) {
-        Binding *current;
-        for (current = TAILQ_FIRST(mode->bindings); current != TAILQ_END(mode->bindings);) {
-            /* Advance |current| so that we can use TAILQ_REMOVE safely. */
-            Binding *bind = current;
-            current = TAILQ_NEXT(current, bindings);
-            if ((bind->event_state_mask & (1 << n)) == 0)
-                continue;
-            TAILQ_REMOVE(mode->bindings, bind, bindings);
-            TAILQ_INSERT_TAIL(reordered, bind, bindings);
-        }
+    for (int i = 0; i < n; i++) {
+        current = tmp[i];
+        TAILQ_REMOVE(mode->bindings, current, bindings);
+        TAILQ_INSERT_TAIL(reordered, current, bindings);
     }
-    /* Move over the bindings with event_state_mask == 0x0. */
-    Binding *current;
-    for (current = TAILQ_FIRST(mode->bindings); current != TAILQ_END(mode->bindings);) {
-        /* Advance |current| so that we can use TAILQ_REMOVE safely. */
-        Binding *bind = current;
-        current = TAILQ_NEXT(current, bindings);
-        assert(bind->event_state_mask == 0);
-        TAILQ_REMOVE(mode->bindings, bind, bindings);
-        TAILQ_INSERT_TAIL(reordered, bind, bindings);
-    }
+    free(tmp);
     assert(TAILQ_EMPTY(mode->bindings));
     /* Free the old bindings_head, which is now empty. */
     free(mode->bindings);
