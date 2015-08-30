@@ -46,6 +46,12 @@ void ewmh_update_desktop_viewport(void);
 void ewmh_update_active_window(xcb_window_t window);
 
 /**
+ * Updates _NET_WM_VISIBLE_NAME.
+ *
+ */
+void ewmh_update_visible_name(xcb_window_t window, const char *name);
+
+/**
  * Updates the _NET_CLIENT_LIST hint. Used for window listers.
  */
 void ewmh_update_client_list(xcb_window_t *list, int num_windows);
