@@ -409,6 +409,11 @@ struct Window {
 
     /** Depth of the window */
     uint16_t depth;
+
+    /* the wanted size of the window, used in combination with size
+     * increments (see below). */
+    int base_width;
+    int base_height;
 };
 
 /**
@@ -572,10 +577,6 @@ struct Con {
 
     /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
     double aspect_ratio;
-    /* the wanted size of the window, used in combination with size
-     * increments (see below). */
-    int base_width;
-    int base_height;
 
     /* the x11 border pixel attribute */
     int border_width;

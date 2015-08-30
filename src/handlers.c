@@ -960,10 +960,10 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
         base_height = size_hints.min_height;
     }
 
-    if (base_width != con->base_width ||
-        base_height != con->base_height) {
-        con->base_width = base_width;
-        con->base_height = base_height;
+    if (base_width != con->window->base_width ||
+        base_height != con->window->base_height) {
+        con->window->base_width = base_width;
+        con->window->base_height = base_height;
         DLOG("client's base_height changed to %d\n", base_height);
         DLOG("client's base_width changed to %d\n", base_width);
         changed = true;

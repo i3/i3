@@ -55,17 +55,17 @@ void floating_check_size(Con *floating_con) {
             border_rect.height += render_deco_height();
 
         if (focused_con->height_increment &&
-            floating_con->rect.height >= focused_con->base_height + border_rect.height) {
-            floating_con->rect.height -= focused_con->base_height + border_rect.height;
+            floating_con->rect.height >= focused_con->window->base_height + border_rect.height) {
+            floating_con->rect.height -= focused_con->window->base_height + border_rect.height;
             floating_con->rect.height -= floating_con->rect.height % focused_con->height_increment;
-            floating_con->rect.height += focused_con->base_height + border_rect.height;
+            floating_con->rect.height += focused_con->window->base_height + border_rect.height;
         }
 
         if (focused_con->width_increment &&
-            floating_con->rect.width >= focused_con->base_width + border_rect.width) {
-            floating_con->rect.width -= focused_con->base_width + border_rect.width;
+            floating_con->rect.width >= focused_con->window->base_width + border_rect.width) {
+            floating_con->rect.width -= focused_con->window->base_width + border_rect.width;
             floating_con->rect.width -= floating_con->rect.width % focused_con->width_increment;
-            floating_con->rect.width += focused_con->base_width + border_rect.width;
+            floating_con->rect.width += focused_con->window->base_width + border_rect.width;
         }
     }
 
