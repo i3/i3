@@ -602,7 +602,7 @@ static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floatin
     const i3Window *window = focused_con->window;
     if (window != NULL) {
         if (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0 ||
-                strcmp(direction, "height") == 0) {
+            strcmp(direction, "height") == 0) {
             if (px < 0)
                 px = (-px < window->height_increment) ? -window->height_increment : px;
             else

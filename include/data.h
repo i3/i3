@@ -418,6 +418,9 @@ struct Window {
     /* minimum increment size specified for the window (in pixels) */
     int width_increment;
     int height_increment;
+
+    /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
+    double aspect_ratio;
 };
 
 /**
@@ -578,9 +581,6 @@ struct Con {
     bool mark_changed;
 
     double percent;
-
-    /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
-    double aspect_ratio;
 
     /* the x11 border pixel attribute */
     int border_width;

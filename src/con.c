@@ -39,15 +39,16 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     Con *new = scalloc(1, sizeof(Con));
     new->on_remove_child = con_on_remove_child;
     TAILQ_INSERT_TAIL(&all_cons, new, all_cons);
-    new->aspect_ratio = 0.0;
     new->type = CT_CON;
     new->window = window;
     new->border_style = config.default_border;
     new->current_border_width = -1;
-    if (window)
+    if (window) {
         new->depth = window->depth;
-    else
+        new->window->aspect_ratio = 0.0;
+    } else {
         new->depth = XCB_COPY_FROM_PARENT;
+    }
     DLOG("opening window\n");
 
     TAILQ_INIT(&(new->floating_head));

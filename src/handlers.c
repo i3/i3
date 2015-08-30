@@ -999,8 +999,8 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
     } else
         goto render_and_return;
 
-    if (fabs(con->aspect_ratio - aspect_ratio) > DBL_EPSILON) {
-        con->aspect_ratio = aspect_ratio;
+    if (fabs(con->window->aspect_ratio - aspect_ratio) > DBL_EPSILON) {
+        con->window->aspect_ratio = aspect_ratio;
         changed = true;
     }
 
