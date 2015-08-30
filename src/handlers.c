@@ -932,13 +932,13 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
     bool changed = false;
     if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_RESIZE_INC)) {
         if (size_hints.width_inc > 0 && size_hints.width_inc < 0xFFFF)
-            if (con->width_increment != size_hints.width_inc) {
-                con->width_increment = size_hints.width_inc;
+            if (con->window->width_increment != size_hints.width_inc) {
+                con->window->width_increment = size_hints.width_inc;
                 changed = true;
             }
         if (size_hints.height_inc > 0 && size_hints.height_inc < 0xFFFF)
-            if (con->height_increment != size_hints.height_inc) {
-                con->height_increment = size_hints.height_inc;
+            if (con->window->height_increment != size_hints.height_inc) {
+                con->window->height_increment = size_hints.height_inc;
                 changed = true;
             }
 

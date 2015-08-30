@@ -414,6 +414,10 @@ struct Window {
      * increments (see below). */
     int base_width;
     int base_height;
+
+    /* minimum increment size specified for the window (in pixels) */
+    int width_increment;
+    int height_increment;
 };
 
 /**
@@ -581,10 +585,6 @@ struct Con {
     /* the x11 border pixel attribute */
     int border_width;
     int current_border_width;
-
-    /* minimum increment size specified for the window (in pixels) */
-    int width_increment;
-    int height_increment;
 
     struct Window *window;
 

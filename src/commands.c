@@ -599,17 +599,20 @@ static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floatin
     /* ensure that resize will take place even if pixel increment is smaller than
      * height increment or width increment.
      * fixes #1011 */
-    if (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0 ||
-        strcmp(direction, "height") == 0) {
-        if (px < 0)
-            px = (-px < focused_con->height_increment) ? -focused_con->height_increment : px;
-        else
-            px = (px < focused_con->height_increment) ? focused_con->height_increment : px;
-    } else if (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0) {
-        if (px < 0)
-            px = (-px < focused_con->width_increment) ? -focused_con->width_increment : px;
-        else
-            px = (px < focused_con->width_increment) ? focused_con->width_increment : px;
+    const i3Window *window = focused_con->window;
+    if (window != NULL) {
+        if (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0 ||
+                strcmp(direction, "height") == 0) {
+            if (px < 0)
+                px = (-px < window->height_increment) ? -window->height_increment : px;
+            else
+                px = (px < window->height_increment) ? window->height_increment : px;
+        } else if (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0) {
+            if (px < 0)
+                px = (-px < window->width_increment) ? -window->width_increment : px;
+            else
+                px = (px < window->width_increment) ? window->width_increment : px;
+        }
     }
 
     if (strcmp(direction, "up") == 0) {

@@ -42,7 +42,7 @@ void floating_check_size(Con *floating_con) {
     Con *focused_con = con_descend_focused(floating_con);
 
     /* obey size increments */
-    if (focused_con->height_increment || focused_con->width_increment) {
+    if (focused_con->window != NULL && (focused_con->window->height_increment || focused_con->window->width_increment)) {
         Rect border_rect = con_border_style_rect(focused_con);
 
         /* We have to do the opposite calculations that render_con() do
@@ -54,17 +54,17 @@ void floating_check_size(Con *floating_con) {
         if (con_border_style(focused_con) == BS_NORMAL)
             border_rect.height += render_deco_height();
 
-        if (focused_con->height_increment &&
+        if (focused_con->window->height_increment &&
             floating_con->rect.height >= focused_con->window->base_height + border_rect.height) {
             floating_con->rect.height -= focused_con->window->base_height + border_rect.height;
-            floating_con->rect.height -= floating_con->rect.height % focused_con->height_increment;
+            floating_con->rect.height -= floating_con->rect.height % focused_con->window->height_increment;
             floating_con->rect.height += focused_con->window->base_height + border_rect.height;
         }
 
-        if (focused_con->width_increment &&
+        if (focused_con->window->width_increment &&
             floating_con->rect.width >= focused_con->window->base_width + border_rect.width) {
             floating_con->rect.width -= focused_con->window->base_width + border_rect.width;
-            floating_con->rect.width -= floating_con->rect.width % focused_con->width_increment;
+            floating_con->rect.width -= floating_con->rect.width % focused_con->window->width_increment;
             floating_con->rect.width += focused_con->window->base_width + border_rect.width;
         }
     }
