@@ -1922,8 +1922,16 @@ void cmd_title_format(I3_CMD, char *format) {
 
         /* If we only display the title without anything else, we can skip the parsing step,
          * so we remove the title format altogether. */
-        if (strcasecmp(format, "%title") != 0)
+        if (strcasecmp(format, "%title") != 0) {
             current->con->window->title_format = sstrdup(format);
+
+            i3String *formatted_title = window_parse_title_format(current->con->window);
+            ewmh_update_visible_name(current->con->window->id, i3string_as_utf8(formatted_title));
+            I3STRING_FREE(formatted_title);
+        } else {
+            /* We can remove _NET_WM_VISIBLE_NAME since we don't display a custom title. */
+            ewmh_update_visible_name(current->con->window->id, NULL);
+        }
 
         /* Make sure the window title is redrawn immediately. */
         current->con->window->name_x_changed = true;

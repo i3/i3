@@ -81,3 +81,10 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *ur
  *
  */
 void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style);
+
+/**
+ * Returns the window title considering the current title format.
+ * If no format is set, this will simply return the window's name.
+ *
+ */
+i3String *window_parse_title_format(i3Window *win);

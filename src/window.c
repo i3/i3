@@ -66,6 +66,8 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     i3string_free(win->name);
     win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
                                                xcb_get_property_value_length(prop));
+    if (win->title_format != NULL)
+        ewmh_update_visible_name(win->id, i3string_as_utf8(window_parse_title_format(win)));
     win->name_x_changed = true;
     LOG("_NET_WM_NAME changed to \"%s\"\n", i3string_as_utf8(win->name));
 
@@ -104,6 +106,8 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
     i3string_free(win->name);
     win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
                                                xcb_get_property_value_length(prop));
+    if (win->title_format != NULL)
+        ewmh_update_visible_name(win->id, i3string_as_utf8(window_parse_title_format(win)));
 
     LOG("WM_NAME changed to \"%s\"\n", i3string_as_utf8(win->name));
     LOG("Using legacy window title. Note that in order to get Unicode window "
@@ -328,4 +332,75 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
 #undef MWM_DECOR_ALL
 #undef MWM_DECOR_BORDER
 #undef MWM_DECOR_TITLE
+}
+
+/*
+ * Returns the window title considering the current title format.
+ * If no format is set, this will simply return the window's name.
+ *
+ */
+i3String *window_parse_title_format(i3Window *win) {
+    /* We need to ensure that we only escape the window title if pango
+     * is used by the current font. */
+    const bool is_markup = font_is_pango();
+
+    char *format = win->title_format;
+    if (format == NULL)
+        return i3string_copy(win->name);
+
+    /* We initialize these lazily so we only escape them if really necessary. */
+    const char *escaped_title = NULL;
+    const char *escaped_class = NULL;
+    const char *escaped_instance = NULL;
+
+    /* We have to first iterate over the string to see how much buffer space
+     * we need to allocate. */
+    int buffer_len = strlen(format) + 1;
+    for (char *walk = format; *walk != '\0'; walk++) {
+        if (STARTS_WITH(walk, "%title")) {
+            if (escaped_title == NULL)
+                escaped_title = i3string_as_utf8(is_markup ? i3string_escape_markup(win->name) : win->name);
+
+            buffer_len = buffer_len - strlen("%title") + strlen(escaped_title);
+            walk += strlen("%title") - 1;
+        } else if (STARTS_WITH(walk, "%class")) {
+            if (escaped_class == NULL)
+                escaped_class = is_markup ? g_markup_escape_text(win->class_class, -1) : win->class_class;
+
+            buffer_len = buffer_len - strlen("%class") + strlen(escaped_class);
+            walk += strlen("%class") - 1;
+        } else if (STARTS_WITH(walk, "%instance")) {
+            if (escaped_instance == NULL)
+                escaped_instance = is_markup ? g_markup_escape_text(win->class_instance, -1) : win->class_instance;
+
+            buffer_len = buffer_len - strlen("%instance") + strlen(escaped_instance);
+            walk += strlen("%instance") - 1;
+        }
+    }
+
+    /* Now we can parse the format string. */
+    char buffer[buffer_len];
+    char *outwalk = buffer;
+    for (char *walk = format; *walk != '\0'; walk++) {
+        if (*walk != '%') {
+            *(outwalk++) = *walk;
+            continue;
+        }
+
+        if (STARTS_WITH(walk + 1, "title")) {
+            outwalk += sprintf(outwalk, "%s", escaped_title);
+            walk += strlen("title");
+        } else if (STARTS_WITH(walk + 1, "class")) {
+            outwalk += sprintf(outwalk, "%s", escaped_class);
+            walk += strlen("class");
+        } else if (STARTS_WITH(walk + 1, "instance")) {
+            outwalk += sprintf(outwalk, "%s", escaped_instance);
+            walk += strlen("instance");
+        }
+    }
+    *outwalk = '\0';
+
+    i3String *formatted = i3string_from_utf8(buffer);
+    i3string_set_markup(formatted, is_markup);
+    return formatted;
 }

@@ -149,6 +149,18 @@ void ewmh_update_active_window(xcb_window_t window) {
 }
 
 /*
+ * Updates _NET_WM_VISIBLE_NAME.
+ *
+ */
+void ewmh_update_visible_name(xcb_window_t window, const char *name) {
+    if (name != NULL) {
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, A__NET_WM_VISIBLE_NAME, A_UTF8_STRING, 8, strlen(name), name);
+    } else {
+        xcb_delete_property(conn, window, A__NET_WM_VISIBLE_NAME);
+    }
+}
+
+/*
  * i3 currently does not support _NET_WORKAREA, because it does not correspond
  * to i3’s concept of workspaces. See also:
  * http://bugs.i3wm.org/539
@@ -234,6 +246,6 @@ void ewmh_setup_hints(void) {
     /* I’m not entirely sure if we need to keep _NET_WM_NAME on root. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
-    /* only send the first 30 atoms (last one is _NET_CLOSE_WINDOW) increment that number when adding supported atoms */
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, 30, supported_atoms);
+    /* only send the first 31 atoms (last one is _NET_CLOSE_WINDOW) increment that number when adding supported atoms */
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, /* number of atoms */ 31, supported_atoms);
 }
