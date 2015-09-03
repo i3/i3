@@ -172,14 +172,14 @@ void render_con(Con *con, bool render_fullscreen) {
          * Ignoring aspect ratio during fullscreen was necessary to fix MPlayer
          * subtitle rendering, see http://bugs.i3wm.org/594 */
         if (!render_fullscreen &&
-            con->aspect_ratio > 0.0) {
+            con->window->aspect_ratio > 0.0) {
             DLOG("aspect_ratio = %f, current width/height are %d/%d\n",
-                 con->aspect_ratio, inset->width, inset->height);
+                 con->window->aspect_ratio, inset->width, inset->height);
             double new_height = inset->height + 1;
             int new_width = inset->width;
 
             while (new_height > inset->height) {
-                new_height = (1.0 / con->aspect_ratio) * new_width;
+                new_height = (1.0 / con->window->aspect_ratio) * new_width;
 
                 if (new_height > inset->height)
                     new_width--;

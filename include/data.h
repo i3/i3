@@ -409,6 +409,18 @@ struct Window {
 
     /** Depth of the window */
     uint16_t depth;
+
+    /* the wanted size of the window, used in combination with size
+     * increments (see below). */
+    int base_width;
+    int base_height;
+
+    /* minimum increment size specified for the window (in pixels) */
+    int width_increment;
+    int height_increment;
+
+    /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
+    double aspect_ratio;
 };
 
 /**
@@ -570,20 +582,9 @@ struct Con {
 
     double percent;
 
-    /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
-    double aspect_ratio;
-    /* the wanted size of the window, used in combination with size
-     * increments (see below). */
-    int base_width;
-    int base_height;
-
     /* the x11 border pixel attribute */
     int border_width;
     int current_border_width;
-
-    /* minimum increment size specified for the window (in pixels) */
-    int width_increment;
-    int height_increment;
 
     struct Window *window;
 
