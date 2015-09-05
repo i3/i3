@@ -386,14 +386,34 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
         return;
     }
 
-    /* Dock windows can be reconfigured in their height */
+    /* Dock windows can be reconfigured in their height and moved to another output. */
     if (con->parent && con->parent->type == CT_DOCKAREA) {
-        DLOG("Dock window, only height reconfiguration allowed\n");
+        DLOG("Reconfiguring dock window (con = %p).\n", con);
         if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
-            DLOG("Height given, changing\n");
+            DLOG("Dock client wants to change height to %d, we can do that.\n", event->height);
 
             con->geometry.height = event->height;
             tree_render();
+        }
+
+        if (event->value_mask & XCB_CONFIG_WINDOW_X || event->value_mask & XCB_CONFIG_WINDOW_Y) {
+            int16_t x = event->value_mask & XCB_CONFIG_WINDOW_X ? event->x : (int16_t)con->geometry.x;
+            int16_t y = event->value_mask & XCB_CONFIG_WINDOW_Y ? event->y : (int16_t)con->geometry.y;
+
+            Con *current_output = con_get_output(con);
+            Output *target = get_output_containing(x, y);
+            if (target != NULL && current_output != target->con) {
+                DLOG("Dock client is requested to be moved to output %s, moving it there.\n", target->name);
+                Match *match;
+                Con *nc = con_for_window(target->con, con->window, &match);
+                DLOG("Dock client will be moved to container %p.\n", nc);
+                con_detach(con);
+                con_attach(con, nc, false);
+
+                tree_render();
+            } else {
+                DLOG("Dock client will not be moved, we only support moving it to another output.\n");
+            }
         }
     }
 
