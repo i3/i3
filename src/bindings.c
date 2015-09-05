@@ -80,13 +80,13 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
     new_binding->command = sstrdup(command);
     new_binding->event_state_mask = event_state_from_str(modifiers);
     int group_bits_set = 0;
-    if (new_binding->event_state_mask & I3_XKB_GROUP_MASK_1)
+    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_1)
         group_bits_set++;
-    if (new_binding->event_state_mask & I3_XKB_GROUP_MASK_2)
+    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_2)
         group_bits_set++;
-    if (new_binding->event_state_mask & I3_XKB_GROUP_MASK_3)
+    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_3)
         group_bits_set++;
-    if (new_binding->event_state_mask & I3_XKB_GROUP_MASK_4)
+    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_4)
         group_bits_set++;
     if (group_bits_set > 1)
         ELOG("Keybinding has more than one Group specified, but your X server is always in precisely one group. The keybinding can never trigger.\n");
