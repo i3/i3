@@ -359,7 +359,7 @@ i3String *window_parse_title_format(i3Window *win) {
     for (char *walk = format; *walk != '\0'; walk++) {
         if (STARTS_WITH(walk, "%title")) {
             if (escaped_title == NULL)
-                escaped_title = i3string_as_utf8(is_markup ? i3string_escape_markup(win->name) : win->name);
+                escaped_title = win->name == NULL ? "" : i3string_as_utf8(is_markup ? i3string_escape_markup(win->name) : win->name);
 
             buffer_len = buffer_len - strlen("%title") + strlen(escaped_title);
             walk += strlen("%title") - 1;
