@@ -10,8 +10,10 @@
 #pragma once
 
 #include <xcb/xcb.h>
+#include <cairo/cairo-xcb.h>
 
 #include "common.h"
+#include "cairo_util.h"
 
 typedef struct i3_output i3_output;
 
@@ -44,9 +46,10 @@ struct i3_output {
     int ws;       /* The number of the currently visible ws */
     rect rect;    /* The rect (relative to the root window) */
 
-    xcb_window_t bar;     /* The id of the bar of the output */
-    xcb_pixmap_t buffer;  /* An extra pixmap for double-buffering */
-    xcb_gcontext_t bargc; /* The graphical context of the bar */
+    /* Off-screen buffer for preliminary rendering. */
+    surface_t buffer;
+    /* The actual window on which we draw. */
+    surface_t bar;
 
     struct ws_head* workspaces;  /* The workspaces on this output */
     struct tc_head* trayclients; /* The tray clients on this output */
