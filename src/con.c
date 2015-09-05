@@ -1245,18 +1245,13 @@ Rect con_border_style_rect(Con *con) {
     int border_style = con_border_style(con);
     if (border_style == BS_NONE)
         return (Rect){0, 0, 0, 0};
-    borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
     if (border_style == BS_NORMAL) {
         result = (Rect){border_width, 0, -(2 * border_width), -(border_width)};
     } else {
         result = (Rect){border_width, border_width, -(2 * border_width), -(2 * border_width)};
     }
 
-    /* Floating windows are never adjacent to any other window, so
-       don’t hide their border(s). This prevents bug #998. */
-    if (con_is_floating(con))
-        return result;
-
+    borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
     if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {
         result.x -= border_width;
         result.width += border_width;
@@ -1280,6 +1275,11 @@ Rect con_border_style_rect(Con *con) {
  */
 adjacent_t con_adjacent_borders(Con *con) {
     adjacent_t result = ADJ_NONE;
+    /* Floating windows are never adjacent to any other window, so
+       don’t hide their border(s). This prevents bug #998. */
+    if (con_is_floating(con))
+        return result;
+
     Con *workspace = con_get_workspace(con);
     if (con->rect.x == workspace->rect.x)
         result |= ADJ_LEFT_SCREEN_EDGE;
