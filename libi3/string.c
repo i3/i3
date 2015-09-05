@@ -194,7 +194,10 @@ void i3string_set_markup(i3String *str, bool is_markup) {
 i3String *i3string_escape_markup(i3String *str) {
 #if PANGO_SUPPORT
     const char *text = i3string_as_utf8(str);
-    return i3string_from_utf8(g_markup_escape_text(text, -1));
+    char *escaped = g_markup_escape_text(text, -1);
+    i3String *result = i3string_from_utf8(escaped);
+    free(escaped);
+    return result;
 #else
     return str;
 #endif
