@@ -2007,6 +2007,7 @@ If you want to resize containers/windows using your keyboard, you can use the
 *Syntax*:
 -------------------------------------------------------
 resize grow|shrink <direction> [<px> px [or <ppt> ppt]]
+resize set <width> [px] <height> [px]
 -------------------------------------------------------
 
 Direction can either be one of +up+, +down+, +left+ or +right+. Or you can be
@@ -2015,7 +2016,8 @@ space from all the other containers. The optional pixel argument specifies by
 how many pixels a *floating container* should be grown or shrunk (the default
 is 10 pixels). The ppt argument means percentage points and specifies by how
 many percentage points a *tiling container* should be grown or shrunk (the
-default is 10 percentage points).
+default is 10 percentage points). Note that +resize set+ will only work for
+floating containers.
 
 I recommend using the resize command inside a so called +mode+:
 
@@ -2047,6 +2049,11 @@ mode "resize" {
 # Enter resize mode
 bindsym $mod+r mode "resize"
 ----------------------------------------------------------------------
+
+*Example 2 - setting urxvt size to 640x480:*
+------------------------------------------------
+for_window [class="urxvt"] resize set 640 480
+------------------------------------------------
 
 === Jumping to specific windows
 

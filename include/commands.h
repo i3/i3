@@ -61,6 +61,12 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name);
 void cmd_move_con_to_workspace_number(I3_CMD, char *which);
 
 /**
+ * Implementation of 'resize set <px> [px] <px> [px]'.
+ *
+ */
+void cmd_size(I3_CMD, char *cwidth, char *cheight);
+
+/**
  * Implementation of 'resize grow|shrink <direction> [<px> px] [or <ppt> ppt]'.
  *
  */
