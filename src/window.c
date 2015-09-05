@@ -396,6 +396,8 @@ i3String *window_parse_title_format(i3Window *win) {
         } else if (STARTS_WITH(walk + 1, "instance")) {
             outwalk += sprintf(outwalk, "%s", escaped_instance);
             walk += strlen("instance");
+        } else {
+            *(outwalk++) = *walk;
         }
     }
     *outwalk = '\0';
