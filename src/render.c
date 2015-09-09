@@ -12,6 +12,12 @@
  */
 #include "all.h"
 
+/* Forward declarations */
+static void render_con_split(Con *con, Con *child, render_params *p, int i);
+static void render_con_stacked(Con *con, Con *child, render_params *p, int i);
+static void render_con_tabbed(Con *con, Con *child, render_params *p, int i);
+static void render_con_dockarea(Con *con, Con *child, render_params *p);
+
 /* change this to 'true' if you want to have additional borders around every
  * container (for debugging purposes) */
 static bool show_debug_borders = false;
@@ -124,29 +130,26 @@ static void render_l_output(Con *con) {
  *
  */
 void render_con(Con *con, bool render_fullscreen) {
-    int children = con_num_children(con);
+    render_params params = {
+        .rect = con->rect,
+        .x = con->rect.x,
+        .y = con->rect.y,
+        .children = con_num_children(con)};
+
     DLOG("Rendering %snode %p / %s / layout %d / children %d\n",
          (render_fullscreen ? "fullscreen " : ""), con, con->name, con->layout,
-         children);
-
-    /* Copy container rect, subtract container border */
-    /* This is the actually usable space inside this container for clients */
-    Rect rect = con->rect;
+         params.children);
 
     /* Display a border if this is a leaf node. For container nodes, we don’t
      * draw borders (except when in debug mode) */
     if (show_debug_borders) {
-        rect.x += 2;
-        rect.y += 2;
-        rect.width -= 2 * 2;
-        rect.height -= 2 * 2;
+        params.rect.x += 2;
+        params.rect.y += 2;
+        params.rect.width -= 2 * 2;
+        params.rect.height -= 2 * 2;
     }
 
-    int x = rect.x;
-    int y = rect.y;
-
     int i = 0;
-
     con->mapped = true;
 
     /* if this container contains a window, set the coordinates */
@@ -207,7 +210,7 @@ void render_con(Con *con, bool render_fullscreen) {
         fullscreen = con_get_fullscreen_con(con, (con->type == CT_ROOT ? CF_GLOBAL : CF_OUTPUT));
     }
     if (fullscreen) {
-        fullscreen->rect = rect;
+        fullscreen->rect = params.rect;
         x_raise_con(fullscreen);
         render_con(fullscreen, true);
         /* Fullscreen containers are either global (underneath the CT_ROOT
@@ -222,31 +225,33 @@ void render_con(Con *con, bool render_fullscreen) {
     }
 
     /* find the height for the decorations */
-    int deco_height = render_deco_height();
+    params.deco_height = render_deco_height();
 
     /* precalculate the sizes to be able to correct rounding errors */
-    int sizes[children];
-    memset(sizes, 0, children * sizeof(int));
-    if ((con->layout == L_SPLITH || con->layout == L_SPLITV) && children > 0) {
+    int sizes[params.children];
+    memset(sizes, 0, params.children * sizeof(int));
+    if ((con->layout == L_SPLITH || con->layout == L_SPLITV) && params.children > 0) {
         assert(!TAILQ_EMPTY(&con->nodes_head));
+
         Con *child;
         int i = 0, assigned = 0;
-        int total = con_orientation(con) == HORIZ ? rect.width : rect.height;
+        int total = con_orientation(con) == HORIZ ? params.rect.width : params.rect.height;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-            double percentage = child->percent > 0.0 ? child->percent : 1.0 / children;
+            double percentage = child->percent > 0.0 ? child->percent : 1.0 / params.children;
             assigned += sizes[i++] = percentage * total;
         }
         assert(assigned == total ||
-               (assigned > total && assigned - total <= children * 2) ||
-               (assigned < total && total - assigned <= children * 2));
+               (assigned > total && assigned - total <= params.children * 2) ||
+               (assigned < total && total - assigned <= params.children * 2));
         int signal = assigned < total ? 1 : -1;
         while (assigned != total) {
-            for (i = 0; i < children && assigned != total; ++i) {
+            for (i = 0; i < params.children && assigned != total; ++i) {
                 sizes[i] += signal;
                 assigned += signal;
             }
         }
     }
+    params.sizes = sizes;
 
     if (con->layout == L_OUTPUT) {
         /* Skip i3-internal outputs */
@@ -331,104 +336,18 @@ void render_con(Con *con, bool render_fullscreen) {
         }
 
     } else {
-        /* FIXME: refactor this into separate functions: */
         Con *child;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-            assert(children > 0);
+            assert(params.children > 0);
 
-            /* default layout */
             if (con->layout == L_SPLITH || con->layout == L_SPLITV) {
-                if (con->layout == L_SPLITH) {
-                    child->rect.x = x;
-                    child->rect.y = y;
-                    child->rect.width = sizes[i];
-                    child->rect.height = rect.height;
-                    x += child->rect.width;
-                } else {
-                    child->rect.x = x;
-                    child->rect.y = y;
-                    child->rect.width = rect.width;
-                    child->rect.height = sizes[i];
-                    y += child->rect.height;
-                }
-
-                /* first we have the decoration, if this is a leaf node */
-                if (con_is_leaf(child)) {
-                    if (child->border_style == BS_NORMAL) {
-                        /* TODO: make a function for relative coords? */
-                        child->deco_rect.x = child->rect.x - con->rect.x;
-                        child->deco_rect.y = child->rect.y - con->rect.y;
-
-                        child->rect.y += deco_height;
-                        child->rect.height -= deco_height;
-
-                        child->deco_rect.width = child->rect.width;
-                        child->deco_rect.height = deco_height;
-                    } else {
-                        child->deco_rect.x = 0;
-                        child->deco_rect.y = 0;
-                        child->deco_rect.width = 0;
-                        child->deco_rect.height = 0;
-                    }
-                }
-            }
-
-            /* stacked layout */
-            else if (con->layout == L_STACKED) {
-                child->rect.x = x;
-                child->rect.y = y;
-                child->rect.width = rect.width;
-                child->rect.height = rect.height;
-
-                child->deco_rect.x = x - con->rect.x;
-                child->deco_rect.y = y - con->rect.y + (i * deco_height);
-                child->deco_rect.width = child->rect.width;
-                child->deco_rect.height = deco_height;
-
-                if (children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
-                    child->rect.y += (deco_height * children);
-                    child->rect.height -= (deco_height * children);
-                }
-            }
-
-            /* tabbed layout */
-            else if (con->layout == L_TABBED) {
-                child->rect.x = x;
-                child->rect.y = y;
-                child->rect.width = rect.width;
-                child->rect.height = rect.height;
-
-                child->deco_rect.width = floor((float)child->rect.width / children);
-                child->deco_rect.x = x - con->rect.x + i * child->deco_rect.width;
-                child->deco_rect.y = y - con->rect.y;
-
-                /* Since the tab width may be something like 31,6 px per tab, we
-             * let the last tab have all the extra space (0,6 * children). */
-                if (i == (children - 1)) {
-                    child->deco_rect.width += (child->rect.width - (child->deco_rect.x + child->deco_rect.width));
-                }
-
-                if (children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
-                    child->rect.y += deco_height;
-                    child->rect.height -= deco_height;
-                    child->deco_rect.height = deco_height;
-                } else {
-                    child->deco_rect.height = (child->border_style == BS_PIXEL ? 1 : 0);
-                }
-            }
-
-            /* dockarea layout */
-            else if (con->layout == L_DOCKAREA) {
-                child->rect.x = x;
-                child->rect.y = y;
-                child->rect.width = rect.width;
-                child->rect.height = child->geometry.height;
-
-                child->deco_rect.x = 0;
-                child->deco_rect.y = 0;
-                child->deco_rect.width = 0;
-                child->deco_rect.height = 0;
-                y += child->rect.height;
+                render_con_split(con, child, &params, i);
+            } else if (con->layout == L_STACKED) {
+                render_con_stacked(con, child, &params, i);
+            } else if (con->layout == L_TABBED) {
+                render_con_tabbed(con, child, &params, i);
+            } else if (con->layout == L_DOCKAREA) {
+                render_con_dockarea(con, child, &params);
             }
 
             DLOG("child at (%d, %d) with (%d x %d)\n",
@@ -450,7 +369,7 @@ void render_con(Con *con, bool render_fullscreen) {
                 render_con(child, false);
             }
 
-            if (children != 1)
+            if (params.children != 1)
                 /* Raise the stack con itself. This will put the stack decoration on
              * top of every stack window. That way, when a new window is opened in
              * the stack, the old window will not obscure part of the decoration
@@ -458,4 +377,103 @@ void render_con(Con *con, bool render_fullscreen) {
                 x_raise_con(con);
         }
     }
+}
+
+static void render_con_split(Con *con, Con *child, render_params *p, int i) {
+    assert(con->layout == L_SPLITH || con->layout == L_SPLITV);
+
+    if (con->layout == L_SPLITH) {
+        child->rect.x = p->x;
+        child->rect.y = p->y;
+        child->rect.width = p->sizes[i];
+        child->rect.height = p->rect.height;
+        p->x += child->rect.width;
+    } else {
+        child->rect.x = p->x;
+        child->rect.y = p->y;
+        child->rect.width = p->rect.width;
+        child->rect.height = p->sizes[i];
+        p->y += child->rect.height;
+    }
+
+    /* first we have the decoration, if this is a leaf node */
+    if (con_is_leaf(child)) {
+        if (child->border_style == BS_NORMAL) {
+            /* TODO: make a function for relative coords? */
+            child->deco_rect.x = child->rect.x - con->rect.x;
+            child->deco_rect.y = child->rect.y - con->rect.y;
+
+            child->rect.y += p->deco_height;
+            child->rect.height -= p->deco_height;
+
+            child->deco_rect.width = child->rect.width;
+            child->deco_rect.height = p->deco_height;
+        } else {
+            child->deco_rect.x = 0;
+            child->deco_rect.y = 0;
+            child->deco_rect.width = 0;
+            child->deco_rect.height = 0;
+        }
+    }
+}
+
+static void render_con_stacked(Con *con, Con *child, render_params *p, int i) {
+    assert(con->layout == L_STACKED);
+
+    child->rect.x = p->x;
+    child->rect.y = p->y;
+    child->rect.width = p->rect.width;
+    child->rect.height = p->rect.height;
+
+    child->deco_rect.x = p->x - con->rect.x;
+    child->deco_rect.y = p->y - con->rect.y + (i * p->deco_height);
+    child->deco_rect.width = child->rect.width;
+    child->deco_rect.height = p->deco_height;
+
+    if (p->children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
+        child->rect.y += (p->deco_height * p->children);
+        child->rect.height -= (p->deco_height * p->children);
+    }
+}
+
+static void render_con_tabbed(Con *con, Con *child, render_params *p, int i) {
+    assert(con->layout == L_TABBED);
+
+    child->rect.x = p->x;
+    child->rect.y = p->y;
+    child->rect.width = p->rect.width;
+    child->rect.height = p->rect.height;
+
+    child->deco_rect.width = floor((float)child->rect.width / p->children);
+    child->deco_rect.x = p->x - con->rect.x + i * child->deco_rect.width;
+    child->deco_rect.y = p->y - con->rect.y;
+
+    /* Since the tab width may be something like 31,6 px per tab, we
+     * let the last tab have all the extra space (0,6 * children). */
+    if (i == (p->children - 1)) {
+        child->deco_rect.width += (child->rect.width - (child->deco_rect.x + child->deco_rect.width));
+    }
+
+    if (p->children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
+        child->rect.y += p->deco_height;
+        child->rect.height -= p->deco_height;
+        child->deco_rect.height = p->deco_height;
+    } else {
+        child->deco_rect.height = (child->border_style == BS_PIXEL ? 1 : 0);
+    }
+}
+
+static void render_con_dockarea(Con *con, Con *child, render_params *p) {
+    assert(con->layout == L_DOCKAREA);
+
+    child->rect.x = p->x;
+    child->rect.y = p->y;
+    child->rect.width = p->rect.width;
+    child->rect.height = child->geometry.height;
+
+    child->deco_rect.x = 0;
+    child->deco_rect.y = 0;
+    child->deco_rect.width = 0;
+    child->deco_rect.height = 0;
+    p->y += child->rect.height;
 }
