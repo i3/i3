@@ -13,6 +13,7 @@
 #include "all.h"
 
 /* Forward declarations */
+static int *precalculate_sizes(Con *con, render_params *p);
 static void render_con_split(Con *con, Con *child, render_params *p, int i);
 static void render_con_stacked(Con *con, Con *child, render_params *p, int i);
 static void render_con_tabbed(Con *con, Con *child, render_params *p, int i);
@@ -228,35 +229,12 @@ void render_con(Con *con, bool render_fullscreen) {
     params.deco_height = render_deco_height();
 
     /* precalculate the sizes to be able to correct rounding errors */
-    int sizes[params.children];
-    memset(sizes, 0, params.children * sizeof(int));
-    if ((con->layout == L_SPLITH || con->layout == L_SPLITV) && params.children > 0) {
-        assert(!TAILQ_EMPTY(&con->nodes_head));
-
-        Con *child;
-        int i = 0, assigned = 0;
-        int total = con_orientation(con) == HORIZ ? params.rect.width : params.rect.height;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-            double percentage = child->percent > 0.0 ? child->percent : 1.0 / params.children;
-            assigned += sizes[i++] = percentage * total;
-        }
-        assert(assigned == total ||
-               (assigned > total && assigned - total <= params.children * 2) ||
-               (assigned < total && total - assigned <= params.children * 2));
-        int signal = assigned < total ? 1 : -1;
-        while (assigned != total) {
-            for (i = 0; i < params.children && assigned != total; ++i) {
-                sizes[i] += signal;
-                assigned += signal;
-            }
-        }
-    }
-    params.sizes = sizes;
+    params.sizes = precalculate_sizes(con, &params);
 
     if (con->layout == L_OUTPUT) {
         /* Skip i3-internal outputs */
         if (con_is_internal(con))
-            return;
+            goto free_params;
         render_l_output(con);
     } else if (con->type == CT_ROOT) {
         Con *output;
@@ -377,6 +355,36 @@ void render_con(Con *con, bool render_fullscreen) {
                 x_raise_con(con);
         }
     }
+
+free_params:
+    FREE(params.sizes);
+}
+
+static int *precalculate_sizes(Con *con, render_params *p) {
+    int *sizes = smalloc(p->children * sizeof(int));
+    if ((con->layout == L_SPLITH || con->layout == L_SPLITV) && p->children > 0) {
+        assert(!TAILQ_EMPTY(&con->nodes_head));
+
+        Con *child;
+        int i = 0, assigned = 0;
+        int total = con_orientation(con) == HORIZ ? p->rect.width : p->rect.height;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            double percentage = child->percent > 0.0 ? child->percent : 1.0 / p->children;
+            assigned += sizes[i++] = percentage * total;
+        }
+        assert(assigned == total ||
+                (assigned > total && assigned - total <= p->children * 2) ||
+                (assigned < total && total - assigned <= p->children * 2));
+        int signal = assigned < total ? 1 : -1;
+        while (assigned != total) {
+            for (i = 0; i < p->children && assigned != total; ++i) {
+                sizes[i] += signal;
+                assigned += signal;
+            }
+        }
+    }
+
+    return sizes;
 }
 
 static void render_con_split(Con *con, Con *child, render_params *p, int i) {
