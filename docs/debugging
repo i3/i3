@@ -93,17 +93,27 @@ issue with the software in question, not i3.
 
 == Obtaining the debug logfile
 
-Please note that log files may contain sensitive data such as window titles.
-The best way to avoid submitting such information is to only run the necessary
-applications to reproduce the behavior when saving the log file. This will also
-make analyzing the log file easier.
+[CAUTION]
+=====================================================================
+Logs may contain sensitive information, please inspect the file
+before submitting it. Logs may be viewed by anyone, once posted.
+If you choose to redact the log, make an effort not to discard
+information which may be relevant to the issue you are reporting.
+=====================================================================
 
 No matter whether i3 misbehaved in some way without crashing or whether it just
 crashed, the logfile provides all information necessary to debug the problem.
 
-To upload a compressed version of the logfile (for a bugreport), use:
+To upload a compressed version of the logfile (for a bugreport), first use:
 ------------------------------------------------------------------------------
-DISPLAY=:0 i3-dump-log | bzip2 -c | curl --data-binary @- http://logs.i3wm.org
+DISPLAY=:0 i3-dump-log > logfile
+------------------------------------------------------------------------------
+
+To write the captured log into a file which you can inspect (and perhaps redact)
+before submitting. When you're satisfied that the log file contains no information
+you consider sensitive, you can compress the file and submit it to our server with:
+------------------------------------------------------------------------------
+cat logfile | bzip2 -c | curl --data-binary @- http://logs.i3wm.org
 ------------------------------------------------------------------------------
 
 This command does not depend on i3 (it also works while i3 displays
