@@ -1507,8 +1507,7 @@ void cmd_focus(I3_CMD) {
             count);
 
     cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    ysuccess(count > 0);
 }
 
 /*
