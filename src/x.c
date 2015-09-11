@@ -450,16 +450,24 @@ void x_draw_decoration(Con *con) {
          * opened if we are rendering a single window within a split container
          * (which is undistinguishable from a single window outside a split
          * container otherwise. */
-        if (TAILQ_NEXT(con, nodes) == NULL &&
-            TAILQ_PREV(con, nodes_head, nodes) == NULL &&
-            con->parent->type != CT_FLOATING_CON) {
+        if (TAILQ_NEXT(con, nodes) == NULL && TAILQ_PREV(con, nodes_head, nodes) == NULL && con->parent->type != CT_FLOATING_CON) {
             xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){p->color->indicator});
-            if (p->parent_layout == L_SPLITH)
+
+            if (p->parent_layout == L_SPLITH) {
                 xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
                                                                               {r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height}});
-            else if (p->parent_layout == L_SPLITV)
+            } else if (p->parent_layout == L_SPLITV) {
                 xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
                                                                               {br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y)}});
+            } else if (p->parent_layout == L_STACKED) {
+                xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
+                                                                              {br.width + br.x, r->height / 2, -br.width, r->height / 2 + br.height}});
+                xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
+                                                                              {r->width + (br.width + br.x), r->height / 2, -(br.width + br.x), r->height / 2 + br.height}});
+            } else if (p->parent_layout == L_TABBED) {
+                xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
+                                                                              {r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height / 2 + br.height}});
+            }
         }
     }
 
