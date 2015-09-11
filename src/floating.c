@@ -826,6 +826,37 @@ void floating_reposition(Con *con, Rect newrect) {
 }
 
 /*
+ * Sets size of the CT_FLOATING_CON to specified dimensions. Might limit the
+ * actual size with regard to size constraints taken from user settings.
+ * Additionally, the dimensions may be upscaled until they're divisible by the
+ * window's size hints.
+ *
+ */
+void floating_resize(Con *floating_con, int x, int y) {
+    DLOG("floating resize to %dx%d px\n", x, y);
+    Rect *rect = &floating_con->rect;
+    Con *focused_con = con_descend_focused(floating_con);
+    if (focused_con->window == NULL) {
+        DLOG("No window is focused. Not resizing.\n");
+        return;
+    }
+    int wi = focused_con->window->width_increment;
+    int hi = focused_con->window->height_increment;
+    rect->width = x;
+    rect->height = y;
+    if (wi)
+        rect->width += (wi - 1 - rect->width) % wi;
+    if (hi)
+        rect->height += (hi - 1 - rect->height) % hi;
+
+    floating_check_size(floating_con);
+
+    /* If this is a scratchpad window, don't auto center it from now on. */
+    if (floating_con->scratchpad_state == SCRATCHPAD_FRESH)
+        floating_con->scratchpad_state = SCRATCHPAD_CHANGED;
+}
+
+/*
  * Fixes the coordinates of the floating window whenever the window gets
  * reassigned to a different output (or when the output’s rect changes).
  *

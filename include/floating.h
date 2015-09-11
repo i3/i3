@@ -189,6 +189,15 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
 void floating_reposition(Con *con, Rect newrect);
 
 /**
+ * Sets size of the CT_FLOATING_CON to specified dimensions. Might limit the
+ * actual size with regard to size constraints taken from user settings.
+ * Additionally, the dimensions may be upscaled until they're divisible by the
+ * window's size hints.
+ *
+ */
+void floating_resize(Con *floating_con, int x, int y);
+
+/**
  * Fixes the coordinates of the floating window whenever the window gets
  * reassigned to a different output (or when the output’s rect changes).
  *
