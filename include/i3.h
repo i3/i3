@@ -37,6 +37,15 @@ extern bool debug_build;
 extern int listen_fds;
 extern xcb_connection_t *conn;
 extern int conn_screen;
+/**
+ * The EWMH support window that is used to indicate that an EWMH-compliant
+ * window manager is present. This window is created when i3 starts and
+ * kept alive until i3 exits.
+ * We also use this window as the focused window if no other window is
+ * available to be focused on the active workspace in order to prevent
+ * keyboard focus issues (see #1378).
+ */
+extern xcb_window_t ewmh_window;
 /** The last timestamp we got from X11 (timestamps are included in some events
  * and are used for some things, like determining a unique ID in startup
  * notification). */

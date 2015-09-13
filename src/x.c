@@ -12,6 +12,8 @@
  */
 #include "all.h"
 
+xcb_window_t ewmh_window;
+
 /* Stores the X11 window ID of the currently focused window */
 xcb_window_t focused_id = XCB_NONE;
 
@@ -1090,10 +1092,12 @@ void x_push_changes(Con *con) {
     }
 
     if (focused_id == XCB_NONE) {
-        DLOG("Still no window focused, better set focus to the root window\n");
-        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
+        /* If we still have no window to focus, we focus the EWMH window instead. We use this rather than the
+         * root window in order to avoid an X11 fallback mechanism causing a ghosting effect (see #1378). */
+        DLOG("Still no window focused, better set focus to the EWMH support window (%d)\n", ewmh_window);
+        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, ewmh_window, XCB_CURRENT_TIME);
         ewmh_update_active_window(XCB_WINDOW_NONE);
-        focused_id = root;
+        focused_id = ewmh_window;
     }
 
     xcb_flush(conn);

@@ -11,6 +11,8 @@
  */
 #include "all.h"
 
+xcb_window_t ewmh_window;
+
 /*
  * Updates _NET_CURRENT_DESKTOP with the current desktop number.
  *
@@ -227,25 +229,30 @@ void ewmh_setup_hints(void) {
      * present, a child window has to be created (and kept alive as long as the
      * window manager is running) which has the _NET_SUPPORTING_WM_CHECK and
      * _NET_WM_ATOMS. */
-    xcb_window_t child_window = xcb_generate_id(conn);
+    ewmh_window = xcb_generate_id(conn);
+    /* We create the window and put it at (-1, -1) so that it is off-screen. */
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,        /* depth */
-        child_window,                /* window id */
+        ewmh_window,                 /* window id */
         root,                        /* parent */
-        0, 0, 1, 1,                  /* dimensions (x, y, w, h) */
+        -1, -1, 1, 1,                /* dimensions (x, y, w, h) */
         0,                           /* border */
         XCB_WINDOW_CLASS_INPUT_ONLY, /* window class */
         XCB_COPY_FROM_PARENT,        /* visual */
-        0,
-        NULL);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, child_window, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &child_window);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, child_window, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &child_window);
+        XCB_CW_OVERRIDE_REDIRECT,
+        (uint32_t[]){1});
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, ewmh_window, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &ewmh_window);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, ewmh_window, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &ewmh_window);
 
     /* I’m not entirely sure if we need to keep _NET_WM_NAME on root. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
     /* only send the first 31 atoms (last one is _NET_CLOSE_WINDOW) increment that number when adding supported atoms */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, /* number of atoms */ 31, supported_atoms);
+
+    /* We need to map this window to be able to set the input focus to it if no other window is available to be focused. */
+    xcb_map_window(conn, ewmh_window);
+    xcb_configure_window(conn, ewmh_window, XCB_CONFIG_WINDOW_STACK_MODE, (uint32_t[]){XCB_STACK_MODE_BELOW});
 }
