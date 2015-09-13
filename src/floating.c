@@ -412,7 +412,7 @@ bool floating_maybe_reassign_ws(Con *con) {
     Con *content = output_get_content(output->con);
     Con *ws = TAILQ_FIRST(&(content->focus_head));
     DLOG("Moving con %p / %s to workspace %p / %s\n", con, con->name, ws, ws->name);
-    con_move_to_workspace(con, ws, false, true);
+    con_move_to_workspace(con, ws, false, true, false);
     con_focus(con_descend_focused(con));
     return true;
 }

@@ -384,6 +384,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         want_floating = true;
     }
 
+    if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_STICKY))
+        nc->sticky = true;
+
     FREE(state_reply);
     FREE(type_reply);
 

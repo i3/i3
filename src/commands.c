@@ -461,7 +461,7 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false);
+        con_move_to_workspace(current->con, ws, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
@@ -488,7 +488,7 @@ void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false);
+        con_move_to_workspace(current->con, ws, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
@@ -532,7 +532,7 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false);
+        con_move_to_workspace(current->con, ws, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
@@ -583,7 +583,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, workspace, true, false);
+        con_move_to_workspace(current->con, workspace, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
@@ -1223,7 +1223,7 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false);
+        con_move_to_workspace(current->con, ws, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
@@ -1566,6 +1566,42 @@ void cmd_fullscreen(I3_CMD, char *action, char *fullscreen_mode) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'sticky enable|disable|toggle'.
+ *
+ */
+void cmd_sticky(I3_CMD, char *action) {
+    DLOG("%s sticky on window\n", action);
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        if (current->con->window == NULL) {
+            ELOG("only containers holding a window can be made sticky, skipping con = %p\n", current->con);
+            continue;
+        }
+        DLOG("setting sticky for container = %p / %s\n", current->con, current->con->name);
+
+        bool sticky = false;
+        if (strcmp(action, "enable") == 0)
+            sticky = true;
+        else if (strcmp(action, "disable") == 0)
+            sticky = false;
+        else if (strcmp(action, "toggle") == 0)
+            sticky = !current->con->sticky;
+
+        current->con->sticky = sticky;
+        ewmh_update_sticky(current->con->window->id, sticky);
+    }
+
+    /* A window we made sticky might not be on a visible workspace right now, so we need to make
+     * sure it gets pushed to the front now. */
+    output_push_sticky_windows();
+
+    cmd_output->needs_tree_render = true;
     ysuccess(true);
 }
 

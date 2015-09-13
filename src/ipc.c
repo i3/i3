@@ -436,6 +436,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("fullscreen_mode");
     y(integer, con->fullscreen_mode);
 
+    ystr("sticky");
+    y(bool, con->sticky);
+
     ystr("floating");
     switch (con->floating) {
         case FLOATING_AUTO_OFF:

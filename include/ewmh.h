@@ -69,6 +69,12 @@ void ewmh_update_client_list(xcb_window_t *list, int num_windows);
 void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows);
 
 /**
+ * Set or remove _NET_WM_STATE_STICKY on the window.
+ *
+ */
+void ewmh_update_sticky(xcb_window_t window, bool sticky);
+
+/**
  * Set up the EWMH hints on the root window.
  *
  */

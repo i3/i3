@@ -214,6 +214,20 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
 }
 
 /*
+ * Set or remove _NET_WM_STATE_STICKY on the window.
+ *
+ */
+void ewmh_update_sticky(xcb_window_t window, bool sticky) {
+    uint32_t values[1];
+    unsigned int num = 0;
+
+    if (sticky)
+        values[num++] = A__NET_WM_STATE_STICKY;
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, A__NET_WM_STATE, XCB_ATOM_ATOM, 32, num, values);
+}
+
+/*
  * Set up the EWMH hints on the root window.
  *
  */
@@ -250,7 +264,7 @@ void ewmh_setup_hints(void) {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
     /* only send the first 31 atoms (last one is _NET_CLOSE_WINDOW) increment that number when adding supported atoms */
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, /* number of atoms */ 31, supported_atoms);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, /* number of atoms */ 32, supported_atoms);
 
     /* We need to map this window to be able to set the input focus to it if no other window is available to be focused. */
     xcb_map_window(conn, ewmh_window);

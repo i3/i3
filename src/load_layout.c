@@ -435,6 +435,9 @@ static int json_bool(void *ctx, int val) {
         to_focus = json_node;
     }
 
+    if (strcasecmp(last_key, "sticky") == 0)
+        json_node->sticky = val;
+
     if (parsing_swallows) {
         if (strcasecmp(last_key, "restart_mode") == 0)
             current_swallow->restart_mode = val;
