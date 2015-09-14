@@ -94,15 +94,15 @@ static void query_screens(xcb_connection_t *conn) {
  */
 void xinerama_init(void) {
     if (!xcb_get_extension_data(conn, &xcb_xinerama_id)->present) {
-        DLOG("Xinerama extension not found, disabling.\n");
-        disable_randr(conn);
+        DLOG("Xinerama extension not found, using root output.\n");
+        create_root_output(conn);
     } else {
         xcb_xinerama_is_active_reply_t *reply;
         reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
 
         if (reply == NULL || !reply->state) {
-            DLOG("Xinerama is not active (in your X-Server), disabling.\n");
-            disable_randr(conn);
+            DLOG("Xinerama is not active (in your X-Server), using root output.\n");
+            create_root_output(conn);
         } else
             query_screens(conn);
 
