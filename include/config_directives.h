@@ -51,7 +51,6 @@ CFGFUN(force_focus_wrapping, const char *value);
 CFGFUN(force_xinerama, const char *value);
 CFGFUN(fake_outputs, const char *outputs);
 CFGFUN(force_display_urgency_hint, const long duration_ms);
-CFGFUN(delay_exit_on_zero_displays, const long duration_ms);
 CFGFUN(focus_on_window_activation, const char *mode);
 CFGFUN(show_marks, const char *value);
 CFGFUN(hide_edge_borders, const char *borders);
