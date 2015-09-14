@@ -158,11 +158,11 @@ void extract_workspace_names_from_bindings(void) {
         }
         DLOG("Saving workspace name \"%s\"\n", target_name);
 
-        binding_workspace_names = srealloc(binding_workspace_names, ++n * sizeof(char*));
-        binding_workspace_names[n-1] = target_name;
+        binding_workspace_names = srealloc(binding_workspace_names, ++n * sizeof(char *));
+        binding_workspace_names[n - 1] = target_name;
     }
-    binding_workspace_names = srealloc(binding_workspace_names, ++n * sizeof(char*));
-    binding_workspace_names[n-1] = NULL;
+    binding_workspace_names = srealloc(binding_workspace_names, ++n * sizeof(char *));
+    binding_workspace_names[n - 1] = NULL;
 }
 
 /*
