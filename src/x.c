@@ -631,16 +631,14 @@ static void set_hidden_state(Con *con) {
     if (should_be_hidden == state->is_hidden)
         return;
 
-    unsigned int num = 0;
-    uint32_t values[1];
     if (should_be_hidden) {
         DLOG("setting _NET_WM_STATE_HIDDEN for con = %p\n", con);
-        values[num++] = A__NET_WM_STATE_HIDDEN;
+        xcb_add_property_atom(conn, con->window->id, A__NET_WM_STATE, A__NET_WM_STATE_HIDDEN);
     } else {
         DLOG("removing _NET_WM_STATE_HIDDEN for con = %p\n", con);
+        xcb_remove_property_atom(conn, con->window->id, A__NET_WM_STATE, A__NET_WM_STATE_HIDDEN);
     }
 
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id, A__NET_WM_STATE, XCB_ATOM_ATOM, 32, num, values);
     state->is_hidden = should_be_hidden;
 }
 

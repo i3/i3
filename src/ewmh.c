@@ -218,13 +218,13 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
  *
  */
 void ewmh_update_sticky(xcb_window_t window, bool sticky) {
-    uint32_t values[1];
-    unsigned int num = 0;
-
-    if (sticky)
-        values[num++] = A__NET_WM_STATE_STICKY;
-
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, A__NET_WM_STATE, XCB_ATOM_ATOM, 32, num, values);
+    if (sticky) {
+        DLOG("Setting _NET_WM_STATE_STICKY for window = %d.\n", window);
+        xcb_add_property_atom(conn, window, A__NET_WM_STATE, A__NET_WM_STATE_STICKY);
+    } else {
+        DLOG("Removing _NET_WM_STATE_STICKY for window = %d.\n", window);
+        xcb_remove_property_atom(conn, window, A__NET_WM_STATE, A__NET_WM_STATE_STICKY);
+    }
 }
 
 /*

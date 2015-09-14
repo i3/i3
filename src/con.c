@@ -658,14 +658,13 @@ static void con_set_fullscreen_mode(Con *con, fullscreen_mode_t fullscreen_mode)
     if (con->window == NULL)
         return;
 
-    uint32_t values[1];
-    unsigned int num = 0;
-
-    if (con->fullscreen_mode != CF_NONE)
-        values[num++] = A__NET_WM_STATE_FULLSCREEN;
-
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
-                        A__NET_WM_STATE, XCB_ATOM_ATOM, 32, num, values);
+    if (con->fullscreen_mode != CF_NONE) {
+        DLOG("Setting _NET_WM_STATE_FULLSCREEN for con = %p / window = %d.\n", con, con->window->id);
+        xcb_add_property_atom(conn, con->window->id, A__NET_WM_STATE, A__NET_WM_STATE_FULLSCREEN);
+    } else {
+        DLOG("Removing _NET_WM_STATE_FULLSCREEN for con = %p / window = %d.\n", con, con->window->id);
+        xcb_remove_property_atom(conn, con->window->id, A__NET_WM_STATE, A__NET_WM_STATE_FULLSCREEN);
+    }
 }
 
 /*

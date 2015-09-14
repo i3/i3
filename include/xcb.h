@@ -145,3 +145,18 @@ uint16_t get_visual_depth(xcb_visualid_t visual_id);
  *
  */
 xcb_visualid_t get_visualid_by_depth(uint16_t depth);
+
+/**
+ * Add an atom to a list of atoms the given property defines.
+ * This is useful, for example, for manipulating _NET_WM_STATE.
+ *
+ */
+void xcb_add_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom_t property, xcb_atom_t atom);
+
+/**
+ * Remove an atom from a list of atoms the given property defines without
+ * removing any other potentially set atoms.  This is useful, for example, for
+ * manipulating _NET_WM_STATE.
+ *
+ */
+void xcb_remove_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom_t property, xcb_atom_t atom);
