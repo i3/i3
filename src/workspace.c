@@ -17,6 +17,10 @@
  * back-and-forth switching. */
 static char *previous_workspace_name = NULL;
 
+/* NULL-terminated list of workspace names (in order) extracted from
+ * keybindings. */
+static char **binding_workspace_names = NULL;
+
 /*
  * Sets ws->layout to splith/splitv if default_orientation was specified in the
  * configfile. Otherwise, it uses splith/splitv depending on whether the output
@@ -107,21 +111,21 @@ Con *workspace_get(const char *num, bool *created) {
 }
 
 /*
- * Returns a pointer to a new workspace in the given output. The workspace
- * is created attached to the tree hierarchy through the given content
- * container.
+ * Extracts workspace names from keybindings (e.g. “web” from “bindsym $mod+1
+ * workspace web”), so that when an output needs a workspace, i3 can start with
+ * the first configured one. Needs to be called before reorder_bindings() so
+ * that the config-file order is used, not the i3-internal order.
  *
  */
-Con *create_workspace_on_output(Output *output, Con *content) {
-    /* add a workspace to this output */
-    Con *out, *current;
-    char *name;
-    bool exists = true;
-    Con *ws = con_new(NULL, NULL);
-    ws->type = CT_WORKSPACE;
-
-    /* try the configured workspace bindings first to find a free name */
+void extract_workspace_names_from_bindings(void) {
     Binding *bind;
+    int n = 0;
+    if (binding_workspace_names != NULL) {
+        for (int i = 0; binding_workspace_names[i] != NULL; i++) {
+            free(binding_workspace_names[i]);
+        }
+        FREE(binding_workspace_names);
+    }
     TAILQ_FOREACH(bind, bindings, bindings) {
         DLOG("binding with command %s\n", bind->command);
         if (strlen(bind->command) < strlen("workspace ") ||
@@ -152,17 +156,39 @@ Con *create_workspace_on_output(Output *output, Con *content) {
             free(target_name);
             continue;
         }
-        FREE(ws->name);
-        ws->name = target_name;
-        DLOG("trying name *%s*\n", ws->name);
+        DLOG("Saving workspace name \"%s\"\n", target_name);
 
+        binding_workspace_names = srealloc(binding_workspace_names, ++n * sizeof(char*));
+        binding_workspace_names[n-1] = target_name;
+    }
+    binding_workspace_names = srealloc(binding_workspace_names, ++n * sizeof(char*));
+    binding_workspace_names[n-1] = NULL;
+}
+
+/*
+ * Returns a pointer to a new workspace in the given output. The workspace
+ * is created attached to the tree hierarchy through the given content
+ * container.
+ *
+ */
+Con *create_workspace_on_output(Output *output, Con *content) {
+    /* add a workspace to this output */
+    Con *out, *current;
+    char *name;
+    bool exists = true;
+    Con *ws = con_new(NULL, NULL);
+    ws->type = CT_WORKSPACE;
+
+    /* try the configured workspace bindings first to find a free name */
+    for (int n = 0; binding_workspace_names[n] != NULL; n++) {
+        char *target_name = binding_workspace_names[n];
         /* Ensure that this workspace is not assigned to a different output —
          * otherwise we would create it, then move it over to its output, then
          * find a new workspace, etc… */
         bool assigned = false;
         struct Workspace_Assignment *assignment;
         TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-            if (strcmp(assignment->name, ws->name) != 0 ||
+            if (strcmp(assignment->name, target_name) != 0 ||
                 strcmp(assignment->output, output->name) == 0)
                 continue;
 
@@ -175,10 +201,10 @@ Con *create_workspace_on_output(Output *output, Con *content) {
 
         current = NULL;
         TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
-        GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, ws->name));
-
+        GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, target_name));
         exists = (current != NULL);
         if (!exists) {
+            ws->name = sstrdup(target_name);
             /* Set ->num to the number of the workspace, if the name actually
              * is a number or starts with a number */
             ws->num = ws_name_to_number(ws->name);

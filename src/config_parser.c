@@ -996,6 +996,7 @@ bool parse_file(const char *f, bool use_nagbar) {
     struct ConfigResultIR *config_output = parse_config(new, context);
     yajl_gen_free(config_output->json_gen);
 
+    extract_workspace_names_from_bindings();
     check_for_duplicate_bindings(context);
     reorder_bindings();
 
