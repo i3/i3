@@ -1414,15 +1414,14 @@ void cmd_focus_window_mode(I3_CMD, char *window_mode) {
     DLOG("window_mode = %s\n", window_mode);
 
     Con *ws = con_get_workspace(focused);
-    Con *current;
     if (ws != NULL) {
         if (strcmp(window_mode, "mode_toggle") == 0) {
-            current = TAILQ_FIRST(&(ws->focus_head));
-            if (current != NULL && current->type == CT_FLOATING_CON)
+            if (con_inside_floating(focused))
                 window_mode = "tiling";
             else
                 window_mode = "floating";
         }
+        Con *current;
         TAILQ_FOREACH(current, &(ws->focus_head), focused) {
             if ((strcmp(window_mode, "floating") == 0 && current->type != CT_FLOATING_CON) ||
                 (strcmp(window_mode, "tiling") == 0 && current->type == CT_FLOATING_CON))
