@@ -1367,11 +1367,11 @@ void handle_event(int type, xcb_generic_event_t *event) {
             DLOG("xkb new keyboard notify, sequence %d, time %d\n", state->sequence, state->time);
             xcb_key_symbols_free(keysyms);
             keysyms = xcb_key_symbols_alloc(conn);
+            if (((xcb_xkb_new_keyboard_notify_event_t *)event)->changed & XCB_XKB_NKN_DETAIL_KEYCODES)
+                (void)load_keymap();
             ungrab_all_keys(conn);
             translate_keysyms();
             grab_all_keys(conn);
-            if (((xcb_xkb_new_keyboard_notify_event_t *)event)->changed & XCB_XKB_NKN_DETAIL_KEYCODES)
-                (void)load_keymap();
         } else if (state->xkbType == XCB_XKB_MAP_NOTIFY) {
             if (event_is_ignored(event->sequence, type)) {
                 DLOG("Ignoring map notify event for sequence %d.\n", state->sequence);
