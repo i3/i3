@@ -18,7 +18,7 @@
 # Ticket: #1455
 use i3test;
 
-my ($ws, $focused);
+my ($ws, $tmp, $focused);
 
 ###############################################################################
 # 1: Given a sticky tiling container, when the workspace is switched, then
@@ -62,9 +62,9 @@ is(@{get_ws($ws)->{floating_nodes}}, 2, 'multiple sticky windows can be used at 
 cmd '[class="findme"] kill';
 
 ###############################################################################
-# 4: Given a sticky floating container and a tiling container on the target
-#    workspace, when the workspace is switched, then the tiling container is
-#    focused.
+# 4: Given an unfocused sticky floating container and a tiling container on the
+#    target workspace, when the workspace is switched, then the tiling container
+#    is focused.
 ###############################################################################
 $ws = fresh_workspace;
 open_window;
@@ -72,13 +72,30 @@ $focused = get_focused($ws);
 fresh_workspace;
 open_floating_window(wm_class => 'findme');
 cmd 'sticky enable';
+open_window;
 cmd 'workspace ' . $ws;
 
 is(get_focused($ws), $focused, 'the tiling container has focus');
 cmd '[class="findme"] kill';
 
 ###############################################################################
-# 5: Given a floating container on a non-visible workspace, when the window
+# 5: Given a focused sticky floating container and a tiling container on the
+#    target workspace, when the workspace is switched, then the tiling container
+#    is focused.
+###############################################################################
+$ws = fresh_workspace;
+open_window;
+$tmp = fresh_workspace;
+open_floating_window(wm_class => 'findme');
+$focused = get_focused($tmp);
+cmd 'sticky enable';
+cmd 'workspace ' . $ws;
+
+is(get_focused($ws), $focused, 'the sticky container has focus');
+cmd '[class="findme"] kill';
+
+###############################################################################
+# 6: Given a floating container on a non-visible workspace, when the window
 #    is made sticky, then the window immediately jumps to the currently
 #    visible workspace.
 ###############################################################################

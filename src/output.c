@@ -52,31 +52,34 @@ Output *get_output_from_string(Output *current_output, const char *output_str) {
  * workspace on that output.
  *
  */
-void output_push_sticky_windows(void) {
+void output_push_sticky_windows(Con *to_focus) {
     Con *output;
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH(output, &(croot->focus_head), focused) {
         Con *workspace, *visible_ws = NULL;
         GREP_FIRST(visible_ws, output_get_content(output), workspace_is_visible(child));
 
         /* We use this loop instead of TAILQ_FOREACH to avoid problems if the
          * sticky window was the last window on that workspace as moving it in
          * this case will close the workspace. */
-        for (workspace = TAILQ_FIRST(&(output_get_content(output)->nodes_head));
-             workspace != TAILQ_END(&(output_get_content(output)->nodes_head));) {
+        for (workspace = TAILQ_FIRST(&(output_get_content(output)->focus_head));
+             workspace != TAILQ_END(&(output_get_content(output)->focus_head));) {
             Con *current_ws = workspace;
-            workspace = TAILQ_NEXT(workspace, nodes);
+            workspace = TAILQ_NEXT(workspace, focused);
 
             /* Since moving the windows actually removes them from the list of
              * floating windows on this workspace, here too we need to use
              * another loop than TAILQ_FOREACH. */
             Con *child;
-            for (child = TAILQ_FIRST(&(current_ws->floating_head));
-                 child != TAILQ_END(&(current_ws->floating_head));) {
+            for (child = TAILQ_FIRST(&(current_ws->focus_head));
+                 child != TAILQ_END(&(current_ws->focus_head));) {
                 Con *current = child;
-                child = TAILQ_NEXT(child, floating_windows);
+                child = TAILQ_NEXT(child, focused);
+                if (current->type != CT_FLOATING_CON)
+                    continue;
 
-                if (con_is_sticky(current))
-                    con_move_to_workspace(current, visible_ws, true, false, true);
+                if (con_is_sticky(current)) {
+                    con_move_to_workspace(current, visible_ws, true, false, current != to_focus->parent);
+                }
             }
         }
     }

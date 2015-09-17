@@ -1598,7 +1598,7 @@ void cmd_sticky(I3_CMD, char *action) {
 
     /* A window we made sticky might not be on a visible workspace right now, so we need to make
      * sure it gets pushed to the front now. */
-    output_push_sticky_windows();
+    output_push_sticky_windows(focused);
 
     cmd_output->needs_tree_render = true;
     ysuccess(true);

@@ -363,6 +363,7 @@ static void workspace_defer_update_urgent_hint_cb(EV_P_ ev_timer *w, int revents
 
 static void _workspace_show(Con *workspace) {
     Con *current, *old = NULL;
+    Con *old_focus = focused;
 
     /* safe-guard against showing i3-internal workspaces like __i3_scratch */
     if (con_is_internal(workspace))
@@ -478,7 +479,7 @@ static void _workspace_show(Con *workspace) {
     ewmh_update_current_desktop();
 
     /* Push any sticky windows to the now visible workspace. */
-    output_push_sticky_windows();
+    output_push_sticky_windows(old_focus);
 }
 
 /*
