@@ -12,8 +12,8 @@
 #include <stdbool.h>
 #include <err.h>
 
-#if PANGO_SUPPORT
 #include <cairo/cairo-xcb.h>
+#if PANGO_SUPPORT
 #include <pango/pangocairo.h>
 #endif
 

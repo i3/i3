@@ -10,13 +10,34 @@
 #pragma once
 
 #include <xcb/xcb.h>
+#include <cairo/cairo-xcb.h>
 
 #include "common.h"
+#include "cairo_util.h"
 
 typedef struct i3_output i3_output;
 
 SLIST_HEAD(outputs_head, i3_output);
 struct outputs_head* outputs;
+
+struct i3_output {
+    char* name;   /* Name of the output */
+    bool active;  /* If the output is active */
+    bool primary; /* If it is the primary output */
+    bool visible; /* If the bar is visible on this output */
+    int ws;       /* The number of the currently visible ws */
+    rect rect;    /* The rect (relative to the root window) */
+
+    /* Off-screen buffer for preliminary rendering. */
+    surface_t buffer;
+    /* The actual window on which we draw. */
+    surface_t bar;
+
+    struct ws_head* workspaces;  /* The workspaces on this output */
+    struct tc_head* trayclients; /* The tray clients on this output */
+
+    SLIST_ENTRY(i3_output) slist; /* Pointer for the SLIST-Macro */
+};
 
 /*
  * Start parsing the received JSON string
@@ -36,20 +57,4 @@ void init_outputs(void);
  */
 i3_output* get_output_by_name(char* name);
 
-struct i3_output {
-    char* name;   /* Name of the output */
-    bool active;  /* If the output is active */
-    bool primary; /* If it is the primary output */
-    bool visible; /* If the bar is visible on this output */
-    int ws;       /* The number of the currently visible ws */
-    rect rect;    /* The rect (relative to the root window) */
-
-    xcb_window_t bar;     /* The id of the bar of the output */
-    xcb_pixmap_t buffer;  /* An extra pixmap for double-buffering */
-    xcb_gcontext_t bargc; /* The graphical context of the bar */
-
-    struct ws_head* workspaces;  /* The workspaces on this output */
-    struct tc_head* trayclients; /* The tray clients on this output */
-
-    SLIST_ENTRY(i3_output) slist; /* Pointer for the SLIST-Macro */
-};
+void init_surface(surface_t* surface, xcb_drawable_t drawable, int width, int height);
