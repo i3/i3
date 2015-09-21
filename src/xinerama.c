@@ -88,6 +88,19 @@ static void query_screens(xcb_connection_t *conn) {
 }
 
 /*
+ * This creates the root_output (borrowed from randr.c) and uses it
+ * as the sole output for this session.
+ *
+ */
+static void use_root_output(xcb_connection_t *conn) {
+    Output *s = create_root_output(conn);
+    s->active = true;
+    TAILQ_INSERT_TAIL(&outputs, s, outputs);
+    output_init_con(s);
+    init_ws_for_output(s, output_get_content(s->con));
+}
+
+/*
  * We have just established a connection to the X server and need the initial Xinerama
  * information to setup workspaces for each screen.
  *
@@ -95,14 +108,14 @@ static void query_screens(xcb_connection_t *conn) {
 void xinerama_init(void) {
     if (!xcb_get_extension_data(conn, &xcb_xinerama_id)->present) {
         DLOG("Xinerama extension not found, using root output.\n");
-        create_root_output(conn);
+        use_root_output(conn);
     } else {
         xcb_xinerama_is_active_reply_t *reply;
         reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
 
         if (reply == NULL || !reply->state) {
             DLOG("Xinerama is not active (in your X-Server), using root output.\n");
-            create_root_output(conn);
+            use_root_output(conn);
         } else
             query_screens(conn);
 

@@ -118,4 +118,4 @@ Output *get_output_next_wrap(direction_t direction, Output *current);
  * Creates an output covering the root window.
  *
  */
-void create_root_output(xcb_connection_t *conn);
+Output *create_root_output(xcb_connection_t *conn);
