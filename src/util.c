@@ -169,24 +169,35 @@ bool path_exists(const char *path) {
 }
 
 /*
- * Goes through the list of arguments (for exec()) and checks if the given argument
- * is present. If not, it copies the arguments (because we cannot realloc it) and
- * appends the given argument.
- *
+ * Goes through the list of arguments (for exec()) and add/replace the given option,
+ * including the option name, its argument, and the option character.
  */
-static char **append_argument(char **original, char *argument) {
+static char **add_argument(char **original, char *opt_char, char *opt_arg, char *opt_name) {
     int num_args;
-    for (num_args = 0; original[num_args] != NULL; num_args++) {
-        DLOG("original argument: \"%s\"\n", original[num_args]);
-        /* If the argument is already present we return the original pointer */
-        if (strcmp(original[num_args], argument) == 0)
-            return original;
+    for (num_args = 0; original[num_args] != NULL; num_args++)
+        ;
+    char **result = scalloc(num_args + 3, sizeof(char *));
+
+    /* copy the arguments, but skip the ones we'll replace */
+    int write_index = 0;
+    bool skip_next = false;
+    for (int i = 0; i < num_args; ++i) {
+        if (skip_next) {
+            skip_next = false;
+            continue;
+        }
+        if (!strcmp(original[i], opt_char) ||
+            (opt_name && !strcmp(original[i], opt_name))) {
+            if (opt_arg)
+                skip_next = true;
+            continue;
+        }
+        result[write_index++] = original[i];
     }
-    /* Copy the original array */
-    char **result = smalloc((num_args + 2) * sizeof(char *));
-    memcpy(result, original, num_args * sizeof(char *));
-    result[num_args] = argument;
-    result[num_args + 1] = NULL;
+
+    /* add the arguments we'll replace */
+    result[write_index++] = opt_char;
+    result[write_index] = opt_arg;
 
     return result;
 }
@@ -267,39 +278,21 @@ void i3_restart(bool forget_layout) {
     ipc_shutdown();
 
     LOG("restarting \"%s\"...\n", start_argv[0]);
-    /* make sure -a is in the argument list or append it */
-    start_argv = append_argument(start_argv, "-a");
+    /* make sure -a is in the argument list or add it */
+    start_argv = add_argument(start_argv, "-a", NULL, NULL);
+
+    /* make debuglog-on persist */
+    if (get_debug_logging()) {
+        start_argv = add_argument(start_argv, "-d", "all", NULL);
+    }
 
     /* replace -r <file> so that the layout is restored */
     if (restart_filename != NULL) {
-        /* create the new argv */
-        int num_args;
-        for (num_args = 0; start_argv[num_args] != NULL; num_args++)
-            ;
-        char **new_argv = scalloc(num_args + 3, sizeof(char *));
-
-        /* copy the arguments, but skip the ones we'll replace */
-        int write_index = 0;
-        bool skip_next = false;
-        for (int i = 0; i < num_args; ++i) {
-            if (skip_next)
-                skip_next = false;
-            else if (!strcmp(start_argv[i], "-r") ||
-                     !strcmp(start_argv[i], "--restart"))
-                skip_next = true;
-            else
-                new_argv[write_index++] = start_argv[i];
-        }
-
-        /* add the arguments we'll replace */
-        new_argv[write_index++] = "--restart";
-        new_argv[write_index] = restart_filename;
-
-        /* swap the argvs */
-        start_argv = new_argv;
+        start_argv = add_argument(start_argv, "--restart", restart_filename, "-r");
     }
 
     execvp(start_argv[0], start_argv);
+
     /* not reached */
 }
 
