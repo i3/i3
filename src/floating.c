@@ -18,6 +18,9 @@ extern xcb_connection_t *conn;
  *
  */
 static Rect total_outputs_dimensions(void) {
+    if (TAILQ_EMPTY(&outputs))
+        return (Rect){0, 0, root_screen->width_in_pixels, root_screen->height_in_pixels};
+
     Output *output;
     /* Use Rect to encapsulate dimensions, ignoring x/y */
     Rect outputs_dimensions = {0, 0, 0, 0};
