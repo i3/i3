@@ -655,8 +655,6 @@ int main(int argc, char *argv[]) {
             ELOG("ERROR: No screen at (%d, %d), starting on the first screen\n",
                  pointerreply->root_x, pointerreply->root_y);
             output = get_first_output();
-            if (!output)
-                die("No usable outputs available.\n");
         }
 
         con_focus(con_descend_focused(output_get_content(output->con)));

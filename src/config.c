@@ -206,10 +206,6 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     if (config.workspace_urgency_timer == 0)
         config.workspace_urgency_timer = 0.5;
 
-    /* Set default zero displays exit delay to 500ms */
-    if (config.zero_disp_exit_timer_ms == 0)
-        config.zero_disp_exit_timer_ms = 500;
-
     parse_configuration(override_configpath, true);
 
     if (reload) {
