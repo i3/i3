@@ -239,19 +239,17 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
  * Creates an output covering the root window.
  *
  */
-void create_root_output(xcb_connection_t *conn) {
-    root_output = scalloc(1, sizeof(Output));
+Output *create_root_output(xcb_connection_t *conn) {
+    Output *s = scalloc(1, sizeof(Output));
 
-    root_output->active = true;
-    root_output->rect.x = 0;
-    root_output->rect.y = 0;
-    root_output->rect.width = root_screen->width_in_pixels;
-    root_output->rect.height = root_screen->height_in_pixels;
-    root_output->name = "xroot-0";
-    output_init_con(root_output);
-    init_ws_for_output(root_output, output_get_content(root_output->con));
+    s->active = false;
+    s->rect.x = 0;
+    s->rect.y = 0;
+    s->rect.width = root_screen->width_in_pixels;
+    s->rect.height = root_screen->height_in_pixels;
+    s->name = "xroot-0";
 
-    TAILQ_INSERT_TAIL(&outputs, root_output, outputs);
+    return s;
 }
 
 /*
@@ -833,11 +831,18 @@ void randr_query_outputs(void) {
 void randr_init(int *event_base) {
     const xcb_query_extension_reply_t *extreply;
 
-    create_root_output(conn);
+    root_output = create_root_output(conn);
+    TAILQ_INSERT_TAIL(&outputs, root_output, outputs);
 
     extreply = xcb_get_extension_data(conn, &xcb_randr_id);
-    if (!extreply->present)
+    if (!extreply->present) {
+        DLOG("RandR is not present, activating root output.\n");
+        root_output->active = true;
+        output_init_con(root_output);
+        init_ws_for_output(root_output, output_get_content(root_output->con));
+
         return;
+    }
 
     randr_query_outputs();
 
