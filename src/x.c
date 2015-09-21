@@ -145,6 +145,14 @@ void x_con_init(Con *con, uint16_t depth) {
 
     Rect dims = {-15, -15, 10, 10};
     con->frame = create_window(conn, dims, depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
+    xcb_change_property(conn,
+                        XCB_PROP_MODE_REPLACE,
+                        con->frame,
+                        XCB_ATOM_WM_CLASS,
+                        XCB_ATOM_STRING,
+                        8,
+                        (strlen("i3-frame") + 1) * 2,
+                        "i3-frame\0i3-frame\0");
 
     if (win_colormap != XCB_NONE)
         xcb_free_colormap(conn, win_colormap);
