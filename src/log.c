@@ -246,6 +246,15 @@ static void vlog(const bool print, const char *fmt, va_list args) {
         len += vsnprintf(message + len, sizeof(message) - len, fmt, args);
         if (len >= sizeof(message)) {
             fprintf(stderr, "BUG: single log message > 4k\n");
+
+            /* vsnprintf returns the number of bytes that *would have been written*,
+             * not the actual amount written. Thus, limit len to sizeof(message) to avoid
+             * memory corruption and outputting garbage later.  */
+            len = sizeof(message);
+
+            /* Punch in a newline so the next log message is not dangling at
+             * the end of the truncated message. */
+            message[len - 2] = '\n';
         }
 
         /* If there is no space for the current message in the ringbuffer, we
