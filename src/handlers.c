@@ -736,7 +736,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 con->sticky = !con->sticky;
 
             DLOG("New sticky status for con = %p is %i.\n", con, con->sticky);
-            output_push_sticky_windows();
+            output_push_sticky_windows(focused);
         }
 
         tree_render();

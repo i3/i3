@@ -27,4 +27,4 @@ Output *get_output_from_string(Output *current_output, const char *output_str);
  * workspace on that output.
  *
  */
-void output_push_sticky_windows(void);
+void output_push_sticky_windows(Con *to_focus);
