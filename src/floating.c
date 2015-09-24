@@ -369,6 +369,12 @@ void floating_disable(Con *con, bool automatic) {
  *
  */
 void toggle_floating_mode(Con *con, bool automatic) {
+    /* forbid the command to toggle floating on a CT_FLOATING_CON */
+    if (con->type == CT_FLOATING_CON) {
+        ELOG("Cannot toggle floating mode on con = %p because it is of type CT_FLOATING_CON.\n", con);
+        return;
+    }
+
     /* see if the client is already floating */
     if (con_is_floating(con)) {
         LOG("already floating, re-setting to tiling\n");
