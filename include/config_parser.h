@@ -32,6 +32,11 @@ struct ConfigResultIR {
 struct ConfigResultIR *parse_config(const char *input, struct context *context);
 
 /**
+ * launch nagbar to indicate errors in the configuration file.
+ */
+void start_config_error_nagbar(const char *configpath, bool has_errors);
+
+/**
  * Parses the given file by first replacing the variables, then calling
  * parse_config and launching i3-nagbar if use_nagbar is true.
  *
