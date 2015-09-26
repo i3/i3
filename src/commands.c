@@ -1194,41 +1194,37 @@ void cmd_mode(I3_CMD, char *mode) {
  *
  */
 void cmd_move_con_to_output(I3_CMD, char *name) {
-    owindow *current;
-
-    DLOG("should move window to output %s\n", name);
-
+    DLOG("Should move window to output \"%s\".\n", name);
     HANDLE_EMPTY_MATCH;
 
-    Output *current_output = NULL;
-    // TODO: fix the handling of criteria
-    TAILQ_FOREACH(current, &owindows, owindows)
-    current_output = get_output_of_con(current->con);
-    assert(current_output != NULL);
-
-    Output *output = get_output_from_string(current_output, name);
-    if (!output) {
-        LOG("No such output found.\n");
-        ysuccess(false);
-        return;
-    }
-
-    /* get visible workspace on output */
-    Con *ws = NULL;
-    GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-    if (!ws) {
-        ysuccess(false);
-        return;
-    }
-
+    owindow *current;
+    bool had_error = false;
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
+
+        Output *current_output = get_output_of_con(current->con);
+        assert(current_output != NULL);
+
+        Output *output = get_output_from_string(current_output, name);
+        if (output == NULL) {
+            ELOG("Could not find output \"%s\", skipping.\n", name);
+            had_error = true;
+            continue;
+        }
+
+        Con *ws = NULL;
+        GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
+        if (ws == NULL) {
+            ELOG("Could not find a visible workspace on output %p.\n", output);
+            had_error = true;
+            continue;
+        }
+
         con_move_to_workspace(current->con, ws, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    ysuccess(!had_error);
 }
 
 /*
