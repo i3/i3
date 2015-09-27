@@ -194,4 +194,4 @@ Con *workspace_encapsulate(Con *ws);
  * This returns true if and only if moving the workspace was successful.
  *
  */
-bool workspace_move_to_output(Con *ws, char *output);
+bool workspace_move_to_output(Con *ws, const char *output);

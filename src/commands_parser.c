@@ -133,10 +133,8 @@ static void push_long(const char *identifier, long num) {
     exit(1);
 }
 
-// XXX: ideally, this would be const char. need to check if that works with all
-// called functions.
 // TODO move to a common util
-static char *get_string(const char *identifier) {
+static const char *get_string(const char *identifier) {
     for (int c = 0; c < 10; c++) {
         if (stack[c].identifier == NULL)
             break;
