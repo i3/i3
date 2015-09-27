@@ -782,15 +782,11 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, char *way, char
  * Implementation of 'resize grow|shrink <direction> [<px> px] [or <ppt> ppt]'.
  *
  */
-void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resize_ppt) {
-    /* resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt] */
-    DLOG("resizing in way %s, direction %s, px %s or ppt %s\n", way, direction, resize_px, resize_ppt);
-    // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
-    int px = atoi(resize_px);
-    int ppt = atoi(resize_ppt);
+void cmd_resize(I3_CMD, char *way, char *direction, long resize_px, long resize_ppt) {
+    DLOG("resizing in way %s, direction %s, px %ld or ppt %ld\n", way, direction, resize_px, resize_ppt);
     if (strcmp(way, "shrink") == 0) {
-        px *= -1;
-        ppt *= -1;
+        resize_px *= -1;
+        resize_ppt *= -1;
     }
 
     HANDLE_EMPTY_MATCH;
@@ -805,14 +801,16 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
 
         Con *floating_con;
         if ((floating_con = con_inside_floating(current->con))) {
-            cmd_resize_floating(current_match, cmd_output, way, direction, floating_con, px);
+            cmd_resize_floating(current_match, cmd_output, way, direction, floating_con, resize_px);
         } else {
             if (strcmp(direction, "width") == 0 ||
                 strcmp(direction, "height") == 0) {
-                if (!cmd_resize_tiling_width_height(current_match, cmd_output, current->con, way, direction, ppt))
+                if (!cmd_resize_tiling_width_height(current_match, cmd_output,
+                                                    current->con, way, direction, resize_ppt))
                     return;
             } else {
-                if (!cmd_resize_tiling_direction(current_match, cmd_output, current->con, way, direction, ppt))
+                if (!cmd_resize_tiling_direction(current_match, cmd_output,
+                                                 current->con, way, direction, resize_ppt))
                     return;
             }
         }
@@ -827,13 +825,10 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
  * Implementation of 'resize set <px> [px] <px> [px]'.
  *
  */
-void cmd_size(I3_CMD, char *cwidth, char *cheight) {
-    DLOG("resizing to %sx%s px\n", cwidth, cheight);
-    // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
-    int x = atoi(cwidth);
-    int y = atoi(cheight);
-    if (x <= 0 || y <= 0) {
-        ELOG("Resize failed: dimensions cannot be negative (was %sx%s)\n", cwidth, cheight);
+void cmd_resize_set(I3_CMD, long cwidth, long cheight) {
+    DLOG("resizing to %ldx%ld px\n", cwidth, cheight);
+    if (cwidth <= 0 || cheight <= 0) {
+        ELOG("Resize failed: dimensions cannot be negative (was %ldx%ld)\n", cwidth, cheight);
         return;
     }
 
@@ -843,7 +838,7 @@ void cmd_size(I3_CMD, char *cwidth, char *cheight) {
     TAILQ_FOREACH(current, &owindows, owindows) {
         Con *floating_con;
         if ((floating_con = con_inside_floating(current->con))) {
-            floating_resize(floating_con, x, y);
+            floating_resize(floating_con, cwidth, cheight);
         } else {
             ELOG("Resize failed: %p not a floating container\n", current->con);
         }

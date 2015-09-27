@@ -225,10 +225,10 @@ state RESIZE_DIRECTION:
       -> RESIZE_PX
 
 state RESIZE_PX:
-  resize_px = word
+  resize_px = number
       -> RESIZE_TILING
   end
-      -> call cmd_resize($way, $direction, "10", "10")
+      -> call cmd_resize($way, $direction, 10, 10)
 
 state RESIZE_TILING:
   'px'
@@ -236,29 +236,29 @@ state RESIZE_TILING:
   'or'
       -> RESIZE_TILING_OR
   end
-      -> call cmd_resize($way, $direction, $resize_px, "10")
+      -> call cmd_resize($way, $direction, &resize_px, 10)
 
 state RESIZE_TILING_OR:
-  resize_ppt = word
+  resize_ppt = number
       -> RESIZE_TILING_FINAL
 
 state RESIZE_TILING_FINAL:
   'ppt', end
-      -> call cmd_resize($way, $direction, $resize_px, $resize_ppt)
+      -> call cmd_resize($way, $direction, &resize_px, &resize_ppt)
 
 state RESIZE_SET:
-  width = word
+  width = number
       -> RESIZE_WIDTH
 
 state RESIZE_WIDTH:
   'px'
       ->
-  height = word
+  height = number
       -> RESIZE_HEIGHT
 
 state RESIZE_HEIGHT:
   'px', end
-      -> call cmd_size($width, $height)
+      -> call cmd_resize_set(&width, &height)
 
 # rename workspace <name> to <name>
 # rename workspace to <name>
