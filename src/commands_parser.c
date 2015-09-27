@@ -99,6 +99,31 @@ static void push_string(const char *identifier, char *str) {
         stack[c].identifier = identifier;
         stack[c].val.str = str;
         stack[c].type = STACK_STR;
+<<<<<<< e86d626bf180eda3f88a547b708d94dc616fc0d3
+=======
+        return;
+    }
+
+    /* When we arrive here, the stack is full. This should not happen and
+     * means there’s either a bug in this parser or the specification
+     * contains a command with more than 10 identified tokens. */
+    fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
+                    "in the code, or a new command which contains more than "
+                    "10 identified tokens.\n");
+    exit(1);
+}
+
+// TODO move to a common util
+static void push_long(const char *identifier, long num) {
+    for (int c = 0; c < 10; c++) {
+        if (stack[c].identifier != NULL) {
+            continue;
+        }
+
+        stack[c].identifier = identifier;
+        stack[c].val.num = num;
+        stack[c].type = STACK_LONG;
+>>>>>>> Allow the commands parser to use "number" arguments by making the stack typed.
         return;
     }
 
