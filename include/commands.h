@@ -64,13 +64,13 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which);
  * Implementation of 'resize set <px> [px] <px> [px]'.
  *
  */
-void cmd_size(I3_CMD, char *cwidth, char *cheight);
+void cmd_resize_set(I3_CMD, long cwidth, long cheight);
 
 /**
  * Implementation of 'resize grow|shrink <direction> [<px> px] [or <ppt> ppt]'.
  *
  */
-void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resize_ppt);
+void cmd_resize(I3_CMD, char *way, char *direction, long resize_px, long resize_ppt);
 
 /**
  * Implementation of 'border normal|pixel [<n>]', 'border none|1pixel|toggle'.
