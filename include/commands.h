@@ -214,7 +214,7 @@ void cmd_sticky(I3_CMD, char *action);
  * Implementation of 'move <direction> [<pixels> [px]]'.
  *
  */
-void cmd_move_direction(I3_CMD, char *direction, char *move_px);
+void cmd_move_direction(I3_CMD, char *direction, long move_px);
 
 /**
  * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith'.
@@ -262,7 +262,7 @@ void cmd_focus_output(I3_CMD, char *name);
  * Implementation of 'move [window|container] [to] [absolute] position <px> [px] <px> [px]
  *
  */
-void cmd_move_window_to_position(I3_CMD, char *method, char *x, char *y);
+void cmd_move_window_to_position(I3_CMD, char *method, long x, long y);
 
 /**
  * Implementation of 'move [window|container] [to] [absolute] position center

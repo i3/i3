@@ -1565,28 +1565,25 @@ void cmd_sticky(I3_CMD, char *action) {
  * Implementation of 'move <direction> [<pixels> [px]]'.
  *
  */
-void cmd_move_direction(I3_CMD, char *direction, char *move_px) {
-    // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
-    int px = atoi(move_px);
-
+void cmd_move_direction(I3_CMD, char *direction, long move_px) {
     owindow *current;
     HANDLE_EMPTY_MATCH;
 
     Con *initially_focused = focused;
 
     TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("moving in direction %s, px %s\n", direction, move_px);
+        DLOG("moving in direction %s, px %ld\n", direction, move_px);
         if (con_is_floating(current->con)) {
-            DLOG("floating move with %d pixels\n", px);
+            DLOG("floating move with %ld pixels\n", move_px);
             Rect newrect = current->con->parent->rect;
             if (strcmp(direction, "left") == 0) {
-                newrect.x -= px;
+                newrect.x -= move_px;
             } else if (strcmp(direction, "right") == 0) {
-                newrect.x += px;
+                newrect.x += move_px;
             } else if (strcmp(direction, "up") == 0) {
-                newrect.y -= px;
+                newrect.y -= move_px;
             } else if (strcmp(direction, "down") == 0) {
-                newrect.y += px;
+                newrect.y += move_px;
             }
             floating_reposition(current->con->parent, newrect);
         } else {
@@ -1788,9 +1785,7 @@ void cmd_focus_output(I3_CMD, char *name) {
  * Implementation of 'move [window|container] [to] [absolute] position <px> [px] <px> [px]
  *
  */
-void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
-    int x = atoi(cx);
-    int y = atoi(cy);
+void cmd_move_window_to_position(I3_CMD, char *method, long x, long y) {
     bool has_error = false;
 
     owindow *current;
@@ -1812,7 +1807,7 @@ void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
             current->con->parent->rect.x = x;
             current->con->parent->rect.y = y;
 
-            DLOG("moving to absolute position %d %d\n", x, y);
+            DLOG("moving to absolute position %ld %ld\n", x, y);
             floating_maybe_reassign_ws(current->con->parent);
             cmd_output->needs_tree_render = true;
         }
@@ -1820,7 +1815,7 @@ void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
         if (strcmp(method, "position") == 0) {
             Rect newrect = current->con->parent->rect;
 
-            DLOG("moving to position %d %d\n", x, y);
+            DLOG("moving to position %ld %ld\n", x, y);
             newrect.x = x;
             newrect.y = y;
 
