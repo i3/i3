@@ -320,16 +320,16 @@ state MOVE:
       -> MOVE_TO_ABSOLUTE_POSITION
 
 state MOVE_DIRECTION:
-  pixels = word
+  pixels = number
       -> MOVE_DIRECTION_PX
   end
-      -> call cmd_move_direction($direction, "10")
+      -> call cmd_move_direction($direction, 10)
 
 state MOVE_DIRECTION_PX:
   'px'
-      -> call cmd_move_direction($direction, $pixels)
+      -> call cmd_move_direction($direction, &pixels)
   end
-      -> call cmd_move_direction($direction, $pixels)
+      -> call cmd_move_direction($direction, &pixels)
 
 state MOVE_WORKSPACE:
   'to '
@@ -370,18 +370,18 @@ state MOVE_TO_POSITION:
       -> call cmd_move_window_to_center($method)
   'mouse', 'cursor', 'pointer'
       -> call cmd_move_window_to_mouse()
-  coord_x = word
+  coord_x = number
       -> MOVE_TO_POSITION_X
 
 state MOVE_TO_POSITION_X:
   'px'
       ->
-  coord_y = word
+  coord_y = number
       -> MOVE_TO_POSITION_Y
 
 state MOVE_TO_POSITION_Y:
   'px', end
-      -> call cmd_move_window_to_position($method, $coord_x, $coord_y)
+      -> call cmd_move_window_to_position($method, &coord_x, &coord_y)
 
 # mode <string>
 state MODE:
