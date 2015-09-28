@@ -1028,8 +1028,8 @@ bool con_move_to_mark(Con *con, const char *mark) {
         target = TAILQ_FIRST(&(target->focus_head));
     }
 
-    if (con == target) {
-        DLOG("cannot move the container to itself, aborting.\n");
+    if (con == target || con == target->parent) {
+        DLOG("cannot move the container to or inside itself, aborting.\n");
         return false;
     }
 
