@@ -338,6 +338,10 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         } else if (strcasecmp(last_key, "mark") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
+
+            /* We unmark any containers using this mark to avoid duplicates. */
+            con_unmark(buf);
+
             json_node->mark = buf;
         } else if (strcasecmp(last_key, "floating") == 0) {
             char *buf = NULL;

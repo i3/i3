@@ -520,6 +520,79 @@ Con *con_by_mark(const char *mark) {
 }
 
 /*
+ * Toggles the mark on a container.
+ * If the container already has this mark, the mark is removed.
+ * Otherwise, the mark is assigned to the container.
+ *
+ */
+void con_mark_toggle(Con *con, const char *mark) {
+    assert(con != NULL);
+    DLOG("Toggling mark \"%s\" on con = %p.\n", mark, con);
+
+    if (con->mark != NULL && strcmp(con->mark, mark) == 0) {
+        con_unmark(mark);
+    } else {
+        con_mark(con, mark);
+    }
+}
+
+/*
+ * Assigns a mark to the container.
+ *
+ */
+void con_mark(Con *con, const char *mark) {
+    assert(con != NULL);
+    DLOG("Setting mark \"%s\" on con = %p.\n", mark, con);
+
+    FREE(con->mark);
+    con->mark = sstrdup(mark);
+    con->mark_changed = true;
+
+    DLOG("Clearing the mark from all other windows.\n");
+    Con *other;
+    TAILQ_FOREACH(other, &all_cons, all_cons) {
+        /* Skip the window we actually handled since we took care of it already. */
+        if (con == other)
+            continue;
+
+        if (other->mark != NULL && strcmp(other->mark, mark) == 0) {
+            FREE(other->mark);
+            other->mark_changed = true;
+        }
+    }
+}
+
+/*
+ * If mark is NULL, this removes all existing marks.
+ * Otherwise, it will only remove the given mark (if it is present).
+ *
+ */
+void con_unmark(const char *mark) {
+    Con *con;
+    if (mark == NULL) {
+        DLOG("Unmarking all containers.\n");
+        TAILQ_FOREACH(con, &all_cons, all_cons) {
+            if (con->mark == NULL)
+                continue;
+
+            FREE(con->mark);
+            con->mark_changed = true;
+        }
+    } else {
+        DLOG("Removing mark \"%s\".\n", mark);
+        con = con_by_mark(mark);
+        if (con == NULL) {
+            DLOG("No container found with this mark, so there is nothing to do.\n");
+            return;
+        }
+
+        DLOG("Found mark on con = %p. Removing it now.\n", con);
+        FREE(con->mark);
+        con->mark_changed = true;
+    }
+}
+
+/*
  * Returns the first container below 'con' which wants to swallow this window
  * TODO: priority
  *

@@ -147,6 +147,27 @@ Con *con_by_frame_id(xcb_window_t frame);
 Con *con_by_mark(const char *mark);
 
 /**
+ * Toggles the mark on a container.
+ * If the container already has this mark, the mark is removed.
+ * Otherwise, the mark is assigned to the container.
+ *
+ */
+void con_mark_toggle(Con *con, const char *mark);
+
+/**
+ * Assigns a mark to the container.
+ *
+ */
+void con_mark(Con *con, const char *mark);
+
+/**
+ * If mark is NULL, this removes all existing marks.
+ * Otherwise, it will only remove the given mark (if it is present).
+ *
+ */
+void con_unmark(const char *mark);
+
+/**
  * Returns the first container below 'con' which wants to swallow this window
  * TODO: priority
  *

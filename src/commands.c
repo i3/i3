@@ -1120,27 +1120,10 @@ void cmd_mark(I3_CMD, char *mark, char *toggle) {
     }
 
     DLOG("matching: %p / %s\n", current->con, current->con->name);
-    current->con->mark_changed = true;
-    if (toggle != NULL && current->con->mark && strcmp(current->con->mark, mark) == 0) {
-        DLOG("removing window mark %s\n", mark);
-        FREE(current->con->mark);
+    if (toggle != NULL) {
+        con_mark_toggle(current->con, mark);
     } else {
-        DLOG("marking window with str %s\n", mark);
-        FREE(current->con->mark);
-        current->con->mark = sstrdup(mark);
-    }
-
-    DLOG("Clearing all non-matched windows with this mark\n");
-    Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons) {
-        /* Skip matched window, we took care of it already. */
-        if (current->con == con)
-            continue;
-
-        if (con->mark && strcmp(con->mark, mark) == 0) {
-            FREE(con->mark);
-            con->mark_changed = true;
-        }
+        con_mark(current->con, mark);
     }
 
     cmd_output->needs_tree_render = true;
@@ -1153,24 +1136,7 @@ void cmd_mark(I3_CMD, char *mark, char *toggle) {
  *
  */
 void cmd_unmark(I3_CMD, char *mark) {
-    if (mark == NULL) {
-        Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            if (con->mark == NULL)
-                continue;
-
-            FREE(con->mark);
-            con->mark_changed = true;
-        }
-        DLOG("Removed all window marks.\n");
-    } else {
-        Con *con = con_by_mark(mark);
-        if (con != NULL) {
-            FREE(con->mark);
-            con->mark_changed = true;
-        }
-        DLOG("Removed window mark \"%s\".\n", mark);
-    }
+    con_unmark(mark);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
