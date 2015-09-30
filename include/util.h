@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * util.c: Utility functions, which can be useful everywhere within i3 (see
  *         also libi3).
@@ -105,14 +105,6 @@ void exec_i3_utility(char *name, char *argv[]);
  */
 void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie,
                  char *err_message);
-
-/**
- * This function resolves ~ in pathnames.
- * It may resolve wildcards in the first part of the path, but if no match
- * or multiple matches are found, it just returns a copy of path as given.
- *
- */
-char *resolve_tilde(const char *path);
 
 /**
  * Checks if the given path exists by calling stat().

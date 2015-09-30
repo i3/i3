@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * config_directives.c: all config storing functions (see config_parser.c)
  *
@@ -89,6 +89,31 @@ CFGFUN(criteria_add, const char *ctype, const char *cvalue) {
         return;
     }
 
+    if (strcmp(ctype, "window_type") == 0) {
+        if (strcasecmp(cvalue, "normal") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_NORMAL;
+        else if (strcasecmp(cvalue, "dialog") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_DIALOG;
+        else if (strcasecmp(cvalue, "utility") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_UTILITY;
+        else if (strcasecmp(cvalue, "toolbar") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_TOOLBAR;
+        else if (strcasecmp(cvalue, "splash") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_SPLASH;
+        else if (strcasecmp(cvalue, "menu") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_MENU;
+        else if (strcasecmp(cvalue, "dropdown_menu") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU;
+        else if (strcasecmp(cvalue, "popup_menu") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_POPUP_MENU;
+        else if (strcasecmp(cvalue, "tooltip") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_TOOLTIP;
+        else
+            ELOG("unknown window_type value \"%s\"\n", cvalue);
+
+        return;
+    }
+
     if (strcmp(ctype, "con_mark") == 0) {
         current_match->mark = regex_new(cvalue);
         return;
@@ -112,6 +137,11 @@ CFGFUN(criteria_add, const char *ctype, const char *cvalue) {
         return;
     }
 
+    if (strcmp(ctype, "workspace") == 0) {
+        current_match->workspace = regex_new(cvalue);
+        return;
+    }
+
     ELOG("Unknown criterion: %s\n", ctype);
 }
 
@@ -131,32 +161,40 @@ static bool eval_boolstr(const char *str) {
 }
 
 /*
- * A utility function to convert a string of modifiers to the corresponding bit
- * mask.
+ * A utility function to convert a string containing the group and modifiers to
+ * the corresponding bit mask.
  */
-uint32_t modifiers_from_str(const char *str) {
+i3_event_state_mask_t event_state_from_str(const char *str) {
     /* It might be better to use strtok() here, but the simpler strstr() should
      * do for now. */
-    uint32_t result = 0;
+    i3_event_state_mask_t result = 0;
     if (str == NULL)
         return result;
     if (strstr(str, "Mod1") != NULL)
-        result |= BIND_MOD1;
+        result |= XCB_KEY_BUT_MASK_MOD_1;
     if (strstr(str, "Mod2") != NULL)
-        result |= BIND_MOD2;
+        result |= XCB_KEY_BUT_MASK_MOD_2;
     if (strstr(str, "Mod3") != NULL)
-        result |= BIND_MOD3;
+        result |= XCB_KEY_BUT_MASK_MOD_3;
     if (strstr(str, "Mod4") != NULL)
-        result |= BIND_MOD4;
+        result |= XCB_KEY_BUT_MASK_MOD_4;
     if (strstr(str, "Mod5") != NULL)
-        result |= BIND_MOD5;
+        result |= XCB_KEY_BUT_MASK_MOD_5;
     if (strstr(str, "Control") != NULL ||
         strstr(str, "Ctrl") != NULL)
-        result |= BIND_CONTROL;
+        result |= XCB_KEY_BUT_MASK_CONTROL;
     if (strstr(str, "Shift") != NULL)
-        result |= BIND_SHIFT;
-    if (strstr(str, "Mode_switch") != NULL)
-        result |= BIND_MODE_SWITCH;
+        result |= XCB_KEY_BUT_MASK_SHIFT;
+
+    if (strstr(str, "Group1") != NULL)
+        result |= (I3_XKB_GROUP_MASK_1 << 16);
+    if (strstr(str, "Group2") != NULL ||
+        strstr(str, "Mode_switch") != NULL)
+        result |= (I3_XKB_GROUP_MASK_2 << 16);
+    if (strstr(str, "Group3") != NULL)
+        result |= (I3_XKB_GROUP_MASK_3 << 16);
+    if (strstr(str, "Group4") != NULL)
+        result |= (I3_XKB_GROUP_MASK_4 << 16);
     return result;
 }
 
@@ -171,8 +209,8 @@ CFGFUN(font, const char *font) {
     font_pattern = sstrdup(font);
 }
 
-CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *whole_window, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, whole_window, command, DEFAULT_BINDING_MODE);
+CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command) {
+    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, DEFAULT_BINDING_MODE);
 }
 
 /*******************************************************************************
@@ -181,8 +219,8 @@ CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, co
 
 static char *current_mode;
 
-CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *whole_window, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, whole_window, command, current_mode);
+CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command) {
+    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, current_mode);
 }
 
 CFGFUN(enter_mode, const char *modename) {
@@ -212,7 +250,7 @@ CFGFUN(for_window, const char *command) {
         return;
     }
     DLOG("\t should execute command %s for the criteria mentioned above\n", command);
-    Assignment *assignment = scalloc(sizeof(Assignment));
+    Assignment *assignment = scalloc(1, sizeof(Assignment));
     assignment->type = A_COMMAND;
     match_copy(&(assignment->match), current_match);
     assignment->dest.command = sstrdup(command);
@@ -230,7 +268,7 @@ CFGFUN(floating_maximum_size, const long width, const long height) {
 }
 
 CFGFUN(floating_modifier, const char *modifiers) {
-    config.floating_modifier = modifiers_from_str(modifiers);
+    config.floating_modifier = event_state_from_str(modifiers);
 }
 
 CFGFUN(default_orientation, const char *orientation) {
@@ -329,6 +367,27 @@ CFGFUN(force_display_urgency_hint, const long duration_ms) {
     config.workspace_urgency_timer = duration_ms / 1000.0;
 }
 
+CFGFUN(focus_on_window_activation, const char *mode) {
+    if (strcmp(mode, "smart") == 0)
+        config.focus_on_window_activation = FOWA_SMART;
+    else if (strcmp(mode, "urgent") == 0)
+        config.focus_on_window_activation = FOWA_URGENT;
+    else if (strcmp(mode, "focus") == 0)
+        config.focus_on_window_activation = FOWA_FOCUS;
+    else if (strcmp(mode, "none") == 0)
+        config.focus_on_window_activation = FOWA_NONE;
+    else {
+        ELOG("Unknown focus_on_window_activation mode \"%s\", ignoring it.\n", mode);
+        return;
+    }
+
+    DLOG("Set new focus_on_window_activation mode = %i.\n", config.focus_on_window_activation);
+}
+
+CFGFUN(show_marks, const char *value) {
+    config.show_marks = eval_boolstr(value);
+}
+
 CFGFUN(workspace, const char *workspace, const char *output) {
     DLOG("Assigning workspace \"%s\" to output \"%s\"\n", workspace, output);
     /* Check for earlier assignments of the same workspace so that we
@@ -345,7 +404,7 @@ CFGFUN(workspace, const char *workspace, const char *output) {
         }
     }
     if (!duplicate) {
-        assignment = scalloc(sizeof(struct Workspace_Assignment));
+        assignment = scalloc(1, sizeof(struct Workspace_Assignment));
         assignment->name = sstrdup(workspace);
         assignment->output = sstrdup(output);
         TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
@@ -402,11 +461,24 @@ CFGFUN(assign, const char *workspace) {
         ELOG("Match is empty, ignoring this assignment\n");
         return;
     }
-    DLOG("new assignment, using above criteria, to workspace %s\n", workspace);
-    Assignment *assignment = scalloc(sizeof(Assignment));
+    DLOG("New assignment, using above criteria, to workspace \"%s\".\n", workspace);
+    Assignment *assignment = scalloc(1, sizeof(Assignment));
     match_copy(&(assignment->match), current_match);
     assignment->type = A_TO_WORKSPACE;
     assignment->dest.workspace = sstrdup(workspace);
+    TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
+}
+
+CFGFUN(no_focus) {
+    if (match_is_empty(current_match)) {
+        ELOG("Match is empty, ignoring this assignment\n");
+        return;
+    }
+
+    DLOG("New assignment, using above criteria, to ignore focus on manage.\n");
+    Assignment *assignment = scalloc(1, sizeof(Assignment));
+    match_copy(&(assignment->match), current_match);
+    assignment->type = A_NO_FOCUS;
     TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
 }
 
@@ -467,14 +539,44 @@ CFGFUN(bar_modifier, const char *modifier) {
         current_bar.modifier = M_SHIFT;
 }
 
+static void bar_configure_binding(const char *button, const char *command) {
+    if (strncasecmp(button, "button", strlen("button")) != 0) {
+        ELOG("Bindings for a bar can only be mouse bindings, not \"%s\", ignoring.\n", button);
+        return;
+    }
+
+    int input_code = atoi(button + strlen("button"));
+    if (input_code < 1) {
+        ELOG("Button \"%s\" does not seem to be in format 'buttonX'.\n", button);
+        return;
+    }
+
+    struct Barbinding *current;
+    TAILQ_FOREACH(current, &(current_bar.bar_bindings), bindings) {
+        if (current->input_code == input_code) {
+            ELOG("command for button %s was already specified, ignoring.\n", button);
+            return;
+        }
+    }
+
+    struct Barbinding *new_binding = scalloc(1, sizeof(struct Barbinding));
+    new_binding->input_code = input_code;
+    new_binding->command = sstrdup(command);
+    TAILQ_INSERT_TAIL(&(current_bar.bar_bindings), new_binding, bindings);
+}
+
 CFGFUN(bar_wheel_up_cmd, const char *command) {
-    FREE(current_bar.wheel_up_cmd);
-    current_bar.wheel_up_cmd = sstrdup(command);
+    ELOG("'wheel_up_cmd' is deprecated. Please us 'bindsym button4 %s' instead.\n", command);
+    bar_configure_binding("button4", command);
 }
 
 CFGFUN(bar_wheel_down_cmd, const char *command) {
-    FREE(current_bar.wheel_down_cmd);
-    current_bar.wheel_down_cmd = sstrdup(command);
+    ELOG("'wheel_down_cmd' is deprecated. Please us 'bindsym button5 %s' instead.\n", command);
+    bar_configure_binding("button5", command);
+}
+
+CFGFUN(bar_bindsym, const char *button, const char *command) {
+    bar_configure_binding(button, command);
 }
 
 CFGFUN(bar_position, const char *position) {
@@ -507,6 +609,7 @@ CFGFUN(bar_color, const char *colorclass, const char *border, const char *backgr
     APPLY_COLORS(active_workspace);
     APPLY_COLORS(inactive_workspace);
     APPLY_COLORS(urgent_workspace);
+    APPLY_COLORS(binding_mode);
 
 #undef APPLY_COLORS
 }
@@ -519,6 +622,10 @@ CFGFUN(bar_socket_path, const char *socket_path) {
 CFGFUN(bar_tray_output, const char *output) {
     FREE(current_bar.tray_output);
     current_bar.tray_output = sstrdup(output);
+}
+
+CFGFUN(bar_tray_padding, const long padding_px) {
+    current_bar.tray_padding = padding_px;
 }
 
 CFGFUN(bar_color_single, const char *colorclass, const char *color) {
@@ -547,6 +654,11 @@ CFGFUN(bar_strip_workspace_numbers, const char *value) {
     current_bar.strip_workspace_numbers = eval_boolstr(value);
 }
 
+CFGFUN(bar_start) {
+    TAILQ_INIT(&(current_bar.bar_bindings));
+    current_bar.tray_padding = 2;
+}
+
 CFGFUN(bar_finish) {
     DLOG("\t new bar configuration finished, saving.\n");
     /* Generate a unique ID for this bar if not already configured */
@@ -561,7 +673,7 @@ CFGFUN(bar_finish) {
 
     /* Copy the current (static) structure into a dynamically allocated
      * one, then cleanup our static one. */
-    Barconfig *bar_config = scalloc(sizeof(Barconfig));
+    Barconfig *bar_config = scalloc(1, sizeof(Barconfig));
     memcpy(bar_config, &current_bar, sizeof(Barconfig));
     TAILQ_INSERT_TAIL(&barconfigs, bar_config, configs);
 

@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * regex.c: Interface to libPCRE (perl compatible regular expressions).
  *
@@ -25,7 +25,7 @@ struct regex *regex_new(const char *pattern) {
     const char *error;
     int errorcode, offset;
 
-    struct regex *re = scalloc(sizeof(struct regex));
+    struct regex *re = scalloc(1, sizeof(struct regex));
     re->pattern = sstrdup(pattern);
     int options = PCRE_UTF8;
 #ifdef PCRE_HAS_UCP

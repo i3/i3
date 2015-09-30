@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * startup.c: Startup notification code. Ensures a startup notification context
  *            is setup when launching applications. We store the current
@@ -131,7 +131,7 @@ void startup_sequence_delete(struct Startup_Sequence *sequence) {
  *
  */
 void start_application(const char *command, bool no_startup_id) {
-    SnLauncherContext *context;
+    SnLauncherContext *context = NULL;
 
     if (!no_startup_id) {
         /* Create a startup notification context to monitor the progress of this
@@ -149,7 +149,7 @@ void start_application(const char *command, bool no_startup_id) {
         free(first_word);
 
         /* Trigger a timeout after 60 seconds */
-        struct ev_timer *timeout = scalloc(sizeof(struct ev_timer));
+        struct ev_timer *timeout = scalloc(1, sizeof(struct ev_timer));
         ev_timer_init(timeout, startup_timeout, 60.0, 0.);
         timeout->data = context;
         ev_timer_start(main_loop, timeout);
@@ -159,7 +159,7 @@ void start_application(const char *command, bool no_startup_id) {
         /* Save the ID and current workspace in our internal list of startup
          * sequences */
         Con *ws = con_get_workspace(focused);
-        struct Startup_Sequence *sequence = scalloc(sizeof(struct Startup_Sequence));
+        struct Startup_Sequence *sequence = scalloc(1, sizeof(struct Startup_Sequence));
         sequence->id = sstrdup(sn_launcher_context_get_startup_id(context));
         sequence->workspace = sstrdup(ws->name);
         sequence->context = context;
@@ -316,14 +316,8 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
     }
 
     char *startup_id;
-    if (asprintf(&startup_id, "%.*s", xcb_get_property_value_length(startup_id_reply),
-                 (char *)xcb_get_property_value(startup_id_reply)) == -1) {
-        perror("asprintf()");
-        DLOG("Could not get _NET_STARTUP_ID\n");
-        free(startup_id_reply);
-        return NULL;
-    }
-
+    sasprintf(&startup_id, "%.*s", xcb_get_property_value_length(startup_id_reply),
+              (char *)xcb_get_property_value(startup_id_reply));
     struct Startup_Sequence *current, *sequence = NULL;
     TAILQ_FOREACH(current, &startup_sequences, sequences) {
         if (strcmp(current->id, startup_id) != 0)

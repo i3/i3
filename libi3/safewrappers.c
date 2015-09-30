@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #include <string.h>
@@ -27,10 +27,10 @@ void *smalloc(size_t size) {
     return result;
 }
 
-void *scalloc(size_t size) {
-    void *result = calloc(size, 1);
+void *scalloc(size_t num, size_t size) {
+    void *result = calloc(num, size);
     if (result == NULL)
-        err(EXIT_FAILURE, "calloc(%zd)", size);
+        err(EXIT_FAILURE, "calloc(%zd, %zd)", num, size);
     return result;
 }
 
@@ -45,6 +45,13 @@ char *sstrdup(const char *str) {
     char *result = strdup(str);
     if (result == NULL)
         err(EXIT_FAILURE, "strdup()");
+    return result;
+}
+
+char *sstrndup(const char *str, size_t size) {
+    char *result = strndup(str, size);
+    if (result == NULL)
+        err(EXIT_FAILURE, "strndup()");
     return result;
 }
 

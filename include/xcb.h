@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * xcb.c: Helper functions for easier usage of XCB
  *
@@ -108,6 +108,16 @@ void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window);
  */
 void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r);
 
+/**
+ * Returns the first supported _NET_WM_WINDOW_TYPE atom.
+ *
+ */
+xcb_atom_t xcb_get_preferred_window_type(xcb_get_property_reply_t *reply);
+
+/**
+ * Returns true if the given reply contains the given data.
+ *
+ */
 bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom);
 
 /**
@@ -135,3 +145,18 @@ uint16_t get_visual_depth(xcb_visualid_t visual_id);
  *
  */
 xcb_visualid_t get_visualid_by_depth(uint16_t depth);
+
+/**
+ * Add an atom to a list of atoms the given property defines.
+ * This is useful, for example, for manipulating _NET_WM_STATE.
+ *
+ */
+void xcb_add_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom_t property, xcb_atom_t atom);
+
+/**
+ * Remove an atom from a list of atoms the given property defines without
+ * removing any other potentially set atoms.  This is useful, for example, for
+ * manipulating _NET_WM_STATE.
+ *
+ */
+void xcb_remove_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom_t property, xcb_atom_t atom);

@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-input/main.c: Utility which lets the user input commands and sends them
  *                  to i3.
@@ -103,7 +103,7 @@ static void restore_input_focus(void) {
  *
  */
 static uint8_t *concat_strings(char **glyphs, int max) {
-    uint8_t *output = calloc(max + 1, 4);
+    uint8_t *output = scalloc(max + 1, 4);
     uint8_t *walk = output;
     for (int c = 0; c < max; c++) {
         printf("at %c\n", glyphs[c][0]);
@@ -187,10 +187,10 @@ static void finish_input() {
 
     /* allocate space for the output */
     int inputlen = strlen(command);
-    char *full = calloc(1,
-                        strlen(format) - (2 * cnt) /* format without all %s */
-                            + (inputlen * cnt)     /* replaced %s */
-                            + 1);                  /* trailing NUL */
+    char *full = scalloc(strlen(format) - (2 * cnt) /* format without all %s */
+                             + (inputlen * cnt)     /* replaced %s */
+                             + 1,                   /* trailing NUL */
+                         1);
     char *dest = full;
     for (c = 0; c < len; c++) {
         /* if this is not % or it is % but without a following 's',
@@ -314,8 +314,52 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     return 1;
 }
 
+static xcb_rectangle_t get_window_position(void) {
+    xcb_rectangle_t result = (xcb_rectangle_t){logical_px(50), logical_px(50), logical_px(500), font.height + logical_px(8)};
+
+    xcb_get_input_focus_reply_t *input_focus = NULL;
+    xcb_get_geometry_reply_t *geometry = NULL;
+    xcb_translate_coordinates_reply_t *coordinates = NULL;
+
+    /* In rare cases, the window holding the input focus might disappear while we are figuring out its
+     * position. To avoid this, we grab the server in the meantime. */
+    xcb_grab_server(conn);
+
+    input_focus = xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL);
+    if (input_focus == NULL || input_focus->focus == XCB_NONE) {
+        DLOG("Failed to receive the current input focus or no window has the input focus right now.\n");
+        goto free_resources;
+    }
+
+    geometry = xcb_get_geometry_reply(conn, xcb_get_geometry(conn, input_focus->focus), NULL);
+    if (geometry == NULL) {
+        DLOG("Failed to received window geometry.\n");
+        goto free_resources;
+    }
+
+    coordinates = xcb_translate_coordinates_reply(
+        conn, xcb_translate_coordinates(conn, input_focus->focus, root, geometry->x, geometry->y), NULL);
+    if (coordinates == NULL) {
+        DLOG("Failed to translate coordinates.\n");
+        goto free_resources;
+    }
+
+    DLOG("Determined coordinates of window with input focus at x = %i / y = %i.\n", coordinates->dst_x, coordinates->dst_y);
+    result.x += coordinates->dst_x;
+    result.y += coordinates->dst_y;
+
+free_resources:
+    xcb_ungrab_server(conn);
+    xcb_flush(conn);
+
+    FREE(input_focus);
+    FREE(geometry);
+    FREE(coordinates);
+    return result;
+}
+
 int main(int argc, char *argv[]) {
-    format = strdup("%s");
+    format = sstrdup("%s");
     socket_path = getenv("I3SOCK");
     char *pattern = sstrdup("pango:monospace 8");
     int o, option_index = 0;
@@ -337,7 +381,7 @@ int main(int argc, char *argv[]) {
         switch (o) {
             case 's':
                 FREE(socket_path);
-                socket_path = strdup(optarg);
+                socket_path = sstrdup(optarg);
                 break;
             case 'v':
                 printf("i3-input " I3_VERSION);
@@ -357,11 +401,11 @@ int main(int argc, char *argv[]) {
                 break;
             case 'f':
                 FREE(pattern);
-                pattern = strdup(optarg);
+                pattern = sstrdup(optarg);
                 break;
             case 'F':
                 FREE(format);
-                format = strdup(optarg);
+                format = sstrdup(optarg);
                 break;
             case 'h':
                 printf("i3-input " I3_VERSION "\n");
@@ -402,15 +446,17 @@ int main(int argc, char *argv[]) {
     if (prompt != NULL)
         prompt_offset = predict_text_width(prompt);
 
+    const xcb_rectangle_t win_pos = get_window_position();
+
     /* Open an input window */
     win = xcb_generate_id(conn);
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,
-        win,                                                                          /* the window id */
-        root,                                                                         /* parent == root */
-        logical_px(50), logical_px(50), logical_px(500), font.height + logical_px(8), /* dimensions */
-        0,                                                                            /* X11 border = 0, we draw our own */
+        win,                                                 /* the window id */
+        root,                                                /* parent == root */
+        win_pos.x, win_pos.y, win_pos.width, win_pos.height, /* dimensions */
+        0,                                                   /* X11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK,

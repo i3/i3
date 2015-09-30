@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * include/data.h: This file defines all data structures used by i3
  *
@@ -74,18 +74,6 @@ typedef enum { ADJ_NONE = 0,
                ADJ_UPPER_SCREEN_EDGE = (1 << 2),
                ADJ_LOWER_SCREEN_EDGE = (1 << 4) } adjacent_t;
 
-enum {
-    BIND_NONE = 0,
-    BIND_SHIFT = XCB_MOD_MASK_SHIFT,     /* (1 << 0) */
-    BIND_CONTROL = XCB_MOD_MASK_CONTROL, /* (1 << 2) */
-    BIND_MOD1 = XCB_MOD_MASK_1,          /* (1 << 3) */
-    BIND_MOD2 = XCB_MOD_MASK_2,          /* (1 << 4) */
-    BIND_MOD3 = XCB_MOD_MASK_3,          /* (1 << 5) */
-    BIND_MOD4 = XCB_MOD_MASK_4,          /* (1 << 6) */
-    BIND_MOD5 = XCB_MOD_MASK_5,          /* (1 << 7) */
-    BIND_MODE_SWITCH = (1 << 8)
-};
-
 /**
  * Container layouts. See Con::layout.
  */
@@ -106,6 +94,25 @@ typedef enum {
     B_KEYBOARD = 0,
     B_MOUSE = 1
 } input_type_t;
+
+/**
+ * Bitmask for matching XCB_XKB_GROUP_1 to XCB_XKB_GROUP_4.
+ */
+typedef enum {
+    I3_XKB_GROUP_MASK_ANY = 0,
+    I3_XKB_GROUP_MASK_1 = (1 << 0),
+    I3_XKB_GROUP_MASK_2 = (1 << 1),
+    I3_XKB_GROUP_MASK_3 = (1 << 2),
+    I3_XKB_GROUP_MASK_4 = (1 << 3)
+} i3_xkb_group_mask_t;
+
+/**
+ * The lower 16 bits contain a xcb_key_but_mask_t, the higher 16 bits contain
+ * an i3_xkb_group_mask_t. This type is necessary for the fallback logic to
+ * work when handling XKB groups (see ticket #1775) and makes the code which
+ * locates keybindings upon KeyPress/KeyRelease events simpler.
+ */
+typedef uint32_t i3_event_state_mask_t;
 
 /**
  * Mouse pointer warping modes.
@@ -256,6 +263,10 @@ struct Binding {
     } release;
 
     /** If this is true for a mouse binding, the binding should be executed
+     * when the button is pressed over the window border. */
+    bool border;
+
+    /** If this is true for a mouse binding, the binding should be executed
      * when the button is pressed over any part of the window, not just the
      * title bar (default). */
     bool whole_window;
@@ -265,8 +276,10 @@ struct Binding {
     /** Keycode to bind */
     uint32_t keycode;
 
-    /** Bitmask consisting of BIND_MOD_1, BIND_MODE_SWITCH, … */
-    uint32_t mods;
+    /** Bitmask which is applied against event->state for KeyPress and
+     * KeyRelease events to determine whether this binding applies to the
+     * current state. */
+    i3_event_state_mask_t event_state_mask;
 
     /** Symbol the user specified in configfile, if any. This needs to be
      * stored with the binding to be able to re-convert it into a keycode
@@ -359,6 +372,8 @@ struct Window {
 
     /** The name of the window. */
     i3String *name;
+    /** The format with which the window's name should be displayed. */
+    char *title_format;
 
     /** The WM_WINDOW_ROLE of this window (for example, the pidgin buddy window
      * sets "buddy list"). Useful to match specific windows in assignments or
@@ -378,6 +393,9 @@ struct Window {
      * default will be 'accepts focus'. */
     bool doesnt_accept_focus;
 
+    /** The _NET_WM_WINDOW_TYPE for this window. */
+    xcb_atom_t window_type;
+
     /** Whether the window says it is a dock window */
     enum { W_NODOCK = 0,
            W_DOCK_TOP = 1,
@@ -391,6 +409,18 @@ struct Window {
 
     /** Depth of the window */
     uint16_t depth;
+
+    /* the wanted size of the window, used in combination with size
+     * increments (see below). */
+    int base_width;
+    int base_height;
+
+    /* minimum increment size specified for the window (in pixels) */
+    int width_increment;
+    int height_increment;
+
+    /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
+    double aspect_ratio;
 };
 
 /**
@@ -408,6 +438,8 @@ struct Match {
     struct regex *instance;
     struct regex *mark;
     struct regex *window_role;
+    struct regex *workspace;
+    xcb_atom_t window_type;
     enum {
         U_DONTCHECK = -1,
         U_LATEST = 0,
@@ -460,6 +492,7 @@ struct Assignment {
      *
      * A_COMMAND = run the specified command for the matching window
      * A_TO_WORKSPACE = assign the matching window to the specified workspace
+     * A_NO_FOCUS = don't focus matched window when it is managed
      *
      * While the type is a bitmask, only one value can be set at a time. It is
      * a bitmask to allow filtering for multiple types, for example in the
@@ -469,7 +502,8 @@ struct Assignment {
     enum {
         A_ANY = 0,
         A_COMMAND = (1 << 0),
-        A_TO_WORKSPACE = (1 << 1)
+        A_TO_WORKSPACE = (1 << 1),
+        A_NO_FOCUS = (1 << 2)
     } type;
 
     /** the criteria to check if a window matches */
@@ -543,23 +577,14 @@ struct Con {
 
     /* user-definable mark to jump to this container later */
     char *mark;
+    /* cached to decide whether a redraw is needed */
+    bool mark_changed;
 
     double percent;
-
-    /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
-    double aspect_ratio;
-    /* the wanted size of the window, used in combination with size
-     * increments (see below). */
-    int base_width;
-    int base_height;
 
     /* the x11 border pixel attribute */
     int border_width;
     int current_border_width;
-
-    /* minimum increment size specified for the window (in pixels) */
-    int width_increment;
-    int height_increment;
 
     struct Window *window;
 
@@ -578,6 +603,12 @@ struct Con {
     TAILQ_HEAD(swallow_head, Match) swallow_head;
 
     fullscreen_mode_t fullscreen_mode;
+
+    /* Whether this window should stick to the glass. This corresponds to
+     * the _NET_WM_STATE_STICKY atom and will only be respected if the
+     * window is floating. */
+    bool sticky;
+
     /* layout is the layout of this container: one of split[v|h], stacked or
      * tabbed. Special containers in the tree (above workspaces) have special
      * layouts like dockarea or output.

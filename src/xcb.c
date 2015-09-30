@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * xcb.c: Helper functions for easier usage of XCB
  *
@@ -114,7 +114,7 @@ void send_take_focus(xcb_window_t window, xcb_timestamp_t timestamp) {
     /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
      * In order to properly initialize these bytes, we allocate 32 bytes even
      * though we only need less for an xcb_configure_notify_event_t */
-    void *event = scalloc(32);
+    void *event = scalloc(32, 1);
     xcb_client_message_event_t *ev = event;
 
     ev->response_type = XCB_CLIENT_MESSAGE;
@@ -152,6 +152,35 @@ void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r) {
                                   &(r.x));
     /* ignore events which are generated because we configured a window */
     add_ignore_event(cookie.sequence, -1);
+}
+
+/*
+ * Returns the first supported _NET_WM_WINDOW_TYPE atom.
+ *
+ */
+xcb_atom_t xcb_get_preferred_window_type(xcb_get_property_reply_t *reply) {
+    if (reply == NULL || xcb_get_property_value_length(reply) == 0)
+        return XCB_NONE;
+
+    xcb_atom_t *atoms;
+    if ((atoms = xcb_get_property_value(reply)) == NULL)
+        return XCB_NONE;
+
+    for (int i = 0; i < xcb_get_property_value_length(reply) / (reply->format / 8); i++) {
+        if (atoms[i] == A__NET_WM_WINDOW_TYPE_NORMAL ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_DIALOG ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_UTILITY ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_TOOLBAR ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_SPLASH ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_MENU ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_POPUP_MENU ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_TOOLTIP) {
+            return atoms[i];
+        }
+    }
+
+    return XCB_NONE;
 }
 
 /*
@@ -244,4 +273,49 @@ xcb_visualid_t get_visualid_by_depth(uint16_t depth) {
         return visual_iter.data->visual_id;
     }
     return 0;
+}
+
+/*
+ * Add an atom to a list of atoms the given property defines.
+ * This is useful, for example, for manipulating _NET_WM_STATE.
+ *
+ */
+void xcb_add_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom_t property, xcb_atom_t atom) {
+    xcb_change_property(conn, XCB_PROP_MODE_APPEND, window, property, XCB_ATOM_ATOM, 32, 1, (uint32_t[]){atom});
+}
+
+/*
+ * Remove an atom from a list of atoms the given property defines without
+ * removing any other potentially set atoms.  This is useful, for example, for
+ * manipulating _NET_WM_STATE.
+ *
+ */
+void xcb_remove_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom_t property, xcb_atom_t atom) {
+    xcb_grab_server(conn);
+
+    xcb_get_property_reply_t *reply =
+        xcb_get_property_reply(conn,
+                               xcb_get_property(conn, false, window, property, XCB_GET_PROPERTY_TYPE_ANY, 0, 4096), NULL);
+    if (reply == NULL || xcb_get_property_value_length(reply) == 0)
+        goto release_grab;
+    xcb_atom_t *atoms = xcb_get_property_value(reply);
+    if (atoms == NULL) {
+        goto release_grab;
+    }
+
+    {
+        int num = 0;
+        const int current_size = xcb_get_property_value_length(reply) / (reply->format / 8);
+        xcb_atom_t values[current_size];
+        for (int i = 0; i < current_size; i++) {
+            if (atoms[i] != atom)
+                values[num++] = atoms[i];
+        }
+
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, property, XCB_ATOM_ATOM, 32, num, values);
+    }
+
+release_grab:
+    FREE(reply);
+    xcb_ungrab_server(conn);
 }

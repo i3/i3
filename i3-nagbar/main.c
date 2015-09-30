@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-nagbar is a utility which displays a nag message, for example in the case
  * when the user has an error in their configuration file.
@@ -27,6 +27,7 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_event.h>
+#include <xcb/randr.h>
 
 #include "libi3.h"
 #include "i3-nagbar.h"
@@ -288,6 +289,60 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     return 1;
 }
 
+/**
+ * Return the position and size the i3-nagbar window should use.
+ * This will be the primary output or a fallback if it cannot be determined.
+ */
+static xcb_rectangle_t get_window_position(void) {
+    /* Default values if we cannot determine the primary output or its CRTC info. */
+    xcb_rectangle_t result = (xcb_rectangle_t){50, 50, 500, font.height + logical_px(8) + logical_px(8)};
+
+    xcb_randr_get_screen_resources_current_cookie_t rcookie = xcb_randr_get_screen_resources_current(conn, root);
+    xcb_randr_get_output_primary_cookie_t pcookie = xcb_randr_get_output_primary(conn, root);
+
+    xcb_randr_get_output_primary_reply_t *primary = NULL;
+    xcb_randr_get_screen_resources_current_reply_t *res = NULL;
+
+    if ((primary = xcb_randr_get_output_primary_reply(conn, pcookie, NULL)) == NULL) {
+        DLOG("Could not determine the primary output.\n");
+        goto free_resources;
+    }
+
+    if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
+        goto free_resources;
+    }
+
+    xcb_randr_get_output_info_reply_t *output =
+        xcb_randr_get_output_info_reply(conn,
+                                        xcb_randr_get_output_info(conn, primary->output, res->config_timestamp),
+                                        NULL);
+    if (output == NULL || output->crtc == XCB_NONE)
+        goto free_resources;
+
+    xcb_randr_get_crtc_info_reply_t *crtc =
+        xcb_randr_get_crtc_info_reply(conn,
+                                      xcb_randr_get_crtc_info(conn, output->crtc, res->config_timestamp),
+                                      NULL);
+    if (crtc == NULL)
+        goto free_resources;
+
+    DLOG("Found primary output on position x = %i / y = %i / w = %i / h = %i.\n",
+         crtc->x, crtc->y, crtc->width, crtc->height);
+    if (crtc->width == 0 || crtc->height == 0) {
+        DLOG("Primary output is not active, ignoring it.\n");
+        goto free_resources;
+    }
+
+    result.x = crtc->x;
+    result.y = crtc->y;
+    goto free_resources;
+
+free_resources:
+    FREE(res);
+    FREE(primary);
+    return result;
+}
+
 int main(int argc, char *argv[]) {
     /* The following lines are a terribly horrible kludge. Because terminal
      * emulators have different ways of interpreting the -e command line
@@ -316,7 +371,7 @@ int main(int argc, char *argv[]) {
     if (argv0_len > strlen(".nagbar_cmd") &&
         strcmp(argv[0] + argv0_len - strlen(".nagbar_cmd"), ".nagbar_cmd") == 0) {
         unlink(argv[0]);
-        cmd = strdup(argv[0]);
+        cmd = sstrdup(argv[0]);
         *(cmd + argv0_len - strlen(".nagbar_cmd")) = '\0';
         execl("/bin/sh", "/bin/sh", cmd, NULL);
         err(EXIT_FAILURE, "execv(/bin/sh, /bin/sh, %s)", cmd);
@@ -363,7 +418,7 @@ int main(int argc, char *argv[]) {
                 printf("i3-nagbar [-m <message>] [-b <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
                 return 0;
             case 'b':
-                buttons = realloc(buttons, sizeof(button_t) * (buttoncnt + 1));
+                buttons = srealloc(buttons, sizeof(button_t) * (buttoncnt + 1));
                 buttons[buttoncnt].label = i3string_from_utf8(optarg);
                 buttons[buttoncnt].action = argv[optind];
                 printf("button with label *%s* and action *%s*\n",
@@ -410,16 +465,18 @@ int main(int argc, char *argv[]) {
     font = load_font(pattern, true);
     set_font(&font);
 
+    xcb_rectangle_t win_pos = get_window_position();
+
     /* Open an input window */
     win = xcb_generate_id(conn);
 
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,
-        win,                                                                         /* the window id */
-        root,                                                                        /* parent == root */
-        50, 50, 500, font.height + logical_px(8) + logical_px(8) /* 8 px padding */, /* dimensions */
-        0,                                                                           /* x11 border = 0, we draw our own */
+        win,                                                 /* the window id */
+        root,                                                /* parent == root */
+        win_pos.x, win_pos.y, win_pos.width, win_pos.height, /* dimensions */
+        0,                                                   /* x11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,

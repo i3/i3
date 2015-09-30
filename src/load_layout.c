@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * load_layout.c: Restore (parts of) the layout, for example after an inplace
  *                restart.
@@ -116,6 +116,33 @@ static int json_end_map(void *ctx) {
             json_node->num = ws_name_to_number(json_node->name);
         }
 
+        // When appending JSON layout files that only contain the workspace
+        // _contents_, we might not have an upfront signal that the
+        // container we’re currently parsing is a floating container (like
+        // the “floating_nodes” key of the workspace container itself).
+        // That’s why we make sure the con is attached at the right place
+        // in the hierarchy in case it’s floating.
+        if (json_node->type == CT_FLOATING_CON) {
+            DLOG("fixing parent which currently is %p / %s\n", json_node->parent, json_node->parent->name);
+            json_node->parent = con_get_workspace(json_node->parent);
+
+            // Also set a size if none was supplied, otherwise the placeholder
+            // window cannot be created as X11 requests with width=0 or
+            // height=0 are invalid.
+            const Rect zero = {0, 0, 0, 0};
+            if (memcmp(&(json_node->rect), &zero, sizeof(Rect)) == 0) {
+                DLOG("Geometry not set, combining children\n");
+                Con *child;
+                TAILQ_FOREACH(child, &(json_node->nodes_head), nodes) {
+                    DLOG("child geometry: %d x %d\n", child->geometry.width, child->geometry.height);
+                    json_node->rect.width += child->geometry.width;
+                    json_node->rect.height = max(json_node->rect.height, child->geometry.height);
+                }
+            }
+
+            floating_check_size(json_node);
+        }
+
         LOG("attaching\n");
         con_attach(json_node, json_node->parent, true);
         LOG("Creating window\n");
@@ -167,7 +194,7 @@ static int json_end_array(void *ctx) {
 static int json_key(void *ctx, const unsigned char *val, size_t len) {
     LOG("key: %.*s\n", (int)len, val);
     FREE(last_key);
-    last_key = scalloc((len + 1) * sizeof(char));
+    last_key = scalloc(len + 1, 1);
     memcpy(last_key, val, len);
     if (strcasecmp(last_key, "swallows") == 0)
         parsing_swallows = true;
@@ -209,10 +236,10 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         free(sval);
     } else {
         if (strcasecmp(last_key, "name") == 0) {
-            json_node->name = scalloc((len + 1) * sizeof(char));
+            json_node->name = scalloc(len + 1, 1);
             memcpy(json_node->name, val, len);
         } else if (strcasecmp(last_key, "sticky_group") == 0) {
-            json_node->sticky_group = scalloc((len + 1) * sizeof(char));
+            json_node->sticky_group = scalloc(len + 1, 1);
             memcpy(json_node->sticky_group, val, len);
             LOG("sticky_group of this container is %s\n", json_node->sticky_group);
         } else if (strcasecmp(last_key, "orientation") == 0) {
@@ -311,6 +338,10 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         } else if (strcasecmp(last_key, "mark") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
+
+            /* We unmark any containers using this mark to avoid duplicates. */
+            con_unmark(buf);
+
             json_node->mark = buf;
         } else if (strcasecmp(last_key, "floating") == 0) {
             char *buf = NULL;
@@ -361,7 +392,7 @@ static int json_int(void *ctx, long long val) {
         json_node->old_id = val;
 
     if (parsing_focus) {
-        struct focus_mapping *focus_mapping = scalloc(sizeof(struct focus_mapping));
+        struct focus_mapping *focus_mapping = scalloc(1, sizeof(struct focus_mapping));
         focus_mapping->old_id = val;
         TAILQ_INSERT_TAIL(&focus_mappings, focus_mapping, focus_mappings);
     }
@@ -407,6 +438,9 @@ static int json_bool(void *ctx, int val) {
     if (strcasecmp(last_key, "focused") == 0 && val) {
         to_focus = json_node;
     }
+
+    if (strcasecmp(last_key, "sticky") == 0)
+        json_node->sticky = val;
 
     if (parsing_swallows) {
         if (strcasecmp(last_key, "restart_mode") == 0)

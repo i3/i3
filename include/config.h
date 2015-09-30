@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * include/config.h: Contains all structs/variables for the configurable
  * part of i3 as well as functions handling the configuration file (calling
@@ -167,6 +167,22 @@ struct Config {
      * flag can be delayed using an urgency timer. */
     float workspace_urgency_timer;
 
+    /** Behavior when a window sends a NET_ACTIVE_WINDOW message. */
+    enum {
+        /* Focus if the target workspace is visible, set urgency hint otherwise. */
+        FOWA_SMART,
+        /* Always set the urgency hint. */
+        FOWA_URGENT,
+        /* Always focus the window. */
+        FOWA_FOCUS,
+        /* Ignore the request (no focus, no urgency hint). */
+        FOWA_NONE
+    } focus_on_window_activation;
+
+    /** Specifies whether or not marks should be displayed in the window
+     * decoration. Marks starting with a "_" will be ignored either way. */
+    bool show_marks;
+
     /** The default border style for new windows. */
     border_style_t default_border;
 
@@ -235,6 +251,9 @@ struct Barconfig {
      * disables the tray (it’s enabled by default). */
     char *tray_output;
 
+    /* Padding around the tray icons. */
+    int tray_padding;
+
     /** Path to the i3 IPC socket. This option is discouraged since programs
      * can find out the path by looking for the I3_SOCKET_PATH property on the
      * root window! */
@@ -261,13 +280,7 @@ struct Barconfig {
         M_MOD5 = 7
     } modifier;
 
-    /** Command that should be run when mouse wheel up button is pressed over
-     * i3bar to override the default behavior. */
-    char *wheel_up_cmd;
-
-    /** Command that should be run when mouse wheel down button is pressed over
-     * i3bar to override the default behavior. */
-    char *wheel_down_cmd;
+    TAILQ_HEAD(bar_bindings_head, Barbinding) bar_bindings;
 
     /** Bar position (bottom by default). */
     enum { P_BOTTOM = 0,
@@ -324,9 +337,28 @@ struct Barconfig {
         char *urgent_workspace_border;
         char *urgent_workspace_bg;
         char *urgent_workspace_text;
+
+        char *binding_mode_border;
+        char *binding_mode_bg;
+        char *binding_mode_text;
     } colors;
 
     TAILQ_ENTRY(Barconfig) configs;
+};
+
+/**
+ * Defines a mouse command to be executed instead of the default behavior when
+ * clicking on the non-statusline part of i3bar.
+ *
+ */
+struct Barbinding {
+    /** The button to be used (e.g., 1 for "button1"). */
+    int input_code;
+
+    /** The command which is to be executed for this button. */
+    char *command;
+
+    TAILQ_ENTRY(Barbinding) bindings;
 };
 
 /**

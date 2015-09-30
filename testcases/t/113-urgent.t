@@ -53,10 +53,10 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 force_display_urgency_hint 0ms
 EOT
 
-my $type;
+my ($type, $tmp, $w1, $w2);
 for ($type = 1; $type <= 2; $type++) {
     my $pid = launch_with_config($config);
-    my $tmp = fresh_workspace;
+    $tmp = fresh_workspace;
 
 #####################################################################
 # Create two windows and put them in stacking mode
@@ -269,8 +269,8 @@ for ($type = 1; $type <= 2; $type++) {
     my $ws1 = fresh_workspace;
     my $ws2 = fresh_workspace;
     cmd "workspace $ws1";
-    my $w1 = open_window;
-    my $w2 = open_window;
+    $w1 = open_window;
+    $w2 = open_window;
     cmd "workspace $ws2";
     sync_with_i3;
     set_urgency($w1, 1, $type);
@@ -284,10 +284,10 @@ for ($type = 1; $type <= 2; $type++) {
 ##############################################################################
 # Check if urgent flag can be unset if we move the window out of the container
 ##############################################################################
-    my $tmp = fresh_workspace;
+    $tmp = fresh_workspace;
     cmd 'layout tabbed';
-    my $w1 = open_window;
-    my $w2 = open_window;
+    $w1 = open_window;
+    $w2 = open_window;
     sync_with_i3;
     cmd '[id="' . $w2->id . '"] focus';
     sync_with_i3;
@@ -306,6 +306,33 @@ for ($type = 1; $type <= 2; $type++) {
     sync_with_i3;
     my $ws = get_ws($tmp);
     ok(!$ws->{urgent}, 'urgent flag not set on workspace');
+
+##############################################################################
+# Regression test for #1187: Urgency hint moves to new workspace when moving
+# a container to another workspace.
+##############################################################################
+
+    my $tmp_source = fresh_workspace;
+    my $tmp_target = fresh_workspace;
+    cmd 'workspace ' . $tmp_source;
+    sync_with_i3;
+    $w1 = open_window;
+    $w2 = open_window;
+    sync_with_i3;
+    cmd '[id="' . $w1->id . '"] focus';
+    sync_with_i3;
+    cmd 'mark urgent_con';
+    cmd '[id="' . $w2->id . '"] focus';
+    set_urgency($w1, 1, $type);
+    sync_with_i3;
+    cmd '[con_mark="urgent_con"] move container to workspace ' . $tmp_target;
+    sync_with_i3;
+    my $source_ws = get_ws($tmp_source);
+    my $target_ws = get_ws($tmp_target);
+    ok(!$source_ws->{urgent}, 'Source workspace is no longer marked urgent');
+    is($target_ws->{urgent}, 1, 'Target workspace is now marked urgent');
+
+##############################################################################
 
     exit_gracefully($pid);
 }

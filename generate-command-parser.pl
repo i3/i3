@@ -2,7 +2,7 @@
 # vim:ts=4:sw=4:expandtab
 #
 # i3 - an improved dynamic tiling window manager
-# © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+# © 2009 Michael Stapelberg and contributors (see also: LICENSE)
 #
 # generate-command-parser.pl: script to generate parts of the command parser
 # from its specification file parser-specs/commands.spec.
@@ -112,7 +112,7 @@ for my $line (@lines) {
 # We sort descendingly by length to be able to replace occurences of the state
 # name even when one state’s name is included in another one’s (like FOR_WINDOW
 # is in FOR_WINDOW_COMMAND).
-my @keys = sort { length($b) <=> length($a) } keys %states;
+my @keys = sort { (length($b) <=> length($a)) or ($a cmp $b) } keys %states;
 
 open(my $enumfh, '>', "GENERATED_${prefix}_enums.h");
 

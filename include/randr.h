@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * For more information on RandR, please see the X.org RandR specification at
  * http://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
@@ -28,13 +28,6 @@ typedef enum {
  *
  */
 void randr_init(int *event_base);
-
-/**
- * Disables RandR support by creating exactly one output with the size of the
- * X11 screen.
- *
- */
-void disable_randr(xcb_connection_t *conn);
 
 /**
  * Initializes a CT_OUTPUT Con (searches existing ones from inplace restart
@@ -120,3 +113,9 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
  *
  */
 Output *get_output_next_wrap(direction_t direction, Output *current);
+
+/*
+ * Creates an output covering the root window.
+ *
+ */
+Output *create_root_output(xcb_connection_t *conn);

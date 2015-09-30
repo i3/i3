@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3.h: global variables that are used all over i3.
  *
@@ -24,6 +24,9 @@
 #include "data.h"
 #include "xcb.h"
 
+/** Git commit identifier, from version.c */
+extern const char *i3_version;
+
 /** The original value of RLIMIT_CORE when i3 was started. We need to restore
  * this before starting any other process, since we set RLIMIT_CORE to
  * RLIM_INFINITY for i3 debugging versions. */
@@ -34,6 +37,15 @@ extern bool debug_build;
 extern int listen_fds;
 extern xcb_connection_t *conn;
 extern int conn_screen;
+/**
+ * The EWMH support window that is used to indicate that an EWMH-compliant
+ * window manager is present. This window is created when i3 starts and
+ * kept alive until i3 exits.
+ * We also use this window as the focused window if no other window is
+ * available to be focused on the active workspace in order to prevent
+ * keyboard focus issues (see #1378).
+ */
+extern xcb_window_t ewmh_window;
 /** The last timestamp we got from X11 (timestamps are included in some events
  * and are used for some things, like determining a unique ID in startup
  * notification). */

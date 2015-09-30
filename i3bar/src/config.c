@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010 Axel Wagner and contributors (see also: LICENSE)
  *
  * config.c: Parses the configuration (received from i3).
  *
@@ -20,6 +20,7 @@
 #include "common.h"
 
 static char *cur_key;
+static bool parsing_bindings;
 
 /*
  * Parse a key.
@@ -34,6 +35,14 @@ static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t 
     strncpy(cur_key, (const char *)keyVal, keyLen);
     cur_key[keyLen] = '\0';
 
+    if (strcmp(cur_key, "bindings") == 0)
+        parsing_bindings = true;
+
+    return 1;
+}
+
+static int config_end_array_cb(void *params_) {
+    parsing_bindings = false;
     return 1;
 }
 
@@ -62,6 +71,27 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
     /* The id and socket_path are ignored, we already know them. */
     if (!strcmp(cur_key, "id") || !strcmp(cur_key, "socket_path"))
         return 1;
+
+    if (parsing_bindings) {
+        if (strcmp(cur_key, "command") == 0) {
+            binding_t *binding = TAILQ_LAST(&(config.bindings), bindings_head);
+            if (binding == NULL) {
+                ELOG("There is no binding to put the current command onto. This is a bug in i3.\n");
+                return 0;
+            }
+
+            if (binding->command != NULL) {
+                ELOG("The binding for input_code = %d already has a command. This is a bug in i3.\n", binding->input_code);
+                return 0;
+            }
+
+            sasprintf(&(binding->command), "%.*s", len, val);
+            return 1;
+        }
+
+        ELOG("Unknown key \"%s\" while parsing bar bindings.\n", cur_key);
+        return 0;
+    }
 
     if (!strcmp(cur_key, "mode")) {
         DLOG("mode = %.*s, len = %d\n", len, val, len);
@@ -112,17 +142,25 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
         return 1;
     }
 
+    /* This key was sent in <= 4.10.2. We keep it around to avoid breakage for
+     * users updating from that version and restarting i3bar before i3. */
     if (!strcmp(cur_key, "wheel_up_cmd")) {
         DLOG("wheel_up_cmd = %.*s\n", len, val);
-        FREE(config.wheel_up_cmd);
-        sasprintf(&config.wheel_up_cmd, "%.*s", len, val);
+        binding_t *binding = scalloc(1, sizeof(binding_t));
+        binding->input_code = 4;
+        sasprintf(&(binding->command), "%.*s", len, val);
+        TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
         return 1;
     }
 
+    /* This key was sent in <= 4.10.2. We keep it around to avoid breakage for
+     * users updating from that version and restarting i3bar before i3. */
     if (!strcmp(cur_key, "wheel_down_cmd")) {
         DLOG("wheel_down_cmd = %.*s\n", len, val);
-        FREE(config.wheel_down_cmd);
-        sasprintf(&config.wheel_down_cmd, "%.*s", len, val);
+        binding_t *binding = scalloc(1, sizeof(binding_t));
+        binding->input_code = 5;
+        sasprintf(&(binding->command), "%.*s", len, val);
+        TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
         return 1;
     }
 
@@ -191,6 +229,9 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
     COLOR(urgent_workspace_border, urgent_ws_border);
     COLOR(urgent_workspace_bg, urgent_ws_bg);
     COLOR(urgent_workspace_text, urgent_ws_fg);
+    COLOR(binding_mode_border, binding_mode_border);
+    COLOR(binding_mode_bg, binding_mode_bg);
+    COLOR(binding_mode_text, binding_mode_fg);
 
     printf("got unexpected string %.*s for cur_key = %s\n", len, val, cur_key);
 
@@ -229,11 +270,40 @@ static int config_boolean_cb(void *params_, int val) {
     return 0;
 }
 
+/*
+ * Parse an integer value
+ *
+ */
+static int config_integer_cb(void *params_, long long val) {
+    if (parsing_bindings) {
+        if (strcmp(cur_key, "input_code") == 0) {
+            binding_t *binding = scalloc(1, sizeof(binding_t));
+            binding->input_code = val;
+            TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
+
+            return 1;
+        }
+
+        ELOG("Unknown key \"%s\" while parsing bar bindings.\n", cur_key);
+        return 0;
+    }
+
+    if (!strcmp(cur_key, "tray_padding")) {
+        DLOG("tray_padding = %lld\n", val);
+        config.tray_padding = val;
+        return 1;
+    }
+
+    return 0;
+}
+
 /* A datastructure to pass all these callbacks to yajl */
 static yajl_callbacks outputs_callbacks = {
     .yajl_null = config_null_cb,
     .yajl_boolean = config_boolean_cb,
+    .yajl_integer = config_integer_cb,
     .yajl_string = config_string_cb,
+    .yajl_end_array = config_end_array_cb,
     .yajl_map_key = config_map_key_cb,
 };
 
@@ -245,6 +315,8 @@ void parse_config_json(char *json) {
     yajl_handle handle;
     yajl_status state;
     handle = yajl_alloc(&outputs_callbacks, NULL, NULL);
+
+    TAILQ_INIT(&(config.bindings));
 
     state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
@@ -286,5 +358,8 @@ void free_colors(struct xcb_color_strings_t *colors) {
     FREE_COLOR(focus_ws_fg);
     FREE_COLOR(focus_ws_bg);
     FREE_COLOR(focus_ws_border);
+    FREE_COLOR(binding_mode_fg);
+    FREE_COLOR(binding_mode_bg);
+    FREE_COLOR(binding_mode_border);
 #undef FREE_COLOR
 }

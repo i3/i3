@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * This is LEGACY code (we support RandR, which can do much more than
  * Xinerama), but necessary for the poor users of the nVidia binary
@@ -56,7 +56,7 @@ static void query_screens(xcb_connection_t *conn) {
             s->rect.width = min(s->rect.width, screen_info[screen].width);
             s->rect.height = min(s->rect.height, screen_info[screen].height);
         } else {
-            s = scalloc(sizeof(Output));
+            s = scalloc(1, sizeof(Output));
             sasprintf(&(s->name), "xinerama-%d", num_screens);
             DLOG("Created new Xinerama screen %s (%p)\n", s->name, s);
             s->active = true;
@@ -88,21 +88,34 @@ static void query_screens(xcb_connection_t *conn) {
 }
 
 /*
+ * This creates the root_output (borrowed from randr.c) and uses it
+ * as the sole output for this session.
+ *
+ */
+static void use_root_output(xcb_connection_t *conn) {
+    Output *s = create_root_output(conn);
+    s->active = true;
+    TAILQ_INSERT_TAIL(&outputs, s, outputs);
+    output_init_con(s);
+    init_ws_for_output(s, output_get_content(s->con));
+}
+
+/*
  * We have just established a connection to the X server and need the initial Xinerama
  * information to setup workspaces for each screen.
  *
  */
 void xinerama_init(void) {
     if (!xcb_get_extension_data(conn, &xcb_xinerama_id)->present) {
-        DLOG("Xinerama extension not found, disabling.\n");
-        disable_randr(conn);
+        DLOG("Xinerama extension not found, using root output.\n");
+        use_root_output(conn);
     } else {
         xcb_xinerama_is_active_reply_t *reply;
         reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
 
         if (reply == NULL || !reply->state) {
-            DLOG("Xinerama is not active (in your X-Server), disabling.\n");
-            disable_randr(conn);
+            DLOG("Xinerama is not active (in your X-Server), using root output.\n");
+            use_root_output(conn);
         } else
             query_screens(conn);
 

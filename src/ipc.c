@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * ipc.c: UNIX domain socket IPC (initialization, client handling, protocol).
  *
@@ -84,7 +84,7 @@ void ipc_shutdown(void) {
 IPC_HANDLER(command) {
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
-    char *command = scalloc(message_size + 1);
+    char *command = scalloc(message_size + 1, 1);
     strncpy(command, (const char *)message, message_size);
     LOG("IPC: received: *%s*\n", command);
     yajl_gen gen = yajl_gen_alloc(NULL);
@@ -121,6 +121,68 @@ static void dump_rect(yajl_gen gen, const char *name, Rect r) {
     y(map_close);
 }
 
+static void dump_event_state_mask(yajl_gen gen, Binding *bind) {
+    y(array_open);
+    for (int i = 0; i < 20; i++) {
+        if (bind->event_state_mask & (1 << i)) {
+            switch (1 << i) {
+                case XCB_KEY_BUT_MASK_SHIFT:
+                    ystr("shift");
+                    break;
+                case XCB_KEY_BUT_MASK_LOCK:
+                    ystr("lock");
+                    break;
+                case XCB_KEY_BUT_MASK_CONTROL:
+                    ystr("ctrl");
+                    break;
+                case XCB_KEY_BUT_MASK_MOD_1:
+                    ystr("Mod1");
+                    break;
+                case XCB_KEY_BUT_MASK_MOD_2:
+                    ystr("Mod2");
+                    break;
+                case XCB_KEY_BUT_MASK_MOD_3:
+                    ystr("Mod3");
+                    break;
+                case XCB_KEY_BUT_MASK_MOD_4:
+                    ystr("Mod4");
+                    break;
+                case XCB_KEY_BUT_MASK_MOD_5:
+                    ystr("Mod5");
+                    break;
+                case XCB_KEY_BUT_MASK_BUTTON_1:
+                    ystr("Button1");
+                    break;
+                case XCB_KEY_BUT_MASK_BUTTON_2:
+                    ystr("Button2");
+                    break;
+                case XCB_KEY_BUT_MASK_BUTTON_3:
+                    ystr("Button3");
+                    break;
+                case XCB_KEY_BUT_MASK_BUTTON_4:
+                    ystr("Button4");
+                    break;
+                case XCB_KEY_BUT_MASK_BUTTON_5:
+                    ystr("Button5");
+                    break;
+                case (I3_XKB_GROUP_MASK_1 << 16):
+                    ystr("Group1");
+                    break;
+                case (I3_XKB_GROUP_MASK_2 << 16):
+                    ystr("Group2");
+                    break;
+                case (I3_XKB_GROUP_MASK_3 << 16):
+                    ystr("Group3");
+                    break;
+                case (I3_XKB_GROUP_MASK_4 << 16):
+                    ystr("Group4");
+                    break;
+            }
+        }
+    }
+    y(array_close);
+}
+
 static void dump_binding(yajl_gen gen, Binding *bind) {
     y(map_open);
     ystr("input_code");
@@ -138,39 +200,13 @@ static void dump_binding(yajl_gen gen, Binding *bind) {
     ystr("command");
     ystr(bind->command);
 
+    // This key is only provided for compatibility, new programs should use
+    // event_state_mask instead.
     ystr("mods");
-    y(array_open);
-    for (int i = 0; i < 8; i++) {
-        if (bind->mods & (1 << i)) {
-            switch (1 << i) {
-                case XCB_MOD_MASK_SHIFT:
-                    ystr("shift");
-                    break;
-                case XCB_MOD_MASK_LOCK:
-                    ystr("lock");
-                    break;
-                case XCB_MOD_MASK_CONTROL:
-                    ystr("ctrl");
-                    break;
-                case XCB_MOD_MASK_1:
-                    ystr("Mod1");
-                    break;
-                case XCB_MOD_MASK_2:
-                    ystr("Mod2");
-                    break;
-                case XCB_MOD_MASK_3:
-                    ystr("Mod3");
-                    break;
-                case XCB_MOD_MASK_4:
-                    ystr("Mod4");
-                    break;
-                case XCB_MOD_MASK_5:
-                    ystr("Mod5");
-                    break;
-            }
-        }
-    }
-    y(array_close);
+    dump_event_state_mask(gen, bind);
+
+    ystr("event_state_mask");
+    dump_event_state_mask(gen, bind);
 
     y(map_close);
 }
@@ -400,6 +436,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("fullscreen_mode");
     y(integer, con->fullscreen_mode);
 
+    ystr("sticky");
+    y(bool, con->sticky);
+
     ystr("floating");
     switch (con->floating) {
         case FLOATING_AUTO_OFF:
@@ -469,6 +508,28 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(map_close);
 }
 
+static void dump_bar_bindings(yajl_gen gen, Barconfig *config) {
+    if (TAILQ_EMPTY(&(config->bar_bindings)))
+        return;
+
+    ystr("bindings");
+    y(array_open);
+
+    struct Barbinding *current;
+    TAILQ_FOREACH(current, &(config->bar_bindings), bindings) {
+        y(map_open);
+
+        ystr("input_code");
+        y(integer, current->input_code);
+        ystr("command");
+        ystr(current->command);
+
+        y(map_close);
+    }
+
+    y(array_close);
+}
+
 static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     y(map_open);
 
@@ -492,6 +553,10 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     } while (0)
 
     YSTR_IF_SET(tray_output);
+
+    ystr("tray_padding");
+    y(integer, config->tray_padding);
+
     YSTR_IF_SET(socket_path);
 
     ystr("mode");
@@ -549,15 +614,7 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
             break;
     }
 
-    if (config->wheel_up_cmd) {
-        ystr("wheel_up_cmd");
-        ystr(config->wheel_up_cmd);
-    }
-
-    if (config->wheel_down_cmd) {
-        ystr("wheel_down_cmd");
-        ystr(config->wheel_down_cmd);
-    }
+    dump_bar_bindings(gen, config);
 
     ystr("position");
     if (config->position == P_BOTTOM)
@@ -611,6 +668,9 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     YSTR_IF_SET(urgent_workspace_border);
     YSTR_IF_SET(urgent_workspace_bg);
     YSTR_IF_SET(urgent_workspace_text);
+    YSTR_IF_SET(binding_mode_border);
+    YSTR_IF_SET(binding_mode_bg);
+    YSTR_IF_SET(binding_mode_text);
     y(map_close);
 
     y(map_close);
@@ -791,7 +851,10 @@ IPC_HANDLER(get_version) {
     y(integer, PATCH_VERSION);
 
     ystr("human_readable");
-    ystr(I3_VERSION);
+    ystr(i3_version);
+
+    ystr("loaded_config_file_name");
+    ystr(current_configpath);
 
     y(map_close);
 
@@ -831,7 +894,7 @@ IPC_HANDLER(get_bar_config) {
 
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
-    char *bar_id = scalloc(message_size + 1);
+    char *bar_id = scalloc(message_size + 1, 1);
     strncpy(bar_id, (const char *)message, message_size);
     LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
     Barconfig *current, *config = NULL;
@@ -876,10 +939,10 @@ static int add_subscription(void *extra, const unsigned char *s,
     int event = client->num_events;
 
     client->num_events++;
-    client->events = realloc(client->events, client->num_events * sizeof(char *));
+    client->events = srealloc(client->events, client->num_events * sizeof(char *));
     /* We copy the string because it is not null-terminated and strndup()
      * is missing on some BSD systems */
-    client->events[event] = scalloc(len + 1);
+    client->events[event] = scalloc(len + 1, 1);
     memcpy(client->events[event], s, len);
 
     DLOG("client is now subscribed to:\n");
@@ -1036,13 +1099,13 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
 
     set_nonblock(client);
 
-    struct ev_io *package = scalloc(sizeof(struct ev_io));
+    struct ev_io *package = scalloc(1, sizeof(struct ev_io));
     ev_io_init(package, ipc_receive_message, client, EV_READ);
     ev_io_start(EV_A_ package);
 
     DLOG("IPC: new client connected on fd %d\n", w->fd);
 
-    ipc_client *new = scalloc(sizeof(ipc_client));
+    ipc_client *new = scalloc(1, sizeof(ipc_client));
     new->fd = client;
 
     TAILQ_INSERT_TAIL(&all_clients, new, clients);
@@ -1063,7 +1126,7 @@ int ipc_create_socket(const char *filename) {
     char *copy = sstrdup(resolved);
     const char *dir = dirname(copy);
     if (!path_exists(dir))
-        mkdirp(dir);
+        mkdirp(dir, DEFAULT_DIR_MODE);
     free(copy);
 
     /* Unlink the unix domain socket before */

@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * For more information on RandR, please see the X.org RandR specification at
  * http://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
@@ -27,7 +27,8 @@ xcb_randr_get_output_primary_reply_t *primary;
 /* Stores all outputs available in your current session. */
 struct outputs_head outputs = TAILQ_HEAD_INITIALIZER(outputs);
 
-static bool randr_disabled = false;
+/* This is the output covering the root window */
+static Output *root_output;
 
 /*
  * Get a specific output by its internal X11 id. Used by randr_query_outputs
@@ -70,6 +71,21 @@ Output *get_first_output(void) {
         return output;
 
     die("No usable outputs available.\n");
+}
+
+/*
+ * Check whether there are any active outputs (excluding the root output).
+ *
+ */
+static bool any_randr_output_active(void) {
+    Output *output;
+
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (output != root_output && !output->to_be_disabled && output->active)
+            return true;
+    }
+
+    return false;
 }
 
 /*
@@ -220,27 +236,20 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
 }
 
 /*
- * Disables RandR support by creating exactly one output with the size of the
- * X11 screen.
+ * Creates an output covering the root window.
  *
  */
-void disable_randr(xcb_connection_t *conn) {
-    DLOG("RandR extension unusable, disabling.\n");
+Output *create_root_output(xcb_connection_t *conn) {
+    Output *s = scalloc(1, sizeof(Output));
 
-    Output *s = scalloc(sizeof(Output));
-
-    s->active = true;
+    s->active = false;
     s->rect.x = 0;
     s->rect.y = 0;
     s->rect.width = root_screen->width_in_pixels;
     s->rect.height = root_screen->height_in_pixels;
     s->name = "xroot-0";
-    output_init_con(s);
-    init_ws_for_output(s, output_get_content(s->con));
 
-    TAILQ_INSERT_TAIL(&outputs, s, outputs);
-
-    randr_disabled = true;
+    return s;
 }
 
 /*
@@ -292,7 +301,7 @@ void output_init_con(Output *output) {
     topdock->type = CT_DOCKAREA;
     topdock->layout = L_DOCKAREA;
     /* this container swallows dock clients */
-    Match *match = scalloc(sizeof(Match));
+    Match *match = scalloc(1, sizeof(Match));
     match_init(match);
     match->dock = M_DOCK_TOP;
     match->insert_where = M_BELOW;
@@ -326,7 +335,7 @@ void output_init_con(Output *output) {
     bottomdock->type = CT_DOCKAREA;
     bottomdock->layout = L_DOCKAREA;
     /* this container swallows dock clients */
-    match = scalloc(sizeof(Match));
+    match = scalloc(1, sizeof(Match));
     match_init(match);
     match->dock = M_DOCK_BOTTOM;
     match->insert_where = M_BELOW;
@@ -522,7 +531,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
     Output *new = get_output_by_id(id);
     bool existing = (new != NULL);
     if (!existing)
-        new = scalloc(sizeof(Output));
+        new = scalloc(1, sizeof(Output));
     new->id = id;
     new->primary = (primary && primary->output == id);
     FREE(new->name);
@@ -588,6 +597,8 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
 /*
  * (Re-)queries the outputs via RandR and stores them in the list of outputs.
  *
+ * If no outputs are found use the root window.
+ *
  */
 void randr_query_outputs(void) {
     Output *output, *other, *first;
@@ -602,9 +613,6 @@ void randr_query_outputs(void) {
     /* an output is VGA-1, LVDS-1, etc. (usually physical video outputs) */
     xcb_randr_output_t *randr_outputs;
 
-    if (randr_disabled)
-        return;
-
     /* Get screen resources (primary output, crtcs, outputs, modes) */
     rcookie = xcb_randr_get_screen_resources_current(conn, root);
     pcookie = xcb_randr_get_output_primary(conn, root);
@@ -613,10 +621,9 @@ void randr_query_outputs(void) {
         ELOG("Could not get RandR primary output\n");
     else
         DLOG("primary output is %08x\n", primary->output);
-    if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
-        disable_randr(conn);
+    if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL)
         return;
-    }
+
     cts = res->config_timestamp;
 
     int len = xcb_randr_get_screen_resources_current_outputs_length(res);
@@ -636,6 +643,16 @@ void randr_query_outputs(void) {
 
         handle_output(conn, randr_outputs[i], output, cts, res);
         free(output);
+    }
+
+    /* If there's no randr output, enable the output covering the root window. */
+    if (any_randr_output_active()) {
+        DLOG("Active RandR output found. Disabling root output.\n");
+        if (root_output->active)
+            root_output->to_be_disabled = true;
+    } else {
+        DLOG("No active RandR output found. Enabling root output.\n");
+        root_output->active = true;
     }
 
     /* Check for clones, disable the clones and reduce the mode to the
@@ -779,14 +796,6 @@ void randr_query_outputs(void) {
         }
     }
 
-    if (TAILQ_EMPTY(&outputs)) {
-        ELOG("No outputs found via RandR, disabling\n");
-        disable_randr(conn);
-    }
-
-    /* Verifies that there is at least one active output as a side-effect. */
-    get_first_output();
-
     /* Just go through each active output and assign one workspace */
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (!output->active)
@@ -822,12 +831,20 @@ void randr_query_outputs(void) {
 void randr_init(int *event_base) {
     const xcb_query_extension_reply_t *extreply;
 
+    root_output = create_root_output(conn);
+    TAILQ_INSERT_TAIL(&outputs, root_output, outputs);
+
     extreply = xcb_get_extension_data(conn, &xcb_randr_id);
     if (!extreply->present) {
-        disable_randr(conn);
+        DLOG("RandR is not present, activating root output.\n");
+        root_output->active = true;
+        output_init_con(root_output);
+        init_ws_for_output(root_output, output_get_content(root_output->con));
+
         return;
-    } else
-        randr_query_outputs();
+    }
+
+    randr_query_outputs();
 
     if (event_base != NULL)
         *event_base = extreply->first_event;

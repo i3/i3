@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #include <stdlib.h>
@@ -23,7 +23,7 @@ void fake_configure_notify(xcb_connection_t *conn, xcb_rectangle_t r, xcb_window
     /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
      * In order to properly initialize these bytes, we allocate 32 bytes even
      * though we only need less for an xcb_configure_notify_event_t */
-    void *event = scalloc(32);
+    void *event = scalloc(32, 1);
     xcb_configure_notify_event_t *generated_event = event;
 
     generated_event->event = window;

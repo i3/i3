@@ -160,6 +160,27 @@ $ ./complete-run.pl --parallel=1 --keep-xserver-output
 This will show the output of Xephyr, which is the X server implementation we
 use for testing.
 
+==== Coverage testing
+
+Coverage testing is possible with +lcov+, the front-end for GCC's coverage
+testing tool +gcov+. The testcases can generate a nice html report that tells
+you which functions and lines were covered during a run of the tests. You can
+use this tool to judge how effective your tests are.
+
+To use test coverage tools, first compile with coverage enabled.
+
+---------------------------------------------------
+COVERAGE=1 make
+---------------------------------------------------
+
+Then run the tests with the +--coverage-testing+ flag.
+
+---------------------------------------------------
+./complete-run.pl --coverage-testing
+---------------------------------------------------
+
+Then open +latest/i3-coverage/index.html+ in your web browser.
+
 ==== IPC interface
 
 The testsuite makes extensive use of the IPC (Inter-Process Communication)

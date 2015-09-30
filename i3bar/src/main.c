@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010 Axel Wagner and contributors (see also: LICENSE)
  *
  */
 #include <stdio.h>
@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
                 socket_path = expand_path(optarg);
                 break;
             case 'v':
-                printf("i3bar version " I3_VERSION " © 2010-2014 Axel Wagner and contributors\n");
+                printf("i3bar version " I3_VERSION " © 2010 Axel Wagner and contributors\n");
                 exit(EXIT_SUCCESS);
                 break;
             case 'b':

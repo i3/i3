@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * commands.c: all command functions (see commands_parser.c)
  *
@@ -363,6 +363,31 @@ void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue) {
         return;
     }
 
+    if (strcmp(ctype, "window_type") == 0) {
+        if (strcasecmp(cvalue, "normal") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_NORMAL;
+        else if (strcasecmp(cvalue, "dialog") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_DIALOG;
+        else if (strcasecmp(cvalue, "utility") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_UTILITY;
+        else if (strcasecmp(cvalue, "toolbar") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_TOOLBAR;
+        else if (strcasecmp(cvalue, "splash") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_SPLASH;
+        else if (strcasecmp(cvalue, "menu") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_MENU;
+        else if (strcasecmp(cvalue, "dropdown_menu") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU;
+        else if (strcasecmp(cvalue, "popup_menu") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_POPUP_MENU;
+        else if (strcasecmp(cvalue, "tooltip") == 0)
+            current_match->window_type = A__NET_WM_WINDOW_TYPE_TOOLTIP;
+        else
+            ELOG("unknown window_type value \"%s\"\n", cvalue);
+
+        return;
+    }
+
     if (strcmp(ctype, "con_mark") == 0) {
         current_match->mark = regex_new(cvalue);
         return;
@@ -383,6 +408,11 @@ void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue) {
                    strcasecmp(cvalue, "first") == 0) {
             current_match->urgent = U_OLDEST;
         }
+        return;
+    }
+
+    if (strcmp(ctype, "workspace") == 0) {
+        current_match->workspace = regex_new(cvalue);
         return;
     }
 
@@ -431,7 +461,7 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false);
+        con_move_to_workspace(current->con, ws, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
@@ -458,7 +488,7 @@ void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false);
+        con_move_to_workspace(current->con, ws, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
@@ -502,7 +532,7 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false);
+        con_move_to_workspace(current->con, ws, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
@@ -553,7 +583,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, workspace, true, false);
+        con_move_to_workspace(current->con, workspace, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
@@ -569,17 +599,20 @@ static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floatin
     /* ensure that resize will take place even if pixel increment is smaller than
      * height increment or width increment.
      * fixes #1011 */
-    if (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0 ||
-        strcmp(direction, "height") == 0) {
-        if (px < 0)
-            px = (-px < focused_con->height_increment) ? -focused_con->height_increment : px;
-        else
-            px = (px < focused_con->height_increment) ? focused_con->height_increment : px;
-    } else if (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0) {
-        if (px < 0)
-            px = (-px < focused_con->width_increment) ? -focused_con->width_increment : px;
-        else
-            px = (px < focused_con->width_increment) ? focused_con->width_increment : px;
+    const i3Window *window = focused_con->window;
+    if (window != NULL) {
+        if (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0 ||
+            strcmp(direction, "height") == 0) {
+            if (px < 0)
+                px = (-px < window->height_increment) ? -window->height_increment : px;
+            else
+                px = (px < window->height_increment) ? window->height_increment : px;
+        } else if (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0) {
+            if (px < 0)
+                px = (-px < window->width_increment) ? -window->width_increment : px;
+            else
+                px = (px < window->width_increment) ? window->width_increment : px;
+        }
     }
 
     if (strcmp(direction, "up") == 0) {
@@ -791,7 +824,38 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
 }
 
 /*
- * Implementation of 'border normal|none|1pixel|toggle|pixel'.
+ * Implementation of 'resize set <px> [px] <px> [px]'.
+ *
+ */
+void cmd_size(I3_CMD, char *cwidth, char *cheight) {
+    DLOG("resizing to %sx%s px\n", cwidth, cheight);
+    // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
+    int x = atoi(cwidth);
+    int y = atoi(cheight);
+    if (x <= 0 || y <= 0) {
+        ELOG("Resize failed: dimensions cannot be negative (was %sx%s)\n", cwidth, cheight);
+        return;
+    }
+
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        Con *floating_con;
+        if ((floating_con = con_inside_floating(current->con))) {
+            floating_resize(floating_con, x, y);
+        } else {
+            ELOG("Resize failed: %p not a floating container\n", current->con);
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'border normal|pixel [<n>]', 'border none|1pixel|toggle'.
  *
  */
 void cmd_border(I3_CMD, char *border_style_str, char *border_width) {
@@ -1037,26 +1101,29 @@ void cmd_workspace_name(I3_CMD, char *name) {
 }
 
 /*
- * Implementation of 'mark <mark>'
+ * Implementation of 'mark [--toggle] <mark>'
  *
  */
-void cmd_mark(I3_CMD, char *mark) {
-    DLOG("Clearing all windows which have that mark first\n");
-
-    Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons) {
-        if (con->mark && strcmp(con->mark, mark) == 0)
-            FREE(con->mark);
-    }
-
-    DLOG("marking window with str %s\n", mark);
-    owindow *current;
-
+void cmd_mark(I3_CMD, char *mark, char *toggle) {
     HANDLE_EMPTY_MATCH;
 
-    TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        current->con->mark = sstrdup(mark);
+    owindow *current = TAILQ_FIRST(&owindows);
+    if (current == NULL) {
+        ysuccess(false);
+        return;
+    }
+
+    /* Marks must be unique, i.e., no two windows must have the same mark. */
+    if (current != TAILQ_LAST(&owindows, owindows_head)) {
+        yerror("A mark must not be put onto more than one window");
+        return;
+    }
+
+    DLOG("matching: %p / %s\n", current->con, current->con->name);
+    if (toggle != NULL) {
+        con_mark_toggle(current->con, mark);
+    } else {
+        con_mark(current->con, mark);
     }
 
     cmd_output->needs_tree_render = true;
@@ -1069,20 +1136,7 @@ void cmd_mark(I3_CMD, char *mark) {
  *
  */
 void cmd_unmark(I3_CMD, char *mark) {
-    if (mark == NULL) {
-        Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            FREE(con->mark);
-        }
-        DLOG("removed all window marks");
-    } else {
-        Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            if (con->mark && strcmp(con->mark, mark) == 0)
-                FREE(con->mark);
-        }
-        DLOG("removed window mark %s\n", mark);
-    }
+    con_unmark(mark);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -1106,41 +1160,57 @@ void cmd_mode(I3_CMD, char *mode) {
  *
  */
 void cmd_move_con_to_output(I3_CMD, char *name) {
-    owindow *current;
-
-    DLOG("should move window to output %s\n", name);
-
+    DLOG("Should move window to output \"%s\".\n", name);
     HANDLE_EMPTY_MATCH;
 
-    Output *current_output = NULL;
-    // TODO: fix the handling of criteria
-    TAILQ_FOREACH(current, &owindows, owindows)
-    current_output = get_output_of_con(current->con);
-    assert(current_output != NULL);
-
-    Output *output = get_output_from_string(current_output, name);
-    if (!output) {
-        LOG("No such output found.\n");
-        ysuccess(false);
-        return;
-    }
-
-    /* get visible workspace on output */
-    Con *ws = NULL;
-    GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-    if (!ws) {
-        ysuccess(false);
-        return;
-    }
-
+    owindow *current;
+    bool had_error = false;
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false);
+
+        Output *current_output = get_output_of_con(current->con);
+        assert(current_output != NULL);
+
+        Output *output = get_output_from_string(current_output, name);
+        if (output == NULL) {
+            ELOG("Could not find output \"%s\", skipping.\n", name);
+            had_error = true;
+            continue;
+        }
+
+        Con *ws = NULL;
+        GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
+        if (ws == NULL) {
+            ELOG("Could not find a visible workspace on output %p.\n", output);
+            had_error = true;
+            continue;
+        }
+
+        con_move_to_workspace(current->con, ws, true, false, false);
     }
 
     cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    ysuccess(!had_error);
+}
+
+/*
+ * Implementation of 'move [container|window] [to] mark <str>'.
+ *
+ */
+void cmd_move_con_to_mark(I3_CMD, char *mark) {
+    DLOG("moving window to mark \"%s\"\n", mark);
+
+    HANDLE_EMPTY_MATCH;
+
+    bool result = true;
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        DLOG("moving matched window %p / %s to mark \"%s\"\n", current->con, current->con->name, mark);
+        result &= con_move_to_mark(current->con, mark);
+    }
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(result);
 }
 
 /*
@@ -1306,15 +1376,14 @@ void cmd_focus_window_mode(I3_CMD, char *window_mode) {
     DLOG("window_mode = %s\n", window_mode);
 
     Con *ws = con_get_workspace(focused);
-    Con *current;
     if (ws != NULL) {
         if (strcmp(window_mode, "mode_toggle") == 0) {
-            current = TAILQ_FIRST(&(ws->focus_head));
-            if (current != NULL && current->type == CT_FLOATING_CON)
+            if (con_inside_floating(focused))
                 window_mode = "tiling";
             else
                 window_mode = "floating";
         }
+        Con *current;
         TAILQ_FOREACH(current, &(ws->focus_head), focused) {
             if ((strcmp(window_mode, "floating") == 0 && current->type != CT_FLOATING_CON) ||
                 (strcmp(window_mode, "tiling") == 0 && current->type == CT_FLOATING_CON))
@@ -1430,8 +1499,7 @@ void cmd_focus(I3_CMD) {
             count);
 
     cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    ysuccess(count > 0);
 }
 
 /*
@@ -1459,6 +1527,42 @@ void cmd_fullscreen(I3_CMD, char *action, char *fullscreen_mode) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'sticky enable|disable|toggle'.
+ *
+ */
+void cmd_sticky(I3_CMD, char *action) {
+    DLOG("%s sticky on window\n", action);
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        if (current->con->window == NULL) {
+            ELOG("only containers holding a window can be made sticky, skipping con = %p\n", current->con);
+            continue;
+        }
+        DLOG("setting sticky for container = %p / %s\n", current->con, current->con->name);
+
+        bool sticky = false;
+        if (strcmp(action, "enable") == 0)
+            sticky = true;
+        else if (strcmp(action, "disable") == 0)
+            sticky = false;
+        else if (strcmp(action, "toggle") == 0)
+            sticky = !current->con->sticky;
+
+        current->con->sticky = sticky;
+        ewmh_update_sticky(current->con->window->id, sticky);
+    }
+
+    /* A window we made sticky might not be on a visible workspace right now, so we need to make
+     * sure it gets pushed to the front now. */
+    output_push_sticky_windows(focused);
+
+    cmd_output->needs_tree_render = true;
     ysuccess(true);
 }
 
@@ -1746,28 +1850,45 @@ void cmd_move_window_to_center(I3_CMD, char *method) {
     }
 
     if (strcmp(method, "absolute") == 0) {
-        Rect *rect = &focused->parent->rect;
-
         DLOG("moving to absolute center\n");
-        rect->x = croot->rect.width / 2 - rect->width / 2;
-        rect->y = croot->rect.height / 2 - rect->height / 2;
+        floating_center(focused->parent, croot->rect);
 
         floating_maybe_reassign_ws(focused->parent);
         cmd_output->needs_tree_render = true;
     }
 
     if (strcmp(method, "position") == 0) {
-        Rect *wsrect = &con_get_workspace(focused)->rect;
-        Rect newrect = focused->parent->rect;
-
         DLOG("moving to center\n");
-        newrect.x = wsrect->width / 2 - newrect.width / 2;
-        newrect.y = wsrect->height / 2 - newrect.height / 2;
+        floating_center(focused->parent, con_get_workspace(focused)->rect);
 
-        floating_reposition(focused->parent, newrect);
+        cmd_output->needs_tree_render = true;
     }
 
     // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'move [window|container] [to] position mouse'
+ *
+ */
+void cmd_move_window_to_mouse(I3_CMD) {
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        Con *floating_con = con_inside_floating(current->con);
+        if (floating_con == NULL) {
+            DLOG("con %p / %s is not floating, cannot move it to the mouse position.\n",
+                 current->con, current->con->name);
+            continue;
+        }
+
+        DLOG("moving floating container %p / %s to cursor position\n", floating_con, floating_con->name);
+        floating_move_to_pointer(floating_con);
+    }
+
+    cmd_output->needs_tree_render = true;
     ysuccess(true);
 }
 
@@ -1814,12 +1935,49 @@ void cmd_scratchpad_show(I3_CMD) {
 }
 
 /*
+ * Implementation of 'title_format <format>'
+ *
+ */
+void cmd_title_format(I3_CMD, char *format) {
+    DLOG("setting title_format to \"%s\"\n", format);
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        if (current->con->window == NULL)
+            continue;
+
+        DLOG("setting title_format for %p / %s\n", current->con, current->con->name);
+        FREE(current->con->window->title_format);
+
+        /* If we only display the title without anything else, we can skip the parsing step,
+         * so we remove the title format altogether. */
+        if (strcasecmp(format, "%title") != 0) {
+            current->con->window->title_format = sstrdup(format);
+
+            i3String *formatted_title = window_parse_title_format(current->con->window);
+            ewmh_update_visible_name(current->con->window->id, i3string_as_utf8(formatted_title));
+            I3STRING_FREE(formatted_title);
+        } else {
+            /* We can remove _NET_WM_VISIBLE_NAME since we don't display a custom title. */
+            ewmh_update_visible_name(current->con->window->id, NULL);
+        }
+
+        /* Make sure the window title is redrawn immediately. */
+        current->con->window->name_x_changed = true;
+    }
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'rename workspace [<name>] to <name>'
  *
  */
 void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     if (strncasecmp(new_name, "__", strlen("__")) == 0) {
-        LOG("Cannot rename workspace to \"%s\": names starting with __ are i3-internal.", new_name);
+        LOG("Cannot rename workspace to \"%s\": names starting with __ are i3-internal.\n", new_name);
         ysuccess(false);
         return;
     }

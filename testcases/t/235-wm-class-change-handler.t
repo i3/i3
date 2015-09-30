@@ -31,16 +31,17 @@ EOT
 my $pid = launch_with_config($config);
 
 sub change_window_class {
-    my ($window, $class) = @_;
+    my ($window, $class, $length) = @_;
     my $atomname = $x->atom(name => 'WM_CLASS');
     my $atomtype = $x->atom(name => 'STRING');
+    $length ||= length($class) + 1;
     $x->change_property(
         PROP_MODE_REPLACE,
         $window->id,
         $atomname->id,
         $atomtype->id,
         8,
-        length($class) + 1,
+        $length,
         $class
     );
     sync_with_i3;
@@ -64,6 +65,13 @@ is($con->{window_properties}->{instance}, 'special',
 # config for testing purposes
 is($con->{mark}, 'special_class_mark',
     'A `for_window` assignment should run for a match when the window changes class');
+
+change_window_class($win, "abcdefghijklmnopqrstuv\0abcd", 24);
+
+$con = @{get_ws_content($ws)}[0];
+
+is($con->{window_properties}->{class}, 'a',
+    'Non-null-terminated strings should be handled correctly');
 
 exit_gracefully($pid);
 

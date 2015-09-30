@@ -1,7 +1,7 @@
 # vim:ts=2:sw=2:expandtab
 #
 # i3 - an improved dynamic tiling window manager
-# © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+# © 2009 Michael Stapelberg and contributors (see also: LICENSE)
 #
 # parser-specs/config.spec: Specification file for generate-command-parser.pl
 # which will generate the appropriate header files for our C parser.
@@ -31,6 +31,7 @@ state INITIAL:
   'hide_edge_borders'                      -> HIDE_EDGE_BORDERS
   'for_window'                             -> FOR_WINDOW
   'assign'                                 -> ASSIGN
+  'no_focus'                               -> NO_FOCUS
   'focus_follows_mouse'                    -> FOCUS_FOLLOWS_MOUSE
   'mouse_warping'                          -> MOUSE_WARPING
   'force_focus_wrapping'                   -> FORCE_FOCUS_WRAPPING
@@ -38,6 +39,8 @@ state INITIAL:
   'workspace_auto_back_and_forth'          -> WORKSPACE_BACK_AND_FORTH
   'fake_outputs', 'fake-outputs'           -> FAKE_OUTPUTS
   'force_display_urgency_hint'             -> FORCE_DISPLAY_URGENCY_HINT
+  'focus_on_window_activation'             -> FOCUS_ON_WINDOW_ACTIVATION
+  'show_marks'                             -> SHOW_MARKS
   'workspace'                              -> WORKSPACE
   'ipc_socket', 'ipc-socket'               -> IPC_SOCKET
   'restart_state'                          -> RESTART_STATE
@@ -100,8 +103,6 @@ state WORKSPACE_LAYOUT:
 
 # new_window <normal|1pixel|none>
 # new_float <normal|1pixel|none>
-# TODO: new_float is not in the userguide yet
-# TODO: pixel is not in the userguide yet
 state NEW_WINDOW:
   border = 'normal', 'pixel'
       -> NEW_WINDOW_PIXELS
@@ -148,6 +149,15 @@ state ASSIGN_WORKSPACE:
   workspace = string
       -> call cfg_assign($workspace)
 
+# no_focus <criteria>
+state NO_FOCUS:
+  '['
+      -> call cfg_criteria_init(NO_FOCUS_END); CRITERIA
+
+state NO_FOCUS_END:
+  end
+      -> call cfg_no_focus()
+
 # Criteria: Used by for_window and assign.
 state CRITERIA:
   ctype = 'class'       -> CRITERION
@@ -155,9 +165,11 @@ state CRITERIA:
   ctype = 'window_role' -> CRITERION
   ctype = 'con_id'      -> CRITERION
   ctype = 'id'          -> CRITERION
+  ctype = 'window_type' -> CRITERION
   ctype = 'con_mark'    -> CRITERION
   ctype = 'title'       -> CRITERION
   ctype = 'urgent'      -> CRITERION
+  ctype = 'workspace'   -> CRITERION
   ']'
       -> call cfg_criteria_pop_state()
 
@@ -204,11 +216,21 @@ state FORCE_DISPLAY_URGENCY_HINT:
   duration_ms = number
       -> FORCE_DISPLAY_URGENCY_HINT_MS
 
+# show_marks
+state SHOW_MARKS:
+  value = word
+      -> call cfg_show_marks($value)
+
 state FORCE_DISPLAY_URGENCY_HINT_MS:
   'ms'
       ->
   end
       -> call cfg_force_display_urgency_hint(&duration_ms)
+
+# focus_on_window_activation <smart|urgent|focus|none>
+state FOCUS_ON_WINDOW_ACTIVATION:
+  mode = word
+      -> call cfg_focus_on_window_activation($mode)
 
 # workspace <workspace> output <output>
 state WORKSPACE:
@@ -278,9 +300,11 @@ state FONT:
 state BINDING:
   release = '--release'
       ->
+  border = '--border'
+      ->
   whole_window = '--whole-window'
       ->
-  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl', 'Mode_switch', '$mod'
+  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl', 'Mode_switch', 'Group1', 'Group2', 'Group3', 'Group4', '$mod'
       ->
   '+'
       ->
@@ -290,10 +314,12 @@ state BINDING:
 state BINDCOMMAND:
   release = '--release'
       ->
+  border = '--border'
+      ->
   whole_window = '--whole-window'
       ->
   command = string
-      -> call cfg_binding($bindtype, $modifiers, $key, $release, $whole_window, $command)
+      -> call cfg_binding($bindtype, $modifiers, $key, $release, $border, $whole_window, $command)
 
 ################################################################################
 # Mode configuration
@@ -327,7 +353,11 @@ state MODE_IGNORE_LINE:
 state MODE_BINDING:
   release = '--release'
       ->
-  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl', 'Mode_switch', '$mod'
+  border = '--border'
+      ->
+  whole_window = '--whole-window'
+      ->
+  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl', 'Mode_switch', 'Group1', 'Group2', 'Group3', 'Group4', '$mod'
       ->
   '+'
       ->
@@ -337,10 +367,12 @@ state MODE_BINDING:
 state MODE_BINDCOMMAND:
   release = '--release'
       ->
+  border = '--border'
+      ->
   whole_window = '--whole-window'
       ->
   command = string
-      -> call cfg_mode_binding($bindtype, $modifiers, $key, $release, $whole_window, $command); MODE
+      -> call cfg_mode_binding($bindtype, $modifiers, $key, $release, $border, $whole_window, $command); MODE
 
 ################################################################################
 # Bar configuration (i3bar)
@@ -350,7 +382,7 @@ state BARBRACE:
   end
       ->
   '{'
-      -> BAR
+      -> call cfg_bar_start(); BAR
 
 state BAR:
   end ->
@@ -366,9 +398,11 @@ state BAR:
   'modifier'               -> BAR_MODIFIER
   'wheel_up_cmd'           -> BAR_WHEEL_UP_CMD
   'wheel_down_cmd'         -> BAR_WHEEL_DOWN_CMD
+  'bindsym'                -> BAR_BINDSYM
   'position'               -> BAR_POSITION
   'output'                 -> BAR_OUTPUT
   'tray_output'            -> BAR_TRAY_OUTPUT
+  'tray_padding'           -> BAR_TRAY_PADDING
   'font'                   -> BAR_FONT
   'separator_symbol'       -> BAR_SEPARATOR_SYMBOL
   'binding_mode_indicator' -> BAR_BINDING_MODE_INDICATOR
@@ -420,6 +454,14 @@ state BAR_WHEEL_DOWN_CMD:
   command = string
       -> call cfg_bar_wheel_down_cmd($command); BAR
 
+state BAR_BINDSYM:
+  button = word
+      -> BAR_BINDSYM_COMMAND
+
+state BAR_BINDSYM_COMMAND:
+  command = string
+      -> call cfg_bar_bindsym($button, $command); BAR
+
 state BAR_POSITION:
   position = 'top', 'bottom'
       -> call cfg_bar_position($position); BAR
@@ -431,6 +473,16 @@ state BAR_OUTPUT:
 state BAR_TRAY_OUTPUT:
   output = word
       -> call cfg_bar_tray_output($output); BAR
+
+state BAR_TRAY_PADDING:
+  padding_px = number
+      -> BAR_TRAY_PADDING_PX
+
+state BAR_TRAY_PADDING_PX:
+  'px'
+      ->
+  end
+      -> call cfg_bar_tray_padding(&padding_px); BAR
 
 state BAR_FONT:
   font = string
@@ -468,7 +520,7 @@ state BAR_COLORS:
   'set' -> BAR_COLORS_IGNORE_LINE
   colorclass = 'background', 'statusline', 'separator'
       -> BAR_COLORS_SINGLE
-  colorclass = 'focused_workspace', 'active_workspace', 'inactive_workspace', 'urgent_workspace'
+  colorclass = 'focused_workspace', 'active_workspace', 'inactive_workspace', 'urgent_workspace', 'binding_mode'
       -> BAR_COLORS_BORDER
   '}'
       -> BAR

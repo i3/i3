@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-config-wizard: Program to convert configs using keycodes to configs using
  *                   keysyms.
@@ -392,7 +392,7 @@ static char *rewrite_binding(const char *input) {
                     }
                 }
                 if (walk != beginning) {
-                    char *str = scalloc(walk - beginning + 1);
+                    char *str = scalloc(walk - beginning + 1, 1);
                     /* We copy manually to handle escaping of characters. */
                     int inpos, outpos;
                     for (inpos = 0, outpos = 0;
@@ -462,38 +462,6 @@ void debuglog(char *fmt, ...) {
 }
 
 /*
- * This function resolves ~ in pathnames.
- * It may resolve wildcards in the first part of the path, but if no match
- * or multiple matches are found, it just returns a copy of path as given.
- *
- */
-static char *resolve_tilde(const char *path) {
-    static glob_t globbuf;
-    char *head, *tail, *result;
-
-    tail = strchr(path, '/');
-    head = strndup(path, tail ? (size_t)(tail - path) : strlen(path));
-
-    int res = glob(head, GLOB_TILDE, NULL, &globbuf);
-    free(head);
-    /* no match, or many wildcard matches are bad */
-    if (res == GLOB_NOMATCH || globbuf.gl_pathc != 1)
-        result = strdup(path);
-    else if (res != 0) {
-        err(1, "glob() failed");
-    } else {
-        head = globbuf.gl_pathv[0];
-        result = calloc(1, strlen(head) + (tail ? strlen(tail) : 0) + 1);
-        strncpy(result, head, strlen(head));
-        if (tail)
-            strncat(result, tail, strlen(tail));
-    }
-    globfree(&globbuf);
-
-    return result;
-}
-
-/*
  * Handles expose events, that is, draws the window contents.
  *
  */
@@ -514,17 +482,23 @@ static int handle_expose() {
         set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
         txt(logical_px(10), 2, "You have not configured i3 yet.");
-        txt(logical_px(10), 3, "Do you want me to generate ~/.i3/config?");
-        txt(logical_px(85), 5, "Yes, generate ~/.i3/config");
-        txt(logical_px(85), 7, "No, I will use the defaults");
+        txt(logical_px(10), 3, "Do you want me to generate a config at");
+
+        char *msg;
+        sasprintf(&msg, "%s?", config_path);
+        txt(logical_px(10), 4, msg);
+        free(msg);
+
+        txt(logical_px(85), 6, "Yes, generate the config");
+        txt(logical_px(85), 8, "No, I will use the defaults");
 
         /* green */
         set_font_colors(pixmap_gc, get_colorpixel("#00FF00"), get_colorpixel("#000000"));
-        txt(logical_px(25), 5, "<Enter>");
+        txt(logical_px(25), 6, "<Enter>");
 
         /* red */
         set_font_colors(pixmap_gc, get_colorpixel("#FF0000"), get_colorpixel("#000000"));
-        txt(logical_px(31), 7, "<ESC>");
+        txt(logical_px(31), 8, "<ESC>");
     }
 
     if (current_step == STEP_GENERATE) {
@@ -534,7 +508,7 @@ static int handle_expose() {
         txt(logical_px(85), 4, "Win as default modifier");
         txt(logical_px(85), 5, "Alt as default modifier");
         txt(logical_px(10), 7, "Afterwards, press");
-        txt(logical_px(85), 9, "to write ~/.i3/config");
+        txt(logical_px(85), 9, "to write the config");
         txt(logical_px(85), 10, "to abort");
 
         /* the not-selected modifier */
@@ -772,7 +746,7 @@ static void finish() {
 }
 
 int main(int argc, char *argv[]) {
-    config_path = resolve_tilde("~/.i3/config");
+    char *xdg_config_home;
     socket_path = getenv("I3SOCK");
     char *pattern = "pango:monospace 8";
     char *patternbold = "pango:monospace bold 8";
@@ -794,7 +768,7 @@ int main(int argc, char *argv[]) {
         switch (o) {
             case 's':
                 FREE(socket_path);
-                socket_path = strdup(optarg);
+                socket_path = sstrdup(optarg);
                 break;
             case 'v':
                 printf("i3-config-wizard " I3_VERSION "\n");
@@ -806,20 +780,29 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* Check if the destination config file does not exist but the path is
-     * writable. If not, exit now, this program is not useful in that case. */
-    struct stat stbuf;
-    if (stat(config_path, &stbuf) == 0) {
-        printf("The config file \"%s\" already exists. Exiting.\n", config_path);
+    char *path = get_config_path(NULL, false);
+    if (path != NULL) {
+        printf("The config file \"%s\" already exists. Exiting.\n", path);
+        free(path);
         return 0;
     }
 
-    /* Create ~/.i3 if it does not yet exist */
-    char *config_dir = resolve_tilde("~/.i3");
+    /* Always write to $XDG_CONFIG_HOME/i3/config by default. */
+    if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL)
+        xdg_config_home = "~/.config";
+
+    xdg_config_home = resolve_tilde(xdg_config_home);
+    sasprintf(&config_path, "%s/i3/config", xdg_config_home);
+
+    /* Create $XDG_CONFIG_HOME/i3 if it does not yet exist */
+    char *config_dir;
+    struct stat stbuf;
+    sasprintf(&config_dir, "%s/i3", xdg_config_home);
     if (stat(config_dir, &stbuf) != 0)
-        if (mkdir(config_dir, 0755) == -1)
-            err(1, "mkdir(%s) failed", config_dir);
+        if (mkdirp(config_dir, DEFAULT_DIR_MODE) != 0)
+            err(EXIT_FAILURE, "mkdirp(%s) failed", config_dir);
     free(config_dir);
+    free(xdg_config_home);
 
     int fd;
     if ((fd = open(config_path, O_CREAT | O_RDWR, 0644)) == -1) {

@@ -20,8 +20,8 @@ i3-msg/i3-msg: libi3.a $(i3_msg_OBJECTS)
 
 install-i3-msg: i3-msg/i3-msg
 	echo "[i3-msg] Install"
-	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
-	$(INSTALL) -m 0755 i3-msg/i3-msg $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(EXEC_PREFIX)/bin
+	$(INSTALL) -m 0755 i3-msg/i3-msg $(DESTDIR)$(EXEC_PREFIX)/bin/
 
 clean-i3-msg:
 	echo "[i3-msg] Clean"

@@ -4,13 +4,15 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * x.c: Interface to X11, transfers our in-memory state to X11 (see also
  *      render.c). Basically a big state machine.
  *
  */
 #include "all.h"
+
+xcb_window_t ewmh_window;
 
 /* Stores the X11 window ID of the currently focused window */
 xcb_window_t focused_id = XCB_NONE;
@@ -36,6 +38,7 @@ typedef struct con_state {
     bool mapped;
     bool unmap_now;
     bool child_mapped;
+    bool is_hidden;
 
     /** The con for which this state is. */
     Con *con;
@@ -142,11 +145,19 @@ void x_con_init(Con *con, uint16_t depth) {
 
     Rect dims = {-15, -15, 10, 10};
     con->frame = create_window(conn, dims, depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
+    xcb_change_property(conn,
+                        XCB_PROP_MODE_REPLACE,
+                        con->frame,
+                        XCB_ATOM_WM_CLASS,
+                        XCB_ATOM_STRING,
+                        8,
+                        (strlen("i3-frame") + 1) * 2,
+                        "i3-frame\0i3-frame\0");
 
     if (win_colormap != XCB_NONE)
         xcb_free_colormap(conn, win_colormap);
 
-    struct con_state *state = scalloc(sizeof(struct con_state));
+    struct con_state *state = scalloc(1, sizeof(struct con_state));
     state->id = con->frame;
     state->mapped = false;
     state->initial = true;
@@ -285,7 +296,7 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
     /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
      * In order to properly initialize these bytes, we allocate 32 bytes even
      * though we only need less for an xcb_configure_notify_event_t */
-    void *event = scalloc(32);
+    void *event = scalloc(32, 1);
     xcb_client_message_event_t *ev = event;
 
     ev->response_type = XCB_CLIENT_MESSAGE;
@@ -336,7 +347,7 @@ void x_draw_decoration(Con *con) {
         return;
 
     /* 1: build deco_params and compare with cache */
-    struct deco_render_params *p = scalloc(sizeof(struct deco_render_params));
+    struct deco_render_params *p = scalloc(1, sizeof(struct deco_render_params));
 
     /* find out which colors to use */
     if (con->urgent)
@@ -363,6 +374,7 @@ void x_draw_decoration(Con *con) {
         (con->window == NULL || !con->window->name_x_changed) &&
         !parent->pixmap_recreated &&
         !con->pixmap_recreated &&
+        !con->mark_changed &&
         memcmp(p, con->deco_render_params, sizeof(struct deco_render_params)) == 0) {
         free(p);
         goto copy_pixmaps;
@@ -381,6 +393,7 @@ void x_draw_decoration(Con *con) {
 
     parent->pixmap_recreated = false;
     con->pixmap_recreated = false;
+    con->mark_changed = false;
 
     /* 2: draw the client.background, but only for the parts around the client_rect */
     if (con->window != NULL) {
@@ -531,10 +544,28 @@ void x_draw_decoration(Con *con) {
     //DLOG("indent_level = %d, indent_mult = %d\n", indent_level, indent_mult);
     int indent_px = (indent_level * 5) * indent_mult;
 
-    draw_text(win->name,
+    int mark_width = 0;
+    if (config.show_marks && con->mark != NULL && (con->mark)[0] != '_') {
+        char *formatted_mark;
+        sasprintf(&formatted_mark, "[%s]", con->mark);
+        i3String *mark = i3string_from_utf8(formatted_mark);
+        FREE(formatted_mark);
+        mark_width = predict_text_width(mark);
+
+        draw_text(mark, parent->pixmap, parent->pm_gc,
+                  con->deco_rect.x + con->deco_rect.width - mark_width - logical_px(2),
+                  con->deco_rect.y + text_offset_y, mark_width);
+
+        I3STRING_FREE(mark);
+    }
+
+    i3String *title = win->title_format == NULL ? win->name : window_parse_title_format(win);
+    draw_text(title,
               parent->pixmap, parent->pm_gc,
-              con->deco_rect.x + 2 + indent_px, con->deco_rect.y + text_offset_y,
-              con->deco_rect.width - 2 - indent_px);
+              con->deco_rect.x + logical_px(2) + indent_px, con->deco_rect.y + text_offset_y,
+              con->deco_rect.width - logical_px(2) - indent_px - mark_width - logical_px(2));
+    if (win->title_format != NULL)
+        I3STRING_FREE(title);
 
 after_title:
     /* Since we don’t clip the text at all, it might in some cases be painted
@@ -592,6 +623,31 @@ void x_deco_recurse(Con *con) {
     if ((con->type != CT_ROOT && con->type != CT_OUTPUT) &&
         (!leaf || con->mapped))
         x_draw_decoration(con);
+}
+
+/*
+ * Sets or removes the _NET_WM_STATE_HIDDEN property on con if necessary.
+ *
+ */
+static void set_hidden_state(Con *con) {
+    if (con->window == NULL) {
+        return;
+    }
+
+    con_state *state = state_for_frame(con->frame);
+    bool should_be_hidden = con_is_hidden(con);
+    if (should_be_hidden == state->is_hidden)
+        return;
+
+    if (should_be_hidden) {
+        DLOG("setting _NET_WM_STATE_HIDDEN for con = %p\n", con);
+        xcb_add_property_atom(conn, con->window->id, A__NET_WM_STATE, A__NET_WM_STATE_HIDDEN);
+    } else {
+        DLOG("removing _NET_WM_STATE_HIDDEN for con = %p\n", con);
+        xcb_remove_property_atom(conn, con->window->id, A__NET_WM_STATE, A__NET_WM_STATE_HIDDEN);
+    }
+
+    state->is_hidden = should_be_hidden;
 }
 
 /*
@@ -796,6 +852,8 @@ void x_push_node(Con *con) {
         DLOG("Sending fake configure notify\n");
         fake_absolute_configure_notify(con);
     }
+
+    set_hidden_state(con);
 
     /* Handle all children and floating windows of this node. We recurse
      * in focus order to display the focused client in a stack first when
@@ -1040,10 +1098,12 @@ void x_push_changes(Con *con) {
     }
 
     if (focused_id == XCB_NONE) {
-        DLOG("Still no window focused, better set focus to the root window\n");
-        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
+        /* If we still have no window to focus, we focus the EWMH window instead. We use this rather than the
+         * root window in order to avoid an X11 fallback mechanism causing a ghosting effect (see #1378). */
+        DLOG("Still no window focused, better set focus to the EWMH support window (%d)\n", ewmh_window);
+        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, ewmh_window, XCB_CURRENT_TIME);
         ewmh_update_active_window(XCB_WINDOW_NONE);
-        focused_id = root;
+        focused_id = ewmh_window;
     }
 
     xcb_flush(conn);

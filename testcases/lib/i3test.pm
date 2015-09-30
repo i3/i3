@@ -606,7 +606,7 @@ sub get_dock_clients {
 
 =head2 cmd($command)
 
-Sends the specified command to i3.
+Sends the specified command to i3 and returns the output.
 
   my $ws = unused_workspace;
   cmd "workspace $ws";

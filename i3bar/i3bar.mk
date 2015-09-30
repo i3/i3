@@ -20,8 +20,8 @@ i3bar/i3bar: libi3.a $(i3bar_OBJECTS)
 
 install-i3bar: i3bar/i3bar
 	echo "[i3bar] Install"
-	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
-	$(INSTALL) -m 0755 i3bar/i3bar $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(EXEC_PREFIX)/bin
+	$(INSTALL) -m 0755 i3bar/i3bar $(DESTDIR)$(EXEC_PREFIX)/bin/
 
 clean-i3bar:
 	echo "[i3bar] Clean"

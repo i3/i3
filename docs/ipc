@@ -520,21 +520,23 @@ statusline::
 	Text color to be used for the statusline.
 separator::
 	Text color to be used for the separator.
-focused_workspace_text/focused_workspace_bg::
-	Text color/background color for a workspace button when the workspace
+focused_workspace_text/focused_workspace_bg/focused_workspace_border::
+	Text/background/border color for a workspace button when the workspace
 	has focus.
-active_workspace_text/active_workspace_bg::
-	Text color/background color for a workspace button when the workspace
+active_workspace_text/active_workspace_bg/active_workspace_border::
+	Text/background/border color for a workspace button when the workspace
 	is active (visible) on some output, but the focus is on another one.
 	You can only tell this apart from the focused workspace when you are
 	using multiple monitors.
-inactive_workspace_text/inactive_workspace_bg::
-	Text color/background color for a workspace button when the workspace
+inactive_workspace_text/inactive_workspace_bg/inactive_workspace_border::
+	Text/background/border color for a workspace button when the workspace
 	does not have focus and is not active (visible) on any output. This
 	will be the case for most workspaces.
-urgent_workspace_text/urgent_workspace_bar::
-	Text color/background color for workspaces which contain at least one
+urgent_workspace_text/urgent_workspace_bg/urgent_workspace_border::
+	Text/background/border color for workspaces which contain at least one
 	window with the urgency hint set.
+binding_mode_text/binding_mode_bg/binding_mode_border::
+        Text/background/border color for the binding mode indicator.
 
 
 *Example of configured bars:*
@@ -580,11 +582,14 @@ human_readable (string)::
 	build date and branch name. When you need to display the i3 version to
 	your users, use the human-readable version whenever possible (since
 	this is what +i3 --version+ displays, too).
+loaded_config_file_name (string)::
+	The current config path.
 
 *Example:*
 -------------------
 {
    "human_readable" : "4.2-169-gf80b877 (2012-08-05, branch \"next\")",
+   "loaded_config_file_name" : "/home/hwangcc23/.i3/config",
    "minor" : 2,
    "patch" : 0,
    "major" : 4
@@ -768,8 +773,8 @@ The +binding (object)+ field contains details about the binding that was run:
 
 command (string)::
 	The i3 command that is configured to run for this binding.
-mods (array of strings)::
-	The modifier keys that were configured with this binding.
+event_state_mask (array of strings)::
+	The group and modifier keys that were configured with this binding.
 input_code (integer)::
 	If the binding was configured with +bindcode+, this will be the key code
 	that was given for the binding. If the binding is a mouse binding, it will be
@@ -787,7 +792,7 @@ input_type (string)::
  "change": "run",
  "binding": {
   "command": "nop",
-  "mods": [
+  "event_state_mask": [
     "shift",
     "ctrl"
   ],
@@ -822,4 +827,7 @@ Python::
 	* https://github.com/whitelynx/i3ipc (not maintained)
 	* https://github.com/ziberna/i3-py (not maintained)
 Ruby::
-	* http://github.com/badboy/i3-ipc
+	* https://github.com/veelenga/i3ipc-ruby
+	* https://github.com/badboy/i3-ipc (not maintained)
+Rust::
+	* https://github.com/tmerr/i3ipc-rs

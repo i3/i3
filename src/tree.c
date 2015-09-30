@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * tree.c: Everything that primarily modifies the layout tree data structure.
  *
@@ -202,7 +202,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
 
     /* remove the urgency hint of the workspace (if set) */
     if (con->urgent) {
-        con->urgent = false;
+        con_set_urgency(con, false);
         con_update_parents_urgency(con);
         workspace_update_urgent_flag(con_get_workspace(con));
     }

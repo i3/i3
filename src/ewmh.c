@@ -4,12 +4,14 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * ewmh.c: Get/set certain EWMH properties easily.
  *
  */
 #include "all.h"
+
+xcb_window_t ewmh_window;
 
 /*
  * Updates _NET_CURRENT_DESKTOP with the current desktop number.
@@ -149,6 +151,18 @@ void ewmh_update_active_window(xcb_window_t window) {
 }
 
 /*
+ * Updates _NET_WM_VISIBLE_NAME.
+ *
+ */
+void ewmh_update_visible_name(xcb_window_t window, const char *name) {
+    if (name != NULL) {
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, A__NET_WM_VISIBLE_NAME, A_UTF8_STRING, 8, strlen(name), name);
+    } else {
+        xcb_delete_property(conn, window, A__NET_WM_VISIBLE_NAME);
+    }
+}
+
+/*
  * i3 currently does not support _NET_WORKAREA, because it does not correspond
  * to i3’s concept of workspaces. See also:
  * http://bugs.i3wm.org/539
@@ -200,6 +214,20 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
 }
 
 /*
+ * Set or remove _NET_WM_STATE_STICKY on the window.
+ *
+ */
+void ewmh_update_sticky(xcb_window_t window, bool sticky) {
+    if (sticky) {
+        DLOG("Setting _NET_WM_STATE_STICKY for window = %d.\n", window);
+        xcb_add_property_atom(conn, window, A__NET_WM_STATE, A__NET_WM_STATE_STICKY);
+    } else {
+        DLOG("Removing _NET_WM_STATE_STICKY for window = %d.\n", window);
+        xcb_remove_property_atom(conn, window, A__NET_WM_STATE, A__NET_WM_STATE_STICKY);
+    }
+}
+
+/*
  * Set up the EWMH hints on the root window.
  *
  */
@@ -215,25 +243,30 @@ void ewmh_setup_hints(void) {
      * present, a child window has to be created (and kept alive as long as the
      * window manager is running) which has the _NET_SUPPORTING_WM_CHECK and
      * _NET_WM_ATOMS. */
-    xcb_window_t child_window = xcb_generate_id(conn);
+    ewmh_window = xcb_generate_id(conn);
+    /* We create the window and put it at (-1, -1) so that it is off-screen. */
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,        /* depth */
-        child_window,                /* window id */
+        ewmh_window,                 /* window id */
         root,                        /* parent */
-        0, 0, 1, 1,                  /* dimensions (x, y, w, h) */
+        -1, -1, 1, 1,                /* dimensions (x, y, w, h) */
         0,                           /* border */
         XCB_WINDOW_CLASS_INPUT_ONLY, /* window class */
         XCB_COPY_FROM_PARENT,        /* visual */
-        0,
-        NULL);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, child_window, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &child_window);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, child_window, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &child_window);
+        XCB_CW_OVERRIDE_REDIRECT,
+        (uint32_t[]){1});
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, ewmh_window, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &ewmh_window);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, ewmh_window, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &ewmh_window);
 
     /* I’m not entirely sure if we need to keep _NET_WM_NAME on root. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
-    /* only send the first 24 atoms (last one is _NET_CLOSE_WINDOW) increment that number when adding supported atoms */
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, 24, supported_atoms);
+    /* only send the first 31 atoms (last one is _NET_CLOSE_WINDOW) increment that number when adding supported atoms */
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, /* number of atoms */ 32, supported_atoms);
+
+    /* We need to map this window to be able to set the input focus to it if no other window is available to be focused. */
+    xcb_map_window(conn, ewmh_window);
+    xcb_configure_window(conn, ewmh_window, XCB_CONFIG_WINDOW_STACK_MODE, (uint32_t[]){XCB_STACK_MODE_BELOW});
 }

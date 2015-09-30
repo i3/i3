@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * floating.c: Floating windows.
  *
@@ -63,6 +63,18 @@ void floating_raise_con(Con *con);
  *
  */
 bool floating_maybe_reassign_ws(Con *con);
+
+/**
+ * Centers a floating con above the specified rect.
+ *
+ */
+void floating_center(Con *con, Rect rect);
+
+/**
+ * Moves the given floating con to the current pointer position.
+ *
+ */
+void floating_move_to_pointer(Con *con);
 
 #if 0
 /**
@@ -175,6 +187,15 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
  *
  */
 void floating_reposition(Con *con, Rect newrect);
+
+/**
+ * Sets size of the CT_FLOATING_CON to specified dimensions. Might limit the
+ * actual size with regard to size constraints taken from user settings.
+ * Additionally, the dimensions may be upscaled until they're divisible by the
+ * window's size hints.
+ *
+ */
+void floating_resize(Con *floating_con, int x, int y);
 
 /**
  * Fixes the coordinates of the floating window whenever the window gets

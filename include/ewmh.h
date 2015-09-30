@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * ewmh.c: Get/set certain EWMH properties easily.
  *
@@ -46,6 +46,12 @@ void ewmh_update_desktop_viewport(void);
 void ewmh_update_active_window(xcb_window_t window);
 
 /**
+ * Updates _NET_WM_VISIBLE_NAME.
+ *
+ */
+void ewmh_update_visible_name(xcb_window_t window, const char *name);
+
+/**
  * Updates the _NET_CLIENT_LIST hint. Used for window listers.
  */
 void ewmh_update_client_list(xcb_window_t *list, int num_windows);
@@ -61,6 +67,12 @@ void ewmh_update_client_list(xcb_window_t *list, int num_windows);
  *
  */
 void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows);
+
+/**
+ * Set or remove _NET_WM_STATE_STICKY on the window.
+ *
+ */
+void ewmh_update_sticky(xcb_window_t window, bool sticky);
 
 /**
  * Set up the EWMH hints on the root window.

@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * main.c: Initialization, main loop
  *
@@ -188,7 +188,7 @@ static void handle_signal(int sig, siginfo_t *info, void *data) {
 int main(int argc, char *argv[]) {
     /* Keep a symbol pointing to the I3_VERSION string constant so that we have
      * it in gdb backtraces. */
-    const char *i3_version __attribute__((unused)) = I3_VERSION;
+    const char *_i3_version __attribute__((unused)) = i3_version;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
@@ -261,11 +261,11 @@ int main(int argc, char *argv[]) {
                 only_check_config = true;
                 break;
             case 'v':
-                printf("i3 version " I3_VERSION " © 2009-2014 Michael Stapelberg and contributors\n");
+                printf("i3 version %s © 2009 Michael Stapelberg and contributors\n", i3_version);
                 exit(EXIT_SUCCESS);
                 break;
             case 'm':
-                printf("Binary i3 version:  " I3_VERSION " © 2009-2014 Michael Stapelberg and contributors\n");
+                printf("Binary i3 version:  %s © 2009 Michael Stapelberg and contributors\n", i3_version);
                 display_running_version();
                 exit(EXIT_SUCCESS);
                 break;
@@ -450,13 +450,13 @@ int main(int argc, char *argv[]) {
             memset(cwd, '\0', cwd_size);
             if (read(patternfd, cwd, cwd_size) > 0)
                 /* a trailing newline is included in cwd */
-                LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
+                LOG("CORE DUMPS: Your core_pattern is: \"%s\".\n", cwd);
             close(patternfd);
         }
         free(cwd);
     }
 
-    LOG("i3 " I3_VERSION " starting\n");
+    LOG("i3 %s starting\n", i3_version);
 
     conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn))
@@ -474,6 +474,12 @@ int main(int argc, char *argv[]) {
     root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
 
+/* Place requests for the atoms we need as soon as possible */
+#define xmacro(atom) \
+    xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
+#include "atoms.xmacro"
+#undef xmacro
+
     /* By default, we use the same depth and visual as the root window, which
      * usually is TrueColor (24 bit depth) and the corresponding visual.
      * However, we also check if a 32 bit depth and visual are available (for
@@ -490,6 +496,20 @@ int main(int argc, char *argv[]) {
 
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
     xcb_query_pointer_cookie_t pointercookie = xcb_query_pointer(conn, root);
+
+/* Setup NetWM atoms */
+#define xmacro(name)                                                                       \
+    do {                                                                                   \
+        xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name##_cookie, NULL); \
+        if (!reply) {                                                                      \
+            ELOG("Could not get atom " #name "\n");                                        \
+            exit(-1);                                                                      \
+        }                                                                                  \
+        A_##name = reply->atom;                                                            \
+        free(reply);                                                                       \
+    } while (0);
+#include "atoms.xmacro"
+#undef xmacro
 
     load_configuration(conn, override_configpath, false);
 
@@ -511,12 +531,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     DLOG("root geometry reply: (%d, %d) %d x %d\n", greply->x, greply->y, greply->width, greply->height);
-
-/* Place requests for the atoms we need as soon as possible */
-#define xmacro(atom) \
-    xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-#include "atoms.xmacro"
-#undef xmacro
 
     xcursor_load_cursors();
 
@@ -542,24 +556,41 @@ int main(int argc, char *argv[]) {
                               0xff,
                               0xff,
                               NULL);
+
+        /* Setting both, XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE and
+         * XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED, will lead to the
+         * X server sending us the full XKB state in KeyPress and KeyRelease:
+         * https://sources.debian.net/src/xorg-server/2:1.17.2-1.1/xkb/xkbEvents.c/?hl=927#L927
+         */
+        xcb_xkb_per_client_flags_reply_t *pcf_reply;
+        /* The last three parameters are unset because they are only relevant
+         * when using a feature called “automatic reset of boolean controls”:
+         * http://www.x.org/releases/X11R7.7/doc/kbproto/xkbproto.html#Automatic_Reset_of_Boolean_Controls
+         * */
+        pcf_reply = xcb_xkb_per_client_flags_reply(
+            conn,
+            xcb_xkb_per_client_flags(
+                conn,
+                XCB_XKB_ID_USE_CORE_KBD,
+                XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE | XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED,
+                XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE | XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED,
+                0 /* uint32_t ctrlsToChange */,
+                0 /* uint32_t autoCtrls */,
+                0 /* uint32_t autoCtrlsValues */),
+            NULL);
+        if (pcf_reply == NULL ||
+            !(pcf_reply->value & XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE)) {
+            ELOG("Could not set XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE\n");
+        }
+        if (pcf_reply == NULL ||
+            !(pcf_reply->value & XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED)) {
+            ELOG("Could not set XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED\n");
+        }
+        free(pcf_reply);
         xkb_base = extreply->first_event;
     }
 
     restore_connect();
-
-/* Setup NetWM atoms */
-#define xmacro(name)                                                                       \
-    do {                                                                                   \
-        xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name##_cookie, NULL); \
-        if (!reply) {                                                                      \
-            ELOG("Could not get atom " #name "\n");                                        \
-            exit(-1);                                                                      \
-        }                                                                                  \
-        A_##name = reply->atom;                                                            \
-        free(reply);                                                                       \
-    } while (0);
-#include "atoms.xmacro"
-#undef xmacro
 
     property_handlers_init();
 
@@ -569,12 +600,15 @@ int main(int argc, char *argv[]) {
 
     xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
 
+    if (!load_keymap())
+        die("Could not load keymap\n");
+
     translate_keysyms();
-    grab_all_keys(conn, false);
+    grab_all_keys(conn);
 
     bool needs_tree_init = true;
     if (layout_path) {
-        LOG("Trying to restore the layout from %s...", layout_path);
+        LOG("Trying to restore the layout from \"%s\".\n", layout_path);
         needs_tree_init = !tree_restore(layout_path, greply);
         if (delete_layout_path) {
             unlink(layout_path);
@@ -633,7 +667,7 @@ int main(int argc, char *argv[]) {
     if (ipc_socket == -1) {
         ELOG("Could not create the IPC socket, IPC disabled\n");
     } else {
-        struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
+        struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
         ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
         ev_io_start(main_loop, ipc_io);
     }
@@ -661,7 +695,7 @@ int main(int argc, char *argv[]) {
                 ELOG("Could not disable FD_CLOEXEC on fd %d\n", fd);
             }
 
-            struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
+            struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
             ev_io_init(ipc_io, ipc_new_client, fd, EV_READ);
             ev_io_start(main_loop, ipc_io);
         }
@@ -677,9 +711,9 @@ int main(int argc, char *argv[]) {
     ewmh_update_desktop_names();
     ewmh_update_desktop_viewport();
 
-    struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
-    xcb_check = scalloc(sizeof(struct ev_check));
-    struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
+    struct ev_io *xcb_watcher = scalloc(1, sizeof(struct ev_io));
+    xcb_check = scalloc(1, sizeof(struct ev_check));
+    struct ev_prepare *xcb_prepare = scalloc(1, sizeof(struct ev_prepare));
 
     ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);
@@ -766,7 +800,7 @@ int main(int argc, char *argv[]) {
             sigaction(SIGABRT, &action, NULL) == -1 ||
             sigaction(SIGFPE, &action, NULL) == -1 ||
             sigaction(SIGSEGV, &action, NULL) == -1)
-            ELOG("Could not setup signal handler");
+            ELOG("Could not setup signal handler.\n");
     }
 
     /* Catch all signals with default action "Term", see signal(7) */
@@ -775,7 +809,7 @@ int main(int argc, char *argv[]) {
         sigaction(SIGALRM, &action, NULL) == -1 ||
         sigaction(SIGUSR1, &action, NULL) == -1 ||
         sigaction(SIGUSR2, &action, NULL) == -1)
-        ELOG("Could not setup signal handler");
+        ELOG("Could not setup signal handler.\n");
 
     /* Ignore SIGPIPE to survive errors when an IPC client disconnects
      * while we are sending them a message */

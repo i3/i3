@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * con.c: Functions which deal with containers directly (creating containers,
  *        searching containers, getting specific properties from containers,
@@ -42,11 +42,24 @@ bool con_is_leaf(Con *con);
  */
 bool con_has_managed_window(Con *con);
 
-/*
+/**
  * Returns true if a container should be considered split.
  *
  */
 bool con_is_split(Con *con);
+
+/**
+ * This will only return true for containers which have some parent with
+ * a tabbed / stacked parent of which they are not the currently focused child.
+ *
+ */
+bool con_is_hidden(Con *con);
+
+/**
+ * Returns whether the container or any of its children is sticky.
+ *
+ */
+bool con_is_sticky(Con *con);
 
 /**
  * Returns true if this node has regular or floating children.
@@ -127,6 +140,34 @@ Con *con_by_window_id(xcb_window_t window);
 Con *con_by_frame_id(xcb_window_t frame);
 
 /**
+ * Returns the container with the given mark or NULL if no such container
+ * exists.
+ *
+ */
+Con *con_by_mark(const char *mark);
+
+/**
+ * Toggles the mark on a container.
+ * If the container already has this mark, the mark is removed.
+ * Otherwise, the mark is assigned to the container.
+ *
+ */
+void con_mark_toggle(Con *con, const char *mark);
+
+/**
+ * Assigns a mark to the container.
+ *
+ */
+void con_mark(Con *con, const char *mark);
+
+/**
+ * If mark is NULL, this removes all existing marks.
+ * Otherwise, it will only remove the given mark (if it is present).
+ *
+ */
+void con_unmark(const char *mark);
+
+/**
  * Returns the first container below 'con' which wants to swallow this window
  * TODO: priority
  *
@@ -198,10 +239,20 @@ void con_disable_fullscreen(Con *con);
  * The dont_warp flag disables pointer warping and will be set when this
  * function is called while dragging a floating window.
  *
+ * If ignore_focus is set, the container will be moved without modifying focus
+ * at all.
+ *
  * TODO: is there a better place for this function?
  *
  */
-void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp);
+void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates,
+                           bool dont_warp, bool ignore_focus);
+
+/**
+ * Moves the given container to the given mark.
+ *
+ */
+bool con_move_to_mark(Con *con, const char *mark);
 
 /**
  * Returns the orientation of the given container (for stacked containers,

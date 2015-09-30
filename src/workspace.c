@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * workspace.c: Modifying workspaces, accessing them, moving containers to
  *              workspaces.
@@ -16,6 +16,10 @@
 /* Stores a copy of the name of the last used workspace for the workspace
  * back-and-forth switching. */
 static char *previous_workspace_name = NULL;
+
+/* NULL-terminated list of workspace names (in order) extracted from
+ * keybindings. */
+static char **binding_workspace_names = NULL;
 
 /*
  * Sets ws->layout to splith/splitv if default_orientation was specified in the
@@ -107,21 +111,21 @@ Con *workspace_get(const char *num, bool *created) {
 }
 
 /*
- * Returns a pointer to a new workspace in the given output. The workspace
- * is created attached to the tree hierarchy through the given content
- * container.
+ * Extracts workspace names from keybindings (e.g. “web” from “bindsym $mod+1
+ * workspace web”), so that when an output needs a workspace, i3 can start with
+ * the first configured one. Needs to be called before reorder_bindings() so
+ * that the config-file order is used, not the i3-internal order.
  *
  */
-Con *create_workspace_on_output(Output *output, Con *content) {
-    /* add a workspace to this output */
-    Con *out, *current;
-    char *name;
-    bool exists = true;
-    Con *ws = con_new(NULL, NULL);
-    ws->type = CT_WORKSPACE;
-
-    /* try the configured workspace bindings first to find a free name */
+void extract_workspace_names_from_bindings(void) {
     Binding *bind;
+    int n = 0;
+    if (binding_workspace_names != NULL) {
+        for (int i = 0; binding_workspace_names[i] != NULL; i++) {
+            free(binding_workspace_names[i]);
+        }
+        FREE(binding_workspace_names);
+    }
     TAILQ_FOREACH(bind, bindings, bindings) {
         DLOG("binding with command %s\n", bind->command);
         if (strlen(bind->command) < strlen("workspace ") ||
@@ -129,7 +133,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
             continue;
         DLOG("relevant command = %s\n", bind->command);
         const char *target = bind->command + strlen("workspace ");
-        while ((*target == ' ' || *target == '\t') && target != '\0')
+        while (*target == ' ' || *target == '\t')
             target++;
         /* We check if this is the workspace
          * next/prev/next_on_output/prev_on_output/back_and_forth/number command.
@@ -152,17 +156,39 @@ Con *create_workspace_on_output(Output *output, Con *content) {
             free(target_name);
             continue;
         }
-        FREE(ws->name);
-        ws->name = target_name;
-        DLOG("trying name *%s*\n", ws->name);
+        DLOG("Saving workspace name \"%s\"\n", target_name);
 
+        binding_workspace_names = srealloc(binding_workspace_names, ++n * sizeof(char *));
+        binding_workspace_names[n - 1] = target_name;
+    }
+    binding_workspace_names = srealloc(binding_workspace_names, ++n * sizeof(char *));
+    binding_workspace_names[n - 1] = NULL;
+}
+
+/*
+ * Returns a pointer to a new workspace in the given output. The workspace
+ * is created attached to the tree hierarchy through the given content
+ * container.
+ *
+ */
+Con *create_workspace_on_output(Output *output, Con *content) {
+    /* add a workspace to this output */
+    Con *out, *current;
+    char *name;
+    bool exists = true;
+    Con *ws = con_new(NULL, NULL);
+    ws->type = CT_WORKSPACE;
+
+    /* try the configured workspace bindings first to find a free name */
+    for (int n = 0; binding_workspace_names[n] != NULL; n++) {
+        char *target_name = binding_workspace_names[n];
         /* Ensure that this workspace is not assigned to a different output —
          * otherwise we would create it, then move it over to its output, then
          * find a new workspace, etc… */
         bool assigned = false;
         struct Workspace_Assignment *assignment;
         TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-            if (strcmp(assignment->name, ws->name) != 0 ||
+            if (strcmp(assignment->name, target_name) != 0 ||
                 strcmp(assignment->output, output->name) == 0)
                 continue;
 
@@ -175,10 +201,10 @@ Con *create_workspace_on_output(Output *output, Con *content) {
 
         current = NULL;
         TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
-        GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, ws->name));
-
+        GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, target_name));
         exists = (current != NULL);
         if (!exists) {
+            ws->name = sstrdup(target_name);
             /* Set ->num to the number of the workspace, if the name actually
              * is a number or starts with a number */
             ws->num = ws_name_to_number(ws->name);
@@ -322,21 +348,22 @@ static void workspace_reassign_sticky(Con *con) {
 static void workspace_defer_update_urgent_hint_cb(EV_P_ ev_timer *w, int revents) {
     Con *con = w->data;
 
+    ev_timer_stop(main_loop, con->urgency_timer);
+    FREE(con->urgency_timer);
+
     if (con->urgent) {
         DLOG("Resetting urgency flag of con %p by timer\n", con);
-        con->urgent = false;
+        con_set_urgency(con, false);
         con_update_parents_urgency(con);
         workspace_update_urgent_flag(con_get_workspace(con));
         ipc_send_window_event("urgent", con);
         tree_render();
     }
-
-    ev_timer_stop(main_loop, con->urgency_timer);
-    FREE(con->urgency_timer);
 }
 
 static void _workspace_show(Con *workspace) {
     Con *current, *old = NULL;
+    Con *old_focus = focused;
 
     /* safe-guard against showing i3-internal workspaces like __i3_scratch */
     if (con_is_internal(workspace))
@@ -397,7 +424,7 @@ static void _workspace_show(Con *workspace) {
         if (focused->urgency_timer == NULL) {
             DLOG("Deferring reset of urgency flag of con %p on newly shown workspace %p\n",
                  focused, workspace);
-            focused->urgency_timer = scalloc(sizeof(struct ev_timer));
+            focused->urgency_timer = scalloc(1, sizeof(struct ev_timer));
             /* use a repeating timer to allow for easy resets */
             ev_timer_init(focused->urgency_timer, workspace_defer_update_urgent_hint_cb,
                           config.workspace_urgency_timer, config.workspace_urgency_timer);
@@ -450,6 +477,9 @@ static void _workspace_show(Con *workspace) {
 
     /* Update the EWMH hints */
     ewmh_update_current_desktop();
+
+    /* Push any sticky windows to the now visible workspace. */
+    output_push_sticky_windows(old_focus);
 }
 
 /*
@@ -729,7 +759,7 @@ workspace_prev_on_output_end:
  */
 void workspace_back_and_forth(void) {
     if (!previous_workspace_name) {
-        DLOG("No previous workspace name set. Not switching.");
+        DLOG("No previous workspace name set. Not switching.\n");
         return;
     }
 
@@ -742,7 +772,7 @@ void workspace_back_and_forth(void) {
  */
 Con *workspace_back_and_forth_get(void) {
     if (!previous_workspace_name) {
-        DLOG("no previous workspace name set.");
+        DLOG("No previous workspace name set.\n");
         return NULL;
     }
 
@@ -846,6 +876,9 @@ Con *workspace_attach_to(Con *ws) {
     /* 4: attach the new split container to the workspace */
     DLOG("Attaching new split %p to workspace %p\n", new, ws);
     con_attach(new, ws, false);
+
+    /* 5: fix the percentages */
+    con_fix_percent(ws);
 
     return new;
 }

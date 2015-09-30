@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * output.c: Output (monitor) related functions.
  *
@@ -21,3 +21,10 @@ Con *output_get_content(Con *output);
  *
  */
 Output *get_output_from_string(Output *current_output, const char *output_str);
+
+/**
+ * Iterates over all outputs and pushes sticky windows to the currently visible
+ * workspace on that output.
+ *
+ */
+void output_push_sticky_windows(Con *to_focus);

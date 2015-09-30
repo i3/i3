@@ -10,10 +10,10 @@ Thank you for being interested in debugging i3. It really means
 something to us to get your bug fixed. If you have any questions about the
 process and/or need further help, do not hesitate to contact us!
 
-== Verify you are using i3 ≥ 4.7
+== Verify you are using i3 ≥ 4.10
 
-Only the latest major version of i3 is supported, i.e. version 4.7 currently.
-To verify which version you are running, use:
+Only the latest major version of i3 is supported. To verify which version
+you are running, use:
 
 ---------------
 $ i3 --moreversion 2>&- || i3 --version
@@ -67,7 +67,43 @@ fly:
 i3-msg 'debuglog on; shmlog on; reload'
 ---------------------------------------
 
+== Reproducing the problem
+
+Before submitting an issue, please make sure to close down on the problem as
+much as you can yourself. Here are some steps you should consider:
+
+* Find a deterministic, reliable way to reproduce the problem and provide it
+  with your bug report.
+* Try using the default i3 config to reproduce the problem. If the issue does
+  not appear with the default config, gradually adapt it to track down what 
+  change(s) to the config introduce the problem.
+* Reproduce the problem with a minimal setup, i.e., only use as few applications,
+  windows and steps as necessary.
+* In addition, try to stick to applications that are common and, even more
+  importantly, free / open source.
+* Before obtaining the log file, restart i3 in-place, execute the steps to
+  reproduce the problem and then save the logs. This keeps the log file as
+  small as possible and necessary.
+
+Please be aware that we cannot support compatibility issues with closed-source
+software, as digging into compatibility problems without having access to the
+source code is too time-consuming. Additionally, experience has shown that
+often, the software in question is responsible for the issue. Please raise an
+issue with the software in question, not i3.
+
 == Obtaining the debug logfile
+
+[CAUTION]
+================================================================================
+Logs may contain sensitive information, so please inspect the log before
+submitting it. Logs may be viewed by anyone, once posted. If you choose to
+redact the log, make an effort not to discard information which may be relevant
+to the issue you are reporting.
+
+The best way to avoid submitting such information is to only run the necessary
+steps to reproduce the behavior when saving the log file. This will also make
+analyzing the log file easier.
+================================================================================
 
 No matter whether i3 misbehaved in some way without crashing or whether it just
 crashed, the logfile provides all information necessary to debug the problem.
@@ -121,3 +157,20 @@ When debugging with us in IRC, be prepared to use a so called nopaste service
 such as http://nopaste.info or http://pastebin.com because pasting large
 amounts of text in IRC sometimes leads to incomplete lines (servers have line
 length limitations) or flood kicks.
+
+== Debugging i3bar
+
+To debug i3bar problems, add +verbose yes+ to all +bar {}+ blocks in your i3
+config, reload your config and then restart all i3bar instances like this:
+
+---------------------------------------------------------------------
+$ i3 reload
+$ killall i3bar
+$ for c in $(i3-msg -t get_bar_config | python -c \
+      'import json,sys;print("\n".join(json.load(sys.stdin)))'); do \
+    (i3bar --bar_id=$c >i3bar.$c.log 2>&1) & \
+  done;
+---------------------------------------------------------------------
+
+There will now be +i3bar.*.log+ files in your current directory that you can provide
+in your bug report.

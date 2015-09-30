@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010 Axel Wagner and contributors (see also: LICENSE)
  *
  * workspaces.c: Maintaining the workspace lists
  *
@@ -106,7 +106,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
 
     if (!strcmp(params->cur_key, "name")) {
         const char *ws_name = (const char *)val;
-        params->workspaces_walk->canonical_name = strndup(ws_name, len);
+        params->workspaces_walk->canonical_name = sstrndup(ws_name, len);
 
         if (config.strip_ws_numbers && params->workspaces_walk->num >= 0) {
             /* Special case: strip off the workspace number */

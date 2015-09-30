@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * libi3: contains functions which are used by i3 *and* accompanying tools such
  * as i3-msg, i3-config-wizard, …
@@ -20,6 +20,8 @@
 #if PANGO_SUPPORT
 #include <pango/pango.h>
 #endif
+
+#define DEFAULT_DIR_MODE (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
 /**
  * Opaque data structure for storing strings.
@@ -111,7 +113,7 @@ void *smalloc(size_t size);
  * there is no more memory available)
  *
  */
-void *scalloc(size_t size);
+void *scalloc(size_t num, size_t size);
 
 /**
  * Safe-wrapper around realloc which exits if realloc returns NULL (meaning
@@ -126,6 +128,13 @@ void *srealloc(void *ptr, size_t size);
  *
  */
 char *sstrdup(const char *str);
+
+/**
+ * Safe-wrapper around strndup which exits if strndup returns NULL (meaning that
+ * there is no more memory available)
+ *
+ */
+char *sstrndup(const char *str, size_t size);
 
 /**
  * Safe-wrapper around asprintf which exits if it returns -1 (meaning that
@@ -235,6 +244,11 @@ bool i3string_is_markup(i3String *str);
  * Set whether the i3String should use Pango markup.
  */
 void i3string_set_markup(i3String *str, bool is_markup);
+
+/**
+ * Escape pango markup characters in the given string.
+ */
+i3String *i3string_escape_markup(i3String *str);
 
 /**
  * Returns the number of glyphs in an i3String.
@@ -375,6 +389,12 @@ xcb_char2b_t *convert_utf8_to_ucs2(char *input, size_t *real_strlen);
 void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background);
 
 /**
+ * Returns true if and only if the current font is a pango font.
+ *
+ */
+bool font_is_pango(void);
+
+/**
  * Draws text onto the specified X drawable (normally a pixmap) at the
  * specified coordinates (from the top left corner of the leftmost, uppermost
  * glyph) and using the provided gc.
@@ -436,7 +456,27 @@ char *get_exe_path(const char *argv0);
 int logical_px(const int logical);
 
 /**
+ * This function resolves ~ in pathnames.
+ * It may resolve wildcards in the first part of the path, but if no match
+ * or multiple matches are found, it just returns a copy of path as given.
+ *
+ */
+char *resolve_tilde(const char *path);
+
+/**
+ * Get the path of the first configuration file found. If override_configpath
+ * is specified, that path is returned and saved for further calls. Otherwise,
+ * checks the home directory first, then the system directory first, always
+ * taking into account the XDG Base Directory Specification ($XDG_CONFIG_HOME,
+ * $XDG_CONFIG_DIRS)
+ *
+ */
+char *get_config_path(const char *override_configpath, bool use_system_paths);
+
+#if !defined(__sun)
+/**
  * Emulates mkdir -p (creates any missing folders)
  *
  */
-bool mkdirp(const char *path);
+int mkdirp(const char *path, mode_t mode);
+#endif

@@ -8,8 +8,8 @@ WriteMakefile(
     MIN_PERL_VERSION => '5.010000', # 5.10.0
     PREREQ_PM => {
         'AnyEvent'     => 0,
-        'AnyEvent::I3' => '0.15',
-        'X11::XCB'     => '0.09',
+        'AnyEvent::I3' => '0.16',
+        'X11::XCB'     => '0.12',
         'Inline'       => 0,
         'Inline::C'    => 0,
         'ExtUtils::PkgConfig' => 0,

@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010 Axel Wagner and contributors (see also: LICENSE)
  *
  * xcb.c: Communicating with X
  *
@@ -40,6 +40,9 @@ struct xcb_color_strings_t {
     char *urgent_ws_bg;
     char *urgent_ws_fg;
     char *urgent_ws_border;
+    char *binding_mode_bg;
+    char *binding_mode_fg;
+    char *binding_mode_border;
 };
 
 typedef struct xcb_colors_t xcb_colors_t;

@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * move.c: Moving containers into some direction.
  *
@@ -249,6 +249,14 @@ void tree_move(Con *con, int direction) {
                         ? AFTER
                         : BEFORE);
         insert_con_into(con, target, position);
+    } else if (con->parent->parent->type == CT_WORKSPACE &&
+               con->parent->layout != L_DEFAULT &&
+               con_num_children(con->parent) == 1) {
+        /* Con is the lone child of a non-default layout container at the edge
+         * of the workspace. Treat it as though the workspace is its parent
+         * and move it to the next output. */
+        DLOG("Grandparent is workspace\n");
+        move_to_output_directed(con, direction);
     } else {
         DLOG("Moving into container above\n");
         position = (direction == D_UP || direction == D_LEFT ? BEFORE : AFTER);

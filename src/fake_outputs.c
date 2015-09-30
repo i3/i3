@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * Faking outputs is useful in pathological situations (like network X servers
  * which don’t support multi-monitor in a useful way) and for our testsuite.
@@ -49,7 +49,7 @@ void fake_outputs_init(const char *output_spec) {
             new_output->rect.width = min(new_output->rect.width, width);
             new_output->rect.height = min(new_output->rect.height, height);
         } else {
-            new_output = scalloc(sizeof(Output));
+            new_output = scalloc(1, sizeof(Output));
             sasprintf(&(new_output->name), "fake-%d", num_screens);
             DLOG("Created new fake output %s (%p)\n", new_output->name, new_output);
             new_output->active = true;

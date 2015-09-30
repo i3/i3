@@ -1,0 +1,115 @@
+
+ ┌────────────────────────────┐
+ │ Release notes for i3 v4.11 │
+ └────────────────────────────┘
+
+This is i3 v4.11. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+Aside from plenty of new features, there are several changes that might result
+in behavioral changes, depending on your specific configuration and
+environment. As usual, we tried hard to keep the current behavior, and when we
+changed behavior, we strongly believe it’s for the better.
+
+Keyboard binding handling has been made more correct, for details see:
+https://github.com/i3/i3/commit/bf3cd41b5ddf1e757515ab5fbf811be56e5f69cc
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.11        │
+ └────────────────────────────┘
+
+  • docs/debugging: provide instructions on how to debug i3bar
+  • docs/debugging: added a note about sensitive data
+  • docs/userguide: add a note to both “exec”s about semicolon and comma
+  • docs/userguide: quoted strings need to be used, escaping isn’t possible
+  • docs/userguide: make syntax of syntax descriptions consistent
+  • docs/userguide: recommend “exec exec” for correct signal handling
+  • docs/userguide: explain i3-config-wizard’s behavior
+  • i3-nagbar: open on the primary screen
+  • i3-config-wizard: respect XDG config directories
+  • i3-input: position i3-input at window with input focus
+  • i3bar: use a reasonable default sep_block_width if a separator_symbol is given
+  • i3bar: add binding mode indicator
+  • i3bar: add bindsym command (deprecates wheel_{up,down}_cmd)
+  • i3bar: make tray padding configurable
+  • makefiles: respect EXEC_PREFIX and PKG_CONFIG
+  • added a --toggle switch to mark: “mark [--toggle] <mark>”
+  • added “focus_on_window_activation” directive
+  • added “no_focus” directive
+  • added “move [container|window] [to] mark <str>” command
+  • added “move [window|container] [to] position mouse|cursor|pointer” command
+  • added “title_format” command
+  • added “resize set [width] [height]” command
+  • added “sticky” command (for floating containers)
+  • added “workspace” criterion
+  • added “window_type” criterion
+  • make center coordinates relative to current workspace
+  • draw marks in window decoration (configure with show_marks)
+  • only mark a window if only one window is matched
+  • make floating window mouse handling consistent with tiled windows
+  • add a --border flag to enable mouse binds to trigger on border click
+  • set the _NET_WM_STATE_HIDDEN atom on windows that are currently not visible
+    due to being in the non-focused tab of a stacked or tabbed container
+  • ignore InputHint when not in WM_HINTS
+  • display which config is used in i3 --moreversion
+  • support config file line continuation
+  • use WM_SIZE_HINTS when present to set the geometry of floating windows
+  • add “tray_output primary” to the default config
+  • use libxkbcommon for translating keysyms, support all XKB groups
+  • support special value “__focused__” in criteria
+  • support _NET_WM_VISIBLE_NAME
+  • make sure borders are never counted as adjacent to the edge for floating
+    containers
+  • support moving dock clients to another output
+  • let “focus” report success depending on whether a window was matched
+  • handle _NET_WM_STATE_STICKY (for floating containers)
+  • make “debuglog on” command persist over restarts
+  • randr: use root window in case of no randr outputs
+  • set proper WM_CLASS on frame windows
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • i3bar: only detect clicks within the statusline width
+  • i3bar: fix flickering shortened status bar on other output(s)
+  • i3bar: send custom-defined command upon click on the non-statusline part of
+    i3bar even if workspace_buttons is set to “no”.
+  • i3-config-wizard: Make window size and click coordinates dependent on font
+  • i3-save-tree: retain “rect” for floating cons
+  • move urgency hint when moving container
+  • fix percents when attaching a window to a ws creates a new split con
+  • cope with non-null-terminated x class properties
+  • get workspace name when renaming current workspace
+  • allow single-child non-default layout cons to be moved between outputs
+  • allow --whole-window right after 'bindsym' within binding modes
+  • remove windows from the save set when unmapping (fixes problems with e.g.
+    owncloud when restarting i3)
+  • serialize con_id with %p in run_binding()
+  • initialize workspace rect to the output's upon creation
+  • mkdirp: do not throw an error if directory exists
+  • grab all buttons when managing a window to also allow 'bindsym
+    --whole-window button4 …' to work correctly
+  • properly clear the urgency hint when set by i3
+  • layout restore: load floating containers correctly
+  • layout restore: remove remaining criteria when swallowing window
+  • layout restore: When appending a layout containing a marked container, make
+    sure that any other containers with the same mark are unmarked during
+    insertion of the new container.
+  • use the EWMH support window rather than the root window as an input focus fallback
+  • use the focused container to determine the target window_mode when using
+    floating mode_toggle
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  Andrzej Pronobis, Chris West (Faux), Deiz, Felix C. Stegerman, Georgiy Tugai,
+  hwangcc23, Ingo Bürk, Kacper Kowalik (Xarthisius), lasers, lambithal, Michael
+  Hofmann, Michael Tipton, Micha Rosenbaum, Nikita Mikhailov, Nils Schneider,
+  PopeLevi, rr-, shdown, Simon Nagl, Theo Buehler, Thomas Anderson, Tim Creech,
+  Tony Crisci
+
+-- Michael Stapelberg, 2015-09-30

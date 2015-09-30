@@ -23,6 +23,13 @@ image:keyboard-layer2.png["Keys to use with Shift+$mod",width=600,link="keyboard
 The red keys are the modifiers you need to press (by default), the blue keys
 are your homerow.
 
+Note that when starting i3 without a config file, i3-config-wizard will offer
+you to create a config file in which the key positions (!) match what you see
+in the image above, regardless of the keyboard layout you are using. If you
+prefer to use a config file where the key letters match what you are seeing
+above, just decline i3-config-wizard’s offer and base your config on
++/etc/i3/config+.
+
 == Using i3
 
 Throughout this guide, the keyword +$mod+ will be used to refer to the
@@ -256,8 +263,9 @@ workspace node’s orientation will be changed to +vertical+. The terminal windo
 you moved down is directly attached to the workspace and appears on the bottom
 of the screen. A new (horizontal) container was created to accommodate the
 other two terminal windows. You will notice this when switching to tabbed mode
-(for example). You would end up having one tab called "another container" and
-the other one being the terminal window you moved down.
+(for example). You would end up having one tab with a representation of the split
+container (e.g., "H[urxvt firefox]") and the other one being the terminal window
+you moved down.
 
 [[configuring]]
 == Configuring i3
@@ -319,7 +327,7 @@ and fall back to a working font.
 *Syntax*:
 ------------------------------
 font <X core font description>
-font pango:[family list] [style options] [size]
+font pango:<family list> [<style options>] <size>
 ------------------------------
 
 *Examples*:
@@ -360,8 +368,8 @@ after the keys have been released.
 
 *Syntax*:
 ----------------------------------
-bindsym [--release] [Modifiers+]keysym command
-bindcode [--release] [Modifiers+]keycode command
+bindsym [--release] [<Group>+][<Modifiers>+]<keysym> command
+bindcode [--release] [<Group>+][<Modifiers>+]<keycode> command
 ----------------------------------
 
 *Examples*:
@@ -387,12 +395,13 @@ Available Modifiers:
 Mod1-Mod5, Shift, Control::
 Standard modifiers, see +xmodmap(1)+
 
-Mode_switch::
-Unlike other window managers, i3 can use Mode_switch as a modifier. This allows
-you to remap capslock (for example) to Mode_switch and use it for both: typing
-umlauts or special characters 'and' having some comfortably reachable key
-bindings. For example, when typing, capslock+1 or capslock+2 for switching
-workspaces is totally convenient. Try it :-).
+Group1, Group2, Group3, Group4::
+When using multiple keyboard layouts (e.g. with `setxkbmap -layout us,ru`), you
+can specify in which XKB group (also called “layout”) a keybinding should be
+active. By default, keybindings are translated in Group1 and are active in all
+groups. If you want to override keybindings in one of your layouts, specify the
+corresponding group. For backwards compatibility, the group “Mode_switch” is an
+alias for Group2.
 
 [[mousebindings]]
 
@@ -403,14 +412,17 @@ button in the scope of the clicked container (see <<command_criteria>>). You
 can configure mouse bindings in a similar way to key bindings.
 
 *Syntax*:
-----------------------------------
-bindsym [--release] [--whole-window] [Modifiers+]button[n] command
-----------------------------------
+-------------------------------------------------------------------------------
+bindsym [--release] [--border] [--whole-window] [<Modifiers>+]button<n> command
+-------------------------------------------------------------------------------
 
 By default, the binding will only run when you click on the titlebar of the
-window. If the +--whole-window+ flag is given, it will run when any part of the
-window is clicked. If the +--release+ flag is given, it will run when the mouse
-button is released.
+window. If the +--release+ flag is given, it will run when the mouse button
+is released.
+
+If the +--whole-window+ flag is given, the binding will also run when any part
+of the window is clicked, with the exception of the border. To have a bind run
+when the border is clicked, specify the +--border+ flag.
 
 *Examples*:
 --------------------------------
@@ -447,7 +459,7 @@ ratio will be preserved).
 
 *Syntax*:
 --------------------------------
-floating_modifier <Modifiers>
+floating_modifier <Modifier>
 --------------------------------
 
 *Example*:
@@ -486,9 +498,9 @@ With the +default_orientation+ configuration directive, you can override that
 behavior.
 
 *Syntax*:
-----------------------------------------------
-default_orientation <horizontal|vertical|auto>
-----------------------------------------------
+--------------------------------------------
+default_orientation horizontal|vertical|auto
+--------------------------------------------
 
 *Example*:
 ----------------------------
@@ -499,17 +511,11 @@ default_orientation vertical
 
 This option determines in which mode new containers on workspace level will
 start.
-///////////////////////////////
-See also <<stack-limit>>.
-//////////////////////////////
 
 *Syntax*:
 ---------------------------------------------
-workspace_layout <default|stacking|tabbed>
+workspace_layout default|stacking|tabbed
 ---------------------------------------------
-/////////////////////////////////////////////
-new_container stack-limit <cols|rows> <value>
-/////////////////////////////////////////////
 
 *Example*:
 ---------------------
@@ -519,18 +525,20 @@ workspace_layout tabbed
 === Border style for new windows
 
 This option determines which border style new windows will have. The default is
-"normal". Note that new_float applies only to windows which are starting out as
-floating windows, e.g. dialog windows.
++normal+. Note that new_float applies only to windows which are starting out as
+floating windows, e.g., dialog windows, but not windows that are floated later on.
 
 *Syntax*:
 ---------------------------------------------
-new_window <normal|1pixel|none|pixel>
-new_float <normal|1pixel|none|pixel>
+new_window normal|none|pixel
+new_window normal|pixel <px>
+new_float normal|none|pixel
+new_float normal|pixel <px>
 ---------------------------------------------
 
 *Example*:
 ---------------------
-new_window 1pixel
+new_window pixel
 ---------------------
 
 The "normal" and "pixel" border styles support an optional border width in
@@ -553,9 +561,9 @@ You can hide vertical borders adjacent to the screen edges using
 to waste even two pixels in displayspace. Default is none.
 
 *Syntax*:
-----------------------------
-hide_edge_borders <none|vertical|horizontal|both>
-----------------------------
+-----------------------------------------------
+hide_edge_borders none|vertical|horizontal|both
+-----------------------------------------------
 
 *Example*:
 ----------------------
@@ -564,14 +572,16 @@ hide_edge_borders vertical
 
 === Arbitrary commands for specific windows (for_window)
 
+[[for_window]]
+
 With the +for_window+ command, you can let i3 execute any command when it
 encounters a specific window. This can be used to set windows to floating or to
 change their border style, for example.
 
 *Syntax*:
------------------------------
-for_window <criteria> command
------------------------------
+-------------------------------
+for_window <criteria> <command>
+-------------------------------
 
 *Examples*:
 ------------------------------------------------
@@ -579,7 +589,7 @@ for_window <criteria> command
 for_window [class="XTerm"] floating enable
 
 # Make all urxvts use a 1-pixel border:
-for_window [class="urxvt"] border 1pixel
+for_window [class="urxvt"] border pixel 1
 
 # A less useful, but rather funny example:
 # makes the window floating as soon as I change
@@ -589,6 +599,27 @@ for_window [title="x200: ~/work"] floating enable
 
 The valid criteria are the same as those for commands, see <<command_criteria>>.
 
+=== Don't focus window upon opening
+
+[[no_focus]]
+
+When a new window appears, it will be focused. The +no_focus+ directive allows preventing
+this from happening and can be used in combination with <<command_criteria>>.
+
+Note that this does not apply to all cases, e.g., when feeding data into a running application
+causing it to request being focused. To configure the behavior in such cases, refer to
+<<focus_on_window_activation>>.
+
+*Syntax*:
+-------------------
+no_focus <criteria>
+-------------------
+
+*Example*:
+-------------------------------
+no_focus [window_role="pop-up"]
+-------------------------------
+
 === Variables
 
 As you learned in the section about keyboard bindings, you will have
@@ -597,9 +628,9 @@ yourself some typing and be able to change the modifier you use later,
 variables can be handy.
 
 *Syntax*:
---------------
-set $name value
---------------
+-------------------
+set $<name> <value>
+-------------------
 
 *Example*:
 ------------------------
@@ -635,7 +666,7 @@ considered.
 
 *Syntax*:
 ------------------------------------------------------------
-assign <criteria> [→] workspace
+assign <criteria> [→] [workspace] <workspace>
 ------------------------------------------------------------
 
 *Examples*:
@@ -704,10 +735,10 @@ and +,+ (comma): they chain commands together in i3, so you need to use quoted
 strings if they appear in your command.
 
 *Syntax*:
--------------------
-exec [--no-startup-id] command
-exec_always [--no-startup-id] command
--------------------
+---------------------------------------
+exec [--no-startup-id] <command>
+exec_always [--no-startup-id] <command>
+---------------------------------------
 
 *Examples*:
 --------------------------------
@@ -731,9 +762,9 @@ or when starting (e.g., by default it will use 1 for the first screen, 2 for
 the second screen and so on).
 
 *Syntax*:
-----------------------------------
+-------------------------------------
 workspace <workspace> output <output>
-----------------------------------
+-------------------------------------
 
 The 'output' is the name of the RandR output you attach your screen to. On a
 laptop, you might have VGA1 and LVDS1 as output names. You can see the
@@ -753,9 +784,9 @@ workspace "2: vim" output VGA1
 You can change all colors which i3 uses to draw the window decorations.
 
 *Syntax*:
---------------------------------------------
-colorclass border background text indicator
---------------------------------------------
+------------------------------------------------------
+<colorclass> <border> <background> <text> <indicator>
+------------------------------------------------------
 
 Where colorclass can be one of:
 
@@ -771,18 +802,11 @@ client.urgent::
 client.placeholder::
 	Background and text color are used to draw placeholder window contents
 	(when restoring layouts). Border and indicator are ignored.
-
-You can also specify the color to be used to paint the background of the client
-windows. This color will be used to paint the window on top of which the client
-will be rendered.
-
-*Syntax*:
------------------------
-client.background color
------------------------
-
-Only clients that do not cover the whole area of this window expose the color
-used to paint it.
+client.background::
+        Background color which will be used to paint the background of the
+        client window on top of which the client will be rendered. Only clients
+        which do not cover the whole area of this window expose the color. Note
+        that this colorclass only takes a single color.
 
 Colors are in HTML hex format (#rrggbb), see the following example:
 
@@ -794,6 +818,8 @@ client.focused_inactive #333333 #5f676a #ffffff #484e50
 client.unfocused        #333333 #222222 #888888 #292d2e
 client.urgent           #2f343a #900000 #ffffff #900000
 client.placeholder      #000000 #0c0c0c #ffffff #000000
+
+client.background       #ffffff
 ---------------------------------------------------------
 
 Note that for the window decorations, the color around the child window is the
@@ -841,9 +867,9 @@ still be useful inside the currently active window (for example to click on
 links in your browser window).
 
 *Syntax*:
-----------------------------
-focus_follows_mouse <yes|no>
-----------------------------
+--------------------------
+focus_follows_mouse yes|no
+--------------------------
 
 *Example*:
 ----------------------
@@ -861,9 +887,9 @@ be warped. +none+ disables warping entirely, whereas +output+ is the default
 behavior described above.
 
 *Syntax*:
----------------------------
-mouse_warping <output|none>
----------------------------
+-------------------------
+mouse_warping output|none
+-------------------------
 
 *Example*:
 ------------------
@@ -885,9 +911,9 @@ There are three things which are possible to do in this situation:
 3. Leave fullscreen mode.
 
 *Syntax*:
--------------------------------------------------
-popup_during_fullscreen <smart|ignore|leave_fullscreen>
--------------------------------------------------
+-----------------------------------------------------
+popup_during_fullscreen smart|ignore|leave_fullscreen
+-----------------------------------------------------
 
 *Example*:
 ------------------------------
@@ -908,9 +934,9 @@ parent+ to switch to different containers, you can use the
 will always wrap.
 
 *Syntax*:
------------------------------
-force_focus_wrapping <yes|no>
------------------------------
+---------------------------
+force_focus_wrapping yes|no
+---------------------------
 
 *Example*:
 ------------------------
@@ -930,9 +956,9 @@ For people who cannot modify their +~/.xsession+ to add the
 +--force-xinerama+ commandline parameter, a configuration option is provided:
 
 *Syntax*:
------------------------
-force_xinerama <yes|no>
------------------------
+---------------------
+force_xinerama yes|no
+---------------------
 
 *Example*:
 ------------------
@@ -952,9 +978,9 @@ mod+2 because somebody sent you a message. You don’t need to remember where yo
 came from now, you can just press $mod+2 again to switch back to "1: www".
 
 *Syntax*:
---------------------------------------
-workspace_auto_back_and_forth <yes|no>
---------------------------------------
+------------------------------------
+workspace_auto_back_and_forth yes|no
+------------------------------------
 
 *Example*:
 ---------------------------------
@@ -984,6 +1010,65 @@ force_display_urgency_hint <timeout> ms
 ---------------------------------
 force_display_urgency_hint 500 ms
 ---------------------------------
+
+=== Focus on window activation
+
+[[focus_on_window_activation]]
+
+If a window is activated, e.g., via +google-chrome www.google.com+, it may request
+to take focus. Since this may not preferable, different reactions can be configured.
+
+Note that this may not affect windows that are being opened. To prevent new windows
+from being focused, see <<no_focus>>.
+
+*Syntax*:
+--------------------------------------------------
+focus_on_window_activation smart|urgent|focus|none
+--------------------------------------------------
+
+The different modes will act as follows:
+
+smart::
+    This is the default behavior. If the window requesting focus is on an active
+    workspace, it will receive the focus. Otherwise, the urgency hint will be set.
+urgent::
+    The window will always be marked urgent, but the focus will not be stolen.
+focus::
+    The window will always be focused and not be marked urgent.
+none::
+    The window will neither be focused, nor be marked urgent.
+
+=== Drawing marks on window decoration
+
+If activated, marks on windows are drawn in their window decoration. However,
+any mark starting with an underscore in its name (+_+) will not be drawn even if
+this option is activated.
+
+The default for this option is +yes+.
+
+*Syntax*:
+-----------------
+show_marks yes|no
+-----------------
+
+*Example*:
+--------------
+show_marks yes
+--------------
+
+[[line_continuation]]
+
+=== Line continuation
+
+Config files support line continuation, meaning when you end a line in a
+backslash character (`\`), the line-break will be ignored by the parser. This
+feature can be used to create more readable configuration files.
+
+*Examples*:
+-------------------
+bindsym Mod1+f \
+fullscreen toggle
+-------------------
 
 == Configuring i3bar
 
@@ -1027,9 +1112,9 @@ The specified command will be passed to +sh -c+, so you can use globbing and
 have to have correct quoting etc.
 
 *Syntax*:
-----------------------
-i3bar_command command
-----------------------
+-----------------------
+i3bar_command <command>
+-----------------------
 
 *Example*:
 -------------------------------------------------
@@ -1046,17 +1131,23 @@ right hand side of the bar. This is useful to display system information like
 your current IP address, battery status or date/time.
 
 The specified command will be passed to +sh -c+, so you can use globbing and
-have to have correct quoting etc.
+have to have correct quoting etc. Note that for signal handling, depending on
+your shell (users of dash(1) are known to be affected), you have to use the
+shell’s exec command so that signals are passed to your program, not to the
+shell.
 
 *Syntax*:
-----------------------
-status_command command
-----------------------
+------------------------
+status_command <command>
+------------------------
 
 *Example*:
 -------------------------------------------------
 bar {
     status_command i3status --config ~/.i3status.conf
+
+    # For dash(1) users who want signal handling to work:
+    status_command exec ~/.bin/my_status_command
 }
 -------------------------------------------------
 
@@ -1092,11 +1183,11 @@ The default mode is dock mode; in hide mode, the default modifier is Mod4 (usual
 the windows key). The default value for the hidden_state is hide.
 
 *Syntax*:
-----------------
-mode <dock|hide|invisible>
-hidden_state <hide|show>
+-------------------------
+mode dock|hide|invisible
+hidden_state hide|show
 modifier <Modifier>
-----------------
+------------------------
 
 *Example*:
 ----------------
@@ -1112,23 +1203,41 @@ Available modifiers are Mod1-Mod5, Shift, Control (see +xmodmap(1)+).
 === Mouse button commands
 
 Specifies a command to run when a button was pressed on i3bar to override the
-default behavior. Currently only the mouse wheel buttons are supported. This is
-useful for disabling the scroll wheel action or running scripts that implement
-custom behavior for these buttons.
+default behavior. This is useful, e.g., for disabling the scroll wheel action
+or running scripts that implement custom behavior for these buttons.
+
+A button is always named +button<n>+, where 1 to 5 are default buttons as follows and higher
+numbers can be special buttons on devices offering more buttons:
+
+button1::
+    Left mouse button.
+button2::
+    Middle mouse button.
+button3::
+    Right mouse button.
+button4::
+    Scroll wheel up.
+button5::
+    Scroll wheel down.
+
+Please note that the old +wheel_up_cmd+ and +wheel_down_cmd+ commands are deprecated
+and will be removed in a future release. We strongly recommend using the more general
++bindsym+ with +button4+ and +button5+ instead.
 
 *Syntax*:
----------------------
-wheel_up_cmd <command>
-wheel_down_cmd <command>
----------------------
+----------------------------
+bindsym button<n> <command>
+----------------------------
 
 *Example*:
----------------------
+---------------------------------------------------------
 bar {
-    wheel_up_cmd nop
-    wheel_down_cmd exec ~/.i3/scripts/custom_wheel_down
+    # disable clicking on workspace buttons
+    bindsym button1 nop
+    # execute custom script when scrolling downwards
+    bindsym button5 exec ~/.i3/scripts/custom_wheel_down
 }
----------------------
+---------------------------------------------------------
 
 === Bar ID
 
@@ -1156,9 +1265,9 @@ This option determines in which edge of the screen i3bar should show up.
 The default is bottom.
 
 *Syntax*:
----------------------
-position <top|bottom>
----------------------
+-------------------
+position top|bottom
+-------------------
 
 *Example*:
 ---------------------
@@ -1211,9 +1320,9 @@ You can configure on which output (monitor) the icons should be displayed or
 you can turn off the functionality entirely.
 
 *Syntax*:
--------------------------
-tray_output <none|primary|output>
--------------------------
+---------------------------------
+tray_output none|primary|<output>
+---------------------------------
 
 *Example*:
 -------------------------
@@ -1223,7 +1332,9 @@ bar {
 }
 
 # show tray icons on the primary monitor
-tray_output primary
+bar {
+    tray_output primary
+}
 
 # show tray icons on the big monitor
 bar {
@@ -1234,6 +1345,28 @@ bar {
 Note that you might not have a primary output configured yet. To do so, run:
 -------------------------
 xrandr --output <output> --primary
+-------------------------
+
+Note that when you use multiple bar configuration blocks, either specify
+`tray_output primary` in all of them or explicitly specify `tray_output none`
+in bars which should not display the tray, otherwise the different instances
+might race each other in trying to display tray icons.
+
+=== Tray padding
+
+The tray is shown on the right-hand side of the bar. By default, a padding of 2
+pixels is used for the upper, lower and right-hand side of the tray area and
+between the individual icons.
+
+*Syntax*:
+-------------------------
+tray_padding <px> [px]
+-------------------------
+
+*Example*:
+-------------------------
+# Obey Fitts's law
+tray_padding 0
 -------------------------
 
 === Font
@@ -1278,9 +1411,9 @@ you want to display a statusline-only bar containing additional information.
 The default is to show workspace buttons.
 
 *Syntax*:
---------------------------
-workspace_buttons <yes|no>
---------------------------
+------------------------
+workspace_buttons yes|no
+------------------------
 
 *Example*:
 ------------------------
@@ -1303,9 +1436,9 @@ workspaces to "1:I", "2:II", "3:III", "4:IV", ...
 The default is to display the full name within the workspace button.
 
 *Syntax*:
-----------------------------------
-strip_workspace_numbers <yes|no>
-----------------------------------
+------------------------------
+strip_workspace_numbers yes|no
+------------------------------
 
 *Example*:
 ----------------------------
@@ -1324,9 +1457,9 @@ For an example of a +mode+ definition, see <<resizingconfig>>.
 The default is to show the mode indicator.
 
 *Syntax*:
--------------------------------
-binding_mode_indicator <yes|no>
--------------------------------
+-----------------------------
+binding_mode_indicator yes|no
+-----------------------------
 
 *Example*:
 -----------------------------
@@ -1360,7 +1493,10 @@ inactive_workspace::
 	will be the case for most workspaces.
 urgent_workspace::
 	Border, background and text color for a workspace button when the workspace
-	contains a window with the urgency hint set. Also applies to +mode+ indicators.
+	contains a window with the urgency hint set.
+binding_mode::
+        Border, background and text color for the binding mode indicator. If not used,
+        the colors will be taken from +urgent_workspace+.
 
 *Syntax*:
 ----------------------------------------
@@ -1369,7 +1505,7 @@ colors {
     statusline <color>
     separator <color>
 
-    colorclass <border> <background> <text>
+    <colorclass> <border> <background> <text>
 }
 ----------------------------------------
 
@@ -1385,6 +1521,7 @@ bar {
         active_workspace   #333333 #5f676a #ffffff
         inactive_workspace #333333 #222222 #888888
         urgent_workspace   #2f343a #900000 #ffffff
+        binding_mode       #2f343a #900000 #ffffff
     }
 }
 --------------------------------------
@@ -1400,6 +1537,8 @@ do this is to use the +i3-msg+ utility:
 # execute this on your shell to make the current container borderless
 i3-msg border none
 --------------------------
+
+[[command_chaining]]
 
 Commands can be chained by using +;+ (a semicolon). So, to move a window to a
 specific workspace and immediately switch to that workspace, you can configure
@@ -1440,27 +1579,43 @@ for_window [class="^evil-app$"] floating enable, move container to workspace 4
 The criteria which are currently implemented are:
 
 class::
-	Compares the window class (the second part of WM_CLASS)
+	Compares the window class (the second part of WM_CLASS). Use the
+	special value +__focused__+ to match all windows having the same window
+	class as the currently focused window.
 instance::
-	Compares the window instance (the first part of WM_CLASS)
+	Compares the window instance (the first part of WM_CLASS). Use the
+	special value +__focused__+ to match all windows having the same window
+	instance as the currently focused window.
 window_role::
-	Compares the window role (WM_WINDOW_ROLE).
+	Compares the window role (WM_WINDOW_ROLE). Use the special value
+	+__focused__+ to match all windows having the same window role as the
+	currently focused window.
+window_type::
+	Compare the window type (_NET_WM_WINDOW_TYPE). Possible values are
+	+normal+, +dialog+, +utility+, +toolbar+, +splash+, +menu+, +dropdown_menu+,
+	+popup_menu+ and +tooltip+.
 id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
 	Compares the X11 window title (_NET_WM_NAME or WM_NAME as fallback).
+	Use the special value +__focused__+ to match all windows having the
+	same window title as the currently focused window.
 urgent::
 	Compares the urgent state of the window. Can be "latest" or "oldest".
 	Matches the latest or oldest urgent window, respectively.
 	(The following aliases are also available: newest, last, recent, first)
+workspace::
+	Compares the workspace name of the workspace the window belongs to. Use
+	the special value +__focused__+ to match all windows in the currently
+	focused workspace.
 con_mark::
 	Compares the mark set for this container, see <<vim_like_marks>>.
 con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
 	interface. Handy for scripting.
 
-The criteria +class+, +instance+, +role+, +title+ and +mark+ are actually
-regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
+The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
+actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
 information on how to use them.
 
 [[exec]]
@@ -1477,9 +1632,9 @@ and +,+ (comma): they chain commands together in i3, so you need to use quoted
 strings if they appear in your command.
 
 *Syntax*:
-------------------------------
-exec [--no-startup-id] command
-------------------------------
+--------------------------------
+exec [--no-startup-id] <command>
+--------------------------------
 
 *Example*:
 ------------------------------
@@ -1512,9 +1667,9 @@ orientation will be changed (if it does not have more than one window). Use
 to splith or vice-versa.
 
 *Syntax*:
----------------------------
-split <vertical|horizontal>
----------------------------
+-------------------------
+split vertical|horizontal
+-------------------------
 
 *Example*:
 ------------------------------
@@ -1537,10 +1692,10 @@ Likewise, to make the current window floating (or tiling again) use +floating
 enable+ respectively +floating disable+ (or +floating toggle+):
 
 *Syntax*:
---------------
-layout <default|tabbed|stacking|splitv|splith>
+--------------------------------------------
+layout default|tabbed|stacking|splitv|splith
 layout toggle [split|all]
---------------
+--------------------------------------------
 
 *Examples*:
 --------------
@@ -1561,15 +1716,17 @@ bindsym $mod+f fullscreen toggle
 bindsym $mod+t floating toggle
 --------------
 
-=== Focusing/Moving containers
+[[_focusing_moving_containers]]
 
-To change the focus, use the focus command: +focus left+, +focus right+, +focus
-down+ and +focus up+.
+=== Focusing containers
 
-There are a few special parameters you can use for the focus command:
+To change focus, you can use the +focus+ command. The following options are
+available:
 
+left|right|up|down::
+        Sets focus to the nearest container in the given direction.
 parent::
-	Sets focus to the +Parent Container+ of the current +Container+.
+	Sets focus to the parent container of the current container.
 child::
 	The opposite of +focus parent+, sets the focus to the last focused
 	child container.
@@ -1583,23 +1740,16 @@ output::
 	Followed by a direction or an output name, this will focus the
 	corresponding output.
 
-For moving, use +move left+, +move right+, +move down+ and +move up+.
-
 *Syntax*:
------------------------------------
-focus <left|right|down|up>
-focus <parent|child|floating|tiling|mode_toggle>
-focus output <<left|right|down|up>|output>
-move <left|right|down|up> [<px> px]
-move [absolute] position [[<px> px] [<px> px]|center]
------------------------------------
-
-Note that the amount of pixels you can specify for the +move+ command is only
-relevant for floating containers. The default amount is 10 pixels.
+----------------------------------------------
+focus left|right|down|up
+focus parent|child|floating|tiling|mode_toggle
+focus output left|right|up|down|<output>
+----------------------------------------------
 
 *Examples*:
-----------------------
-# Focus container on the left, bottom, top, right:
+-------------------------------------------------
+# Focus container on the left, bottom, top, right
 bindsym $mod+j focus left
 bindsym $mod+k focus down
 bindsym $mod+l focus up
@@ -1616,8 +1766,33 @@ bindsym $mod+x focus output right
 
 # Focus the big output
 bindsym $mod+x focus output HDMI-2
+-------------------------------------------------
 
-# Move container to the left, bottom, top, right:
+=== Moving containers
+
+Use the +move+ command to move a container.
+
+*Syntax*:
+-----------------------------------------------------
+# Moves the container into the given direction.
+# The optional pixel argument specifies how far the
+# container should be moved if it is floating and
+# defaults to 10 pixels.
+move <left|right|down|up> [<px> px]
+
+# Moves the container either to a specific location
+# or to the center of the screen. If 'absolute' is
+# used, it is moved to the center of all outputs.
+move [absolute] position [[<px> px] [<px> px]|center]
+
+# Moves the container to the current position of the
+# mouse cursor. Only affects floating containers.
+move position mouse
+-----------------------------------------------------
+
+*Examples*:
+-------------------------------------------------------
+# Move container to the left, bottom, top, right
 bindsym $mod+j move left
 bindsym $mod+k move down
 bindsym $mod+l move up
@@ -1627,10 +1802,33 @@ bindsym $mod+semicolon move right
 # move more than the default
 bindsym $mod+j move left 20 px
 
-# Move floating container to the center
-# of all outputs
+# Move floating container to the center of all outputs
 bindsym $mod+c move absolute position center
-----------------------
+
+# Move container to the current position of the cursor
+bindsym $mod+m move position mouse
+-------------------------------------------------------
+
+=== Sticky floating windows
+
+If you want a window to stick to the glass, i.e., have it stay on screen even
+if you switch to another workspace, you can use the +sticky+ command. For
+example, this can be useful for notepads, a media player or a video chat
+window.
+
+Note that while any window can be made sticky through this command, it will
+only take effect if the window is floating.
+
+*Syntax*:
+----------------------------
+sticky enable|disable|toggle
+----------------------------
+
+*Examples*:
+------------------------------------------------------
+# make a terminal sticky that was started as a notepad
+for_window [instance=notepad] sticky enable
+------------------------------------------------------
 
 === Changing (named) workspaces/moving to workspaces
 
@@ -1661,14 +1859,14 @@ workspace using +move container to workspace back_and_forth+.
 
 *Syntax*:
 -----------------------------------
-workspace <next|prev|next_on_output|prev_on_output>
+workspace next|prev|next_on_output|prev_on_output
 workspace back_and_forth
 workspace <name>
 workspace number <name>
 
 move [window|container] [to] workspace <name>
 move [window|container] [to] workspace number <name>
-move [window|container] [to] workspace <prev|next|current>
+move [window|container] [to] workspace prev|next|current
 -----------------------------------
 
 *Examples*:
@@ -1742,7 +1940,7 @@ rename workspace to <new_name>
 i3-msg 'rename workspace 5 to 6'
 i3-msg 'rename workspace 1 to "1: www"'
 i3-msg 'rename workspace "1: www" to "10: www"'
-i3-msg 'rename workspace to "2: mail"
+i3-msg 'rename workspace to "2: mail"'
 bindsym $mod+r exec i3-input -F 'rename workspace to "%s"' -P 'New name: '
 --------------------------------------------------------------------------
 
@@ -1760,10 +1958,10 @@ To move a container to another RandR output (addressed by names like +LVDS1+ or
 +right+, +up+ or +down+), there are two commands:
 
 *Syntax*:
---------------------------------------------------------
-move container to output <<left|right|down|up>|<output>>
-move workspace to output <<left|right|down|up>|<output>>
---------------------------------------------------------
+----------------------------------------------------
+move container to output left|right|down|up|<output>
+move workspace to output left|right|down|up|<output>
+----------------------------------------------------
 
 *Examples*:
 --------------------------------------------------------
@@ -1775,6 +1973,26 @@ bindsym $mod+x move workspace to output right
 bindsym $mod+x move container to output VGA1
 --------------------------------------------------------
 
+=== Moving containers/workspaces to marks
+
+To move a container to another container with a specific mark (see <<vim_like_marks>>),
+you can use the following command.
+
+The window will be moved right after the marked container in the tree, i.e., it ends up
+in the same position as if you had opened a new window when the marked container was
+focused. If the mark is on a split container, the window will appear as a new child
+after the currently focused child within that container.
+
+*Syntax*:
+------------------------------------
+move window|container to mark <mark>
+------------------------------------
+
+*Example*:
+--------------------------------------------------------
+for_window [instance="tabme"] move window to mark target
+--------------------------------------------------------
+
 [[resizingconfig]]
 
 === Resizing containers/windows
@@ -1783,9 +2001,10 @@ If you want to resize containers/windows using your keyboard, you can use the
 +resize+ command:
 
 *Syntax*:
----------------------------------------------------------
-resize <grow|shrink> <direction> [<px> px [or <ppt> ppt]]
----------------------------------------------------------
+-------------------------------------------------------
+resize grow|shrink <direction> [<px> px [or <ppt> ppt]]
+resize set <width> [px] <height> [px]
+-------------------------------------------------------
 
 Direction can either be one of +up+, +down+, +left+ or +right+. Or you can be
 less specific and use +width+ or +height+, in which case i3 will take/give
@@ -1793,7 +2012,8 @@ space from all the other containers. The optional pixel argument specifies by
 how many pixels a *floating container* should be grown or shrunk (the default
 is 10 pixels). The ppt argument means percentage points and specifies by how
 many percentage points a *tiling container* should be grown or shrunk (the
-default is 10 percentage points).
+default is 10 percentage points). Note that +resize set+ will only work for
+floating containers.
 
 I recommend using the resize command inside a so called +mode+:
 
@@ -1825,6 +2045,11 @@ mode "resize" {
 # Enter resize mode
 bindsym $mod+r mode "resize"
 ----------------------------------------------------------------------
+
+*Example 2 - setting urxvt size to 640x480:*
+------------------------------------------------
+for_window [class="urxvt"] resize set 640 480
+------------------------------------------------
 
 === Jumping to specific windows
 
@@ -1864,11 +2089,17 @@ window, you cannot simply bind it to a key.  +i3-input+ is a tool created
 for this purpose: It lets you input a command and sends the command to i3. It
 can also prefix this command and display a custom prompt for the input dialog.
 
+The additional +--toggle+ option will remove the mark if the window already has
+this mark, add it if the window has none or replace the current mark if it has
+another mark.
+
+Refer to +show_marks+ if you don't want marks to be shown in the window decoration.
+
 *Syntax*:
 ------------------------------
-mark identifier
+mark [--toggle] <identifier>
 [con_mark="identifier"] focus
-unmark identifier
+unmark <identifier>
 ------------------------------
 
 *Example (in a terminal)*:
@@ -1893,52 +2124,69 @@ Alternatively, if you do not want to mess with +i3-input+, you could create
 seperate bindings for a specific set of labels and then only use those labels.
 ///////////////////////////////////////////////////////////////////
 
+=== Window title format
+
+By default, i3 will simply print the X11 window title. Using +title_format+,
+this can be customized by setting the format to the desired output. This
+directive supports
+https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup]
+and the following placeholders which will be replaced:
+
++%title+::
+    The X11 window title (_NET_WM_NAME or WM_NAME as fallback).
++%class+:
+    The X11 window class (second part of WM_CLASS). This corresponds to the
+    +class+ criterion, see <<command_criteria>>.
++%instance+:
+    The X11 window instance (first part of WM_CLASS). This corresponds to the
+    +instance+ criterion, see <<command_criteria>>.
+
+Using the <<for_window>> directive, you can set the title format for any window
+based on <<command_criteria>>.
+
+*Syntax*:
+---------------------
+title_format <format>
+---------------------
+
+*Examples*:
+-------------------------------------------------------------------------------------
+# give the focused window a prefix
+bindsym $mod+p title_format "Important | %title"
+
+# print all window titles bold
+for_window [class=".*"] title_format "<b>%title</b>"
+
+# print window titles of firefox windows red
+for_window [class="(?i)firefox"] title_format "<span foreground='red'>%title</span>"
+-------------------------------------------------------------------------------------
+
 === Changing border style
 
 To change the border of the current client, you can use +border normal+ to use the normal
-border (including window title), +border 1pixel+ to use a 1-pixel border (no window title)
+border (including window title), +border pixel 1+ to use a 1-pixel border (no window title)
 and +border none+ to make the client borderless.
 
 There is also +border toggle+ which will toggle the different border styles.
 
-*Examples*:
-----------------------------
-bindsym $mod+t border normal
-bindsym $mod+y border 1pixel
-bindsym $mod+u border none
-----------------------------
-
-[[stack-limit]]
-
-///////////////////////////////////////////////////////////////////////////////
-TODO: not yet implemented
-=== Changing the stack-limit of a container
-
-If you have a single container with a lot of windows inside it (say, more than
-10), the default layout of a stacking container can get a little unhandy.
-Depending on your screen’s size, you might end up with only half of the title
-lines being actually used, wasting a lot of screen space.
-
-Using the +stack-limit+ command, you can limit the number of rows or columns
-in a stacking container. i3 will create columns or rows (depending on what
-you limited) automatically as needed.
-
 *Syntax*:
---------------------------------
-stack-limit <cols|rows> <value>
---------------------------------
+-----------------------------------------------
+border normal|pixel [<n>]
+border none|toggle
+
+# legacy syntax, equivalent to "border pixel 1"
+border 1pixel
+-----------------------------------------------
 
 *Examples*:
--------------------
-# I always want to have two window titles in one line
-stack-limit cols 2
-
-# Not more than 5 rows in this stacking container
-stack-limit rows 5
--------------------
-
-image:stacklimit.png[Container limited to two columns]
-///////////////////////////////////////////////////////////////////////////////
+----------------------------------------------
+# use window title, but no border
+bindsym $mod+t border normal 0
+# use no window title and a thick border
+bindsym $mod+y border pixel 3
+# use neither window title nor border
+bindsym $mod+u border none
+----------------------------------------------
 
 [[shmlog]]
 
@@ -1954,7 +2202,7 @@ discarded and a new one will be started.
 *Syntax*:
 ------------------------------
 shmlog <size_in_bytes>
-shmlog <on|off|toggle>
+shmlog on|off|toggle
 ------------------------------
 
 *Examples*:
@@ -1975,9 +2223,9 @@ command does not activate shared memory logging (shmlog), and as such is most
 likely useful in combination with the above-described <<shmlog>> command.
 
 *Syntax*:
-------------------------
-debuglog <on|off|toggle>
-------------------------
+----------------------
+debuglog on|off|toggle
+----------------------
 
 *Examples*:
 ------------------------

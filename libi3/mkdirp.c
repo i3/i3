@@ -8,24 +8,26 @@
  * Emulates mkdir -p (creates any missing folders)
  *
  */
-bool mkdirp(const char *path) {
-    if (mkdir(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0)
-        return true;
+
+#if !defined(__sun)
+int mkdirp(const char *path, mode_t mode) {
+    if (mkdir(path, mode) == 0)
+        return 0;
     if (errno == EEXIST) {
         struct stat st;
         /* Check that the named file actually is a directory. */
         if (stat(path, &st)) {
             ELOG("stat(%s) failed: %s\n", path, strerror(errno));
-            return false;
+            return -1;
         }
         if (!S_ISDIR(st.st_mode)) {
             ELOG("mkdir(%s) failed: %s\n", path, strerror(ENOTDIR));
-            return false;
+            return -1;
         }
-        return true;
+        return 0;
     } else if (errno != ENOENT) {
         ELOG("mkdir(%s) failed: %s\n", path, strerror(errno));
-        return false;
+        return -1;
     }
     char *copy = sstrdup(path);
     /* strip trailing slashes, if any */
@@ -38,13 +40,14 @@ bool mkdirp(const char *path) {
             free(copy);
             copy = NULL;
         }
-        return false;
+        return -1;
     }
     *sep = '\0';
-    bool result = false;
-    if (mkdirp(copy))
-        result = mkdirp(path);
+    int result = -1;
+    if (mkdirp(copy, mode) == 0)
+        result = mkdirp(path, mode);
     free(copy);
 
     return result;
 }
+#endif

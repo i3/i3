@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010 Axel Wagner and contributors (see also: LICENSE)
  *
  * xcb.c: Communicating with X
  *
@@ -60,6 +60,9 @@ xcb_connection_t *conn;
 /* The font we'll use */
 static i3Font font;
 
+/* Icon size (based on font size) */
+int icon_size;
+
 /* Overall height of the bar (based on font size) */
 int bar_height;
 
@@ -103,6 +106,9 @@ struct xcb_colors_t {
     uint32_t focus_ws_bg;
     uint32_t focus_ws_fg;
     uint32_t focus_ws_border;
+    uint32_t binding_mode_bg;
+    uint32_t binding_mode_fg;
+    uint32_t binding_mode_border;
 };
 struct xcb_colors_t colors;
 
@@ -148,7 +154,7 @@ int get_tray_width(struct tc_head *trayclients) {
     TAILQ_FOREACH_REVERSE(trayclient, trayclients, tc_head, tailq) {
         if (!trayclient->mapped)
             continue;
-        tray_width += font.height + logical_px(2);
+        tray_width += icon_size + logical_px(config.tray_padding);
     }
     if (tray_width > 0)
         tray_width += logical_px(tray_loff_px);
@@ -368,6 +374,18 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(focus_ws_border, "#4c7899");
 #undef PARSE_COLOR
 
+#define PARSE_COLOR_FALLBACK(name, fallback)                                                 \
+    do {                                                                                     \
+        colors.name = new_colors->name ? get_colorpixel(new_colors->name) : colors.fallback; \
+    } while (0)
+
+    /* For the binding mode indicator colors, we don't hardcode a default.
+     * Instead, we fall back to urgent_ws_* colors. */
+    PARSE_COLOR_FALLBACK(binding_mode_fg, urgent_ws_fg);
+    PARSE_COLOR_FALLBACK(binding_mode_bg, urgent_ws_bg);
+    PARSE_COLOR_FALLBACK(binding_mode_border, urgent_ws_border);
+#undef PARSE_COLOR_FALLBACK
+
     init_tray_colors();
     xcb_flush(xcb_connection);
 }
@@ -420,7 +438,7 @@ void handle_button(xcb_button_press_event_t *event) {
         int offset = walk->rect.w - statusline_width - tray_width - logical_px(sb_hoff_px);
 
         x = original_x - offset;
-        if (x >= 0) {
+        if (x >= 0 && (size_t)x < statusline_width) {
             struct status_block *block;
             int sep_offset_remainder = 0;
 
@@ -442,25 +460,27 @@ void handle_button(xcb_button_press_event_t *event) {
         x = original_x;
     }
 
+    /* If a custom command was specified for this mouse button, it overrides
+     * the default behavior. */
+    binding_t *binding;
+    TAILQ_FOREACH(binding, &(config.bindings), bindings) {
+        if (binding->input_code != event->detail)
+            continue;
+
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, binding->command);
+        return;
+    }
+
     if (cur_ws == NULL) {
         DLOG("No workspace active?\n");
         return;
     }
-
     switch (event->detail) {
         case 4:
             /* Mouse wheel up. We select the previous ws, if any.
              * If there is no more workspace, don’t even send the workspace
              * command, otherwise (with workspace auto_back_and_forth) we’d end
              * up on the wrong workspace. */
-
-            /* If `wheel_up_cmd [COMMAND]` was specified, it should override
-             * the default behavior */
-            if (config.wheel_up_cmd) {
-                i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, config.wheel_up_cmd);
-                return;
-            }
-
             if (cur_ws == TAILQ_FIRST(walk->workspaces))
                 return;
 
@@ -471,14 +491,6 @@ void handle_button(xcb_button_press_event_t *event) {
              * If there is no more workspace, don’t even send the workspace
              * command, otherwise (with workspace auto_back_and_forth) we’d end
              * up on the wrong workspace. */
-
-            /* if `wheel_down_cmd [COMMAND]` was specified, it should override
-             * the default behavior */
-            if (config.wheel_down_cmd) {
-                i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, config.wheel_down_cmd);
-                return;
-            }
-
             if (cur_ws == TAILQ_LAST(walk->workspaces, ws_head))
                 return;
 
@@ -521,7 +533,7 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     const size_t len = namelen + strlen("workspace \"\"") + 1;
-    char *buffer = scalloc(len + num_quotes);
+    char *buffer = scalloc(len + num_quotes, 1);
     strncpy(buffer, "workspace \"", strlen("workspace \""));
     size_t inpos, outpos;
     for (inpos = 0, outpos = strlen("workspace \"");
@@ -591,8 +603,8 @@ static void configure_trayclients(void) {
             clients++;
 
             DLOG("Configuring tray window %08x to x=%d\n",
-                 trayclient->win, output->rect.w - (clients * (font.height + logical_px(2))));
-            uint32_t x = output->rect.w - (clients * (font.height + logical_px(2)));
+                 trayclient->win, output->rect.w - (clients * (icon_size + logical_px(config.tray_padding))));
+            uint32_t x = output->rect.w - (clients * (icon_size + logical_px(config.tray_padding)));
             xcb_configure_window(xcb_connection,
                                  trayclient->win,
                                  XCB_CONFIG_WINDOW_X,
@@ -702,23 +714,23 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             xcb_reparent_window(xcb_connection,
                                 client,
                                 output->bar,
-                                output->rect.w - font.height - 2,
-                                2);
+                                output->rect.w - icon_size - logical_px(config.tray_padding),
+                                logical_px(config.tray_padding));
             /* We reconfigure the window to use a reasonable size. The systray
              * specification explicitly says:
              *   Tray icons may be assigned any size by the system tray, and
              *   should do their best to cope with any size effectively
              */
             mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
-            values[0] = font.height;
-            values[1] = font.height;
+            values[0] = icon_size;
+            values[1] = icon_size;
             xcb_configure_window(xcb_connection,
                                  client,
                                  mask,
                                  values);
 
             /* send the XEMBED_EMBEDDED_NOTIFY message */
-            void *event = scalloc(32);
+            void *event = scalloc(32, 1);
             xcb_client_message_event_t *ev = event;
             ev->response_type = XCB_CLIENT_MESSAGE;
             ev->window = client;
@@ -941,10 +953,10 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
                 continue;
 
             xcb_rectangle_t rect;
-            rect.x = output->rect.w - (clients * (font.height + 2));
-            rect.y = 2;
-            rect.width = font.height;
-            rect.height = font.height;
+            rect.x = output->rect.w - (clients * (icon_size + logical_px(config.tray_padding)));
+            rect.y = logical_px(config.tray_padding);
+            rect.width = icon_size;
+            rect.height = icon_size;
 
             DLOG("This is a tray window. x = %d\n", rect.x);
             fake_configure_notify(xcb_connection, rect, event->window, 0);
@@ -1215,6 +1227,7 @@ void init_xcb_late(char *fontname) {
     set_font(&font);
     DLOG("Calculated font height: %d\n", font.height);
     bar_height = font.height + 2 * logical_px(ws_voff_px);
+    icon_size = bar_height - 2 * logical_px(config.tray_padding);
 
     if (config.separator_symbol)
         separator_symbol_width = predict_text_width(config.separator_symbol);
@@ -1641,8 +1654,7 @@ void reconfig_windows(bool redraw_bars) {
                                                "i3bar\0i3bar\0");
 
             char *name;
-            if (asprintf(&name, "i3bar for output %s", walk->name) == -1)
-                err(EXIT_FAILURE, "asprintf()");
+            sasprintf(&name, "i3bar for output %s", walk->name);
             xcb_void_cookie_t name_cookie;
             name_cookie = xcb_change_property(xcb_connection,
                                               XCB_PROP_MODE_REPLACE,
@@ -1792,6 +1804,8 @@ void reconfig_windows(bool redraw_bars) {
 void draw_bars(bool unhide) {
     DLOG("Drawing bars...\n");
     int workspace_width = 0;
+    /* Is the currently-rendered statusline using short_text items? */
+    bool rendered_statusline_is_short = false;
 
     refresh_statusline(false);
 
@@ -1888,11 +1902,11 @@ void draw_bars(bool unhide) {
         if (binding.name && !config.disable_binding_mode_indicator) {
             workspace_width += logical_px(ws_spacing_px);
 
-            uint32_t fg_color = colors.urgent_ws_fg;
-            uint32_t bg_color = colors.urgent_ws_bg;
+            uint32_t fg_color = colors.binding_mode_fg;
+            uint32_t bg_color = colors.binding_mode_bg;
             uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
 
-            uint32_t vals_border[] = {colors.urgent_ws_border, colors.urgent_ws_border};
+            uint32_t vals_border[] = {colors.binding_mode_border, colors.binding_mode_border};
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
                           mask,
@@ -1941,8 +1955,15 @@ void draw_bars(bool unhide) {
             uint32_t max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - 2 * logical_px(sb_hoff_px);
 
             /* If the statusline is too long, try to use short texts. */
-            if (statusline_width > max_statusline_width)
+            if (statusline_width > max_statusline_width) {
+                /* If the currently rendered statusline is long, render a short status line */
                 refresh_statusline(true);
+                rendered_statusline_is_short = true;
+            } else if (rendered_statusline_is_short) {
+                /* If the currently rendered statusline is short, render a long status line */
+                refresh_statusline(false);
+                rendered_statusline_is_short = false;
+            }
 
             /* Luckily we already prepared a seperate pixmap containing the rendered
              * statusline, we just have to copy the relevant parts to the relevant

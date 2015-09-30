@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010 Axel Wagner and contributors (see also: LICENSE)
  *
  * mode.c: Handle mode event and show current binding mode in the bar
  *
@@ -32,7 +32,7 @@ static int mode_string_cb(void *params_, const unsigned char *val, size_t len) {
 
     if (!strcmp(params->cur_key, "change")) {
         /* Save the name */
-        params->mode->name = i3string_from_utf8_with_length((const char *)val, len);
+        params->mode->name = i3string_from_markup_with_length((const char *)val, len);
         /* Save its rendered width */
         params->mode->width = predict_text_width(params->mode->name);
 

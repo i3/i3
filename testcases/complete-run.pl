@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
-# © 2010-2012 Michael Stapelberg and contributors
+# © 2010 Michael Stapelberg and contributors
 package complete_run;
 use strict;
 use warnings;
@@ -8,7 +8,6 @@ use v5.10;
 use utf8;
 # the following are modules which ship with Perl (>= 5.10):
 use Pod::Usage;
-use Cwd qw(abs_path);
 use File::Temp qw(tempfile tempdir);
 use Getopt::Long;
 use POSIX ();
@@ -17,8 +16,20 @@ use TAP::Parser;
 use TAP::Parser::Aggregator;
 use Time::HiRes qw(time);
 use IO::Handle;
+
+my $dirname;
+
+BEGIN {
+    use File::Basename;
+    use Cwd qw(abs_path);
+
+    # fileparse()[1] contains the directory portion of the specified path.
+    # See File::Basename(3p) for more details.
+    $dirname = (fileparse(abs_path($0)))[1];
+}
+
 # these are shipped with the testsuite
-use lib qw(lib);
+use lib $dirname . 'lib';
 use StartXServer;
 use StatusLine;
 use TestWorker;
@@ -70,6 +81,8 @@ my $result = GetOptions(
 
 pod2usage(-verbose => 2, -exitcode => 0) if $help;
 
+chdir $dirname or die "Could not chdir into $dirname";
+
 # Check for missing executables
 my @binaries = qw(
                    ../i3
@@ -84,6 +97,16 @@ my @binaries = qw(
 foreach my $binary (@binaries) {
     die "$binary executable not found, did you run “make”?" unless -e $binary;
     die "$binary is not an executable" unless -x $binary;
+}
+
+if ($options{coverage}) {
+    qx(command -v lcov &> /dev/null);
+    die "Cannot find lcov needed for coverage testing." if $?;
+    qx(command -v genhtml &> /dev/null);
+    die "Cannot find genhtml needed for coverage testing." if $?;
+
+    # clean out the counters that may be left over from previous tests.
+    qx(lcov -d ../ --zerocounters &> /dev/null);
 }
 
 qx(Xephyr -help 2>&1);
@@ -226,6 +249,17 @@ if ($numtests == 1) {
 }
 
 END { cleanup() }
+
+if ($options{coverage}) {
+    print("\nGenerating test coverage report...\n");
+    qx(lcov -d ../ -b ../ --capture -o latest/i3-coverage.info);
+    qx(genhtml -o latest/i3-coverage latest/i3-coverage.info);
+    if ($?) {
+        print("Could not generate test coverage html. Did you compile i3 with test coverage support?\n");
+    } else {
+        print("Test coverage report generated in latest/i3-coverage\n");
+    }
+}
 
 exit ($aggregator->failed > 0);
 
@@ -391,12 +425,15 @@ available in C<latest/xtrace-for-$test.log>.
 
 =item B<--coverage-testing>
 
-Exits i3 cleanly (instead of kill -9) to make coverage testing work properly.
+Generates a test coverage report at C<latest/i3-coverage>. Exits i3 cleanly
+during tests (instead of kill -9) to make coverage testing work properly.
 
 =item B<--parallel>
 
-Number of Xephyr instances to start (if you don’t want to start num_cores * 2
+Number of Xephyr instances to start (if you don't want to start num_cores * 2
 instances for some reason).
 
   # Run all tests on a single Xephyr instance
   ./complete-run.pl -p 1
+
+=back

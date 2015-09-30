@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * scratchpad.c: Moving windows to the scratchpad and making them visible again.
  *
@@ -60,7 +60,7 @@ void scratchpad_move(Con *con) {
 
     /* 2: Send the window to the __i3_scratch workspace, mainting its
      * coordinates and not warping the pointer. */
-    con_move_to_workspace(con, __i3_scratch, true, true);
+    con_move_to_workspace(con, __i3_scratch, true, true, false);
 
     /* 3: If this is the first time this window is used as a scratchpad, we set
      * the scratchpad_state to SCRATCHPAD_FRESH. The window will then be
@@ -142,7 +142,7 @@ void scratchpad_show(Con *con) {
             floating->scratchpad_state != SCRATCHPAD_NONE) {
             DLOG("Found a visible scratchpad window on another workspace,\n");
             DLOG("moving it to this workspace: con = %p\n", walk_con);
-            con_move_to_workspace(walk_con, focused_ws, true, false);
+            con_move_to_workspace(walk_con, focused_ws, true, false, false);
             return;
         }
     }
@@ -189,7 +189,7 @@ void scratchpad_show(Con *con) {
     }
 
     /* 1: Move the window from __i3_scratch to the current workspace. */
-    con_move_to_workspace(con, active, true, false);
+    con_move_to_workspace(con, active, true, false, false);
 
     /* 2: Adjust the size if this window was not adjusted yet. */
     if (con->scratchpad_state == SCRATCHPAD_FRESH) {
@@ -198,10 +198,7 @@ void scratchpad_show(Con *con) {
         con->rect.width = output->rect.width * 0.5;
         con->rect.height = output->rect.height * 0.75;
         floating_check_size(con);
-        con->rect.x = output->rect.x +
-                      ((output->rect.width / 2.0) - (con->rect.width / 2.0));
-        con->rect.y = output->rect.y +
-                      ((output->rect.height / 2.0) - (con->rect.height / 2.0));
+        floating_center(con, con_get_workspace(con)->rect);
     }
 
     /* Activate active workspace if window is from another workspace to ensure

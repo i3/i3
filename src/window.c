@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * window.c: Updates window attributes (X11 hints/properties).
  *
@@ -27,30 +27,27 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool bef
      * null-terminated strings (for compatibility reasons). Instead, we
      * use strdup() on both strings */
     const size_t prop_length = xcb_get_property_value_length(prop);
-    char *new_class = smalloc(prop_length + 1);
-    memcpy(new_class, xcb_get_property_value(prop), prop_length);
-    new_class[prop_length] = '\0';
+    char *new_class = xcb_get_property_value(prop);
+    const size_t class_class_index = strnlen(new_class, prop_length) + 1;
 
     FREE(win->class_instance);
     FREE(win->class_class);
 
-    win->class_instance = sstrdup(new_class);
-    if ((strlen(new_class) + 1) < prop_length)
-        win->class_class = sstrdup(new_class + strlen(new_class) + 1);
+    win->class_instance = sstrndup(new_class, prop_length);
+    if (class_class_index < prop_length)
+        win->class_class = sstrndup(new_class + class_class_index, prop_length - class_class_index);
     else
         win->class_class = NULL;
     LOG("WM_CLASS changed to %s (instance), %s (class)\n",
         win->class_instance, win->class_class);
 
     if (before_mgmt) {
-        free(new_class);
         free(prop);
         return;
     }
 
     run_assignments(win);
 
-    free(new_class);
     free(prop);
 }
 
@@ -69,6 +66,8 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     i3string_free(win->name);
     win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
                                                xcb_get_property_value_length(prop));
+    if (win->title_format != NULL)
+        ewmh_update_visible_name(win->id, i3string_as_utf8(window_parse_title_format(win)));
     win->name_x_changed = true;
     LOG("_NET_WM_NAME changed to \"%s\"\n", i3string_as_utf8(win->name));
 
@@ -107,6 +106,8 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
     i3string_free(win->name);
     win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
                                                xcb_get_property_value_length(prop));
+    if (win->title_format != NULL)
+        ewmh_update_visible_name(win->id, i3string_as_utf8(window_parse_title_format(win)));
 
     LOG("WM_NAME changed to \"%s\"\n", i3string_as_utf8(win->name));
     LOG("Using legacy window title. Note that in order to get Unicode window "
@@ -211,13 +212,8 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     }
 
     char *new_role;
-    if (asprintf(&new_role, "%.*s", xcb_get_property_value_length(prop),
-                 (char *)xcb_get_property_value(prop)) == -1) {
-        perror("asprintf()");
-        DLOG("Could not get WM_WINDOW_ROLE\n");
-        free(prop);
-        return;
-    }
+    sasprintf(&new_role, "%.*s", xcb_get_property_value_length(prop),
+              (char *)xcb_get_property_value(prop));
     FREE(win->role);
     win->role = new_role;
     LOG("WM_WINDOW_ROLE changed to \"%s\"\n", win->role);
@@ -230,6 +226,23 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     run_assignments(win);
 
     free(prop);
+}
+
+/*
+ * Updates the _NET_WM_WINDOW_TYPE property.
+ *
+ */
+void window_update_type(i3Window *window, xcb_get_property_reply_t *reply) {
+    xcb_atom_t new_type = xcb_get_preferred_window_type(reply);
+    if (new_type == XCB_NONE) {
+        DLOG("cannot read _NET_WM_WINDOW_TYPE from window.\n");
+        return;
+    }
+
+    window->window_type = new_type;
+    LOG("_NET_WM_WINDOW_TYPE changed to %i.\n", window->window_type);
+
+    run_assignments(window);
 }
 
 /*
@@ -319,4 +332,77 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
 #undef MWM_DECOR_ALL
 #undef MWM_DECOR_BORDER
 #undef MWM_DECOR_TITLE
+}
+
+/*
+ * Returns the window title considering the current title format.
+ * If no format is set, this will simply return the window's name.
+ *
+ */
+i3String *window_parse_title_format(i3Window *win) {
+    /* We need to ensure that we only escape the window title if pango
+     * is used by the current font. */
+    const bool is_markup = font_is_pango();
+
+    char *format = win->title_format;
+    if (format == NULL)
+        return i3string_copy(win->name);
+
+    /* We initialize these lazily so we only escape them if really necessary. */
+    const char *escaped_title = NULL;
+    const char *escaped_class = NULL;
+    const char *escaped_instance = NULL;
+
+    /* We have to first iterate over the string to see how much buffer space
+     * we need to allocate. */
+    int buffer_len = strlen(format) + 1;
+    for (char *walk = format; *walk != '\0'; walk++) {
+        if (STARTS_WITH(walk, "%title")) {
+            if (escaped_title == NULL)
+                escaped_title = win->name == NULL ? "" : i3string_as_utf8(is_markup ? i3string_escape_markup(win->name) : win->name);
+
+            buffer_len = buffer_len - strlen("%title") + strlen(escaped_title);
+            walk += strlen("%title") - 1;
+        } else if (STARTS_WITH(walk, "%class")) {
+            if (escaped_class == NULL)
+                escaped_class = is_markup ? g_markup_escape_text(win->class_class, -1) : win->class_class;
+
+            buffer_len = buffer_len - strlen("%class") + strlen(escaped_class);
+            walk += strlen("%class") - 1;
+        } else if (STARTS_WITH(walk, "%instance")) {
+            if (escaped_instance == NULL)
+                escaped_instance = is_markup ? g_markup_escape_text(win->class_instance, -1) : win->class_instance;
+
+            buffer_len = buffer_len - strlen("%instance") + strlen(escaped_instance);
+            walk += strlen("%instance") - 1;
+        }
+    }
+
+    /* Now we can parse the format string. */
+    char buffer[buffer_len];
+    char *outwalk = buffer;
+    for (char *walk = format; *walk != '\0'; walk++) {
+        if (*walk != '%') {
+            *(outwalk++) = *walk;
+            continue;
+        }
+
+        if (STARTS_WITH(walk + 1, "title")) {
+            outwalk += sprintf(outwalk, "%s", escaped_title);
+            walk += strlen("title");
+        } else if (STARTS_WITH(walk + 1, "class")) {
+            outwalk += sprintf(outwalk, "%s", escaped_class);
+            walk += strlen("class");
+        } else if (STARTS_WITH(walk + 1, "instance")) {
+            outwalk += sprintf(outwalk, "%s", escaped_instance);
+            walk += strlen("instance");
+        } else {
+            *(outwalk++) = *walk;
+        }
+    }
+    *outwalk = '\0';
+
+    i3String *formatted = i3string_from_utf8(buffer);
+    i3string_set_markup(formatted, is_markup);
+    return formatted;
 }

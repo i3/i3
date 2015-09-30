@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #include <assert.h>
@@ -338,6 +338,18 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
             assert(false);
             break;
     }
+}
+
+/*
+ * Returns true if and only if the current font is a pango font.
+ *
+ */
+bool font_is_pango(void) {
+#if PANGO_SUPPORT
+    return savedFont->type == FONT_TYPE_PANGO;
+#else
+    return false;
+#endif
 }
 
 static int predict_text_width_xcb(const xcb_char2b_t *text, size_t text_len);

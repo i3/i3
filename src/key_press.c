@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * key_press.c: key press handler
  *
@@ -18,11 +18,11 @@
  *
  */
 void handle_key_press(xcb_key_press_event_t *event) {
-    bool key_release = (event->response_type == XCB_KEY_RELEASE);
+    const bool key_release = (event->response_type == XCB_KEY_RELEASE);
 
     last_timestamp = event->time;
 
-    DLOG("%s %d, state raw = %d\n", (key_release ? "KeyRelease" : "KeyPress"), event->detail, event->state);
+    DLOG("%s %d, state raw = 0x%x\n", (key_release ? "KeyRelease" : "KeyPress"), event->detail, event->state);
 
     Binding *bind = get_binding_from_xcb_event((xcb_generic_event_t *)event);
 

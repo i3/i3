@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * display_version.c: displays the running i3 version, runs as part of
  *                    i3 --moreversion.
@@ -16,20 +16,25 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <fcntl.h>
+#include <time.h>
 #include "all.h"
 
-static bool human_readable_key;
-static char *human_readable_version;
+static bool human_readable_key, loaded_config_file_name_key;
+static char *human_readable_version, *loaded_config_file_name;
 
 static int version_string(void *ctx, const unsigned char *val, size_t len) {
     if (human_readable_key)
         sasprintf(&human_readable_version, "%.*s", (int)len, val);
+    if (loaded_config_file_name_key)
+        sasprintf(&loaded_config_file_name, "%.*s", (int)len, val);
     return 1;
 }
 
 static int version_map_key(void *ctx, const unsigned char *stringval, size_t stringlen) {
     human_readable_key = (stringlen == strlen("human_readable") &&
                           strncmp((const char *)stringval, "human_readable", strlen("human_readable")) == 0);
+    loaded_config_file_name_key = (stringlen == strlen("loaded_config_file_name") &&
+                                   strncmp((const char *)stringval, "loaded_config_file_name", strlen("loaded_config_file_name")) == 0);
     return 1;
 }
 
@@ -103,6 +108,21 @@ void display_running_version(void) {
         errx(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
 
     printf("\rRunning i3 version: %s (pid %s)\n", human_readable_version, pid_from_atom);
+
+    if (loaded_config_file_name) {
+        struct stat sb;
+        time_t now;
+        char mtime[64];
+        printf("Loaded i3 config: %s", loaded_config_file_name);
+        if (stat(loaded_config_file_name, &sb) == -1) {
+            printf("\n");
+            ELOG("Cannot stat config file \"%s\"\n", loaded_config_file_name);
+        } else {
+            strftime(mtime, sizeof(mtime), "%c", localtime(&(sb.st_mtime)));
+            time(&now);
+            printf(" (Last modified: %s, %.f seconds ago)\n", mtime, difftime(now, sb.st_mtime));
+        }
+    }
 
 #ifdef __linux__
     size_t destpath_size = 1024;

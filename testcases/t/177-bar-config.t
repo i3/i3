@@ -66,6 +66,7 @@ ok($bar_config->{workspace_buttons}, 'workspace buttons enabled per default');
 ok($bar_config->{binding_mode_indicator}, 'mode indicator enabled per default');
 is($bar_config->{mode}, 'dock', 'dock mode by default');
 is($bar_config->{position}, 'bottom', 'position bottom by default');
+is($bar_config->{tray_padding}, 2, 'tray_padding ok');
 
 #####################################################################
 # ensure that reloading cleans up the old bar configs
@@ -96,6 +97,7 @@ bar {
 
     tray_output LVDS1
     tray_output HDMI2
+    tray_padding 0
     position top
     mode dock
     font Terminus
@@ -112,6 +114,7 @@ bar {
         active_workspace    #333333 #222222 #888888
         inactive_workspace  #333333 #222222 #888888
         urgent_workspace    #2f343a #900000 #ffffff
+        binding_mode        #abc123 #123abc #ababab
     }
 }
 EOT
@@ -133,6 +136,7 @@ is($bar_config->{mode}, 'dock', 'dock mode');
 is($bar_config->{position}, 'top', 'position top');
 is_deeply($bar_config->{outputs}, [ 'HDMI1', 'HDMI2' ], 'outputs ok');
 is($bar_config->{tray_output}, 'HDMI2', 'tray_output ok');
+is($bar_config->{tray_padding}, 0, 'tray_padding ok');
 is($bar_config->{font}, 'Terminus', 'font ok');
 is($bar_config->{socket_path}, '/tmp/foobar', 'socket_path ok');
 is_deeply($bar_config->{colors},
@@ -151,6 +155,9 @@ is_deeply($bar_config->{colors},
         urgent_workspace_border => '#2f343a',
         urgent_workspace_text => '#ffffff',
         urgent_workspace_bg => '#900000',
+        binding_mode_border => '#abc123',
+        binding_mode_text => '#ababab',
+        binding_mode_bg => '#123abc',
     }, 'colors ok');
 
 exit_gracefully($pid);

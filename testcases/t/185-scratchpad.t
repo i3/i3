@@ -377,7 +377,7 @@ sub verify_scratchpad_move_with_visible_scratch_con {
     # this should bring up window 1
     cmd 'scratchpad show';
 
-    my $ws = get_ws($first);
+    $ws = get_ws($first);
     is(scalar @{$ws->{floating_nodes}}, 1, 'one floating node on ws1');
     is($x->input_focus, $window1->id, "showed the correct scratchpad window1");
 

@@ -60,48 +60,14 @@ is($focus, $bottom->id, "Bottom window focused (wrapping to the top works)");
 $focus = focus_after('focus down');
 is($focus, $top->id, "Top window focused (wrapping to the bottom works)");
 
-###############################################
-# Test focus with empty containers and colspan
-###############################################
+#####################################################################
+# Test focus is only successful if there was a window that could be
+# matched.
+#####################################################################
 
-#my $otmp = get_unused_workspace();
-#$i3->command("workspace $otmp")->recv;
-#
-#$top = i3test::open_standard_window($x);
-#$bottom = i3test::open_standard_window($x);
-#sleep 0.25;
-#
-#$focus = focus_after("mj");
-#$focus = focus_after("mh");
-#$focus = focus_after("k");
-#is($focus, $bottom->id, "Selecting top window without snapping doesn't work");
-#
-#$focus = focus_after("sl");
-#is($focus, $bottom->id, "Bottom window focused");
-#
-#$focus = focus_after("k");
-#is($focus, $top->id, "Top window focused");
-#
-## Same thing, but left/right instead of top/bottom
-#
-#my $o2tmp = get_unused_workspace();
-#$i3->command("workspace $o2tmp")->recv;
-#
-#my $left = i3test::open_standard_window($x);
-#my $right = i3test::open_standard_window($x);
-#sleep 0.25;
-#
-#$focus = focus_after("ml");
-#$focus = focus_after("h");
-#$focus = focus_after("mk");
-#$focus = focus_after("l");
-#is($focus, $left->id, "Selecting right window without snapping doesn't work");
-#
-#$focus = focus_after("sj");
-#is($focus, $left->id, "left window focused");
-#
-#$focus = focus_after("l");
-#is($focus, $right->id, "right window focused");
+my $result = cmd '[con_mark=__does_not_exist] focus';
+is($result->[0]->{success}, 0, 'focus is unsuccessful if no window was matched');
 
+#####################################################################
 
 done_testing;
