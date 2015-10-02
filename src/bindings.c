@@ -319,6 +319,7 @@ void translate_keysyms(void) {
         return;
     }
 
+    bool has_errors = false;
     Binding *bind;
     TAILQ_FOREACH(bind, bindings, bindings) {
         if (bind->input_type == B_MOUSE) {
@@ -389,6 +390,21 @@ void translate_keysyms(void) {
             sasprintf(&tmp, "%s %d", keycodes, bind->translated_to[n]);
             free(keycodes);
             keycodes = tmp;
+
+            /* check for duplicate bindings */
+            Binding *check;
+            TAILQ_FOREACH(check, bindings, bindings) {
+                if (check == bind)
+                    continue;
+                if (check->symbol != NULL)
+                    continue;
+                if (check->keycode != bind->translated_to[n] ||
+                    check->event_state_mask != bind->event_state_mask ||
+                    check->release != bind->release)
+                    continue;
+                has_errors = true;
+                ELOG("Duplicate keybinding in config file:\n  keysym = %s, keycode = %d, state_mask = 0x%x\n", bind->symbol, check->keycode, bind->event_state_mask);
+            }
         }
         DLOG("state=0x%x, cfg=\"%s\", sym=0x%x → keycodes%s (%d)\n",
              bind->event_state_mask, bind->symbol, keysym, keycodes, bind->number_keycodes);
@@ -396,6 +412,10 @@ void translate_keysyms(void) {
     }
 
     xkb_state_unref(dummy_state);
+
+    if (has_errors) {
+        start_config_error_nagbar(current_configpath, true);
+    }
 }
 
 /*
@@ -514,8 +534,6 @@ void check_for_duplicate_bindings(struct context *context) {
 
             /* Check if one is using keysym while the other is using bindsym.
              * If so, skip. */
-            /* XXX: It should be checked at a later place (when translating the
-             * keysym to keycodes) if there are any duplicates */
             if ((bind->symbol == NULL && current->symbol != NULL) ||
                 (bind->symbol != NULL && current->symbol == NULL))
                 continue;
