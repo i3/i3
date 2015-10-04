@@ -45,3 +45,9 @@ bool match_matches_window(Match *match, i3Window *window);
  *
  */
 void match_free(Match *match);
+
+/**
+ * Interprets a ctype=cvalue pair and adds it to the given match specification.
+ *
+ */
+void match_parse_property(Match *match, const char *ctype, const char *cvalue);

@@ -254,3 +254,112 @@ void match_free(Match *match) {
     FREE(match->mark);
     FREE(match->window_role);
 }
+
+/*
+ * Interprets a ctype=cvalue pair and adds it to the given match specification.
+ *
+ */
+void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
+    assert(match != NULL);
+    DLOG("ctype=*%s*, cvalue=*%s*\n", ctype, cvalue);
+
+    if (strcmp(ctype, "class") == 0) {
+        match->class = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "instance") == 0) {
+        match->instance = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "window_role") == 0) {
+        match->window_role = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "con_id") == 0) {
+        char *end;
+        long parsed = strtol(cvalue, &end, 10);
+        if (parsed == LONG_MIN ||
+            parsed == LONG_MAX ||
+            parsed < 0 ||
+            (end && *end != '\0')) {
+            ELOG("Could not parse con id \"%s\"\n", cvalue);
+        } else {
+            match->con_id = (Con *)parsed;
+            DLOG("id as int = %p\n", match->con_id);
+        }
+        return;
+    }
+
+    if (strcmp(ctype, "id") == 0) {
+        char *end;
+        long parsed = strtol(cvalue, &end, 10);
+        if (parsed == LONG_MIN ||
+            parsed == LONG_MAX ||
+            parsed < 0 ||
+            (end && *end != '\0')) {
+            ELOG("Could not parse window id \"%s\"\n", cvalue);
+        } else {
+            match->id = parsed;
+            DLOG("window id as int = %d\n", match->id);
+        }
+        return;
+    }
+
+    if (strcmp(ctype, "window_type") == 0) {
+        if (strcasecmp(cvalue, "normal") == 0)
+            match->window_type = A__NET_WM_WINDOW_TYPE_NORMAL;
+        else if (strcasecmp(cvalue, "dialog") == 0)
+            match->window_type = A__NET_WM_WINDOW_TYPE_DIALOG;
+        else if (strcasecmp(cvalue, "utility") == 0)
+            match->window_type = A__NET_WM_WINDOW_TYPE_UTILITY;
+        else if (strcasecmp(cvalue, "toolbar") == 0)
+            match->window_type = A__NET_WM_WINDOW_TYPE_TOOLBAR;
+        else if (strcasecmp(cvalue, "splash") == 0)
+            match->window_type = A__NET_WM_WINDOW_TYPE_SPLASH;
+        else if (strcasecmp(cvalue, "menu") == 0)
+            match->window_type = A__NET_WM_WINDOW_TYPE_MENU;
+        else if (strcasecmp(cvalue, "dropdown_menu") == 0)
+            match->window_type = A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU;
+        else if (strcasecmp(cvalue, "popup_menu") == 0)
+            match->window_type = A__NET_WM_WINDOW_TYPE_POPUP_MENU;
+        else if (strcasecmp(cvalue, "tooltip") == 0)
+            match->window_type = A__NET_WM_WINDOW_TYPE_TOOLTIP;
+        else
+            ELOG("unknown window_type value \"%s\"\n", cvalue);
+
+        return;
+    }
+
+    if (strcmp(ctype, "con_mark") == 0) {
+        match->mark = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "title") == 0) {
+        match->title = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "urgent") == 0) {
+        if (strcasecmp(cvalue, "latest") == 0 ||
+            strcasecmp(cvalue, "newest") == 0 ||
+            strcasecmp(cvalue, "recent") == 0 ||
+            strcasecmp(cvalue, "last") == 0) {
+            match->urgent = U_LATEST;
+        } else if (strcasecmp(cvalue, "oldest") == 0 ||
+                   strcasecmp(cvalue, "first") == 0) {
+            match->urgent = U_OLDEST;
+        }
+        return;
+    }
+
+    if (strcmp(ctype, "workspace") == 0) {
+        match->workspace = regex_new(cvalue);
+        return;
+    }
+
+    ELOG("Unknown criterion: %s\n", ctype);
+}
