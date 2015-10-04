@@ -122,7 +122,7 @@ static void push_string(const char *identifier, const char *str) {
     /* When we arrive here, the stack is full. This should not happen and
      * means there’s either a bug in this parser or the specification
      * contains a command with more than 10 identified tokens. */
-    fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
+    fprintf(stderr, "BUG: config_parser stack full. This means either a bug "
                     "in the code, or a new command which contains more than "
                     "10 identified tokens.\n");
     exit(1);
@@ -142,7 +142,7 @@ static void push_long(const char *identifier, long num) {
     /* When we arrive here, the stack is full. This should not happen and
      * means there’s either a bug in this parser or the specification
      * contains a command with more than 10 identified tokens. */
-    fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
+    fprintf(stderr, "BUG: config_parser stack full. This means either a bug "
                     "in the code, or a new command which contains more than "
                     "10 identified tokens.\n");
     exit(1);
@@ -177,53 +177,6 @@ static void clear_stack(void) {
         stack[c].val.num = 0;
     }
 }
-
-// TODO: remove this if it turns out we don’t need it for testing.
-#if 0
-/*******************************************************************************
- * A dynamically growing linked list which holds the criteria for the current
- * command.
- ******************************************************************************/
-
-typedef struct criterion {
-    char *type;
-    char *value;
-
-    TAILQ_ENTRY(criterion) criteria;
-} criterion;
-
-static TAILQ_HEAD(criteria_head, criterion) criteria =
-  TAILQ_HEAD_INITIALIZER(criteria);
-
-/*
- * Stores the given type/value in the list of criteria.
- * Accepts a pointer as first argument, since it is 'call'ed by the parser.
- *
- */
-static void push_criterion(void *unused_criteria, const char *type,
-                           const char *value) {
-    struct criterion *criterion = smalloc(sizeof(struct criterion));
-    criterion->type = sstrdup(type);
-    criterion->value = sstrdup(value);
-    TAILQ_INSERT_TAIL(&criteria, criterion, criteria);
-}
-
-/*
- * Clears the criteria linked list.
- * Accepts a pointer as first argument, since it is 'call'ed by the parser.
- *
- */
-static void clear_criteria(void *unused_criteria) {
-    struct criterion *criterion;
-    while (!TAILQ_EMPTY(&criteria)) {
-        criterion = TAILQ_FIRST(&criteria);
-        free(criterion->type);
-        free(criterion->value);
-        TAILQ_REMOVE(&criteria, criterion, criteria);
-        free(criterion);
-    }
-}
-#endif
 
 /*******************************************************************************
  * The parser itself.

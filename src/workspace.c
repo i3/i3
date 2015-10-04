@@ -918,7 +918,7 @@ Con *workspace_encapsulate(Con *ws) {
  * Move the given workspace to the specified output.
  * This returns true if and only if moving the workspace was successful.
  */
-bool workspace_move_to_output(Con *ws, char *name) {
+bool workspace_move_to_output(Con *ws, const char *name) {
     LOG("Trying to move workspace %p / %s to output \"%s\".\n", ws, ws->name, name);
 
     Con *current_output_con = con_get_output(ws);

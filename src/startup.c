@@ -261,7 +261,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
  * Renames workspaces that are mentioned in the startup sequences.
  *
  */
-void startup_sequence_rename_workspace(char *old_name, char *new_name) {
+void startup_sequence_rename_workspace(const char *old_name, const char *new_name) {
     struct Startup_Sequence *current;
     TAILQ_FOREACH(current, &startup_sequences, sequences) {
         if (strcmp(current->workspace, old_name) != 0)

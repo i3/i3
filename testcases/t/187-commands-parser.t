@@ -216,7 +216,7 @@ is(parser_calls('workspace "foo\\\\\\"bar"'),
 ################################################################################
 
 is(parser_calls("resize shrink width 10 px or"),
-   "ERROR: Expected one of these tokens: <word>\n" .
+   "ERROR: Expected one of these tokens: <number>\n" .
    "ERROR: Your command: resize shrink width 10 px or\n" .
    "ERROR:                                           ",
    "error for resize command with incomplete 'or'-construction ok");

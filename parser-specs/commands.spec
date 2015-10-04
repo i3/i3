@@ -225,10 +225,10 @@ state RESIZE_DIRECTION:
       -> RESIZE_PX
 
 state RESIZE_PX:
-  resize_px = word
+  resize_px = number
       -> RESIZE_TILING
   end
-      -> call cmd_resize($way, $direction, "10", "10")
+      -> call cmd_resize($way, $direction, 10, 10)
 
 state RESIZE_TILING:
   'px'
@@ -236,29 +236,29 @@ state RESIZE_TILING:
   'or'
       -> RESIZE_TILING_OR
   end
-      -> call cmd_resize($way, $direction, $resize_px, "10")
+      -> call cmd_resize($way, $direction, &resize_px, 10)
 
 state RESIZE_TILING_OR:
-  resize_ppt = word
+  resize_ppt = number
       -> RESIZE_TILING_FINAL
 
 state RESIZE_TILING_FINAL:
   'ppt', end
-      -> call cmd_resize($way, $direction, $resize_px, $resize_ppt)
+      -> call cmd_resize($way, $direction, &resize_px, &resize_ppt)
 
 state RESIZE_SET:
-  width = word
+  width = number
       -> RESIZE_WIDTH
 
 state RESIZE_WIDTH:
   'px'
       ->
-  height = word
+  height = number
       -> RESIZE_HEIGHT
 
 state RESIZE_HEIGHT:
   'px', end
-      -> call cmd_size($width, $height)
+      -> call cmd_resize_set(&width, &height)
 
 # rename workspace <name> to <name>
 # rename workspace to <name>
@@ -320,16 +320,16 @@ state MOVE:
       -> MOVE_TO_ABSOLUTE_POSITION
 
 state MOVE_DIRECTION:
-  pixels = word
+  pixels = number
       -> MOVE_DIRECTION_PX
   end
-      -> call cmd_move_direction($direction, "10")
+      -> call cmd_move_direction($direction, 10)
 
 state MOVE_DIRECTION_PX:
   'px'
-      -> call cmd_move_direction($direction, $pixels)
+      -> call cmd_move_direction($direction, &pixels)
   end
-      -> call cmd_move_direction($direction, $pixels)
+      -> call cmd_move_direction($direction, &pixels)
 
 state MOVE_WORKSPACE:
   'to '
@@ -370,18 +370,18 @@ state MOVE_TO_POSITION:
       -> call cmd_move_window_to_center($method)
   'mouse', 'cursor', 'pointer'
       -> call cmd_move_window_to_mouse()
-  coord_x = word
+  coord_x = number
       -> MOVE_TO_POSITION_X
 
 state MOVE_TO_POSITION_X:
   'px'
       ->
-  coord_y = word
+  coord_y = number
       -> MOVE_TO_POSITION_Y
 
 state MOVE_TO_POSITION_Y:
   'px', end
-      -> call cmd_move_window_to_position($method, $coord_x, $coord_y)
+      -> call cmd_move_window_to_position($method, &coord_x, &coord_y)
 
 # mode <string>
 state MODE:

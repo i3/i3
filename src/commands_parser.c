@@ -73,7 +73,14 @@ typedef struct tokenptr {
 struct stack_entry {
     /* Just a pointer, not dynamically allocated. */
     const char *identifier;
-    char *str;
+    enum {
+        STACK_STR = 0,
+        STACK_LONG = 1,
+    } type;
+    union {
+        char *str;
+        long num;
+    } val;
 };
 
 /* 10 entries should be enough for everybody. */
@@ -90,7 +97,8 @@ static void push_string(const char *identifier, char *str) {
             continue;
         /* Found a free slot, let’s store it here. */
         stack[c].identifier = identifier;
-        stack[c].str = str;
+        stack[c].val.str = str;
+        stack[c].type = STACK_STR;
         return;
     }
 
@@ -103,73 +111,61 @@ static void push_string(const char *identifier, char *str) {
     exit(1);
 }
 
-// XXX: ideally, this would be const char. need to check if that works with all
-// called functions.
-static char *get_string(const char *identifier) {
+// TODO move to a common util
+static void push_long(const char *identifier, long num) {
+    for (int c = 0; c < 10; c++) {
+        if (stack[c].identifier != NULL) {
+            continue;
+        }
+
+        stack[c].identifier = identifier;
+        stack[c].val.num = num;
+        stack[c].type = STACK_LONG;
+        return;
+    }
+
+    /* When we arrive here, the stack is full. This should not happen and
+     * means there’s either a bug in this parser or the specification
+     * contains a command with more than 10 identified tokens. */
+    fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
+                    "in the code, or a new command which contains more than "
+                    "10 identified tokens.\n");
+    exit(1);
+}
+
+// TODO move to a common util
+static const char *get_string(const char *identifier) {
     for (int c = 0; c < 10; c++) {
         if (stack[c].identifier == NULL)
             break;
         if (strcmp(identifier, stack[c].identifier) == 0)
-            return stack[c].str;
+            return stack[c].val.str;
     }
     return NULL;
 }
 
+// TODO move to a common util
+static long get_long(const char *identifier) {
+    for (int c = 0; c < 10; c++) {
+        if (stack[c].identifier == NULL)
+            break;
+        if (strcmp(identifier, stack[c].identifier) == 0)
+            return stack[c].val.num;
+    }
+
+    return 0;
+}
+
+// TODO move to a common util
 static void clear_stack(void) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].str != NULL)
-            free(stack[c].str);
+        if (stack[c].type == STACK_STR && stack[c].val.str != NULL)
+            free(stack[c].val.str);
         stack[c].identifier = NULL;
-        stack[c].str = NULL;
+        stack[c].val.str = NULL;
+        stack[c].val.num = 0;
     }
 }
-
-// TODO: remove this if it turns out we don’t need it for testing.
-#if 0
-/*******************************************************************************
- * A dynamically growing linked list which holds the criteria for the current
- * command.
- ******************************************************************************/
-
-typedef struct criterion {
-    char *type;
-    char *value;
-
-    TAILQ_ENTRY(criterion) criteria;
-} criterion;
-
-static TAILQ_HEAD(criteria_head, criterion) criteria =
-  TAILQ_HEAD_INITIALIZER(criteria);
-
-/*
- * Stores the given type/value in the list of criteria.
- * Accepts a pointer as first argument, since it is 'call'ed by the parser.
- *
- */
-static void push_criterion(void *unused_criteria, const char *type,
-                           const char *value) {
-    struct criterion *criterion = smalloc(sizeof(struct criterion));
-    criterion->type = sstrdup(type);
-    criterion->value = sstrdup(value);
-    TAILQ_INSERT_TAIL(&criteria, criterion, criteria);
-}
-
-/*
- * Clears the criteria linked list.
- * Accepts a pointer as first argument, since it is 'call'ed by the parser.
- *
- */
-static void clear_criteria(void *unused_criteria) {
-    struct criterion *criterion;
-    while (!TAILQ_EMPTY(&criteria)) {
-        criterion = TAILQ_FIRST(&criteria);
-        free(criterion->type);
-        free(criterion->value);
-        TAILQ_REMOVE(&criteria, criterion, criteria);
-        free(criterion);
-    }
-}
-#endif
 
 /*******************************************************************************
  * The parser itself.
@@ -314,6 +310,29 @@ CommandResult *parse_command(const char *input, yajl_gen gen) {
                     break;
                 }
                 continue;
+            }
+
+            if (strcmp(token->name, "number") == 0) {
+                /* Handle numbers. We only accept decimal numbers for now. */
+                char *end = NULL;
+                errno = 0;
+                long int num = strtol(walk, &end, 10);
+                if ((errno == ERANGE && (num == LONG_MIN || num == LONG_MAX)) ||
+                    (errno != 0 && num == 0))
+                    continue;
+
+                /* No valid numbers found */
+                if (end == walk)
+                    continue;
+
+                if (token->identifier != NULL)
+                    push_long(token->identifier, num);
+
+                /* Set walk to the first non-number character */
+                walk = end;
+                next_state(token);
+                token_handled = true;
+                break;
             }
 
             if (strcmp(token->name, "string") == 0 ||
