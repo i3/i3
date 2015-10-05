@@ -64,6 +64,10 @@ static i3Font font;
 /* Icon size (based on font size) */
 int icon_size;
 
+xcb_visualtype_t *visual_type;
+uint8_t depth;
+xcb_colormap_t colormap;
+
 /* Overall height of the bar (based on font size) */
 int bar_height;
 
@@ -170,14 +174,17 @@ static void draw_separator(uint32_t x, struct status_block *block) {
     uint32_t center_x = x - sep_offset;
     if (config.separator_symbol == NULL) {
         /* Draw a classic one pixel, vertical separator. */
+        cairo_save(statusline_surface.cr);
+        cairo_set_operator(statusline_surface.cr, CAIRO_OPERATOR_SOURCE);
         cairo_set_source_color(&statusline_surface, colors.sep_fg);
         cairo_rectangle(statusline_surface.cr, center_x, logical_px(sep_voff_px), logical_px(1), bar_height - 2 * logical_px(sep_voff_px));
         cairo_fill(statusline_surface.cr);
+        cairo_restore(statusline_surface.cr);
     } else {
         /* Draw a custom separator. */
         uint32_t separator_x = MAX(x - block->sep_block_width, center_x - separator_symbol_width / 2);
         set_font_colors(statusline_surface.gc, colors.sep_fg.colorpixel, colors.bar_bg.colorpixel);
-        draw_text(config.separator_symbol, statusline_surface.id, statusline_surface.gc,
+        draw_text(config.separator_symbol, statusline_surface.id, statusline_surface.gc, visual_type,
                   separator_x, logical_px(ws_voff_px), x - separator_x);
     }
 }
@@ -239,9 +246,11 @@ void refresh_statusline(bool use_short_text) {
         realloc_sl_buffer();
 
     /* Clear the statusline pixmap. */
+    cairo_save(statusline_surface.cr);
     cairo_set_source_color(&statusline_surface, colors.bar_bg);
-    cairo_rectangle(statusline_surface.cr, 0, 0, MAX(root_screen->width_in_pixels, statusline_width), bar_height);
-    cairo_fill(statusline_surface.cr);
+    cairo_set_operator(statusline_surface.cr, CAIRO_OPERATOR_SOURCE);
+    cairo_paint(statusline_surface.cr);
+    cairo_restore(statusline_surface.cr);
 
     /* Draw the text of each block. */
     uint32_t x = 0;
@@ -263,7 +272,8 @@ void refresh_statusline(bool use_short_text) {
         }
 
         set_font_colors(statusline_surface.gc, fg_color.colorpixel, colors.bar_bg.colorpixel);
-        draw_text(block->full_text, statusline_surface.id, statusline_surface.gc, x + block->x_offset, logical_px(ws_voff_px), block->width);
+        draw_text(block->full_text, statusline_surface.id, statusline_surface.gc, visual_type,
+                  x + block->x_offset, logical_px(ws_voff_px), block->width);
         x += block->width + block->sep_block_width + block->x_offset + block->x_append;
 
         /* If this is not the last block, draw a separator. */
@@ -699,11 +709,15 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 ELOG("No output found\n");
                 return;
             }
-            xcb_reparent_window(xcb_connection,
-                                client,
-                                output->bar.id,
-                                output->rect.w - icon_size - logical_px(config.tray_padding),
-                                logical_px(config.tray_padding));
+
+            xcb_void_cookie_t rcookie = xcb_reparent_window(xcb_connection,
+                                                            client,
+                                                            output->bar.id,
+                                                            output->rect.w - icon_size - logical_px(config.tray_padding),
+                                                            logical_px(config.tray_padding));
+            if (xcb_request_failed(rcookie, "Could not reparent window. Maybe it is using an incorrect depth/visual?"))
+                return;
+
             /* We reconfigure the window to use a reasonable size. The systray
              * specification explicitly says:
              *   Tray icons may be assigned any size by the system tray, and
@@ -1106,11 +1120,29 @@ char *init_xcb_early() {
     root_screen = xcb_aux_get_screen(xcb_connection, screen);
     xcb_root = root_screen->root;
 
+    depth = root_screen->root_depth;
+    colormap = root_screen->default_colormap;
+    visual_type = xcb_aux_find_visual_by_attrs(root_screen, -1, 32);
+    if (visual_type) {
+        depth = xcb_aux_get_depth_of_visual(root_screen, visual_type->visual_id);
+        colormap = xcb_generate_id(xcb_connection);
+        xcb_void_cookie_t cm_cookie = xcb_create_colormap_checked(xcb_connection,
+                                                                  XCB_COLORMAP_ALLOC_NONE,
+                                                                  colormap,
+                                                                  xcb_root,
+                                                                  visual_type->visual_id);
+        if (xcb_request_failed(cm_cookie, "Could not allocate colormap")) {
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        visual_type = get_visualtype(root_screen);
+    }
+
     /* We draw the statusline to a seperate pixmap, because it looks the same on all bars and
      * this way, we can choose to crop it */
     xcb_pixmap_t statusline_id = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               root_screen->root_depth,
+                                                               depth,
                                                                statusline_id,
                                                                xcb_root,
                                                                root_screen->width_in_pixels,
@@ -1248,17 +1280,17 @@ void init_tray(void) {
 
     /* tray support: we need a window to own the selection */
     selwin = xcb_generate_id(xcb_connection);
-    uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
-    uint32_t selval[] = {1};
+    uint32_t selmask = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_COLORMAP;
+    uint32_t selval[] = {root_screen->black_pixel, root_screen->black_pixel, 1, colormap};
     xcb_create_window(xcb_connection,
-                      root_screen->root_depth,
+                      depth,
                       selwin,
                       xcb_root,
                       -1, -1,
                       1, 1,
                       0,
                       XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                      root_screen->root_visual,
+                      visual_type->visual_id,
                       selmask,
                       selval);
 
@@ -1272,6 +1304,14 @@ void init_tray(void) {
                         32,
                         1,
                         &orientation);
+    xcb_change_property(xcb_connection,
+                        XCB_PROP_MODE_REPLACE,
+                        selwin,
+                        atoms[_NET_SYSTEM_TRAY_VISUAL],
+                        XCB_ATOM_VISUALID,
+                        32,
+                        1,
+                        &visual_type->visual_id);
 
     init_tray_colors();
 
@@ -1473,7 +1513,7 @@ void realloc_sl_buffer(void) {
 
     xcb_pixmap_t statusline_id = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               root_screen->root_depth,
+                                                               depth,
                                                                statusline_id,
                                                                xcb_root,
                                                                MAX(root_screen->width_in_pixels, statusline_width),
@@ -1551,41 +1591,44 @@ void reconfig_windows(bool redraw_bars) {
 
             xcb_window_t bar_id = xcb_generate_id(xcb_connection);
             xcb_pixmap_t buffer_id = xcb_generate_id(xcb_connection);
-            mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
-            /* Black background */
+            mask = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK | XCB_CW_COLORMAP;
+
             values[0] = colors.bar_bg.colorpixel;
+            values[1] = root_screen->black_pixel;
             /* If hide_on_modifier is set to hide or invisible mode, i3 is not supposed to manage our bar windows */
-            values[1] = (config.hide_on_modifier == M_DOCK ? 0 : 1);
+            values[2] = (config.hide_on_modifier == M_DOCK ? 0 : 1);
             /* We enable the following EventMask fields:
              * EXPOSURE, to get expose events (we have to re-draw then)
              * SUBSTRUCTURE_REDIRECT, to get ConfigureRequests when the tray
              *                        child windows use ConfigureWindow
              * BUTTON_PRESS, to handle clicks on the workspace buttons
              * */
-            values[2] = XCB_EVENT_MASK_EXPOSURE |
+            values[3] = XCB_EVENT_MASK_EXPOSURE |
                         XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
                         XCB_EVENT_MASK_BUTTON_PRESS;
             if (config.hide_on_modifier == M_DOCK) {
                 /* If the bar is normally visible, catch visibility change events to suspend
                  * the status process when the bar is obscured by full-screened windows.  */
-                values[2] |= XCB_EVENT_MASK_VISIBILITY_CHANGE;
+                values[3] |= XCB_EVENT_MASK_VISIBILITY_CHANGE;
                 walk->visible = true;
             }
+            values[4] = colormap;
+
             xcb_void_cookie_t win_cookie = xcb_create_window_checked(xcb_connection,
-                                                                     root_screen->root_depth,
+                                                                     depth,
                                                                      bar_id,
                                                                      xcb_root,
                                                                      walk->rect.x, walk->rect.y + walk->rect.h - bar_height,
                                                                      walk->rect.w, bar_height,
                                                                      0,
                                                                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                                                     root_screen->root_visual,
+                                                                     visual_type->visual_id,
                                                                      mask,
                                                                      values);
 
             /* The double-buffer we use to render stuff off-screen */
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    root_screen->root_depth,
+                                                                    depth,
                                                                     buffer_id,
                                                                     bar_id,
                                                                     walk->rect.w,
@@ -1701,7 +1744,7 @@ void reconfig_windows(bool redraw_bars) {
 
             DLOG("Recreating buffer for output %s\n", walk->name);
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    root_screen->root_depth,
+                                                                    depth,
                                                                     walk->buffer.id,
                                                                     walk->bar.id,
                                                                     walk->rect.w,
@@ -1766,10 +1809,13 @@ void draw_bars(bool unhide) {
             /* Oh shit, an active output without an own bar. Create it now! */
             reconfig_windows(false);
         }
+
         /* First things first: clear the backbuffer */
+        cairo_save(outputs_walk->buffer.cr);
         cairo_set_source_color(&(outputs_walk->buffer), colors.bar_bg);
-        cairo_rectangle(outputs_walk->buffer.cr, 0, 0, outputs_walk->rect.w, bar_height);
-        cairo_fill(outputs_walk->buffer.cr);
+        cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
+        cairo_paint(outputs_walk->buffer.cr);
+        cairo_restore(outputs_walk->buffer.cr);
 
         if (!config.disable_ws) {
             i3_ws *ws_walk;
@@ -1798,20 +1844,27 @@ void draw_bars(bool unhide) {
                     unhide = true;
                 }
 
+                cairo_save(outputs_walk->buffer.cr);
+                cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
+
+                /* Draw the border of the button. */
                 cairo_set_source_color(&(outputs_walk->buffer), border_color);
                 cairo_rectangle(outputs_walk->buffer.cr, workspace_width, logical_px(1),
                                 ws_walk->name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
                                 font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
                 cairo_fill(outputs_walk->buffer.cr);
 
+                /* Draw the inside of the button. */
                 cairo_set_source_color(&(outputs_walk->buffer), bg_color);
                 cairo_rectangle(outputs_walk->buffer.cr, workspace_width + logical_px(1), 2 * logical_px(1),
                                 ws_walk->name_width + 2 * logical_px(ws_hoff_px),
                                 font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
                 cairo_fill(outputs_walk->buffer.cr);
 
+                cairo_restore(outputs_walk->buffer.cr);
+
                 set_font_colors(outputs_walk->buffer.gc, fg_color.colorpixel, bg_color.colorpixel);
-                draw_text(ws_walk->name, outputs_walk->buffer.id, outputs_walk->buffer.gc,
+                draw_text(ws_walk->name, outputs_walk->buffer.id, outputs_walk->buffer.gc, visual_type,
                           workspace_width + logical_px(ws_hoff_px) + logical_px(1),
                           logical_px(ws_voff_px),
                           ws_walk->name_width);
@@ -1828,6 +1881,9 @@ void draw_bars(bool unhide) {
             color_t fg_color = colors.binding_mode_fg;
             color_t bg_color = colors.binding_mode_bg;
 
+            cairo_save(outputs_walk->buffer.cr);
+            cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
+
             cairo_set_source_color(&(outputs_walk->buffer), colors.binding_mode_border);
             cairo_rectangle(outputs_walk->buffer.cr, workspace_width, logical_px(1),
                             binding.width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
@@ -1840,10 +1896,13 @@ void draw_bars(bool unhide) {
                             font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
             cairo_fill(outputs_walk->buffer.cr);
 
+            cairo_restore(outputs_walk->buffer.cr);
+
             set_font_colors(outputs_walk->buffer.gc, fg_color.colorpixel, bg_color.colorpixel);
             draw_text(binding.name,
                       outputs_walk->buffer.id,
                       outputs_walk->buffer.gc,
+                      visual_type,
                       workspace_width + logical_px(ws_hoff_px) + logical_px(1),
                       logical_px(ws_voff_px),
                       binding.width);
@@ -1876,9 +1935,12 @@ void draw_bars(bool unhide) {
             int x_src = (int16_t)(statusline_width - visible_statusline_width);
             int x_dest = (int16_t)(outputs_walk->rect.w - tray_width - logical_px(sb_hoff_px) - visible_statusline_width);
 
+            cairo_save(outputs_walk->buffer.cr);
+            cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
             cairo_set_source_surface(outputs_walk->buffer.cr, statusline_surface.surface, x_dest - x_src, 0);
             cairo_rectangle(outputs_walk->buffer.cr, x_dest, 0, (int16_t)visible_statusline_width, (int16_t)bar_height);
             cairo_fill(outputs_walk->buffer.cr);
+            cairo_restore(outputs_walk->buffer.cr);
         }
 
         workspace_width = 0;
@@ -1906,9 +1968,14 @@ void redraw_bars(void) {
         if (!outputs_walk->active) {
             continue;
         }
+
+        cairo_save(outputs_walk->bar.cr);
+        cairo_set_operator(outputs_walk->bar.cr, CAIRO_OPERATOR_SOURCE);
         cairo_set_source_surface(outputs_walk->bar.cr, outputs_walk->buffer.surface, 0, 0);
         cairo_rectangle(outputs_walk->bar.cr, 0, 0, outputs_walk->rect.w, outputs_walk->rect.h);
         cairo_fill(outputs_walk->bar.cr);
+        cairo_restore(outputs_walk->bar.cr);
+
         xcb_flush(xcb_connection);
     }
 }

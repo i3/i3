@@ -552,7 +552,7 @@ void x_draw_decoration(Con *con) {
         FREE(formatted_mark);
         mark_width = predict_text_width(mark);
 
-        draw_text(mark, parent->pixmap, parent->pm_gc,
+        draw_text(mark, parent->pixmap, parent->pm_gc, NULL,
                   con->deco_rect.x + con->deco_rect.width - mark_width - logical_px(2),
                   con->deco_rect.y + text_offset_y, mark_width);
 
@@ -561,7 +561,7 @@ void x_draw_decoration(Con *con) {
 
     i3String *title = win->title_format == NULL ? win->name : window_parse_title_format(win);
     draw_text(title,
-              parent->pixmap, parent->pm_gc,
+              parent->pixmap, parent->pm_gc, NULL,
               con->deco_rect.x + logical_px(2) + indent_px, con->deco_rect.y + text_offset_y,
               con->deco_rect.width - logical_px(2) - indent_px - mark_width - logical_px(2));
     if (win->title_format != NULL)

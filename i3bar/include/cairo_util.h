@@ -15,6 +15,7 @@ typedef struct color_t {
     double red;
     double green;
     double blue;
+    double alpha;
 
     /* For compatibility, we also store the colorpixel for now. */
     uint32_t colorpixel;

@@ -196,7 +196,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 
     /* restore font color */
     set_font_colors(pixmap_gc, color_text, color_background);
-    draw_text(prompt, pixmap, pixmap_gc,
+    draw_text(prompt, pixmap, pixmap_gc, NULL,
               logical_px(4) + logical_px(4),
               logical_px(4) + logical_px(4),
               rect.width - logical_px(4) - logical_px(4));
@@ -264,7 +264,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         values[1] = color_button_background;
         set_font_colors(pixmap_gc, color_text, color_button_background);
         /* the x term seems to set left/right padding */
-        draw_text(buttons[c].label, pixmap, pixmap_gc,
+        draw_text(buttons[c].label, pixmap, pixmap_gc, NULL,
                   y - w - line_width + logical_px(6),
                   logical_px(4) + logical_px(3),
                   rect.width - y + w + line_width - logical_px(6));

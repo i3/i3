@@ -8,6 +8,7 @@
  */
 #include <stdlib.h>
 #include <err.h>
+#include <string.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
 #include <cairo/cairo-xcb.h>
@@ -16,7 +17,7 @@
 #include "libi3.h"
 
 xcb_connection_t *xcb_connection;
-xcb_screen_t *root_screen;
+xcb_visualtype_t *visual_type;
 
 /*
  * Initialize the cairo surface to represent the given drawable.
@@ -30,7 +31,7 @@ void cairo_surface_init(surface_t *surface, xcb_drawable_t drawable, int width, 
     if (xcb_request_failed(gc_cookie, "Could not create graphical context"))
         exit(EXIT_FAILURE);
 
-    surface->surface = cairo_xcb_surface_create(xcb_connection, surface->id, get_visualtype(root_screen), width, height);
+    surface->surface = cairo_xcb_surface_create(xcb_connection, surface->id, visual_type, width, height);
     surface->cr = cairo_create(surface->surface);
 }
 
@@ -50,15 +51,25 @@ void cairo_surface_free(surface_t *surface) {
  *
  */
 color_t cairo_hex_to_color(const char *color) {
-    char groups[3][3] = {
+    char alpha[2];
+    if (strlen(color) == strlen("#rrggbbaa")) {
+        alpha[0] = color[7];
+        alpha[1] = color[8];
+    } else {
+        alpha[0] = alpha[1] = 'F';
+    }
+
+    char groups[4][3] = {
         {color[1], color[2], '\0'},
         {color[3], color[4], '\0'},
-        {color[5], color[6], '\0'}};
+        {color[5], color[6], '\0'},
+        {alpha[0], alpha[1], '\0'}};
 
     return (color_t){
         .red = strtol(groups[0], NULL, 16) / 255.0,
         .green = strtol(groups[1], NULL, 16) / 255.0,
         .blue = strtol(groups[2], NULL, 16) / 255.0,
+        .alpha = strtol(groups[3], NULL, 16) / 255.0,
         .colorpixel = get_colorpixel(color)};
 }
 
@@ -67,5 +78,5 @@ color_t cairo_hex_to_color(const char *color) {
  *
  */
 void cairo_set_source_color(surface_t *surface, color_t color) {
-    cairo_set_source_rgb(surface->cr, color.red, color.green, color.blue);
+    cairo_set_source_rgba(surface->cr, color.red, color.green, color.blue, color.alpha);
 }
