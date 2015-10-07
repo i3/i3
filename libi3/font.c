@@ -29,6 +29,7 @@ static xcb_visualtype_t *root_visual_type;
 static double pango_font_red;
 static double pango_font_green;
 static double pango_font_blue;
+static double pango_font_alpha;
 
 /* Necessary to track whether the dpi changes and trigger a LOG() message,
  * which is more easily visible to users. */
@@ -123,7 +124,8 @@ static void draw_text_pango(const char *text, size_t text_len,
         pango_layout_set_text(layout, text, text_len);
 
     /* Do the drawing */
-    cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
+    cairo_set_source_rgba(cr, pango_font_red, pango_font_green, pango_font_blue, pango_font_alpha);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     pango_cairo_update_layout(cr, layout);
     pango_layout_get_pixel_size(layout, NULL, &height);
     /* Center the piece of text vertically if its height is smaller than the
@@ -332,6 +334,7 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
             pango_font_red = ((foreground >> 16) & 0xff) / 255.0;
             pango_font_green = ((foreground >> 8) & 0xff) / 255.0;
             pango_font_blue = (foreground & 0xff) / 255.0;
+            pango_font_alpha = ((foreground >> 24) & 0xff) / 255.0;
             break;
 #endif
         default:
