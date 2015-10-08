@@ -179,13 +179,13 @@ static void draw_separator(uint32_t x, struct status_block *block) {
         cairo_set_source_color(&statusline_surface, colors.sep_fg);
         cairo_rectangle(statusline_surface.cr, center_x, logical_px(sep_voff_px), logical_px(1), bar_height - 2 * logical_px(sep_voff_px));
         cairo_fill(statusline_surface.cr);
+        cairo_surface_flush(statusline_surface.surface);
         cairo_restore(statusline_surface.cr);
     } else {
         /* Draw a custom separator. */
         uint32_t separator_x = MAX(x - block->sep_block_width, center_x - separator_symbol_width / 2);
-        set_font_colors(statusline_surface.gc, colors.sep_fg.colorpixel, colors.bar_bg.colorpixel);
-        draw_text(config.separator_symbol, statusline_surface.id, statusline_surface.gc, visual_type,
-                  separator_x, logical_px(ws_voff_px), x - separator_x);
+        cairo_draw_text(config.separator_symbol, &statusline_surface, colors.sep_fg, colors.bar_bg,
+                        separator_x, logical_px(ws_voff_px), x - separator_x);
     }
 }
 
@@ -250,6 +250,7 @@ void refresh_statusline(bool use_short_text) {
     cairo_set_source_color(&statusline_surface, colors.bar_bg);
     cairo_set_operator(statusline_surface.cr, CAIRO_OPERATOR_SOURCE);
     cairo_paint(statusline_surface.cr);
+    cairo_surface_flush(statusline_surface.surface);
     cairo_restore(statusline_surface.cr);
 
     /* Draw the text of each block. */
@@ -267,13 +268,13 @@ void refresh_statusline(bool use_short_text) {
             cairo_set_source_color(&statusline_surface, colors.urgent_ws_bg);
             cairo_rectangle(statusline_surface.cr, x - logical_px(2), logical_px(1), block->width + logical_px(4), bar_height - logical_px(2));
             cairo_fill(statusline_surface.cr);
+            cairo_surface_flush(statusline_surface.surface);
         } else {
             fg_color = (block->color ? cairo_hex_to_color(block->color) : colors.bar_fg);
         }
 
-        set_font_colors(statusline_surface.gc, fg_color.colorpixel, colors.bar_bg.colorpixel);
-        draw_text(block->full_text, statusline_surface.id, statusline_surface.gc, visual_type,
-                  x + block->x_offset, logical_px(ws_voff_px), block->width);
+        cairo_draw_text(block->full_text, &statusline_surface, fg_color, colors.bar_bg,
+                        x + block->x_offset, logical_px(ws_voff_px), block->width);
         x += block->width + block->sep_block_width + block->x_offset + block->x_append;
 
         /* If this is not the last block, draw a separator. */
@@ -1815,6 +1816,7 @@ void draw_bars(bool unhide) {
         cairo_set_source_color(&(outputs_walk->buffer), colors.bar_bg);
         cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
         cairo_paint(outputs_walk->buffer.cr);
+        cairo_surface_flush(outputs_walk->buffer.surface);
         cairo_restore(outputs_walk->buffer.cr);
 
         if (!config.disable_ws) {
@@ -1844,30 +1846,32 @@ void draw_bars(bool unhide) {
                     unhide = true;
                 }
 
+                /* Draw the border of the button. */
                 cairo_save(outputs_walk->buffer.cr);
                 cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
-
-                /* Draw the border of the button. */
                 cairo_set_source_color(&(outputs_walk->buffer), border_color);
                 cairo_rectangle(outputs_walk->buffer.cr, workspace_width, logical_px(1),
                                 ws_walk->name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
                                 font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
                 cairo_fill(outputs_walk->buffer.cr);
+                cairo_surface_flush(outputs_walk->buffer.surface);
+                cairo_restore(outputs_walk->buffer.cr);
 
                 /* Draw the inside of the button. */
+                cairo_save(outputs_walk->buffer.cr);
+                cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
                 cairo_set_source_color(&(outputs_walk->buffer), bg_color);
                 cairo_rectangle(outputs_walk->buffer.cr, workspace_width + logical_px(1), 2 * logical_px(1),
                                 ws_walk->name_width + 2 * logical_px(ws_hoff_px),
                                 font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
                 cairo_fill(outputs_walk->buffer.cr);
-
+                cairo_surface_flush(outputs_walk->buffer.surface);
                 cairo_restore(outputs_walk->buffer.cr);
 
-                set_font_colors(outputs_walk->buffer.gc, fg_color.colorpixel, bg_color.colorpixel);
-                draw_text(ws_walk->name, outputs_walk->buffer.id, outputs_walk->buffer.gc, visual_type,
-                          workspace_width + logical_px(ws_hoff_px) + logical_px(1),
-                          logical_px(ws_voff_px),
-                          ws_walk->name_width);
+                cairo_draw_text(ws_walk->name, &(outputs_walk->buffer), fg_color, bg_color,
+                                workspace_width + logical_px(ws_hoff_px) + logical_px(1),
+                                logical_px(ws_voff_px),
+                                ws_walk->name_width);
 
                 workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + ws_walk->name_width;
                 if (TAILQ_NEXT(ws_walk, tailq) != NULL)
@@ -1883,29 +1887,28 @@ void draw_bars(bool unhide) {
 
             cairo_save(outputs_walk->buffer.cr);
             cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
-
             cairo_set_source_color(&(outputs_walk->buffer), colors.binding_mode_border);
             cairo_rectangle(outputs_walk->buffer.cr, workspace_width, logical_px(1),
                             binding.width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
                             font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
             cairo_fill(outputs_walk->buffer.cr);
+            cairo_surface_flush(outputs_walk->buffer.surface);
+            cairo_restore(outputs_walk->buffer.cr);
 
+            cairo_save(outputs_walk->buffer.cr);
+            cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
             cairo_set_source_color(&(outputs_walk->buffer), bg_color);
             cairo_rectangle(outputs_walk->buffer.cr, workspace_width + logical_px(1), 2 * logical_px(1),
                             binding.width + 2 * logical_px(ws_hoff_px),
                             font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
             cairo_fill(outputs_walk->buffer.cr);
-
+            cairo_surface_flush(outputs_walk->buffer.surface);
             cairo_restore(outputs_walk->buffer.cr);
 
-            set_font_colors(outputs_walk->buffer.gc, fg_color.colorpixel, bg_color.colorpixel);
-            draw_text(binding.name,
-                      outputs_walk->buffer.id,
-                      outputs_walk->buffer.gc,
-                      visual_type,
-                      workspace_width + logical_px(ws_hoff_px) + logical_px(1),
-                      logical_px(ws_voff_px),
-                      binding.width);
+            cairo_draw_text(binding.name, &(outputs_walk->buffer), fg_color, bg_color,
+                            workspace_width + logical_px(ws_hoff_px) + logical_px(1),
+                            logical_px(ws_voff_px),
+                            binding.width);
 
             unhide = true;
             workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + binding.width;
@@ -1940,6 +1943,7 @@ void draw_bars(bool unhide) {
             cairo_set_source_surface(outputs_walk->buffer.cr, statusline_surface.surface, x_dest - x_src, 0);
             cairo_rectangle(outputs_walk->buffer.cr, x_dest, 0, (int16_t)visible_statusline_width, (int16_t)bar_height);
             cairo_fill(outputs_walk->buffer.cr);
+            cairo_surface_flush(outputs_walk->buffer.surface);
             cairo_restore(outputs_walk->buffer.cr);
         }
 
@@ -1974,6 +1978,7 @@ void redraw_bars(void) {
         cairo_set_source_surface(outputs_walk->bar.cr, outputs_walk->buffer.surface, 0, 0);
         cairo_rectangle(outputs_walk->bar.cr, 0, 0, outputs_walk->rect.w, outputs_walk->rect.h);
         cairo_fill(outputs_walk->bar.cr);
+        cairo_surface_flush(outputs_walk->bar.surface);
         cairo_restore(outputs_walk->bar.cr);
 
         xcb_flush(xcb_connection);

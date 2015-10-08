@@ -64,3 +64,11 @@ color_t cairo_hex_to_color(const char *color);
  *
  */
 void cairo_set_source_color(surface_t *surface, color_t color);
+
+/**
+ * Draw the given text using libi3.
+ * This function also marks the surface dirty which is needed if other means of
+ * drawing are used. This will be the case when using XCB to draw text.
+ *
+ */
+void cairo_draw_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y, int max_width);
