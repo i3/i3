@@ -93,3 +93,53 @@ void cairo_draw_text(i3String *text, surface_t *surface, color_t fg_color, color
 
     cairo_surface_mark_dirty(surface->surface);
 }
+
+/**
+ * Draws a filled rectangle.
+ * This function is a convenience wrapper and takes care of flushing the
+ * surface as well as restoring the cairo state.
+ * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
+ *
+ */
+void cairo_draw_rectangle(surface_t *surface, color_t color, double x, double y, double w, double h) {
+    cairo_save(surface->cr);
+
+    /* Using the SOURCE operator will copy both color and alpha information directly
+     * onto the surface rather than blending it. This is a bit more efficient and
+     * allows better color control for the user when using opacity. */
+    cairo_set_operator(surface->cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_color(surface, color);
+
+    cairo_rectangle(surface->cr, x, y, w, h);
+    cairo_fill(surface->cr);
+
+    /* Make sure we flush the surface for any text drawing operations that could follow.
+     * Since we support drawing text via XCB, we need this. */
+    cairo_surface_flush(surface->surface);
+
+    cairo_restore(surface->cr);
+}
+
+/**
+ * Copies a surface onto another surface.
+ * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
+ *
+ */
+void cairo_copy_surface(surface_t *src, surface_t *dest, double src_x, double src_y,
+                        double dest_x, double dest_y, double dest_w, double dest_h) {
+    cairo_save(dest->cr);
+
+    /* Using the SOURCE operator will copy both color and alpha information directly
+     * onto the surface rather than blending it. This is a bit more efficient and
+     * allows better color control for the user when using opacity. */
+    cairo_set_operator(dest->cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_surface(dest->cr, src->surface, src_x, src_y);
+
+    cairo_rectangle(dest->cr, dest_x, dest_y, dest_w, dest_h);
+    cairo_fill(dest->cr);
+
+    /* Make sure we flush the surface for any text drawing operations that could follow.
+     * Since we support drawing text via XCB, we need this. */
+    cairo_surface_flush(dest->surface);
+    cairo_restore(dest->cr);
+}
