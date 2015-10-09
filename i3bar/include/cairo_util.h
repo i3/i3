@@ -15,6 +15,7 @@ typedef struct color_t {
     double red;
     double green;
     double blue;
+    double alpha;
 
     /* For compatibility, we also store the colorpixel for now. */
     uint32_t colorpixel;
@@ -63,3 +64,28 @@ color_t cairo_hex_to_color(const char *color);
  *
  */
 void cairo_set_source_color(surface_t *surface, color_t color);
+
+/**
+ * Draw the given text using libi3.
+ * This function also marks the surface dirty which is needed if other means of
+ * drawing are used. This will be the case when using XCB to draw text.
+ *
+ */
+void cairo_draw_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y, int max_width);
+
+/**
+ * Draws a filled rectangle.
+ * This function is a convenience wrapper and takes care of flushing the
+ * surface as well as restoring the cairo state.
+ * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
+ *
+ */
+void cairo_draw_rectangle(surface_t *surface, color_t color, double x, double y, double w, double h);
+
+/**
+ * Copies a surface onto another surface.
+ * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
+ *
+ */
+void cairo_copy_surface(surface_t *src, surface_t *dest, double src_x, double src_y,
+                        double dest_x, double dest_y, double dest_w, double dest_h);

@@ -161,7 +161,7 @@ static void update_placeholder_contents(placeholder_state *state) {
         DLOG("con %p (placeholder 0x%08x) line %d: %s\n", state->con, state->window, n, serialized);
 
         i3String *str = i3string_from_utf8(serialized);
-        draw_text(str, state->pixmap, state->gc, 2, (n * (config.font.height + 2)) + 2, state->rect.width - 2);
+        draw_text(str, state->pixmap, state->gc, NULL, 2, (n * (config.font.height + 2)) + 2, state->rect.width - 2);
         i3string_free(str);
         n++;
         free(serialized);
@@ -172,7 +172,7 @@ static void update_placeholder_contents(placeholder_state *state) {
     int text_width = predict_text_width(line);
     int x = (state->rect.width / 2) - (text_width / 2);
     int y = (state->rect.height / 2) - (config.font.height / 2);
-    draw_text(line, state->pixmap, state->gc, x, y, text_width);
+    draw_text(line, state->pixmap, state->gc, NULL, x, y, text_width);
     i3string_free(line);
     xcb_flush(conn);
     xcb_aux_sync(conn);

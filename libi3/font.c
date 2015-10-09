@@ -29,6 +29,7 @@ static xcb_visualtype_t *root_visual_type;
 static double pango_font_red;
 static double pango_font_green;
 static double pango_font_blue;
+static double pango_font_alpha;
 
 /* Necessary to track whether the dpi changes and trigger a LOG() message,
  * which is more easily visible to users. */
@@ -102,12 +103,12 @@ static bool load_pango_font(i3Font *font, const char *desc) {
  *
  */
 static void draw_text_pango(const char *text, size_t text_len,
-                            xcb_drawable_t drawable, int x, int y,
+                            xcb_drawable_t drawable, xcb_visualtype_t *visual, int x, int y,
                             int max_width, bool is_markup) {
     /* Create the Pango layout */
     /* root_visual_type is cached in load_pango_font */
     cairo_surface_t *surface = cairo_xcb_surface_create(conn, drawable,
-                                                        root_visual_type, x + max_width, y + savedFont->height);
+                                                        visual, x + max_width, y + savedFont->height);
     cairo_t *cr = cairo_create(surface);
     PangoLayout *layout = create_layout_with_dpi(cr);
     gint height;
@@ -123,7 +124,8 @@ static void draw_text_pango(const char *text, size_t text_len,
         pango_layout_set_text(layout, text, text_len);
 
     /* Do the drawing */
-    cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
+    cairo_set_source_rgba(cr, pango_font_red, pango_font_green, pango_font_blue, pango_font_alpha);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     pango_cairo_update_layout(cr, layout);
     pango_layout_get_pixel_size(layout, NULL, &height);
     /* Center the piece of text vertically if its height is smaller than the
@@ -332,6 +334,7 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
             pango_font_red = ((foreground >> 16) & 0xff) / 255.0;
             pango_font_green = ((foreground >> 8) & 0xff) / 255.0;
             pango_font_blue = (foreground & 0xff) / 255.0;
+            pango_font_alpha = ((foreground >> 24) & 0xff) / 255.0;
             break;
 #endif
         default:
@@ -391,9 +394,12 @@ static void draw_text_xcb(const xcb_char2b_t *text, size_t text_len, xcb_drawabl
  * Text must be specified as an i3String.
  *
  */
-void draw_text(i3String *text, xcb_drawable_t drawable,
-               xcb_gcontext_t gc, int x, int y, int max_width) {
+void draw_text(i3String *text, xcb_drawable_t drawable, xcb_gcontext_t gc,
+               xcb_visualtype_t *visual, int x, int y, int max_width) {
     assert(savedFont != NULL);
+    if (visual == NULL) {
+        visual = root_visual_type;
+    }
 
     switch (savedFont->type) {
         case FONT_TYPE_NONE:
@@ -407,7 +413,7 @@ void draw_text(i3String *text, xcb_drawable_t drawable,
         case FONT_TYPE_PANGO:
             /* Render the text using Pango */
             draw_text_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
-                            drawable, x, y, max_width, i3string_is_markup(text));
+                            drawable, visual, x, y, max_width, i3string_is_markup(text));
             return;
 #endif
         default:
@@ -432,7 +438,7 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
             if (text_len > 255) {
                 /* The text is too long to draw it directly to X */
                 i3String *str = i3string_from_utf8(text);
-                draw_text(str, drawable, gc, x, y, max_width);
+                draw_text(str, drawable, gc, NULL, x, y, max_width);
                 i3string_free(str);
             } else {
                 /* X11 coordinates for fonts start at the baseline */
@@ -446,7 +452,7 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
         case FONT_TYPE_PANGO:
             /* Render the text using Pango */
             draw_text_pango(text, strlen(text),
-                            drawable, x, y, max_width, false);
+                            drawable, root_visual_type, x, y, max_width, false);
             return;
 #endif
         default:

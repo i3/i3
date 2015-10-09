@@ -402,8 +402,8 @@ bool font_is_pango(void);
  * Text must be specified as an i3String.
  *
  */
-void draw_text(i3String *text, xcb_drawable_t drawable,
-               xcb_gcontext_t gc, int x, int y, int max_width);
+void draw_text(i3String *text, xcb_drawable_t drawable, xcb_gcontext_t gc,
+               xcb_visualtype_t *visual, int x, int y, int max_width);
 
 /**
  * ASCII version of draw_text to print static strings.
