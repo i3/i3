@@ -26,23 +26,13 @@
  *
  */
 uint32_t get_colorpixel(const char *hex) {
-    char alpha[2];
-    if (strlen(hex) == strlen("#rrggbbaa")) {
-        alpha[0] = hex[7];
-        alpha[1] = hex[8];
-    } else {
-        alpha[0] = alpha[1] = 'F';
-    }
-
-    char strgroups[4][3] = {
+    char strgroups[3][3] = {
         {hex[1], hex[2], '\0'},
         {hex[3], hex[4], '\0'},
-        {hex[5], hex[6], '\0'},
-        {alpha[0], alpha[1], '\0'}};
+        {hex[5], hex[6], '\0'}};
     uint8_t r = strtol(strgroups[0], NULL, 16);
     uint8_t g = strtol(strgroups[1], NULL, 16);
     uint8_t b = strtol(strgroups[2], NULL, 16);
-    uint8_t a = strtol(strgroups[3], NULL, 16);
 
-    return (a << 24) | (r << 16 | g << 8 | b);
+    return (0xFF << 24) | (r << 16 | g << 8 | b);
 }
