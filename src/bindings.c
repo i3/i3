@@ -673,19 +673,19 @@ static int fill_rmlvo_from_root(struct xkb_rule_names *xkb_names) {
         remaining -= len;
         switch (i) {
             case 0:
-                asprintf((char **)&(xkb_names->rules), "%.*s", len, walk);
+                sasprintf((char **)&(xkb_names->rules), "%.*s", len, walk);
                 break;
             case 1:
-                asprintf((char **)&(xkb_names->model), "%.*s", len, walk);
+                sasprintf((char **)&(xkb_names->model), "%.*s", len, walk);
                 break;
             case 2:
-                asprintf((char **)&(xkb_names->layout), "%.*s", len, walk);
+                sasprintf((char **)&(xkb_names->layout), "%.*s", len, walk);
                 break;
             case 3:
-                asprintf((char **)&(xkb_names->variant), "%.*s", len, walk);
+                sasprintf((char **)&(xkb_names->variant), "%.*s", len, walk);
                 break;
             case 4:
-                asprintf((char **)&(xkb_names->options), "%.*s", len, walk);
+                sasprintf((char **)&(xkb_names->options), "%.*s", len, walk);
                 break;
         }
         DLOG("component %d of _XKB_RULES_NAMES is \"%.*s\"\n", i, len, walk);
