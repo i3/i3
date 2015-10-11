@@ -626,6 +626,77 @@ CommandResult *run_binding(Binding *bind, Con *con) {
     return result;
 }
 
+static int fill_rmlvo_from_root(struct xkb_rule_names *xkb_names) {
+    xcb_intern_atom_reply_t *atom_reply;
+    size_t content_max_words = 256;
+
+    xcb_window_t root = root_screen->root;
+
+    atom_reply = xcb_intern_atom_reply(
+        conn, xcb_intern_atom(conn, 0, strlen("_XKB_RULES_NAMES"), "_XKB_RULES_NAMES"), NULL);
+    if (atom_reply == NULL)
+        return -1;
+
+    xcb_get_property_cookie_t prop_cookie;
+    xcb_get_property_reply_t *prop_reply;
+    prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
+                                             XCB_GET_PROPERTY_TYPE_ANY, 0, content_max_words);
+    prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
+    if (prop_reply == NULL) {
+        free(atom_reply);
+        return -1;
+    }
+    if (xcb_get_property_value_length(prop_reply) > 0 && prop_reply->bytes_after > 0) {
+        /* We received an incomplete value. Ask again but with a properly
+         * adjusted size. */
+        content_max_words += ceil(prop_reply->bytes_after / 4.0);
+        /* Repeat the request, with adjusted size */
+        free(prop_reply);
+        prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
+                                                 XCB_GET_PROPERTY_TYPE_ANY, 0, content_max_words);
+        prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
+        if (prop_reply == NULL) {
+            free(atom_reply);
+            return -1;
+        }
+    }
+    if (xcb_get_property_value_length(prop_reply) == 0) {
+        free(atom_reply);
+        free(prop_reply);
+        return -1;
+    }
+
+    const char *walk = (const char *)xcb_get_property_value(prop_reply);
+    int remaining = xcb_get_property_value_length(prop_reply);
+    for (int i = 0; i < 5 && remaining > 0; i++) {
+        const int len = strnlen(walk, remaining);
+        remaining -= len;
+        switch (i) {
+            case 0:
+                asprintf((char **)&(xkb_names->rules), "%.*s", len, walk);
+                break;
+            case 1:
+                asprintf((char **)&(xkb_names->model), "%.*s", len, walk);
+                break;
+            case 2:
+                asprintf((char **)&(xkb_names->layout), "%.*s", len, walk);
+                break;
+            case 3:
+                asprintf((char **)&(xkb_names->variant), "%.*s", len, walk);
+                break;
+            case 4:
+                asprintf((char **)&(xkb_names->options), "%.*s", len, walk);
+                break;
+        }
+        DLOG("component %d of _XKB_RULES_NAMES is \"%.*s\"\n", i, len, walk);
+        walk += (len + 1);
+    }
+
+    free(atom_reply);
+    free(prop_reply);
+    return 0;
+}
+
 /*
  * Loads the XKB keymap from the X11 server and feeds it to xkbcommon.
  *
@@ -638,12 +709,40 @@ bool load_keymap(void) {
         }
     }
 
-    struct xkb_keymap *new_keymap;
-    const int32_t device_id = xkb_x11_get_core_keyboard_device_id(conn);
-    DLOG("device_id = %d\n", device_id);
-    if ((new_keymap = xkb_x11_keymap_new_from_device(xkb_context, conn, device_id, 0)) == NULL) {
-        ELOG("xkb_x11_keymap_new_from_device failed\n");
-        return false;
+    struct xkb_keymap *new_keymap = NULL;
+    int32_t device_id;
+    if (xkb_supported && (device_id = xkb_x11_get_core_keyboard_device_id(conn)) > -1) {
+        if ((new_keymap = xkb_x11_keymap_new_from_device(xkb_context, conn, device_id, 0)) == NULL) {
+            ELOG("xkb_x11_keymap_new_from_device failed\n");
+            return false;
+        }
+    } else {
+        /* Likely there is no XKB support on this server, possibly because it
+         * is a VNC server. */
+        LOG("No XKB / core keyboard device? Assembling keymap from local RMLVO.\n");
+        struct xkb_rule_names names = {
+            .rules = NULL,
+            .model = NULL,
+            .layout = NULL,
+            .variant = NULL,
+            .options = NULL};
+        if (fill_rmlvo_from_root(&names) == -1) {
+            ELOG("Could not get _XKB_RULES_NAMES atom from root window, falling back to defaults.\n");
+            if ((new_keymap = xkb_keymap_new_from_names(xkb_context, &names, 0)) == NULL) {
+                ELOG("xkb_keymap_new_from_names(NULL) failed\n");
+                return false;
+            }
+        }
+        new_keymap = xkb_keymap_new_from_names(xkb_context, &names, 0);
+        free((char *)names.rules);
+        free((char *)names.model);
+        free((char *)names.layout);
+        free((char *)names.variant);
+        free((char *)names.options);
+        if (new_keymap == NULL) {
+            ELOG("xkb_keymap_new_from_names(RMLVO) failed\n");
+            return false;
+        }
     }
     xkb_keymap_unref(xkb_keymap);
     xkb_keymap = new_keymap;

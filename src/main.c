@@ -87,6 +87,7 @@ struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignment
 
 /* We hope that those are supported and set them to true */
 bool xcursor_supported = true;
+bool xkb_supported = true;
 
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
@@ -543,6 +544,7 @@ int main(int argc, char *argv[]) {
 
     const xcb_query_extension_reply_t *extreply;
     extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
+    xkb_supported = extreply->present;
     if (!extreply->present) {
         DLOG("xkb is not present on this server\n");
     } else {
