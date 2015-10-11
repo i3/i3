@@ -604,7 +604,7 @@ The valid criteria are the same as those for commands, see <<command_criteria>>.
 [[no_focus]]
 
 When a new window appears, it will be focused. The +no_focus+ directive allows preventing
-this from happening and can be used in combination with <<command_criteria>>.
+this from happening and must be used in combination with <<command_criteria>>.
 
 Note that this does not apply to all cases, e.g., when feeding data into a running application
 causing it to request being focused. To configure the behavior in such cases, refer to
