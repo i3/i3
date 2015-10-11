@@ -51,25 +51,15 @@ void cairo_surface_free(surface_t *surface) {
  *
  */
 color_t cairo_hex_to_color(const char *color) {
-    char alpha[2];
-    if (strlen(color) == strlen("#rrggbbaa")) {
-        alpha[0] = color[7];
-        alpha[1] = color[8];
-    } else {
-        alpha[0] = alpha[1] = 'F';
-    }
-
-    char groups[4][3] = {
+    char groups[3][3] = {
         {color[1], color[2], '\0'},
         {color[3], color[4], '\0'},
-        {color[5], color[6], '\0'},
-        {alpha[0], alpha[1], '\0'}};
+        {color[5], color[6], '\0'}};
 
     return (color_t){
         .red = strtol(groups[0], NULL, 16) / 255.0,
         .green = strtol(groups[1], NULL, 16) / 255.0,
         .blue = strtol(groups[2], NULL, 16) / 255.0,
-        .alpha = strtol(groups[3], NULL, 16) / 255.0,
         .colorpixel = get_colorpixel(color)};
 }
 
@@ -78,7 +68,7 @@ color_t cairo_hex_to_color(const char *color) {
  *
  */
 void cairo_set_source_color(surface_t *surface, color_t color) {
-    cairo_set_source_rgba(surface->cr, color.red, color.green, color.blue, color.alpha);
+    cairo_set_source_rgb(surface->cr, color.red, color.green, color.blue);
 }
 
 /**
