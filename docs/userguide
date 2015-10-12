@@ -610,6 +610,10 @@ Note that this does not apply to all cases, e.g., when feeding data into a runni
 causing it to request being focused. To configure the behavior in such cases, refer to
 <<focus_on_window_activation>>.
 
++no_focus+ will also be ignored for the first window on a workspace as there shouldn't be
+a reason to not focus the window in this case. This allows for better usability in
+combination with +workspace_layout+.
+
 *Syntax*:
 -------------------
 no_focus <criteria>
