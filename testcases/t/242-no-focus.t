@@ -30,13 +30,15 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
 $pid = launch_with_config($config);
- 
+
 $ws = fresh_workspace;
 $first = open_window;
 $focused = get_focused($ws);
 $second = open_window;
 
+sync_with_i3;
 isnt(get_focused($ws), $focused, 'focus has changed');
+is($x->input_focus, $second->id, 'input focus has changed');
 
 exit_gracefully($pid);
 
@@ -53,13 +55,37 @@ no_focus [instance=notme]
 EOT
 
 $pid = launch_with_config($config);
- 
+
 $ws = fresh_workspace;
 $first = open_window;
 $focused = get_focused($ws);
 $second = open_window(wm_class => 'notme');
 
+sync_with_i3;
 is(get_focused($ws), $focused, 'focus has not changed');
+is($x->input_focus, $first->id, 'input focus has not changed');
+
+exit_gracefully($pid);
+
+#####################################################################
+## 3: no_focus doesn't affect the first window opened on a workspace
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+no_focus [instance=focusme]
+EOT
+
+$pid = launch_with_config($config);
+
+$ws = fresh_workspace;
+$focused = get_focused($ws);
+$first = open_window(wm_class => 'focusme');
+
+sync_with_i3;
+is($x->input_focus, $first->id, 'input focus has changed');
 
 exit_gracefully($pid);
 
