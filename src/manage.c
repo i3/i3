@@ -524,13 +524,23 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* Send an event about window creation */
     ipc_send_window_event("new", nc);
 
+    if (set_focus && assignment_for(cwindow, A_NO_FOCUS) != NULL) {
+        /* The first window on a workspace should always be focused. We have to
+         * compare with == 1 because the container has already been inserted at
+         * this point. */
+        if (con_num_children(ws) == 1) {
+            DLOG("This is the first window on this workspace, ignoring no_focus.\n");
+        } else {
+            DLOG("no_focus was set for con = %p, not setting focus.\n", nc);
+            set_focus = false;
+        }
+    }
+
     /* Defer setting focus after the 'new' event has been sent to ensure the
      * proper window event sequence. */
     if (set_focus && !nc->window->doesnt_accept_focus && nc->mapped) {
-        if (assignment_for(cwindow, A_NO_FOCUS) == NULL) {
-            DLOG("Now setting focus.\n");
-            con_focus(nc);
-        }
+        DLOG("Now setting focus.\n");
+        con_focus(nc);
     }
 
     tree_render();
