@@ -78,9 +78,13 @@ void cairo_set_source_color(surface_t *surface, color_t color) {
  *
  */
 void cairo_draw_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y, int max_width) {
+    /* Flush any changes before we draw the text as this might use XCB directly. */
+    cairo_surface_flush(surface->surface);
+
     set_font_colors(surface->gc, fg_color.colorpixel, bg_color.colorpixel);
     draw_text(text, surface->id, surface->gc, visual_type, x, y, max_width);
 
+    /* Notify cairo that we (possibly) used another way to draw on the surface. */
     cairo_surface_mark_dirty(surface->surface);
 }
 
@@ -130,6 +134,7 @@ void cairo_copy_surface(surface_t *src, surface_t *dest, double src_x, double sr
 
     /* Make sure we flush the surface for any text drawing operations that could follow.
      * Since we support drawing text via XCB, we need this. */
+    cairo_surface_flush(src->surface);
     cairo_surface_flush(dest->surface);
     cairo_restore(dest->cr);
 }

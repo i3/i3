@@ -133,6 +133,8 @@ static void draw_text_pango(const char *text, size_t text_len,
     cairo_move_to(cr, x, y - yoffset);
     pango_cairo_show_layout(cr, layout);
 
+    cairo_surface_flush(surface);
+
     /* Free resources */
     g_object_unref(layout);
     cairo_destroy(cr);
