@@ -206,7 +206,7 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "markup") == 0) {
-        ctx->block.is_markup = (len == strlen("pango") && !strncasecmp((const char *)val, "pango", strlen("pango")));
+        ctx->block.pango_markup = (len == strlen("pango") && !strncasecmp((const char *)val, "pango", strlen("pango")));
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "align") == 0) {
@@ -275,15 +275,15 @@ static int stdin_end_map(void *context) {
 
     if (new_block->min_width_str) {
         i3String *text = i3string_from_utf8(new_block->min_width_str);
-        i3string_set_markup(text, new_block->is_markup);
+        i3string_set_markup(text, new_block->pango_markup);
         new_block->min_width = (uint32_t)predict_text_width(text);
         i3string_free(text);
     }
 
-    i3string_set_markup(new_block->full_text, new_block->is_markup);
+    i3string_set_markup(new_block->full_text, new_block->pango_markup);
 
     if (new_block->short_text != NULL)
-        i3string_set_markup(new_block->short_text, new_block->is_markup);
+        i3string_set_markup(new_block->short_text, new_block->pango_markup);
 
     TAILQ_INSERT_TAIL(&statusline_buffer, new_block, blocks);
     return 1;

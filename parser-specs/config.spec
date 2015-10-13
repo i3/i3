@@ -326,8 +326,10 @@ state BINDCOMMAND:
 ################################################################################
 
 state MODENAME:
+  pango_markup = '--pango_markup'
+      ->
   modename = word
-      -> call cfg_enter_mode($modename); MODEBRACE
+      -> call cfg_enter_mode($pango_markup, $modename); MODEBRACE
 
 state MODEBRACE:
   end

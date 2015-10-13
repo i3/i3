@@ -24,7 +24,7 @@ struct _i3String {
     xcb_char2b_t *ucs2;
     size_t num_glyphs;
     size_t num_bytes;
-    bool is_markup;
+    bool pango_markup;
 };
 
 /*
@@ -52,7 +52,7 @@ i3String *i3string_from_markup(const char *from_markup) {
     i3String *str = i3string_from_utf8(from_markup);
 
     /* Set the markup flag */
-    str->is_markup = true;
+    str->pango_markup = true;
 
     return str;
 }
@@ -86,7 +86,7 @@ i3String *i3string_from_markup_with_length(const char *from_markup, size_t num_b
     i3String *str = i3string_from_utf8_with_length(from_markup, num_bytes);
 
     /* set the markup flag */
-    str->is_markup = true;
+    str->pango_markup = true;
 
     return str;
 }
@@ -118,7 +118,7 @@ i3String *i3string_from_ucs2(const xcb_char2b_t *from_ucs2, size_t num_glyphs) {
  */
 i3String *i3string_copy(i3String *str) {
     i3String *copy = i3string_from_utf8(i3string_as_utf8(str));
-    copy->is_markup = str->is_markup;
+    copy->pango_markup = str->pango_markup;
     return copy;
 }
 
@@ -178,14 +178,14 @@ size_t i3string_get_num_bytes(i3String *str) {
  * Whether the given i3String is in Pango markup.
  */
 bool i3string_is_markup(i3String *str) {
-    return str->is_markup;
+    return str->pango_markup;
 }
 
 /*
  * Set whether the i3String should use Pango markup.
  */
-void i3string_set_markup(i3String *str, bool is_markup) {
-    str->is_markup = is_markup;
+void i3string_set_markup(i3String *str, bool pango_markup) {
+    str->pango_markup = pango_markup;
 }
 
 /*

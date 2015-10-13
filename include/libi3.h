@@ -243,7 +243,7 @@ bool i3string_is_markup(i3String *str);
 /**
  * Set whether the i3String should use Pango markup.
  */
-void i3string_set_markup(i3String *str, bool is_markup);
+void i3string_set_markup(i3String *str, bool pango_markup);
 
 /**
  * Escape pango markup characters in the given string.

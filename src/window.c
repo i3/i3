@@ -342,7 +342,7 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
 i3String *window_parse_title_format(i3Window *win) {
     /* We need to ensure that we only escape the window title if pango
      * is used by the current font. */
-    const bool is_markup = font_is_pango();
+    const bool pango_markup = font_is_pango();
 
     char *format = win->title_format;
     if (format == NULL)
@@ -359,19 +359,19 @@ i3String *window_parse_title_format(i3Window *win) {
     for (char *walk = format; *walk != '\0'; walk++) {
         if (STARTS_WITH(walk, "%title")) {
             if (escaped_title == NULL)
-                escaped_title = win->name == NULL ? "" : i3string_as_utf8(is_markup ? i3string_escape_markup(win->name) : win->name);
+                escaped_title = win->name == NULL ? "" : i3string_as_utf8(pango_markup ? i3string_escape_markup(win->name) : win->name);
 
             buffer_len = buffer_len - strlen("%title") + strlen(escaped_title);
             walk += strlen("%title") - 1;
         } else if (STARTS_WITH(walk, "%class")) {
             if (escaped_class == NULL)
-                escaped_class = is_markup ? g_markup_escape_text(win->class_class, -1) : win->class_class;
+                escaped_class = pango_markup ? g_markup_escape_text(win->class_class, -1) : win->class_class;
 
             buffer_len = buffer_len - strlen("%class") + strlen(escaped_class);
             walk += strlen("%class") - 1;
         } else if (STARTS_WITH(walk, "%instance")) {
             if (escaped_instance == NULL)
-                escaped_instance = is_markup ? g_markup_escape_text(win->class_instance, -1) : win->class_instance;
+                escaped_instance = pango_markup ? g_markup_escape_text(win->class_instance, -1) : win->class_instance;
 
             buffer_len = buffer_len - strlen("%instance") + strlen(escaped_instance);
             walk += strlen("%instance") - 1;
@@ -403,6 +403,6 @@ i3String *window_parse_title_format(i3Window *win) {
     *outwalk = '\0';
 
     i3String *formatted = i3string_from_utf8(buffer);
-    i3string_set_markup(formatted, is_markup);
+    i3string_set_markup(formatted, pango_markup);
     return formatted;
 }

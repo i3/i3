@@ -53,7 +53,7 @@ mode "meh" {
 EOT
 
 my $expected = <<'EOT';
-cfg_enter_mode(meh)
+cfg_enter_mode((null), meh)
 cfg_mode_binding(bindsym, Mod1,Shift, x, (null), (null), (null), resize grow)
 cfg_mode_binding(bindcode, Mod1, 44, (null), (null), (null), resize shrink)
 cfg_mode_binding(bindsym, Mod1, x, --release, (null), (null), exec foo)
@@ -627,7 +627,7 @@ mode "yo" {
 EOT
 
 $expected = <<'EOT';
-cfg_enter_mode(yo)
+cfg_enter_mode((null), yo)
 cfg_mode_binding(bindsym, (null), x, (null), (null), (null), resize shrink left)
 ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', '}'
 ERROR: CONFIG: (in file <stdin>)

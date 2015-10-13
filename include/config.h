@@ -77,6 +77,7 @@ struct Variable {
  */
 struct Mode {
     char *name;
+    bool pango_markup;
     struct bindings_head *bindings;
 
     SLIST_ENTRY(Mode) modes;

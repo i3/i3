@@ -108,7 +108,7 @@ CFGFUN(font, const char *font) {
 }
 
 CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, DEFAULT_BINDING_MODE);
+    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, DEFAULT_BINDING_MODE, false);
 }
 
 /*******************************************************************************
@@ -116,12 +116,13 @@ CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, co
  ******************************************************************************/
 
 static char *current_mode;
+static bool current_mode_pango_markup;
 
 CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, current_mode);
+    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, current_mode, current_mode_pango_markup);
 }
 
-CFGFUN(enter_mode, const char *modename) {
+CFGFUN(enter_mode, const char *pango_markup, const char *modename) {
     if (strcasecmp(modename, DEFAULT_BINDING_MODE) == 0) {
         ELOG("You cannot use the name %s for your mode\n", DEFAULT_BINDING_MODE);
         exit(1);
@@ -129,6 +130,7 @@ CFGFUN(enter_mode, const char *modename) {
     DLOG("\t now in mode %s\n", modename);
     FREE(current_mode);
     current_mode = sstrdup(modename);
+    current_mode_pango_markup = (pango_markup != NULL);
 }
 
 CFGFUN(exec, const char *exectype, const char *no_startup_id, const char *command) {

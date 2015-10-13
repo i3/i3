@@ -27,7 +27,7 @@ const char *DEFAULT_BINDING_MODE = "default";
  * the list of modes.
  *
  */
-static struct Mode *mode_from_name(const char *name) {
+static struct Mode *mode_from_name(const char *name, bool pango_markup) {
     struct Mode *mode;
 
     /* Try to find the mode in the list of modes and return it */
@@ -39,6 +39,7 @@ static struct Mode *mode_from_name(const char *name) {
     /* If the mode was not found, create a new one */
     mode = scalloc(1, sizeof(struct Mode));
     mode->name = sstrdup(name);
+    mode->pango_markup = pango_markup;
     mode->bindings = scalloc(1, sizeof(struct bindings_head));
     TAILQ_INIT(mode->bindings);
     SLIST_INSERT_HEAD(&modes, mode, modes);
@@ -54,7 +55,7 @@ static struct Mode *mode_from_name(const char *name) {
  */
 Binding *configure_binding(const char *bindtype, const char *modifiers, const char *input_code,
                            const char *release, const char *border, const char *whole_window,
-                           const char *command, const char *modename) {
+                           const char *command, const char *modename, bool pango_markup) {
     Binding *new_binding = scalloc(1, sizeof(Binding));
     DLOG("bindtype %s, modifiers %s, input code %s, release %s\n", bindtype, modifiers, input_code, release);
     new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
@@ -91,7 +92,7 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
     if (group_bits_set > 1)
         ELOG("Keybinding has more than one Group specified, but your X server is always in precisely one group. The keybinding can never trigger.\n");
 
-    struct Mode *mode = mode_from_name(modename);
+    struct Mode *mode = mode_from_name(modename, pango_markup);
     TAILQ_INSERT_TAIL(mode->bindings, new_binding, bindings);
 
     return new_binding;
@@ -437,7 +438,8 @@ void switch_mode(const char *new_mode) {
         grab_all_keys(conn);
 
         char *event_msg;
-        sasprintf(&event_msg, "{\"change\":\"%s\"}", mode->name);
+        sasprintf(&event_msg, "{\"change\":\"%s\", \"pango_markup\":%s}",
+                  mode->name, (mode->pango_markup ? "true" : "false"));
 
         ipc_send_event("mode", I3_IPC_EVENT_MODE, event_msg);
         FREE(event_msg);
