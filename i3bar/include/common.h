@@ -80,4 +80,4 @@ TAILQ_HEAD(statusline_head, status_block) statusline_head;
 #include "config.h"
 #include "libi3.h"
 #include "parse_json_header.h"
-#include "cairo_util.h"
+#include "draw_util.h"

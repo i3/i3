@@ -133,11 +133,6 @@ static void draw_text_pango(const char *text, size_t text_len,
     cairo_move_to(cr, x, y - yoffset);
     pango_cairo_show_layout(cr, layout);
 
-    /* We need to flush cairo surfaces twice to avoid an assertion bug. See #1989
-     * and https://bugs.freedesktop.org/show_bug.cgi?id=92455. */
-    cairo_surface_flush(surface);
-    cairo_surface_flush(surface);
-
     /* Free resources */
     g_object_unref(layout);
     cairo_destroy(cr);

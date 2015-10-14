@@ -30,7 +30,6 @@
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
-#include <cairo/cairo-xcb.h>
 
 #include "common.h"
 #include "libi3.h"
@@ -174,16 +173,16 @@ static void draw_separator(uint32_t x, struct status_block *block) {
     uint32_t center_x = x - sep_offset;
     if (config.separator_symbol == NULL) {
         /* Draw a classic one pixel, vertical separator. */
-        cairo_draw_rectangle(&statusline_surface, colors.sep_fg,
-                             center_x,
-                             logical_px(sep_voff_px),
-                             logical_px(1),
-                             bar_height - 2 * logical_px(sep_voff_px));
+        draw_util_rectangle(&statusline_surface, colors.sep_fg,
+                            center_x,
+                            logical_px(sep_voff_px),
+                            logical_px(1),
+                            bar_height - 2 * logical_px(sep_voff_px));
     } else {
         /* Draw a custom separator. */
         uint32_t separator_x = MAX(x - block->sep_block_width, center_x - separator_symbol_width / 2);
-        cairo_draw_text(config.separator_symbol, &statusline_surface, colors.sep_fg, colors.bar_bg,
-                        separator_x, logical_px(ws_voff_px), x - separator_x);
+        draw_util_text(config.separator_symbol, &statusline_surface, colors.sep_fg, colors.bar_bg,
+                       separator_x, logical_px(ws_voff_px), x - separator_x);
     }
 }
 
@@ -244,7 +243,7 @@ void refresh_statusline(bool use_short_text) {
         realloc_sl_buffer();
 
     /* Clear the statusline pixmap. */
-    cairo_clear_surface(&statusline_surface, colors.bar_bg);
+    draw_util_clear_surface(&statusline_surface, colors.bar_bg);
 
     /* Draw the text of each block. */
     uint32_t x = 0;
@@ -258,17 +257,17 @@ void refresh_statusline(bool use_short_text) {
             fg_color = colors.urgent_ws_fg;
 
             /* Draw the background */
-            cairo_draw_rectangle(&statusline_surface, colors.urgent_ws_bg,
-                                 x - logical_px(2),
-                                 logical_px(1),
-                                 block->width + logical_px(4),
-                                 bar_height - logical_px(2));
+            draw_util_rectangle(&statusline_surface, colors.urgent_ws_bg,
+                                x - logical_px(2),
+                                logical_px(1),
+                                block->width + logical_px(4),
+                                bar_height - logical_px(2));
         } else {
-            fg_color = (block->color ? cairo_hex_to_color(block->color) : colors.bar_fg);
+            fg_color = (block->color ? draw_util_hex_to_color(block->color) : colors.bar_fg);
         }
 
-        cairo_draw_text(block->full_text, &statusline_surface, fg_color, colors.bar_bg,
-                        x + block->x_offset, logical_px(ws_voff_px), block->width);
+        draw_util_text(block->full_text, &statusline_surface, fg_color, colors.bar_bg,
+                       x + block->x_offset, logical_px(ws_voff_px), block->width);
         x += block->width + block->sep_block_width + block->x_offset + block->x_append;
 
         /* If this is not the last block, draw a separator. */
@@ -346,9 +345,9 @@ void unhide_bars(void) {
  *
  */
 void init_colors(const struct xcb_color_strings_t *new_colors) {
-#define PARSE_COLOR(name, def)                                                       \
-    do {                                                                             \
-        colors.name = cairo_hex_to_color(new_colors->name ? new_colors->name : def); \
+#define PARSE_COLOR(name, def)                                                           \
+    do {                                                                                 \
+        colors.name = draw_util_hex_to_color(new_colors->name ? new_colors->name : def); \
     } while (0)
     PARSE_COLOR(bar_fg, "#FFFFFF");
     PARSE_COLOR(bar_bg, "#000000");
@@ -367,9 +366,9 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(focus_ws_border, "#4c7899");
 #undef PARSE_COLOR
 
-#define PARSE_COLOR_FALLBACK(name, fallback)                                                     \
-    do {                                                                                         \
-        colors.name = new_colors->name ? cairo_hex_to_color(new_colors->name) : colors.fallback; \
+#define PARSE_COLOR_FALLBACK(name, fallback)                                                         \
+    do {                                                                                             \
+        colors.name = new_colors->name ? draw_util_hex_to_color(new_colors->name) : colors.fallback; \
     } while (0)
 
     /* For the binding mode indicator colors, we don't hardcode a default.
@@ -1128,7 +1127,7 @@ char *init_xcb_early() {
                                                                xcb_root,
                                                                root_screen->width_in_pixels,
                                                                root_screen->height_in_pixels);
-    cairo_surface_init(&statusline_surface, statusline_id, root_screen->width_in_pixels, root_screen->height_in_pixels);
+    draw_util_surface_init(&statusline_surface, statusline_id, root_screen->width_in_pixels, root_screen->height_in_pixels);
 
     /* The various watchers to communicate with xcb */
     xcb_io = smalloc(sizeof(ev_io));
@@ -1490,7 +1489,7 @@ void realloc_sl_buffer(void) {
     DLOG("Re-allocating statusline buffer, statusline_width = %d, root_screen->width_in_pixels = %d\n",
          statusline_width, root_screen->width_in_pixels);
     xcb_free_pixmap(xcb_connection, statusline_surface.id);
-    cairo_surface_free(&statusline_surface);
+    draw_util_surface_free(&statusline_surface);
 
     xcb_pixmap_t statusline_id = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
@@ -1499,7 +1498,7 @@ void realloc_sl_buffer(void) {
                                                                xcb_root,
                                                                MAX(root_screen->width_in_pixels, statusline_width),
                                                                bar_height);
-    cairo_surface_init(&statusline_surface, statusline_id, root_screen->width_in_pixels, root_screen->height_in_pixels);
+    draw_util_surface_init(&statusline_surface, statusline_id, root_screen->width_in_pixels, root_screen->height_in_pixels);
 
     if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline buffer"))
         exit(EXIT_FAILURE);
@@ -1650,8 +1649,8 @@ void reconfig_windows(bool redraw_bars) {
                                                                 1,
                                                                 (unsigned char *)&atoms[_NET_WM_WINDOW_TYPE_DOCK]);
 
-            cairo_surface_init(&walk->bar, bar_id, walk->rect.w, bar_height);
-            cairo_surface_init(&walk->buffer, buffer_id, walk->rect.w, bar_height);
+            draw_util_surface_init(&walk->bar, bar_id, walk->rect.w, bar_height);
+            draw_util_surface_init(&walk->buffer, buffer_id, walk->rect.w, bar_height);
 
             xcb_void_cookie_t strut_cookie = config_strut_partial(walk);
 
@@ -1731,10 +1730,10 @@ void reconfig_windows(bool redraw_bars) {
                                                                     walk->rect.w,
                                                                     bar_height);
 
-            cairo_surface_free(&(walk->bar));
-            cairo_surface_free(&(walk->buffer));
-            cairo_surface_init(&(walk->bar), walk->bar.id, walk->rect.w, bar_height);
-            cairo_surface_init(&(walk->buffer), walk->buffer.id, walk->rect.w, bar_height);
+            draw_util_surface_free(&(walk->bar));
+            draw_util_surface_free(&(walk->buffer));
+            draw_util_surface_init(&(walk->bar), walk->bar.id, walk->rect.w, bar_height);
+            draw_util_surface_init(&(walk->buffer), walk->buffer.id, walk->rect.w, bar_height);
 
             xcb_void_cookie_t map_cookie, umap_cookie;
             if (redraw_bars) {
@@ -1792,7 +1791,7 @@ void draw_bars(bool unhide) {
         }
 
         /* First things first: clear the backbuffer */
-        cairo_clear_surface(&(outputs_walk->buffer), colors.bar_bg);
+        draw_util_clear_surface(&(outputs_walk->buffer), colors.bar_bg);
 
         if (!config.disable_ws) {
             i3_ws *ws_walk;
@@ -1822,23 +1821,23 @@ void draw_bars(bool unhide) {
                 }
 
                 /* Draw the border of the button. */
-                cairo_draw_rectangle(&(outputs_walk->buffer), border_color,
-                                     workspace_width,
-                                     logical_px(1),
-                                     ws_walk->name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
-                                     font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
+                draw_util_rectangle(&(outputs_walk->buffer), border_color,
+                                    workspace_width,
+                                    logical_px(1),
+                                    ws_walk->name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
+                                    font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
 
                 /* Draw the inside of the button. */
-                cairo_draw_rectangle(&(outputs_walk->buffer), bg_color,
-                                     workspace_width + logical_px(1),
-                                     2 * logical_px(1),
-                                     ws_walk->name_width + 2 * logical_px(ws_hoff_px),
-                                     font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
+                draw_util_rectangle(&(outputs_walk->buffer), bg_color,
+                                    workspace_width + logical_px(1),
+                                    2 * logical_px(1),
+                                    ws_walk->name_width + 2 * logical_px(ws_hoff_px),
+                                    font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
 
-                cairo_draw_text(ws_walk->name, &(outputs_walk->buffer), fg_color, bg_color,
-                                workspace_width + logical_px(ws_hoff_px) + logical_px(1),
-                                logical_px(ws_voff_px),
-                                ws_walk->name_width);
+                draw_util_text(ws_walk->name, &(outputs_walk->buffer), fg_color, bg_color,
+                               workspace_width + logical_px(ws_hoff_px) + logical_px(1),
+                               logical_px(ws_voff_px),
+                               ws_walk->name_width);
 
                 workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + ws_walk->name_width;
                 if (TAILQ_NEXT(ws_walk, tailq) != NULL)
@@ -1852,22 +1851,22 @@ void draw_bars(bool unhide) {
             color_t fg_color = colors.binding_mode_fg;
             color_t bg_color = colors.binding_mode_bg;
 
-            cairo_draw_rectangle(&(outputs_walk->buffer), colors.binding_mode_border,
-                                 workspace_width,
-                                 logical_px(1),
-                                 binding.width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
-                                 font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
+            draw_util_rectangle(&(outputs_walk->buffer), colors.binding_mode_border,
+                                workspace_width,
+                                logical_px(1),
+                                binding.width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
+                                font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
 
-            cairo_draw_rectangle(&(outputs_walk->buffer), bg_color,
-                                 workspace_width + logical_px(1),
-                                 2 * logical_px(1),
-                                 binding.width + 2 * logical_px(ws_hoff_px),
-                                 font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
+            draw_util_rectangle(&(outputs_walk->buffer), bg_color,
+                                workspace_width + logical_px(1),
+                                2 * logical_px(1),
+                                binding.width + 2 * logical_px(ws_hoff_px),
+                                font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
 
-            cairo_draw_text(binding.name, &(outputs_walk->buffer), fg_color, bg_color,
-                            workspace_width + logical_px(ws_hoff_px) + logical_px(1),
-                            logical_px(ws_voff_px),
-                            binding.width);
+            draw_util_text(binding.name, &(outputs_walk->buffer), fg_color, bg_color,
+                           workspace_width + logical_px(ws_hoff_px) + logical_px(1),
+                           logical_px(ws_voff_px),
+                           binding.width);
 
             unhide = true;
             workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + binding.width;
@@ -1897,8 +1896,8 @@ void draw_bars(bool unhide) {
             int x_src = (int16_t)(statusline_width - visible_statusline_width);
             int x_dest = (int16_t)(outputs_walk->rect.w - tray_width - logical_px(sb_hoff_px) - visible_statusline_width);
 
-            cairo_copy_surface(&statusline_surface, &(outputs_walk->buffer), x_dest - x_src, 0,
-                               x_dest, 0, (int16_t)visible_statusline_width, (int16_t)bar_height);
+            draw_util_copy_surface(&statusline_surface, &(outputs_walk->buffer), x_src, 0,
+                                   x_dest, 0, (int16_t)visible_statusline_width, (int16_t)bar_height);
         }
 
         workspace_width = 0;
@@ -1927,8 +1926,8 @@ void redraw_bars(void) {
             continue;
         }
 
-        cairo_copy_surface(&(outputs_walk->buffer), &(outputs_walk->bar), 0, 0,
-                           0, 0, outputs_walk->rect.w, outputs_walk->rect.h);
+        draw_util_copy_surface(&(outputs_walk->buffer), &(outputs_walk->bar), 0, 0,
+                               0, 0, outputs_walk->rect.w, outputs_walk->rect.h);
         xcb_flush(xcb_connection);
     }
 }

@@ -3,13 +3,16 @@
  *
  * © 2015 Ingo Bürk and contributors (see also: LICENSE)
  *
- * cairo_util.h: Utility for operations using cairo.
+ * draw.h: Utility for drawing.
  *
  */
 #pragma once
 
+#ifdef I3BAR_CAIRO
 #include <cairo/cairo-xcb.h>
+#endif
 
+#ifdef I3BAR_CAIRO
 /* We need to flush cairo surfaces twice to avoid an assertion bug. See #1989
  * and https://bugs.freedesktop.org/show_bug.cgi?id=92455. */
 #define CAIRO_SURFACE_FLUSH(surface)  \
@@ -17,6 +20,7 @@
         cairo_surface_flush(surface); \
         cairo_surface_flush(surface); \
     } while (0)
+#endif
 
 /* Represents a color split by color channel. */
 typedef struct color_t {
@@ -34,43 +38,40 @@ typedef struct surface_t {
     /* The drawable which is being represented. */
     xcb_drawable_t id;
 
-    // TODO remove this once i3 uses solely cairo for drawing operations
-    /* A classic XCB graphics context. This should not be used for
-     * drawing operations. */
+    /* A classic XCB graphics context. */
     xcb_gcontext_t gc;
 
+    int width;
+    int height;
+
+#ifdef I3BAR_CAIRO
     /* A cairo surface representing the drawable. */
     cairo_surface_t *surface;
 
     /* The cairo object representing the drawale. In general,
      * this is what one should use for any drawing operation. */
     cairo_t *cr;
+#endif
 } surface_t;
 
 /**
- * Initialize the cairo surface to represent the given drawable.
+ * Initialize the surface to represent the given drawable.
  *
  */
-void cairo_surface_init(surface_t *surface, xcb_drawable_t drawable, int width, int height);
+void draw_util_surface_init(surface_t *surface, xcb_drawable_t drawable, int width, int height);
 
 /**
  * Destroys the surface.
  *
  */
-void cairo_surface_free(surface_t *surface);
+void draw_util_surface_free(surface_t *surface);
 
 /**
  * Parses the given color in hex format to an internal color representation.
  * Note that the input must begin with a hash sign, e.g., "#3fbc59".
  *
  */
-color_t cairo_hex_to_color(const char *color);
-
-/**
- * Set the given color as the source color on the surface.
- *
- */
-void cairo_set_source_color(surface_t *surface, color_t color);
+color_t draw_util_hex_to_color(const char *color);
 
 /**
  * Draw the given text using libi3.
@@ -78,28 +79,25 @@ void cairo_set_source_color(surface_t *surface, color_t color);
  * drawing are used. This will be the case when using XCB to draw text.
  *
  */
-void cairo_draw_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y, int max_width);
+void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y, int max_width);
 
 /**
  * Draws a filled rectangle.
  * This function is a convenience wrapper and takes care of flushing the
  * surface as well as restoring the cairo state.
- * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
  *
  */
-void cairo_draw_rectangle(surface_t *surface, color_t color, double x, double y, double w, double h);
+void draw_util_rectangle(surface_t *surface, color_t color, double x, double y, double w, double h);
 
 /**
  * Clears a surface with the given color.
- * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
  *
  */
-void cairo_clear_surface(surface_t *surface, color_t color);
+void draw_util_clear_surface(surface_t *surface, color_t color);
 
 /**
  * Copies a surface onto another surface.
- * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
  *
  */
-void cairo_copy_surface(surface_t *src, surface_t *dest, double src_x, double src_y,
-                        double dest_x, double dest_y, double dest_w, double dest_h);
+void draw_util_copy_surface(surface_t *src, surface_t *dest, double src_x, double src_y,
+                            double dest_x, double dest_y, double width, double height);
