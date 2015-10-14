@@ -115,6 +115,29 @@ void cairo_draw_rectangle(surface_t *surface, color_t color, double x, double y,
 }
 
 /**
+ * Clears a surface with the given color.
+ * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
+ *
+ */
+void cairo_clear_surface(surface_t *surface, color_t color) {
+    cairo_save(surface->cr);
+
+    /* Using the SOURCE operator will copy both color and alpha information directly
+     * onto the surface rather than blending it. This is a bit more efficient and
+     * allows better color control for the user when using opacity. */
+    cairo_set_operator(surface->cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_color(surface, color);
+
+    cairo_paint(surface->cr);
+
+    /* Make sure we flush the surface for any text drawing operations that could follow.
+     * Since we support drawing text via XCB, we need this. */
+    CAIRO_SURFACE_FLUSH(surface->surface);
+
+    cairo_restore(surface->cr);
+}
+
+/**
  * Copies a surface onto another surface.
  * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
  *

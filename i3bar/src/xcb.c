@@ -244,12 +244,7 @@ void refresh_statusline(bool use_short_text) {
         realloc_sl_buffer();
 
     /* Clear the statusline pixmap. */
-    cairo_save(statusline_surface.cr);
-    cairo_set_source_color(&statusline_surface, colors.bar_bg);
-    cairo_set_operator(statusline_surface.cr, CAIRO_OPERATOR_SOURCE);
-    cairo_paint(statusline_surface.cr);
-    CAIRO_SURFACE_FLUSH(statusline_surface.surface);
-    cairo_restore(statusline_surface.cr);
+    cairo_clear_surface(&statusline_surface, colors.bar_bg);
 
     /* Draw the text of each block. */
     uint32_t x = 0;
@@ -1797,12 +1792,7 @@ void draw_bars(bool unhide) {
         }
 
         /* First things first: clear the backbuffer */
-        cairo_save(outputs_walk->buffer.cr);
-        cairo_set_source_color(&(outputs_walk->buffer), colors.bar_bg);
-        cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
-        cairo_paint(outputs_walk->buffer.cr);
-        CAIRO_SURFACE_FLUSH(outputs_walk->buffer.surface);
-        cairo_restore(outputs_walk->buffer.cr);
+        cairo_clear_surface(&(outputs_walk->buffer), colors.bar_bg);
 
         if (!config.disable_ws) {
             i3_ws *ws_walk;

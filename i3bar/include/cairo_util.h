@@ -90,6 +90,13 @@ void cairo_draw_text(i3String *text, surface_t *surface, color_t fg_color, color
 void cairo_draw_rectangle(surface_t *surface, color_t color, double x, double y, double w, double h);
 
 /**
+ * Clears a surface with the given color.
+ * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
+ *
+ */
+void cairo_clear_surface(surface_t *surface, color_t color);
+
+/**
  * Copies a surface onto another surface.
  * Note that the drawing is done using CAIRO_OPERATOR_SOURCE.
  *
