@@ -248,7 +248,7 @@ void refresh_statusline(bool use_short_text) {
     cairo_set_source_color(&statusline_surface, colors.bar_bg);
     cairo_set_operator(statusline_surface.cr, CAIRO_OPERATOR_SOURCE);
     cairo_paint(statusline_surface.cr);
-    cairo_surface_flush(statusline_surface.surface);
+    CAIRO_SURFACE_FLUSH(statusline_surface.surface);
     cairo_restore(statusline_surface.cr);
 
     /* Draw the text of each block. */
@@ -1801,7 +1801,7 @@ void draw_bars(bool unhide) {
         cairo_set_source_color(&(outputs_walk->buffer), colors.bar_bg);
         cairo_set_operator(outputs_walk->buffer.cr, CAIRO_OPERATOR_SOURCE);
         cairo_paint(outputs_walk->buffer.cr);
-        cairo_surface_flush(outputs_walk->buffer.surface);
+        CAIRO_SURFACE_FLUSH(outputs_walk->buffer.surface);
         cairo_restore(outputs_walk->buffer.cr);
 
         if (!config.disable_ws) {

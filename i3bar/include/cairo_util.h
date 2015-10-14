@@ -10,6 +10,14 @@
 
 #include <cairo/cairo-xcb.h>
 
+/* We need to flush cairo surfaces twice to avoid an assertion bug. See #1989
+ * and https://bugs.freedesktop.org/show_bug.cgi?id=92455. */
+#define CAIRO_SURFACE_FLUSH(surface)  \
+    do {                              \
+        cairo_surface_flush(surface); \
+        cairo_surface_flush(surface); \
+    } while (0)
+
 /* Represents a color split by color channel. */
 typedef struct color_t {
     double red;
