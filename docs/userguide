@@ -1849,6 +1849,10 @@ container to workspace next+, +move container to workspace prev+ to move a
 container to the next/previous workspace and +move container to workspace current+
 (the last one makes sense only when used with criteria).
 
++workspace next+ cycles through either numbered or named workspaces. But when it
+reaches the last numbered/named workspace, it looks for named workspaces after
+exhausting numbered ones and looks for numbered ones after exhausting named ones.
+
 See <<move_to_outputs>> for how to move a container/workspace to a different
 RandR output.
 
