@@ -77,6 +77,12 @@ i3 keeps your layout in a tree data structure.
 Window::
 An X11 window, like the Firefox browser window or a terminal emulator.
 
+Floating Window::
+A window which "floats" on top of other windows. This style is used by i3 to
+display X11 windows with type "dialog", such as the "Print" or "Open File"
+dialog boxes in many GUI applications. Use of floating windows can be
+fine-tuned with the for_window command (see HTML userguide).
+
 Split container::
 A split container contains multiple other split containers or windows.
 +
