@@ -987,6 +987,13 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
     }
 
     while ((event = xcb_poll_for_event(xcb_connection)) != NULL) {
+        if (event->response_type == 0) {
+            xcb_generic_error_t *error = (xcb_generic_error_t *)event;
+            DLOG("Received X11 error, sequence 0x%x, error_code = %d\n", error->sequence, error->error_code);
+            free(event);
+            continue;
+        }
+
         int type = (event->response_type & ~0x80);
 
         if (type == xkb_base && xkb_base > -1) {
