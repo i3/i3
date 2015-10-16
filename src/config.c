@@ -110,8 +110,13 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(barconfig->id);
             for (int c = 0; c < barconfig->num_outputs; c++)
                 free(barconfig->outputs[c]);
+            while (!TAILQ_EMPTY(&(barconfig->tray_outputs))) {
+                struct tray_output_t *tray_output = TAILQ_FIRST(&(barconfig->tray_outputs));
+                FREE(tray_output->output);
+                TAILQ_REMOVE(&(barconfig->tray_outputs), tray_output, tray_outputs);
+                FREE(tray_output);
+            }
             FREE(barconfig->outputs);
-            FREE(barconfig->tray_output);
             FREE(barconfig->socket_path);
             FREE(barconfig->status_command);
             FREE(barconfig->i3bar_command);

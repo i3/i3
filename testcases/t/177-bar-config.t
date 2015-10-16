@@ -138,7 +138,7 @@ ok(!$bar_config->{binding_mode_indicator}, 'mode indicator disabled');
 is($bar_config->{mode}, 'dock', 'dock mode');
 is($bar_config->{position}, 'top', 'position top');
 is_deeply($bar_config->{outputs}, [ 'HDMI1', 'HDMI2' ], 'outputs ok');
-is($bar_config->{tray_output}, 'HDMI2', 'tray_output ok');
+is_deeply($bar_config->{tray_outputs}, [ 'LVDS1', 'HDMI2' ], 'tray_output ok');
 is($bar_config->{tray_padding}, 0, 'tray_padding ok');
 is($bar_config->{font}, 'Terminus', 'font ok');
 is($bar_config->{socket_path}, '/tmp/foobar', 'socket_path ok');
@@ -294,7 +294,7 @@ ok($bar_config->{binding_mode_indicator}, 'mode indicator enabled');
 is($bar_config->{mode}, 'dock', 'dock mode');
 is($bar_config->{position}, 'top', 'position top');
 is_deeply($bar_config->{outputs}, [ 'HDMI1', 'HDMI2' ], 'outputs ok');
-is($bar_config->{tray_output}, 'HDMI2', 'tray_output ok');
+is_deeply($bar_config->{tray_outputs}, [ 'LVDS1', 'HDMI2' ], 'tray_output ok');
 is($bar_config->{font}, 'Terminus', 'font ok');
 is($bar_config->{socket_path}, '/tmp/foobar', 'socket_path ok');
 is_deeply($bar_config->{colors},

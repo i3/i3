@@ -551,6 +551,18 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
         y(array_close);
     }
 
+    if (!TAILQ_EMPTY(&(config->tray_outputs))) {
+        ystr("tray_outputs");
+        y(array_open);
+
+        struct tray_output_t *tray_output;
+        TAILQ_FOREACH(tray_output, &(config->tray_outputs), tray_outputs) {
+            ystr(tray_output->output);
+        }
+
+        y(array_close);
+    }
+
 #define YSTR_IF_SET(name)       \
     do {                        \
         if (config->name) {     \
@@ -558,8 +570,6 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
             ystr(config->name); \
         }                       \
     } while (0)
-
-    YSTR_IF_SET(tray_output);
 
     ystr("tray_padding");
     y(integer, config->tray_padding);

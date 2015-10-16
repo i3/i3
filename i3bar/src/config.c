@@ -21,6 +21,7 @@
 
 static char *cur_key;
 static bool parsing_bindings;
+static bool parsing_tray_outputs;
 
 /*
  * Parse a key.
@@ -32,14 +33,20 @@ static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t 
     FREE(cur_key);
     sasprintf(&(cur_key), "%.*s", keyLen, keyVal);
 
-    if (strcmp(cur_key, "bindings") == 0)
+    if (strcmp(cur_key, "bindings") == 0) {
         parsing_bindings = true;
+    }
+
+    if (strcmp(cur_key, "tray_outputs") == 0) {
+        parsing_tray_outputs = true;
+    }
 
     return 1;
 }
 
 static int config_end_array_cb(void *params_) {
     parsing_bindings = false;
+    parsing_tray_outputs = false;
     return 1;
 }
 
@@ -88,6 +95,14 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 
         ELOG("Unknown key \"%s\" while parsing bar bindings.\n", cur_key);
         return 0;
+    }
+
+    if (parsing_tray_outputs) {
+        DLOG("Adding tray_output = %.*s to the list.\n", len, val);
+        tray_output_t *tray_output = scalloc(1, sizeof(tray_output_t));
+        sasprintf(&(tray_output->output), "%.*s", len, val);
+        TAILQ_INSERT_TAIL(&(config.tray_outputs), tray_output, tray_outputs);
+        return 1;
     }
 
     if (!strcmp(cur_key, "mode")) {
@@ -195,10 +210,13 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
         return 1;
     }
 
+    /* We keep the old single tray_output working for users who only restart i3bar
+     * after updating. */
     if (!strcmp(cur_key, "tray_output")) {
-        DLOG("tray_output %.*s\n", len, val);
-        FREE(config.tray_output);
-        sasprintf(&config.tray_output, "%.*s", len, val);
+        DLOG("Found deprecated key tray_output %.*s.\n", len, val);
+        tray_output_t *tray_output = scalloc(1, sizeof(tray_output_t));
+        sasprintf(&(tray_output->output), "%.*s", len, val);
+        TAILQ_INSERT_TAIL(&(config.tray_outputs), tray_output, tray_outputs);
         return 1;
     }
 
@@ -317,6 +335,7 @@ void parse_config_json(char *json) {
     handle = yajl_alloc(&outputs_callbacks, NULL, NULL);
 
     TAILQ_INIT(&(config.bindings));
+    TAILQ_INIT(&(config.tray_outputs));
 
     state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
