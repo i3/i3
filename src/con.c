@@ -1020,6 +1020,12 @@ bool con_move_to_mark(Con *con, const char *mark) {
         return true;
     }
 
+    if (con->type == CT_WORKSPACE) {
+        DLOG("target container is a workspace, simply moving the container there.\n");
+        con_move_to_workspace(con, target, true, false, false);
+        return true;
+    }
+
     /* For split containers, we use the currently focused container within it.
      * This allows setting marks on, e.g., tabbed containers which will move
      * con to a new tab behind the focused tab. */
