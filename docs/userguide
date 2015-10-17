@@ -149,8 +149,10 @@ it does not yet exist.
 The easiest way to resize a container is by using the mouse: Grab the border
 and move it to the wanted size.
 
-See <<resizingconfig>> for how to configure i3 to be able to resize
-columns/rows with your keyboard.
+You can also use <<binding_modes>> to define a mode for resizing via the
+keyboard. To see an example for this, look at the
+https://github.com/i3/i3/blob/next/i3.config.keycodes[default config] provided
+by i3.
 
 === Restarting i3 inplace
 
@@ -177,7 +179,8 @@ around. By grabbing the borders and moving them you can resize the window. You
 can also do that by using the <<floating_modifier>>. Another way to resize
 floating windows using the mouse is to right-click on the titlebar and drag.
 
-For resizing floating windows with your keyboard, see <<resizingconfig>>.
+For resizing floating windows with your keyboard, see the resizing binding mode
+provided by the i3 https://github.com/i3/i3/blob/next/i3.config.keycodes[default config].
 
 Floating windows are always on top of tiling windows.
 
@@ -441,6 +444,59 @@ bindsym button9 move left
 bindsym button8 move right
 --------------------------------
 
+[[binding_modes]]
+
+=== Binding modes
+
+You can have multiple sets of bindings by using different binding modes. When
+you switch to another binding mode, all bindings from the current mode are
+released and only the bindings defined in the new mode are valid for as long as
+you stay in that binding mode. The only predefined binding mode is +default+,
+which is the mode i3 starts out with and to which all bindings not defined in a
+specific binding mode belong.
+
+Working with binding modes consists of two parts: defining a binding mode and
+switching to it. For these purposes, there are one config directive and one
+command, both of which are called +mode+. The directive is used to define the
+bindings belonging to a certain binding mode, while the command will switch to
+the specified mode.
+
+It is recommended to use binding modes in combination with <<variables>> in
+order to make maintenance easier. Below is an example of how to use a binding
+mode.
+
+Note that it is advisable to define bindings for switching back to the default
+mode.
+
+Note that it is possible to use <<pango_markup>> for binding modes, but you
+need to enable it explicitly by passing the +--pango_markup+ flag to the mode
+definition.
+
+*Syntax*:
+----------------------------
+# config directive
+mode [--pango_markup] <name>
+
+# command
+mode <name>
+----------------------------
+
+*Example*:
+------------------------------------------------------------------------
+# Press $mod+o followed by either f, t, Esc or Return to launch firefox,
+# thunderbird or return to the default mode, respectively.
+set $mode_launcher Launch: [f]irefox [t]hunderbird
+bindsym $mod+o mode "$mode_launcher"
+
+mode "$mode_launcher" {
+    bindsym f exec firefox
+    bindsym t exec thunderbird
+
+    bindsym Esc mode "default"
+    bindsym Return mode "default"
+}
+------------------------------------------------------------------------
+
 [[floating_modifier]]
 
 === The floating modifier
@@ -623,6 +679,8 @@ no_focus <criteria>
 -------------------------------
 no_focus [window_role="pop-up"]
 -------------------------------
+
+[[variables]]
 
 === Variables
 
@@ -1455,8 +1513,8 @@ bar {
 
 Specifies whether the current binding mode indicator should be shown or not.
 This is useful if you want to hide the workspace buttons but still be able
-to see the current binding mode indicator.
-For an example of a +mode+ definition, see <<resizingconfig>>.
+to see the current binding mode indicator. See <<binding_modes>> to learn what
+modes are and how to use them.
 
 The default is to show the mode indicator.
 
@@ -2019,38 +2077,12 @@ many percentage points a *tiling container* should be grown or shrunk (the
 default is 10 percentage points). Note that +resize set+ will only work for
 floating containers.
 
-I recommend using the resize command inside a so called +mode+:
+It is recommended to define bindings for resizing in a dedicated binding mode.
+See <<binding_modes>> and the example in the i3
+https://github.com/i3/i3/blob/next/i3.config.keycodes[default config] for more
+context.
 
-.Example: Configuration file, defining a mode for resizing
-----------------------------------------------------------------------
-mode "resize" {
-        # These bindings trigger as soon as you enter the resize mode
-
-        # Pressing left will shrink the window’s width.
-        # Pressing right will grow the window’s width.
-        # Pressing up will shrink the window’s height.
-        # Pressing down will grow the window’s height.
-        bindsym j           resize shrink width 10 px or 10 ppt
-        bindsym k           resize grow height 10 px or 10 ppt
-        bindsym l           resize shrink height 10 px or 10 ppt
-        bindsym semicolon   resize grow width 10 px or 10 ppt
-
-        # same bindings, but for the arrow keys
-        bindsym Left        resize shrink width 10 px or 10 ppt
-        bindsym Down        resize grow height 10 px or 10 ppt
-        bindsym Up          resize shrink height 10 px or 10 ppt
-        bindsym Right       resize grow width 10 px or 10 ppt
-
-        # back to normal: Enter or Escape
-        bindsym Return mode "default"
-        bindsym Escape mode "default"
-}
-
-# Enter resize mode
-bindsym $mod+r mode "resize"
-----------------------------------------------------------------------
-
-*Example 2 - setting urxvt size to 640x480:*
+*Example*:
 ------------------------------------------------
 for_window [class="urxvt"] resize set 640 480
 ------------------------------------------------
@@ -2127,6 +2159,8 @@ bindsym $mod+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
 Alternatively, if you do not want to mess with +i3-input+, you could create
 seperate bindings for a specific set of labels and then only use those labels.
 ///////////////////////////////////////////////////////////////////
+
+[[pango_markup]]
 
 === Window title format
 
