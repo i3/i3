@@ -108,9 +108,8 @@ static int outputs_string_cb(void *params_, const unsigned char *val, size_t len
     struct outputs_json_params *params = (struct outputs_json_params *)params_;
 
     if (!strcmp(params->cur_key, "current_workspace")) {
-        char *copy = smalloc(sizeof(const unsigned char) * (len + 1));
-        strncpy(copy, (const char *)val, len);
-        copy[len] = '\0';
+        char *copy = NULL;
+        sasprintf(&copy, "%.*s", len, val);
 
         char *end;
         errno = 0;
@@ -118,7 +117,8 @@ static int outputs_string_cb(void *params_, const unsigned char *val, size_t len
         if (errno == 0 &&
             (end && *end == '\0'))
             params->outputs_walk->ws = parsed_num;
-        free(copy);
+
+        FREE(copy);
         FREE(params->cur_key);
         return 1;
     }
@@ -127,14 +127,9 @@ static int outputs_string_cb(void *params_, const unsigned char *val, size_t len
         return 0;
     }
 
-    char *name = smalloc(sizeof(const unsigned char) * (len + 1));
-    strncpy(name, (const char *)val, len);
-    name[len] = '\0';
-
-    params->outputs_walk->name = name;
+    sasprintf(&(params->outputs_walk->name), "%.*s", len, val);
 
     FREE(params->cur_key);
-
     return 1;
 }
 
@@ -228,11 +223,7 @@ static int outputs_end_map_cb(void *params_) {
 static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
     struct outputs_json_params *params = (struct outputs_json_params *)params_;
     FREE(params->cur_key);
-
-    params->cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(params->cur_key, (const char *)keyVal, keyLen);
-    params->cur_key[keyLen] = '\0';
-
+    sasprintf(&(params->cur_key), "%.*s", keyLen, keyVal);
     return 1;
 }
 

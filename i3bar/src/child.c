@@ -220,24 +220,15 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
-        char *copy = (char *)smalloc(len + 1);
-        strncpy(copy, (const char *)val, len);
-        copy[len] = 0;
-        ctx->block.min_width_str = copy;
+        sasprintf(&(ctx->block.min_width_str), "%.*s", len, val);
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "name") == 0) {
-        char *copy = (char *)smalloc(len + 1);
-        strncpy(copy, (const char *)val, len);
-        copy[len] = 0;
-        ctx->block.name = copy;
+        sasprintf(&(ctx->block.name), "%.*s", len, val);
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "instance") == 0) {
-        char *copy = (char *)smalloc(len + 1);
-        strncpy(copy, (const char *)val, len);
-        copy[len] = 0;
-        ctx->block.instance = copy;
+        sasprintf(&(ctx->block.instance), "%.*s", len, val);
         return 1;
     }
 

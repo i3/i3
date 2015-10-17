@@ -33,11 +33,7 @@ static int mode_string_cb(void *params_, const unsigned char *val, size_t len) {
     struct mode_json_params *params = (struct mode_json_params *)params_;
 
     if (!strcmp(params->cur_key, "change")) {
-        char *copy = smalloc(sizeof(const unsigned char) * (len + 1));
-        strncpy(copy, (const char *)val, len);
-        copy[len] = '\0';
-
-        params->name = copy;
+        sasprintf(&(params->name), "%.*s", len, val);
         FREE(params->cur_key);
         return 1;
     }
@@ -74,11 +70,7 @@ static int mode_boolean_cb(void *params_, int val) {
 static int mode_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
     struct mode_json_params *params = (struct mode_json_params *)params_;
     FREE(params->cur_key);
-
-    params->cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(params->cur_key, (const char *)keyVal, keyLen);
-    params->cur_key[keyLen] = '\0';
-
+    sasprintf(&(params->cur_key), "%.*s", keyLen, keyVal);
     return 1;
 }
 
