@@ -442,7 +442,63 @@ bindsym button8 move right
 --------------------------------
 
 [[binding_modes]]
+<<<<<<< a47710a1f3f43b0aa2a04108e9c259f186ea2301
 === Binding modes
+=======
+
+=== Binding modes
+
+You can have multiple sets of bindings by using different binding modes. When
+you switch to another binding mode, all bindings from the current mode are
+released and only the bindings defined in the new mode are valid for as long as
+you stay in that binding mode. The only predefined binding mode is +default+,
+which is the mode i3 starts out with and to which all bindings not defined in a
+specific binding mode belong.
+
+Working with binding modes consists of two parts: defining a binding mode and
+switching to it. For these purposes, there are one config directive and one
+command, both of which are called +mode+. The directive is used to define the
+bindings belonging to a certain binding mode, while the command will switch to
+the specified mode.
+
+It is recommended to use binding modes in combination with <<variables>> in
+order to make maintenance easier. Below is an example of how to use a binding
+mode.
+
+Note that it is advisable to define bindings for switching back to the default
+mode.
+
+Note that it is possible to use <<pango_markup>> for binding modes, but you
+need to enable it explicitly by passing the +--pango_markup+ flag to the mode
+definition.
+
+*Syntax*:
+----------------------------
+# config directive
+mode [--pango_markup] <name>
+
+# command
+mode <name>
+----------------------------
+
+*Example*:
+------------------------------------------------------------------------
+# Press $mod+o followed by either f, t, Esc or Return to launch firefox,
+# thunderbird or return to the default mode, respectively.
+set $mode_launcher Launch: [f]irefox [t]hunderbird
+bindsym $mod+o mode "$mode_launcher"
+
+mode "$mode_launcher" {
+    bindsym f exec firefox
+    bindsym t exec thunderbird
+
+    bindsym Esc mode "default"
+    bindsym Return mode "default"
+}
+------------------------------------------------------------------------
+
+[[floating_modifier]]
+>>>>>>> Add proper documentation for binding modes.
 
 You can have multiple sets of bindings by using different binding modes. When
 you switch to another binding mode, all bindings from the current mode are
@@ -677,6 +733,10 @@ no_focus [window_role="pop-up"]
 -------------------------------
 
 [[variables]]
+<<<<<<< a47710a1f3f43b0aa2a04108e9c259f186ea2301
+=======
+
+>>>>>>> Add proper documentation for binding modes.
 === Variables
 
 As you learned in the section about keyboard bindings, you will have
@@ -2246,6 +2306,10 @@ separate bindings for a specific set of labels and then only use those labels.
 ///////////////////////////////////////////////////////////////////
 
 [[pango_markup]]
+<<<<<<< a47710a1f3f43b0aa2a04108e9c259f186ea2301
+=======
+
+>>>>>>> Add proper documentation for binding modes.
 === Window title format
 
 By default, i3 will simply print the X11 window title. Using +title_format+,
