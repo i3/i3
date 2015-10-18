@@ -30,10 +30,7 @@ static bool parsing_bindings;
  */
 static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
     FREE(cur_key);
-
-    cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(cur_key, (const char *)keyVal, keyLen);
-    cur_key[keyLen] = '\0';
+    sasprintf(&(cur_key), "%.*s", keyLen, keyVal);
 
     if (strcmp(cur_key, "bindings") == 0)
         parsing_bindings = true;
