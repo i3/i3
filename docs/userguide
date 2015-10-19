@@ -2039,7 +2039,7 @@ bindsym $mod+x move workspace to output right
 bindsym $mod+x move container to output VGA1
 --------------------------------------------------------
 
-=== Moving containers/workspaces to marks
+=== Moving containers/windows to marks
 
 To move a container to another container with a specific mark (see <<vim_like_marks>>),
 you can use the following command.
