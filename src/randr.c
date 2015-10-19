@@ -604,7 +604,6 @@ void randr_query_outputs(void) {
     Output *output, *other, *first;
     xcb_randr_get_output_primary_cookie_t pcookie;
     xcb_randr_get_screen_resources_current_cookie_t rcookie;
-    resources_reply *res;
 
     /* timestamp of the configuration so that we get consistent replies to all
      * requests (if the configuration changes between our different calls) */
@@ -621,28 +620,31 @@ void randr_query_outputs(void) {
         ELOG("Could not get RandR primary output\n");
     else
         DLOG("primary output is %08x\n", primary->output);
-    if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL)
-        return;
 
-    cts = res->config_timestamp;
+    resources_reply *res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL);
+    if (res == NULL) {
+        ELOG("Could not query screen resources.\n");
+    } else {
+        cts = res->config_timestamp;
 
-    int len = xcb_randr_get_screen_resources_current_outputs_length(res);
-    randr_outputs = xcb_randr_get_screen_resources_current_outputs(res);
+        int len = xcb_randr_get_screen_resources_current_outputs_length(res);
+        randr_outputs = xcb_randr_get_screen_resources_current_outputs(res);
 
-    /* Request information for each output */
-    xcb_randr_get_output_info_cookie_t ocookie[len];
-    for (int i = 0; i < len; i++)
-        ocookie[i] = xcb_randr_get_output_info(conn, randr_outputs[i], cts);
+        /* Request information for each output */
+        xcb_randr_get_output_info_cookie_t ocookie[len];
+        for (int i = 0; i < len; i++)
+            ocookie[i] = xcb_randr_get_output_info(conn, randr_outputs[i], cts);
 
-    /* Loop through all outputs available for this X11 screen */
-    for (int i = 0; i < len; i++) {
-        xcb_randr_get_output_info_reply_t *output;
+        /* Loop through all outputs available for this X11 screen */
+        for (int i = 0; i < len; i++) {
+            xcb_randr_get_output_info_reply_t *output;
 
-        if ((output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL)) == NULL)
-            continue;
+            if ((output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL)) == NULL)
+                continue;
 
-        handle_output(conn, randr_outputs[i], output, cts, res);
-        free(output);
+            handle_output(conn, randr_outputs[i], output, cts, res);
+            free(output);
+        }
     }
 
     /* If there's no randr output, enable the output covering the root window. */
