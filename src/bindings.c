@@ -413,6 +413,7 @@ void translate_keysyms(void) {
     }
 
     xkb_state_unref(dummy_state);
+    xkb_state_unref(dummy_state_no_shift);
 
     if (has_errors) {
         start_config_error_nagbar(current_configpath, true);
