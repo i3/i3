@@ -118,7 +118,17 @@ cmd 'mark --toggle important';
 is_deeply(get_mark_for_window_on_workspace($tmp, $con), [ 'important' ], 'container now has the mark');
 
 ##############################################################
-# 7: mark a con, toggle the mark on another con,
+# 7: mark a con, toggle a different mark, check it is marked
+#    with the new mark
+##############################################################
+
+$con = open_window;
+cmd 'mark boring';
+cmd 'mark --replace --toggle important';
+is_deeply(get_mark_for_window_on_workspace($tmp, $con), [ 'important' ], 'container has the most recent mark');
+
+##############################################################
+# 8: mark a con, toggle the mark on another con,
 #    check only the latter has the mark
 ##############################################################
 
@@ -133,7 +143,7 @@ is_deeply(get_mark_for_window_on_workspace($tmp, $first), [ 'important' ], 'left
 ok(!get_mark_for_window_on_workspace($tmp, $second), 'second containr no longer has the mark');
 
 ##############################################################
-# 8: try to mark two cons with the same mark and check that
+# 9: try to mark two cons with the same mark and check that
 #    it fails
 ##############################################################
 

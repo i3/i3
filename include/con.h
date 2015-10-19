@@ -158,13 +158,13 @@ bool con_has_mark(Con *con, const char *mark);
  * Otherwise, the mark is assigned to the container.
  *
  */
-void con_mark_toggle(Con *con, const char *mark);
+void con_mark_toggle(Con *con, const char *mark, mark_mode_t mode);
 
 /**
  * Assigns a mark to the container.
  *
  */
-void con_mark(Con *con, const char *mark);
+void con_mark(Con *con, const char *mark, mark_mode_t mode);
 
 /**
  * If mark is NULL, this removes all existing marks.

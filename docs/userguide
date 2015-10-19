@@ -2115,17 +2115,21 @@ for this purpose: It lets you input a command and sends the command to i3. It
 can also prefix this command and display a custom prompt for the input dialog.
 
 The additional +--toggle+ option will remove the mark if the window already has
-this mark, add it if the window has none or replace the current mark if it has
-another mark.
+this mark or add it otherwise. Note that you may need to use this in
+combination with +--add+ (see below) as any other marks will otherwise be
+removed.
+
+By default, a window can only have one mark. You can use the +--add+ flag to
+put more than one mark on a window.
 
 Refer to <<show_marks>> if you don't want marks to be shown in the window decoration.
 
 *Syntax*:
-------------------------------
-mark [--toggle] <identifier>
+----------------------------------------------
+mark [--add|--replace] [--toggle] <identifier>
 [con_mark="identifier"] focus
 unmark <identifier>
-------------------------------
+----------------------------------------------
 
 *Example (in a terminal)*:
 ------------------------------

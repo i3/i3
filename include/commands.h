@@ -115,10 +115,10 @@ void cmd_workspace_back_and_forth(I3_CMD);
 void cmd_workspace_name(I3_CMD, const char *name);
 
 /**
- * Implementation of 'mark [--toggle] <mark>'
+ * Implementation of 'mark [--add|--replace] [--toggle] <mark>'
  *
  */
-void cmd_mark(I3_CMD, const char *mark, const char *toggle);
+void cmd_mark(I3_CMD, const char *mark, const char *mode, const char *toggle);
 
 /**
  * Implementation of 'unmark [mark]'

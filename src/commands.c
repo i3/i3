@@ -1003,10 +1003,10 @@ void cmd_workspace_name(I3_CMD, const char *name) {
 }
 
 /*
- * Implementation of 'mark [--toggle] <mark>'
+ * Implementation of 'mark [--add|--replace] [--toggle] <mark>'
  *
  */
-void cmd_mark(I3_CMD, const char *mark, const char *toggle) {
+void cmd_mark(I3_CMD, const char *mark, const char *mode, const char *toggle) {
     HANDLE_EMPTY_MATCH;
 
     owindow *current = TAILQ_FIRST(&owindows);
@@ -1022,10 +1022,12 @@ void cmd_mark(I3_CMD, const char *mark, const char *toggle) {
     }
 
     DLOG("matching: %p / %s\n", current->con, current->con->name);
+
+    mark_mode_t mark_mode = (mode == NULL || strcmp(mode, "--replace") == 0) ? MM_REPLACE : MM_ADD;
     if (toggle != NULL) {
-        con_mark_toggle(current->con, mark);
+        con_mark_toggle(current->con, mark, mark_mode);
     } else {
-        con_mark(current->con, mark);
+        con_mark(current->con, mark, mark_mode);
     }
 
     cmd_output->needs_tree_render = true;

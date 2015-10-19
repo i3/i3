@@ -246,7 +246,7 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         char *mark;
         sasprintf(&mark, "%.*s", (int)len, val);
 
-        con_mark(json_node, mark);
+        con_mark(json_node, mark, MM_ADD);
     } else {
         if (strcasecmp(last_key, "name") == 0) {
             json_node->name = scalloc(len + 1, 1);
@@ -354,7 +354,7 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
 
-            con_mark(json_node, buf);
+            con_mark(json_node, buf, MM_REPLACE);
         } else if (strcasecmp(last_key, "floating") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);

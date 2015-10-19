@@ -540,14 +540,14 @@ bool con_has_mark(Con *con, const char *mark) {
  * Otherwise, the mark is assigned to the container.
  *
  */
-void con_mark_toggle(Con *con, const char *mark) {
+void con_mark_toggle(Con *con, const char *mark, mark_mode_t mode) {
     assert(con != NULL);
     DLOG("Toggling mark \"%s\" on con = %p.\n", mark, con);
 
     if (con_has_mark(con, mark)) {
         con_unmark(mark);
     } else {
-        con_mark(con, mark);
+        con_mark(con, mark, mode);
     }
 }
 
@@ -555,11 +555,19 @@ void con_mark_toggle(Con *con, const char *mark) {
  * Assigns a mark to the container.
  *
  */
-void con_mark(Con *con, const char *mark) {
+void con_mark(Con *con, const char *mark, mark_mode_t mode) {
     assert(con != NULL);
     DLOG("Setting mark \"%s\" on con = %p.\n", mark, con);
 
     con_unmark(mark);
+    if (mode == MM_REPLACE) {
+        DLOG("Removing all existing marks on con = %p.\n", con);
+
+        mark_t *current;
+        TAILQ_FOREACH(current, &(con->marks_head), marks) {
+            con_unmark(current->name);
+        }
+    }
 
     mark_t *new = scalloc(1, sizeof(mark_t));
     new->name = sstrdup(mark);

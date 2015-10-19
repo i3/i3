@@ -38,8 +38,8 @@ sub get_mark_for_window_on_workspace {
 
 $ws = fresh_workspace;
 $con = open_window;
-cmd 'mark A';
-cmd 'mark B';
+cmd 'mark --add A';
+cmd 'mark --add B';
 
 is_deeply(sort(get_marks()), [ 'A', 'B' ], 'both marks exist');
 is_deeply(get_mark_for_window_on_workspace($ws, $con), [ 'A', 'B' ], 'both marks are on the same window');
@@ -54,9 +54,9 @@ $ws = fresh_workspace;
 $con = open_window;
 cmd 'mark A';
 
-cmd 'mark --toggle B';
+cmd 'mark --add --toggle B';
 is_deeply(get_mark_for_window_on_workspace($ws, $con), [ 'A', 'B' ], 'both marks are on the same window');
-cmd 'mark --toggle B';
+cmd 'mark --add --toggle B';
 is_deeply(get_mark_for_window_on_workspace($ws, $con), [ 'A' ], 'only mark B has been removed');
 
 cmd 'unmark';
@@ -67,9 +67,9 @@ cmd 'unmark';
 
 $ws = fresh_workspace;
 $con = open_window;
-cmd 'mark A';
-cmd 'mark B';
-cmd 'mark C';
+cmd 'mark --add A';
+cmd 'mark --add B';
+cmd 'mark --add C';
 
 cmd 'unmark B';
 is_deeply(get_mark_for_window_on_workspace($ws, $con), [ 'A', 'C' ], 'only mark B has been removed');
@@ -82,11 +82,11 @@ cmd 'unmark';
 
 $ws = fresh_workspace;
 $con = open_window;
-cmd 'mark A';
-cmd 'mark B';
+cmd 'mark --add A';
+cmd 'mark --add B';
 open_window;
 
-cmd '[con_mark=B] mark C';
+cmd '[con_mark=B] mark --add C';
 is_deeply(get_mark_for_window_on_workspace($ws, $con), [ 'A', 'B', 'C' ], 'matching on a mark works with multiple marks');
 
 cmd 'unmark';
