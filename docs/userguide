@@ -1659,7 +1659,9 @@ workspace::
 	the special value +\_\_focused__+ to match all windows in the currently
 	focused workspace.
 con_mark::
-	Compares the mark set for this container, see <<vim_like_marks>>.
+        Compares the marks set for this container, see <<vim_like_marks>>. A
+        match is made if any of the container's marks matches the specified
+        mark.
 con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
 	interface. Handy for scripting.

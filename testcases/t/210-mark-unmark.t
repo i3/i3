@@ -28,7 +28,7 @@ sub get_mark_for_window_on_workspace {
     my ($ws, $con) = @_;
 
     my $current = first { $_->{window} == $con->{id} } @{get_ws_content($ws)};
-    return $current->{mark};
+    return $current->{marks};
 }
 
 ##############################################################
@@ -40,7 +40,6 @@ my $tmp = fresh_workspace;
 cmd 'split h';
 
 is_deeply(get_marks(), [], 'no marks set yet');
-
 
 ##############################################################
 # 2: mark a con, check that it's marked, unmark it, check that
@@ -98,7 +97,7 @@ cmd 'mark important';
 cmd 'focus left';
 cmd 'mark important';
 
-is(get_mark_for_window_on_workspace($tmp, $first), 'important', 'first container now has the mark');
+is_deeply(get_mark_for_window_on_workspace($tmp, $first), [ 'important' ], 'first container now has the mark');
 ok(!get_mark_for_window_on_workspace($tmp, $second), 'second container lost the mark');
 
 ##############################################################
@@ -116,20 +115,10 @@ ok(!get_mark_for_window_on_workspace($tmp, $con), 'container no longer has the m
 
 $con = open_window;
 cmd 'mark --toggle important';
-is(get_mark_for_window_on_workspace($tmp, $con), 'important', 'container now has the mark');
+is_deeply(get_mark_for_window_on_workspace($tmp, $con), [ 'important' ], 'container now has the mark');
 
 ##############################################################
-# 7: mark a con, toggle a different mark, check it is marked
-#    with the new mark
-##############################################################
-
-$con = open_window;
-cmd 'mark boring';
-cmd 'mark --toggle important';
-is(get_mark_for_window_on_workspace($tmp, $con), 'important', 'container has the most recent mark');
-
-##############################################################
-# 8: mark a con, toggle the mark on another con,
+# 7: mark a con, toggle the mark on another con,
 #    check only the latter has the mark
 ##############################################################
 
@@ -140,11 +129,11 @@ cmd 'mark important';
 cmd 'focus left';
 cmd 'mark --toggle important';
 
-is(get_mark_for_window_on_workspace($tmp, $first), 'important', 'left container has the mark now');
+is_deeply(get_mark_for_window_on_workspace($tmp, $first), [ 'important' ], 'left container has the mark now');
 ok(!get_mark_for_window_on_workspace($tmp, $second), 'second containr no longer has the mark');
 
 ##############################################################
-# 9: try to mark two cons with the same mark and check that
+# 8: try to mark two cons with the same mark and check that
 #    it fails
 ##############################################################
 

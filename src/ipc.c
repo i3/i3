@@ -275,9 +275,16 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("urgent");
     y(bool, con->urgent);
 
-    if (con->mark != NULL) {
-        ystr("mark");
-        ystr(con->mark);
+    if (!TAILQ_EMPTY(&(con->marks_head))) {
+        ystr("marks");
+        y(array_open);
+
+        mark_t *mark;
+        TAILQ_FOREACH(mark, &(con->marks_head), marks) {
+            ystr(mark->name);
+        }
+
+        y(array_close);
     }
 
     ystr("focused");
@@ -819,9 +826,12 @@ IPC_HANDLER(get_marks) {
     y(array_open);
 
     Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons)
-    if (con->mark != NULL)
-        ystr(con->mark);
+    TAILQ_FOREACH(con, &all_cons, all_cons) {
+        mark_t *mark;
+        TAILQ_FOREACH(mark, &(con->marks_head), marks) {
+            ystr(mark->name);
+        }
+    }
 
     y(array_close);
 

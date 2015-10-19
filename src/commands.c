@@ -290,10 +290,16 @@ void cmd_criteria_match_windows(I3_CMD) {
                 DLOG("doesnt match\n");
                 free(current);
             }
-        } else if (current_match->mark != NULL && current->con->mark != NULL &&
-                   regex_matches(current_match->mark, current->con->mark)) {
-            DLOG("match by mark\n");
-            TAILQ_INSERT_TAIL(&owindows, current, owindows);
+        } else if (current_match->mark != NULL && !TAILQ_EMPTY(&(current->con->marks_head))) {
+            mark_t *mark;
+            TAILQ_FOREACH(mark, &(current->con->marks_head), marks) {
+                if (!regex_matches(current_match->mark, mark->name))
+                    continue;
+
+                DLOG("match by mark\n");
+                TAILQ_INSERT_TAIL(&owindows, current, owindows);
+                break;
+            }
         } else {
             if (current->con->window && match_matches_window(current_match, current->con->window)) {
                 DLOG("matches window!\n");

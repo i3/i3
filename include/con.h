@@ -147,6 +147,12 @@ Con *con_by_frame_id(xcb_window_t frame);
 Con *con_by_mark(const char *mark);
 
 /**
+ * Returns true if and only if the given containers holds the mark.
+ *
+ */
+bool con_has_mark(Con *con, const char *mark);
+
+/**
  * Toggles the mark on a container.
  * If the container already has this mark, the mark is removed.
  * Otherwise, the mark is assigned to the container.

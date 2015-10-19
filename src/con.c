@@ -55,6 +55,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     TAILQ_INIT(&(new->nodes_head));
     TAILQ_INIT(&(new->focus_head));
     TAILQ_INIT(&(new->swallow_head));
+    TAILQ_INIT(&(new->marks_head));
 
     if (parent != NULL)
         con_attach(new, parent, false);
@@ -512,11 +513,25 @@ Con *con_by_frame_id(xcb_window_t frame) {
 Con *con_by_mark(const char *mark) {
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons) {
-        if (con->mark != NULL && strcmp(con->mark, mark) == 0)
+        if (con_has_mark(con, mark))
             return con;
     }
 
     return NULL;
+}
+
+/*
+ * Returns true if and only if the given containers holds the mark.
+ *
+ */
+bool con_has_mark(Con *con, const char *mark) {
+    mark_t *current;
+    TAILQ_FOREACH(current, &(con->marks_head), marks) {
+        if (strcmp(current->name, mark) == 0)
+            return true;
+    }
+
+    return false;
 }
 
 /*
@@ -529,7 +544,7 @@ void con_mark_toggle(Con *con, const char *mark) {
     assert(con != NULL);
     DLOG("Toggling mark \"%s\" on con = %p.\n", mark, con);
 
-    if (con->mark != NULL && strcmp(con->mark, mark) == 0) {
+    if (con_has_mark(con, mark)) {
         con_unmark(mark);
     } else {
         con_mark(con, mark);
@@ -544,22 +559,13 @@ void con_mark(Con *con, const char *mark) {
     assert(con != NULL);
     DLOG("Setting mark \"%s\" on con = %p.\n", mark, con);
 
-    FREE(con->mark);
-    con->mark = sstrdup(mark);
+    con_unmark(mark);
+
+    mark_t *new = scalloc(1, sizeof(mark_t));
+    new->name = sstrdup(mark);
+    TAILQ_INSERT_TAIL(&(con->marks_head), new, marks);
+
     con->mark_changed = true;
-
-    DLOG("Clearing the mark from all other windows.\n");
-    Con *other;
-    TAILQ_FOREACH(other, &all_cons, all_cons) {
-        /* Skip the window we actually handled since we took care of it already. */
-        if (con == other)
-            continue;
-
-        if (other->mark != NULL && strcmp(other->mark, mark) == 0) {
-            FREE(other->mark);
-            other->mark_changed = true;
-        }
-    }
 }
 
 /*
@@ -572,10 +578,17 @@ void con_unmark(const char *mark) {
     if (mark == NULL) {
         DLOG("Unmarking all containers.\n");
         TAILQ_FOREACH(con, &all_cons, all_cons) {
-            if (con->mark == NULL)
+            if (TAILQ_EMPTY(&(con->marks_head)))
                 continue;
 
-            FREE(con->mark);
+            mark_t *current;
+            while (!TAILQ_EMPTY(&(con->marks_head))) {
+                current = TAILQ_FIRST(&(con->marks_head));
+                FREE(current->name);
+                TAILQ_REMOVE(&(con->marks_head), current, marks);
+                FREE(current);
+            }
+
             con->mark_changed = true;
         }
     } else {
@@ -587,8 +600,18 @@ void con_unmark(const char *mark) {
         }
 
         DLOG("Found mark on con = %p. Removing it now.\n", con);
-        FREE(con->mark);
         con->mark_changed = true;
+
+        mark_t *current;
+        TAILQ_FOREACH(current, &(con->marks_head), marks) {
+            if (strcmp(current->name, mark) != 0)
+                continue;
+
+            FREE(current->name);
+            TAILQ_REMOVE(&(con->marks_head), current, marks);
+            FREE(current);
+            break;
+        }
     }
 }
 
