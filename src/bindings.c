@@ -396,6 +396,7 @@ void translate_keysyms(void) {
     }
 
     xkb_state_unref(dummy_state);
+    xkb_state_unref(dummy_state_no_shift);
 }
 
 /*
