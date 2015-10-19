@@ -894,8 +894,8 @@ IPC_HANDLER(get_bar_config) {
 
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
-    char *bar_id = scalloc(message_size + 1, 1);
-    strncpy(bar_id, (const char *)message, message_size);
+    char *bar_id = NULL;
+    sasprintf(&bar_id, "%.*s", message_size, message);
     LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
     Barconfig *current, *config = NULL;
     TAILQ_FOREACH(current, &barconfigs, configs) {
@@ -905,6 +905,7 @@ IPC_HANDLER(get_bar_config) {
         config = current;
         break;
     }
+    free(bar_id);
 
     if (!config) {
         /* If we did not find a config for the given ID, the reply will contain
