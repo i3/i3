@@ -1040,7 +1040,14 @@ void cmd_mark(I3_CMD, const char *mark, const char *mode, const char *toggle) {
  *
  */
 void cmd_unmark(I3_CMD, const char *mark) {
-    con_unmark(mark);
+    if (match_is_empty(current_match)) {
+        con_unmark(NULL, mark);
+    } else {
+        owindow *current;
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            con_unmark(current->con, mark);
+        }
+    }
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply

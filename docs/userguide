@@ -2132,11 +2132,19 @@ unmark <identifier>
 ----------------------------------------------
 
 *Example (in a terminal)*:
-------------------------------
-$ i3-msg mark irssi
-$ i3-msg '[con_mark="irssi"] focus'
-$ i3-msg unmark irssi
-------------------------------
+---------------------------------------------------------
+# marks the focused container
+mark irssi
+
+# focus the container with the mark "irssi"
+'[con_mark="irssi"] focus'
+
+# remove the mark "irssi" from whichever container has it
+unmark irssi
+
+# remove all marks on all firefox windows
+[class="(?i)firefox"] unmark
+---------------------------------------------------------
 
 ///////////////////////////////////////////////////////////////////
 TODO: make i3-input replace %s

@@ -166,12 +166,14 @@ void con_mark_toggle(Con *con, const char *mark, mark_mode_t mode);
  */
 void con_mark(Con *con, const char *mark, mark_mode_t mode);
 
-/**
- * If mark is NULL, this removes all existing marks.
+/*
+ * Removes marks from containers.
+ * If con is NULL, all containers are considered.
+ * If name is NULL, this removes all existing marks.
  * Otherwise, it will only remove the given mark (if it is present).
  *
  */
-void con_unmark(const char *mark);
+void con_unmark(Con *con, const char *name);
 
 /**
  * Returns the first container below 'con' which wants to swallow this window

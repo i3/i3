@@ -545,7 +545,7 @@ void con_mark_toggle(Con *con, const char *mark, mark_mode_t mode) {
     DLOG("Toggling mark \"%s\" on con = %p.\n", mark, con);
 
     if (con_has_mark(con, mark)) {
-        con_unmark(mark);
+        con_unmark(con, mark);
     } else {
         con_mark(con, mark, mode);
     }
@@ -559,13 +559,13 @@ void con_mark(Con *con, const char *mark, mark_mode_t mode) {
     assert(con != NULL);
     DLOG("Setting mark \"%s\" on con = %p.\n", mark, con);
 
-    con_unmark(mark);
+    con_unmark(NULL, mark);
     if (mode == MM_REPLACE) {
         DLOG("Removing all existing marks on con = %p.\n", con);
 
         mark_t *current;
         TAILQ_FOREACH(current, &(con->marks_head), marks) {
-            con_unmark(current->name);
+            con_unmark(con, current->name);
         }
     }
 
@@ -577,47 +577,52 @@ void con_mark(Con *con, const char *mark, mark_mode_t mode) {
 }
 
 /*
- * If mark is NULL, this removes all existing marks.
+ * Removes marks from containers.
+ * If con is NULL, all containers are considered.
+ * If name is NULL, this removes all existing marks.
  * Otherwise, it will only remove the given mark (if it is present).
  *
  */
-void con_unmark(const char *mark) {
-    Con *con;
-    if (mark == NULL) {
+void con_unmark(Con *con, const char *name) {
+    Con *current;
+    if (name == NULL) {
         DLOG("Unmarking all containers.\n");
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            if (TAILQ_EMPTY(&(con->marks_head)))
+        TAILQ_FOREACH(current, &all_cons, all_cons) {
+            if (con != NULL && current != con)
                 continue;
 
-            mark_t *current;
-            while (!TAILQ_EMPTY(&(con->marks_head))) {
-                current = TAILQ_FIRST(&(con->marks_head));
-                FREE(current->name);
-                TAILQ_REMOVE(&(con->marks_head), current, marks);
-                FREE(current);
+            if (TAILQ_EMPTY(&(current->marks_head)))
+                continue;
+
+            mark_t *mark;
+            while (!TAILQ_EMPTY(&(current->marks_head))) {
+                mark = TAILQ_FIRST(&(current->marks_head));
+                FREE(mark->name);
+                TAILQ_REMOVE(&(current->marks_head), mark, marks);
+                FREE(mark);
             }
 
-            con->mark_changed = true;
+            current->mark_changed = true;
         }
     } else {
-        DLOG("Removing mark \"%s\".\n", mark);
-        con = con_by_mark(mark);
-        if (con == NULL) {
+        DLOG("Removing mark \"%s\".\n", name);
+        current = (con == NULL) ? con_by_mark(name) : con;
+        if (current == NULL) {
             DLOG("No container found with this mark, so there is nothing to do.\n");
             return;
         }
 
-        DLOG("Found mark on con = %p. Removing it now.\n", con);
-        con->mark_changed = true;
+        DLOG("Found mark on con = %p. Removing it now.\n", current);
+        current->mark_changed = true;
 
-        mark_t *current;
-        TAILQ_FOREACH(current, &(con->marks_head), marks) {
-            if (strcmp(current->name, mark) != 0)
+        mark_t *mark;
+        TAILQ_FOREACH(mark, &(current->marks_head), marks) {
+            if (strcmp(mark->name, name) != 0)
                 continue;
 
-            FREE(current->name);
-            TAILQ_REMOVE(&(con->marks_head), current, marks);
-            FREE(current);
+            FREE(mark->name);
+            TAILQ_REMOVE(&(current->marks_head), mark, marks);
+            FREE(mark);
             break;
         }
     }
