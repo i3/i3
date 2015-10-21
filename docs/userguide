@@ -442,10 +442,13 @@ bindsym button8 move right
 --------------------------------
 
 [[binding_modes]]
+<<<<<<< 6ca1b2bed001f780adeb8b4e204e8d8dbfb92908
 <<<<<<< a47710a1f3f43b0aa2a04108e9c259f186ea2301
 === Binding modes
 =======
 
+=======
+>>>>>>> Improve placement of explicit IDs for headings
 === Binding modes
 
 You can have multiple sets of bindings by using different binding modes. When
@@ -498,6 +501,7 @@ mode "$mode_launcher" {
 ------------------------------------------------------------------------
 
 [[floating_modifier]]
+<<<<<<< 6ca1b2bed001f780adeb8b4e204e8d8dbfb92908
 >>>>>>> Add proper documentation for binding modes.
 
 You can have multiple sets of bindings by using different binding modes. When
@@ -550,6 +554,8 @@ mode "$mode_launcher" {
 ------------------------------------------------------------------------
 
 [[floating_modifier]]
+=======
+>>>>>>> Improve placement of explicit IDs for headings
 === The floating modifier
 
 To move floating windows with your mouse, you can either grab their titlebar
@@ -733,10 +739,13 @@ no_focus [window_role="pop-up"]
 -------------------------------
 
 [[variables]]
+<<<<<<< 6ca1b2bed001f780adeb8b4e204e8d8dbfb92908
 <<<<<<< a47710a1f3f43b0aa2a04108e9c259f186ea2301
 =======
 
 >>>>>>> Add proper documentation for binding modes.
+=======
+>>>>>>> Improve placement of explicit IDs for headings
 === Variables
 
 As you learned in the section about keyboard bindings, you will have
@@ -762,6 +771,7 @@ absolutely no plans to change this. If you need a more dynamic configuration
 you should create a little script which generates a configuration file and run
 it before starting i3 (for example in your +~/.xsession+ file).
 
+<<<<<<< 6ca1b2bed001f780adeb8b4e204e8d8dbfb92908
 Also see <<xresources>> to learn how to create variables based on resources
 loaded from the X resource database.
 
@@ -794,6 +804,8 @@ set_from_resource $<name> <resource_name> <fallback>
 set_from_resource $black i3wm.color0 #000000
 ----------------------------------------------------------------------------
 
+=======
+>>>>>>> Improve placement of explicit IDs for headings
 [[assign_workspace]]
 === Automatically putting clients on specific workspaces
 
@@ -2306,10 +2318,13 @@ separate bindings for a specific set of labels and then only use those labels.
 ///////////////////////////////////////////////////////////////////
 
 [[pango_markup]]
+<<<<<<< 6ca1b2bed001f780adeb8b4e204e8d8dbfb92908
 <<<<<<< a47710a1f3f43b0aa2a04108e9c259f186ea2301
 =======
 
 >>>>>>> Add proper documentation for binding modes.
+=======
+>>>>>>> Improve placement of explicit IDs for headings
 === Window title format
 
 By default, i3 will simply print the X11 window title. Using +title_format+,
