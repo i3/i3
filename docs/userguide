@@ -1642,15 +1642,15 @@ The criteria which are currently implemented are:
 
 class::
 	Compares the window class (the second part of WM_CLASS). Use the
-	special value +__focused__+ to match all windows having the same window
+	special value +\_\_focused__+ to match all windows having the same window
 	class as the currently focused window.
 instance::
 	Compares the window instance (the first part of WM_CLASS). Use the
-	special value +__focused__+ to match all windows having the same window
+	special value +\_\_focused__+ to match all windows having the same window
 	instance as the currently focused window.
 window_role::
 	Compares the window role (WM_WINDOW_ROLE). Use the special value
-	+__focused__+ to match all windows having the same window role as the
+	+\_\_focused__+ to match all windows having the same window role as the
 	currently focused window.
 window_type::
 	Compare the window type (_NET_WM_WINDOW_TYPE). Possible values are
@@ -1659,8 +1659,8 @@ window_type::
 id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
-	Compares the X11 window title (_NET_WM_NAME or WM_NAME as fallback).
-	Use the special value +__focused__+ to match all windows having the
+	Compares the X11 window title (\_NET_WM_NAME or WM_NAME as fallback).
+	Use the special value +\_\_focused__+ to match all windows having the
 	same window title as the currently focused window.
 urgent::
 	Compares the urgent state of the window. Can be "latest" or "oldest".
@@ -1668,7 +1668,7 @@ urgent::
 	(The following aliases are also available: newest, last, recent, first)
 workspace::
 	Compares the workspace name of the workspace the window belongs to. Use
-	the special value +__focused__+ to match all windows in the currently
+	the special value +\_\_focused__+ to match all windows in the currently
 	focused workspace.
 con_mark::
 	Compares the mark set for this container, see <<vim_like_marks>>.
