@@ -33,15 +33,15 @@ above, just decline i3-config-wizard’s offer and base your config on
 == Using i3
 
 Throughout this guide, the keyword +$mod+ will be used to refer to the
-configured modifier. This is the Alt key (Mod1) by default, with the Windows
-key (Mod4) being a popular alternative.
+configured modifier. This is the Alt key (+Mod1+) by default, with the Windows
+key (+Mod4+) being a popular alternative.
 
 === Opening terminals and moving around
 
 One very basic operation is opening a new terminal. By default, the keybinding
-for this is $mod+Enter, that is Alt+Enter in the default configuration. By
-pressing $mod+Enter, a new terminal will be opened.  It will fill the whole
-space available on your screen.
+for this is +$mod+Enter+, that is Alt+Enter (+Mod1+Enter+) in the default
+configuration. By pressing +$mod+Enter+, a new terminal will be opened.  It
+will fill the whole space available on your screen.
 
 image:single_terminal.png[Single terminal]
 
@@ -55,9 +55,9 @@ image:two_terminals.png[Two terminals]
 To move the focus between the two terminals, you can use the direction keys
 which you may know from the editor +vi+. However, in i3, your homerow is used
 for these keys (in +vi+, the keys are shifted to the left by one for
-compatibility with most keyboard layouts). Therefore, +$mod+J+ is left, +$mod+K+
-is down, +$mod+L+ is up and `$mod+;` is right. So, to switch between the
-terminals, use +$mod+K+ or +$mod+L+. Of course, you can also use the arrow keys.
+compatibility with most keyboard layouts). Therefore, +$mod+j+ is left, +$mod+k+
+is down, +$mod+l+ is up and `$mod+;` is right. So, to switch between the
+terminals, use +$mod+k+ or +$mod+l+. Of course, you can also use the arrow keys.
 
 At the moment, your workspace is split (it contains two terminals) in a
 specific direction (horizontal by default). Every window can be split
@@ -114,7 +114,7 @@ create a keybinding for starting the application directly. See the section
 === Closing windows
 
 If an application does not provide a mechanism for closing (most applications
-provide a menu, the escape key or a shortcut like +Control+W+ to close), you
+provide a menu, the escape key or a shortcut like +Control+w+ to close), you
 can press +$mod+Shift+q+ to kill a window. For applications which support
 the WM_DELETE protocol, this will correctly close the application (saving
 any modifications or doing other cleanup). If the application doesn’t support
@@ -290,7 +290,7 @@ with a text editor.
 
 On first start (and on all following starts, unless you have a configuration
 file), i3 will offer you to create a configuration file. You can tell the
-wizard to use either Alt (Mod1) or Windows (Mod4) as modifier in the config
+wizard to use either Alt (+Mod1+) or Windows (+Mod4+) as modifier in the config
 file. Also, the created config file will use the key symbols of your current
 keyboard layout. To start the wizard, use the command +i3-config-wizard+.
 Please note that you must not have +~/.i3/config+, otherwise the wizard will
