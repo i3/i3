@@ -21,10 +21,6 @@ static void render_con_stacked(Con *con, Con *child, render_params *p, int i);
 static void render_con_tabbed(Con *con, Con *child, render_params *p, int i);
 static void render_con_dockarea(Con *con, Con *child, render_params *p);
 
-/* change this to 'true' if you want to have additional borders around every
- * container (for debugging purposes) */
-static bool show_debug_borders = false;
-
 /*
  * Returns the height for the decorations
  */
@@ -53,15 +49,6 @@ void render_con(Con *con, bool render_fullscreen) {
     DLOG("Rendering %snode %p / %s / layout %d / children %d\n",
          (render_fullscreen ? "fullscreen " : ""), con, con->name, con->layout,
          params.children);
-
-    /* Display a border if this is a leaf node. For container nodes, we don’t
-     * draw borders (except when in debug mode) */
-    if (show_debug_borders) {
-        params.rect.x += 2;
-        params.rect.y += 2;
-        params.rect.width -= 2 * 2;
-        params.rect.height -= 2 * 2;
-    }
 
     int i = 0;
     con->mapped = true;
