@@ -545,18 +545,34 @@ void x_draw_decoration(Con *con) {
     int indent_px = (indent_level * 5) * indent_mult;
 
     int mark_width = 0;
-    if (config.show_marks && con->mark != NULL && (con->mark)[0] != '_') {
-        char *formatted_mark;
-        sasprintf(&formatted_mark, "[%s]", con->mark);
-        i3String *mark = i3string_from_utf8(formatted_mark);
+    if (config.show_marks && !TAILQ_EMPTY(&(con->marks_head))) {
+        char *formatted_mark = sstrdup("");
+        bool had_visible_mark = false;
+
+        mark_t *mark;
+        TAILQ_FOREACH(mark, &(con->marks_head), marks) {
+            if (mark->name[0] == '_')
+                continue;
+            had_visible_mark = true;
+
+            char *buf;
+            sasprintf(&buf, "%s[%s]", formatted_mark, mark->name);
+            free(formatted_mark);
+            formatted_mark = buf;
+        }
+
+        if (had_visible_mark) {
+            i3String *mark = i3string_from_utf8(formatted_mark);
+            mark_width = predict_text_width(mark);
+
+            draw_text(mark, parent->pixmap, parent->pm_gc, NULL,
+                      con->deco_rect.x + con->deco_rect.width - mark_width - logical_px(2),
+                      con->deco_rect.y + text_offset_y, mark_width);
+
+            I3STRING_FREE(mark);
+        }
+
         FREE(formatted_mark);
-        mark_width = predict_text_width(mark);
-
-        draw_text(mark, parent->pixmap, parent->pm_gc, NULL,
-                  con->deco_rect.x + con->deco_rect.width - mark_width - logical_px(2),
-                  con->deco_rect.y + text_offset_y, mark_width);
-
-        I3STRING_FREE(mark);
     }
 
     i3String *title = win->title_format == NULL ? win->name : window_parse_title_format(win);

@@ -290,10 +290,16 @@ void cmd_criteria_match_windows(I3_CMD) {
                 DLOG("doesnt match\n");
                 free(current);
             }
-        } else if (current_match->mark != NULL && current->con->mark != NULL &&
-                   regex_matches(current_match->mark, current->con->mark)) {
-            DLOG("match by mark\n");
-            TAILQ_INSERT_TAIL(&owindows, current, owindows);
+        } else if (current_match->mark != NULL && !TAILQ_EMPTY(&(current->con->marks_head))) {
+            mark_t *mark;
+            TAILQ_FOREACH(mark, &(current->con->marks_head), marks) {
+                if (!regex_matches(current_match->mark, mark->name))
+                    continue;
+
+                DLOG("match by mark\n");
+                TAILQ_INSERT_TAIL(&owindows, current, owindows);
+                break;
+            }
         } else {
             if (current->con->window && match_matches_window(current_match, current->con->window)) {
                 DLOG("matches window!\n");
@@ -997,10 +1003,10 @@ void cmd_workspace_name(I3_CMD, const char *name) {
 }
 
 /*
- * Implementation of 'mark [--toggle] <mark>'
+ * Implementation of 'mark [--add|--replace] [--toggle] <mark>'
  *
  */
-void cmd_mark(I3_CMD, const char *mark, const char *toggle) {
+void cmd_mark(I3_CMD, const char *mark, const char *mode, const char *toggle) {
     HANDLE_EMPTY_MATCH;
 
     owindow *current = TAILQ_FIRST(&owindows);
@@ -1016,10 +1022,12 @@ void cmd_mark(I3_CMD, const char *mark, const char *toggle) {
     }
 
     DLOG("matching: %p / %s\n", current->con, current->con->name);
+
+    mark_mode_t mark_mode = (mode == NULL || strcmp(mode, "--replace") == 0) ? MM_REPLACE : MM_ADD;
     if (toggle != NULL) {
-        con_mark_toggle(current->con, mark);
+        con_mark_toggle(current->con, mark, mark_mode);
     } else {
-        con_mark(current->con, mark);
+        con_mark(current->con, mark, mark_mode);
     }
 
     cmd_output->needs_tree_render = true;
@@ -1032,7 +1040,14 @@ void cmd_mark(I3_CMD, const char *mark, const char *toggle) {
  *
  */
 void cmd_unmark(I3_CMD, const char *mark) {
-    con_unmark(mark);
+    if (match_is_empty(current_match)) {
+        con_unmark(NULL, mark);
+    } else {
+        owindow *current;
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            con_unmark(current->con, mark);
+        }
+    }
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply

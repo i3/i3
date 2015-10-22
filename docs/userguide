@@ -1659,10 +1659,13 @@ workspace::
 	the special value +\_\_focused__+ to match all windows in the currently
 	focused workspace.
 con_mark::
-	Compares the mark set for this container, see <<vim_like_marks>>.
+        Compares the marks set for this container, see <<vim_like_marks>>. A
+        match is made if any of the container's marks matches the specified
+        mark.
 con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
-	interface. Handy for scripting.
+	interface. Handy for scripting. Use the special value +\_\_focused__+
+	to match only the currently focused window.
 
 The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
@@ -2113,24 +2116,36 @@ for this purpose: It lets you input a command and sends the command to i3. It
 can also prefix this command and display a custom prompt for the input dialog.
 
 The additional +--toggle+ option will remove the mark if the window already has
-this mark, add it if the window has none or replace the current mark if it has
-another mark.
+this mark or add it otherwise. Note that you may need to use this in
+combination with +--add+ (see below) as any other marks will otherwise be
+removed.
+
+By default, a window can only have one mark. You can use the +--add+ flag to
+put more than one mark on a window.
 
 Refer to <<show_marks>> if you don't want marks to be shown in the window decoration.
 
 *Syntax*:
-------------------------------
-mark [--toggle] <identifier>
+----------------------------------------------
+mark [--add|--replace] [--toggle] <identifier>
 [con_mark="identifier"] focus
 unmark <identifier>
-------------------------------
+----------------------------------------------
 
 *Example (in a terminal)*:
-------------------------------
-$ i3-msg mark irssi
-$ i3-msg '[con_mark="irssi"] focus'
-$ i3-msg unmark irssi
-------------------------------
+---------------------------------------------------------
+# marks the focused container
+mark irssi
+
+# focus the container with the mark "irssi"
+'[con_mark="irssi"] focus'
+
+# remove the mark "irssi" from whichever container has it
+unmark irssi
+
+# remove all marks on all firefox windows
+[class="(?i)firefox"] unmark
+---------------------------------------------------------
 
 ///////////////////////////////////////////////////////////////////
 TODO: make i3-input replace %s

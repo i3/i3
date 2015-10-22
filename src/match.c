@@ -279,6 +279,11 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
     }
 
     if (strcmp(ctype, "con_id") == 0) {
+        if (strcmp(cvalue, "__focused__") == 0) {
+            match->con_id = focused;
+            return;
+        }
+
         char *end;
         long parsed = strtol(cvalue, &end, 10);
         if (parsed == LONG_MIN ||

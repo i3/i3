@@ -63,7 +63,7 @@ is($con->{window_properties}->{instance}, 'special',
 
 # The mark `special_class_mark` is added in a `for_window` assignment in the
 # config for testing purposes
-is($con->{mark}, 'special_class_mark',
+is_deeply($con->{marks}, [ 'special_class_mark' ],
     'A `for_window` assignment should run for a match when the window changes class');
 
 change_window_class($win, "abcdefghijklmnopqrstuv\0abcd", 24);
