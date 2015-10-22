@@ -33,15 +33,15 @@ above, just decline i3-config-wizard’s offer and base your config on
 == Using i3
 
 Throughout this guide, the keyword +$mod+ will be used to refer to the
-configured modifier. This is the Alt key (Mod1) by default, with the Windows
-key (Mod4) being a popular alternative.
+configured modifier. This is the Alt key (+Mod1+) by default, with the Windows
+key (+Mod4+) being a popular alternative.
 
 === Opening terminals and moving around
 
 One very basic operation is opening a new terminal. By default, the keybinding
-for this is $mod+Enter, that is Alt+Enter in the default configuration. By
-pressing $mod+Enter, a new terminal will be opened.  It will fill the whole
-space available on your screen.
+for this is +$mod+Enter+, that is Alt+Enter (+Mod1+Enter+) in the default
+configuration. By pressing +$mod+Enter+, a new terminal will be opened.  It
+will fill the whole space available on your screen.
 
 image:single_terminal.png[Single terminal]
 
@@ -55,9 +55,9 @@ image:two_terminals.png[Two terminals]
 To move the focus between the two terminals, you can use the direction keys
 which you may know from the editor +vi+. However, in i3, your homerow is used
 for these keys (in +vi+, the keys are shifted to the left by one for
-compatibility with most keyboard layouts). Therefore, +$mod+J+ is left, +$mod+K+
-is down, +$mod+L+ is up and `$mod+;` is right. So, to switch between the
-terminals, use +$mod+K+ or +$mod+L+. Of course, you can also use the arrow keys.
+compatibility with most keyboard layouts). Therefore, +$mod+j+ is left, +$mod+k+
+is down, +$mod+l+ is up and `$mod+;` is right. So, to switch between the
+terminals, use +$mod+k+ or +$mod+l+. Of course, you can also use the arrow keys.
 
 At the moment, your workspace is split (it contains two terminals) in a
 specific direction (horizontal by default). Every window can be split
@@ -114,7 +114,7 @@ create a keybinding for starting the application directly. See the section
 === Closing windows
 
 If an application does not provide a mechanism for closing (most applications
-provide a menu, the escape key or a shortcut like +Control+W+ to close), you
+provide a menu, the escape key or a shortcut like +Control+w+ to close), you
 can press +$mod+Shift+q+ to kill a window. For applications which support
 the WM_DELETE protocol, this will correctly close the application (saving
 any modifications or doing other cleanup). If the application doesn’t support
@@ -205,9 +205,8 @@ like this:
 image::tree-layout2.png["layout2",float="right"]
 image::tree-shot4.png["shot4",title="Two terminals on standard workspace"]
 
-=== Orientation and Split Containers
-
 [[OrientationSplit]]
+=== Orientation and Split Containers
 
 It is only natural to use so-called +Split Containers+ in order to build a
 layout when using a tree as data structure. In i3, every +Container+ has an
@@ -291,7 +290,7 @@ with a text editor.
 
 On first start (and on all following starts, unless you have a configuration
 file), i3 will offer you to create a configuration file. You can tell the
-wizard to use either Alt (Mod1) or Windows (Mod4) as modifier in the config
+wizard to use either Alt (+Mod1+) or Windows (+Mod4+) as modifier in the config
 file. Also, the created config file will use the key symbols of your current
 keyboard layout. To start the wizard, use the command +i3-config-wizard+.
 Please note that you must not have +~/.i3/config+, otherwise the wizard will
@@ -309,7 +308,6 @@ a # and can only be used at the beginning of a line:
 -------------------
 
 [[fonts]]
-
 === Fonts
 
 i3 has support for both X core fonts and FreeType fonts (through Pango) to
@@ -342,7 +340,6 @@ font pango:Terminus 11px
 --------------------------------------------------------------
 
 [[keybindings]]
-
 === Keyboard bindings
 
 A keyboard binding makes i3 execute a command (see below) upon pressing a
@@ -407,7 +404,6 @@ corresponding group. For backwards compatibility, the group “Mode_switch” is
 alias for Group2.
 
 [[mousebindings]]
-
 === Mouse bindings
 
 A mouse binding makes i3 execute a command upon pressing a specific mouse
@@ -445,7 +441,6 @@ bindsym button8 move right
 --------------------------------
 
 [[binding_modes]]
-
 === Binding modes
 
 You can have multiple sets of bindings by using different binding modes. When
@@ -498,7 +493,6 @@ mode "$mode_launcher" {
 ------------------------------------------------------------------------
 
 [[floating_modifier]]
-
 === The floating modifier
 
 To move floating windows with your mouse, you can either grab their titlebar
@@ -626,9 +620,8 @@ hide_edge_borders none|vertical|horizontal|both
 hide_edge_borders vertical
 ----------------------
 
-=== Arbitrary commands for specific windows (for_window)
-
 [[for_window]]
+=== Arbitrary commands for specific windows (for_window)
 
 With the +for_window+ command, you can let i3 execute any command when it
 encounters a specific window. This can be used to set windows to floating or to
@@ -655,9 +648,8 @@ for_window [title="x200: ~/work"] floating enable
 
 The valid criteria are the same as those for commands, see <<command_criteria>>.
 
-=== Don't focus window upon opening
-
 [[no_focus]]
+=== Don't focus window upon opening
 
 When a new window appears, it will be focused. The +no_focus+ directive allows preventing
 this from happening and must be used in combination with <<command_criteria>>.
@@ -681,7 +673,6 @@ no_focus [window_role="pop-up"]
 -------------------------------
 
 [[variables]]
-
 === Variables
 
 As you learned in the section about keyboard bindings, you will have
@@ -707,9 +698,8 @@ absolutely no plans to change this. If you need a more dynamic configuration
 you should create a little script which generates a configuration file and run
 it before starting i3 (for example in your +~/.xsession+ file).
 
-=== Automatically putting clients on specific workspaces
-
 [[assign_workspace]]
+=== Automatically putting clients on specific workspaces
 
 To automatically make a specific window show up on a specific workspace, you
 can use an *assignment*. You can match windows by using any criteria,
@@ -814,7 +804,6 @@ exec --no-startup-id urxvt
 The flag --no-startup-id is explained in <<exec>>.
 
 [[workspace_screen]]
-
 === Automatically putting workspaces on specific screens
 
 If you assign clients to workspaces, it might be handy to put the
@@ -1073,9 +1062,8 @@ force_display_urgency_hint <timeout> ms
 force_display_urgency_hint 500 ms
 ---------------------------------
 
-=== Focus on window activation
-
 [[focus_on_window_activation]]
+=== Focus on window activation
 
 If a window is activated, e.g., via +google-chrome www.google.com+, it may request
 to take focus. Since this may not preferable, different reactions can be configured.
@@ -1100,6 +1088,7 @@ focus::
 none::
     The window will neither be focused, nor be marked urgent.
 
+[[show_marks]]
 === Drawing marks on window decoration
 
 If activated, marks on windows are drawn in their window decoration. However,
@@ -1119,7 +1108,6 @@ show_marks yes
 --------------
 
 [[line_continuation]]
-
 === Line continuation
 
 Config files support line continuation, meaning when you end a line in a
@@ -1642,15 +1630,15 @@ The criteria which are currently implemented are:
 
 class::
 	Compares the window class (the second part of WM_CLASS). Use the
-	special value +__focused__+ to match all windows having the same window
+	special value +\_\_focused__+ to match all windows having the same window
 	class as the currently focused window.
 instance::
 	Compares the window instance (the first part of WM_CLASS). Use the
-	special value +__focused__+ to match all windows having the same window
+	special value +\_\_focused__+ to match all windows having the same window
 	instance as the currently focused window.
 window_role::
 	Compares the window role (WM_WINDOW_ROLE). Use the special value
-	+__focused__+ to match all windows having the same window role as the
+	+\_\_focused__+ to match all windows having the same window role as the
 	currently focused window.
 window_type::
 	Compare the window type (_NET_WM_WINDOW_TYPE). Possible values are
@@ -1659,8 +1647,8 @@ window_type::
 id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
-	Compares the X11 window title (_NET_WM_NAME or WM_NAME as fallback).
-	Use the special value +__focused__+ to match all windows having the
+	Compares the X11 window title (\_NET_WM_NAME or WM_NAME as fallback).
+	Use the special value +\_\_focused__+ to match all windows having the
 	same window title as the currently focused window.
 urgent::
 	Compares the urgent state of the window. Can be "latest" or "oldest".
@@ -1668,7 +1656,7 @@ urgent::
 	(The following aliases are also available: newest, last, recent, first)
 workspace::
 	Compares the workspace name of the workspace the window belongs to. Use
-	the special value +__focused__+ to match all windows in the currently
+	the special value +\_\_focused__+ to match all windows in the currently
 	focused workspace.
 con_mark::
 	Compares the mark set for this container, see <<vim_like_marks>>.
@@ -1681,7 +1669,6 @@ actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
 information on how to use them.
 
 [[exec]]
-
 === Executing applications (exec)
 
 What good is a window manager if you can’t actually start any applications?
@@ -1779,7 +1766,6 @@ bindsym $mod+t floating toggle
 --------------
 
 [[_focusing_moving_containers]]
-
 === Focusing containers
 
 To change focus, you can use the +focus+ command. The following options are
@@ -2015,9 +2001,8 @@ bindsym $mod+r exec i3-input -F 'rename workspace to "%s"' -P 'New name: '
 See <<move_to_outputs>> for how to move a container/workspace to a different
 RandR output.
 
-=== Moving containers/workspaces to RandR outputs
-
 [[move_to_outputs]]
+=== Moving containers/workspaces to RandR outputs
 
 To move a container to another RandR output (addressed by names like +LVDS1+ or
 +VGA1+) or to a RandR output identified by a specific direction (like +left+,
@@ -2060,7 +2045,6 @@ for_window [instance="tabme"] move window to mark target
 --------------------------------------------------------
 
 [[resizingconfig]]
-
 === Resizing containers/windows
 
 If you want to resize containers/windows using your keyboard, you can use the
@@ -2112,9 +2096,8 @@ with criteria for that.
 bindsym $mod+a [class="urxvt" title="VIM"] focus
 ------------------------------------------------
 
-=== VIM-like marks (mark/goto)
-
 [[vim_like_marks]]
+=== VIM-like marks (mark/goto)
 
 This feature is like the jump feature: It allows you to directly jump to a
 specific window (this means switching to the appropriate workspace and setting
@@ -2133,7 +2116,7 @@ The additional +--toggle+ option will remove the mark if the window already has
 this mark, add it if the window has none or replace the current mark if it has
 another mark.
 
-Refer to +show_marks+ if you don't want marks to be shown in the window decoration.
+Refer to <<show_marks>> if you don't want marks to be shown in the window decoration.
 
 *Syntax*:
 ------------------------------
@@ -2165,7 +2148,6 @@ seperate bindings for a specific set of labels and then only use those labels.
 ///////////////////////////////////////////////////////////////////
 
 [[pango_markup]]
-
 === Window title format
 
 By default, i3 will simply print the X11 window title. Using +title_format+,
@@ -2231,7 +2213,6 @@ bindsym $mod+u border none
 ----------------------------------------------
 
 [[shmlog]]
-
 === Enabling shared memory logging
 
 As described in http://i3wm.org/docs/debugging.html, i3 can log to a shared
@@ -2380,7 +2361,6 @@ bindsym $mod+Shift+b bar mode invisible bar-1
 ------------------------------------------------
 
 [[multi_monitor]]
-
 == Multiple monitors
 
 As you can see in the goal list on the website, i3 was specifically developed
@@ -2510,6 +2490,7 @@ position the window either at the top or at the bottom of the screen, depending
 on which hint the application sets. With i3bar, you can configure its position,
 see <<i3bar_position>>.
 
+[[presentations]]
 === Giving presentations (multi-monitor)
 
 When giving a presentation, you typically want the audience to see what you see
@@ -2518,7 +2499,6 @@ simple). For more complex presentations, you might want to have some notes
 which only you can see on your screen, while the audience can only see the
 slides.
 
-[[presentations]]
 ==== Case 1: everybody gets the same output
 This is the simple case. You connect your computer to the video projector,
 turn on both (computer and video projector) and configure your X server to
