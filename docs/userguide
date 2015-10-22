@@ -1664,7 +1664,8 @@ con_mark::
         mark.
 con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
-	interface. Handy for scripting.
+	interface. Handy for scripting. Use the special value +\_\_focused__+
+	to match only the currently focused window.
 
 The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for

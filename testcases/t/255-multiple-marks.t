@@ -92,5 +92,26 @@ is_deeply(get_mark_for_window_on_workspace($ws, $con), [ 'A', 'B', 'C' ], 'match
 cmd 'unmark';
 
 ###############################################################################
+# Verify that "unmark" can be matched on the focused window.
+###############################################################################
+
+$ws = fresh_workspace;
+$con = open_window;
+cmd 'mark --add A';
+cmd 'mark --add B';
+open_window;
+cmd 'mark --add C';
+cmd 'mark --add D';
+
+is_deeply(sort(get_marks()), [ 'A', 'B', 'C', 'D' ], 'all marks exist');
+
+cmd '[con_id=__focused__] unmark';
+
+is_deeply(sort(get_marks()), [ 'A', 'B' ], 'marks on the unfocused window still exist');
+is_deeply(get_mark_for_window_on_workspace($ws, $con), [ 'A', 'B' ], 'matching on con_id=__focused__ works for unmark');
+
+cmd 'unmark';
+
+###############################################################################
 
 done_testing;
