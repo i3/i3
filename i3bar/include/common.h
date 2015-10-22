@@ -38,6 +38,8 @@ struct status_block {
     i3String *short_text;
 
     char *color;
+    char *background;
+    char *border;
 
     /* min_width can be specified either as a numeric value (in pixels) or as a
      * string. For strings, we set min_width to the measured text width of

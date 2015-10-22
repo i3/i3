@@ -208,6 +208,9 @@ void refresh_statusline(bool use_short_text) {
             continue;
 
         block->width = predict_text_width(block->full_text);
+        /* Add padding for the border if we have to draw it. */
+        if (block->border)
+            block->width += logical_px(2);
 
         /* Compute offset and append for text aligment in min_width. */
         if (block->min_width <= block->width) {
@@ -250,24 +253,43 @@ void refresh_statusline(bool use_short_text) {
     TAILQ_FOREACH(block, &statusline_head, blocks) {
         if (i3string_get_num_bytes(block->full_text) == 0)
             continue;
-        color_t fg_color;
 
-        /* If this block is urgent, draw it with the defined color and border. */
-        if (block->urgent) {
-            fg_color = colors.urgent_ws_fg;
+        color_t fg_color = (block->color ? draw_util_hex_to_color(block->color) : colors.bar_fg);
+        int border_width = (block->border) ? logical_px(1) : 0;
+        if (block->border || block->background || block->urgent) {
+            if (block->urgent)
+                fg_color = colors.urgent_ws_fg;
 
-            /* Draw the background */
-            draw_util_rectangle(&statusline_surface, colors.urgent_ws_bg,
-                                x - logical_px(2),
-                                logical_px(1),
-                                block->width + logical_px(4),
+            /* Let's determine the colors first. */
+            color_t border_color = colors.bar_bg;
+            color_t bg_color = colors.bar_bg;
+            if (block->urgent) {
+                border_color = colors.urgent_ws_border;
+                bg_color = colors.urgent_ws_bg;
+            } else {
+                if (block->border)
+                    border_color = draw_util_hex_to_color(block->border);
+
+                if (block->background)
+                    bg_color = draw_util_hex_to_color(block->background);
+            }
+
+            /* Draw the border. */
+            draw_util_rectangle(&statusline_surface, border_color,
+                                x, logical_px(1),
+                                block->width + block->x_offset + block->x_append,
                                 bar_height - logical_px(2));
-        } else {
-            fg_color = (block->color ? draw_util_hex_to_color(block->color) : colors.bar_fg);
+
+            /* Draw the background. */
+            draw_util_rectangle(&statusline_surface, bg_color,
+                                x + border_width,
+                                logical_px(1) + border_width,
+                                block->width + block->x_offset + block->x_append - 2 * border_width,
+                                bar_height - 2 * border_width - logical_px(2));
         }
 
         draw_util_text(block->full_text, &statusline_surface, fg_color, colors.bar_bg,
-                       x + block->x_offset, logical_px(ws_voff_px), block->width);
+                       x + block->x_offset + border_width, logical_px(ws_voff_px), block->width - 2 * border_width);
         x += block->width + block->sep_block_width + block->x_offset + block->x_append;
 
         /* If this is not the last block, draw a separator. */

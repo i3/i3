@@ -75,6 +75,8 @@ static void clear_statusline(struct statusline_head *head, bool free_resources) 
             FREE(first->name);
             FREE(first->instance);
             FREE(first->min_width_str);
+            FREE(first->background);
+            FREE(first->border);
         }
 
         TAILQ_REMOVE(head, first, blocks);
@@ -203,6 +205,14 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
     }
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
         sasprintf(&(ctx->block.color), "%.*s", len, val);
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "background") == 0) {
+        sasprintf(&(ctx->block.background), "%.*s", len, val);
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "border") == 0) {
+        sasprintf(&(ctx->block.border), "%.*s", len, val);
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "markup") == 0) {

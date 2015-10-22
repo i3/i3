@@ -136,6 +136,10 @@ color::
 	when it is associated.
 	Colors are specified in hex (like in HTML), starting with a leading
 	hash sign. For example, +#ff0000+ means red.
+background::
+	Overrides the background color for this particular block.
+border::
+	Overrides the border color for this particular block.
 min_width::
 	The minimum width (in pixels) of the block. If the content of the
 	+full_text+ key take less space than the specified min_width, the block
@@ -207,6 +211,8 @@ An example of a block which uses all possible entries follows:
  "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
  "short_text": "10.0.0.1",
  "color": "#00ff00",
+ "background": "#1c1c1c",
+ "border": "#ee0000",
  "min_width": 300,
  "align": "right",
  "urgent": false,
