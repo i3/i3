@@ -131,11 +131,11 @@ is(parser_calls('[con_mark="yay"] focus'),
 # commands being parsed due to the configuration, people might send IPC
 # commands with leading or trailing newlines.
 is(parser_calls("workspace test\n"),
-   'cmd_workspace_name(test)',
+   'cmd_workspace_name(test, (null))',
    'trailing whitespace stripped off ok');
 
 is(parser_calls("\nworkspace test"),
-   'cmd_workspace_name(test)',
+   'cmd_workspace_name(test, (null))',
    'trailing whitespace stripped off ok');
 
 ################################################################################
@@ -187,27 +187,27 @@ is(parser_calls('move something to somewhere'),
 ################################################################################
 
 is(parser_calls('workspace "foo"'),
-   'cmd_workspace_name(foo)',
+   'cmd_workspace_name(foo, (null))',
    'Command with simple double quotes ok');
 
 is(parser_calls('workspace "foo'),
-   'cmd_workspace_name(foo)',
+   'cmd_workspace_name(foo, (null))',
    'Command without ending double quotes ok');
 
 is(parser_calls('workspace "foo \"bar"'),
-   'cmd_workspace_name(foo "bar)',
+   'cmd_workspace_name(foo "bar, (null))',
    'Command with escaped double quotes ok');
 
 is(parser_calls('workspace "foo \\'),
-   'cmd_workspace_name(foo \\)',
+   'cmd_workspace_name(foo \\, (null))',
    'Command with single backslash in the end ok');
 
 is(parser_calls('workspace "foo\\\\bar"'),
-   'cmd_workspace_name(foo\\bar)',
+   'cmd_workspace_name(foo\\bar, (null))',
    'Command with escaped backslashes ok');
 
 is(parser_calls('workspace "foo\\\\\\"bar"'),
-   'cmd_workspace_name(foo\\"bar)',
+   'cmd_workspace_name(foo\\"bar, (null))',
    'Command with escaped double quotes after escaped backslashes ok');
 
 ################################################################################

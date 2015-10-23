@@ -917,10 +917,11 @@ void cmd_workspace(I3_CMD, const char *which) {
 }
 
 /*
- * Implementation of 'workspace number <name>'
+ * Implementation of 'workspace [--no-auto-back-and-forth] number <name>'
  *
  */
-void cmd_workspace_number(I3_CMD, const char *which) {
+void cmd_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_and_forth) {
+    const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
     Con *output, *workspace = NULL;
 
     if (con_get_fullscreen_con(croot, CF_GLOBAL)) {
@@ -948,7 +949,7 @@ void cmd_workspace_number(I3_CMD, const char *which) {
         cmd_output->needs_tree_render = true;
         return;
     }
-    if (maybe_back_and_forth(cmd_output, workspace->name))
+    if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, workspace->name))
         return;
     workspace_show(workspace);
 
@@ -976,10 +977,12 @@ void cmd_workspace_back_and_forth(I3_CMD) {
 }
 
 /*
- * Implementation of 'workspace <name>'
+ * Implementation of 'workspace [--no-auto-back-and-forth] <name>'
  *
  */
-void cmd_workspace_name(I3_CMD, const char *name) {
+void cmd_workspace_name(I3_CMD, const char *name, const char *_no_auto_back_and_forth) {
+    const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
+
     if (strncasecmp(name, "__", strlen("__")) == 0) {
         LOG("You cannot switch to the i3-internal workspaces (\"%s\").\n", name);
         ysuccess(false);
@@ -993,7 +996,7 @@ void cmd_workspace_name(I3_CMD, const char *name) {
     }
 
     DLOG("should switch to workspace %s\n", name);
-    if (maybe_back_and_forth(cmd_output, name))
+    if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, name))
         return;
     workspace_show_by_name(name);
 

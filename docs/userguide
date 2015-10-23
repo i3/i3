@@ -1884,8 +1884,11 @@ for_window [instance=notepad] sticky enable
 === Changing (named) workspaces/moving to workspaces
 
 To change to a specific workspace, use the +workspace+ command, followed by the
-number or name of the workspace. To move containers to specific workspaces, use
-+move container to workspace+.
+number or name of the workspace. Pass the optional flag
++--no-auto-back-and-forth+ to disable <<back_and_forth>> for this specific call
+only.
+
+To move containers to specific workspaces, use +move container to workspace+.
 
 You can also switch to the next and previous workspace with the commands
 +workspace next+ and +workspace prev+, which is handy, for example, if you have
@@ -1916,8 +1919,8 @@ workspace using +move container to workspace back_and_forth+.
 -----------------------------------
 workspace next|prev|next_on_output|prev_on_output
 workspace back_and_forth
-workspace <name>
-workspace number <name>
+workspace [--no-auto-back-and-forth] <name>
+workspace [--no-auto-back-and-forth] number <name>
 
 move [window|container] [to] workspace <name>
 move [window|container] [to] workspace number <name>

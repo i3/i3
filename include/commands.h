@@ -97,10 +97,10 @@ void cmd_append_layout(I3_CMD, const char *path);
 void cmd_workspace(I3_CMD, const char *which);
 
 /**
- * Implementation of 'workspace number <number>'
+ * Implementation of 'workspace [--no-auto-back-and-forth] number <number>'
  *
  */
-void cmd_workspace_number(I3_CMD, const char *which);
+void cmd_workspace_number(I3_CMD, const char *which, const char *no_auto_back_and_forth);
 
 /**
  * Implementation of 'workspace back_and_forth'.
@@ -109,10 +109,10 @@ void cmd_workspace_number(I3_CMD, const char *which);
 void cmd_workspace_back_and_forth(I3_CMD);
 
 /**
- * Implementation of 'workspace <name>'
+ * Implementation of 'workspace [--no-auto-back-and-forth] <name>'
  *
  */
-void cmd_workspace_name(I3_CMD, const char *name);
+void cmd_workspace_name(I3_CMD, const char *name, const char *no_auto_back_and_forth);
 
 /**
  * Implementation of 'mark [--add|--replace] [--toggle] <mark>'
