@@ -40,6 +40,13 @@ void run_assignments(i3Window *window) {
         if (skip)
             continue;
 
+        /* Store that we ran this assignment to not execute it again. We have
+         * to do this before running the actual command to prevent infinite
+         * loops. */
+        window->nr_assignments++;
+        window->ran_assignments = srealloc(window->ran_assignments, sizeof(Assignment *) * window->nr_assignments);
+        window->ran_assignments[window->nr_assignments - 1] = current;
+
         DLOG("matching assignment, would do:\n");
         if (current->type == A_COMMAND) {
             DLOG("execute command %s\n", current->dest.command);
@@ -53,11 +60,6 @@ void run_assignments(i3Window *window) {
 
             command_result_free(result);
         }
-
-        /* Store that we ran this assignment to not execute it again */
-        window->nr_assignments++;
-        window->ran_assignments = srealloc(window->ran_assignments, sizeof(Assignment *) * window->nr_assignments);
-        window->ran_assignments[window->nr_assignments - 1] = current;
     }
 
     /* If any of the commands required re-rendering, we will do that now. */
