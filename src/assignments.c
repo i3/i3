@@ -76,7 +76,7 @@ Assignment *assignment_for(i3Window *window, int type) {
         if ((type != A_ANY && (assignment->type & type) == 0) ||
             !match_matches_window(&(assignment->match), window))
             continue;
-        DLOG("got a matching assignment (to %s)\n", assignment->dest.workspace);
+        DLOG("got a matching assignment\n");
         return assignment;
     }
 
