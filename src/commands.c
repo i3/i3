@@ -403,16 +403,17 @@ void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
 }
 
 /*
- * Implementation of 'move [window|container] [to] workspace <name>'.
+ * Implementation of 'move [--no-auto-back-and-forth] [window|container] [to] workspace <name>'.
  *
  */
-void cmd_move_con_to_workspace_name(I3_CMD, const char *name) {
+void cmd_move_con_to_workspace_name(I3_CMD, const char *name, const char *_no_auto_back_and_forth) {
     if (strncasecmp(name, "__", strlen("__")) == 0) {
         LOG("You cannot move containers to i3-internal workspaces (\"%s\").\n", name);
         ysuccess(false);
         return;
     }
 
+    const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
     owindow *current;
 
     /* We have nothing to move:
@@ -432,7 +433,8 @@ void cmd_move_con_to_workspace_name(I3_CMD, const char *name) {
     /* get the workspace */
     Con *ws = workspace_get(name, NULL);
 
-    ws = maybe_auto_back_and_forth_workspace(ws);
+    if (!no_auto_back_and_forth)
+        ws = maybe_auto_back_and_forth_workspace(ws);
 
     HANDLE_EMPTY_MATCH;
 
@@ -447,10 +449,11 @@ void cmd_move_con_to_workspace_name(I3_CMD, const char *name) {
 }
 
 /*
- * Implementation of 'move [window|container] [to] workspace number <name>'.
+ * Implementation of 'move [--no-auto-back-and-forth] [window|container] [to] workspace number <name>'.
  *
  */
-void cmd_move_con_to_workspace_number(I3_CMD, const char *which) {
+void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_and_forth) {
+    const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
     owindow *current;
 
     /* We have nothing to move:
@@ -483,7 +486,8 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which) {
         workspace = workspace_get(which, NULL);
     }
 
-    workspace = maybe_auto_back_and_forth_workspace(workspace);
+    if (!no_auto_back_and_forth)
+        workspace = maybe_auto_back_and_forth_workspace(workspace);
 
     HANDLE_EMPTY_MATCH;
 

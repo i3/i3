@@ -49,16 +49,16 @@ void cmd_move_con_to_workspace(I3_CMD, const char *which);
 void cmd_move_con_to_workspace_back_and_forth(I3_CMD);
 
 /**
- * Implementation of 'move [window|container] [to] workspace <name>'.
+ * Implementation of 'move [--no-auto-back-and-forth] [window|container] [to] workspace <name>'.
  *
  */
-void cmd_move_con_to_workspace_name(I3_CMD, const char *name);
+void cmd_move_con_to_workspace_name(I3_CMD, const char *name, const char *no_auto_back_and_forth);
 
 /**
- * Implementation of 'move [window|container] [to] workspace number <number>'.
+ * Implementation of 'move [--no-auto-back-and-forth] [window|container] [to] workspace number <number>'.
  *
  */
-void cmd_move_con_to_workspace_number(I3_CMD, const char *which);
+void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *no_auto_back_and_forth);
 
 /**
  * Implementation of 'resize set <px> [px] <px> [px]'.

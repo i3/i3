@@ -308,6 +308,8 @@ state MOVE:
       ->
   'to'
       ->
+  no_auto_back_and_forth = '--no-auto-back-and-forth'
+      ->
   'workspace'
       -> MOVE_WORKSPACE
   'output'
@@ -345,11 +347,11 @@ state MOVE_WORKSPACE:
   'number'
       -> MOVE_WORKSPACE_NUMBER
   workspace = string
-      -> call cmd_move_con_to_workspace_name($workspace)
+      -> call cmd_move_con_to_workspace_name($workspace, $no_auto_back_and_forth)
 
 state MOVE_WORKSPACE_NUMBER:
   number = string
-      -> call cmd_move_con_to_workspace_number($number)
+      -> call cmd_move_con_to_workspace_number($number, $no_auto_back_and_forth)
 
 state MOVE_TO_OUTPUT:
   output = string

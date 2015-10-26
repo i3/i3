@@ -1916,16 +1916,16 @@ back_and_forth+; likewise, you can move containers to the previously focused
 workspace using +move container to workspace back_and_forth+.
 
 *Syntax*:
------------------------------------
+--------------------------------------------------------------------------------
 workspace next|prev|next_on_output|prev_on_output
 workspace back_and_forth
 workspace [--no-auto-back-and-forth] <name>
 workspace [--no-auto-back-and-forth] number <name>
 
-move [window|container] [to] workspace <name>
-move [window|container] [to] workspace number <name>
+move [--no-auto-back-and-forth] [window|container] [to] workspace <name>
+move [--no-auto-back-and-forth] [window|container] [to] workspace number <name>
 move [window|container] [to] workspace prev|next|current
------------------------------------
+--------------------------------------------------------------------------------
 
 *Examples*:
 -------------------------
