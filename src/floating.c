@@ -108,7 +108,7 @@ void floating_check_size(Con *floating_con) {
 void floating_enable(Con *con, bool automatic) {
     bool set_focus = (con == focused);
 
-    if (con->parent && con->parent->type == CT_DOCKAREA) {
+    if (con_is_docked(con)) {
         LOG("Container is a dock window, not enabling floating mode.\n");
         return;
     }

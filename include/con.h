@@ -113,6 +113,12 @@ bool con_is_internal(Con *con);
 bool con_is_floating(Con *con);
 
 /**
+ * Returns true if the container is a docked container.
+ *
+ */
+bool con_is_docked(Con *con);
+
+/**
  * Checks if the given container is either floating or inside some floating
  * container. It returns the FLOATING_CON container.
  *

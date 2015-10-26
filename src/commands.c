@@ -1188,16 +1188,18 @@ void cmd_move_workspace_to_output(I3_CMD, const char *name) {
  *
  */
 void cmd_split(I3_CMD, const char *direction) {
+    HANDLE_EMPTY_MATCH;
+
     owindow *current;
-    /* TODO: use matches */
     LOG("splitting in direction %c\n", direction[0]);
-    if (match_is_empty(current_match))
-        tree_split(focused, (direction[0] == 'v' ? VERT : HORIZ));
-    else {
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            DLOG("matching: %p / %s\n", current->con, current->con->name);
-            tree_split(current->con, (direction[0] == 'v' ? VERT : HORIZ));
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        if (con_is_docked(current->con)) {
+            ELOG("Cannot split a docked container, skipping.\n");
+            continue;
         }
+
+        DLOG("matching: %p / %s\n", current->con, current->con->name);
+        tree_split(current->con, (direction[0] == 'v' ? VERT : HORIZ));
     }
 
     cmd_output->needs_tree_render = true;
@@ -1524,9 +1526,10 @@ void cmd_move_direction(I3_CMD, const char *direction, long move_px) {
  *
  */
 void cmd_layout(I3_CMD, const char *layout_str) {
+    HANDLE_EMPTY_MATCH;
+
     if (strcmp(layout_str, "stacking") == 0)
         layout_str = "stacked";
-    owindow *current;
     layout_t layout;
     /* default is a special case which will be handled in con_set_layout(). */
     if (strcmp(layout_str, "default") == 0)
@@ -1546,14 +1549,15 @@ void cmd_layout(I3_CMD, const char *layout_str) {
 
     DLOG("changing layout to %s (%d)\n", layout_str, layout);
 
-    /* check if the match is empty, not if the result is empty */
-    if (match_is_empty(current_match))
-        con_set_layout(focused, layout);
-    else {
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            DLOG("matching: %p / %s\n", current->con, current->con->name);
-            con_set_layout(current->con, layout);
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        if (con_is_docked(current->con)) {
+            ELOG("cannot change layout of a docked container, skipping it.\n");
+            continue;
         }
+
+        DLOG("matching: %p / %s\n", current->con, current->con->name);
+        con_set_layout(current->con, layout);
     }
 
     cmd_output->needs_tree_render = true;
