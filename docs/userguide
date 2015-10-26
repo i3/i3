@@ -1529,6 +1529,15 @@ statusline::
 	Text color to be used for the statusline.
 separator::
 	Text color to be used for the separator.
+focused_background::
+	Background color of the bar on the currently focused monitor output. If
+	not used, the color will be taken from +background+.
+focused_statusline::
+	Text color to be used for the statusline on the currently focused
+	monitor output. If not used, the color will be taken from +statusline+.
+focused_separator::
+	Text color to be used for the separator on the currently focused
+	monitor output. If not used, the color will be taken from +separator+.
 focused_workspace::
 	Border, background and text color for a workspace button when the workspace
 	has focus.

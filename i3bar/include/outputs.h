@@ -38,6 +38,12 @@ void init_outputs(void);
  */
 i3_output* get_output_by_name(char* name);
 
+/*
+ * Returns true if the output has the currently focused workspace
+ *
+ */
+bool output_has_focus(i3_output* output);
+
 struct i3_output {
     char* name;   /* Name of the output */
     bool active;  /* If the output is active */
