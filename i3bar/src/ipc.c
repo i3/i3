@@ -63,7 +63,6 @@ void got_output_reply(char *reply) {
     DLOG("Parsing outputs JSON...\n");
     parse_outputs_json(reply);
     DLOG("Reconfiguring windows...\n");
-    realloc_sl_buffer();
     reconfig_windows(false);
 
     i3_output *o_walk;
@@ -175,7 +174,6 @@ void got_bar_config_update(char *event) {
     /* update fonts and colors */
     init_xcb_late(config.fontname);
     init_colors(&(config.colors));
-    realloc_sl_buffer();
 
     draw_bars(false);
 }

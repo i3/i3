@@ -144,10 +144,16 @@ static int outputs_start_map_cb(void *params_) {
     if (params->cur_key == NULL) {
         new_output = smalloc(sizeof(i3_output));
         new_output->name = NULL;
+        new_output->active = false;
+        new_output->primary = false;
+        new_output->visible = false;
         new_output->ws = 0,
+        new_output->statusline_width = 0;
+        new_output->statusline_short_text = false;
         memset(&new_output->rect, 0, sizeof(rect));
         memset(&new_output->bar, 0, sizeof(surface_t));
         memset(&new_output->buffer, 0, sizeof(surface_t));
+        memset(&new_output->statusline_buffer, 0, sizeof(surface_t));
 
         new_output->workspaces = smalloc(sizeof(struct ws_head));
         TAILQ_INIT(new_output->workspaces);
