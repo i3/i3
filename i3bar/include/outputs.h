@@ -46,8 +46,14 @@ struct i3_output {
     int ws;       /* The number of the currently visible ws */
     rect rect;    /* The rect (relative to the root window) */
 
-    /* Off-screen buffer for preliminary rendering. */
+    /* Off-screen buffer for preliminary rendering of the bar. */
     surface_t buffer;
+    /* Off-screen buffer for pre-rendering the statusline, separated to make clipping easier. */
+    surface_t statusline_buffer;
+    /* How much of statusline_buffer's horizontal space was used on last statusline render. */
+    int statusline_width;
+    /* Whether statusline block short texts where used on last statusline render. */
+    bool statusline_short_text;
     /* The actual window on which we draw. */
     surface_t bar;
 
