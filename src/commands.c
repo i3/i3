@@ -615,7 +615,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
 
     while (current->type != CT_WORKSPACE &&
            current->type != CT_FLOATING_CON &&
-           con_orientation(current->parent) != search_orientation)
+           (con_orientation(current->parent) != search_orientation || con_num_children(current->parent) == 1))
         current = current->parent;
 
     /* get the default percentage */
