@@ -91,6 +91,9 @@ struct xcb_colors_t {
     color_t bar_fg;
     color_t bar_bg;
     color_t sep_fg;
+    color_t focus_bar_fg;
+    color_t focus_bar_bg;
+    color_t focus_sep_fg;
     color_t active_ws_fg;
     color_t active_ws_bg;
     color_t active_ws_border;
@@ -160,7 +163,10 @@ int get_tray_width(struct tc_head *trayclients) {
  * Draws a separator for the given block if necessary.
  *
  */
-static void draw_separator(i3_output *output, uint32_t x, struct status_block *block) {
+static void draw_separator(i3_output *output, uint32_t x, struct status_block *block, bool use_focus_colors) {
+    color_t sep_fg = (use_focus_colors ? colors.focus_sep_fg : colors.sep_fg);
+    color_t bar_bg = (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg);
+
     uint32_t sep_offset = get_sep_offset(block);
     if (TAILQ_NEXT(block, blocks) == NULL || sep_offset == 0)
         return;
@@ -168,7 +174,7 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
     uint32_t center_x = x - sep_offset;
     if (config.separator_symbol == NULL) {
         /* Draw a classic one pixel, vertical separator. */
-        draw_util_rectangle(&output->statusline_buffer, colors.sep_fg,
+        draw_util_rectangle(&output->statusline_buffer, sep_fg,
                             center_x,
                             logical_px(sep_voff_px),
                             logical_px(1),
@@ -176,7 +182,7 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
     } else {
         /* Draw a custom separator. */
         uint32_t separator_x = MAX(x - block->sep_block_width, center_x - separator_symbol_width / 2);
-        draw_util_text(config.separator_symbol, &output->statusline_buffer, colors.sep_fg, colors.bar_bg,
+        draw_util_text(config.separator_symbol, &output->statusline_buffer, sep_fg, bar_bg,
                        separator_x, logical_px(ws_voff_px), x - separator_x);
     }
 }
@@ -233,10 +239,11 @@ uint32_t predict_statusline_length(bool use_short_text) {
 /*
  * Redraws the statusline to the output's statusline_buffer
  */
-void draw_statusline(i3_output *output, uint32_t clip_left, bool use_short_text) {
+void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_colors, bool use_short_text) {
     struct status_block *block;
 
-    draw_util_clear_surface(&output->statusline_buffer, colors.bar_bg);
+    color_t bar_color = (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg);
+    draw_util_clear_surface(&output->statusline_buffer, bar_color);
 
     /* Use unsigned integer wraparound to clip off the left side.
      * For example, if clip_left is 75, then x will start at the very large
@@ -263,17 +270,19 @@ void draw_statusline(i3_output *output, uint32_t clip_left, bool use_short_text)
             fg_color = colors.urgent_ws_fg;
         } else if (block->color) {
             fg_color = draw_util_hex_to_color(block->color);
+        } else if (use_focus_colors) {
+            fg_color = colors.focus_bar_fg;
         } else {
             fg_color = colors.bar_fg;
         }
 
-        color_t bg_color = colors.bar_bg;
+        color_t bg_color = bar_color;
 
         int border_width = (block->border) ? logical_px(1) : 0;
         int full_render_width = render->width + render->x_offset + render->x_append;
         if (block->border || block->background || block->urgent) {
             /* Let's determine the colors first. */
-            color_t border_color = colors.bar_bg;
+            color_t border_color = bar_color;
             if (block->urgent) {
                 border_color = colors.urgent_ws_border;
                 bg_color = colors.urgent_ws_bg;
@@ -306,7 +315,7 @@ void draw_statusline(i3_output *output, uint32_t clip_left, bool use_short_text)
         /* If this is not the last block, draw a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL) {
             x += block->sep_block_width;
-            draw_separator(output, x, block);
+            draw_separator(output, x, block, use_focus_colors);
         }
     }
 }
@@ -412,6 +421,12 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR_FALLBACK(binding_mode_fg, urgent_ws_fg);
     PARSE_COLOR_FALLBACK(binding_mode_bg, urgent_ws_bg);
     PARSE_COLOR_FALLBACK(binding_mode_border, urgent_ws_border);
+
+    /* Similarly, for unspecified focused bar colors, we fall back to the
+     * regular bar colors. */
+    PARSE_COLOR_FALLBACK(focus_bar_fg, bar_fg);
+    PARSE_COLOR_FALLBACK(focus_bar_bg, bar_bg);
+    PARSE_COLOR_FALLBACK(focus_sep_fg, sep_fg);
 #undef PARSE_COLOR_FALLBACK
 
     init_tray_colors();
@@ -1826,8 +1841,11 @@ void draw_bars(bool unhide) {
             reconfig_windows(false);
         }
 
+        bool use_focus_colors = output_has_focus(outputs_walk);
+
         /* First things first: clear the backbuffer */
-        draw_util_clear_surface(&(outputs_walk->buffer), colors.bar_bg);
+        draw_util_clear_surface(&(outputs_walk->buffer),
+                                (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg));
 
         if (!config.disable_ws) {
             i3_ws *ws_walk;
@@ -1928,7 +1946,7 @@ void draw_bars(bool unhide) {
             int16_t visible_statusline_width = MIN(statusline_width, max_statusline_width);
             int x_dest = outputs_walk->rect.w - tray_width - logical_px(sb_hoff_px) - visible_statusline_width;
 
-            draw_statusline(outputs_walk, clip_left, use_short_text);
+            draw_statusline(outputs_walk, clip_left, use_focus_colors, use_short_text);
             draw_util_copy_surface(&outputs_walk->statusline_buffer, &outputs_walk->buffer, 0, 0,
                                    x_dest, 0, visible_statusline_width, (int16_t)bar_height);
 

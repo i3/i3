@@ -302,3 +302,17 @@ i3_output *get_output_by_name(char *name) {
 
     return walk;
 }
+
+/*
+ * Returns true if the output has the currently focused workspace
+ *
+ */
+bool output_has_focus(i3_output *output) {
+    i3_ws *ws_walk;
+    TAILQ_FOREACH(ws_walk, output->workspaces, tailq) {
+        if (ws_walk->focused) {
+            return true;
+        }
+    }
+    return false;
+}

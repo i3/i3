@@ -118,6 +118,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(barconfig->font);
             FREE(barconfig->colors.background);
             FREE(barconfig->colors.statusline);
+            FREE(barconfig->colors.separator);
+            FREE(barconfig->colors.focused_background);
+            FREE(barconfig->colors.focused_statusline);
+            FREE(barconfig->colors.focused_separator);
             FREE(barconfig->colors.focused_workspace_border);
             FREE(barconfig->colors.focused_workspace_bg);
             FREE(barconfig->colors.focused_workspace_text);

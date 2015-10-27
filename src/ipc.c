@@ -663,6 +663,9 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     YSTR_IF_SET(background);
     YSTR_IF_SET(statusline);
     YSTR_IF_SET(separator);
+    YSTR_IF_SET(focused_background);
+    YSTR_IF_SET(focused_statusline);
+    YSTR_IF_SET(focused_separator);
     YSTR_IF_SET(focused_workspace_border);
     YSTR_IF_SET(focused_workspace_bg);
     YSTR_IF_SET(focused_workspace_text);

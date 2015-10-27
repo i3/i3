@@ -323,6 +323,10 @@ struct Barconfig {
         char *statusline;
         char *separator;
 
+        char *focused_background;
+        char *focused_statusline;
+        char *focused_separator;
+
         char *focused_workspace_border;
         char *focused_workspace_bg;
         char *focused_workspace_text;

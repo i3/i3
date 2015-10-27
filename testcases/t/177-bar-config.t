@@ -109,6 +109,9 @@ bar {
     colors {
         background #ff0000
         statusline   #00ff00
+        focused_background #cc0000
+        focused_statusline #cccc00
+        focused_separator  #0000cc
 
         focused_workspace   #4c7899 #285577 #ffffff
         active_workspace    #333333 #222222 #888888
@@ -143,6 +146,9 @@ is_deeply($bar_config->{colors},
     {
         background => '#ff0000',
         statusline => '#00ff00',
+        focused_background => '#cc0000',
+        focused_statusline=> '#cccc00',
+        focused_separator => '#0000cc',
         focused_workspace_border => '#4c7899',
         focused_workspace_text => '#ffffff',
         focused_workspace_bg => '#285577',
