@@ -238,21 +238,13 @@ bool match_matches_window(Match *match, i3Window *window) {
  *
  */
 void match_free(Match *match) {
-    /* First step: free the regex fields / patterns */
     regex_free(match->title);
     regex_free(match->application);
     regex_free(match->class);
     regex_free(match->instance);
     regex_free(match->mark);
     regex_free(match->window_role);
-
-    /* Second step: free the regex helper struct itself */
-    FREE(match->title);
-    FREE(match->application);
-    FREE(match->class);
-    FREE(match->instance);
-    FREE(match->mark);
-    FREE(match->window_role);
+    regex_free(match->workspace);
 }
 
 /*
@@ -264,16 +256,19 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
     DLOG("ctype=*%s*, cvalue=*%s*\n", ctype, cvalue);
 
     if (strcmp(ctype, "class") == 0) {
+        regex_free(match->class);
         match->class = regex_new(cvalue);
         return;
     }
 
     if (strcmp(ctype, "instance") == 0) {
+        regex_free(match->instance);
         match->instance = regex_new(cvalue);
         return;
     }
 
     if (strcmp(ctype, "window_role") == 0) {
+        regex_free(match->window_role);
         match->window_role = regex_new(cvalue);
         return;
     }
@@ -339,11 +334,13 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
     }
 
     if (strcmp(ctype, "con_mark") == 0) {
+        regex_free(match->mark);
         match->mark = regex_new(cvalue);
         return;
     }
 
     if (strcmp(ctype, "title") == 0) {
+        regex_free(match->title);
         match->title = regex_new(cvalue);
         return;
     }
@@ -362,6 +359,7 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
     }
 
     if (strcmp(ctype, "workspace") == 0) {
+        regex_free(match->workspace);
         match->workspace = regex_new(cvalue);
         return;
     }
