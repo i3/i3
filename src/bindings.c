@@ -165,15 +165,23 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
     }
 
     TAILQ_FOREACH(bind, bindings, bindings) {
+        bool state_matches;
+        if (bind->event_state_mask == 0) {
+            /* Verify no modifiers are pressed. A bitwise AND would lead to
+             * false positives, see issue #2002. */
+            state_matches = (state_filtered == 0);
+        } else {
+            state_matches = ((state_filtered & bind->event_state_mask) == bind->event_state_mask);
+        }
+
         DLOG("binding with event_state_mask 0x%x, state_filtered 0x%x, match: %s\n",
-             bind->event_state_mask, state_filtered,
-             ((state_filtered & bind->event_state_mask) == bind->event_state_mask) ? "yes" : "no");
+             bind->event_state_mask, state_filtered, (state_matches ? "yes" : "no"));
         /* First compare the state_filtered (unless this is a
          * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
          * event) */
         if (bind->input_type != input_type)
             continue;
-        if ((state_filtered & bind->event_state_mask) != bind->event_state_mask &&
+        if (!state_matches &&
             (bind->release != B_UPON_KEYRELEASE_IGNORE_MODS ||
              !is_release))
             continue;
