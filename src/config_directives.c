@@ -29,6 +29,7 @@ CFGFUN(criteria_init, int _state) {
     criteria_next_state = _state;
 
     DLOG("Initializing criteria, current_match = %p, state = %d\n", current_match, _state);
+    match_free(current_match);
     match_init(current_match);
 }
 
