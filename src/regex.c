@@ -64,6 +64,7 @@ void regex_free(struct regex *regex) {
     FREE(regex->pattern);
     FREE(regex->regex);
     FREE(regex->extra);
+    FREE(regex);
 }
 
 /*
