@@ -167,10 +167,10 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
 
     TAILQ_FOREACH(bind, bindings, bindings) {
         bool state_matches;
-        if (bind->event_state_mask == 0) {
+        if ((bind->event_state_mask & 0xFFFF) == 0) {
             /* Verify no modifiers are pressed. A bitwise AND would lead to
              * false positives, see issue #2002. */
-            state_matches = (state_filtered == 0);
+            state_matches = (state_filtered == bind->event_state_mask);
         } else {
             state_matches = ((state_filtered & bind->event_state_mask) == bind->event_state_mask);
         }
