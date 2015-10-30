@@ -75,20 +75,20 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         ungrab_all_keys(conn);
 
         struct Mode *mode;
-        Binding *bind;
         while (!SLIST_EMPTY(&modes)) {
             mode = SLIST_FIRST(&modes);
             FREE(mode->name);
 
             /* Clear the old binding list */
-            bindings = mode->bindings;
-            while (!TAILQ_EMPTY(bindings)) {
-                bind = TAILQ_FIRST(bindings);
-                TAILQ_REMOVE(bindings, bind, bindings);
+            while (!TAILQ_EMPTY(mode->bindings)) {
+                Binding *bind = TAILQ_FIRST(mode->bindings);
+                TAILQ_REMOVE(mode->bindings, bind, bindings);
                 binding_free(bind);
             }
-            FREE(bindings);
+            FREE(mode->bindings);
+
             SLIST_REMOVE(&modes, mode, Mode, modes);
+            FREE(mode);
         }
 
         struct Assignment *assign;
@@ -110,12 +110,21 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(barconfig->id);
             for (int c = 0; c < barconfig->num_outputs; c++)
                 free(barconfig->outputs[c]);
+
+            while (!TAILQ_EMPTY(&(barconfig->bar_bindings))) {
+                struct Barbinding *binding = TAILQ_FIRST(&(barconfig->bar_bindings));
+                FREE(binding->command);
+                TAILQ_REMOVE(&(barconfig->bar_bindings), binding, bindings);
+                FREE(binding);
+            }
+
             while (!TAILQ_EMPTY(&(barconfig->tray_outputs))) {
                 struct tray_output_t *tray_output = TAILQ_FIRST(&(barconfig->tray_outputs));
                 FREE(tray_output->output);
                 TAILQ_REMOVE(&(barconfig->tray_outputs), tray_output, tray_outputs);
                 FREE(tray_output);
             }
+
             FREE(barconfig->outputs);
             FREE(barconfig->socket_path);
             FREE(barconfig->status_command);
