@@ -356,7 +356,7 @@ int handle_button_press(xcb_button_press_event_t *event) {
 
     last_timestamp = event->time;
 
-    const uint32_t mod = config.floating_modifier;
+    const uint32_t mod = (config.floating_modifier & 0xFFFF);
     const bool mod_pressed = (mod != 0 && (event->state & mod) == mod);
     DLOG("floating_mod = %d, detail = %d\n", mod_pressed, event->detail);
     if ((con = con_by_window_id(event->event)))
