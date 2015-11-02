@@ -819,18 +819,28 @@ int main(int argc, char *argv[]) {
 
     /* Autostarting exec-lines */
     if (autostart) {
-        struct Autostart *exec;
-        TAILQ_FOREACH(exec, &autostarts, autostarts) {
+        while (!TAILQ_EMPTY(&autostarts)) {
+            struct Autostart *exec = TAILQ_FIRST(&autostarts);
+
             LOG("auto-starting %s\n", exec->command);
             start_application(exec->command, exec->no_startup_id);
+
+            FREE(exec->command);
+            TAILQ_REMOVE(&autostarts, exec, autostarts);
+            FREE(exec);
         }
     }
 
     /* Autostarting exec_always-lines */
-    struct Autostart *exec_always;
-    TAILQ_FOREACH(exec_always, &autostarts_always, autostarts_always) {
+    while (!TAILQ_EMPTY(&autostarts_always)) {
+        struct Autostart *exec_always = TAILQ_FIRST(&autostarts_always);
+
         LOG("auto-starting (always!) %s\n", exec_always->command);
         start_application(exec_always->command, exec_always->no_startup_id);
+
+        FREE(exec_always->command);
+        TAILQ_REMOVE(&autostarts_always, exec_always, autostarts_always);
+        FREE(exec_always);
     }
 
     /* Start i3bar processes for all configured bars */
