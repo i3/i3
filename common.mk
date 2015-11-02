@@ -141,6 +141,9 @@ LIBSN_LIBS   := $(call ldflags_for_lib, libstartup-notification-1.0,startup-noti
 PANGO_CFLAGS := $(call cflags_for_lib, cairo)
 PANGO_CFLAGS += $(call cflags_for_lib, pangocairo)
 I3_CPPFLAGS  += -DPANGO_SUPPORT=1
+ifeq ($(shell $(PKG_CONFIG) --atleast-version=1.14.4 cairo 2>/dev/null && echo 1),1)
+I3_CPPFLAGS  += -DI3BAR_CAIRO=1
+endif
 PANGO_LIBS   := $(call ldflags_for_lib, cairo)
 PANGO_LIBS   += $(call ldflags_for_lib, pangocairo)
 
