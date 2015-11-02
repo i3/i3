@@ -248,9 +248,10 @@ struct Barconfig {
      * simplicity (since we store just strings). */
     char **outputs;
 
-    /** Output on which the tray should be shown. The special value of 'no'
-     * disables the tray (it’s enabled by default). */
-    char *tray_output;
+    /* List of outputs on which the tray is allowed to be shown, in order.
+     * The special value "none" disables it (per default, it will be shown) and
+     * the special value "primary" enabled it on the primary output. */
+    TAILQ_HEAD(tray_outputs_head, tray_output_t) tray_outputs;
 
     /* Padding around the tray icons. */
     int tray_padding;
@@ -364,6 +365,12 @@ struct Barbinding {
     char *command;
 
     TAILQ_ENTRY(Barbinding) bindings;
+};
+
+struct tray_output_t {
+    char *output;
+
+    TAILQ_ENTRY(tray_output_t) tray_outputs;
 };
 
 /**

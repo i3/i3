@@ -399,57 +399,57 @@ CFGFUN(no_focus) {
  * Bar configuration (i3bar)
  ******************************************************************************/
 
-static Barconfig current_bar;
+static Barconfig *current_bar;
 
 CFGFUN(bar_font, const char *font) {
-    FREE(current_bar.font);
-    current_bar.font = sstrdup(font);
+    FREE(current_bar->font);
+    current_bar->font = sstrdup(font);
 }
 
 CFGFUN(bar_separator_symbol, const char *separator) {
-    FREE(current_bar.separator_symbol);
-    current_bar.separator_symbol = sstrdup(separator);
+    FREE(current_bar->separator_symbol);
+    current_bar->separator_symbol = sstrdup(separator);
 }
 
 CFGFUN(bar_mode, const char *mode) {
-    current_bar.mode = (strcmp(mode, "dock") == 0 ? M_DOCK : (strcmp(mode, "hide") == 0 ? M_HIDE : M_INVISIBLE));
+    current_bar->mode = (strcmp(mode, "dock") == 0 ? M_DOCK : (strcmp(mode, "hide") == 0 ? M_HIDE : M_INVISIBLE));
 }
 
 CFGFUN(bar_hidden_state, const char *hidden_state) {
-    current_bar.hidden_state = (strcmp(hidden_state, "hide") == 0 ? S_HIDE : S_SHOW);
+    current_bar->hidden_state = (strcmp(hidden_state, "hide") == 0 ? S_HIDE : S_SHOW);
 }
 
 CFGFUN(bar_id, const char *bar_id) {
-    current_bar.id = sstrdup(bar_id);
+    current_bar->id = sstrdup(bar_id);
 }
 
 CFGFUN(bar_output, const char *output) {
-    int new_outputs = current_bar.num_outputs + 1;
-    current_bar.outputs = srealloc(current_bar.outputs, sizeof(char *) * new_outputs);
-    current_bar.outputs[current_bar.num_outputs] = sstrdup(output);
-    current_bar.num_outputs = new_outputs;
+    int new_outputs = current_bar->num_outputs + 1;
+    current_bar->outputs = srealloc(current_bar->outputs, sizeof(char *) * new_outputs);
+    current_bar->outputs[current_bar->num_outputs] = sstrdup(output);
+    current_bar->num_outputs = new_outputs;
 }
 
 CFGFUN(bar_verbose, const char *verbose) {
-    current_bar.verbose = eval_boolstr(verbose);
+    current_bar->verbose = eval_boolstr(verbose);
 }
 
 CFGFUN(bar_modifier, const char *modifier) {
     if (strcmp(modifier, "Mod1") == 0)
-        current_bar.modifier = M_MOD1;
+        current_bar->modifier = M_MOD1;
     else if (strcmp(modifier, "Mod2") == 0)
-        current_bar.modifier = M_MOD2;
+        current_bar->modifier = M_MOD2;
     else if (strcmp(modifier, "Mod3") == 0)
-        current_bar.modifier = M_MOD3;
+        current_bar->modifier = M_MOD3;
     else if (strcmp(modifier, "Mod4") == 0)
-        current_bar.modifier = M_MOD4;
+        current_bar->modifier = M_MOD4;
     else if (strcmp(modifier, "Mod5") == 0)
-        current_bar.modifier = M_MOD5;
+        current_bar->modifier = M_MOD5;
     else if (strcmp(modifier, "Control") == 0 ||
              strcmp(modifier, "Ctrl") == 0)
-        current_bar.modifier = M_CONTROL;
+        current_bar->modifier = M_CONTROL;
     else if (strcmp(modifier, "Shift") == 0)
-        current_bar.modifier = M_SHIFT;
+        current_bar->modifier = M_SHIFT;
 }
 
 static void bar_configure_binding(const char *button, const char *command) {
@@ -465,7 +465,7 @@ static void bar_configure_binding(const char *button, const char *command) {
     }
 
     struct Barbinding *current;
-    TAILQ_FOREACH(current, &(current_bar.bar_bindings), bindings) {
+    TAILQ_FOREACH(current, &(current_bar->bar_bindings), bindings) {
         if (current->input_code == input_code) {
             ELOG("command for button %s was already specified, ignoring.\n", button);
             return;
@@ -475,7 +475,7 @@ static void bar_configure_binding(const char *button, const char *command) {
     struct Barbinding *new_binding = scalloc(1, sizeof(struct Barbinding));
     new_binding->input_code = input_code;
     new_binding->command = sstrdup(command);
-    TAILQ_INSERT_TAIL(&(current_bar.bar_bindings), new_binding, bindings);
+    TAILQ_INSERT_TAIL(&(current_bar->bar_bindings), new_binding, bindings);
 }
 
 CFGFUN(bar_wheel_up_cmd, const char *command) {
@@ -493,29 +493,29 @@ CFGFUN(bar_bindsym, const char *button, const char *command) {
 }
 
 CFGFUN(bar_position, const char *position) {
-    current_bar.position = (strcmp(position, "top") == 0 ? P_TOP : P_BOTTOM);
+    current_bar->position = (strcmp(position, "top") == 0 ? P_TOP : P_BOTTOM);
 }
 
 CFGFUN(bar_i3bar_command, const char *i3bar_command) {
-    FREE(current_bar.i3bar_command);
-    current_bar.i3bar_command = sstrdup(i3bar_command);
+    FREE(current_bar->i3bar_command);
+    current_bar->i3bar_command = sstrdup(i3bar_command);
 }
 
 CFGFUN(bar_color, const char *colorclass, const char *border, const char *background, const char *text) {
-#define APPLY_COLORS(classname)                                          \
-    do {                                                                 \
-        if (strcmp(colorclass, #classname) == 0) {                       \
-            if (text != NULL) {                                          \
-                /* New syntax: border, background, text */               \
-                current_bar.colors.classname##_border = sstrdup(border); \
-                current_bar.colors.classname##_bg = sstrdup(background); \
-                current_bar.colors.classname##_text = sstrdup(text);     \
-            } else {                                                     \
-                /* Old syntax: text, background */                       \
-                current_bar.colors.classname##_bg = sstrdup(background); \
-                current_bar.colors.classname##_text = sstrdup(border);   \
-            }                                                            \
-        }                                                                \
+#define APPLY_COLORS(classname)                                           \
+    do {                                                                  \
+        if (strcmp(colorclass, #classname) == 0) {                        \
+            if (text != NULL) {                                           \
+                /* New syntax: border, background, text */                \
+                current_bar->colors.classname##_border = sstrdup(border); \
+                current_bar->colors.classname##_bg = sstrdup(background); \
+                current_bar->colors.classname##_text = sstrdup(text);     \
+            } else {                                                      \
+                /* Old syntax: text, background */                        \
+                current_bar->colors.classname##_bg = sstrdup(background); \
+                current_bar->colors.classname##_text = sstrdup(border);   \
+            }                                                             \
+        }                                                                 \
     } while (0)
 
     APPLY_COLORS(focused_workspace);
@@ -528,73 +528,72 @@ CFGFUN(bar_color, const char *colorclass, const char *border, const char *backgr
 }
 
 CFGFUN(bar_socket_path, const char *socket_path) {
-    FREE(current_bar.socket_path);
-    current_bar.socket_path = sstrdup(socket_path);
+    FREE(current_bar->socket_path);
+    current_bar->socket_path = sstrdup(socket_path);
 }
 
 CFGFUN(bar_tray_output, const char *output) {
-    FREE(current_bar.tray_output);
-    current_bar.tray_output = sstrdup(output);
+    struct tray_output_t *tray_output = scalloc(1, sizeof(struct tray_output_t));
+    tray_output->output = sstrdup(output);
+    TAILQ_INSERT_TAIL(&(current_bar->tray_outputs), tray_output, tray_outputs);
 }
 
 CFGFUN(bar_tray_padding, const long padding_px) {
-    current_bar.tray_padding = padding_px;
+    current_bar->tray_padding = padding_px;
 }
 
 CFGFUN(bar_color_single, const char *colorclass, const char *color) {
     if (strcmp(colorclass, "background") == 0)
-        current_bar.colors.background = sstrdup(color);
+        current_bar->colors.background = sstrdup(color);
     else if (strcmp(colorclass, "separator") == 0)
-        current_bar.colors.separator = sstrdup(color);
+        current_bar->colors.separator = sstrdup(color);
     else if (strcmp(colorclass, "statusline") == 0)
-        current_bar.colors.statusline = sstrdup(color);
+        current_bar->colors.statusline = sstrdup(color);
     else if (strcmp(colorclass, "focused_background") == 0)
-        current_bar.colors.focused_background = sstrdup(color);
+        current_bar->colors.focused_background = sstrdup(color);
     else if (strcmp(colorclass, "focused_separator") == 0)
-        current_bar.colors.focused_separator = sstrdup(color);
+        current_bar->colors.focused_separator = sstrdup(color);
     else
-        current_bar.colors.focused_statusline = sstrdup(color);
+        current_bar->colors.focused_statusline = sstrdup(color);
 }
 
 CFGFUN(bar_status_command, const char *command) {
-    FREE(current_bar.status_command);
-    current_bar.status_command = sstrdup(command);
+    FREE(current_bar->status_command);
+    current_bar->status_command = sstrdup(command);
 }
 
 CFGFUN(bar_binding_mode_indicator, const char *value) {
-    current_bar.hide_binding_mode_indicator = !eval_boolstr(value);
+    current_bar->hide_binding_mode_indicator = !eval_boolstr(value);
 }
 
 CFGFUN(bar_workspace_buttons, const char *value) {
-    current_bar.hide_workspace_buttons = !eval_boolstr(value);
+    current_bar->hide_workspace_buttons = !eval_boolstr(value);
 }
 
 CFGFUN(bar_strip_workspace_numbers, const char *value) {
-    current_bar.strip_workspace_numbers = eval_boolstr(value);
+    current_bar->strip_workspace_numbers = eval_boolstr(value);
 }
 
 CFGFUN(bar_start) {
-    TAILQ_INIT(&(current_bar.bar_bindings));
-    current_bar.tray_padding = 2;
+    current_bar = scalloc(1, sizeof(struct Barconfig));
+    TAILQ_INIT(&(current_bar->bar_bindings));
+    TAILQ_INIT(&(current_bar->tray_outputs));
+    current_bar->tray_padding = 2;
 }
 
 CFGFUN(bar_finish) {
     DLOG("\t new bar configuration finished, saving.\n");
     /* Generate a unique ID for this bar if not already configured */
-    if (!current_bar.id)
-        sasprintf(&current_bar.id, "bar-%d", config.number_barconfigs);
+    if (current_bar->id == NULL)
+        sasprintf(&current_bar->id, "bar-%d", config.number_barconfigs);
 
     config.number_barconfigs++;
 
     /* If no font was explicitly set, we use the i3 font as default */
-    if (!current_bar.font && font_pattern)
-        current_bar.font = sstrdup(font_pattern);
+    if (current_bar->font == NULL && font_pattern != NULL)
+        current_bar->font = sstrdup(font_pattern);
 
-    /* Copy the current (static) structure into a dynamically allocated
-     * one, then cleanup our static one. */
-    Barconfig *bar_config = scalloc(1, sizeof(Barconfig));
-    memcpy(bar_config, &current_bar, sizeof(Barconfig));
-    TAILQ_INSERT_TAIL(&barconfigs, bar_config, configs);
-
-    memset(&current_bar, '\0', sizeof(Barconfig));
+    TAILQ_INSERT_TAIL(&barconfigs, current_bar, configs);
+    /* Simply reset the pointer, but don't free the resources. */
+    current_bar = NULL;
 }

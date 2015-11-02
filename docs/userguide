@@ -1369,6 +1369,11 @@ NetworkManager, VLC, Pidgin, etc. can place little icons.
 You can configure on which output (monitor) the icons should be displayed or
 you can turn off the functionality entirely.
 
+You can use mutliple +tray_output+ directives in your config to specify a list
+of outputs on which you want the tray to appear. The first available output in
+that list as defined by the order of the directives will be used for the tray
+output.
+
 *Syntax*:
 ---------------------------------
 tray_output none|primary|<output>

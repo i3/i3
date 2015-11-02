@@ -728,25 +728,50 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             }
 
             DLOG("X window %08x requested docking\n", client);
-            i3_output *walk, *output = NULL;
-            SLIST_FOREACH(walk, outputs, slist) {
-                if (!walk->active)
-                    continue;
-                if (config.tray_output) {
-                    if ((strcasecmp(walk->name, config.tray_output) != 0) &&
-                        (!walk->primary || strcasecmp("primary", config.tray_output) != 0))
+            i3_output *output = NULL;
+            i3_output *walk = NULL;
+            tray_output_t *tray_output = NULL;
+            /* We need to iterate through the tray_output assignments first in
+             * order to prioritize them. Otherwise, if this bar manages two
+             * outputs and both are assigned as tray_output as well, the first
+             * output in our list would receive the tray rather than the first
+             * one defined via tray_output. */
+            TAILQ_FOREACH(tray_output, &(config.tray_outputs), tray_outputs) {
+                SLIST_FOREACH(walk, outputs, slist) {
+                    if (!walk->active)
                         continue;
+
+                    if (strcasecmp(walk->name, tray_output->output) == 0) {
+                        DLOG("Found tray_output assignment for output %s.\n", walk->name);
+                        output = walk;
+                        break;
+                    }
+
+                    if (walk->primary && strcasecmp("primary", tray_output->output) == 0) {
+                        DLOG("Found tray_output assignment on primary output %s.\n", walk->name);
+                        output = walk;
+                        break;
+                    }
                 }
 
-                DLOG("using output %s\n", walk->name);
-                output = walk;
-                break;
+                /* If we found an output, we're done. */
+                if (output != NULL)
+                    break;
             }
+
+            /* Check whether any "tray_output primary" was defined for this bar. */
+            bool contains_primary = false;
+            TAILQ_FOREACH(tray_output, &(config.tray_outputs), tray_outputs) {
+                if (strcasecmp("primary", tray_output->output) == 0) {
+                    contains_primary = true;
+                    break;
+                }
+            }
+
             /* In case of tray_output == primary and there is no primary output
-             * configured, we fall back to the first available output. */
-            if (output == NULL &&
-                config.tray_output &&
-                strcasecmp("primary", config.tray_output) == 0) {
+             * configured, we fall back to the first available output. We do the
+             * same if no tray_output was specified. */
+            if (output == NULL && (contains_primary || TAILQ_EMPTY(&(config.tray_outputs)))) {
                 SLIST_FOREACH(walk, outputs, slist) {
                     if (!walk->active)
                         continue;
@@ -1707,20 +1732,37 @@ void reconfig_windows(bool redraw_bars) {
                 exit(EXIT_FAILURE);
             }
 
-            const char *tray_output = (config.tray_output ? config.tray_output : SLIST_FIRST(outputs)->name);
-            if (!tray_configured && strcasecmp(tray_output, "none") != 0) {
-                /* Configuration sanity check: ensure this i3bar instance handles the output on
-                 * which the tray should appear (e.g. don’t initialize a tray if tray_output ==
-                 * VGA-1 but output == [HDMI-1]).
-                 */
-                i3_output *output;
-                SLIST_FOREACH(output, outputs, slist) {
-                    if (strcasecmp(output->name, tray_output) == 0 ||
-                        (strcasecmp(tray_output, "primary") == 0 && output->primary)) {
-                        init_tray();
-                        break;
+            /* Unless "tray_output none" was specified, we need to initialize the tray. */
+            const char *first = (TAILQ_EMPTY(&(config.tray_outputs))) ? SLIST_FIRST(outputs)->name : TAILQ_FIRST(&(config.tray_outputs))->output;
+            if (!tray_configured && strcasecmp(first, "none") != 0) {
+                /* We do a sanity check here to ensure that this i3bar instance actually handles
+                 * the output on which the tray should appear. For example,
+                 * consider tray_output == [VGA-1], but output == [HDMI-1]. */
+
+                /* If no tray_output was specified, we go ahead and initialize the tray as
+                 * we will be using the first available output. */
+                if (TAILQ_EMPTY(&(config.tray_outputs)))
+                    init_tray();
+
+                /* If one or more tray_output assignments were specified, we ensure that at least one of
+                 * them is actually an output managed by this instance. */
+                tray_output_t *tray_output;
+                TAILQ_FOREACH(tray_output, &(config.tray_outputs), tray_outputs) {
+                    i3_output *output;
+                    bool found = false;
+                    SLIST_FOREACH(output, outputs, slist) {
+                        if (strcasecmp(output->name, tray_output->output) == 0 ||
+                            (strcasecmp(tray_output->output, "primary") == 0 && output->primary)) {
+                            found = true;
+                            init_tray();
+                            break;
+                        }
                     }
+
+                    if (found)
+                        break;
                 }
+
                 tray_configured = true;
             }
         } else {
