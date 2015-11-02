@@ -843,7 +843,7 @@ bool parse_file(const char *f, bool use_nagbar) {
                 break;
             die("Could not read configuration file\n");
         }
-        if (buffer[strlen(buffer) - 1] != '\n') {
+        if (buffer[strlen(buffer) - 1] != '\n' && !feof(fstr)) {
             ELOG("Your line continuation is too long, it exceeds %zd bytes\n", sizeof(buffer));
         }
         continuation = strstr(buffer, "\\\n");
