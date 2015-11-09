@@ -11,7 +11,7 @@
 #include <string.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
 #include <cairo/cairo-xcb.h>
 #endif
 
@@ -38,7 +38,7 @@ void draw_util_surface_init(surface_t *surface, xcb_drawable_t drawable, int wid
     if (xcb_request_failed(gc_cookie, "Could not create graphical context"))
         exit(EXIT_FAILURE);
 
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
     surface->surface = cairo_xcb_surface_create(xcb_connection, surface->id, visual_type, width, height);
     surface->cr = cairo_create(surface->surface);
 #endif
@@ -50,7 +50,7 @@ void draw_util_surface_init(surface_t *surface, xcb_drawable_t drawable, int wid
  */
 void draw_util_surface_free(surface_t *surface) {
     xcb_free_gc(xcb_connection, surface->gc);
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
     cairo_surface_destroy(surface->surface);
     cairo_destroy(surface->cr);
 #endif
@@ -79,7 +79,7 @@ color_t draw_util_hex_to_color(const char *color) {
  *
  */
 static void draw_util_set_source_color(surface_t *surface, color_t color) {
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
     cairo_set_source_rgb(surface->cr, color.red, color.green, color.blue);
 #else
     uint32_t colorpixel = color.colorpixel;
@@ -95,7 +95,7 @@ static void draw_util_set_source_color(surface_t *surface, color_t color) {
  *
  */
 void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y, int max_width) {
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
     /* Flush any changes before we draw the text as this might use XCB directly. */
     CAIRO_SURFACE_FLUSH(surface->surface);
 #endif
@@ -103,7 +103,7 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
     set_font_colors(surface->gc, fg_color.colorpixel, bg_color.colorpixel);
     draw_text(text, surface->id, surface->gc, visual_type, x, y, max_width);
 
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
     /* Notify cairo that we (possibly) used another way to draw on the surface. */
     cairo_surface_mark_dirty(surface->surface);
 #endif
@@ -116,7 +116,7 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
  *
  */
 void draw_util_rectangle(surface_t *surface, color_t color, double x, double y, double w, double h) {
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
     cairo_save(surface->cr);
 
     /* Using the SOURCE operator will copy both color and alpha information directly
@@ -146,7 +146,7 @@ void draw_util_rectangle(surface_t *surface, color_t color, double x, double y, 
  *
  */
 void draw_util_clear_surface(surface_t *surface, color_t color) {
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
     cairo_save(surface->cr);
 
     /* Using the SOURCE operator will copy both color and alpha information directly
@@ -176,7 +176,7 @@ void draw_util_clear_surface(surface_t *surface, color_t color) {
  */
 void draw_util_copy_surface(surface_t *src, surface_t *dest, double src_x, double src_y,
                             double dest_x, double dest_y, double width, double height) {
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
     cairo_save(dest->cr);
 
     /* Using the SOURCE operator will copy both color and alpha information directly

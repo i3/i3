@@ -8,11 +8,11 @@
  */
 #pragma once
 
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
 #include <cairo/cairo-xcb.h>
 #endif
 
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
 /* We need to flush cairo surfaces twice to avoid an assertion bug. See #1989
  * and https://bugs.freedesktop.org/show_bug.cgi?id=92455. */
 #define CAIRO_SURFACE_FLUSH(surface)  \
@@ -44,7 +44,7 @@ typedef struct surface_t {
     int width;
     int height;
 
-#ifdef I3BAR_CAIRO
+#ifdef CAIRO_SUPPORT
     /* A cairo surface representing the drawable. */
     cairo_surface_t *surface;
 
