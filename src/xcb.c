@@ -324,8 +324,19 @@ release_grab:
  * Grab the specified buttons on a window when managing it.
  *
  */
-void xcb_grab_buttons(xcb_connection_t *conn, xcb_window_t window, uint8_t* buttons) {
-    for (int i = 0; i < sizeof(buttons) / sizeof(uint8_t); i++) {
+void xcb_grab_buttons(xcb_connection_t *conn, xcb_window_t window, bool bind_scrollwheel) {
+    uint8_t buttons[3];
+    int num = 0;
+
+    if (bind_scrollwheel) {
+        buttons[num++] = XCB_BUTTON_INDEX_ANY;
+    } else {
+        buttons[num++] = XCB_BUTTON_INDEX_1;
+        buttons[num++] = XCB_BUTTON_INDEX_2;
+        buttons[num++] = XCB_BUTTON_INDEX_3;
+    }
+
+    for (int i = 0; i < num; i++) {
         xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS, XCB_GRAB_MODE_SYNC,
                         XCB_GRAB_MODE_ASYNC, root, XCB_NONE, buttons[i], XCB_BUTTON_MASK_ANY);
     }

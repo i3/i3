@@ -229,6 +229,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     if (reload) {
         translate_keysyms();
         grab_all_keys(conn);
+        regrab_all_buttons(conn);
     }
 
     if (config.font.type == FONT_TYPE_NONE) {

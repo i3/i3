@@ -168,7 +168,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     cwindow->id = window;
     cwindow->depth = get_visual_depth(attr->visual);
 
-    xcb_grab_buttons(conn, window, (uint8_t[]) {XCB_BUTTON_INDEX_ANY});
+    xcb_grab_buttons(conn, window, bindings_should_grab_scrollwheel_buttons());
 
     /* update as much information as possible so far (some replies may be NULL) */
     window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL), true);
