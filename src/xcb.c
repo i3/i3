@@ -319,3 +319,14 @@ release_grab:
     FREE(reply);
     xcb_ungrab_server(conn);
 }
+
+/*
+ * Grab the specified buttons on a window when managing it.
+ *
+ */
+void xcb_grab_buttons(xcb_connection_t *conn, xcb_window_t window, uint8_t* buttons) {
+    for (int i = 0; i < sizeof(buttons) / sizeof(uint8_t); i++) {
+        xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS, XCB_GRAB_MODE_SYNC,
+                        XCB_GRAB_MODE_ASYNC, root, XCB_NONE, buttons[i], XCB_BUTTON_MASK_ANY);
+    }
+}
