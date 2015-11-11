@@ -13,7 +13,6 @@
 #include <cairo/cairo-xcb.h>
 
 #include "common.h"
-#include "draw_util.h"
 
 typedef struct i3_output i3_output;
 

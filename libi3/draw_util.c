@@ -15,7 +15,6 @@
 #include <cairo/cairo-xcb.h>
 #endif
 
-#include "common.h"
 #include "libi3.h"
 
 xcb_connection_t *xcb_connection;
@@ -35,8 +34,12 @@ void draw_util_surface_init(surface_t *surface, xcb_drawable_t drawable, int wid
 
     surface->gc = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t gc_cookie = xcb_create_gc_checked(xcb_connection, surface->gc, surface->id, 0, NULL);
-    if (xcb_request_failed(gc_cookie, "Could not create graphical context"))
+
+    xcb_generic_error_t *error = xcb_request_check(xcb_connection, gc_cookie);
+    if (error != NULL) {
+        ELOG("Could not create graphical context. Error code: %d\n", error->error_code);
         exit(EXIT_FAILURE);
+    }
 
 #ifdef CAIRO_SUPPORT
     surface->surface = cairo_xcb_surface_create(xcb_connection, surface->id, visual_type, width, height);
