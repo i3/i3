@@ -67,9 +67,8 @@ i3_event_state_mask_t event_state_from_str(const char *str) {
     /* It might be better to use strtok() here, but the simpler strstr() should
      * do for now. */
     i3_event_state_mask_t result = 0;
-    int group_bits_set = 0;
     if (str == NULL)
-        return (I3_XKB_GROUP_MASK_1 << 16);
+        return result;
     if (strstr(str, "Mod1") != NULL)
         result |= XCB_KEY_BUT_MASK_MOD_1;
     if (strstr(str, "Mod2") != NULL)
@@ -86,26 +85,15 @@ i3_event_state_mask_t event_state_from_str(const char *str) {
     if (strstr(str, "Shift") != NULL)
         result |= XCB_KEY_BUT_MASK_SHIFT;
 
-    if (strstr(str, "Group1") != NULL) {
+    if (strstr(str, "Group1") != NULL)
         result |= (I3_XKB_GROUP_MASK_1 << 16);
-        group_bits_set++;
-    }
     if (strstr(str, "Group2") != NULL ||
-        strstr(str, "Mode_switch") != NULL) {
+        strstr(str, "Mode_switch") != NULL)
         result |= (I3_XKB_GROUP_MASK_2 << 16);
-        group_bits_set++;
-    }
-    if (strstr(str, "Group3") != NULL) {
+    if (strstr(str, "Group3") != NULL)
         result |= (I3_XKB_GROUP_MASK_3 << 16);
-        group_bits_set++;
-    }
-    if (strstr(str, "Group4") != NULL) {
+    if (strstr(str, "Group4") != NULL)
         result |= (I3_XKB_GROUP_MASK_4 << 16);
-        group_bits_set++;
-    }
-    if (group_bits_set == 0) {
-        result |= (I3_XKB_GROUP_MASK_1 << 16);
-    }
     return result;
 }
 
