@@ -164,18 +164,28 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
         }
     }
 
+    const uint32_t xkb_group_state = (state_filtered & 0xFFFF0000);
+    const uint32_t modifiers_state = (state_filtered & 0x0000FFFF);
     TAILQ_FOREACH(bind, bindings, bindings) {
-        bool state_matches;
-        if ((bind->event_state_mask & 0xFFFF) == 0) {
+        const uint32_t xkb_group_mask = (bind->event_state_mask & 0xFFFF0000);
+        /* modifiers_mask is a special case: a value of 0 does not mean “match all”,
+         * but rather “match exactly when no modifiers are present”. */
+        const uint32_t modifiers_mask = (bind->event_state_mask & 0x0000FFFF);
+        const bool groups_match = ((xkb_group_state & xkb_group_mask) == xkb_group_mask);
+        bool mods_match;
+        if (modifiers_mask == 0) {
             /* Verify no modifiers are pressed. A bitwise AND would lead to
              * false positives, see issue #2002. */
-            state_matches = (state_filtered == bind->event_state_mask);
+            mods_match = (modifiers_state == 0);
         } else {
-            state_matches = ((state_filtered & bind->event_state_mask) == bind->event_state_mask);
+            mods_match = ((modifiers_state & modifiers_mask) == modifiers_mask);
         }
+        const bool state_matches = (groups_match && mods_match);
 
-        DLOG("binding with event_state_mask 0x%x, state_filtered 0x%x, match: %s\n",
-             bind->event_state_mask, state_filtered, (state_matches ? "yes" : "no"));
+        DLOG("binding groups_match = %s, mods_match = %s, state_matches = %s\n",
+             (groups_match ? "yes" : "no"),
+             (mods_match ? "yes" : "no"),
+             (state_matches ? "yes" : "no"));
         /* First compare the state_filtered (unless this is a
          * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
          * event) */
