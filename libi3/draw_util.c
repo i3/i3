@@ -186,7 +186,7 @@ void draw_util_copy_surface(surface_t *src, surface_t *dest, double src_x, doubl
      * onto the surface rather than blending it. This is a bit more efficient and
      * allows better color control for the user when using opacity. */
     cairo_set_operator(dest->cr, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_surface(dest->cr, src->surface, dest_x - src_x, src_y);
+    cairo_set_source_surface(dest->cr, src->surface, dest_x - src_x, dest_y - src_y);
 
     cairo_rectangle(dest->cr, dest_x, dest_y, width, height);
     cairo_fill(dest->cr);
