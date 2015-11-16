@@ -746,6 +746,12 @@ void x_push_node(Con *con) {
                              con->parent->layout == L_STACKED ||
                              con->parent->layout == L_TABBED);
 
+    /* The root con and output cons will never require a pixmap. In particular for the
+     * __i3 output, this will likely not work anyway because it might be ridiculously
+     * large, causing an XCB_ALLOC error. */
+    if (con->type == CT_ROOT || con->type == CT_OUTPUT)
+        is_pixmap_needed = false;
+
     bool fake_notify = false;
     /* Set new position if rect changed (and if height > 0) or if the pixmap
      * needs to be recreated */
