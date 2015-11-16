@@ -518,7 +518,7 @@ void x_draw_decoration(Con *con) {
     if (p->border_style != BS_NORMAL)
         goto copy_pixmaps;
 
-    /* If the parent hasn't been set up yet, skip the decoratin rendering
+    /* If the parent hasn't been set up yet, skip the decoration rendering
      * for now. */
     if (parent->frame_buffer.id == XCB_NONE)
         goto copy_pixmaps;

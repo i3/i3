@@ -23,6 +23,14 @@ xcb_visualtype_t *visual_type;
 /* Forward declarations */
 static void draw_util_set_source_color(xcb_connection_t *conn, surface_t *surface, color_t color);
 
+#define RETURN_UNLESS_SURFACE_INITIALIZED(surface)                               \
+    do {                                                                         \
+        if ((surface)->id == XCB_NONE) {                                         \
+            ELOG("Surface %p is not initialized, skipping drawing.\n", surface); \
+            return;                                                              \
+        }                                                                        \
+    } while (0)
+
 /*
  * Initialize the surface to represent the given drawable.
  *
@@ -104,6 +112,8 @@ color_t draw_util_colorpixel_to_color(uint32_t colorpixel) {
  *
  */
 static void draw_util_set_source_color(xcb_connection_t *conn, surface_t *surface, color_t color) {
+    RETURN_UNLESS_SURFACE_INITIALIZED(surface);
+
 #ifdef CAIRO_SUPPORT
     cairo_set_source_rgb(surface->cr, color.red, color.green, color.blue);
 #else
@@ -120,6 +130,8 @@ static void draw_util_set_source_color(xcb_connection_t *conn, surface_t *surfac
  *
  */
 void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y, int max_width) {
+    RETURN_UNLESS_SURFACE_INITIALIZED(surface);
+
 #ifdef CAIRO_SUPPORT
     /* Flush any changes before we draw the text as this might use XCB directly. */
     CAIRO_SURFACE_FLUSH(surface->surface);
@@ -141,6 +153,8 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
  *
  */
 void draw_util_rectangle(xcb_connection_t *conn, surface_t *surface, color_t color, double x, double y, double w, double h) {
+    RETURN_UNLESS_SURFACE_INITIALIZED(surface);
+
 #ifdef CAIRO_SUPPORT
     cairo_save(surface->cr);
 
@@ -171,6 +185,8 @@ void draw_util_rectangle(xcb_connection_t *conn, surface_t *surface, color_t col
  *
  */
 void draw_util_clear_surface(xcb_connection_t *conn, surface_t *surface, color_t color) {
+    RETURN_UNLESS_SURFACE_INITIALIZED(surface);
+
 #ifdef CAIRO_SUPPORT
     cairo_save(surface->cr);
 
@@ -201,6 +217,9 @@ void draw_util_clear_surface(xcb_connection_t *conn, surface_t *surface, color_t
  */
 void draw_util_copy_surface(xcb_connection_t *conn, surface_t *src, surface_t *dest, double src_x, double src_y,
                             double dest_x, double dest_y, double width, double height) {
+    RETURN_UNLESS_SURFACE_INITIALIZED(src);
+    RETURN_UNLESS_SURFACE_INITIALIZED(dest);
+
 #ifdef CAIRO_SUPPORT
     cairo_save(dest->cr);
 
