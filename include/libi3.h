@@ -513,6 +513,8 @@ typedef struct surface_t {
     /* A classic XCB graphics context. */
     xcb_gcontext_t gc;
 
+    xcb_visualtype_t *visual_type;
+
     int width;
     int height;
 
@@ -530,13 +532,20 @@ typedef struct surface_t {
  * Initialize the surface to represent the given drawable.
  *
  */
-void draw_util_surface_init(surface_t *surface, xcb_drawable_t drawable, int width, int height);
+void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_drawable_t drawable,
+                            xcb_visualtype_t *visual, int width, int height);
+
+/**
+ * Resize the surface to the given size.
+ *
+ */
+void draw_util_surface_set_size(surface_t *surface, int width, int height);
 
 /**
  * Destroys the surface.
  *
  */
-void draw_util_surface_free(surface_t *surface);
+void draw_util_surface_free(xcb_connection_t *conn, surface_t *surface);
 
 /**
  * Parses the given color in hex format to an internal color representation.
@@ -544,6 +553,8 @@ void draw_util_surface_free(surface_t *surface);
  *
  */
 color_t draw_util_hex_to_color(const char *color);
+
+color_t draw_util_colorpixel_to_color(uint32_t colorpixel);
 
 /**
  * Draw the given text using libi3.
@@ -559,17 +570,17 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
  * surface as well as restoring the cairo state.
  *
  */
-void draw_util_rectangle(surface_t *surface, color_t color, double x, double y, double w, double h);
+void draw_util_rectangle(xcb_connection_t *conn, surface_t *surface, color_t color, double x, double y, double w, double h);
 
 /**
  * Clears a surface with the given color.
  *
  */
-void draw_util_clear_surface(surface_t *surface, color_t color);
+void draw_util_clear_surface(xcb_connection_t *conn, surface_t *surface, color_t color);
 
 /**
  * Copies a surface onto another surface.
  *
  */
-void draw_util_copy_surface(surface_t *src, surface_t *dest, double src_x, double src_y,
+void draw_util_copy_surface(xcb_connection_t *conn, surface_t *src, surface_t *dest, double src_x, double src_y,
                             double dest_x, double dest_y, double width, double height);

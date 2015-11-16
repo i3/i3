@@ -514,7 +514,7 @@ Con *con_by_window_id(xcb_window_t window) {
 Con *con_by_frame_id(xcb_window_t frame) {
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons)
-    if (con->frame == frame)
+    if (con->frame.id == frame)
         return con;
     return NULL;
 }

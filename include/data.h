@@ -551,11 +551,10 @@ struct Con {
      * change. */
     uint8_t ignore_unmap;
 
-    /* ids/pixmap/graphics context for the frame window */
+    /* The surface used for the frame window. */
+    surface_t frame;
+    surface_t frame_buffer;
     bool pixmap_recreated;
-    xcb_window_t frame;
-    xcb_pixmap_t pixmap;
-    xcb_gcontext_t pm_gc;
 
     enum {
         CT_ROOT = 0,

@@ -144,10 +144,11 @@ void x_con_init(Con *con, uint16_t depth) {
     }
 
     Rect dims = {-15, -15, 10, 10};
-    con->frame = create_window(conn, dims, depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
+    xcb_window_t frame_id = create_window(conn, dims, depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
+    draw_util_surface_init(conn, &(con->frame), frame_id, get_visualtype_by_id(visual), dims.width, dims.height);
     xcb_change_property(conn,
                         XCB_PROP_MODE_REPLACE,
-                        con->frame,
+                        con->frame.id,
                         XCB_ATOM_WM_CLASS,
                         XCB_ATOM_STRING,
                         8,
@@ -158,7 +159,7 @@ void x_con_init(Con *con, uint16_t depth) {
         xcb_free_colormap(conn, win_colormap);
 
     struct con_state *state = scalloc(1, sizeof(struct con_state));
-    state->id = con->frame;
+    state->id = con->frame.id;
     state->mapped = false;
     state->initial = true;
     DLOG("Adding window 0x%08x to lists\n", state->id);
@@ -177,7 +178,7 @@ void x_con_init(Con *con, uint16_t depth) {
 void x_reinit(Con *con) {
     struct con_state *state;
 
-    if ((state = state_for_frame(con->frame)) == NULL) {
+    if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state not found\n");
         return;
     }
@@ -196,13 +197,13 @@ void x_reinit(Con *con) {
  */
 void x_reparent_child(Con *con, Con *old) {
     struct con_state *state;
-    if ((state = state_for_frame(con->frame)) == NULL) {
+    if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state for con not found\n");
         return;
     }
 
     state->need_reparent = true;
-    state->old_frame = old->frame;
+    state->old_frame = old->frame.id;
 }
 
 /*
@@ -212,12 +213,12 @@ void x_reparent_child(Con *con, Con *old) {
 void x_move_win(Con *src, Con *dest) {
     struct con_state *state_src, *state_dest;
 
-    if ((state_src = state_for_frame(src->frame)) == NULL) {
+    if ((state_src = state_for_frame(src->frame.id)) == NULL) {
         ELOG("window state for src not found\n");
         return;
     }
 
-    if ((state_dest = state_for_frame(dest->frame)) == NULL) {
+    if ((state_dest = state_for_frame(dest->frame.id)) == NULL) {
         ELOG("window state for dest not found\n");
         return;
     }
@@ -239,10 +240,11 @@ void x_move_win(Con *src, Con *dest) {
 void x_con_kill(Con *con) {
     con_state *state;
 
-    xcb_destroy_window(conn, con->frame);
-    xcb_free_pixmap(conn, con->pixmap);
-    xcb_free_gc(conn, con->pm_gc);
-    state = state_for_frame(con->frame);
+    draw_util_surface_free(conn, &(con->frame));
+    draw_util_surface_free(conn, &(con->frame_buffer));
+    xcb_destroy_window(conn, con->frame.id);
+    xcb_free_pixmap(conn, con->frame_buffer.id);
+    state = state_for_frame(con->frame.id);
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_REMOVE(&old_state_head, state, old_state);
     TAILQ_REMOVE(&initial_mapping_head, state, initial_mapping_order);
@@ -312,6 +314,54 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
     free(event);
 }
 
+static void x_draw_decoration_border(Con *con, struct deco_render_params *p) {
+    assert(con->parent != NULL);
+
+    Rect *dr = &(con->deco_rect);
+    adjacent_t borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
+    int deco_diff_l = borders_to_hide & ADJ_LEFT_SCREEN_EDGE ? 0 : con->current_border_width;
+    int deco_diff_r = borders_to_hide & ADJ_RIGHT_SCREEN_EDGE ? 0 : con->current_border_width;
+    if (con->parent->layout == L_TABBED ||
+        (con->parent->layout == L_STACKED && TAILQ_NEXT(con, nodes) != NULL)) {
+        deco_diff_l = 0;
+        deco_diff_r = 0;
+    }
+
+    draw_util_rectangle(conn, &(con->parent->frame_buffer), draw_util_colorpixel_to_color(p->color->border),
+                        dr->x, dr->y, dr->width, 1);
+
+    draw_util_rectangle(conn, &(con->parent->frame_buffer), draw_util_colorpixel_to_color(p->color->border),
+                        dr->x + deco_diff_l, dr->y + dr->height - 1, dr->width - (deco_diff_l + deco_diff_r), 1);
+}
+
+static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p) {
+    assert(con->parent != NULL);
+
+    Rect *dr = &(con->deco_rect);
+    Rect br = con_border_style_rect(con);
+
+    /* Redraw the right border to cut off any text that went past it.
+     * This is necessary when the text was drawn using XCB since cutting text off
+     * automatically does not work there. For pango rendering, this isn't necessary. */
+    draw_util_rectangle(conn, &(con->parent->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+                        dr->x + dr->width + br.width, dr->y, -br.width, dr->height);
+
+    /* Draw a 1px separator line before and after every tab, so that tabs can
+     * be easily distinguished. */
+    if (con->parent->layout == L_TABBED) {
+        /* Left side */
+        draw_util_rectangle(conn, &(con->parent->frame_buffer), draw_util_colorpixel_to_color(p->color->border),
+                            dr->x, dr->y, 1, dr->height);
+
+        /* Right side */
+        draw_util_rectangle(conn, &(con->parent->frame_buffer), draw_util_colorpixel_to_color(p->color->border),
+                            dr->x + dr->width - 1, dr->y, 1, dr->height);
+    }
+
+    /* Redraw the border. */
+    x_draw_decoration_border(con, p);
+}
+
 /*
  * Draws the decoration of the given container onto its parent.
  *
@@ -343,7 +393,7 @@ void x_draw_decoration(Con *con) {
     /* Skip containers whose pixmap has not yet been created (can happen when
      * decoration rendering happens recursively for a window for which
      * x_push_node() was not yet called) */
-    if (leaf && con->pixmap == XCB_NONE)
+    if (leaf && con->frame_buffer.id == XCB_NONE)
         return;
 
     /* 1: build deco_params and compare with cache */
@@ -395,29 +445,20 @@ void x_draw_decoration(Con *con) {
     con->pixmap_recreated = false;
     con->mark_changed = false;
 
-    /* 2: draw the client.background, but only for the parts around the client_rect */
+    /* 2: draw the client.background, but only for the parts around the window_rect */
     if (con->window != NULL) {
-        xcb_rectangle_t background[] = {
-            /* top area */
-            {0, 0, r->width, w->y},
-            /* bottom area */
-            {0, (w->y + w->height), r->width, r->height - (w->y + w->height)},
-            /* left area */
-            {0, 0, w->x, r->height},
-            /* right area */
-            {w->x + w->width, 0, r->width - (w->x + w->width), r->height}};
-#if 0
-        for (int i = 0; i < 4; i++)
-            DLOG("rect is (%d, %d) with %d x %d\n",
-                    background[i].x,
-                    background[i].y,
-                    background[i].width,
-                    background[i].height
-                );
-#endif
-
-        xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){config.client.background});
-        xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, sizeof(background) / sizeof(xcb_rectangle_t), background);
+        /* top area */
+        draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(config.client.background),
+                            0, 0, r->width, w->y);
+        /* bottom area */
+        draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(config.client.background),
+                            0, w->y + w->height, r->width, r->height - (w->y + w->height));
+        /* left area */
+        draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(config.client.background),
+                            0, 0, w->x, r->height);
+        /* right area */
+        draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(config.client.background),
+                            w->x + w->width, 0, r->width - (w->x + w->width), r->height);
     }
 
     /* 3: draw a rectangle in border color around the client */
@@ -433,27 +474,26 @@ void x_draw_decoration(Con *con) {
         DLOG("window_rect spans (%d, %d) with %d x %d\n", con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
 #endif
 
-        /* These rectangles represents the border around the child window
+        /* These rectangles represent the border around the child window
          * (left, bottom and right part). We don’t just fill the whole
          * rectangle because some childs are not freely resizable and we want
          * their background color to "shine through". */
-        xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){p->color->background});
         if (!(borders_to_hide & ADJ_LEFT_SCREEN_EDGE)) {
-            xcb_rectangle_t leftline = {0, 0, br.x, r->height};
-            xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &leftline);
+            draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+                                0, 0, br.x, r->height);
         }
         if (!(borders_to_hide & ADJ_RIGHT_SCREEN_EDGE)) {
-            xcb_rectangle_t rightline = {r->width + (br.width + br.x), 0, -(br.width + br.x), r->height};
-            xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &rightline);
+            draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+                                r->width + (br.width + br.x), 0, -(br.width + br.x), r->height);
         }
         if (!(borders_to_hide & ADJ_LOWER_SCREEN_EDGE)) {
-            xcb_rectangle_t bottomline = {br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y)};
-            xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &bottomline);
+            draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+                                br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
         }
-        /* 1pixel border needs an additional line at the top */
+        /* pixel border needs an additional line at the top */
         if (p->border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
-            xcb_rectangle_t topline = {br.x, 0, r->width + br.width, br.y};
-            xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &topline);
+            draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+                                br.x, 0, r->width + br.width, br.y);
         }
 
         /* Highlight the side of the border at which the next window will be
@@ -463,13 +503,13 @@ void x_draw_decoration(Con *con) {
         if (TAILQ_NEXT(con, nodes) == NULL &&
             TAILQ_PREV(con, nodes_head, nodes) == NULL &&
             con->parent->type != CT_FLOATING_CON) {
-            xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){p->color->indicator});
-            if (p->parent_layout == L_SPLITH)
-                xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
-                                                                              {r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height}});
-            else if (p->parent_layout == L_SPLITV)
-                xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
-                                                                              {br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y)}});
+            if (p->parent_layout == L_SPLITH) {
+                draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->indicator),
+                                    r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height);
+            } else if (p->parent_layout == L_SPLITV) {
+                draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->indicator),
+                                    br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
+            }
         }
     }
 
@@ -478,31 +518,19 @@ void x_draw_decoration(Con *con) {
     if (p->border_style != BS_NORMAL)
         goto copy_pixmaps;
 
+    /* If the parent hasn't been set up yet, skip the decoratin rendering
+     * for now. */
+    if (parent->frame_buffer.id == XCB_NONE)
+        goto copy_pixmaps;
+
     /* 4: paint the bar */
-    xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){p->color->background});
-    xcb_rectangle_t drect = {con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height};
-    xcb_poly_fill_rectangle(conn, parent->pixmap, parent->pm_gc, 1, &drect);
+    draw_util_rectangle(conn, &(parent->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+                        con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
 
     /* 5: draw two unconnected horizontal lines in border color */
-    xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){p->color->border});
-    Rect *dr = &(con->deco_rect);
-    adjacent_t borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
-    int deco_diff_l = borders_to_hide & ADJ_LEFT_SCREEN_EDGE ? 0 : con->current_border_width;
-    int deco_diff_r = borders_to_hide & ADJ_RIGHT_SCREEN_EDGE ? 0 : con->current_border_width;
-    if (parent->layout == L_TABBED ||
-        (parent->layout == L_STACKED && TAILQ_NEXT(con, nodes) != NULL)) {
-        deco_diff_l = 0;
-        deco_diff_r = 0;
-    }
-    xcb_segment_t segments[] = {
-        {dr->x, dr->y,
-         dr->x + dr->width - 1, dr->y},
-        {dr->x + deco_diff_l, dr->y + dr->height - 1,
-         dr->x - deco_diff_r + dr->width - 1, dr->y + dr->height - 1}};
-    xcb_poly_segment(conn, parent->pixmap, parent->pm_gc, 2, segments);
+    x_draw_decoration_border(con, p);
 
     /* 6: draw the title */
-    set_font_colors(parent->pm_gc, p->color->text, p->color->background);
     int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
 
     struct Window *win = con->window;
@@ -510,16 +538,18 @@ void x_draw_decoration(Con *con) {
         /* we have a split container which gets a representation
          * of its children as title
          */
-        char *title;
+        char *_title;
         char *tree = con_get_tree_representation(con);
-        sasprintf(&title, "i3: %s", tree);
+        sasprintf(&_title, "i3: %s", tree);
         free(tree);
 
-        draw_text_ascii(title,
-                        parent->pixmap, parent->pm_gc,
-                        con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
-                        con->deco_rect.width - 2);
-        free(title);
+        i3String *title = i3string_from_utf8(_title);
+        draw_util_text(title, &(parent->frame_buffer),
+                       draw_util_colorpixel_to_color(p->color->text), draw_util_colorpixel_to_color(p->color->background),
+                       con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
+                       con->deco_rect.width - 2);
+        FREE(_title);
+        I3STRING_FREE(title);
 
         goto after_title;
     }
@@ -565,9 +595,10 @@ void x_draw_decoration(Con *con) {
             i3String *mark = i3string_from_utf8(formatted_mark);
             mark_width = predict_text_width(mark);
 
-            draw_text(mark, parent->pixmap, parent->pm_gc, NULL,
-                      con->deco_rect.x + con->deco_rect.width - mark_width - logical_px(2),
-                      con->deco_rect.y + text_offset_y, mark_width);
+            draw_util_text(mark, &(parent->frame_buffer),
+                           draw_util_colorpixel_to_color(p->color->text), draw_util_colorpixel_to_color(p->color->background),
+                           con->deco_rect.x + con->deco_rect.width - mark_width - logical_px(2),
+                           con->deco_rect.y + text_offset_y, mark_width);
 
             I3STRING_FREE(mark);
         }
@@ -576,41 +607,17 @@ void x_draw_decoration(Con *con) {
     }
 
     i3String *title = win->title_format == NULL ? win->name : window_parse_title_format(win);
-    draw_text(title,
-              parent->pixmap, parent->pm_gc, NULL,
-              con->deco_rect.x + logical_px(2) + indent_px, con->deco_rect.y + text_offset_y,
-              con->deco_rect.width - logical_px(2) - indent_px - mark_width - logical_px(2));
+    draw_util_text(title, &(parent->frame_buffer),
+                   draw_util_colorpixel_to_color(p->color->text), draw_util_colorpixel_to_color(p->color->background),
+                   con->deco_rect.x + logical_px(2) + indent_px, con->deco_rect.y + text_offset_y,
+                   con->deco_rect.width - logical_px(2) - indent_px - mark_width - logical_px(2));
     if (win->title_format != NULL)
         I3STRING_FREE(title);
 
 after_title:
-    /* Since we don’t clip the text at all, it might in some cases be painted
-     * on the border pixels on the right side of a window. Therefore, we draw
-     * the right border again after rendering the text (and the unconnected
-     * lines in border color). */
-
-    /* Draw a 1px separator line before and after every tab, so that tabs can
-     * be easily distinguished. */
-    if (parent->layout == L_TABBED) {
-        xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){p->color->border});
-    } else {
-        xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){p->color->background});
-    }
-    xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, parent->pixmap, parent->pm_gc, 6,
-                  (xcb_point_t[]){
-                      {dr->x + dr->width, dr->y},
-                      {dr->x + dr->width, dr->y + dr->height},
-                      {dr->x + dr->width - 1, dr->y},
-                      {dr->x + dr->width - 1, dr->y + dr->height},
-                      {dr->x, dr->y + dr->height},
-                      {dr->x, dr->y},
-                  });
-
-    xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){p->color->border});
-    xcb_poly_segment(conn, parent->pixmap, parent->pm_gc, 2, segments);
-
+    x_draw_decoration_after_title(con, p);
 copy_pixmaps:
-    xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+    draw_util_copy_surface(conn, &(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
 }
 
 /*
@@ -623,7 +630,7 @@ void x_deco_recurse(Con *con) {
     Con *current;
     bool leaf = TAILQ_EMPTY(&(con->nodes_head)) &&
                 TAILQ_EMPTY(&(con->floating_head));
-    con_state *state = state_for_frame(con->frame);
+    con_state *state = state_for_frame(con->frame.id);
 
     if (!leaf) {
         TAILQ_FOREACH(current, &(con->nodes_head), nodes)
@@ -632,8 +639,9 @@ void x_deco_recurse(Con *con) {
         TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
         x_deco_recurse(current);
 
-        if (state->mapped)
-            xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+        if (state->mapped) {
+            draw_util_copy_surface(conn, &(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+        }
     }
 
     if ((con->type != CT_ROOT && con->type != CT_OUTPUT) &&
@@ -650,7 +658,7 @@ static void set_hidden_state(Con *con) {
         return;
     }
 
-    con_state *state = state_for_frame(con->frame);
+    con_state *state = state_for_frame(con->frame.id);
     bool should_be_hidden = con_is_hidden(con);
     if (should_be_hidden == state->is_hidden)
         return;
@@ -678,12 +686,12 @@ void x_push_node(Con *con) {
     Rect rect = con->rect;
 
     //DLOG("Pushing changes for node %p / %s\n", con, con->name);
-    state = state_for_frame(con->frame);
+    state = state_for_frame(con->frame.id);
 
     if (state->name != NULL) {
         DLOG("pushing name %s for con %p\n", state->name, con);
 
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->frame,
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->frame.id,
                             XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(state->name), state->name);
         FREE(state->name);
     }
@@ -716,7 +724,7 @@ void x_push_node(Con *con) {
         xcb_change_window_attributes(conn, state->old_frame, XCB_CW_EVENT_MASK, values);
         xcb_change_window_attributes(conn, con->window->id, XCB_CW_EVENT_MASK, values);
 
-        xcb_reparent_window(conn, con->window->id, con->frame, 0, 0);
+        xcb_reparent_window(conn, con->window->id, con->frame.id, 0, 0);
 
         values[0] = FRAME_EVENT_MASK;
         xcb_change_window_attributes(conn, state->old_frame, XCB_CW_EVENT_MASK, values);
@@ -741,8 +749,8 @@ void x_push_node(Con *con) {
     bool fake_notify = false;
     /* Set new position if rect changed (and if height > 0) or if the pixmap
      * needs to be recreated */
-    if ((is_pixmap_needed && con->pixmap == XCB_NONE) || (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0 &&
-                                                          rect.height > 0)) {
+    if ((is_pixmap_needed && con->frame_buffer.id == XCB_NONE) || (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0 &&
+                                                                   rect.height > 0)) {
         /* We first create the new pixmap, then render to it, set it as the
          * background and only afterwards change the window size. This reduces
          * flickering. */
@@ -755,38 +763,47 @@ void x_push_node(Con *con) {
 
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
-        if (!is_pixmap_needed && con->pixmap != XCB_NONE) {
-            xcb_free_pixmap(conn, con->pixmap);
-            con->pixmap = XCB_NONE;
+        if (!is_pixmap_needed && con->frame_buffer.id != XCB_NONE) {
+            draw_util_surface_free(conn, &(con->frame_buffer));
+            xcb_free_pixmap(conn, con->frame_buffer.id);
+            con->frame_buffer.id = XCB_NONE;
         }
 
-        if (is_pixmap_needed && (has_rect_changed || con->pixmap == XCB_NONE)) {
-            if (con->pixmap == 0) {
-                con->pixmap = xcb_generate_id(conn);
-                con->pm_gc = xcb_generate_id(conn);
+        if (is_pixmap_needed && (has_rect_changed || con->frame_buffer.id == XCB_NONE)) {
+            if (con->frame_buffer.id == XCB_NONE) {
+                con->frame_buffer.id = xcb_generate_id(conn);
             } else {
-                xcb_free_pixmap(conn, con->pixmap);
-                xcb_free_gc(conn, con->pm_gc);
+                draw_util_surface_free(conn, &(con->frame_buffer));
+                xcb_free_pixmap(conn, con->frame_buffer.id);
             }
 
             uint16_t win_depth = root_depth;
             if (con->window)
                 win_depth = con->window->depth;
 
-            xcb_create_pixmap(conn, win_depth, con->pixmap, con->frame, rect.width, rect.height);
+            /* Ensure we have valid dimensions for our surface. */
+            // TODO This is probably a bug in the condition above as we should never enter this path
+            //      for height == 0. Also, we should probably handle width == 0 the same way.
+            int width = MAX(rect.width, 1);
+            int height = MAX(rect.height, 1);
+
+            xcb_create_pixmap_checked(conn, win_depth, con->frame_buffer.id, con->frame.id, width, height);
+            draw_util_surface_init(conn, &(con->frame_buffer), con->frame_buffer.id,
+                                   get_visualtype_by_id(get_visualid_by_depth(win_depth)), width, height);
 
             /* For the graphics context, we disable GraphicsExposure events.
              * Those will be sent when a CopyArea request cannot be fulfilled
              * properly due to parts of the source being unmapped or otherwise
              * unavailable. Since we always copy from pixmaps to windows, this
              * is not a concern for us. */
-            uint32_t values[] = {0};
-            xcb_create_gc(conn, con->pm_gc, con->pixmap, XCB_GC_GRAPHICS_EXPOSURES, values);
+            xcb_change_gc(conn, con->frame_buffer.gc, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){0});
 
+            draw_util_surface_set_size(&(con->frame), width, height);
             con->pixmap_recreated = true;
 
             /* Don’t render the decoration for windows inside a stack which are
              * not visible right now */
+            // TODO Should this work the same way for L_TABBED?
             if (!con->parent ||
                 con->parent->layout != L_STACKED ||
                 TAILQ_FIRST(&(con->parent->focus_head)) == con)
@@ -802,9 +819,10 @@ void x_push_node(Con *con) {
          * window get lost when resizing it, therefore we want to provide it as
          * fast as possible) */
         xcb_flush(conn);
-        xcb_set_window_rect(conn, con->frame, rect);
-        if (con->pixmap != XCB_NONE)
-            xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+        xcb_set_window_rect(conn, con->frame.id, rect);
+        if (con->frame_buffer.id != XCB_NONE) {
+            draw_util_copy_surface(conn, &(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+        }
         xcb_flush(conn);
 
         memcpy(&(state->rect), &rect, sizeof(Rect));
@@ -848,17 +866,18 @@ void x_push_node(Con *con) {
             state->child_mapped = true;
         }
 
-        cookie = xcb_map_window(conn, con->frame);
+        cookie = xcb_map_window(conn, con->frame.id);
 
         values[0] = FRAME_EVENT_MASK;
-        xcb_change_window_attributes(conn, con->frame, XCB_CW_EVENT_MASK, values);
+        xcb_change_window_attributes(conn, con->frame.id, XCB_CW_EVENT_MASK, values);
 
         /* copy the pixmap contents to the frame window immediately after mapping */
-        if (con->pixmap != XCB_NONE)
-            xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+        if (con->frame_buffer.id != XCB_NONE) {
+            draw_util_copy_surface(conn, &(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+        }
         xcb_flush(conn);
 
-        DLOG("mapping container %08x (serial %d)\n", con->frame, cookie.sequence);
+        DLOG("mapping container %08x (serial %d)\n", con->frame.id, cookie.sequence);
         state->mapped = con->mapped;
     }
 
@@ -892,7 +911,7 @@ static void x_push_node_unmaps(Con *con) {
     con_state *state;
 
     //DLOG("Pushing changes (with unmaps) for node %p / %s\n", con, con->name);
-    state = state_for_frame(con->frame);
+    state = state_for_frame(con->frame.id);
 
     /* map/unmap if map state changed, also ensure that the child window
      * is changed if we are mapped *and* in initial state (meaning the
@@ -906,14 +925,14 @@ static void x_push_node_unmaps(Con *con) {
                                 A_WM_STATE, A_WM_STATE, 32, 2, data);
         }
 
-        cookie = xcb_unmap_window(conn, con->frame);
+        cookie = xcb_unmap_window(conn, con->frame.id);
         DLOG("unmapping container %p / %s (serial %d)\n", con, con->name, cookie.sequence);
         /* we need to increase ignore_unmap for this container (if it
          * contains a window) and for every window "under" this one which
          * contains a window */
         if (con->window != NULL) {
             con->ignore_unmap++;
-            DLOG("ignore_unmap for con %p (frame 0x%08x) now %d\n", con, con->frame, con->ignore_unmap);
+            DLOG("ignore_unmap for con %p (frame 0x%08x) now %d\n", con, con->frame.id, con->ignore_unmap);
         }
         state->mapped = con->mapped;
     }
@@ -1067,7 +1086,7 @@ void x_push_changes(Con *con) {
 
     x_deco_recurse(con);
 
-    xcb_window_t to_focus = focused->frame;
+    xcb_window_t to_focus = focused->frame.id;
     if (focused->window != NULL)
         to_focus = focused->window->id;
 
@@ -1161,7 +1180,7 @@ void x_push_changes(Con *con) {
  */
 void x_raise_con(Con *con) {
     con_state *state;
-    state = state_for_frame(con->frame);
+    state = state_for_frame(con->frame.id);
     //DLOG("raising in new stack: %p / %s / %s / xid %08x\n", con, con->name, con->window ? con->window->name_json : "", state->id);
 
     CIRCLEQ_REMOVE(&state_head, state, state);
@@ -1177,7 +1196,7 @@ void x_raise_con(Con *con) {
 void x_set_name(Con *con, const char *name) {
     struct con_state *state;
 
-    if ((state = state_for_frame(con->frame)) == NULL) {
+    if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state not found\n");
         return;
     }

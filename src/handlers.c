@@ -656,15 +656,14 @@ static void handle_expose_event(xcb_expose_event_t *event) {
         return;
     }
 
-    /* Since we render to our pixmap on every change anyways, expose events
+    /* Since we render to our surface on every change anyways, expose events
      * only tell us that the X server lost (parts of) the window contents. We
-     * can handle that by copying the appropriate part from our pixmap to the
+     * can handle that by copying the appropriate part from our surface to the
      * window. */
-    xcb_copy_area(conn, parent->pixmap, parent->frame, parent->pm_gc,
-                  event->x, event->y, event->x, event->y,
-                  event->width, event->height);
+    draw_util_copy_surface(conn, &(parent->frame_buffer), &(parent->frame),
+                           event->x, event->y, event->x, event->y,
+                           event->width, event->height);
     xcb_flush(conn);
-
     return;
 }
 

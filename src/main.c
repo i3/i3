@@ -60,6 +60,7 @@ xcb_window_t root;
  * otherwise the root window’s default (usually 24 bit TrueColor). */
 uint8_t root_depth;
 xcb_visualid_t visual_id;
+xcb_visualtype_t *visual_type;
 xcb_colormap_t colormap;
 
 struct ev_loop *main_loop;
@@ -487,6 +488,7 @@ int main(int argc, char *argv[]) {
      * transparency) and use it if so. */
     root_depth = root_screen->root_depth;
     visual_id = root_screen->root_visual;
+    visual_type = get_visualtype(root_screen);
     colormap = root_screen->default_colormap;
 
     DLOG("root_depth = %d, visual_id = 0x%08x.\n", root_depth, visual_id);
