@@ -147,6 +147,27 @@ void grab_all_keys(xcb_connection_t *conn) {
 }
 
 /*
+ * Release the button grabs on all managed windows and regrab them,
+ * reevaluating which buttons need to be grabbed.
+ *
+ */
+void regrab_all_buttons(xcb_connection_t *conn) {
+    bool grab_scrollwheel = bindings_should_grab_scrollwheel_buttons();
+    xcb_grab_server(conn);
+
+    Con *con;
+    TAILQ_FOREACH(con, &all_cons, all_cons) {
+        if (con->window == NULL)
+            continue;
+
+        xcb_ungrab_button(conn, XCB_BUTTON_INDEX_ANY, con->window->id, XCB_BUTTON_MASK_ANY);
+        xcb_grab_buttons(conn, con->window->id, grab_scrollwheel);
+    }
+
+    xcb_ungrab_server(conn);
+}
+
+/*
  * Returns a pointer to the Binding with the specified modifiers and
  * keycode or NULL if no such binding exists.
  *
@@ -787,4 +808,34 @@ bool load_keymap(void) {
     xkb_keymap = new_keymap;
 
     return true;
+}
+
+/*
+ * Returns true if the current config has any binding to a scroll wheel button
+ * (4 or 5) which is a whole-window binding.
+ * We need this to figure out whether we should grab all buttons or just 1-3
+ * when managing a window. See #2049.
+ *
+ */
+bool bindings_should_grab_scrollwheel_buttons(void) {
+    Binding *bind;
+    TAILQ_FOREACH(bind, bindings, bindings) {
+        /* We are only interested in whole window mouse bindings. */
+        if (bind->input_type != B_MOUSE || !bind->whole_window)
+            continue;
+
+        char *endptr;
+        long button = strtol(bind->symbol + (sizeof("button") - 1), &endptr, 10);
+        if (button == LONG_MAX || button == LONG_MIN || button < 0 || *endptr != '\0' || endptr == bind->symbol) {
+            ELOG("Could not parse button number, skipping this binding. Please report this bug in i3.\n");
+            continue;
+        }
+
+        /* If the binding is for either scrollwheel button, we need to grab everything. */
+        if (button == 4 || button == 5) {
+            return true;
+        }
+    }
+
+    return false;
 }
