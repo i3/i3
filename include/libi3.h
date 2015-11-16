@@ -554,8 +554,6 @@ void draw_util_surface_free(xcb_connection_t *conn, surface_t *surface);
  */
 color_t draw_util_hex_to_color(const char *color);
 
-color_t draw_util_colorpixel_to_color(uint32_t colorpixel);
-
 /**
  * Draw the given text using libi3.
  * This function also marks the surface dirty which is needed if other means of

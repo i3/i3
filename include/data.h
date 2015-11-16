@@ -179,7 +179,7 @@ struct deco_render_params {
     struct width_height con_rect;
     struct width_height con_window_rect;
     Rect con_deco_rect;
-    uint32_t background;
+    color_t background;
     layout_t parent_layout;
     bool con_is_leaf;
 };

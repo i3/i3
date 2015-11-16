@@ -327,10 +327,10 @@ static void x_draw_decoration_border(Con *con, struct deco_render_params *p) {
         deco_diff_r = 0;
     }
 
-    draw_util_rectangle(conn, &(con->parent->frame_buffer), draw_util_colorpixel_to_color(p->color->border),
+    draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->border,
                         dr->x, dr->y, dr->width, 1);
 
-    draw_util_rectangle(conn, &(con->parent->frame_buffer), draw_util_colorpixel_to_color(p->color->border),
+    draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->border,
                         dr->x + deco_diff_l, dr->y + dr->height - 1, dr->width - (deco_diff_l + deco_diff_r), 1);
 }
 
@@ -343,18 +343,18 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
     /* Redraw the right border to cut off any text that went past it.
      * This is necessary when the text was drawn using XCB since cutting text off
      * automatically does not work there. For pango rendering, this isn't necessary. */
-    draw_util_rectangle(conn, &(con->parent->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+    draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->background,
                         dr->x + dr->width + br.width, dr->y, -br.width, dr->height);
 
     /* Draw a 1px separator line before and after every tab, so that tabs can
      * be easily distinguished. */
     if (con->parent->layout == L_TABBED) {
         /* Left side */
-        draw_util_rectangle(conn, &(con->parent->frame_buffer), draw_util_colorpixel_to_color(p->color->border),
+        draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->border,
                             dr->x, dr->y, 1, dr->height);
 
         /* Right side */
-        draw_util_rectangle(conn, &(con->parent->frame_buffer), draw_util_colorpixel_to_color(p->color->border),
+        draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->border,
                             dr->x + dr->width - 1, dr->y, 1, dr->height);
     }
 
@@ -448,16 +448,16 @@ void x_draw_decoration(Con *con) {
     /* 2: draw the client.background, but only for the parts around the window_rect */
     if (con->window != NULL) {
         /* top area */
-        draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(config.client.background),
+        draw_util_rectangle(conn, &(con->frame_buffer), config.client.background,
                             0, 0, r->width, w->y);
         /* bottom area */
-        draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(config.client.background),
+        draw_util_rectangle(conn, &(con->frame_buffer), config.client.background,
                             0, w->y + w->height, r->width, r->height - (w->y + w->height));
         /* left area */
-        draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(config.client.background),
+        draw_util_rectangle(conn, &(con->frame_buffer), config.client.background,
                             0, 0, w->x, r->height);
         /* right area */
-        draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(config.client.background),
+        draw_util_rectangle(conn, &(con->frame_buffer), config.client.background,
                             w->x + w->width, 0, r->width - (w->x + w->width), r->height);
     }
 
@@ -479,20 +479,20 @@ void x_draw_decoration(Con *con) {
          * rectangle because some childs are not freely resizable and we want
          * their background color to "shine through". */
         if (!(borders_to_hide & ADJ_LEFT_SCREEN_EDGE)) {
-            draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+            draw_util_rectangle(conn, &(con->frame_buffer), p->color->background,
                                 0, 0, br.x, r->height);
         }
         if (!(borders_to_hide & ADJ_RIGHT_SCREEN_EDGE)) {
-            draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+            draw_util_rectangle(conn, &(con->frame_buffer), p->color->background,
                                 r->width + (br.width + br.x), 0, -(br.width + br.x), r->height);
         }
         if (!(borders_to_hide & ADJ_LOWER_SCREEN_EDGE)) {
-            draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+            draw_util_rectangle(conn, &(con->frame_buffer), p->color->background,
                                 br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
         }
         /* pixel border needs an additional line at the top */
         if (p->border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
-            draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+            draw_util_rectangle(conn, &(con->frame_buffer), p->color->background,
                                 br.x, 0, r->width + br.width, br.y);
         }
 
@@ -504,10 +504,10 @@ void x_draw_decoration(Con *con) {
             TAILQ_PREV(con, nodes_head, nodes) == NULL &&
             con->parent->type != CT_FLOATING_CON) {
             if (p->parent_layout == L_SPLITH) {
-                draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->indicator),
+                draw_util_rectangle(conn, &(con->frame_buffer), p->color->indicator,
                                     r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height);
             } else if (p->parent_layout == L_SPLITV) {
-                draw_util_rectangle(conn, &(con->frame_buffer), draw_util_colorpixel_to_color(p->color->indicator),
+                draw_util_rectangle(conn, &(con->frame_buffer), p->color->indicator,
                                     br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
             }
         }
@@ -524,7 +524,7 @@ void x_draw_decoration(Con *con) {
         goto copy_pixmaps;
 
     /* 4: paint the bar */
-    draw_util_rectangle(conn, &(parent->frame_buffer), draw_util_colorpixel_to_color(p->color->background),
+    draw_util_rectangle(conn, &(parent->frame_buffer), p->color->background,
                         con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
 
     /* 5: draw two unconnected horizontal lines in border color */
@@ -545,7 +545,7 @@ void x_draw_decoration(Con *con) {
 
         i3String *title = i3string_from_utf8(_title);
         draw_util_text(title, &(parent->frame_buffer),
-                       draw_util_colorpixel_to_color(p->color->text), draw_util_colorpixel_to_color(p->color->background),
+                       p->color->text, p->color->background,
                        con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
                        con->deco_rect.width - 2);
         FREE(_title);
@@ -596,7 +596,7 @@ void x_draw_decoration(Con *con) {
             mark_width = predict_text_width(mark);
 
             draw_util_text(mark, &(parent->frame_buffer),
-                           draw_util_colorpixel_to_color(p->color->text), draw_util_colorpixel_to_color(p->color->background),
+                           p->color->text, p->color->background,
                            con->deco_rect.x + con->deco_rect.width - mark_width - logical_px(2),
                            con->deco_rect.y + text_offset_y, mark_width);
 
@@ -608,7 +608,7 @@ void x_draw_decoration(Con *con) {
 
     i3String *title = win->title_format == NULL ? win->name : window_parse_title_format(win);
     draw_util_text(title, &(parent->frame_buffer),
-                   draw_util_colorpixel_to_color(p->color->text), draw_util_colorpixel_to_color(p->color->background),
+                   p->color->text, p->color->background,
                    con->deco_rect.x + logical_px(2) + indent_px, con->deco_rect.y + text_offset_y,
                    con->deco_rect.width - logical_px(2) - indent_px - mark_width - logical_px(2));
     if (win->title_format != NULL)

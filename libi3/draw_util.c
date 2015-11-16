@@ -99,14 +99,6 @@ color_t draw_util_hex_to_color(const char *color) {
         .colorpixel = get_colorpixel(color)};
 }
 
-color_t draw_util_colorpixel_to_color(uint32_t colorpixel) {
-    return (color_t){
-        .red = ((colorpixel >> 16) & 0xFF) / 255.0,
-        .green = ((colorpixel >> 8) & 0xFF) / 255.0,
-        .blue = (colorpixel & 0xFF) / 255.0,
-        .colorpixel = colorpixel};
-}
-
 /*
  * Set the given color as the source color on the surface.
  *
