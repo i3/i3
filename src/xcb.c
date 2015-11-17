@@ -252,6 +252,11 @@ uint16_t get_visual_depth(xcb_visualid_t visual_id) {
     }
     return 0;
 }
+
+/*
+ * Get visual type specified by visualid
+ *
+ */
 xcb_visualtype_t *get_visualtype_by_id(xcb_visualid_t visual_id) {
     xcb_depth_iterator_t depth_iter;
 

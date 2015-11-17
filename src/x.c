@@ -101,47 +101,32 @@ void x_con_init(Con *con, uint16_t depth) {
     uint32_t mask = 0;
     uint32_t values[5];
 
-    xcb_visualid_t visual = XCB_COPY_FROM_PARENT;
-    xcb_colormap_t win_colormap = XCB_NONE;
-    if (depth != root_depth && depth != XCB_COPY_FROM_PARENT) {
-        /* For custom visuals, we need to create a colormap before creating
-         * this window. It will be freed directly after creating the window. */
-        visual = get_visualid_by_depth(depth);
-        win_colormap = xcb_generate_id(conn);
-        xcb_create_colormap_checked(conn, XCB_COLORMAP_ALLOC_NONE, win_colormap, root, visual);
+    /* For custom visuals, we need to create a colormap before creating
+     * this window. It will be freed directly after creating the window. */
+    xcb_visualid_t visual = get_visualid_by_depth(depth);
+    xcb_colormap_t win_colormap = xcb_generate_id(conn);
+    xcb_create_colormap_checked(conn, XCB_COLORMAP_ALLOC_NONE, win_colormap, root, visual);
 
-        /* We explicitly set a background color and border color (even though we
-         * don’t even have a border) because the X11 server requires us to when
-         * using 32 bit color depths, see
-         * http://stackoverflow.com/questions/3645632 */
-        mask |= XCB_CW_BACK_PIXEL;
-        values[0] = root_screen->black_pixel;
+    /* We explicitly set a background color and border color (even though we
+     * don’t even have a border) because the X11 server requires us to when
+     * using 32 bit color depths, see
+     * http://stackoverflow.com/questions/3645632 */
+    mask |= XCB_CW_BACK_PIXEL;
+    values[0] = root_screen->black_pixel;
 
-        mask |= XCB_CW_BORDER_PIXEL;
-        values[1] = root_screen->black_pixel;
+    mask |= XCB_CW_BORDER_PIXEL;
+    values[1] = root_screen->black_pixel;
 
-        /* our own frames should not be managed */
-        mask |= XCB_CW_OVERRIDE_REDIRECT;
-        values[2] = 1;
+    /* our own frames should not be managed */
+    mask |= XCB_CW_OVERRIDE_REDIRECT;
+    values[2] = 1;
 
-        /* see include/xcb.h for the FRAME_EVENT_MASK */
-        mask |= XCB_CW_EVENT_MASK;
-        values[3] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
+    /* see include/xcb.h for the FRAME_EVENT_MASK */
+    mask |= XCB_CW_EVENT_MASK;
+    values[3] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
 
-        mask |= XCB_CW_COLORMAP;
-        values[4] = win_colormap;
-    } else {
-        /* our own frames should not be managed */
-        mask = XCB_CW_OVERRIDE_REDIRECT;
-        values[0] = 1;
-
-        /* see include/xcb.h for the FRAME_EVENT_MASK */
-        mask |= XCB_CW_EVENT_MASK;
-        values[1] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
-
-        mask |= XCB_CW_COLORMAP;
-        values[2] = colormap;
-    }
+    mask |= XCB_CW_COLORMAP;
+    values[4] = win_colormap;
 
     Rect dims = {-15, -15, 10, 10};
     xcb_window_t frame_id = create_window(conn, dims, depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
@@ -522,6 +507,14 @@ void x_draw_decoration(Con *con) {
      * for now. */
     if (parent->frame_buffer.id == XCB_NONE)
         goto copy_pixmaps;
+
+    /* For the first child, we clear the parent pixmap to ensure there's no
+     * garbage left on there. This is important to avoid tearing when using
+     * transparency. */
+    if (con == TAILQ_FIRST(&(con->parent->nodes_head))) {
+        draw_util_clear_surface(conn, &(con->parent->frame_buffer), COLOR_TRANSPARENT);
+        FREE(con->parent->deco_render_params);
+    }
 
     /* 4: paint the bar */
     draw_util_rectangle(conn, &(parent->frame_buffer), p->color->background,

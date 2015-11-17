@@ -499,10 +499,13 @@ typedef struct color_t {
     double red;
     double green;
     double blue;
+    double alpha;
 
     /* The colorpixel we use for direct XCB calls. */
     uint32_t colorpixel;
 } color_t;
+
+#define COLOR_TRANSPARENT ((color_t){.red = 0.0, .green = 0.0, .blue = 0.0, .colorpixel = 0})
 
 /* A wrapper grouping an XCB drawable and both a graphics context
  * and the corresponding cairo objects representing it. */

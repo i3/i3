@@ -47,7 +47,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
         new->depth = window->depth;
         new->window->aspect_ratio = 0.0;
     } else {
-        new->depth = XCB_COPY_FROM_PARENT;
+        new->depth = root_depth;
     }
     DLOG("opening window\n");
 

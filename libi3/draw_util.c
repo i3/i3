@@ -38,7 +38,7 @@ static void draw_util_set_source_color(xcb_connection_t *conn, surface_t *surfac
 void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_drawable_t drawable,
                             xcb_visualtype_t *visual, int width, int height) {
     surface->id = drawable;
-    surface->visual_type = (visual == NULL) ? visual_type : visual;
+    surface->visual_type = ((visual == NULL) ? visual_type : visual);
     surface->width = width;
     surface->height = height;
 
@@ -87,15 +87,25 @@ void draw_util_surface_set_size(surface_t *surface, int width, int height) {
  *
  */
 color_t draw_util_hex_to_color(const char *color) {
-    char groups[3][3] = {
+    char alpha[2];
+    if (strlen(color) == strlen("#rrggbbaa")) {
+        alpha[0] = color[7];
+        alpha[1] = color[8];
+    } else {
+        alpha[0] = alpha[1] = 'F';
+    }
+
+    char groups[4][3] = {
         {color[1], color[2], '\0'},
         {color[3], color[4], '\0'},
-        {color[5], color[6], '\0'}};
+        {color[5], color[6], '\0'},
+        {alpha[0], alpha[1], '\0'}};
 
     return (color_t){
         .red = strtol(groups[0], NULL, 16) / 255.0,
         .green = strtol(groups[1], NULL, 16) / 255.0,
         .blue = strtol(groups[2], NULL, 16) / 255.0,
+        .alpha = strtol(groups[3], NULL, 16) / 255.0,
         .colorpixel = get_colorpixel(color)};
 }
 
@@ -107,7 +117,7 @@ static void draw_util_set_source_color(xcb_connection_t *conn, surface_t *surfac
     RETURN_UNLESS_SURFACE_INITIALIZED(surface);
 
 #ifdef CAIRO_SUPPORT
-    cairo_set_source_rgb(surface->cr, color.red, color.green, color.blue);
+    cairo_set_source_rgba(surface->cr, color.red, color.green, color.blue, color.alpha);
 #else
     uint32_t colorpixel = color.colorpixel;
     xcb_change_gc(conn, surface->gc, XCB_GC_FOREGROUND | XCB_GC_BACKGROUND,
