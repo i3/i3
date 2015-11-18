@@ -612,7 +612,7 @@ to waste even two pixels in displayspace. Default is none.
 
 *Syntax*:
 -----------------------------------------------
-hide_edge_borders none|vertical|horizontal|both
+hide_edge_borders none|vertical|horizontal|both|smart
 -----------------------------------------------
 
 *Example*:

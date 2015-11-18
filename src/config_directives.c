@@ -223,18 +223,20 @@ CFGFUN(new_window, const char *windowtype, const char *border, const long width)
 }
 
 CFGFUN(hide_edge_borders, const char *borders) {
-    if (strcmp(borders, "vertical") == 0)
-        config.hide_edge_borders = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE;
+    if (strcmp(borders, "smart") == 0)
+        config.hide_edge_borders = HEBM_SMART;
+    else if (strcmp(borders, "vertical") == 0)
+        config.hide_edge_borders = HEBM_VERTICAL;
     else if (strcmp(borders, "horizontal") == 0)
-        config.hide_edge_borders = ADJ_UPPER_SCREEN_EDGE | ADJ_LOWER_SCREEN_EDGE;
+        config.hide_edge_borders = HEBM_HORIZONTAL;
     else if (strcmp(borders, "both") == 0)
-        config.hide_edge_borders = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE | ADJ_UPPER_SCREEN_EDGE | ADJ_LOWER_SCREEN_EDGE;
+        config.hide_edge_borders = HEBM_BOTH;
     else if (strcmp(borders, "none") == 0)
-        config.hide_edge_borders = ADJ_NONE;
+        config.hide_edge_borders = HEBM_NONE;
     else if (eval_boolstr(borders))
-        config.hide_edge_borders = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE;
+        config.hide_edge_borders = HEBM_VERTICAL;
     else
-        config.hide_edge_borders = ADJ_NONE;
+        config.hide_edge_borders = HEBM_NONE;
 }
 
 CFGFUN(focus_follows_mouse, const char *value) {
