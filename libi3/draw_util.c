@@ -66,6 +66,12 @@ void draw_util_surface_free(xcb_connection_t *conn, surface_t *surface) {
 #ifdef CAIRO_SUPPORT
     cairo_surface_destroy(surface->surface);
     cairo_destroy(surface->cr);
+
+    /* We need to explicitly set these to NULL to avoid assertion errors in
+     * cairo when calling this multiple times. This can happen, for example,
+     * when setting the border of a window to none and then closing it. */
+    surface->surface = NULL;
+    surface->cr = NULL;
 #endif
 }
 
