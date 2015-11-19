@@ -1380,18 +1380,20 @@ Con *con_descend_direction(Con *con, direction_t direction) {
  */
 Rect con_border_style_rect(Con *con) {
     if (config.hide_edge_borders == HEBM_SMART) {
-        Con *cur = con;
-        while (cur->floating < 2 && cur) {
-            Con *par = cur->parent;
-            if (con_num_children(par) == 1) {
-                if (par->type == CT_WORKSPACE) {
-                    return (Rect){0, 0, 0, 0};
-                } else {
-                    cur = par;
-                }
-            } else {
+        Con *current = con;
+
+        while (current && !con_is_floating(current)) {
+            Con *parent = current->parent;
+
+            if (con_num_children(parent) != 1) {
                 break;
             }
+
+            if (parent->type == CT_WORKSPACE) {
+                return (Rect){0, 0, 0, 0};
+            }
+
+            current = parent;
         }
     }
 
