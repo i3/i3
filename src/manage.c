@@ -90,7 +90,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         utf8_title_cookie, title_cookie,
         class_cookie, leader_cookie, transient_cookie,
         role_cookie, startup_id_cookie, wm_hints_cookie,
-        wm_normal_hints_cookie, motif_wm_hints_cookie;
+        wm_normal_hints_cookie, motif_wm_hints_cookie, wm_user_time_cookie;
 
     geomc = xcb_get_geometry(conn, d);
 
@@ -161,6 +161,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     wm_hints_cookie = xcb_icccm_get_wm_hints(conn, window);
     wm_normal_hints_cookie = xcb_icccm_get_wm_normal_hints(conn, window);
     motif_wm_hints_cookie = GET_PROPERTY(A__MOTIF_WM_HINTS, 5 * sizeof(uint64_t));
+    wm_user_time_cookie = GET_PROPERTY(A__NET_WM_USER_TIME, UINT32_MAX);
 
     DLOG("Managing window 0x%08x\n", window);
 
@@ -530,6 +531,23 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             DLOG("no_focus was set for con = %p, not setting focus.\n", nc);
             set_focus = false;
         }
+    }
+
+    if (set_focus) {
+        DLOG("Checking con = %p for _NET_WM_USER_TIME.\n", nc);
+
+        uint32_t *wm_user_time;
+        xcb_get_property_reply_t *wm_user_time_reply = xcb_get_property_reply(conn, wm_user_time_cookie, NULL);
+        if (wm_user_time_reply != NULL && xcb_get_property_value_length(wm_user_time_reply) != 0 &&
+            (wm_user_time = xcb_get_property_value(wm_user_time_reply)) &&
+            wm_user_time[0] == 0) {
+            DLOG("_NET_WM_USER_TIME set to 0, not focusing con = %p.\n", nc);
+            set_focus = false;
+        }
+
+        FREE(wm_user_time_reply);
+    } else {
+        xcb_discard_reply(conn, wm_user_time_cookie.sequence);
     }
 
     /* Defer setting focus after the 'new' event has been sent to ensure the

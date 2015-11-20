@@ -263,7 +263,7 @@ void ewmh_setup_hints(void) {
     /* I’m not entirely sure if we need to keep _NET_WM_NAME on root. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
-    /* only send the first 31 atoms (last one is _NET_CLOSE_WINDOW) increment that number when adding supported atoms */
+    /* only send the first 32 atoms (last one is _NET_CLOSE_WINDOW) increment that number when adding supported atoms */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, /* number of atoms */ 32, supported_atoms);
 
     /* We need to map this window to be able to set the input focus to it if no other window is available to be focused. */
