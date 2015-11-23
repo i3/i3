@@ -332,20 +332,20 @@ CFGFUN(popup_during_fullscreen, const char *value) {
 
 CFGFUN(color_single, const char *colorclass, const char *color) {
     /* used for client.background only currently */
-    config.client.background = get_colorpixel(color);
+    config.client.background = draw_util_hex_to_color(color);
 }
 
 CFGFUN(color, const char *colorclass, const char *border, const char *background, const char *text, const char *indicator) {
-#define APPLY_COLORS(classname)                                                \
-    do {                                                                       \
-        if (strcmp(colorclass, "client." #classname) == 0) {                   \
-            config.client.classname.border = get_colorpixel(border);           \
-            config.client.classname.background = get_colorpixel(background);   \
-            config.client.classname.text = get_colorpixel(text);               \
-            if (indicator != NULL) {                                           \
-                config.client.classname.indicator = get_colorpixel(indicator); \
-            }                                                                  \
-        }                                                                      \
+#define APPLY_COLORS(classname)                                                        \
+    do {                                                                               \
+        if (strcmp(colorclass, "client." #classname) == 0) {                           \
+            config.client.classname.border = draw_util_hex_to_color(border);           \
+            config.client.classname.background = draw_util_hex_to_color(background);   \
+            config.client.classname.text = draw_util_hex_to_color(text);               \
+            if (indicator != NULL) {                                                   \
+                config.client.classname.indicator = draw_util_hex_to_color(indicator); \
+            }                                                                          \
+        }                                                                              \
     } while (0)
 
     APPLY_COLORS(focused_inactive);

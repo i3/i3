@@ -47,7 +47,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
         new->depth = window->depth;
         new->window->aspect_ratio = 0.0;
     } else {
-        new->depth = XCB_COPY_FROM_PARENT;
+        new->depth = root_depth;
     }
     DLOG("opening window\n");
 
@@ -514,7 +514,7 @@ Con *con_by_window_id(xcb_window_t window) {
 Con *con_by_frame_id(xcb_window_t frame) {
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons)
-    if (con->frame == frame)
+    if (con->frame.id == frame)
         return con;
     return NULL;
 }

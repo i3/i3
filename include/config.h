@@ -50,10 +50,10 @@ struct context {
  *
  */
 struct Colortriple {
-    uint32_t border;
-    uint32_t background;
-    uint32_t text;
-    uint32_t indicator;
+    color_t border;
+    color_t background;
+    color_t text;
+    color_t indicator;
 };
 
 /**
@@ -202,7 +202,7 @@ struct Config {
 
     /* Color codes are stored here */
     struct config_client {
-        uint32_t background;
+        color_t background;
         struct Colortriple focused;
         struct Colortriple focused_inactive;
         struct Colortriple unfocused;

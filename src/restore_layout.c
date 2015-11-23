@@ -125,7 +125,7 @@ void restore_connect(void) {
 
 static void update_placeholder_contents(placeholder_state *state) {
     xcb_change_gc(restore_conn, state->gc, XCB_GC_FOREGROUND,
-                  (uint32_t[]){config.client.placeholder.background});
+                  (uint32_t[]){config.client.placeholder.background.colorpixel});
     xcb_poly_fill_rectangle(restore_conn, state->pixmap, state->gc, 1,
                             (xcb_rectangle_t[]){{0, 0, state->rect.width, state->rect.height}});
 
@@ -133,7 +133,7 @@ static void update_placeholder_contents(placeholder_state *state) {
     xcb_flush(restore_conn);
     xcb_aux_sync(restore_conn);
 
-    set_font_colors(state->gc, config.client.placeholder.text, config.client.placeholder.background);
+    set_font_colors(state->gc, config.client.placeholder.text.colorpixel, config.client.placeholder.background.colorpixel);
 
     Match *swallows;
     int n = 0;
@@ -193,7 +193,7 @@ static void open_placeholder_window(Con *con) {
             true,
             XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
             (uint32_t[]){
-                config.client.placeholder.background,
+                config.client.placeholder.background.colorpixel,
                 XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
             });
         /* Make i3 not focus this window. */

@@ -141,6 +141,12 @@ void xcb_set_root_cursor(int cursor);
 uint16_t get_visual_depth(xcb_visualid_t visual_id);
 
 /**
+ * Get visual type specified by visualid
+ *
+ */
+xcb_visualtype_t *get_visualtype_by_id(xcb_visualid_t visual_id);
+
+/**
  * Get visualid with specified depth
  *
  */

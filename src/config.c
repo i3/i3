@@ -191,13 +191,13 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 /* Initialize default colors */
 #define INIT_COLOR(x, cborder, cbackground, ctext, cindicator) \
     do {                                                       \
-        x.border = get_colorpixel(cborder);                    \
-        x.background = get_colorpixel(cbackground);            \
-        x.text = get_colorpixel(ctext);                        \
-        x.indicator = get_colorpixel(cindicator);              \
+        x.border = draw_util_hex_to_color(cborder);            \
+        x.background = draw_util_hex_to_color(cbackground);    \
+        x.text = draw_util_hex_to_color(ctext);                \
+        x.indicator = draw_util_hex_to_color(cindicator);      \
     } while (0)
 
-    config.client.background = get_colorpixel("#000000");
+    config.client.background = draw_util_hex_to_color("#000000");
     INIT_COLOR(config.client.focused, "#4c7899", "#285577", "#ffffff", "#2e9ef4");
     INIT_COLOR(config.client.focused_inactive, "#333333", "#5f676a", "#ffffff", "#484e50");
     INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888", "#292d2e");
