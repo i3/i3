@@ -280,7 +280,7 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
         }
 
         char *end;
-        long parsed = strtol(cvalue, &end, 10);
+        long parsed = strtol(cvalue, &end, 0);
         if (parsed == LONG_MIN ||
             parsed == LONG_MAX ||
             parsed < 0 ||
