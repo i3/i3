@@ -48,6 +48,7 @@ install:
   - sudo /bin/sh -c 'cpanm -n -v X11::XCB || true'
   - sudo /bin/sh -c 'cpanm -n -v AnyEvent::I3 || true'
 script:
+  - if [ -a .git/shallow ]; then git fetch --unshallow; fi
   - CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Werror" make -j
   - (cd testcases && xvfb-run ./complete-run.pl --parallel=1 || (cat latest/complete-run.log; false))
   - clang-format-3.5 -i $(find . -name "*.[ch]" | tr '\n' ' ') && git diff --exit-code || (echo 'Code was not formatted using clang-format!'; false)
