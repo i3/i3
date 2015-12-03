@@ -1760,29 +1760,43 @@ void cmd_move_window_to_position(I3_CMD, const char *method, long x, long y) {
  *
  */
 void cmd_move_window_to_center(I3_CMD, const char *method) {
-    if (!con_is_floating(focused)) {
-        ELOG("Cannot change position. The window/container is not floating\n");
-        yerror("Cannot change position. The window/container is not floating.");
-        return;
-    }
+    bool has_error = false;
+    HANDLE_EMPTY_MATCH;
 
-    if (strcmp(method, "absolute") == 0) {
-        DLOG("moving to absolute center\n");
-        floating_center(focused->parent, croot->rect);
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        Con *floating_con = con_inside_floating(current->con);
+        if (floating_con == NULL) {
+            ELOG("con %p / %s is not floating, cannot move it to the center.\n",
+                 current->con, current->con->name);
 
-        floating_maybe_reassign_ws(focused->parent);
-        cmd_output->needs_tree_render = true;
-    }
+            if (!has_error) {
+                yerror("Cannot change position of a window/container because it is not floating.");
+                has_error = true;
+            }
 
-    if (strcmp(method, "position") == 0) {
-        DLOG("moving to center\n");
-        floating_center(focused->parent, con_get_workspace(focused)->rect);
+            continue;
+        }
 
-        cmd_output->needs_tree_render = true;
+        if (strcmp(method, "absolute") == 0) {
+            DLOG("moving to absolute center\n");
+            floating_center(floating_con, croot->rect);
+
+            floating_maybe_reassign_ws(floating_con);
+            cmd_output->needs_tree_render = true;
+        }
+
+        if (strcmp(method, "position") == 0) {
+            DLOG("moving to center\n");
+            floating_center(floating_con, con_get_workspace(floating_con)->rect);
+
+            cmd_output->needs_tree_render = true;
+        }
     }
 
     // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    if (!has_error)
+        ysuccess(true);
 }
 
 /*
