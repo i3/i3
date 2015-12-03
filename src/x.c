@@ -783,8 +783,8 @@ void x_push_node(Con *con) {
             /* Ensure we have valid dimensions for our surface. */
             // TODO This is probably a bug in the condition above as we should never enter this path
             //      for height == 0. Also, we should probably handle width == 0 the same way.
-            int width = MAX(rect.width, 1);
-            int height = MAX(rect.height, 1);
+            int width = MAX((int32_t)rect.width, 1);
+            int height = MAX((int32_t)rect.height, 1);
 
             xcb_create_pixmap_checked(conn, win_depth, con->frame_buffer.id, con->frame.id, width, height);
             draw_util_surface_init(conn, &(con->frame_buffer), con->frame_buffer.id,
