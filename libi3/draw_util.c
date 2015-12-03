@@ -47,8 +47,7 @@ void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_draw
 
     xcb_generic_error_t *error = xcb_request_check(conn, gc_cookie);
     if (error != NULL) {
-        ELOG("Could not create graphical context. Error code: %d\n", error->error_code);
-        exit(EXIT_FAILURE);
+        ELOG("Could not create graphical context. Error code: %d. Please report this bug.\n", error->error_code);
     }
 
 #ifdef CAIRO_SUPPORT
