@@ -330,6 +330,8 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
             match->window_type = A__NET_WM_WINDOW_TYPE_POPUP_MENU;
         } else if (strcasecmp(cvalue, "tooltip") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_TOOLTIP;
+        } else if (strcasecmp(cvalue, "notification") == 0) {
+            match->window_type = A__NET_WM_WINDOW_TYPE_NOTIFICATION;
         } else {
             ELOG("unknown window_type value \"%s\"\n", cvalue);
             match->error = sstrdup("unknown window_type value");
