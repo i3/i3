@@ -39,7 +39,7 @@ before_install:
 
   - sudo cp /tmp/pin /etc/apt/preferences.d/trustypin
   - sudo apt-get update
-  - sudo apt-get install -t trusty libc6 libc6-dev
+  - sudo apt-get install -t trusty libc6 libc6-dev git
   - sudo apt-get install --no-install-recommends devscripts equivs xdotool
 install:
   - sudo mk-build-deps --install --remove --tool 'apt-get --no-install-recommends' debian/control
