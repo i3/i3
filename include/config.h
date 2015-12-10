@@ -124,7 +124,7 @@ struct Config {
      * This is useful if you are reaching scrollbar on the edge of the
      * screen or do not want to waste a single pixel of displayspace.
      * By default, this is disabled. */
-    adjacent_t hide_edge_borders;
+    hide_edge_borders_mode_t hide_edge_borders;
 
     /** By default, a workspace bar is drawn at the bottom of the screen.
      * If you want to have a more fancy bar, it is recommended to replace
