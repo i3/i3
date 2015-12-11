@@ -30,6 +30,7 @@ static bool parsing_geometry;
 static bool parsing_focus;
 static bool parsing_marks;
 struct Match *current_swallow;
+static bool swallow_is_empty;
 
 /* This list is used for reordering the focus stack after parsing the 'focus'
  * array. */
@@ -48,6 +49,7 @@ static int json_start_map(void *ctx) {
         current_swallow = smalloc(sizeof(Match));
         match_init(current_swallow);
         TAILQ_INSERT_TAIL(&(json_node->swallow_head), current_swallow, matches);
+        swallow_is_empty = true;
     } else {
         if (!parsing_rect && !parsing_deco_rect && !parsing_window_rect && !parsing_geometry) {
             if (last_key && strcasecmp(last_key, "floating_nodes") == 0) {
@@ -151,6 +153,13 @@ static int json_end_map(void *ctx) {
         json_node = json_node->parent;
     }
 
+    if (parsing_swallows && swallow_is_empty) {
+        /* We parsed an empty swallow definition. This is an invalid layout
+         * definition, hence we reject it. */
+        ELOG("Layout file is invalid: found an empty swallow definition.\n");
+        return 0;
+    }
+
     parsing_rect = false;
     parsing_deco_rect = false;
     parsing_window_rect = false;
@@ -232,12 +241,16 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         sasprintf(&sval, "%.*s", len, val);
         if (strcasecmp(last_key, "class") == 0) {
             current_swallow->class = regex_new(sval);
+            swallow_is_empty = false;
         } else if (strcasecmp(last_key, "instance") == 0) {
             current_swallow->instance = regex_new(sval);
+            swallow_is_empty = false;
         } else if (strcasecmp(last_key, "window_role") == 0) {
             current_swallow->window_role = regex_new(sval);
+            swallow_is_empty = false;
         } else if (strcasecmp(last_key, "title") == 0) {
             current_swallow->title = regex_new(sval);
+            swallow_is_empty = false;
         } else {
             ELOG("swallow key %s unknown\n", last_key);
         }
@@ -433,12 +446,15 @@ static int json_int(void *ctx, long long val) {
     if (parsing_swallows) {
         if (strcasecmp(last_key, "id") == 0) {
             current_swallow->id = val;
+            swallow_is_empty = false;
         }
         if (strcasecmp(last_key, "dock") == 0) {
             current_swallow->dock = val;
+            swallow_is_empty = false;
         }
         if (strcasecmp(last_key, "insert_where") == 0) {
             current_swallow->insert_where = val;
+            swallow_is_empty = false;
         }
     }
 
@@ -455,8 +471,10 @@ static int json_bool(void *ctx, int val) {
         json_node->sticky = val;
 
     if (parsing_swallows) {
-        if (strcasecmp(last_key, "restart_mode") == 0)
+        if (strcasecmp(last_key, "restart_mode") == 0) {
             current_swallow->restart_mode = val;
+            swallow_is_empty = false;
+        }
     }
 
     return 1;
