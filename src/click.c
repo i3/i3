@@ -363,6 +363,21 @@ int handle_button_press(xcb_button_press_event_t *event) {
         return route_click(con, event, mod_pressed, CLICK_INSIDE);
 
     if (!(con = con_by_frame_id(event->event))) {
+        /* Run bindings on the root window as well, see #2097. We only run it
+         * if --whole-window was set as that's the equivalent for a normal
+         * window. */
+        if (event->event == root) {
+            Binding *bind = get_binding_from_xcb_event((xcb_generic_event_t *)event);
+            if (bind != NULL && bind->whole_window) {
+                CommandResult *result = run_binding(bind, NULL);
+                if (result->needs_tree_render) {
+                    tree_render();
+                }
+
+                command_result_free(result);
+            }
+        }
+
         /* If the root window is clicked, find the relevant output from the
          * click coordinates and focus the output's active workspace. */
         if (event->event == root && event->response_type == XCB_BUTTON_PRESS) {
