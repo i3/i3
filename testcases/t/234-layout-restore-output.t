@@ -54,7 +54,7 @@ print $fh <<'EOT';
             "percent": 1,
             "swallows": [
                {
-               // "class": "^URxvt$",
+                  "class": "^URxvt$"
                // "instance": "^urxvt$",
                // "title": "^vals\\@w00t\\:\\ \\~$"
                }
@@ -119,7 +119,7 @@ print $fh <<'EOT';
             "percent": 1,
             "swallows": [
                {
-               // "class": "^URxvt$",
+                  "class": "^URxvt$"
                // "instance": "^urxvt$",
                // "title": "^vals\\@w00t\\:\\ \\~$"
                }
@@ -165,7 +165,7 @@ print $fh <<'EOT';
             "percent": 1,
             "swallows": [
                {
-               // "class": "^URxvt$",
+                  "class": "^URxvt$"
                // "instance": "^urxvt$",
                // "title": "^vals\\@w00t\\:\\ \\~$"
                }
@@ -213,7 +213,7 @@ print $fh <<'EOT';
             "percent": 1,
             "swallows": [
                {
-               // "class": "^URxvt$",
+                  "class": "^URxvt$"
                // "instance": "^urxvt$",
                // "title": "^vals\\@w00t\\:\\ \\~$"
                }

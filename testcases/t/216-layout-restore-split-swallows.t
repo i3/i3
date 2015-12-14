@@ -54,9 +54,6 @@ print $fh <<'EOT';
     "floating": "auto_off",
     "layout": "splitv",
     "percent": 0.883854166666667,
-    "swallows": [
-       {}
-    ],
     "type": "con",
     "nodes": [
         {
@@ -65,9 +62,6 @@ print $fh <<'EOT';
             "floating": "auto_off",
             "layout": "splitv",
             "percent": 1,
-            "swallows": [
-               {}
-            ],
             "type": "con",
             "nodes": [
                 {
