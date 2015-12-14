@@ -436,6 +436,9 @@ struct Window {
  *
  */
 struct Match {
+    /* Set if a criterion was specified incorrectly. */
+    char *error;
+
     struct regex *title;
     struct regex *application;
     struct regex *class;

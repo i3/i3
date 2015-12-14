@@ -42,6 +42,16 @@
         }                                               \
     } while (0)
 
+/** If an error occured during parsing of the criteria, we want to exit instead
+ * of relying on fallback behavior. See #2091. */
+#define HANDLE_INVALID_MATCH                                   \
+    do {                                                       \
+        if (current_match->error != NULL) {                    \
+            yerror("Invalid match: %s", current_match->error); \
+            return;                                            \
+        }                                                      \
+    } while (0)
+
 /** When the command did not include match criteria (!), we use the currently
  * focused container. Do not confuse this case with a command which included
  * criteria but which did not match any windows. This macro has to be called in
@@ -49,6 +59,8 @@
  */
 #define HANDLE_EMPTY_MATCH                              \
     do {                                                \
+        HANDLE_INVALID_MATCH;                           \
+                                                        \
         if (match_is_empty(current_match)) {            \
             owindow *ow = smalloc(sizeof(owindow));     \
             ow->con = focused;                          \
@@ -1232,6 +1244,8 @@ void cmd_kill(I3_CMD, const char *kill_mode_str) {
         ysuccess(false);
         return;
     }
+
+    HANDLE_INVALID_MATCH;
 
     /* check if the match is empty, not if the result is empty */
     if (match_is_empty(current_match))

@@ -238,6 +238,7 @@ bool match_matches_window(Match *match, i3Window *window) {
  *
  */
 void match_free(Match *match) {
+    FREE(match->error);
     regex_free(match->title);
     regex_free(match->application);
     regex_free(match->class);
@@ -286,6 +287,7 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
             parsed < 0 ||
             (end && *end != '\0')) {
             ELOG("Could not parse con id \"%s\"\n", cvalue);
+            match->error = sstrdup("invalid con_id");
         } else {
             match->con_id = (Con *)parsed;
             DLOG("id as int = %p\n", match->con_id);
@@ -301,6 +303,7 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
             parsed < 0 ||
             (end && *end != '\0')) {
             ELOG("Could not parse window id \"%s\"\n", cvalue);
+            match->error = sstrdup("invalid id");
         } else {
             match->id = parsed;
             DLOG("window id as int = %d\n", match->id);
@@ -309,26 +312,28 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
     }
 
     if (strcmp(ctype, "window_type") == 0) {
-        if (strcasecmp(cvalue, "normal") == 0)
+        if (strcasecmp(cvalue, "normal") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_NORMAL;
-        else if (strcasecmp(cvalue, "dialog") == 0)
+        } else if (strcasecmp(cvalue, "dialog") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_DIALOG;
-        else if (strcasecmp(cvalue, "utility") == 0)
+        } else if (strcasecmp(cvalue, "utility") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_UTILITY;
-        else if (strcasecmp(cvalue, "toolbar") == 0)
+        } else if (strcasecmp(cvalue, "toolbar") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_TOOLBAR;
-        else if (strcasecmp(cvalue, "splash") == 0)
+        } else if (strcasecmp(cvalue, "splash") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_SPLASH;
-        else if (strcasecmp(cvalue, "menu") == 0)
+        } else if (strcasecmp(cvalue, "menu") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_MENU;
-        else if (strcasecmp(cvalue, "dropdown_menu") == 0)
+        } else if (strcasecmp(cvalue, "dropdown_menu") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU;
-        else if (strcasecmp(cvalue, "popup_menu") == 0)
+        } else if (strcasecmp(cvalue, "popup_menu") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_POPUP_MENU;
-        else if (strcasecmp(cvalue, "tooltip") == 0)
+        } else if (strcasecmp(cvalue, "tooltip") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_TOOLTIP;
-        else
+        } else {
             ELOG("unknown window_type value \"%s\"\n", cvalue);
+            match->error = sstrdup("unknown window_type value");
+        }
 
         return;
     }
