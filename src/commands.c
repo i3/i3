@@ -294,32 +294,60 @@ void cmd_criteria_match_windows(I3_CMD) {
         next = TAILQ_NEXT(next, owindows);
 
         DLOG("checking if con %p / %s matches\n", current->con, current->con->name);
+
+        /* We use this flag to prevent matching on window-less containers if
+         * only window-specific criteria were specified. */
+        bool accept_match = false;
+
         if (current_match->con_id != NULL) {
+            accept_match = true;
+
             if (current_match->con_id == current->con) {
-                DLOG("matches container!\n");
-                TAILQ_INSERT_TAIL(&owindows, current, owindows);
+                DLOG("con_id matched.\n");
             } else {
-                DLOG("doesnt match\n");
-                free(current);
+                DLOG("con_id does not match.\n");
+                FREE(current);
+                continue;
             }
-        } else if (current_match->mark != NULL && !TAILQ_EMPTY(&(current->con->marks_head))) {
+        }
+
+        if (current_match->mark != NULL && !TAILQ_EMPTY(&(current->con->marks_head))) {
+            accept_match = true;
+            bool matched_by_mark = false;
+
             mark_t *mark;
             TAILQ_FOREACH(mark, &(current->con->marks_head), marks) {
                 if (!regex_matches(current_match->mark, mark->name))
                     continue;
 
                 DLOG("match by mark\n");
-                TAILQ_INSERT_TAIL(&owindows, current, owindows);
+                matched_by_mark = true;
                 break;
             }
-        } else {
-            if (current->con->window && match_matches_window(current_match, current->con->window)) {
+
+            if (!matched_by_mark) {
+                DLOG("mark does not match.\n");
+                FREE(current);
+                continue;
+            }
+        }
+
+        if (current->con->window != NULL) {
+            if (match_matches_window(current_match, current->con->window)) {
                 DLOG("matches window!\n");
-                TAILQ_INSERT_TAIL(&owindows, current, owindows);
+                accept_match = true;
             } else {
                 DLOG("doesnt match\n");
-                free(current);
+                FREE(current);
+                continue;
             }
+        }
+
+        if (accept_match) {
+            TAILQ_INSERT_TAIL(&owindows, current, owindows);
+        } else {
+            FREE(current);
+            continue;
         }
     }
 

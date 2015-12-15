@@ -223,11 +223,25 @@ bool match_matches_window(Match *match, i3Window *window) {
         }
     }
 
-    /* We don’t check the mark because this function is not even called when
-     * the mark would have matched - it is checked in cmdparse.y itself */
     if (match->mark != NULL) {
-        LOG("mark does not match\n");
-        return false;
+        if ((con = con_by_window_id(window->id)) == NULL)
+            return false;
+
+        bool matched = false;
+        mark_t *mark;
+        TAILQ_FOREACH(mark, &(con->marks_head), marks) {
+            if (regex_matches(match->mark, mark->name)) {
+                matched = true;
+                break;
+            }
+        }
+
+        if (matched) {
+            LOG("mark matches\n");
+        } else {
+            LOG("mark does not match\n");
+            return false;
+        }
     }
 
     return true;
