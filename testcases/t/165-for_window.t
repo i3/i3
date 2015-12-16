@@ -380,7 +380,8 @@ my %window_types = (
     'menu'          => '_NET_WM_WINDOW_TYPE_MENU',
     'dropdown_menu' => '_NET_WM_WINDOW_TYPE_DROPDOWN_MENU',
     'popup_menu'    => '_NET_WM_WINDOW_TYPE_POPUP_MENU',
-    'tooltip'       => '_NET_WM_WINDOW_TYPE_TOOLTIP'
+    'tooltip'       => '_NET_WM_WINDOW_TYPE_TOOLTIP',
+    'notification'  => '_NET_WM_WINDOW_TYPE_NOTIFICATION'
 );
 
 while (my ($window_type, $atom) = each %window_types) {

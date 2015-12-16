@@ -175,7 +175,8 @@ xcb_atom_t xcb_get_preferred_window_type(xcb_get_property_reply_t *reply) {
             atoms[i] == A__NET_WM_WINDOW_TYPE_MENU ||
             atoms[i] == A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU ||
             atoms[i] == A__NET_WM_WINDOW_TYPE_POPUP_MENU ||
-            atoms[i] == A__NET_WM_WINDOW_TYPE_TOOLTIP) {
+            atoms[i] == A__NET_WM_WINDOW_TYPE_TOOLTIP ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_NOTIFICATION) {
             return atoms[i];
         }
     }
