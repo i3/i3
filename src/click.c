@@ -198,11 +198,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
             xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, event->time);
             xcb_flush(conn);
 
-            if (result->needs_tree_render)
-                tree_render();
-
             command_result_free(result);
-
             return 0;
         }
     }
@@ -370,10 +366,6 @@ int handle_button_press(xcb_button_press_event_t *event) {
             Binding *bind = get_binding_from_xcb_event((xcb_generic_event_t *)event);
             if (bind != NULL && bind->whole_window) {
                 CommandResult *result = run_binding(bind, NULL);
-                if (result->needs_tree_render) {
-                    tree_render();
-                }
-
                 command_result_free(result);
             }
         }

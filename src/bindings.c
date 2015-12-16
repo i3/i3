@@ -643,8 +643,8 @@ void binding_free(Binding *bind) {
 /*
  * Runs the given binding and handles parse errors. If con is passed, it will
  * execute the command binding with that container selected by criteria.
- * Returns a CommandResult for running the binding's command. Caller should
- * render tree if needs_tree_render is true. Free with command_result_free().
+ * Returns a CommandResult for running the binding's command. Free with
+ * command_result_free().
  *
  */
 CommandResult *run_binding(Binding *bind, Con *con) {
