@@ -984,7 +984,10 @@ void x_push_changes(Con *con) {
 
     DLOG("-- PUSHING WINDOW STACK --\n");
     //DLOG("Disabling EnterNotify\n");
-    uint32_t values[1] = {XCB_NONE};
+    /* We need to keep SubstructureRedirect around, otherwise clients can send
+     * ConfigureWindow requests and get them applied directly instead of having
+     * them become ConfigureRequests that i3 handles. */
+    uint32_t values[1] = {XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT};
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
         if (state->mapped)
             xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
