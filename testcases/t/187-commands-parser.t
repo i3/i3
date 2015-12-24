@@ -80,6 +80,14 @@ is(parser_calls(
    "cmd_exec(--no-startup-id, i3-sensible-terminal)",
    'exec ok');
 
+# Tests execution of commands with quoted ',' or ';'
+is(parser_calls(
+   'exec i3-sensible-terminal -e echo "Hello, i3"; ' .
+   'exec --no-startup-id i3-sensible-terminal -e echo "Hello; i3"'),
+   "cmd_exec((null), i3-sensible-terminal -e echo \"Hello, i3\")\n" .
+   "cmd_exec(--no-startup-id, i3-sensible-terminal -e echo \"Hello; i3\")",
+   'exec ok');
+
 is(parser_calls(
    'resize shrink left; ' .
    'resize shrink left 25 px; ' .
