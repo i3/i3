@@ -109,14 +109,14 @@ XCB_WM_LIBS   := $(call ldflags_for_lib, xcb-icccm,xcb-icccm)
 XCB_WM_LIBS   += $(call ldflags_for_lib, xcb-xinerama,xcb-xinerama)
 XCB_WM_LIBS   += $(call ldflags_for_lib, xcb-randr,xcb-randr)
 
+# XCB cursor
+XCB_CURSOR_CFLAGS := $(call cflags_for_lib, xcb-cursor)
+XCB_CURSOR_LIBS   := $(call ldflags_for_lib, xcb-cursor,xcb-cursor)
+
 XKB_COMMON_CFLAGS := $(call cflags_for_lib, xkbcommon,xkbcommon)
 XKB_COMMON_LIBS := $(call ldflags_for_lib, xkbcommon,xkbcommon)
 XKB_COMMON_X11_CFLAGS := $(call cflags_for_lib, xkbcommon-x11,xkbcommon-x11)
 XKB_COMMON_X11_LIBS := $(call ldflags_for_lib, xkbcommon-x11,xkbcommon-x11)
-
-# Xcursor
-XCURSOR_CFLAGS := $(call cflags_for_lib, xcb-cursor)
-XCURSOR_LIBS   := $(call ldflags_for_lib, xcb-cursor,xcb-cursor)
 
 # yajl
 YAJL_CFLAGS := $(call cflags_for_lib, yajl)
