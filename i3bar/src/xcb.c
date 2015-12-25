@@ -11,6 +11,7 @@
 #include <xcb/xkb.h>
 #include <xcb/xproto.h>
 #include <xcb/xcb_aux.h>
+#include <xcb/xcb_cursor.h>
 
 #ifdef XCB_COMPAT
 #include "xcb_compat.h"
@@ -34,6 +35,10 @@
 #include "common.h"
 #include "libi3.h"
 
+/** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
+ * constant for that. */
+#define XCB_CURSOR_LEFT_PTR 68
+
 /* We save the atoms in an easy to access array, indexed by an enum */
 enum {
 #define ATOM_DO(name) name,
@@ -49,6 +54,7 @@ xcb_connection_t *xcb_connection;
 int screen;
 xcb_screen_t *root_screen;
 xcb_window_t xcb_root;
+static xcb_cursor_t cursor;
 
 /* selection window for tray support */
 static xcb_window_t selwin = XCB_NONE;
@@ -1206,6 +1212,24 @@ char *init_xcb_early() {
     colormap = root_screen->default_colormap;
     visual_type = get_visualtype(root_screen);
 
+    xcb_cursor_context_t *cursor_ctx;
+    if (xcb_cursor_context_new(conn, root_screen, &cursor_ctx) == 0) {
+        cursor = xcb_cursor_load_cursor(cursor_ctx, "left_ptr");
+        xcb_cursor_context_free(cursor_ctx);
+    } else {
+        cursor = xcb_generate_id(xcb_connection);
+        i3Font cursor_font = load_font("cursor", false);
+        xcb_create_glyph_cursor(
+            xcb_connection,
+            cursor,
+            cursor_font.specific.xcb.id,
+            cursor_font.specific.xcb.id,
+            XCB_CURSOR_LEFT_PTR,
+            XCB_CURSOR_LEFT_PTR + 1,
+            0, 0, 0,
+            65535, 65535, 65535);
+    }
+
     /* The various watchers to communicate with xcb */
     xcb_io = smalloc(sizeof(ev_io));
     xcb_prep = smalloc(sizeof(ev_prepare));
@@ -1462,6 +1486,7 @@ void clean_xcb(void) {
     FREE_SLIST(outputs, i3_output);
     FREE(outputs);
 
+    xcb_free_cursor(xcb_connection, cursor);
     xcb_flush(xcb_connection);
     xcb_aux_sync(xcb_connection);
     xcb_disconnect(xcb_connection);
@@ -1605,7 +1630,7 @@ xcb_void_cookie_t config_strut_partial(i3_output *output) {
  */
 void reconfig_windows(bool redraw_bars) {
     uint32_t mask;
-    uint32_t values[5];
+    uint32_t values[6];
     static bool tray_configured = false;
 
     i3_output *walk;
@@ -1623,7 +1648,7 @@ void reconfig_windows(bool redraw_bars) {
             xcb_window_t bar_id = xcb_generate_id(xcb_connection);
             xcb_pixmap_t buffer_id = xcb_generate_id(xcb_connection);
             xcb_pixmap_t statusline_buffer_id = xcb_generate_id(xcb_connection);
-            mask = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK | XCB_CW_COLORMAP;
+            mask = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK | XCB_CW_COLORMAP | XCB_CW_CURSOR;
 
             values[0] = colors.bar_bg.colorpixel;
             values[1] = root_screen->black_pixel;
@@ -1645,6 +1670,7 @@ void reconfig_windows(bool redraw_bars) {
                 walk->visible = true;
             }
             values[4] = colormap;
+            values[5] = cursor;
 
             xcb_void_cookie_t win_cookie = xcb_create_window_checked(xcb_connection,
                                                                      depth,
