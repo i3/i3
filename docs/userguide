@@ -785,7 +785,7 @@ keyword. These commands will be run in order.
 
 See <<command_chaining>> for details on the special meaning of +;+ (semicolon)
 and +,+ (comma): they chain commands together in i3, so you need to use quoted
-strings if they appear in your command.
+strings (as shown in <<exec_quoting>>) if they appear in your command.
 
 *Syntax*:
 ---------------------------------------
@@ -1696,7 +1696,7 @@ searched in your +$PATH+.
 
 See <<command_chaining>> for details on the special meaning of +;+ (semicolon)
 and +,+ (comma): they chain commands together in i3, so you need to use quoted
-strings if they appear in your command.
+strings (as shown in <<exec_quoting>>) if they appear in your command.
 
 *Syntax*:
 --------------------------------
@@ -1719,6 +1719,27 @@ will change the X11 cursor to +watch+ (a clock) while the application is
 launching. So, if an application is not startup-notification aware (most GTK
 and Qt using applications seem to be, though), you will end up with a watch
 cursor for 60 seconds.
+
+[[exec_quoting]]
+If the command to be executed contains a +;+ (semicolon) and/or a +,+ (comma),
+the entire command must be quoted. For example, to have a keybinding for the
+shell command +notify-send Hello, i3+, you would add an entry to your
+configuration file like this:
+
+*Example*:
+------------------------------
+# Execute a command with a comma in it
+bindsym $mod+p exec "notify-send Hello, i3"
+------------------------------
+
+If however a command with a comma and/or semicolon itself requires quotes, you
+must escape the internal quotation marks with double backslashes, like this:
+
+*Example*:
+------------------------------
+# Execute a command with a comma, semicolon and internal quotes
+bindsym $mod+p exec "notify-send \\"Hello, i3; from $USER\\""
+------------------------------
 
 === Splitting containers
 
