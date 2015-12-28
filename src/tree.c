@@ -363,34 +363,6 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
 }
 
 /*
- * Closes the current container using tree_close_internal().
- *
- */
-void tree_close_con(kill_window_t kill_window) {
-    assert(focused != NULL);
-
-    /* There *should* be no possibility to focus outputs / root container */
-    assert(focused->type != CT_OUTPUT);
-    assert(focused->type != CT_ROOT);
-
-    if (focused->type == CT_WORKSPACE) {
-        DLOG("Workspaces cannot be close, closing all children instead\n");
-        Con *child, *nextchild;
-        for (child = TAILQ_FIRST(&(focused->focus_head)); child;) {
-            nextchild = TAILQ_NEXT(child, focused);
-            DLOG("killing child=%p\n", child);
-            tree_close_internal(child, kill_window, false, false);
-            child = nextchild;
-        }
-
-        return;
-    }
-
-    /* Kill con */
-    tree_close_internal(focused, kill_window, false, false);
-}
-
-/*
  * Splits (horizontally or vertically) the given container by creating a new
  * container which contains the old one and the future ones.
  *

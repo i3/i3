@@ -31,6 +31,12 @@ Con *con_new(Con *parent, i3Window *window);
 void con_focus(Con *con);
 
 /**
+ * Closes the given container.
+ *
+ */
+void con_close(Con *con, kill_window_t kill_window);
+
+/**
  * Returns true when this node is a leaf node (has no children)
  *
  */

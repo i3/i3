@@ -57,12 +57,6 @@ bool level_down(void);
 void tree_render(void);
 
 /**
- * Closes the current container using tree_close_internal().
- *
- */
-void tree_close_con(kill_window_t kill_window);
-
-/**
  * Changes focus in the given way (next/previous) and given orientation
  * (horizontal/vertical).
  *

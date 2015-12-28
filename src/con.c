@@ -221,6 +221,36 @@ void con_focus(Con *con) {
 }
 
 /*
+ * Closes the given container.
+ *
+ */
+void con_close(Con *con, kill_window_t kill_window) {
+    assert(con != NULL);
+    DLOG("Closing con = %p.\n", con);
+
+    /* We never close output or root containers. */
+    if (con->type == CT_OUTPUT || con->type == CT_ROOT) {
+        DLOG("con = %p is of type %d, not closing anything.\n", con, con->type);
+        return;
+    }
+
+    if (con->type == CT_WORKSPACE) {
+        DLOG("con = %p is a workspace, closing all children instead.\n", con);
+        Con *child, *nextchild;
+        for (child = TAILQ_FIRST(&(con->focus_head)); child;) {
+            nextchild = TAILQ_NEXT(child, focused);
+            DLOG("killing child = %p.\n", child);
+            tree_close_internal(child, kill_window, false, false);
+            child = nextchild;
+        }
+
+        return;
+    }
+
+    tree_close_internal(con, kill_window, false, false);
+}
+
+/*
  * Returns true when this node is a leaf node (has no children)
  *
  */
