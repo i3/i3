@@ -15,6 +15,8 @@ our @EXPORT = qw(
     set_xkb_group
     xtest_key_press
     xtest_key_release
+    xtest_button_press
+    xtest_button_release
     listen_for_binding
     start_binding_capture
     binding_events
@@ -107,7 +109,7 @@ bool set_xkb_group(int group) {
     return true;
 }
 
-bool xtest_key(int type, int detail) {
+bool xtest_input(int type, int detail, int x, int y) {
     xcb_generic_error_t *err;
     xcb_void_cookie_t cookie;
 
@@ -117,8 +119,8 @@ bool xtest_key(int type, int detail) {
         detail,           /* detail */
         XCB_CURRENT_TIME, /* time */
         XCB_NONE,         /* root */
-        0,                /* rootX */
-        0,                /* rootY */
+        x,                /* rootX */
+        y,                /* rootY */
         XCB_NONE);        /* deviceid */
     if ((err = xcb_request_check(conn, cookie)) != NULL) {
         fprintf(stderr, "X error code %d\n", err->error_code);
@@ -128,12 +130,24 @@ bool xtest_key(int type, int detail) {
     return true;
 }
 
+bool xtest_key(int type, int detail) {
+    return xtest_input(type, detail, 0, 0);
+}
+
 bool xtest_key_press(int detail) {
     return xtest_key(XCB_KEY_PRESS, detail);
 }
 
 bool xtest_key_release(int detail) {
     return xtest_key(XCB_KEY_RELEASE, detail);
+}
+
+bool xtest_button_press(int button, int x, int y) {
+    return xtest_input(XCB_BUTTON_PRESS, button, x, y);
+}
+
+bool xtest_button_release(int button, int x, int y) {
+    return xtest_input(XCB_BUTTON_RELEASE, button, x, y);
 }
 
 END_OF_C_CODE
@@ -240,14 +254,26 @@ Returns false when there was an X11 error changing the group, true otherwise.
 Sends a KeyPress event via XTEST, with the specified C<$detail>, i.e. key code.
 Use C<xev(1)> to find key codes.
 
-Returns false when there was an X11 error changing the group, true otherwise.
+Returns false when there was an X11 error, true otherwise.
 
 =head2 xtest_key_release($detail)
 
 Sends a KeyRelease event via XTEST, with the specified C<$detail>, i.e. key code.
 Use C<xev(1)> to find key codes.
 
-Returns false when there was an X11 error changing the group, true otherwise.
+Returns false when there was an X11 error, true otherwise.
+
+=head2 xtest_button_press($button, $x, $y)
+
+Sends a ButtonPress event via XTEST, with the specified C<$button>.
+
+Returns false when there was an X11 error, true otherwise.
+
+=head2 xtest_button_release($button, $x, $y)
+
+Sends a ButtonRelease event via XTEST, with the specified C<$button>.
+
+Returns false when there was an X11 error, true otherwise.
 
 =head1 AUTHOR
 
