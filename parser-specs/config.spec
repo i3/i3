@@ -282,9 +282,15 @@ state COLOR_TEXT:
 
 state COLOR_INDICATOR:
   indicator = word
-      -> call cfg_color($colorclass, $border, $background, $text, $indicator)
+      -> COLOR_DECORATION_BORDER
   end
-      -> call cfg_color($colorclass, $border, $background, $text, NULL)
+      -> call cfg_color($colorclass, $border, $background, $text, NULL, NULL)
+
+state COLOR_DECORATION_BORDER:
+  decoration_border = word
+      -> call cfg_color($colorclass, $border, $background, $text, $indicator, $decoration_border)
+  end
+      -> call cfg_color($colorclass, $border, $background, $text, $indicator, NULL)
 
 # <exec|exec_always> [--no-startup-id] command
 state EXEC:

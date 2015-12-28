@@ -189,12 +189,13 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     memset(&config, 0, sizeof(config));
 
 /* Initialize default colors */
-#define INIT_COLOR(x, cborder, cbackground, ctext, cindicator) \
-    do {                                                       \
-        x.border = draw_util_hex_to_color(cborder);            \
-        x.background = draw_util_hex_to_color(cbackground);    \
-        x.text = draw_util_hex_to_color(ctext);                \
-        x.indicator = draw_util_hex_to_color(cindicator);      \
+#define INIT_COLOR(x, cborder, cbackground, ctext, cindicator)     \
+    do {                                                           \
+        x.border = draw_util_hex_to_color(cborder);                \
+        x.background = draw_util_hex_to_color(cbackground);        \
+        x.text = draw_util_hex_to_color(ctext);                    \
+        x.indicator = draw_util_hex_to_color(cindicator);          \
+        x.decoration_border = draw_util_hex_to_color(cbackground); \
     } while (0)
 
     config.client.background = draw_util_hex_to_color("#000000");
