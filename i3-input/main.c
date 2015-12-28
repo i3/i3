@@ -137,7 +137,7 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
-    set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
+    set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
 
     /* draw the prompt … */
     if (prompt != NULL) {

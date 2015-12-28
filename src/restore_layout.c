@@ -133,7 +133,7 @@ static void update_placeholder_contents(placeholder_state *state) {
     xcb_flush(restore_conn);
     xcb_aux_sync(restore_conn);
 
-    set_font_colors(state->gc, config.client.placeholder.text.colorpixel, config.client.placeholder.background.colorpixel);
+    set_font_colors(state->gc, config.client.placeholder.text, config.client.placeholder.background);
 
     Match *swallows;
     int n = 0;

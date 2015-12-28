@@ -144,7 +144,7 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
     CAIRO_SURFACE_FLUSH(surface->surface);
 #endif
 
-    set_font_colors(surface->gc, fg_color.colorpixel, bg_color.colorpixel);
+    set_font_colors(surface->gc, fg_color, bg_color);
     draw_text(text, surface->id, surface->gc, surface->visual_type, x, y, max_width);
 
 #ifdef CAIRO_SUPPORT
