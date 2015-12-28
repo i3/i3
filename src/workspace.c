@@ -442,7 +442,7 @@ static void _workspace_show(Con *workspace) {
 
     DLOG("old = %p / %s\n", old, (old ? old->name : "(null)"));
     /* Close old workspace if necessary. This must be done *after* doing
-     * urgency handling, because tree_close() will do a con_focus() on the next
+     * urgency handling, because tree_close_internal() will do a con_focus() on the next
      * client, which will clear the urgency flag too early. Also, there is no
      * way for con_focus() to know about when to clear urgency immediately and
      * when to defer it. */
@@ -451,7 +451,7 @@ static void _workspace_show(Con *workspace) {
         if (!workspace_is_visible(old)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
             yajl_gen gen = ipc_marshal_workspace_event("empty", old, NULL);
-            tree_close(old, DONT_KILL_WINDOW, false, false);
+            tree_close_internal(old, DONT_KILL_WINDOW, false, false);
 
             const unsigned char *payload;
             ylength length;

@@ -1281,7 +1281,7 @@ void cmd_kill(I3_CMD, const char *kill_mode_str) {
     else {
         TAILQ_FOREACH(current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
-            tree_close(current->con, kill_mode, false, false);
+            tree_close_internal(current->con, kill_mode, false, false);
         }
     }
 
