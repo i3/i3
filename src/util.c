@@ -343,6 +343,7 @@ char *pango_escape_markup(char *input) {
 
     char *escaped = g_markup_escape_text(input, -1);
     FREE(input);
+
     return escaped;
 }
 

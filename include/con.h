@@ -433,3 +433,9 @@ char *con_get_tree_representation(Con *con);
  *
  */
 void con_force_split_parents_redraw(Con *con);
+
+/**
+ * Returns the window title considering the current title format.
+ *
+ */
+i3String *con_parse_title_format(Con *con);

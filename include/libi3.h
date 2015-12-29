@@ -504,6 +504,20 @@ char *get_config_path(const char *override_configpath, bool use_system_paths);
 int mkdirp(const char *path, mode_t mode);
 #endif
 
+/** Helper structure for usage in format_placeholders(). */
+typedef struct placeholder_t {
+    /* The placeholder to be replaced, e.g., "%title". */
+    char *name;
+    /* The value this placeholder should be replaced with. */
+    char *value;
+} placeholder_t;
+
+/**
+ * Replaces occurences of the defined placeholders in the format string.
+ *
+ */
+char *format_placeholders(char *format, placeholder_t *placeholders, int num);
+
 #ifdef CAIRO_SUPPORT
 /* We need to flush cairo surfaces twice to avoid an assertion bug. See #1989
  * and https://bugs.freedesktop.org/show_bug.cgi?id=92455. */
