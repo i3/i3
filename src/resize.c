@@ -11,8 +11,6 @@
  */
 #include "all.h"
 
-extern xcb_connection_t *conn;
-
 /*
  * This is an ugly data structure which we need because there is no standard
  * way of having nested functions (only available as a gcc extension at the

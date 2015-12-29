@@ -11,8 +11,6 @@
  */
 #include "all.h"
 
-extern xcb_connection_t *conn;
-
 /*
  * Calculates sum of heights and sum of widths of all currently active outputs
  *

@@ -24,8 +24,6 @@
 #define XEMBED_MAPPED (1 << 0)
 #define XEMBED_EMBEDDED_NOTIFY 0
 
-xcb_connection_t *xcb_connection;
-
 /* We define xcb_request_failed as a macro to include the relevant line number */
 #define xcb_request_failed(cookie, err_msg) _xcb_request_failed(cookie, err_msg, __LINE__)
 int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line);

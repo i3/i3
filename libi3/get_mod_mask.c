@@ -12,8 +12,6 @@
 
 #include "libi3.h"
 
-extern xcb_connection_t *conn;
-
 /*
  * All-in-one function which returns the modifier mask (XCB_MOD_MASK_*) for the
  * given keysymbol, for example for XCB_NUM_LOCK (usually configured to mod2).

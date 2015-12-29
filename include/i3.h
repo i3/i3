@@ -35,7 +35,6 @@ extern struct rlimit original_rlimit_core;
 extern bool debug_build;
 /** The number of file descriptors passed via socket activation. */
 extern int listen_fds;
-extern xcb_connection_t *conn;
 extern int conn_screen;
 /**
  * The EWMH support window that is used to indicate that an EWMH-compliant
@@ -61,7 +60,6 @@ extern TAILQ_HEAD(autostarts_always_head, Autostart) autostarts_always;
 extern TAILQ_HEAD(ws_assignments_head, Workspace_Assignment) ws_assignments;
 extern TAILQ_HEAD(assignments_head, Assignment) assignments;
 extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;
-extern xcb_screen_t *root_screen;
 
 /* Color depth, visual id and colormap to use when creating windows and
  * pixmaps. Will use 32 bit depth and an appropriate visual, if available,
