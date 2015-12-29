@@ -185,11 +185,11 @@ static bool _is_con_mapped(Con *con) {
  * recursively while deleting a containers children.
  *
  * The force_set_focus flag is specified in the case of killing a floating
- * window: tree_close() will be invoked for the CT_FLOATINGCON (the parent
+ * window: tree_close_internal() will be invoked for the CT_FLOATINGCON (the parent
  * container) and focus should be set there.
  *
  */
-bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool force_set_focus) {
+bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool force_set_focus) {
     bool was_mapped = con->mapped;
     Con *parent = con->parent;
 
@@ -219,7 +219,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
     for (child = TAILQ_FIRST(&(con->nodes_head)); child;) {
         nextchild = TAILQ_NEXT(child, nodes);
         DLOG("killing child=%p\n", child);
-        if (!tree_close(child, kill_window, true, false))
+        if (!tree_close_internal(child, kill_window, true, false))
             abort_kill = true;
         child = nextchild;
     }
@@ -310,7 +310,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
      * underlying container, see ticket #660.
      *
      * Rendering has to be avoided when dont_kill_parent is set (when
-     * tree_close calls itself recursively) because the tree is in a
+     * tree_close_internal calls itself recursively) because the tree is in a
      * non-renderable state during that time. */
     if (!dont_kill_parent)
         tree_render();
@@ -320,7 +320,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
 
     if (con_is_floating(con)) {
         DLOG("Container was floating, killing floating container\n");
-        tree_close(parent, DONT_KILL_WINDOW, false, (con == focused));
+        tree_close_internal(parent, DONT_KILL_WINDOW, false, (con == focused));
         DLOG("parent container killed\n");
     }
 
@@ -360,34 +360,6 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
         CALL(parent, on_remove_child);
 
     return true;
-}
-
-/*
- * Closes the current container using tree_close().
- *
- */
-void tree_close_con(kill_window_t kill_window) {
-    assert(focused != NULL);
-
-    /* There *should* be no possibility to focus outputs / root container */
-    assert(focused->type != CT_OUTPUT);
-    assert(focused->type != CT_ROOT);
-
-    if (focused->type == CT_WORKSPACE) {
-        DLOG("Workspaces cannot be close, closing all children instead\n");
-        Con *child, *nextchild;
-        for (child = TAILQ_FIRST(&(focused->focus_head)); child;) {
-            nextchild = TAILQ_NEXT(child, focused);
-            DLOG("killing child=%p\n", child);
-            tree_close(child, kill_window, false, false);
-            child = nextchild;
-        }
-
-        return;
-    }
-
-    /* Kill con */
-    tree_close(focused, kill_window, false, false);
 }
 
 /*
@@ -773,7 +745,7 @@ void tree_flatten(Con *con) {
 
     /* 4: close the redundant cons */
     DLOG("closing redundant cons\n");
-    tree_close(con, DONT_KILL_WINDOW, true, false);
+    tree_close_internal(con, DONT_KILL_WINDOW, true, false);
 
     /* Well, we got to abort the recursion here because we destroyed the
      * container. However, if tree_flatten() is called sufficiently often,

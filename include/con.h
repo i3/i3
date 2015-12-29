@@ -31,6 +31,12 @@ Con *con_new(Con *parent, i3Window *window);
 void con_focus(Con *con);
 
 /**
+ * Closes the given container.
+ *
+ */
+void con_close(Con *con, kill_window_t kill_window);
+
+/**
  * Returns true when this node is a leaf node (has no children)
  *
  */
@@ -278,7 +284,7 @@ orientation_t con_orientation(Con *con);
 
 /**
  * Returns the container which will be focused next when the given container
- * is not available anymore. Called in tree_close and con_move_to_workspace
+ * is not available anymore. Called in tree_close_internal and con_move_to_workspace
  * to properly restore focus.
  *
  */

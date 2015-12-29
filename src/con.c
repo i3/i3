@@ -221,6 +221,36 @@ void con_focus(Con *con) {
 }
 
 /*
+ * Closes the given container.
+ *
+ */
+void con_close(Con *con, kill_window_t kill_window) {
+    assert(con != NULL);
+    DLOG("Closing con = %p.\n", con);
+
+    /* We never close output or root containers. */
+    if (con->type == CT_OUTPUT || con->type == CT_ROOT) {
+        DLOG("con = %p is of type %d, not closing anything.\n", con, con->type);
+        return;
+    }
+
+    if (con->type == CT_WORKSPACE) {
+        DLOG("con = %p is a workspace, closing all children instead.\n", con);
+        Con *child, *nextchild;
+        for (child = TAILQ_FIRST(&(con->focus_head)); child;) {
+            nextchild = TAILQ_NEXT(child, focused);
+            DLOG("killing child = %p.\n", child);
+            tree_close_internal(child, kill_window, false, false);
+            child = nextchild;
+        }
+
+        return;
+    }
+
+    tree_close_internal(con, kill_window, false, false);
+}
+
+/*
  * Returns true when this node is a leaf node (has no children)
  *
  */
@@ -1162,7 +1192,7 @@ orientation_t con_orientation(Con *con) {
 
 /*
  * Returns the container which will be focused next when the given container
- * is not available anymore. Called in tree_close and con_move_to_workspace
+ * is not available anymore. Called in tree_close_internal and con_move_to_workspace
  * to properly restore focus.
  *
  */
@@ -1678,7 +1708,7 @@ static void con_on_remove_child(Con *con) {
         if (TAILQ_EMPTY(&(con->focus_head)) && !workspace_is_visible(con)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", con, con->name);
             yajl_gen gen = ipc_marshal_workspace_event("empty", con, NULL);
-            tree_close(con, DONT_KILL_WINDOW, false, false);
+            tree_close_internal(con, DONT_KILL_WINDOW, false, false);
 
             const unsigned char *payload;
             ylength length;
@@ -1699,7 +1729,7 @@ static void con_on_remove_child(Con *con) {
     int children = con_num_children(con);
     if (children == 0) {
         DLOG("Container empty, closing\n");
-        tree_close(con, DONT_KILL_WINDOW, false, false);
+        tree_close_internal(con, DONT_KILL_WINDOW, false, false);
         return;
     }
 }

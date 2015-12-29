@@ -27,9 +27,11 @@ $ws = fresh_workspace;
 open_window(wm_class => 'matchme');
 
 cmd '[con_id=__focused__ class=doesnotmatch] kill';
+sync_with_i3;
 is(@{get_ws($ws)->{nodes}}, 1, 'window was not killed');
 
 cmd '[con_id=__focused__ class=matchme] kill';
+sync_with_i3;
 is(@{get_ws($ws)->{nodes}}, 0, 'window was killed');
 
 ###############################################################################
@@ -41,9 +43,11 @@ open_window(wm_class => 'matchme');
 cmd 'mark marked';
 
 cmd '[con_mark=marked class=doesnotmatch] kill';
+sync_with_i3;
 is(@{get_ws($ws)->{nodes}}, 1, 'window was not killed');
 
 cmd '[con_mark=marked class=matchme] kill';
+sync_with_i3;
 is(@{get_ws($ws)->{nodes}}, 0, 'window was killed');
 
 ###############################################################################

@@ -1258,7 +1258,6 @@ void cmd_split(I3_CMD, const char *direction) {
 void cmd_kill(I3_CMD, const char *kill_mode_str) {
     if (kill_mode_str == NULL)
         kill_mode_str = "window";
-    owindow *current;
 
     DLOG("kill_mode=%s\n", kill_mode_str);
 
@@ -1273,16 +1272,11 @@ void cmd_kill(I3_CMD, const char *kill_mode_str) {
         return;
     }
 
-    HANDLE_INVALID_MATCH;
+    HANDLE_EMPTY_MATCH;
 
-    /* check if the match is empty, not if the result is empty */
-    if (match_is_empty(current_match))
-        tree_close_con(kill_mode);
-    else {
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            DLOG("matching: %p / %s\n", current->con, current->con->name);
-            tree_close(current->con, kill_mode, false, false);
-        }
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        con_close(current->con, kill_mode);
     }
 
     cmd_output->needs_tree_render = true;
