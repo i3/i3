@@ -27,6 +27,13 @@
 #define DEFAULT_DIR_MODE (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
 /**
+ * XCB connection and root screen
+ *
+ */
+extern xcb_connection_t *conn;
+extern xcb_screen_t *root_screen;
+
+/**
  * Opaque data structure for storing strings.
  *
  */

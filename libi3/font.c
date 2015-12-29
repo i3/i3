@@ -19,9 +19,6 @@
 
 #include "libi3.h"
 
-extern xcb_connection_t *conn;
-extern xcb_screen_t *root_screen;
-
 static const i3Font *savedFont = NULL;
 
 #if PANGO_SUPPORT
