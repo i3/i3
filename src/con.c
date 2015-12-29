@@ -1040,13 +1040,13 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
             startup_sequence_delete(sequence);
     }
 
-    CALL(parent, on_remove_child);
-
     /* 9. If the container was marked urgent, move the urgency hint. */
     if (urgent) {
         workspace_update_urgent_flag(source_ws);
         con_set_urgency(con, true);
     }
+
+    CALL(parent, on_remove_child);
 
     ipc_send_window_event("move", con);
     return true;
