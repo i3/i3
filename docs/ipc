@@ -826,6 +826,8 @@ know):
 C::
 	* i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
 	* https://github.com/acrisci/i3ipc-glib
+C++::
+	* https://github.com/drmgc/i3ipcpp
 Go::
 	* https://github.com/proxypoke/i3ipc
 JavaScript::
