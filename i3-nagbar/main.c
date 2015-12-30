@@ -51,11 +51,11 @@ static button_t *buttons;
 static int buttoncnt;
 
 /* Result of get_colorpixel() for the various colors. */
-static uint32_t color_background;        /* background of the bar */
-static uint32_t color_button_background; /* background for buttons */
-static uint32_t color_border;            /* color of the button border */
-static uint32_t color_border_bottom;     /* color of the bottom border */
-static uint32_t color_text;              /* color of the text */
+static color_t color_background;        /* background of the bar */
+static color_t color_button_background; /* background for buttons */
+static color_t color_border;            /* color of the button border */
+static color_t color_border_bottom;     /* color of the bottom border */
+static color_t color_text;              /* color of the text */
 
 xcb_window_t root;
 xcb_connection_t *conn;
@@ -191,7 +191,7 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
  */
 static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     /* re-draw the background */
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_background});
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_background.colorpixel});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &rect);
 
     /* restore font color */
@@ -210,14 +210,14 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     w += logical_px(8);
     int y = rect.width;
     uint32_t values[3];
-    values[0] = color_button_background;
+    values[0] = color_button_background.colorpixel;
     values[1] = line_width;
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH, values);
 
     xcb_rectangle_t close = {y - w - (2 * line_width), 0, w + (2 * line_width), rect.height};
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &close);
 
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_border});
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_border.colorpixel});
     xcb_point_t points[] = {
         {y - w - (2 * line_width), line_width / 2},
         {y - (line_width / 2), line_width / 2},
@@ -245,11 +245,11 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         /* account for left/right padding, which seems to be set to 12px (total) below */
         w += logical_px(12);
         y -= logical_px(30);
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_button_background});
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_button_background.colorpixel});
         close = (xcb_rectangle_t){y - w - (2 * line_width), logical_px(2), w + (2 * line_width), rect.height - logical_px(6)};
         xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &close);
 
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_border});
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_border.colorpixel});
         buttons[c].x = y - w - (2 * line_width);
         buttons[c].width = w;
         xcb_point_t points2[] = {
@@ -260,8 +260,8 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
             {y - w - (2 * line_width), (line_width / 2) + logical_px(2)}};
         xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, pixmap, pixmap_gc, 5, points2);
 
-        values[0] = color_text;
-        values[1] = color_button_background;
+        values[0] = color_text.colorpixel;
+        values[1] = color_button_background.colorpixel;
         set_font_colors(pixmap_gc, color_text, color_button_background);
         /* the x term seems to set left/right padding */
         draw_text(buttons[c].label, pixmap, pixmap_gc, NULL,
@@ -274,7 +274,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 
     /* border line at the bottom */
     line_width = logical_px(2);
-    values[0] = color_border_bottom;
+    values[0] = color_border_bottom.colorpixel;
     values[1] = line_width;
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH, values);
     xcb_point_t bottom[] = {
@@ -448,18 +448,18 @@ int main(int argc, char *argv[]) {
 
     if (bar_type == TYPE_ERROR) {
         /* Red theme for error messages */
-        color_button_background = get_colorpixel("#680a0a");
-        color_background = get_colorpixel("#900000");
-        color_text = get_colorpixel("#ffffff");
-        color_border = get_colorpixel("#d92424");
-        color_border_bottom = get_colorpixel("#470909");
+        color_button_background = draw_util_hex_to_color("#680a0a");
+        color_background = draw_util_hex_to_color("#900000");
+        color_text = draw_util_hex_to_color("#ffffff");
+        color_border = draw_util_hex_to_color("#d92424");
+        color_border_bottom = draw_util_hex_to_color("#470909");
     } else {
         /* Yellowish theme for warnings */
-        color_button_background = get_colorpixel("#ffc100");
-        color_background = get_colorpixel("#ffa8000");
-        color_text = get_colorpixel("#000000");
-        color_border = get_colorpixel("#ab7100");
-        color_border_bottom = get_colorpixel("#ab7100");
+        color_button_background = draw_util_hex_to_color("#ffc100");
+        color_background = draw_util_hex_to_color("#ffa8000");
+        color_text = draw_util_hex_to_color("#000000");
+        color_border = draw_util_hex_to_color("#ab7100");
+        color_border_bottom = draw_util_hex_to_color("#ab7100");
     }
 
     font = load_font(pattern, true);

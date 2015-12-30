@@ -310,7 +310,7 @@ void free_font(void) {
  * Defines the colors to be used for the forthcoming draw_text calls.
  *
  */
-void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background) {
+void set_font_colors(xcb_gcontext_t gc, color_t foreground, color_t background) {
     assert(savedFont != NULL);
 
     switch (savedFont->type) {
@@ -320,16 +320,16 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
         case FONT_TYPE_XCB: {
             /* Change the font and colors in the GC */
             uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-            uint32_t values[] = {foreground, background, savedFont->specific.xcb.id};
+            uint32_t values[] = {foreground.colorpixel, background.colorpixel, savedFont->specific.xcb.id};
             xcb_change_gc(conn, gc, mask, values);
             break;
         }
 #if PANGO_SUPPORT
         case FONT_TYPE_PANGO:
             /* Save the foreground font */
-            pango_font_red = ((foreground >> 16) & 0xff) / 255.0;
-            pango_font_green = ((foreground >> 8) & 0xff) / 255.0;
-            pango_font_blue = (foreground & 0xff) / 255.0;
+            pango_font_red = foreground.red;
+            pango_font_green = foreground.green;
+            pango_font_blue = foreground.blue;
             break;
 #endif
         default:

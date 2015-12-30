@@ -479,7 +479,7 @@ static int handle_expose() {
 
     if (current_step == STEP_WELCOME) {
         /* restore font color */
-        set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
+        set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
 
         txt(logical_px(10), 2, "You have not configured i3 yet.");
         txt(logical_px(10), 3, "Do you want me to generate a config at");
@@ -493,16 +493,16 @@ static int handle_expose() {
         txt(logical_px(85), 8, "No, I will use the defaults");
 
         /* green */
-        set_font_colors(pixmap_gc, get_colorpixel("#00FF00"), get_colorpixel("#000000"));
+        set_font_colors(pixmap_gc, draw_util_hex_to_color("#00FF00"), draw_util_hex_to_color("#000000"));
         txt(logical_px(25), 6, "<Enter>");
 
         /* red */
-        set_font_colors(pixmap_gc, get_colorpixel("#FF0000"), get_colorpixel("#000000"));
+        set_font_colors(pixmap_gc, draw_util_hex_to_color("#FF0000"), draw_util_hex_to_color("#000000"));
         txt(logical_px(31), 8, "<ESC>");
     }
 
     if (current_step == STEP_GENERATE) {
-        set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
+        set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
 
         txt(logical_px(10), 2, "Please choose either:");
         txt(logical_px(85), 4, "Win as default modifier");
@@ -519,7 +519,7 @@ static int handle_expose() {
 
         /* the selected modifier */
         set_font(&bold_font);
-        set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
+        set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
         if (modifier == MOD_Mod4)
             txt(logical_px(10), 4, "-> <Win>");
         else
@@ -527,11 +527,11 @@ static int handle_expose() {
 
         /* green */
         set_font(&font);
-        set_font_colors(pixmap_gc, get_colorpixel("#00FF00"), get_colorpixel("#000000"));
+        set_font_colors(pixmap_gc, draw_util_hex_to_color("#00FF00"), draw_util_hex_to_color("#000000"));
         txt(logical_px(25), 9, "<Enter>");
 
         /* red */
-        set_font_colors(pixmap_gc, get_colorpixel("#FF0000"), get_colorpixel("#000000"));
+        set_font_colors(pixmap_gc, draw_util_hex_to_color("#FF0000"), draw_util_hex_to_color("#000000"));
         txt(logical_px(31), 10, "<ESC>");
     }
 

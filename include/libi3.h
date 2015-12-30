@@ -392,11 +392,24 @@ char *convert_ucs2_to_utf8(xcb_char2b_t *text, size_t num_glyphs);
  */
 xcb_char2b_t *convert_utf8_to_ucs2(char *input, size_t *real_strlen);
 
+/* Represents a color split by color channel. */
+typedef struct color_t {
+    double red;
+    double green;
+    double blue;
+    double alpha;
+
+    /* The colorpixel we use for direct XCB calls. */
+    uint32_t colorpixel;
+} color_t;
+
+#define COLOR_TRANSPARENT ((color_t){.red = 0.0, .green = 0.0, .blue = 0.0, .colorpixel = 0})
+
 /**
  * Defines the colors to be used for the forthcoming draw_text calls.
  *
  */
-void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background);
+void set_font_colors(xcb_gcontext_t gc, color_t foreground, color_t background);
 
 /**
  * Returns true if and only if the current font is a pango font.
@@ -500,19 +513,6 @@ int mkdirp(const char *path, mode_t mode);
         cairo_surface_flush(surface); \
     } while (0)
 #endif
-
-/* Represents a color split by color channel. */
-typedef struct color_t {
-    double red;
-    double green;
-    double blue;
-    double alpha;
-
-    /* The colorpixel we use for direct XCB calls. */
-    uint32_t colorpixel;
-} color_t;
-
-#define COLOR_TRANSPARENT ((color_t){.red = 0.0, .green = 0.0, .blue = 0.0, .colorpixel = 0})
 
 /* A wrapper grouping an XCB drawable and both a graphics context
  * and the corresponding cairo objects representing it. */
