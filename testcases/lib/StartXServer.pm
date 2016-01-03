@@ -5,19 +5,13 @@ use strict;
 use warnings;
 use Exporter 'import';
 use Time::HiRes qw(sleep);
+use i3test::Util qw(slurp);
 use v5.10;
 
 our @EXPORT = qw(start_xserver);
 
 my @pids;
 my $x_socketpath = '/tmp/.X11-unix/X';
-
-# reads in a whole file
-sub slurp {
-    open(my $fh, '<', shift) or return '';
-    local $/;
-    <$fh>;
-}
 
 # forks an X server process
 sub fork_xserver {
@@ -86,8 +80,11 @@ sub start_xserver {
 
     # Yeah, I know it’s non-standard, but Perl’s POSIX module doesn’t have
     # _SC_NPROCESSORS_CONF.
-    my $cpuinfo = slurp('/proc/cpuinfo');
-    my $num_cores = scalar grep { /model name/ } split("\n", $cpuinfo);
+    my $num_cores;
+    if (-e '/proc/cpuinfo') {
+        my $cpuinfo = slurp('/proc/cpuinfo');
+        $num_cores = scalar grep { /model name/ } split("\n", $cpuinfo);
+    }
     # If /proc/cpuinfo does not exist, we fall back to 2 cores.
     $num_cores ||= 2;
 
