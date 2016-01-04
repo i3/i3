@@ -131,6 +131,13 @@ void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);
 #endif
 
 /**
+ * Escapes the given string if a pango font is currently used.
+ * If the string has to be escaped, the input string will be free'd.
+ *
+ */
+char *pango_escape_markup(char *input);
+
+/**
  * Starts an i3-nagbar instance with the given parameters. Takes care of
  * handling SIGCHLD and killing i3-nagbar when i3 exits.
  *
