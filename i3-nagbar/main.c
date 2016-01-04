@@ -28,9 +28,14 @@
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_event.h>
 #include <xcb/randr.h>
+#include <xcb/xcb_cursor.h>
 
 #include "libi3.h"
 #include "i3-nagbar.h"
+
+/** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
+ * constant for that. */
+#define XCB_CURSOR_LEFT_PTR 68
 
 static char *argv0 = NULL;
 
@@ -467,6 +472,25 @@ int main(int argc, char *argv[]) {
 
     xcb_rectangle_t win_pos = get_window_position();
 
+    xcb_cursor_t cursor;
+    xcb_cursor_context_t *cursor_ctx;
+    if (xcb_cursor_context_new(conn, root_screen, &cursor_ctx) == 0) {
+        cursor = xcb_cursor_load_cursor(cursor_ctx, "left_ptr");
+        xcb_cursor_context_free(cursor_ctx);
+    } else {
+        cursor = xcb_generate_id(conn);
+        i3Font cursor_font = load_font("cursor", false);
+        xcb_create_glyph_cursor(
+            conn,
+            cursor,
+            cursor_font.specific.xcb.id,
+            cursor_font.specific.xcb.id,
+            XCB_CURSOR_LEFT_PTR,
+            XCB_CURSOR_LEFT_PTR + 1,
+            0, 0, 0,
+            65535, 65535, 65535);
+    }
+
     /* Open an input window */
     win = xcb_generate_id(conn);
 
@@ -479,13 +503,14 @@ int main(int argc, char *argv[]) {
         0,                                                   /* x11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
-        XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
+        XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK | XCB_CW_CURSOR,
         (uint32_t[]){
             0, /* back pixel: black */
             XCB_EVENT_MASK_EXPOSURE |
                 XCB_EVENT_MASK_STRUCTURE_NOTIFY |
                 XCB_EVENT_MASK_BUTTON_PRESS |
-                XCB_EVENT_MASK_BUTTON_RELEASE});
+                XCB_EVENT_MASK_BUTTON_RELEASE,
+            cursor});
 
     /* Map the window (make it visible) */
     xcb_map_window(conn, win);
