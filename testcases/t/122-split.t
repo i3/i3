@@ -178,4 +178,34 @@ is(@{$content}, 2, 'two containers on workspace');
 is(@{$fst->{nodes}}, 2, 'first child has two children');
 is(@{$snd->{nodes}}, 0, 'second child has no children');
 
+######################################################################
+# Test split toggle
+######################################################################
+
+$tmp = fresh_workspace;
+cmd 'split h';
+cmd 'split toggle';
+$ws = get_ws($tmp);
+is($ws->{layout}, 'splitv', 'toggled workspace split');
+
+$tmp = fresh_workspace;
+cmd 'split h';
+cmd 'split toggle';
+cmd 'split toggle';
+$ws = get_ws($tmp);
+is($ws->{layout}, 'splith', 'toggled workspace back and forth');
+
+cmd 'open';
+cmd 'open';
+cmd 'split toggle';
+
+$content = get_ws_content($tmp);
+my $second = $content->[1];
+is($second->{layout}, 'splitv', 'toggled container orientation to vertical');
+
+cmd 'split toggle';
+$content = get_ws_content($tmp);
+$second = $content->[1];
+is($second->{layout}, 'splith', 'toggled container orientation back to horizontal');
+
 done_testing;

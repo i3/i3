@@ -1228,7 +1228,7 @@ void cmd_move_workspace_to_output(I3_CMD, const char *name) {
 }
 
 /*
- * Implementation of 'split v|h|vertical|horizontal'.
+ * Implementation of 'split v|h|t|vertical|horizontal|toggle'.
  *
  */
 void cmd_split(I3_CMD, const char *direction) {
@@ -1243,7 +1243,22 @@ void cmd_split(I3_CMD, const char *direction) {
         }
 
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        tree_split(current->con, (direction[0] == 'v' ? VERT : HORIZ));
+        if (direction[0] == 't') {
+            layout_t current_layout;
+            if (current->con->type == CT_WORKSPACE) {
+                current_layout = current->con->layout;
+            } else {
+                current_layout = current->con->parent->layout;
+            }
+            /* toggling split orientation */
+            if (current_layout == L_SPLITH) {
+                tree_split(current->con, VERT);
+            } else {
+                tree_split(current->con, HORIZ);
+            }
+        } else {
+            tree_split(current->con, (direction[0] == 'v' ? VERT : HORIZ));
+        }
     }
 
     cmd_output->needs_tree_render = true;
