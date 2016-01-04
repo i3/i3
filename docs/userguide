@@ -1750,20 +1750,24 @@ get placed below the current one (splitv).
 
 If you apply this command to a split container with the same orientation,
 nothing will happen. If you use a different orientation, the split container’s
-orientation will be changed (if it does not have more than one window). Use
-+layout toggle split+ to change the layout of any split container from splitv
-to splith or vice-versa.
+orientation will be changed (if it does not have more than one window).
+The +toggle+ option will toggle the orientation of the split container if it
+contains a single window. Otherwise it makes the current window a split
+container with opposite orientation compared to the parent container.
+Use +layout toggle split+ to change the layout of any split container from
+splitv to splith or vice-versa.
 
 *Syntax*:
--------------------------
-split vertical|horizontal
--------------------------
+--------------------------------
+split vertical|horizontal|toggle
+--------------------------------
 
 *Example*:
-------------------------------
+-------------------------------
 bindsym $mod+v split vertical
 bindsym $mod+h split horizontal
-------------------------------
+bindsym $mod+t split toggle
+-------------------------------
 
 === Manipulating layout
 

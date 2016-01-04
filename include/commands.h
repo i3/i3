@@ -157,7 +157,7 @@ void cmd_floating(I3_CMD, const char *floating_mode);
 void cmd_move_workspace_to_output(I3_CMD, const char *name);
 
 /**
- * Implementation of 'split v|h|vertical|horizontal'.
+ * Implementation of 'split v|h|t|vertical|horizontal|toggle'.
  *
  */
 void cmd_split(I3_CMD, const char *direction);
