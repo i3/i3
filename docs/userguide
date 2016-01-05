@@ -2215,7 +2215,10 @@ https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup]
 and the following placeholders which will be replaced:
 
 +%title+::
-    The X11 window title (_NET_WM_NAME or WM_NAME as fallback).
+    For normal windows, this is the X11 window title (_NET_WM_NAME or WM_NAME
+    as fallback). When used on containers without a window (e.g., a split
+    container inside a tabbed/stacked layout), this will be the tree
+    representation of the container (e.g., "H[xterm xterm]").
 +%class+::
     The X11 window class (second part of WM_CLASS). This corresponds to the
     +class+ criterion, see <<command_criteria>>.

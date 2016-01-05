@@ -15,7 +15,7 @@
 #undef MIN
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
-#define STARTS_WITH(string, len, needle) ((len >= strlen(needle)) && strncasecmp(string, needle, strlen(needle)) == 0)
+#define STARTS_WITH(string, len, needle) (((len) >= strlen((needle))) && strncasecmp((string), (needle), strlen((needle))) == 0)
 
 /* Securely free p */
 #define FREE(p)          \

@@ -372,6 +372,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     else
         y(null);
 
+    if (con->title_format != NULL) {
+        ystr("title_format");
+        ystr(con->title_format);
+    }
+
     if (con->type == CT_WORKSPACE) {
         ystr("num");
         y(integer, con->num);

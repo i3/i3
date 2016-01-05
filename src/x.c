@@ -531,20 +531,23 @@ void x_draw_decoration(Con *con) {
 
     struct Window *win = con->window;
     if (win == NULL) {
-        /* we have a split container which gets a representation
-         * of its children as title
-         */
-        char *_title;
-        char *tree = con_get_tree_representation(con);
-        sasprintf(&_title, "i3: %s", tree);
-        free(tree);
+        i3String *title;
+        if (con->title_format == NULL) {
+            char *_title;
+            char *tree = con_get_tree_representation(con);
+            sasprintf(&_title, "i3: %s", tree);
+            free(tree);
 
-        i3String *title = i3string_from_utf8(_title);
+            title = i3string_from_utf8(_title);
+            FREE(_title);
+        } else {
+            title = con_parse_title_format(con);
+        }
+
         draw_util_text(title, &(parent->frame_buffer),
                        p->color->text, p->color->background,
                        con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
                        con->deco_rect.width - 2);
-        FREE(_title);
         I3STRING_FREE(title);
 
         goto after_title;
@@ -602,12 +605,12 @@ void x_draw_decoration(Con *con) {
         FREE(formatted_mark);
     }
 
-    i3String *title = win->title_format == NULL ? win->name : window_parse_title_format(win);
+    i3String *title = con->title_format == NULL ? win->name : con_parse_title_format(con);
     draw_util_text(title, &(parent->frame_buffer),
                    p->color->text, p->color->background,
                    con->deco_rect.x + logical_px(2) + indent_px, con->deco_rect.y + text_offset_y,
                    con->deco_rect.width - logical_px(2) - indent_px - mark_width - logical_px(2));
-    if (win->title_format != NULL)
+    if (con->title_format != NULL)
         I3STRING_FREE(title);
 
 after_title:

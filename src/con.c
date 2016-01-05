@@ -2000,3 +2000,47 @@ char *con_get_tree_representation(Con *con) {
 
     return complete_buf;
 }
+
+/*
+ * Returns the container's title considering the current title format.
+ *
+ */
+i3String *con_parse_title_format(Con *con) {
+    assert(con->title_format != NULL);
+
+    i3Window *win = con->window;
+
+    /* We need to ensure that we only escape the window title if pango
+     * is used by the current font. */
+    const bool pango_markup = font_is_pango();
+
+    char *title;
+    char *class;
+    char *instance;
+    if (win == NULL) {
+        title = pango_escape_markup(con_get_tree_representation(con));
+        class = sstrdup("i3-frame");
+        instance = sstrdup("i3-frame");
+    } else {
+        title = pango_escape_markup(sstrdup((win->name == NULL) ? "" : i3string_as_utf8(win->name)));
+        class = pango_escape_markup(sstrdup((win->class_class == NULL) ? "" : win->class_class));
+        instance = pango_escape_markup(sstrdup((win->class_instance == NULL) ? "" : win->class_instance));
+    }
+
+    placeholder_t placeholders[] = {
+        {.name = "%title", .value = title},
+        {.name = "%class", .value = class},
+        {.name = "%instance", .value = instance}};
+    const size_t num = sizeof(placeholders) / sizeof(placeholder_t);
+
+    char *formatted_str = format_placeholders(con->title_format, &placeholders[0], num);
+    i3String *formatted = i3string_from_utf8(formatted_str);
+    i3string_set_markup(formatted, pango_markup);
+    FREE(formatted_str);
+
+    for (size_t i = 0; i < num; i++) {
+        FREE(placeholders[i].value);
+    }
+
+    return formatted;
+}

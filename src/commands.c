@@ -1926,27 +1926,33 @@ void cmd_title_format(I3_CMD, const char *format) {
 
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
-        if (current->con->window == NULL)
-            continue;
-
         DLOG("setting title_format for %p / %s\n", current->con, current->con->name);
-        FREE(current->con->window->title_format);
+        FREE(current->con->title_format);
 
         /* If we only display the title without anything else, we can skip the parsing step,
          * so we remove the title format altogether. */
         if (strcasecmp(format, "%title") != 0) {
-            current->con->window->title_format = sstrdup(format);
+            current->con->title_format = sstrdup(format);
 
-            i3String *formatted_title = window_parse_title_format(current->con->window);
-            ewmh_update_visible_name(current->con->window->id, i3string_as_utf8(formatted_title));
-            I3STRING_FREE(formatted_title);
+            if (current->con->window != NULL) {
+                i3String *formatted_title = con_parse_title_format(current->con);
+                ewmh_update_visible_name(current->con->window->id, i3string_as_utf8(formatted_title));
+                I3STRING_FREE(formatted_title);
+            }
         } else {
-            /* We can remove _NET_WM_VISIBLE_NAME since we don't display a custom title. */
-            ewmh_update_visible_name(current->con->window->id, NULL);
+            if (current->con->window != NULL) {
+                /* We can remove _NET_WM_VISIBLE_NAME since we don't display a custom title. */
+                ewmh_update_visible_name(current->con->window->id, NULL);
+            }
         }
 
-        /* Make sure the window title is redrawn immediately. */
-        current->con->window->name_x_changed = true;
+        if (current->con->window != NULL) {
+            /* Make sure the window title is redrawn immediately. */
+            current->con->window->name_x_changed = true;
+        } else {
+            /* For windowless containers we also need to force the redrawing. */
+            FREE(current->con->deco_render_params);
+        }
     }
 
     cmd_output->needs_tree_render = true;

@@ -264,6 +264,9 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         if (strcasecmp(last_key, "name") == 0) {
             json_node->name = scalloc(len + 1, 1);
             memcpy(json_node->name, val, len);
+        } else if (strcasecmp(last_key, "title_format") == 0) {
+            json_node->title_format = scalloc(len + 1, 1);
+            memcpy(json_node->title_format, val, len);
         } else if (strcasecmp(last_key, "sticky_group") == 0) {
             json_node->sticky_group = scalloc(len + 1, 1);
             memcpy(json_node->sticky_group, val, len);

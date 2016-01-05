@@ -376,8 +376,6 @@ struct Window {
 
     /** The name of the window. */
     i3String *name;
-    /** The format with which the window's name should be displayed. */
-    char *title_format;
 
     /** The WM_WINDOW_ROLE of this window (for example, the pidgin buddy window
      * sets "buddy list"). Useful to match specific windows in assignments or
@@ -587,6 +585,9 @@ struct Con {
     struct Rect geometry;
 
     char *name;
+
+    /** The format with which the window's name should be displayed. */
+    char *title_format;
 
     /* a sticky-group is an identifier which bundles several containers to a
      * group. The contents are shared between all of them, that is they are

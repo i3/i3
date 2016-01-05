@@ -67,8 +67,9 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
                                                xcb_get_property_value_length(prop));
 
-    if (win->title_format != NULL) {
-        i3String *name = window_parse_title_format(win);
+    Con *con = con_by_window_id(win->id);
+    if (con != NULL && con->title_format != NULL) {
+        i3String *name = con_parse_title_format(con);
         ewmh_update_visible_name(win->id, i3string_as_utf8(name));
         I3STRING_FREE(name);
     }
@@ -110,8 +111,10 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
     i3string_free(win->name);
     win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
                                                xcb_get_property_value_length(prop));
-    if (win->title_format != NULL) {
-        i3String *name = window_parse_title_format(win);
+
+    Con *con = con_by_window_id(win->id);
+    if (con != NULL && con->title_format != NULL) {
+        i3String *name = con_parse_title_format(con);
         ewmh_update_visible_name(win->id, i3string_as_utf8(name));
         I3STRING_FREE(name);
     }
@@ -339,78 +342,4 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
 #undef MWM_DECOR_ALL
 #undef MWM_DECOR_BORDER
 #undef MWM_DECOR_TITLE
-}
-
-/*
- * Returns the window title considering the current title format.
- * If no format is set, this will simply return the window's name.
- *
- */
-i3String *window_parse_title_format(i3Window *win) {
-    char *format = win->title_format;
-    if (format == NULL)
-        return i3string_copy(win->name);
-
-    /* We initialize these lazily so we only escape them if really necessary. */
-    char *escaped_title = NULL;
-    char *escaped_class = NULL;
-    char *escaped_instance = NULL;
-
-    /* We have to first iterate over the string to see how much buffer space
-     * we need to allocate. */
-    int buffer_len = strlen(format) + 1;
-    for (char *walk = format; *walk != '\0'; walk++) {
-        if (STARTS_WITH(walk, "%title")) {
-            if (escaped_title == NULL)
-                escaped_title = pango_escape_markup(sstrdup((win->name == NULL) ? "" : i3string_as_utf8(win->name)));
-
-            buffer_len = buffer_len - strlen("%title") + strlen(escaped_title);
-            walk += strlen("%title") - 1;
-        } else if (STARTS_WITH(walk, "%class")) {
-            if (escaped_class == NULL)
-                escaped_class = pango_escape_markup(sstrdup((win->class_class == NULL) ? "" : win->class_class));
-
-            buffer_len = buffer_len - strlen("%class") + strlen(escaped_class);
-            walk += strlen("%class") - 1;
-        } else if (STARTS_WITH(walk, "%instance")) {
-            if (escaped_instance == NULL)
-                escaped_instance = pango_escape_markup(sstrdup((win->class_instance == NULL) ? "" : win->class_instance));
-
-            buffer_len = buffer_len - strlen("%instance") + strlen(escaped_instance);
-            walk += strlen("%instance") - 1;
-        }
-    }
-
-    /* Now we can parse the format string. */
-    char buffer[buffer_len];
-    char *outwalk = buffer;
-    for (char *walk = format; *walk != '\0'; walk++) {
-        if (*walk != '%') {
-            *(outwalk++) = *walk;
-            continue;
-        }
-
-        if (STARTS_WITH(walk + 1, "title")) {
-            outwalk += sprintf(outwalk, "%s", escaped_title);
-            walk += strlen("title");
-        } else if (STARTS_WITH(walk + 1, "class")) {
-            outwalk += sprintf(outwalk, "%s", escaped_class);
-            walk += strlen("class");
-        } else if (STARTS_WITH(walk + 1, "instance")) {
-            outwalk += sprintf(outwalk, "%s", escaped_instance);
-            walk += strlen("instance");
-        } else {
-            *(outwalk++) = *walk;
-        }
-    }
-    *outwalk = '\0';
-
-    i3String *formatted = i3string_from_utf8(buffer);
-    i3string_set_markup(formatted, font_is_pango());
-
-    FREE(escaped_title);
-    FREE(escaped_class);
-    FREE(escaped_instance);
-
-    return formatted;
 }
