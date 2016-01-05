@@ -333,6 +333,20 @@ void *memmem(const void *l, size_t l_len, const void *s, size_t s_len) {
 #endif
 
 /*
+ * Escapes the given string if a pango font is currently used.
+ * If the string has to be escaped, the input string will be free'd.
+ *
+ */
+char *pango_escape_markup(char *input) {
+    if (!font_is_pango())
+        return input;
+
+    char *escaped = g_markup_escape_text(input, -1);
+    FREE(input);
+    return escaped;
+}
+
+/*
  * Handler which will be called when we get a SIGCHLD for the nagbar, meaning
  * it exited (or could not be started, depending on the exit code).
  *

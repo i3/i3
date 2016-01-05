@@ -66,8 +66,12 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     i3string_free(win->name);
     win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
                                                xcb_get_property_value_length(prop));
-    if (win->title_format != NULL)
-        ewmh_update_visible_name(win->id, i3string_as_utf8(window_parse_title_format(win)));
+
+    if (win->title_format != NULL) {
+        i3String *name = window_parse_title_format(win);
+        ewmh_update_visible_name(win->id, i3string_as_utf8(name));
+        I3STRING_FREE(name);
+    }
     win->name_x_changed = true;
     LOG("_NET_WM_NAME changed to \"%s\"\n", i3string_as_utf8(win->name));
 
@@ -106,8 +110,11 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
     i3string_free(win->name);
     win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
                                                xcb_get_property_value_length(prop));
-    if (win->title_format != NULL)
-        ewmh_update_visible_name(win->id, i3string_as_utf8(window_parse_title_format(win)));
+    if (win->title_format != NULL) {
+        i3String *name = window_parse_title_format(win);
+        ewmh_update_visible_name(win->id, i3string_as_utf8(name));
+        I3STRING_FREE(name);
+    }
 
     LOG("WM_NAME changed to \"%s\"\n", i3string_as_utf8(win->name));
     LOG("Using legacy window title. Note that in order to get Unicode window "
@@ -340,18 +347,14 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
  *
  */
 i3String *window_parse_title_format(i3Window *win) {
-    /* We need to ensure that we only escape the window title if pango
-     * is used by the current font. */
-    const bool pango_markup = font_is_pango();
-
     char *format = win->title_format;
     if (format == NULL)
         return i3string_copy(win->name);
 
     /* We initialize these lazily so we only escape them if really necessary. */
-    const char *escaped_title = NULL;
-    const char *escaped_class = NULL;
-    const char *escaped_instance = NULL;
+    char *escaped_title = NULL;
+    char *escaped_class = NULL;
+    char *escaped_instance = NULL;
 
     /* We have to first iterate over the string to see how much buffer space
      * we need to allocate. */
@@ -359,19 +362,19 @@ i3String *window_parse_title_format(i3Window *win) {
     for (char *walk = format; *walk != '\0'; walk++) {
         if (STARTS_WITH(walk, "%title")) {
             if (escaped_title == NULL)
-                escaped_title = win->name == NULL ? "" : i3string_as_utf8(pango_markup ? i3string_escape_markup(win->name) : win->name);
+                escaped_title = pango_escape_markup(sstrdup((win->name == NULL) ? "" : i3string_as_utf8(win->name)));
 
             buffer_len = buffer_len - strlen("%title") + strlen(escaped_title);
             walk += strlen("%title") - 1;
         } else if (STARTS_WITH(walk, "%class")) {
             if (escaped_class == NULL)
-                escaped_class = pango_markup ? g_markup_escape_text(win->class_class, -1) : win->class_class;
+                escaped_class = pango_escape_markup(sstrdup((win->class_class == NULL) ? "" : win->class_class));
 
             buffer_len = buffer_len - strlen("%class") + strlen(escaped_class);
             walk += strlen("%class") - 1;
         } else if (STARTS_WITH(walk, "%instance")) {
             if (escaped_instance == NULL)
-                escaped_instance = pango_markup ? g_markup_escape_text(win->class_instance, -1) : win->class_instance;
+                escaped_instance = pango_escape_markup(sstrdup((win->class_instance == NULL) ? "" : win->class_instance));
 
             buffer_len = buffer_len - strlen("%instance") + strlen(escaped_instance);
             walk += strlen("%instance") - 1;
@@ -403,6 +406,11 @@ i3String *window_parse_title_format(i3Window *win) {
     *outwalk = '\0';
 
     i3String *formatted = i3string_from_utf8(buffer);
-    i3string_set_markup(formatted, pango_markup);
+    i3string_set_markup(formatted, font_is_pango());
+
+    FREE(escaped_title);
+    FREE(escaped_class);
+    FREE(escaped_instance);
+
     return formatted;
 }
