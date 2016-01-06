@@ -13,6 +13,7 @@ use Time::HiRes qw(sleep);
 use Cwd qw(abs_path);
 use Scalar::Util qw(blessed);
 use SocketActivation;
+use i3test::Util qw(slurp);
 
 use v5.10;
 
@@ -39,6 +40,7 @@ our @EXPORT = qw(
     focused_ws
     get_socket_path
     launch_with_config
+    get_i3_log
     wait_for_event
     wait_for_map
     wait_for_unmap
@@ -827,6 +829,7 @@ sub launch_with_config {
     $tmp_socket_path = "/tmp/nested-$ENV{DISPLAY}";
 
     $args{dont_create_temp_dir} //= 0;
+    $args{validate_config} //= 0;
 
     my ($fh, $tmpfile) = tempfile("i3-cfg-for-$ENV{TESTNAME}-XXXXX", UNLINK => 1);
 
@@ -857,7 +860,20 @@ sub launch_with_config {
         restart => $ENV{RESTART},
         cv => $cv,
         dont_create_temp_dir => $args{dont_create_temp_dir},
+        validate_config => $args{validate_config},
     );
+
+    # If we called i3 with -C, we wait for it to exit and then return as
+    # there's nothing else we need to do.
+    if ($args{validate_config}) {
+        $cv->recv;
+        waitpid $i3_pid, 0;
+
+        # We need this since exit_gracefully will not be called in this case.
+        undef $i3_pid;
+
+        return ${^CHILD_ERROR_NATIVE};
+    }
 
     # force update of the cached socket path in lib/i3test
     # as soon as i3 has started
@@ -869,6 +885,16 @@ sub launch_with_config {
     $cv->recv;
 
     return $i3_pid;
+}
+
+=head2 get_i3_log
+
+Returns the content of the log file for the current test.
+
+=cut
+sub get_i3_log {
+    my $logfile = "$ENV{OUTDIR}/i3-log-for-$ENV{TESTNAME}";
+    return slurp($logfile);
 }
 
 =head1 AUTHOR

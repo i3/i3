@@ -30,6 +30,7 @@ BEGIN {
 
 # these are shipped with the testsuite
 use lib $dirname . 'lib';
+use i3test::Util qw(slurp);
 use StartXServer;
 use StatusLine;
 use TestWorker;
@@ -156,7 +157,7 @@ for my $display (@displays) {
 
 # Read previous timing information, if available. We will be able to roughly
 # predict the test duration and schedule a good order for the tests.
-my $timingsjson = StartXServer::slurp('.last_run_timings.json');
+my $timingsjson = slurp('.last_run_timings.json') if -e '.last_run_timings.json';
 %timings = %{decode_json($timingsjson)} if length($timingsjson) > 0;
 
 # Re-order the files so that those which took the longest time in the previous
@@ -245,7 +246,7 @@ printf("\t%s with %.2f seconds\n", $_, $timings{$_})
 if ($numtests == 1) {
     say '';
     say 'Test output:';
-    say StartXServer::slurp($logfile);
+    say slurp($logfile);
 }
 
 END { cleanup() }

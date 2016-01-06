@@ -96,8 +96,13 @@ sub activate_i3 {
         # the interactive signalhandler to make it crash immediately instead.
         # Also disable logging to SHM since we redirect the logs anyways.
         # Force Xinerama because we use Xdmx for multi-monitor tests.
-        my $i3cmd = abs_path("../i3") . q| -V -d all --disable-signalhandler| .
-                                        q| --shmlog-size=0 --force-xinerama|;
+        my $i3cmd = abs_path("../i3") . q| --shmlog-size=0 --disable-signalhandler --force-xinerama|;
+        if (!$args{validate_config}) {
+            # We only set logging if i3 is actually started, but not if we only
+            # validate the config file. This is to keep logging to a minimum as
+            # such a test will likely want to inspect the log file.
+            $i3cmd .= q| -V -d all|;
+        }
 
         # For convenience:
         my $outdir = $args{outdir};
@@ -105,6 +110,10 @@ sub activate_i3 {
 
         if ($args{restart}) {
             $i3cmd .= ' -L ' . abs_path('restart-state.golden');
+        }
+
+        if ($args{validate_config}) {
+            $i3cmd .= ' -C';
         }
 
         if ($args{valgrind}) {
@@ -148,6 +157,11 @@ sub activate_i3 {
     # close the socket, the child process should be the only one which keeps a file
     # descriptor on the listening socket.
     $socket->close;
+
+    if ($args{validate_config}) {
+        $args{cv}->send(1);
+        return $pid;
+    }
 
     # We now connect (will succeed immediately) and send a request afterwards.
     # As soon as the reply is there, i3 is considered ready.
