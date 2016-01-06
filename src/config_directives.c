@@ -347,6 +347,8 @@ CFGFUN(color, const char *colorclass, const char *border, const char *background
             }                                                                                          \
             if (decoration_border != NULL) {                                                           \
                 config.client.classname.decoration_border = draw_util_hex_to_color(decoration_border); \
+            } else {                                                                                   \
+                config.client.classname.decoration_border = config.client.classname.background;        \
             }                                                                                          \
         }                                                                                              \
     } while (0)
