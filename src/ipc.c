@@ -71,6 +71,9 @@ void ipc_shutdown(void) {
         current = TAILQ_FIRST(&all_clients);
         shutdown(current->fd, SHUT_RDWR);
         close(current->fd);
+        for (int i = 0; i < current->num_events; i++)
+            free(current->events[i]);
+        free(current->events);
         TAILQ_REMOVE(&all_clients, current, clients);
         free(current);
     }
