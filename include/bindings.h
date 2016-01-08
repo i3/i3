@@ -15,7 +15,7 @@ extern pid_t command_error_nagbar_pid;
  * The name of the default mode.
  *
  */
-const char *DEFAULT_BINDING_MODE;
+extern const char *DEFAULT_BINDING_MODE;
 
 /**
  * Adds a binding from config parameters given as strings and returns a
