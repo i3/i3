@@ -1082,6 +1082,7 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
 
             for (int i = 0; i < current->num_events; i++)
                 free(current->events[i]);
+            free(current->events);
             /* We can call TAILQ_REMOVE because we break out of the
              * TAILQ_FOREACH afterwards */
             TAILQ_REMOVE(&all_clients, current, clients);
