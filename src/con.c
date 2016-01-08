@@ -608,7 +608,8 @@ void con_mark(Con *con, const char *mark, mark_mode_t mode) {
         DLOG("Removing all existing marks on con = %p.\n", con);
 
         mark_t *current;
-        TAILQ_FOREACH(current, &(con->marks_head), marks) {
+        while (!TAILQ_EMPTY(&(con->marks_head))) {
+            current = TAILQ_FIRST(&(con->marks_head));
             con_unmark(con, current->name);
         }
     }
