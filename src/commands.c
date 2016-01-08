@@ -2001,6 +2001,8 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
     }
 
     /* Change the name and try to parse it as a number. */
+    /* old_name might refer to workspace->name, so copy it before free()ing */
+    char *old_name_copy = sstrdup(old_name);
     FREE(workspace->name);
     workspace->name = sstrdup(new_name);
 
@@ -2041,7 +2043,8 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
     ewmh_update_desktop_viewport();
     ewmh_update_current_desktop();
 
-    startup_sequence_rename_workspace(old_name, new_name);
+    startup_sequence_rename_workspace(old_name_copy, new_name);
+    free(old_name_copy);
 }
 
 /*
