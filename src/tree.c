@@ -328,6 +328,12 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
     free(con->name);
     FREE(con->deco_render_params);
     TAILQ_REMOVE(&all_cons, con, all_cons);
+    while (!TAILQ_EMPTY(&(con->swallow_head))) {
+        Match *match = TAILQ_FIRST(&(con->swallow_head));
+        TAILQ_REMOVE(&(con->swallow_head), match, matches);
+        match_free(match);
+        free(match);
+    }
     free(con);
 
     /* in the case of floating windows, we already focused another container
