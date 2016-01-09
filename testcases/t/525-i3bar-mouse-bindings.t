@@ -54,13 +54,22 @@ $i3->subscribe({
             if ($event->{change} eq 'focus') {
                 $cv->send($event->{container});
             }
+            if ($event->{change} eq 'new') {
+                if (defined($event->{container}->{window_properties}->{class}) &&
+                    $event->{container}->{window_properties}->{class} eq 'i3bar') {
+                    $cv->send($event->{container});
+                }
+            }
         },
     })->recv;
+
+my $con = $cv->recv;
+ok($con, 'i3bar appeared');
 
 my $left = open_window;
 my $right = open_window;
 sync_with_i3;
-my $con = $cv->recv;
+$con = $cv->recv;
 is($con->{window}, $right->{id}, 'focus is initially on the right container');
 reset_test;
 
