@@ -98,7 +98,11 @@ void restore_connect(void) {
             free(state);
         }
 
-        free(restore_conn);
+        /* xcb_disconnect leaks memory in libxcb versions earlier than 1.11,
+         * but it’s the right function to call. See
+         * http://cgit.freedesktop.org/xcb/libxcb/commit/src/xcb_conn.c?id=4dcbfd77b
+         */
+        xcb_disconnect(restore_conn);
         free(xcb_watcher);
         free(xcb_check);
         free(xcb_prepare);
@@ -106,8 +110,12 @@ void restore_connect(void) {
 
     int screen;
     restore_conn = xcb_connect(NULL, &screen);
-    if (restore_conn == NULL || xcb_connection_has_error(restore_conn))
+    if (restore_conn == NULL || xcb_connection_has_error(restore_conn)) {
+        if (restore_conn != NULL) {
+            xcb_disconnect(restore_conn);
+        }
         errx(EXIT_FAILURE, "Cannot open display\n");
+    }
 
     xcb_watcher = scalloc(1, sizeof(struct ev_io));
     xcb_check = scalloc(1, sizeof(struct ev_check));
