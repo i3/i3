@@ -126,6 +126,10 @@ XKB_COMMON_LIBS := $(call ldflags_for_lib, xkbcommon,xkbcommon)
 XKB_COMMON_X11_CFLAGS := $(call cflags_for_lib, xkbcommon-x11,xkbcommon-x11)
 XKB_COMMON_X11_LIBS := $(call ldflags_for_lib, xkbcommon-x11,xkbcommon-x11)
 
+# XCB xrm
+XCB_XRM_CFLAGS := $(call cflags_for_lib, xcb-xrm)
+XCB_XRM_LIBS   := $(call ldflags_for_lib, xcb-xrm,xcb-xrm)
+
 # yajl
 YAJL_CFLAGS := $(call cflags_for_lib, yajl)
 YAJL_LIBS   := $(call ldflags_for_lib, yajl,yajl)

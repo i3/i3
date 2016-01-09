@@ -11,6 +11,7 @@
 
 #include <yajl/yajl_gen.h>
 
+SLIST_HEAD(variables_head, Variable);
 extern pid_t config_error_nagbar_pid;
 
 /*

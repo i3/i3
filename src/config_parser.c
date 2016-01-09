@@ -35,12 +35,15 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <xcb/xcb_xrm.h>
 
 #include "all.h"
 
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) yajl_gen_##x(command_output.json_gen, ##__VA_ARGS__)
 #define ystr(str) yajl_gen_string(command_output.json_gen, (unsigned char *)str, strlen(str))
+
+xcb_xrm_database_t *database = NULL;
 
 #ifndef TEST_PARSER
 pid_t config_error_nagbar_pid = -1;
@@ -812,17 +815,79 @@ void start_config_error_nagbar(const char *configpath, bool has_errors) {
 }
 
 /*
+ * Inserts or updates a variable assignment depending on whether it already exists.
+ *
+ */
+static void upsert_variable(struct variables_head *variables, char *key, char *value) {
+    struct Variable *current;
+    SLIST_FOREACH(current, variables, variables) {
+        if (strcmp(current->key, key) != 0) {
+            continue;
+        }
+
+        DLOG("Updated variable: %s = %s -> %s\n", key, current->value, value);
+        FREE(current->value);
+        current->value = sstrdup(value);
+        return;
+    }
+
+    DLOG("Defined new variable: %s = %s\n", key, value);
+    struct Variable *new = scalloc(1, sizeof(struct Variable));
+    struct Variable *test = NULL, *loc = NULL;
+    new->key = sstrdup(key);
+    new->value = sstrdup(value);
+    /* ensure that the correct variable is matched in case of one being
+     * the prefix of another */
+    SLIST_FOREACH(test, variables, variables) {
+        if (strlen(new->key) >= strlen(test->key))
+            break;
+        loc = test;
+    }
+
+    if (loc == NULL) {
+        SLIST_INSERT_HEAD(variables, new, variables);
+    } else {
+        SLIST_INSERT_AFTER(loc, new, variables);
+    }
+}
+
+static char *get_resource(char *name) {
+    if (conn == NULL) {
+        return NULL;
+    }
+
+    /* Load the resource database lazily. */
+    if (database == NULL) {
+        database = xcb_xrm_database_from_default(conn);
+
+        if (database == NULL) {
+            ELOG("Failed to open the resource database.\n");
+
+            /* Load an empty database so we don't keep trying to load the
+             * default database over and over again. */
+            database = xcb_xrm_database_from_string("");
+
+            return NULL;
+        }
+    }
+
+    char *resource;
+    xcb_xrm_resource_get_string(database, name, NULL, &resource);
+    return resource;
+}
+
+/*
  * Parses the given file by first replacing the variables, then calling
  * parse_config and possibly launching i3-nagbar.
  *
  */
 bool parse_file(const char *f, bool use_nagbar) {
-    SLIST_HEAD(variables_head, Variable) variables = SLIST_HEAD_INITIALIZER(&variables);
+    struct variables_head variables = SLIST_HEAD_INITIALIZER(&variables);
     int fd;
     struct stat stbuf;
     char *buf;
     FILE *fstr;
-    char buffer[4096], key[512], value[512], *continuation = NULL;
+    char buffer[4096], key[512], value[4096], *continuation = NULL;
 
     if ((fd = open(f, O_RDONLY)) == -1)
         die("Could not open configuration file: %s\n", strerror(errno));
@@ -848,8 +913,9 @@ bool parse_file(const char *f, bool use_nagbar) {
         }
 
         /* sscanf implicitly strips whitespace. */
-        const bool skip_line = (sscanf(buffer, "%511s %511[^\n]", key, value) < 1 || strlen(key) < 3);
+        const bool skip_line = (sscanf(buffer, "%511s %4095[^\n]", key, value) < 1 || strlen(key) < 3);
         const bool comment = (key[0] == '#');
+        value[4095] = '\n';
 
         continuation = strstr(buffer, "\\\n");
         if (continuation) {
@@ -868,48 +934,54 @@ bool parse_file(const char *f, bool use_nagbar) {
         }
 
         if (strcasecmp(key, "set") == 0) {
-            if (value[0] != '$') {
+            char v_key[512];
+            char v_value[4096];
+
+            if (sscanf(value, "%511s %4095[^\n]", v_key, v_value) < 1) {
+                ELOG("Failed to parse variable specification '%s', skipping it.\n", value);
+                continue;
+            }
+
+            if (v_key[0] != '$') {
                 ELOG("Malformed variable assignment, name has to start with $\n");
                 continue;
             }
 
-            /* get key/value for this variable */
-            char *v_key = value, *v_value;
-            if (strstr(value, " ") == NULL && strstr(value, "\t") == NULL) {
-                ELOG("Malformed variable assignment, need a value\n");
+            upsert_variable(&variables, v_key, v_value);
+            continue;
+        } else if (strcasecmp(key, "set_from_resource") == 0) {
+            char res_name[512];
+            char v_key[512];
+            char fallback[4096];
+
+            if (sscanf(value, "%511s %511s %4095[^\n]", v_key, res_name, fallback) < 1) {
+                ELOG("Failed to parse resource specification '%s', skipping it.\n", value);
                 continue;
             }
 
-            if (!(v_value = strstr(value, " ")))
-                v_value = strstr(value, "\t");
-
-            *(v_value++) = '\0';
-            while (*v_value == '\t' || *v_value == ' ')
-                v_value++;
-
-            struct Variable *new = scalloc(1, sizeof(struct Variable));
-            struct Variable *test = NULL, *loc = NULL;
-            new->key = sstrdup(v_key);
-            new->value = sstrdup(v_value);
-            /* ensure that the correct variable is matched in case of one being
-             * the prefix of another */
-            SLIST_FOREACH(test, &variables, variables) {
-                if (strlen(new->key) >= strlen(test->key))
-                    break;
-                loc = test;
+            if (v_key[0] != '$') {
+                ELOG("Malformed variable assignment, name has to start with $\n");
+                continue;
             }
 
-            if (loc == NULL) {
-                SLIST_INSERT_HEAD(&variables, new, variables);
-            } else {
-                SLIST_INSERT_AFTER(loc, new, variables);
+            char *res_value = get_resource(res_name);
+            if (res_value == NULL) {
+                DLOG("Could not get resource '%s', using fallback '%s'.\n", res_name, fallback);
+                res_value = sstrdup(fallback);
             }
 
-            DLOG("Got new variable %s = %s\n", v_key, v_value);
+            upsert_variable(&variables, v_key, res_value);
+            FREE(res_value);
             continue;
         }
     }
     fclose(fstr);
+
+    if (database != NULL) {
+        xcb_xrm_database_free(database);
+        /* Explicitly set the database to NULL again in case the config gets reloaded. */
+        database = NULL;
+    }
 
     /* For every custom variable, see how often it occurs in the file and
      * how much extra bytes it requires when replaced. */
