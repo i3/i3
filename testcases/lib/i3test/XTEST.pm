@@ -59,6 +59,9 @@ bool inlinec_connect() {
 
     if ((conn = xcb_connect(NULL, &screen)) == NULL ||
         xcb_connection_has_error(conn)) {
+        if (conn != NULL) {
+            xcb_disconnect(conn);
+        }
         fprintf(stderr, "Could not connect to X11\n");
         return false;
     }
@@ -79,6 +82,7 @@ bool inlinec_connect() {
         conn, xcb_xkb_use_extension(conn, XCB_XKB_MAJOR_VERSION, XCB_XKB_MINOR_VERSION), &err);
     if (err != NULL || usereply == NULL) {
         fprintf(stderr, "xcb_xkb_use_extension() failed\n");
+        free(err);
         return false;
     }
     free(usereply);
@@ -104,6 +108,7 @@ bool set_xkb_group(int group) {
         0);                      /* groupLatch */
     if ((err = xcb_request_check(conn, cookie)) != NULL) {
         fprintf(stderr, "X error code %d\n", err->error_code);
+        free(err);
         return false;
     }
     return true;
@@ -124,6 +129,7 @@ bool xtest_input(int type, int detail, int x, int y) {
         XCB_NONE);        /* deviceid */
     if ((err = xcb_request_check(conn, cookie)) != NULL) {
         fprintf(stderr, "X error code %d\n", err->error_code);
+        free(err);
         return false;
     }
 
