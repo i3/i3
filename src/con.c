@@ -1992,6 +1992,7 @@ char *con_get_tree_representation(Con *con) {
                   (TAILQ_FIRST(&(con->nodes_head)) == child ? "" : " "), child_txt);
         free(buf);
         buf = tmp_buf;
+        free(child_txt);
     }
 
     /* 3) close the brackets */
