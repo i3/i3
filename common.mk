@@ -1,5 +1,6 @@
 UNAME=$(shell uname)
 DEBUG=1
+ASAN=0
 INSTALL=install
 LN=ln
 PKG_CONFIG=pkg-config
@@ -40,6 +41,11 @@ ifeq ($(DEBUG),1)
 CFLAGS ?= -pipe -gdwarf-2 -g3
 else
 CFLAGS ?= -pipe -O2 -freorder-blocks-and-partition
+endif
+
+ifeq ($(ASAN),1)
+CFLAGS += -fsanitize=address -DI3_ASAN_ENABLED
+LDFLAGS += -fsanitize=address
 endif
 
 # Default LDFLAGS that users should be able to override
