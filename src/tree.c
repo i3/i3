@@ -266,11 +266,8 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
             add_ignore_event(cookie.sequence, 0);
         }
         ipc_send_window_event("close", con);
-        FREE(con->window->class_class);
-        FREE(con->window->class_instance);
-        i3string_free(con->window->name);
-        FREE(con->window->ran_assignments);
-        FREE(con->window);
+        window_free(con->window);
+        con->window = NULL;
     }
 
     Con *ws = con_get_workspace(con);

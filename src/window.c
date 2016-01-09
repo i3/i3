@@ -12,6 +12,18 @@
 #include "all.h"
 
 /*
+ * Frees an i3Window and all its members.
+ *
+ */
+void window_free(i3Window *win) {
+    FREE(win->class_class);
+    FREE(win->class_instance);
+    i3string_free(win->name);
+    FREE(win->ran_assignments);
+    FREE(win);
+}
+
+/*
  * Updates the WM_CLASS (consisting of the class and instance) for the
  * given window.
  *

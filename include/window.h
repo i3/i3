@@ -10,6 +10,12 @@
 #pragma once
 
 /**
+ * Frees an i3Window and all its members.
+ *
+ */
+void window_free(i3Window *win);
+
+/**
  * Updates the WM_CLASS (consisting of the class and instance) for the
  * given window.
  *

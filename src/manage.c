@@ -310,6 +310,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             }
         }
     }
+    if (nc->window != cwindow && nc->window != NULL) {
+        window_free(nc->window);
+    }
     nc->window = cwindow;
     x_reinit(nc);
 
