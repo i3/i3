@@ -62,6 +62,11 @@
         HANDLE_INVALID_MATCH;                           \
                                                         \
         if (match_is_empty(current_match)) {            \
+            while (!TAILQ_EMPTY(&owindows)) {           \
+                owindow *ow = TAILQ_FIRST(&owindows);   \
+                TAILQ_REMOVE(&owindows, ow, owindows);  \
+                free(ow);                               \
+            }                                           \
             owindow *ow = smalloc(sizeof(owindow));     \
             ow->con = focused;                          \
             TAILQ_INIT(&owindows);                      \
