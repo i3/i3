@@ -262,6 +262,20 @@ if ($options{coverage}) {
     }
 }
 
+# Report logfiles that match “(Leak|Address)Sanitizer:”.
+my @logs_with_leaks;
+for my $log (<$outdir/i3-log-for-*>) {
+    if (slurp($log) =~ /(Leak|Address)Sanitizer:/) {
+        push @logs_with_leaks, $log;
+    }
+}
+if (scalar @logs_with_leaks > 0) {
+    say "\nThe following test logfiles contain AddressSanitizer or LeakSanitizer reports:";
+    for my $log (sort @logs_with_leaks) {
+        say "\t$log";
+    }
+}
+
 exit ($aggregator->failed > 0);
 
 #
