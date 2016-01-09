@@ -21,7 +21,7 @@ use i3test i3_autostart => 0;
 
 my $config = <<EOT;
 # i3 config file (v4)
-font pango:monospace 8
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 800x600+0+0,800x600+800+0,800x600+0+600,800x600+800+600
 EOT
