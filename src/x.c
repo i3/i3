@@ -1080,6 +1080,8 @@ void x_push_changes(Con *con) {
                 xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0, mid_x, mid_y);
                 xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){ROOT_EVENT_MASK});
             }
+
+            free(pointerreply);
         }
         warp_to = NULL;
     }
