@@ -94,7 +94,7 @@ struct Config {
     i3Font font;
 
     char *ipc_socket_path;
-    const char *restart_state_path;
+    char *restart_state_path;
 
     layout_t default_layout;
     int container_stack_limit;

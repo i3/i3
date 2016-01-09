@@ -261,6 +261,7 @@ CFGFUN(workspace_back_and_forth, const char *value) {
 }
 
 CFGFUN(fake_outputs, const char *outputs) {
+    free(config.fake_outputs);
     config.fake_outputs = sstrdup(outputs);
 }
 
@@ -313,10 +314,12 @@ CFGFUN(workspace, const char *workspace, const char *output) {
 }
 
 CFGFUN(ipc_socket, const char *path) {
+    free(config.ipc_socket_path);
     config.ipc_socket_path = sstrdup(path);
 }
 
 CFGFUN(restart_state, const char *path) {
+    free(config.restart_state_path);
     config.restart_state_path = sstrdup(path);
 }
 

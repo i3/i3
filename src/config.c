@@ -169,6 +169,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
         /* Get rid of the current font */
         free_font();
+
+        free(config.ipc_socket_path);
+        free(config.restart_state_path);
+        free(config.fake_outputs);
     }
 
     SLIST_INIT(&modes);
