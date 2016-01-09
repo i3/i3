@@ -32,6 +32,10 @@
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
 
+#ifdef I3_ASAN_ENABLED
+#include <sanitizer/lsan_interface.h>
+#endif
+
 #include "common.h"
 #include "libi3.h"
 
@@ -1070,6 +1074,9 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
 
     if (xcb_connection_has_error(xcb_connection)) {
         ELOG("X11 connection was closed unexpectedly - maybe your X server terminated / crashed?\n");
+#ifdef I3_ASAN_ENABLED
+        __lsan_do_leak_check();
+#endif
         exit(1);
     }
 

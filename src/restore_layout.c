@@ -13,6 +13,10 @@
  */
 #include "all.h"
 
+#ifdef I3_ASAN_ENABLED
+#include <sanitizer/lsan_interface.h>
+#endif
+
 typedef struct placeholder_state {
     /** The X11 placeholder window. */
     xcb_window_t window;
@@ -114,6 +118,9 @@ void restore_connect(void) {
         if (restore_conn != NULL) {
             xcb_disconnect(restore_conn);
         }
+#ifdef I3_ASAN_ENABLED
+        __lsan_do_leak_check();
+#endif
         errx(EXIT_FAILURE, "Cannot open display\n");
     }
 
