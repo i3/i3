@@ -224,6 +224,7 @@ i3Font load_font(const char *pattern, const bool fallback) {
         info_cookie = xcb_query_font(conn, font.specific.xcb.id);
 
         /* Check if we managed to open 'fixed' */
+        free(error);
         error = xcb_request_check(conn, font_cookie);
 
         /* Fall back to '-misc-*' if opening 'fixed' fails. */
@@ -234,11 +235,15 @@ i3Font load_font(const char *pattern, const bool fallback) {
                                                 strlen(pattern), pattern);
             info_cookie = xcb_query_font(conn, font.specific.xcb.id);
 
+            free(error);
             if ((error = xcb_request_check(conn, font_cookie)) != NULL)
                 errx(EXIT_FAILURE, "Could open neither requested font nor fallbacks "
                                    "(fixed or -misc-*): X11 error %d",
                      error->error_code);
         }
+    }
+    if (error != NULL) {
+        free(error);
     }
 
     font.pattern = sstrdup(pattern);
