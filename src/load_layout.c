@@ -640,8 +640,11 @@ void tree_append_json(Con *con, const char *filename, char **errormsg) {
 
     setlocale(LC_NUMERIC, "");
     yajl_complete_parse(hand);
+    yajl_free(hand);
+    yajl_gen_free(g);
 
     fclose(f);
+    free(buf);
     if (to_focus)
         con_focus(to_focus);
 }
