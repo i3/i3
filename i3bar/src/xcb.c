@@ -1425,6 +1425,8 @@ void init_tray(void) {
         return;
     }
 
+    free(selreply);
+
     send_tray_clientmessage();
 }
 
