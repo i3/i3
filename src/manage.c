@@ -242,6 +242,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     /* See if any container swallows this new window */
     nc = con_for_window(search_at, cwindow, &match);
+    const bool match_from_restart_mode = (match && match->restart_mode);
     if (nc == NULL) {
         /* If not, check if it is assigned to a specific workspace */
         if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE))) {
@@ -291,6 +292,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             DLOG("Removing match %p from container %p\n", match, nc);
             TAILQ_REMOVE(&(nc->swallow_head), match, matches);
             match_free(match);
+            FREE(match);
         }
     }
 
@@ -344,14 +346,17 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             Con *target_output = con_get_output(ws);
 
             if (workspace_is_visible(ws) && current_output == target_output) {
-                if (!match || !match->restart_mode) {
+                if (!match_from_restart_mode) {
                     set_focus = true;
-                } else
+                } else {
                     DLOG("not focusing, matched with restart_mode == true\n");
-            } else
+                }
+            } else {
                 DLOG("workspace not visible, not focusing\n");
-        } else
+            }
+        } else {
             DLOG("dock, not focusing\n");
+        }
     } else {
         DLOG("fs = %p, ws = %p, not focusing\n", fs, ws);
         /* Insert the new container in focus stack *after* the currently
