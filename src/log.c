@@ -172,6 +172,7 @@ void open_logbuffer(void) {
 void close_logbuffer(void) {
     close(logbuffer_shm);
     shm_unlink(shmlogname);
+    free(shmlogname);
     logbuffer = NULL;
     shmlogname = "";
 }
