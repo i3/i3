@@ -87,6 +87,7 @@ static int json_end_map(void *ctx) {
                 Match *match = TAILQ_FIRST(&(json_node->swallow_head));
                 TAILQ_REMOVE(&(json_node->swallow_head), match, matches);
                 match_free(match);
+                free(match);
             }
         }
 

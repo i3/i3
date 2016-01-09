@@ -304,6 +304,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
                 Match *first = TAILQ_FIRST(&(nc->swallow_head));
                 TAILQ_REMOVE(&(nc->swallow_head), first, matches);
                 match_free(first);
+                free(first);
             }
         }
     }
