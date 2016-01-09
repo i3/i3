@@ -464,24 +464,22 @@ void x_draw_decoration(Con *con) {
          * rectangle because some childs are not freely resizable and we want
          * their background color to "shine through". */
         if (!(borders_to_hide & ADJ_LEFT_SCREEN_EDGE)) {
-            draw_util_rectangle(conn, &(con->frame_buffer), p->color->decoration_border, 0, 0, br.x, r->height);
+            draw_util_rectangle(conn, &(con->frame_buffer), p->color->child_border, 0, 0, br.x, r->height);
         }
         if (!(borders_to_hide & ADJ_RIGHT_SCREEN_EDGE)) {
             draw_util_rectangle(conn, &(con->frame_buffer),
-                                p->color->decoration_border, r->width + (br.width + br.x), 0,
+                                p->color->child_border, r->width + (br.width + br.x), 0,
                                 -(br.width + br.x), r->height);
         }
         if (!(borders_to_hide & ADJ_LOWER_SCREEN_EDGE)) {
             draw_util_rectangle(conn, &(con->frame_buffer),
-                                p->color->decoration_border, br.x, r->height + (br.height +
-                                                                                br.y),
+                                p->color->child_border, br.x, r->height + (br.height + br.y),
                                 r->width + br.width, -(br.height + br.y));
         }
         /* pixel border needs an additional line at the top */
         if (p->border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
             draw_util_rectangle(conn, &(con->frame_buffer),
-                                p->color->decoration_border, br.x, 0, r->width + br.width,
-                                br.y);
+                                p->color->child_border, br.x, 0, r->width + br.width, br.y);
         }
 
         /* Highlight the side of the border at which the next window will be
