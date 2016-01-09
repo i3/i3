@@ -674,6 +674,7 @@ int main(int argc, char *argv[]) {
         }
 
         con_focus(con_descend_focused(output_get_content(output->con)));
+        free(pointerreply);
     }
 
     tree_render();
