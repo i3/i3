@@ -282,13 +282,13 @@ state COLOR_TEXT:
 
 state COLOR_INDICATOR:
   indicator = word
-      -> COLOR_DECORATION_BORDER
+      -> COLOR_CHILD_BORDER
   end
       -> call cfg_color($colorclass, $border, $background, $text, NULL, NULL)
 
-state COLOR_DECORATION_BORDER:
-  decoration_border = word
-      -> call cfg_color($colorclass, $border, $background, $text, $indicator, $decoration_border)
+state COLOR_CHILD_BORDER:
+  child_border = word
+      -> call cfg_color($colorclass, $border, $background, $text, $indicator, $child_border)
   end
       -> call cfg_color($colorclass, $border, $background, $text, $indicator, NULL)
 
