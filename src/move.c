@@ -206,6 +206,7 @@ void tree_move(Con *con, int direction) {
 
                 DLOG("Swapped.\n");
                 ipc_send_window_event("move", con);
+                ewmh_update_wm_desktop();
                 return;
             }
 
@@ -214,6 +215,7 @@ void tree_move(Con *con, int direction) {
                  *  try to move it to a workspace on a different output */
                 move_to_output_directed(con, direction);
                 ipc_send_window_event("move", con);
+                ewmh_update_wm_desktop();
                 return;
             }
 
@@ -274,4 +276,5 @@ end:
 
     tree_flatten(croot);
     ipc_send_window_event("move", con);
+    ewmh_update_wm_desktop();
 }

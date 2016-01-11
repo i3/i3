@@ -90,7 +90,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         utf8_title_cookie, title_cookie,
         class_cookie, leader_cookie, transient_cookie,
         role_cookie, startup_id_cookie, wm_hints_cookie,
-        wm_normal_hints_cookie, motif_wm_hints_cookie, wm_user_time_cookie;
+        wm_normal_hints_cookie, motif_wm_hints_cookie, wm_user_time_cookie, wm_desktop_cookie;
 
     geomc = xcb_get_geometry(conn, d);
 
@@ -162,6 +162,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     wm_normal_hints_cookie = xcb_icccm_get_wm_normal_hints(conn, window);
     motif_wm_hints_cookie = GET_PROPERTY(A__MOTIF_WM_HINTS, 5 * sizeof(uint64_t));
     wm_user_time_cookie = GET_PROPERTY(A__NET_WM_USER_TIME, UINT32_MAX);
+    wm_desktop_cookie = GET_PROPERTY(A__NET_WM_DESKTOP, UINT32_MAX);
 
     DLOG("Managing window 0x%08x\n", window);
 
@@ -193,6 +194,16 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     startup_id_reply = xcb_get_property_reply(conn, startup_id_cookie, NULL);
     char *startup_ws = startup_workspace_for_window(cwindow, startup_id_reply);
     DLOG("startup workspace = %s\n", startup_ws);
+
+    /* Get _NET_WM_DESKTOP if it was set. */
+    xcb_get_property_reply_t *wm_desktop_reply;
+    wm_desktop_reply = xcb_get_property_reply(conn, wm_desktop_cookie, NULL);
+    cwindow->wm_desktop = NET_WM_DESKTOP_NONE;
+    if (wm_desktop_reply != NULL && xcb_get_property_value_length(wm_desktop_reply) != 0) {
+        uint32_t *wm_desktops = xcb_get_property_value(wm_desktop_reply);
+        cwindow->wm_desktop = (int32_t)wm_desktops[0];
+    }
+    FREE(wm_desktop_reply);
 
     /* check if the window needs WM_TAKE_FOCUS */
     cwindow->needs_take_focus = window_supports_protocol(cwindow->id, A_WM_TAKE_FOCUS);
@@ -244,6 +255,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     nc = con_for_window(search_at, cwindow, &match);
     const bool match_from_restart_mode = (match && match->restart_mode);
     if (nc == NULL) {
+        Con *wm_desktop_ws = NULL;
+
         /* If not, check if it is assigned to a specific workspace */
         if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE))) {
             DLOG("Assignment matches (%p)\n", match);
@@ -258,9 +271,23 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             /* set the urgency hint on the window if the workspace is not visible */
             if (!workspace_is_visible(assigned_ws))
                 urgency_hint = true;
+        } else if (cwindow->wm_desktop != NET_WM_DESKTOP_NONE &&
+                   cwindow->wm_desktop != NET_WM_DESKTOP_ALL &&
+                   (wm_desktop_ws = ewmh_get_workspace_by_index(cwindow->wm_desktop)) != NULL) {
+            /* If _NET_WM_DESKTOP is set to a specific desktop, we open it
+             * there. Note that we ignore the special value 0xFFFFFFFF here
+             * since such a window will be made sticky anyway. */
+
+            DLOG("Using workspace %p / %s because _NET_WM_DESKTOP = %d.\n",
+                 wm_desktop_ws, wm_desktop_ws->name, cwindow->wm_desktop);
+
+            nc = con_descend_tiling_focused(wm_desktop_ws);
+            if (nc->type == CT_WORKSPACE)
+                nc = tree_open_con(nc, cwindow);
+            else
+                nc = tree_open_con(nc->parent, cwindow);
         } else if (startup_ws) {
-            /* If it’s not assigned, but was started on a specific workspace,
-             * we want to open it there */
+            /* If it was started on a specific workspace, we want to open it there. */
             DLOG("Using workspace on which this application was started (%s)\n", startup_ws);
             nc = con_descend_tiling_focused(workspace_get(startup_ws, NULL));
             DLOG("focused on ws %s: %p / %s\n", startup_ws, nc, nc->name);
@@ -392,6 +419,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_STICKY))
         nc->sticky = true;
+
+    if (cwindow->wm_desktop == NET_WM_DESKTOP_ALL) {
+        DLOG("This window has _NET_WM_DESKTOP = 0xFFFFFFFF. Will float it and make it sticky.\n");
+        nc->sticky = true;
+        want_floating = true;
+    }
 
     FREE(state_reply);
     FREE(type_reply);
@@ -573,6 +606,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * This code needs to be in this part of manage_window() because the window
      * needs to be on the final workspace first. */
     con_set_urgency(nc, urgency_hint);
+
+    /* Update _NET_WM_DESKTOP. We invalidate the cached value first to force an update. */
+    cwindow->wm_desktop = NET_WM_DESKTOP_NONE;
+    ewmh_update_wm_desktop();
+
+    /* If a sticky window was mapped onto another workspace, make sure to pop it to the front. */
+    output_push_sticky_windows(focused);
 
 geom_out:
     free(geom);

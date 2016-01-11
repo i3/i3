@@ -398,6 +398,9 @@ struct Window {
     /** The _NET_WM_WINDOW_TYPE for this window. */
     xcb_atom_t window_type;
 
+    /** The _NET_WM_DESKTOP for this window. */
+    uint32_t wm_desktop;
+
     /** Whether the window says it is a dock window */
     enum { W_NODOCK = 0,
            W_DOCK_TOP = 1,

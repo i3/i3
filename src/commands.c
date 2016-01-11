@@ -1542,6 +1542,8 @@ void cmd_sticky(I3_CMD, const char *action) {
      * sure it gets pushed to the front now. */
     output_push_sticky_windows(focused);
 
+    ewmh_update_wm_desktop();
+
     cmd_output->needs_tree_render = true;
     ysuccess(true);
 }
