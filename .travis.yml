@@ -11,6 +11,8 @@ addons:
     packages:
     - clang-format-3.5
     - libllvm3.5
+    - clang-3.5
+    - gcc-5
 before_install:
   # The travis VMs run on Ubuntu 12.04 which is very old and a huge pain to get
   # into a state where we can build a recent version of i3 :(.
@@ -49,7 +51,9 @@ install:
   - sudo /bin/sh -c 'cpanm -n -v AnyEvent::I3 || true'
 script:
   - if [ -a .git/shallow ]; then git fetch --unshallow; fi
-  - CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Werror" make -j
+  - if [ "$CC" = "clang" ]; then export CC="clang-3.5"; fi
+  - if [ "$CC" = "gcc" ]; then export CC="gcc-5"; fi
+  - CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Werror" make -j ASAN=1
   - (cd testcases && xvfb-run ./complete-run.pl --parallel=1 || (cat latest/complete-run.log; false))
   - clang-format-3.5 -i $(find . -name "*.[ch]" | tr '\n' ' ') && git diff --exit-code || (echo 'Code was not formatted using clang-format!'; false)
   - |
