@@ -802,6 +802,11 @@ int main(int argc, char *argv[]) {
         xcb_free_pixmap(conn, pixmap);
     }
 
+#if defined(__OpenBSD__)
+    if (pledge("stdio rpath wpath cpath proc exec unix", NULL) == -1)
+        err(EXIT_FAILURE, "pledge");
+#endif
+
     struct sigaction action;
 
     action.sa_sigaction = handle_signal;
