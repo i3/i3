@@ -1080,6 +1080,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
     CALL(parent, on_remove_child);
 
     ipc_send_window_event("move", con);
+    ewmh_update_wm_desktop();
     return true;
 }
 

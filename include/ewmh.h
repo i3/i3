@@ -37,6 +37,13 @@ void ewmh_update_desktop_names(void);
 void ewmh_update_desktop_viewport(void);
 
 /**
+ * Updates _NET_WM_DESKTOP for all windows.
+ * A request will only be made if the cached value differs from the calculated value.
+ *
+ */
+void ewmh_update_wm_desktop(void);
+
+/**
  * Updates _NET_ACTIVE_WINDOW with the currently focused window.
  *
  * EWMH: The window ID of the currently active window or None if no window has
@@ -96,3 +103,21 @@ void ewmh_setup_hints(void);
  *
  */
 void ewmh_update_workarea(void);
+
+/**
+ * Returns the workspace container as enumerated by the EWMH desktop model.
+ * Returns NULL if no workspace could be found for the index.
+ *
+ * This is the reverse of ewmh_get_workspace_index.
+ *
+ */
+Con *ewmh_get_workspace_by_index(uint32_t idx);
+
+/**
+ * Returns the EWMH desktop index for the workspace the given container is on.
+ * Returns NET_WM_DESKTOP_NONE if the desktop index cannot be determined.
+ *
+ * This is the reverse of ewmh_get_workspace_by_index.
+ *
+ */
+uint32_t ewmh_get_workspace_index(Con *con);

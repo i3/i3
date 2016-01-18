@@ -20,7 +20,6 @@ use X11::XCB qw(:all);
 
 sub get_wm_state {
     sync_with_i3;
-    my $atom = $x->atom(name => '_NET_WM_STATE_HIDDEN');
 
     my ($con) = @_; 
     my $cookie = $x->get_property(
