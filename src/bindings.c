@@ -164,10 +164,6 @@ void regrab_all_buttons(xcb_connection_t *conn) {
         xcb_grab_buttons(conn, con->window->id, grab_scrollwheel);
     }
 
-    /* Also grab the root window to allow bindings to work on there as well. */
-    xcb_ungrab_button(conn, XCB_BUTTON_INDEX_ANY, root, XCB_BUTTON_MASK_ANY);
-    xcb_grab_buttons(conn, root, grab_scrollwheel);
-
     xcb_ungrab_server(conn);
 }
 
