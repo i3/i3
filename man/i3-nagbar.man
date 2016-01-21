@@ -44,7 +44,7 @@ after modifying the configuration file.
 
 ------------------------------------------------
 i3-nagbar -m 'You have an error in your i3 config file!' \
--b 'edit config' '$EDITOR ~/.config/i3/config'
+-b 'edit config' 'i3-sensible-editor ~/.config/i3/config'
 ------------------------------------------------
 
 == SEE ALSO
