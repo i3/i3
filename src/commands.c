@@ -203,9 +203,11 @@ void cmd_MIGRATION_start_nagbar(void) {
     /* child */
     if (migration_pid == 0) {
         char *pageraction;
-        sasprintf(&pageraction, "i3-sensible-pager \"%s\"", errorfilename);
+        sasprintf(&pageraction, "i3-sensible-pager \"%s\"\n", errorfilename);
         char *argv[] = {
             NULL, /* will be replaced by the executable path */
+            "-f",
+            config.font.pattern,
             "-t",
             "error",
             "-m",
