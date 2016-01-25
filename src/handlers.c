@@ -881,7 +881,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 return;
             }
 
-            con_move_to_workspace(con, ws, false, false, true);
+            con_move_to_workspace(con, ws, true, false, false);
         }
 
         tree_render();
