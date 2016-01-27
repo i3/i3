@@ -42,7 +42,7 @@ DRAGGING_CB(drag_callback) {
     const struct callback_params *params = extra;
 
     Con *target = con_by_coordinates(new_x, new_y);
-    direction_t direction;
+    direction_t direction = 0;
 
     DLOG("new x = %d, y = %d, con = %p, target = %p\n", new_x, new_y, con, target);
     if (target == NULL)
