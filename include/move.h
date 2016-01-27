@@ -17,3 +17,13 @@
  *
  */
 void tree_move(Con *con, int direction);
+
+typedef enum { BEFORE,
+               AFTER } position_t;
+
+/**
+ * This function detaches 'con' from its parent and inserts it either before or
+ * after 'target'.
+ *
+ */
+void insert_con_into(Con *con, Con *target, position_t position);
