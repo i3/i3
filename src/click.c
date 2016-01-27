@@ -321,10 +321,14 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
             return 1;
     }
     /* 8: otherwise, check for border/decoration clicks and resize */
-    else if ((dest == CLICK_BORDER || dest == CLICK_DECORATION) &&
-             is_left_or_right_click) {
+    else if (dest == CLICK_BORDER && is_left_or_right_click) {
         DLOG("Trying to resize (tiling)\n");
         tiling_resize(con, event, dest);
+    }
+    /* 9: otherwise, check for dragging a tiled window */
+    else if (dest == CLICK_DECORATION && is_left_or_right_click) {
+        DLOG("Trying to drag (tiling)\n");
+        tiling_drag(con, event);
     }
 
 done:
