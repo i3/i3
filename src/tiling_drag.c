@@ -129,7 +129,7 @@ void tiling_drag(Con *con, xcb_button_press_event_t *event) {
     xcb_flush(conn);
 
     /* Indicate drop location while dragging. This blocks until the drag is completed. */
-    Con *target;
+    Con *target = NULL;
     direction_t direction;
     const struct callback_params params = {create_drop_indicator(con->rect), &target, &direction};
 
