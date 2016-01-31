@@ -114,7 +114,10 @@ static xcb_window_t create_drop_indicator(Rect rect) {
     values[1] = 1;
 
     xcb_window_t indicator = create_window(conn, rect, XCB_COPY_FROM_PARENT, XCB_COPY_FROM_PARENT,
-                                           XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_MOVE, true, mask, values);
+                                           XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_MOVE, false, mask, values);
+    /* Change the window class to "i3-drag", so that it can be matched in a
+     * compositor configuration. Note that the class needs to be changed before
+     * mapping the window. */
     xcb_change_property(conn,
                         XCB_PROP_MODE_REPLACE,
                         indicator,
@@ -123,6 +126,7 @@ static xcb_window_t create_drop_indicator(Rect rect) {
                         8,
                         (strlen("i3-drag") + 1) * 2,
                         "i3-drag\0i3-drag\0");
+    xcb_map_window(conn, indicator);
     xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, indicator);
     xcb_flush(conn);
 
