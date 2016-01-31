@@ -680,6 +680,51 @@ void tree_next(char way, orientation_t orientation) {
 }
 
 /*
+ * Collapes a chain of redundant nodes by moving the children of 'end' before
+ * 'start' and closing start.
+ *
+ */
+static void collapse_chain(Con *start, Con *end) {
+    Con *current, *parent = start->parent;
+
+    DLOG("Alright, I have to flatten this situation now. Stay calm.\n");
+    /* 1: save focus */
+    Con *focus_next = TAILQ_FIRST(&(end->focus_head));
+
+    DLOG("detaching...\n");
+    /* 2: re-attach end's children to the parent before start */
+    while (!TAILQ_EMPTY(&(end->nodes_head))) {
+        current = TAILQ_FIRST(&(end->nodes_head));
+        DLOG("detaching current=%p / %s\n", current, current->name);
+        con_detach(current);
+        DLOG("re-attaching\n");
+        /* We don’t use con_attach() here because for a CT_CON, the special
+         * case handling of con_attach() does not trigger. So all it would do
+         * is calling TAILQ_INSERT_AFTER, but with the wrong container. So we
+         * directly use the TAILQ macros. */
+        current->parent = parent;
+        TAILQ_INSERT_BEFORE(start, current, nodes);
+        DLOG("attaching to focus list\n");
+        TAILQ_INSERT_TAIL(&(parent->focus_head), current, focused);
+        current->percent = start->percent;
+    }
+    DLOG("re-attached all\n");
+
+    /* 3: restore focus, if con was focused */
+    if (focus_next != NULL &&
+        TAILQ_FIRST(&(parent->focus_head)) == start) {
+        DLOG("restoring focus to focus_next=%p\n", focus_next);
+        TAILQ_REMOVE(&(parent->focus_head), focus_next, focused);
+        TAILQ_INSERT_HEAD(&(parent->focus_head), focus_next, focused);
+        DLOG("restored focus.\n");
+    }
+
+    /* 4: close the redundant cons */
+    DLOG("closing redundant cons\n");
+    tree_close_internal(start, DONT_KILL_WINDOW, true, false);
+}
+
+/*
  * tree_flatten() removes pairs of redundant split containers, e.g.:
  *       [workspace, horizontal]
  *   [v-split]           [child3]
@@ -691,6 +736,12 @@ void tree_next(char way, orientation_t orientation) {
  * split container then and if you move containers this way multiple times,
  * redundant chains of split-containers can be the result.
  *
+ * A second example is this
+ *   [v-split]
+ *   [v-split]
+ * [child1] [child2]
+ * The two v-split containers can be collapsed to a single one. Such a situation
+ * is created when dragging tiled containers.
  */
 void tree_flatten(Con *con) {
     Con *current, *child, *parent = con->parent;
@@ -709,51 +760,22 @@ void tree_flatten(Con *con) {
 
     DLOG("child = %p, con = %p, parent = %p\n", child, con, parent);
 
-    /* The child must have a different orientation than the con but the same as
-     * the con’s parent to be redundant */
+    /** The container and its child need to be horizontal or vertical split
+        containers */
     if (!con_is_split(con) ||
         !con_is_split(child) ||
         (con->layout != L_SPLITH && con->layout != L_SPLITV) ||
-        (child->layout != L_SPLITH && child->layout != L_SPLITV) ||
-        con_orientation(con) == con_orientation(child) ||
-        con_orientation(child) != con_orientation(parent))
+        (child->layout != L_SPLITH && child->layout != L_SPLITV))
         goto recurse;
 
-    DLOG("Alright, I have to flatten this situation now. Stay calm.\n");
-    /* 1: save focus */
-    Con *focus_next = TAILQ_FIRST(&(child->focus_head));
-
-    DLOG("detaching...\n");
-    /* 2: re-attach the children to the parent before con */
-    while (!TAILQ_EMPTY(&(child->nodes_head))) {
-        current = TAILQ_FIRST(&(child->nodes_head));
-        DLOG("detaching current=%p / %s\n", current, current->name);
-        con_detach(current);
-        DLOG("re-attaching\n");
-        /* We don’t use con_attach() here because for a CT_CON, the special
-         * case handling of con_attach() does not trigger. So all it would do
-         * is calling TAILQ_INSERT_AFTER, but with the wrong container. So we
-         * directly use the TAILQ macros. */
-        current->parent = parent;
-        TAILQ_INSERT_BEFORE(con, current, nodes);
-        DLOG("attaching to focus list\n");
-        TAILQ_INSERT_TAIL(&(parent->focus_head), current, focused);
-        current->percent = con->percent;
+    if (con_orientation(con) == con_orientation(child)) {
+        /* The child has the same orientation as the con. */
+        collapse_chain(child, child);
+    } else if (con_orientation(child) == con_orientation(parent)) {
+        /* The child has a different orientation than the con but the same as
+         * the con’s parent. */
+        collapse_chain(con, child);
     }
-    DLOG("re-attached all\n");
-
-    /* 3: restore focus, if con was focused */
-    if (focus_next != NULL &&
-        TAILQ_FIRST(&(parent->focus_head)) == con) {
-        DLOG("restoring focus to focus_next=%p\n", focus_next);
-        TAILQ_REMOVE(&(parent->focus_head), focus_next, focused);
-        TAILQ_INSERT_HEAD(&(parent->focus_head), focus_next, focused);
-        DLOG("restored focus.\n");
-    }
-
-    /* 4: close the redundant cons */
-    DLOG("closing redundant cons\n");
-    tree_close_internal(con, DONT_KILL_WINDOW, true, false);
 
     /* Well, we got to abort the recursion here because we destroyed the
      * container. However, if tree_flatten() is called sufficiently often,
