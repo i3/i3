@@ -20,7 +20,7 @@ static Con *find_drop_target(uint32_t x, uint32_t y) {
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons) {
         if (con->window != NULL && rect_contains(con->rect, x, y) &&
-            con->floating < FLOATING_AUTO_ON &&
+            !con_is_floating(con) &&
             workspace_is_visible(con_get_workspace(con)) &&
             !con_is_hidden(con))
             return con;
