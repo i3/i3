@@ -824,7 +824,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             ev->type = atoms[_XEMBED];
             ev->format = 32;
             ev->data.data32[0] = XCB_CURRENT_TIME;
-            ev->data.data32[1] = atoms[XEMBED_EMBEDDED_NOTIFY];
+            ev->data.data32[1] = XEMBED_EMBEDDED_NOTIFY;
             ev->data.data32[2] = output->bar.id;
             ev->data.data32[3] = xe_version;
             xcb_send_event(xcb_connection,
