@@ -18,9 +18,10 @@
  */
 static Con *con_by_coordinates(uint32_t x, uint32_t y) {
     Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons)
-    if (con->window != NULL && rect_contains(con->rect, x, y))
-        return con;
+    TAILQ_FOREACH(con, &all_cons, all_cons) {
+        if (con->window != NULL && rect_contains(con->rect, x, y))
+            return con;
+    }
     return NULL;
 }
 
