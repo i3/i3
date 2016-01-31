@@ -134,46 +134,6 @@ static xcb_window_t create_drop_indicator(Rect rect) {
 }
 
 /*
- * Moves the dropped container to its new position. This makes the the container
- * and its target the only two children of a split container with appropriate
- * layout. If the parent container of the target has correct layout and no
- * additional children, then no new split container is created.
- *
- */
-static void drop_con(Con *con, Con *target, direction_t direction) {
-    DLOG("Dropping container: con = %p, target = %p, direction = %d\n", con, target, direction);
-
-    /* Split the target's parent if we need to. */
-    orientation_t orientation = (direction == D_LEFT || direction == D_RIGHT) ? HORIZ : VERT;
-    if (con_orientation(target->parent) != orientation || con_num_children(target->parent) > 1) {
-        tree_split(target, orientation);
-    }
-
-    /* Detach the container from its old parent. */
-    Con *old_parent = con->parent;
-    Con *parent = target->parent;
-
-    con_detach(con);
-    con_fix_percent(con->parent);
-
-    /** Attach the container to the target's parent. */
-    con->parent = parent;
-    con->percent = target->percent = .5;
-
-    if (direction == D_LEFT || direction == D_UP) {
-        TAILQ_INSERT_BEFORE(target, con, nodes);
-        TAILQ_INSERT_HEAD(&(parent->focus_head), con, focused);
-    } else {
-        TAILQ_INSERT_AFTER(&(parent->nodes_head), target, con, nodes);
-        TAILQ_INSERT_HEAD(&(parent->focus_head), con, focused);
-    }
-
-    /* Clean up. */
-    CALL(old_parent, on_remove_child);
-    tree_flatten(croot);
-}
-
-/*
  * Initiates a mouse drag operation on a tiled window.
  *
  */
@@ -197,7 +157,7 @@ void tiling_drag(Con *con, xcb_button_press_event_t *event) {
 
     /* Move the container to the drop position. */
     if (drag_result != DRAG_REVERT && target != NULL && target != con) {
-        drop_con(con, target, direction);
+        con_move_to_side_of_con(con, target, direction);
         tree_render();
     }
 }

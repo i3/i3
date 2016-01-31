@@ -72,7 +72,7 @@ Con *con_new(Con *parent, i3Window *window) {
     return new;
 }
 
-static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus) {
+static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus, bool insert_before) {
     con->parent = parent;
     Con *loop;
     Con *current = previous;
@@ -147,8 +147,13 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
         /* Insert the container after the tiling container, if found.
          * When adding to a CT_OUTPUT, just append one after another. */
         if (current && parent->type != CT_OUTPUT) {
-            DLOG("Inserting con = %p after con %p\n", con, current);
-            TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
+            if (insert_before) {
+                DLOG("Inserting con = %p before con %p\n", con, current);
+                TAILQ_INSERT_BEFORE(current, con, nodes);
+            } else {
+                DLOG("Inserting con = %p after con %p\n", con, current);
+                TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
+            }
         } else
             TAILQ_INSERT_TAIL(nodes_head, con, nodes);
     }
@@ -172,7 +177,7 @@ add_to_focus_head:
  *
  */
 void con_attach(Con *con, Con *parent, bool ignore_focus) {
-    _con_attach(con, parent, NULL, ignore_focus);
+    _con_attach(con, parent, NULL, ignore_focus, false);
 }
 
 /*
@@ -896,7 +901,7 @@ void con_disable_fullscreen(Con *con) {
     con_set_fullscreen_mode(con, CF_NONE);
 }
 
-static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fix_coordinates, bool dont_warp, bool ignore_focus) {
+bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fix_coordinates, bool dont_warp, bool ignore_focus, bool insert_before) {
     Con *orig_target = target;
 
     /* Prevent moving if this would violate the fullscreen focus restrictions. */
@@ -1002,7 +1007,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
     /* 4: re-attach the con to the parent of this focused container */
     Con *parent = con->parent;
     con_detach(con);
-    _con_attach(con, target, behind_focused ? NULL : orig_target, !behind_focused);
+    _con_attach(con, target, behind_focused ? NULL : orig_target, !behind_focused, insert_before);
 
     /* 5: fix the percentages */
     con_fix_percent(parent);
@@ -1087,6 +1092,20 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 }
 
 /*
+ * Moves a container to the side of a target container. This makes the the
+ * container and its target the only two children of a split container with
+ * appropriate layout.
+ *
+ */
+void con_move_to_side_of_con(Con *con, Con *target, direction_t direction) {
+    DLOG("Moving container to side of target: con = %p, target = %p, direction = %d\n", con, target, direction);
+
+    tree_split(target, (direction == D_LEFT || direction == D_RIGHT) ? HORIZ : VERT);
+    _con_move_to_con(con, target, false, false, false, false, direction == D_LEFT || direction == D_UP);
+    tree_flatten(croot);
+}
+
+/*
  * Moves the given container to the given mark.
  *
  */
@@ -1123,7 +1142,7 @@ bool con_move_to_mark(Con *con, const char *mark) {
         return false;
     }
 
-    return _con_move_to_con(con, target, false, true, false, false);
+    return _con_move_to_con(con, target, false, true, false, false, false);
 }
 
 /*
@@ -1156,7 +1175,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     }
 
     Con *target = con_descend_focused(workspace);
-    _con_move_to_con(con, target, true, fix_coordinates, dont_warp, ignore_focus);
+    _con_move_to_con(con, target, true, fix_coordinates, dont_warp, ignore_focus, false);
 }
 
 /*
