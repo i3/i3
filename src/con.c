@@ -530,9 +530,10 @@ bool con_inside_focused(Con *con) {
  */
 Con *con_by_window_id(xcb_window_t window) {
     Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons)
-    if (con->window != NULL && con->window->id == window)
-        return con;
+    TAILQ_FOREACH(con, &all_cons, all_cons) {
+        if (con->window != NULL && con->window->id == window)
+            return con;
+    }
     return NULL;
 }
 
@@ -543,9 +544,10 @@ Con *con_by_window_id(xcb_window_t window) {
  */
 Con *con_by_frame_id(xcb_window_t frame) {
     Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons)
-    if (con->frame.id == frame)
-        return con;
+    TAILQ_FOREACH(con, &all_cons, all_cons) {
+        if (con->frame.id == frame)
+            return con;
+    }
     return NULL;
 }
 
