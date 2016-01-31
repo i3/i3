@@ -12,14 +12,17 @@
 #include "all.h"
 
 /*
- * Returns the leaf container at the given coordinates or NULL if no such
- * container exists.
+ * Returns the visible leaf container at the given coordinates or NULL if no
+ * such container exists.
  *
  */
-static Con *con_by_coordinates(uint32_t x, uint32_t y) {
+static Con *find_drop_target(uint32_t x, uint32_t y) {
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons) {
-        if (con->window != NULL && rect_contains(con->rect, x, y))
+        if (con->window != NULL && rect_contains(con->rect, x, y) &&
+            con->floating < FLOATING_AUTO_ON &&
+            workspace_is_visible(con_get_workspace(con)) &&
+            !con_is_hidden(con))
             return con;
     }
     return NULL;
@@ -42,7 +45,7 @@ struct callback_params {
 DRAGGING_CB(drag_callback) {
     const struct callback_params *params = extra;
 
-    Con *target = con_by_coordinates(new_x, new_y);
+    Con *target = find_drop_target(new_x, new_y);
     direction_t direction = 0;
 
     DLOG("new x = %d, y = %d, con = %p, target = %p\n", new_x, new_y, con, target);
