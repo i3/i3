@@ -176,14 +176,14 @@ static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_rel
 static void finish_input() {
     char *command = (char *)concat_strings(glyphs_utf8, input_position);
 
-    /* count the occurences of %s in the string */
+    /* count the occurrences of %s in the string */
     int c;
     int len = strlen(format);
     int cnt = 0;
     for (c = 0; c < (len - 1); c++)
         if (format[c] == '%' && format[c + 1] == 's')
             cnt++;
-    printf("occurences = %d\n", cnt);
+    printf("occurrences = %d\n", cnt);
 
     /* allocate space for the output */
     int inputlen = strlen(command);

@@ -26,7 +26,7 @@ Specify the path to the i3 IPC socket (it should not be necessary to use this
 option, i3-input will figure out the path on its own).
 
 -F <format>::
-Every occurence of "%s" in the <format> string is replaced by the user input,
+Every occurrence of "%s" in the <format> string is replaced by the user input,
 and the result is sent to i3 as a command. Default value is "%s".
 
 -l <limit>::

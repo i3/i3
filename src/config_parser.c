@@ -910,7 +910,7 @@ bool parse_file(const char *f, bool use_nagbar) {
     FREE(bufcopy);
 
     /* Then, allocate a new buffer and copy the file over to the new one,
-     * but replace occurences of our variables */
+     * but replace occurrences of our variables */
     char *walk = buf, *destwalk;
     char *new = smalloc(stbuf.st_size + extra_bytes + 1);
     destwalk = new;

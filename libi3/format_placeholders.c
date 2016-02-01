@@ -16,7 +16,7 @@
 #endif
 
 /*
- * Replaces occurences of the defined placeholders in the format string.
+ * Replaces occurrences of the defined placeholders in the format string.
  *
  */
 char *format_placeholders(char *format, placeholder_t *placeholders, int num) {

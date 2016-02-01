@@ -250,7 +250,7 @@ void cmd_criteria_match_windows(I3_CMD) {
                 DLOG("matches window!\n");
                 accept_match = true;
             } else {
-                DLOG("doesnt match\n");
+                DLOG("doesn't match\n");
                 FREE(current);
                 continue;
             }
