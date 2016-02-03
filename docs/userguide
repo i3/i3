@@ -605,9 +605,10 @@ new_window pixel 3
 ---------------------
 
 
-=== Hiding vertical borders
+[[_hiding_vertical_borders]]
+=== Hiding borders adjacent to the screen edges
 
-You can hide vertical borders adjacent to the screen edges using
+You can hide container borders adjacent to the screen edges using
 +hide_edge_borders+. This is useful if you are using scrollbars, or do not want
 to waste even two pixels in displayspace. Default is none.
 
