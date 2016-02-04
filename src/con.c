@@ -727,6 +727,29 @@ int con_num_children(Con *con) {
     return children;
 }
 
+/**
+ * Returns the number of visible non-floating children of this container.
+ * For example, if the container contains a hsplit which has two children,
+ * this will return 2 instead of 1.
+ */
+int con_num_visible_children(Con *con) {
+    if (con == NULL)
+        return 0;
+
+    int children = 0;
+    Con *current = NULL;
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+        /* Visible leaf nodes are a child. */
+        if (!con_is_hidden(current) && con_is_leaf(current))
+            children++;
+        /* All other containers need to be recursed. */
+        else
+            children += con_num_visible_children(current);
+    }
+
+    return children;
+}
+
 /*
  * Count the number of windows (i.e., leaf containers).
  *
@@ -1444,6 +1467,12 @@ Con *con_descend_direction(Con *con, direction_t direction) {
  *
  */
 Rect con_border_style_rect(Con *con) {
+    if (config.hide_edge_borders == HEBM_SMART && con_num_visible_children(con_get_workspace(con)) <= 1) {
+        if (!con_is_floating(con)) {
+            return (Rect){0, 0, 0, 0};
+        }
+    }
+
     adjacent_t borders_to_hide = ADJ_NONE;
     int border_width = con->current_border_width;
     DLOG("The border width for con is set to: %d\n", con->current_border_width);
