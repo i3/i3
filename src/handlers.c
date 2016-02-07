@@ -503,8 +503,10 @@ static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
         goto ignore_end;
     }
 
-    /* Since we close the container, we need to unset _NET_WM_DESKTOP according to the spec. */
+    /* Since we close the container, we need to unset _NET_WM_DESKTOP and
+     * _NET_WM_STATE according to the spec. */
     xcb_delete_property(conn, event->window, A__NET_WM_DESKTOP);
+    xcb_delete_property(conn, event->window, A__NET_WM_STATE);
 
     tree_close_internal(con, DONT_KILL_WINDOW, false, false);
     tree_render();
