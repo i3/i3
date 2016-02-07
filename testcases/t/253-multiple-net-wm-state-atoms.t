@@ -33,7 +33,7 @@ sub get_wm_state {
 
     my $reply = $x->get_property_reply($cookie->{sequence});
     my $len = $reply->{length};
-    return 0 if $len == 0;
+    return undef if $len == 0;
 
     my @atoms = unpack("L$len", $reply->{value});
     return \@atoms;
@@ -63,6 +63,20 @@ is_deeply(get_wm_state($window), [ $wm_state_fullscreen ], 'only _NET_WM_STATE_F
 cmd 'sticky enable';
 cmd 'fullscreen disable';
 is_deeply(get_wm_state($window), [ $wm_state_sticky ], 'only _NET_WM_STATE_STICKY is set');
+
+###############################################################################
+# _NET_WM_STATE is removed when the window is withdrawn.
+###############################################################################
+
+fresh_workspace;
+$window = open_window;
+cmd 'sticky enable';
+is_deeply(get_wm_state($window), [ $wm_state_sticky ], 'sanity check: _NET_WM_STATE_STICKY is set');
+
+$window->unmap;
+wait_for_unmap($window);
+
+is(get_wm_state($window), undef, '_NET_WM_STATE is removed');
 
 ##########################################################################
 
