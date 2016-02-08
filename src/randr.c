@@ -109,6 +109,27 @@ Output *get_output_containing(unsigned int x, unsigned int y) {
 }
 
 /*
+ * Returns the active (!) output which has the top left corner at
+ * coordinates x, y and has given width and heigh or NULL if there is
+ * no output like this.
+ *
+ */
+Output *get_output(unsigned int x, unsigned int y, unsigned int width, unsigned int height) {
+    Output *output;
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (!output->active)
+            continue;
+        DLOG("comparing x=%d y=%d %dx%d with x=%d and y=%d %dx%d\n",
+             x, y, width, height, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
+        if (x == output->rect.x && width == output->rect.width &&
+            y == output->rect.y && height ==  output->rect.height)
+            return output;
+    }
+
+    return NULL;
+}
+
+/*
  * In contained_by_output, we check if any active output contains part of the container.
  * We do this by checking if the output rect is intersected by the Rect.
  * This is the 2-dimensional counterpart of get_output_containing.

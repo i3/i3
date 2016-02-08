@@ -236,6 +236,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         }
     }
 
+    Output *output_for_fullscreen = get_output(geom->x, geom->y, geom->width, geom->height);
+
     DLOG("Initial geometry: (%d, %d, %d, %d)\n", geom->x, geom->y, geom->width, geom->height);
 
     Con *nc = NULL;
@@ -267,6 +269,18 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             DLOG("Using workspace on which this application was started (%s)\n", startup_ws);
             nc = con_descend_tiling_focused(workspace_get(startup_ws, NULL));
             DLOG("focused on ws %s: %p / %s\n", startup_ws, nc, nc->name);
+            if (nc->type == CT_WORKSPACE)
+                nc = tree_open_con(nc, cwindow);
+            else
+                nc = tree_open_con(nc->parent, cwindow);
+        } else if (output_for_fullscreen) {
+            /* If it's not started on specific workspace, but it has
+	     * fullscreen geometry on cetrain output (e.g.
+	     * presentation in multi-monitor setup), open it on that
+	     * output */
+            DLOG("Candidate for fullscreen on output %s - opening it there\n",
+		 output_for_fullscreen->name);
+            nc = con_descend_tiling_focused(output_for_fullscreen->con);
             if (nc->type == CT_WORKSPACE)
                 nc = tree_open_con(nc, cwindow);
             else
