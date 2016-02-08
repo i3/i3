@@ -79,6 +79,15 @@ Output *get_output_by_name(const char *name);
  */
 Output *get_output_containing(unsigned int x, unsigned int y);
 
+/**
+ * Returns the active (!) output which has the top left corner at
+ * coordinates x, y and has given width and heigh or NULL if there is
+ * no output like this.
+ *
+ */
+Output *get_output(unsigned int x, unsigned int y,
+		   unsigned int width, unsigned int height);
+
 /*
  * In contained_by_output, we check if any active output contains part of the container.
  * We do this by checking if the output rect is intersected by the Rect.
