@@ -76,7 +76,7 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
  * Implementation of 'border normal|pixel [<n>]', 'border none|1pixel|toggle'.
  *
  */
-void cmd_border(I3_CMD, const char *border_style_str, const char *border_width);
+void cmd_border(I3_CMD, const char *border_style_str, long border_width);
 
 /**
  * Implementation of 'nop <comment>'.
