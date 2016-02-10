@@ -2255,6 +2255,10 @@ and +border none+ to make the client borderless.
 
 There is also +border toggle+ which will toggle the different border styles.
 
+Note that "pixel" refers to logical pixel. On HiDPI displays, a logical pixel
+may be represented by multiple physical pixels, so +pixel 1+ might not
+necessarily translate into a single pixel row wide border.
+
 *Syntax*:
 -----------------------------------------------
 border normal|pixel [<n>]
