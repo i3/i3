@@ -1238,7 +1238,7 @@ the windows key). The default value for the hidden_state is hide.
 -------------------------
 mode dock|hide|invisible
 hidden_state hide|show
-modifier <Modifier>
+modifier <Modifier>|none
 ------------------------
 
 *Example*:
@@ -1250,7 +1250,8 @@ bar {
 }
 ----------------
 
-Available modifiers are Mod1-Mod5, Shift, Control (see +xmodmap(1)+).
+Available modifiers are Mod1-Mod5, Shift, Control (see +xmodmap(1)+). You can
+also use "none" if you don't want any modifier to trigger this behavior.
 
 === Mouse button commands
 

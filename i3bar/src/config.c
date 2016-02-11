@@ -121,6 +121,11 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 
     if (!strcmp(cur_key, "modifier")) {
         DLOG("modifier = %.*s\n", len, val);
+        if (len == 4 && !strncmp((const char *)val, "none", strlen("none"))) {
+            config.modifier = XCB_NONE;
+            return 1;
+        }
+
         if (len == 5 && !strncmp((const char *)val, "shift", strlen("shift"))) {
             config.modifier = ShiftMask;
             return 1;
@@ -140,16 +145,12 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
                 case '3':
                     config.modifier = Mod3Mask;
                     return 1;
-                /*
-                case '4':
-                    config.modifier = Mod4Mask;
-                    return 1;
-                */
                 case '5':
                     config.modifier = Mod5Mask;
                     return 1;
             }
         }
+
         config.modifier = Mod4Mask;
         return 1;
     }

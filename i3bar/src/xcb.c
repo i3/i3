@@ -1094,7 +1094,7 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
             DLOG("received an xkb event\n");
 
             xcb_xkb_state_notify_event_t *state = (xcb_xkb_state_notify_event_t *)event;
-            if (state->xkbType == XCB_XKB_STATE_NOTIFY) {
+            if (state->xkbType == XCB_XKB_STATE_NOTIFY && config.modifier != XCB_NONE) {
                 int modstate = state->mods & config.modifier;
 
 #define DLOGMOD(modmask, status)                        \
