@@ -116,47 +116,9 @@ void floating_enable(Con *con, bool automatic) {
         return;
     }
 
-    /* 1: If the container is a workspace container, we need to create a new
-     * split-container with the same layout and make that one floating. We
-     * cannot touch the workspace container itself because floating containers
-     * are children of the workspace. */
     if (con->type == CT_WORKSPACE) {
-        LOG("This is a workspace, creating new container around content\n");
-        if (con_num_children(con) == 0) {
-            LOG("Workspace is empty, aborting\n");
-            return;
-        }
-        /* TODO: refactor this with src/con.c:con_set_layout */
-        Con *new = con_new(NULL, NULL);
-        new->parent = con;
-        new->layout = con->layout;
-
-        /* since the new container will be set into floating mode directly
-         * afterwards, we need to copy the workspace rect. */
-        memcpy(&(new->rect), &(con->rect), sizeof(Rect));
-
-        Con *old_focused = TAILQ_FIRST(&(con->focus_head));
-        if (old_focused == TAILQ_END(&(con->focus_head)))
-            old_focused = NULL;
-
-        /* 4: move the existing cons of this workspace below the new con */
-        DLOG("Moving cons\n");
-        Con *child;
-        while (!TAILQ_EMPTY(&(con->nodes_head))) {
-            child = TAILQ_FIRST(&(con->nodes_head));
-            con_detach(child);
-            con_attach(child, new, true);
-        }
-
-        /* 4: attach the new split container to the workspace */
-        DLOG("Attaching new split to ws\n");
-        con_attach(new, con, false);
-
-        if (old_focused)
-            con_focus(old_focused);
-
-        con = new;
-        set_focus = false;
+        LOG("Container is a workspace, not enabling floating mode.\n");
+        return;
     }
 
     /* 1: detach the container from its parent */

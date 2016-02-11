@@ -21,6 +21,9 @@ use i3test;
 
 my $tmp = fresh_workspace;
 
+open_window;
+cmd 'split v';
+
 #####################################################################
 # open a window with 200x80
 #####################################################################
@@ -29,6 +32,8 @@ my $first = open_window({
         rect => [ 0, 0, 200, 80],
         background_color => '#FF0000',
     });
+
+cmd 'split h';
 
 #####################################################################
 # Open a second window with 300x90
