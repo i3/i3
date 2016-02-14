@@ -55,6 +55,10 @@
 
 #define CALL(obj, member, ...) obj->member(obj, ##__VA_ARGS__)
 
+/* From sys/time.h, not sure if it’s available on all systems. */
+#define _i3_timercmp(a, b, CMP) \
+    (((a).tv_sec == (b).tv_sec) ? ((a).tv_usec CMP(b).tv_usec) : ((a).tv_sec CMP(b).tv_sec))
+
 int min(int a, int b);
 int max(int a, int b);
 bool rect_contains(Rect rect, uint32_t x, uint32_t y);
