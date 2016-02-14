@@ -79,6 +79,13 @@ Output *get_output_by_name(const char *name);
  */
 Output *get_output_containing(unsigned int x, unsigned int y);
 
+/**
+ * Returns the active output which spans exactly the area specified by
+ * rect or NULL if there is no output like this.
+ *
+ */
+Output *get_output_by_rect(Rect rect);
+
 /*
  * In contained_by_output, we check if any active output contains part of the container.
  * We do this by checking if the output rect is intersected by the Rect.

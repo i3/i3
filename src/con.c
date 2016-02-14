@@ -1158,6 +1158,21 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
 }
 
 /*
+ * Moves the given container to the currently focused container on the
+ * visible workspace on the given output.
+ *
+ */
+void con_move_to_output(Con *con, Output *output) {
+    /* fs is either the visible workspace or fullscreen window on the
+     * given output */
+    Con *fs = con_get_fullscreen_con(output_get_content(output->con), CF_OUTPUT);
+    Con *ws = con_get_workspace(fs);
+    assert(ws);
+    DLOG("Moving con %p to output %s\n", con, output->name);
+    con_move_to_workspace(con, ws, false, false, false);
+}
+
+/*
  * Returns the orientation of the given container (for stacked containers,
  * vertical orientation is used regardless of the actual orientation of the
  * container).

@@ -719,6 +719,21 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 (con->fullscreen_mode == CF_NONE &&
                  (event->data.data32[0] == _NET_WM_STATE_ADD ||
                   event->data.data32[0] == _NET_WM_STATE_TOGGLE))) {
+                if (con->fullscreen_mode == CF_NONE) {
+                    /* If the window was mapped recently and its
+                     * requested geometry spans the whole area of an
+                     * output, move the window to that output. This is
+                     * needed for multi-monitor presentations to work
+                     * out of the box. */
+                    Output *output = get_output_by_rect(con->geometry);
+                    struct timeval second_ago;
+
+                    gettimeofday(&second_ago, NULL);
+                    second_ago.tv_sec--;
+
+                    if (output && _i3_timercmp(con->map_time, second_ago, >=))
+                        con_move_to_output(con, output);
+                }
                 DLOG("toggling fullscreen\n");
                 con_toggle_fullscreen(con, CF_OUTPUT);
             }

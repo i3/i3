@@ -109,6 +109,27 @@ Output *get_output_containing(unsigned int x, unsigned int y) {
 }
 
 /*
+ * Returns the active output which spans exactly the area specified by
+ * rect or NULL if there is no output like this.
+ *
+ */
+Output *get_output_by_rect(Rect rect) {
+    Output *output;
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (!output->active)
+            continue;
+        DLOG("comparing x=%d y=%d %dx%d with x=%d and y=%d %dx%d\n",
+             rect.x, rect.y, rect.width, rect.height,
+             output->rect.x, output->rect.y, output->rect.width, output->rect.height);
+        if (rect.x == output->rect.x && rect.width == output->rect.width &&
+            rect.y == output->rect.y && rect.height == output->rect.height)
+            return output;
+    }
+
+    return NULL;
+}
+
+/*
  * In contained_by_output, we check if any active output contains part of the container.
  * We do this by checking if the output rect is intersected by the Rect.
  * This is the 2-dimensional counterpart of get_output_containing.

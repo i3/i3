@@ -586,6 +586,7 @@ struct Con {
     struct Rect deco_rect;
     /** the geometry this window requested when getting mapped */
     struct Rect geometry;
+    struct timeval map_time;
 
     char *name;
 
