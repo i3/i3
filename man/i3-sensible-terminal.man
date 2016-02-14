@@ -25,6 +25,7 @@ It tries to start one of the following (in that order):
 * x-terminal-emulator (only present on Debian and derivatives)
 * urxvt
 * rxvt
+* termit
 * terminator
 * Eterm
 * aterm
@@ -32,6 +33,11 @@ It tries to start one of the following (in that order):
 * gnome-terminal
 * roxterm
 * xfce4-terminal
+* termite
+* lxterminal
+* mate-terminal
+* terminology
+* st
 
 Please don’t complain about the order: If the user has any preference, they will
 have $TERMINAL set or modified their i3 configuration file.
