@@ -269,6 +269,13 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates,
                            bool dont_warp, bool ignore_focus);
 
 /**
+ * Moves the given container to the currently focused container on the
+ * visible workspace on the given output.
+ *
+ */
+void con_move_to_output(Con *con, Output *output);
+
+/**
  * Moves the given container to the given mark.
  *
  */

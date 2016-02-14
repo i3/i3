@@ -359,8 +359,16 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_FULLSCREEN)) {
         /* If this window is already fullscreen (after restarting!), skip
          * toggling fullscreen, that would drop it out of fullscreen mode. */
-        if (fs != nc)
+        if (fs != nc) {
+            Output *output = get_output_with_dimensions((Rect){geom->x, geom->y, geom->width, geom->height});
+            /* If the requested window geometry spans the whole area
+             * of an output, move the window to that output. This is
+             * needed e.g. for LibreOffice Impress multi-monitor
+             * presentations to work out of the box. */
+            if (output != NULL)
+                con_move_to_output(nc, output);
             con_toggle_fullscreen(nc, CF_OUTPUT);
+        }
         fs = NULL;
     }
 
