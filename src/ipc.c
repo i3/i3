@@ -611,6 +611,9 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
 
     ystr("modifier");
     switch (config->modifier) {
+        case M_NONE:
+            ystr("none");
+            break;
         case M_CONTROL:
             ystr("ctrl");
             break;
@@ -626,11 +629,6 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
         case M_MOD3:
             ystr("Mod3");
             break;
-        /*
-               case M_MOD4:
-               ystr("Mod4");
-               break;
-               */
         case M_MOD5:
             ystr("Mod5");
             break;

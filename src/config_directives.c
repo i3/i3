@@ -446,6 +446,9 @@ CFGFUN(bar_modifier, const char *modifier) {
         current_bar->modifier = M_CONTROL;
     else if (strcmp(modifier, "Shift") == 0)
         current_bar->modifier = M_SHIFT;
+    else if (strcmp(modifier, "none") == 0 ||
+             strcmp(modifier, "off") == 0)
+        current_bar->modifier = M_NONE;
 }
 
 static void bar_configure_binding(const char *button, const char *command) {
@@ -575,6 +578,7 @@ CFGFUN(bar_start) {
     TAILQ_INIT(&(current_bar->bar_bindings));
     TAILQ_INIT(&(current_bar->tray_outputs));
     current_bar->tray_padding = 2;
+    current_bar->modifier = M_MOD4;
 }
 
 CFGFUN(bar_finish) {
