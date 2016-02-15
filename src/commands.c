@@ -1909,7 +1909,9 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
     GREP_FIRST(check_dest, output_get_content(output),
                !strcasecmp(child->name, new_name));
 
-    if (check_dest != NULL) {
+    /* If check_dest == workspace, the user might be changing the case of the
+     * workspace, or it might just be a no-op. */
+    if (check_dest != NULL && check_dest != workspace) {
         yerror("New workspace \"%s\" already exists", new_name);
         return;
     }
