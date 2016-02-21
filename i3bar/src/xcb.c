@@ -769,19 +769,9 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                     break;
             }
 
-            /* Check whether any "tray_output primary" was defined for this bar. */
-            bool contains_primary = false;
-            TAILQ_FOREACH(tray_output, &(config.tray_outputs), tray_outputs) {
-                if (strcasecmp("primary", tray_output->output) == 0) {
-                    contains_primary = true;
-                    break;
-                }
-            }
-
-            /* In case of tray_output == primary and there is no primary output
-             * configured, we fall back to the first available output. We do the
-             * same if no tray_output was specified. */
-            if (output == NULL && (contains_primary || TAILQ_EMPTY(&(config.tray_outputs)))) {
+            /* If no tray_output has been specified, we fall back to the first
+             * available output. */
+            if (output == NULL && TAILQ_EMPTY(&(config.tray_outputs))) {
                 SLIST_FOREACH(walk, outputs, slist) {
                     if (!walk->active)
                         continue;
@@ -790,6 +780,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                     break;
                 }
             }
+
             if (output == NULL) {
                 ELOG("No output found\n");
                 return;
