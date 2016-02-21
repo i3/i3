@@ -1761,16 +1761,35 @@ void reconfig_windows(bool redraw_bars) {
             }
 
             /* Unless "tray_output none" was specified, we need to initialize the tray. */
-            const char *first = (TAILQ_EMPTY(&(config.tray_outputs))) ? SLIST_FIRST(outputs)->name : TAILQ_FIRST(&(config.tray_outputs))->output;
-            if (!tray_configured && strcasecmp(first, "none") != 0) {
-                /* We do a sanity check here to ensure that this i3bar instance actually handles
-                 * the output on which the tray should appear. For example,
-                 * consider tray_output == [VGA-1], but output == [HDMI-1]. */
+            bool no_tray = false;
+            if (!(TAILQ_EMPTY(&(config.tray_outputs)))) {
+                no_tray = strcasecmp(TAILQ_FIRST(&(config.tray_outputs))->output, "none") == 0;
+            }
 
+            /*
+             * There are three scenarios in which we need to initialize the tray:
+             *   1. A specific output was listed in tray_outputs which is also
+             *      in the list of outputs managed by this bar.
+             *   2. No tray_output directive was specified. In this case, we
+             *      use the first available output.
+             *   3. 'tray_output primary' was specified. In this case we use the
+             *      primary output.
+             *
+             * Three scenarios in which we specifically don't want to
+             * initialize the tray are:
+             *   1. 'tray_output none' was specified.
+             *   2. A specific output was listed as a tray_output, but is not
+             *      one of the outputs managed by this bar. For example, consider
+             *      tray_outputs == [VGA-1], but outputs == [HDMI-1].
+             *   3. 'tray_output primary' was specified and no output in the list
+             *      is primary.
+             */
+            if (!tray_configured && !no_tray) {
                 /* If no tray_output was specified, we go ahead and initialize the tray as
                  * we will be using the first available output. */
-                if (TAILQ_EMPTY(&(config.tray_outputs)))
+                if (TAILQ_EMPTY(&(config.tray_outputs))) {
                     init_tray();
+                }
 
                 /* If one or more tray_output assignments were specified, we ensure that at least one of
                  * them is actually an output managed by this instance. */
