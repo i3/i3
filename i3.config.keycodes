@@ -152,5 +152,4 @@ bindcode $mod+27 mode "resize"
 # finds out, if available)
 bar {
         status_command i3status
-        tray_output primary
 }
