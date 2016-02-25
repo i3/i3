@@ -71,6 +71,11 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
  */
 void load_configuration(xcb_connection_t *conn, const char *override_configpath, bool reload) {
     if (reload) {
+        /* If we are currently in a binding mode, we first revert to the
+         * default since we have no guarantee that the current mode will even
+         * still exist after parsing the config again. See #2228. */
+        switch_mode("default");
+
         /* First ungrab the keys */
         ungrab_all_keys(conn);
 
