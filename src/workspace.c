@@ -932,7 +932,7 @@ bool workspace_move_to_output(Con *ws, const char *name) {
     Con *content = output_get_content(output->con);
     LOG("got output %p with content %p\n", output, content);
 
-    Con *previously_visible_ws = TAILQ_FIRST(&(content->nodes_head));
+    Con *previously_visible_ws = TAILQ_FIRST(&(content->focus_head));
     LOG("Previously visible workspace = %p / %s\n", previously_visible_ws, previously_visible_ws->name);
 
     bool workspace_was_visible = workspace_is_visible(ws);
