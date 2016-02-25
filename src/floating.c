@@ -29,6 +29,34 @@ static Rect total_outputs_dimensions(void) {
     return outputs_dimensions;
 }
 
+/*
+ * Updates I3_FLOATING_WINDOW by either setting or removing it on the con and
+ * all its children.
+ *
+ */
+static void floating_set_hint_atom(Con *con, bool floating) {
+    if (!con_is_leaf(con)) {
+        Con *child;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            floating_set_hint_atom(child, floating);
+        }
+    }
+
+    if (con->window == NULL) {
+        return;
+    }
+
+    if (floating) {
+        uint32_t val = 1;
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
+                            A_I3_FLOATING_WINDOW, XCB_ATOM_CARDINAL, 32, 1, &val);
+    } else {
+        xcb_delete_property(conn, con->window->id, A_I3_FLOATING_WINDOW);
+    }
+
+    xcb_flush(conn);
+}
+
 /**
  * Called when a floating window is created or resized.
  * This function resizes the window if its size is higher or lower than the
@@ -260,19 +288,19 @@ void floating_enable(Con *con, bool automatic) {
     /* Check if we need to re-assign it to a different workspace because of its
      * coordinates and exit if that was done successfully. */
     if (floating_maybe_reassign_ws(nc)) {
-        ipc_send_window_event("floating", con);
-        return;
+        goto done;
     }
 
     /* Sanitize coordinates: Check if they are on any output */
     if (get_output_containing(nc->rect.x, nc->rect.y) != NULL) {
-        ipc_send_window_event("floating", con);
-        return;
+        goto done;
     }
 
     ELOG("No output found at destination coordinates, centering floating window on current ws\n");
     floating_center(nc, ws->rect);
 
+done:
+    floating_set_hint_atom(nc, true);
     ipc_send_window_event("floating", con);
 }
 
@@ -318,6 +346,7 @@ void floating_disable(Con *con, bool automatic) {
     if (set_focus)
         con_focus(con);
 
+    floating_set_hint_atom(con, false);
     ipc_send_window_event("floating", con);
 }
 
