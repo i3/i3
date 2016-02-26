@@ -22,9 +22,11 @@ static void con_on_remove_child(Con *con);
 void con_force_split_parents_redraw(Con *con) {
     Con *parent = con;
 
-    while (parent && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
-        if (!con_is_leaf(parent))
+    while (parent != NULL && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
+        if (!con_is_leaf(parent)) {
             FREE(parent->deco_render_params);
+        }
+
         parent = parent->parent;
     }
 }
@@ -145,7 +147,7 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
 
         /* Insert the container after the tiling container, if found.
          * When adding to a CT_OUTPUT, just append one after another. */
-        if (current && parent->type != CT_OUTPUT) {
+        if (current != NULL && parent->type != CT_OUTPUT) {
             DLOG("Inserting con = %p after con %p\n", con, current);
             TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
         } else
@@ -526,6 +528,23 @@ bool con_inside_focused(Con *con) {
 }
 
 /*
+ * Checks if the container has the given parent as an actual parent.
+ *
+ */
+bool con_has_parent(Con *con, Con *parent) {
+    Con *current = con->parent;
+    if (current == NULL) {
+        return false;
+    }
+
+    if (current == parent) {
+        return true;
+    }
+
+    return con_has_parent(current, parent);
+}
+
+/*
  * Returns the container with the given client window ID or NULL if no such
  * container exists.
  *
@@ -803,10 +822,11 @@ void con_fix_percent(Con *con) {
     if (children_with_percent != children) {
         TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             if (child->percent <= 0.0) {
-                if (children_with_percent == 0)
+                if (children_with_percent == 0) {
                     total += (child->percent = 1.0);
-                else
+                } else {
                     total += (child->percent = total / children_with_percent);
+                }
             }
         }
     }
@@ -814,11 +834,13 @@ void con_fix_percent(Con *con) {
     // if we got a zero, just distribute the space equally, otherwise
     // distribute according to the proportions we got
     if (total == 0.0) {
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes)
-        child->percent = 1.0 / children;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            child->percent = 1.0 / children;
+        }
     } else if (total != 1.0) {
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes)
-        child->percent /= total;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            child->percent /= total;
+        }
     }
 }
 
@@ -944,7 +966,7 @@ void con_disable_fullscreen(Con *con) {
     con_set_fullscreen_mode(con, CF_NONE);
 }
 
-static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fix_coordinates, bool dont_warp, bool ignore_focus) {
+static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fix_coordinates, bool dont_warp, bool ignore_focus, bool fix_percentage) {
     Con *orig_target = target;
 
     /* Prevent moving if this would violate the fullscreen focus restrictions. */
@@ -1053,9 +1075,11 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
     _con_attach(con, target, behind_focused ? NULL : orig_target, !behind_focused);
 
     /* 5: fix the percentages */
-    con_fix_percent(parent);
-    con->percent = 0.0;
-    con_fix_percent(target);
+    if (fix_percentage) {
+        con_fix_percent(parent);
+        con->percent = 0.0;
+        con_fix_percent(target);
+    }
 
     /* 6: focus the con on the target workspace, but only within that
      * workspace, that is, don’t move focus away if the target workspace is
@@ -1127,6 +1151,9 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
         con_set_urgency(con, true);
     }
 
+    /* Ensure the container will be redrawn. */
+    FREE(con->deco_render_params);
+
     CALL(parent, on_remove_child);
 
     ipc_send_window_event("move", con);
@@ -1166,12 +1193,12 @@ bool con_move_to_mark(Con *con, const char *mark) {
         target = TAILQ_FIRST(&(target->focus_head));
     }
 
-    if (con == target || con == target->parent) {
+    if (con == target || con_has_parent(target, con)) {
         DLOG("cannot move the container to or inside itself, aborting.\n");
         return false;
     }
 
-    return _con_move_to_con(con, target, false, true, false, false);
+    return _con_move_to_con(con, target, false, true, false, false, true);
 }
 
 /*
@@ -1204,7 +1231,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     }
 
     Con *target = con_descend_focused(workspace);
-    _con_move_to_con(con, target, true, fix_coordinates, dont_warp, ignore_focus);
+    _con_move_to_con(con, target, true, fix_coordinates, dont_warp, ignore_focus, true);
 }
 
 /*
@@ -1311,15 +1338,16 @@ Con *con_next_focused(Con *con) {
     } else {
         /* try to focus the next container on the same level as this one or fall
          * back to its parent */
-        if (!(next = TAILQ_NEXT(con, focused)))
+        if (!(next = TAILQ_NEXT(con, focused))) {
             next = con->parent;
+        }
     }
 
     /* now go down the focus stack as far as
      * possible, excluding the current container */
-    while (!TAILQ_EMPTY(&(next->focus_head)) &&
-           TAILQ_FIRST(&(next->focus_head)) != con)
+    while (!TAILQ_EMPTY(&(next->focus_head)) && TAILQ_FIRST(&(next->focus_head)) != con) {
         next = TAILQ_FIRST(&(next->focus_head));
+    }
 
     return next;
 }
@@ -2158,4 +2186,170 @@ i3String *con_parse_title_format(Con *con) {
     }
 
     return formatted;
+}
+
+/*
+ * Swaps the two containers.
+ *
+ */
+bool con_swap(Con *first, Con *second) {
+    assert(first != NULL);
+    assert(second != NULL);
+    DLOG("Swapping containers %p / %p\n", first, second);
+
+    if (first->type != CT_CON) {
+        ELOG("Only regular containers can be swapped, but found con = %p with type = %d.\n", first, first->type);
+        return false;
+    }
+
+    if (second->type != CT_CON) {
+        ELOG("Only regular containers can be swapped, but found con = %p with type = %d.\n", second, second->type);
+        return false;
+    }
+
+    if (con_is_floating(first) || con_is_floating(second)) {
+        ELOG("Floating windows cannot be swapped.\n");
+        return false;
+    }
+
+    if (first == second) {
+        DLOG("Swapping container %p with itself, nothing to do.\n", first);
+        return false;
+    }
+
+    if (con_has_parent(first, second) || con_has_parent(second, first)) {
+        ELOG("Cannot swap containers %p and %p because they are in a parent-child relationship.\n", first, second);
+        return false;
+    }
+
+    Con *old_focus = focused;
+
+    Con *first_ws = con_get_workspace(first);
+    Con *second_ws = con_get_workspace(second);
+    Con *current_ws = con_get_workspace(old_focus);
+    const bool focused_within_first = (first == old_focus || con_has_parent(old_focus, first));
+    const bool focused_within_second = (second == old_focus || con_has_parent(old_focus, second));
+
+    if (!con_fullscreen_permits_focusing(first_ws)) {
+        DLOG("Cannot swap because target workspace \"%s\" is obscured.\n", first_ws->name);
+        return false;
+    }
+
+    if (!con_fullscreen_permits_focusing(second_ws)) {
+        DLOG("Cannot swap because target workspace \"%s\" is obscured.\n", second_ws->name);
+        return false;
+    }
+
+    double first_percent = first->percent;
+    double second_percent = second->percent;
+
+    /* De- and reattaching the containers will insert them at the tail of the
+     * focus_heads. We will need to fix this. But we need to make sure first
+     * and second don't get in each other's way if they share the same parent,
+     * so we select the closest previous focus_head that isn't involved. */
+    Con *first_prev_focus_head = first;
+    while (first_prev_focus_head == first || first_prev_focus_head == second) {
+        first_prev_focus_head = TAILQ_PREV(first_prev_focus_head, focus_head, focused);
+    }
+
+    Con *second_prev_focus_head = second;
+    while (second_prev_focus_head == second || second_prev_focus_head == first) {
+        second_prev_focus_head = TAILQ_PREV(second_prev_focus_head, focus_head, focused);
+    }
+
+    /* We use a fake container to mark the spot of where the second container needs to go. */
+    Con *fake = con_new(NULL, NULL);
+    fake->layout = L_SPLITH;
+    _con_attach(fake, first->parent, first, true);
+
+    bool result = true;
+    /* Swap the containers. We set the ignore_focus flag here because after the
+     * container is attached, the focus order is not yet correct and would
+     * result in wrong windows being focused. */
+
+    /* Move first to second. */
+    result &= _con_move_to_con(first, second, false, false, false, true, false);
+
+    /* If we moved the container holding the focused window to another
+     * workspace we need to ensure the visible workspace has the focused
+     * container.
+     * We don't need to check this for the second container because we've only
+     * moved the first one at this point.*/
+    if (first_ws != second_ws && focused_within_first) {
+        con_focus(con_descend_focused(current_ws));
+    }
+
+    /* Move second to where first has been originally. */
+    result &= _con_move_to_con(second, fake, false, false, false, true, false);
+
+    /* If swapping the containers didn't work we don't need to mess with the focus. */
+    if (!result) {
+        goto swap_end;
+    }
+
+    /* Swapping will have inserted the containers at the tail of their parents'
+     * focus head. We fix this now by putting them in the position of the focus
+     * head the container they swapped with was in. */
+    TAILQ_REMOVE(&(first->parent->focus_head), first, focused);
+    TAILQ_REMOVE(&(second->parent->focus_head), second, focused);
+
+    if (second_prev_focus_head == NULL) {
+        TAILQ_INSERT_HEAD(&(first->parent->focus_head), first, focused);
+    } else {
+        TAILQ_INSERT_AFTER(&(first->parent->focus_head), second_prev_focus_head, first, focused);
+    }
+
+    if (first_prev_focus_head == NULL) {
+        TAILQ_INSERT_HEAD(&(second->parent->focus_head), second, focused);
+    } else {
+        TAILQ_INSERT_AFTER(&(second->parent->focus_head), first_prev_focus_head, second, focused);
+    }
+
+    /* If the focus was within any of the swapped containers, do the following:
+     * - If swapping took place within a workspace, ensure the previously
+     *   focused container stays focused.
+     * - Otherwise, focus the container that has been swapped in.
+     *
+     * To understand why fixing the focus_head previously wasn't enough,
+     * consider the scenario
+     *   H[ V[ A X ] V[ Y B ] ]
+     * with B being focused, but X being the focus_head within its parent. If
+     * we swap A and B now, fixing the focus_head would focus X, but since B
+     * was the focused container before it should stay focused.
+     */
+    if (focused_within_first) {
+        if (first_ws == second_ws) {
+            con_focus(old_focus);
+        } else {
+            con_focus(con_descend_focused(second));
+        }
+    } else if (focused_within_second) {
+        if (first_ws == second_ws) {
+            con_focus(old_focus);
+        } else {
+            con_focus(con_descend_focused(first));
+        }
+    }
+
+    /* We need to copy each other's percentages to ensure that the geometry
+     * doesn't change during the swap. This needs to happen _before_ we close
+     * the fake container as closing the tree will recalculate percentages. */
+    first->percent = second_percent;
+    second->percent = first_percent;
+    fake->percent = 0.0;
+
+swap_end:
+    /* We don't actually need this since percentages-wise we haven't changed
+     * anything, but we'll better be safe than sorry and just make sure as we'd
+     * otherwise crash i3. */
+    con_fix_percent(first->parent);
+    con_fix_percent(second->parent);
+
+    /* We can get rid of the fake container again now. */
+    con_close(fake, DONT_KILL_WINDOW);
+
+    con_force_split_parents_redraw(first);
+    con_force_split_parents_redraw(second);
+
+    return result;
 }

@@ -38,6 +38,7 @@ state INITIAL:
   'rename' -> RENAME
   'nop' -> NOP
   'scratchpad' -> SCRATCHPAD
+  'swap' -> SWAP
   'title_format' -> TITLE_FORMAT
   'mode' -> MODE
   'bar' -> BAR
@@ -405,6 +406,21 @@ state NOP:
 state SCRATCHPAD:
   'show'
       -> call cmd_scratchpad_show()
+
+# swap [container] [with] id <window>
+# swap [container] [with] con_id <con_id>
+# swap [container] [with] mark <mark>
+state SWAP:
+  'container'
+      ->
+  'with'
+      ->
+  mode = 'id', 'con_id', 'mark'
+      -> SWAP_ARGUMENT
+
+state SWAP_ARGUMENT:
+  arg = string
+      -> call cmd_swap($mode, $arg)
 
 state TITLE_FORMAT:
   format = string

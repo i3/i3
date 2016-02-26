@@ -1813,6 +1813,65 @@ void cmd_scratchpad_show(I3_CMD) {
 }
 
 /*
+ * Implementation of 'swap [container] [with] id|con_id|mark <arg>'.
+ *
+ */
+void cmd_swap(I3_CMD, const char *mode, const char *arg) {
+    HANDLE_EMPTY_MATCH;
+
+    owindow *match = TAILQ_FIRST(&owindows);
+    if (match == NULL) {
+        DLOG("No match found for swapping.\n");
+        return;
+    }
+
+    Con *con;
+    if (strcmp(mode, "id") == 0) {
+        long target;
+        if (!parse_long(arg, &target, 0)) {
+            yerror("Failed to parse %s into a window id.\n", arg);
+            return;
+        }
+
+        con = con_by_window_id(target);
+    } else if (strcmp(mode, "con_id") == 0) {
+        long target;
+        if (!parse_long(arg, &target, 0)) {
+            yerror("Failed to parse %s into a container id.\n", arg);
+            return;
+        }
+
+        con = (Con *)target;
+    } else if (strcmp(mode, "mark") == 0) {
+        con = con_by_mark(arg);
+    } else {
+        yerror("Unhandled swap mode \"%s\". This is a bug.\n", mode);
+        return;
+    }
+
+    if (con == NULL) {
+        yerror("Could not find container for %s = %s\n", mode, arg);
+        return;
+    }
+
+    if (match == TAILQ_LAST(&owindows, owindows_head)) {
+        DLOG("More than one container matched the swap command, only using the first one.");
+    }
+
+    if (match->con == NULL) {
+        DLOG("Match %p has no container.\n", match);
+        ysuccess(false);
+        return;
+    }
+
+    DLOG("Swapping %p with %p.\n", match->con, con);
+    bool result = con_swap(match->con, con);
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(result);
+}
+
+/*
  * Implementation of 'title_format <format>'
  *
  */

@@ -458,3 +458,20 @@ void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it) {
      * waitpid() here. */
     waitpid(*nagbar_pid, NULL, 0);
 }
+
+/*
+ * Converts a string into a long using strtol().
+ * This is a convenience wrapper checking the parsing result. It returns true
+ * if the number could be parsed.
+ */
+bool parse_long(const char *str, long *out, int base) {
+    char *end;
+    long result = strtol(str, &end, base);
+    if (result == LONG_MIN || result == LONG_MAX || result < 0 || (end != NULL && *end != '\0')) {
+        *out = result;
+        return false;
+    }
+
+    *out = result;
+    return true;
+}
