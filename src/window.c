@@ -320,6 +320,9 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
      * https://people.gnome.org/~tthurman/docs/metacity/xprops_8h-source.html
      * http://stackoverflow.com/questions/13787553/detect-if-a-x11-window-has-decorations
      */
+#define MWM_HINTS_FLAGS_FIELD 0
+#define MWM_HINTS_DECORATIONS_FIELD 2
+
 #define MWM_HINTS_DECORATIONS (1 << 1)
 #define MWM_DECOR_ALL (1 << 0)
 #define MWM_DECOR_BORDER (1 << 1)
@@ -333,17 +336,23 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
         return;
     }
 
-    /* The property consists of an array of 5 uint64_t's. The first value is a bit
-     * mask of what properties the hint will specify. We are only interested in
-     * MWM_HINTS_DECORATIONS because it indicates that the second value of the
+    /* The property consists of an array of 5 uint32_t's. The first value is a
+     * bit mask of what properties the hint will specify. We are only interested
+     * in MWM_HINTS_DECORATIONS because it indicates that the third value of the
      * array tells us which decorations the window should have, each flag being
-     * a particular decoration. */
-    uint64_t *motif_hints = (uint64_t *)xcb_get_property_value(prop);
+     * a particular decoration. Notice that X11 (Xlib) often mentions 32-bit
+     * fields which in reality are implemented using unsigned long variables
+     * (64-bits long on amd64 for example). On the other hand,
+     * xcb_get_property_value() behaves strictly according to documentation,
+     * i.e. returns 32-bit data fields. */
+    uint32_t *motif_hints = (uint32_t *)xcb_get_property_value(prop);
 
-    if (motif_border_style != NULL && motif_hints[0] & MWM_HINTS_DECORATIONS) {
-        if (motif_hints[1] & MWM_DECOR_ALL || motif_hints[1] & MWM_DECOR_TITLE)
+    if (motif_border_style != NULL &&
+        motif_hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS) {
+        if (motif_hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_ALL ||
+            motif_hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_TITLE)
             *motif_border_style = BS_NORMAL;
-        else if (motif_hints[1] & MWM_DECOR_BORDER)
+        else if (motif_hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_BORDER)
             *motif_border_style = BS_PIXEL;
         else
             *motif_border_style = BS_NONE;
@@ -351,6 +360,8 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
 
     FREE(prop);
 
+#undef MWM_HINTS_FLAGS_FIELD
+#undef MWM_HINTS_DECORATIONS_FIELD
 #undef MWM_HINTS_DECORATIONS
 #undef MWM_DECOR_ALL
 #undef MWM_DECOR_BORDER
