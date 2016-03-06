@@ -380,7 +380,8 @@ my %window_types = (
     'menu'          => '_NET_WM_WINDOW_TYPE_MENU',
     'dropdown_menu' => '_NET_WM_WINDOW_TYPE_DROPDOWN_MENU',
     'popup_menu'    => '_NET_WM_WINDOW_TYPE_POPUP_MENU',
-    'tooltip'       => '_NET_WM_WINDOW_TYPE_TOOLTIP'
+    'tooltip'       => '_NET_WM_WINDOW_TYPE_TOOLTIP',
+    'notification'  => '_NET_WM_WINDOW_TYPE_NOTIFICATION'
 );
 
 while (my ($window_type, $atom) = each %window_types) {
@@ -398,7 +399,7 @@ EOT
 
     my @nodes = @{get_ws($tmp)->{floating_nodes}};
     cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
-    is($nodes[0]->{nodes}[0]->{mark}, 'branded', "mark set (window_type = $atom)");
+    is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'branded' ], "mark set (window_type = $atom)");
 
     exit_gracefully($pid);
 
@@ -431,7 +432,7 @@ EOT
 
     my @nodes = @{get_ws($tmp)->{floating_nodes}};
     cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
-    is($nodes[0]->{nodes}[0]->{mark}, 'branded', "mark set (window_type = $atom)");
+    is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'branded' ], "mark set (window_type = $atom)");
 
     exit_gracefully($pid);
 
@@ -454,7 +455,7 @@ $window = open_window;
 
 @nodes = @{get_ws('trigger')->{floating_nodes}};
 cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
-is($nodes[0]->{nodes}[0]->{mark}, 'triggered', "mark set for workspace criterion");
+is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'triggered' ], "mark set for workspace criterion");
 
 exit_gracefully($pid);
 

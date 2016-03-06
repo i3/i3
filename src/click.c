@@ -198,11 +198,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
             xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, event->time);
             xcb_flush(conn);
 
-            if (result->needs_tree_render)
-                tree_render();
-
             command_result_free(result);
-
             return 0;
         }
     }
@@ -356,13 +352,24 @@ int handle_button_press(xcb_button_press_event_t *event) {
 
     last_timestamp = event->time;
 
-    const uint32_t mod = config.floating_modifier;
+    const uint32_t mod = (config.floating_modifier & 0xFFFF);
     const bool mod_pressed = (mod != 0 && (event->state & mod) == mod);
     DLOG("floating_mod = %d, detail = %d\n", mod_pressed, event->detail);
     if ((con = con_by_window_id(event->event)))
         return route_click(con, event, mod_pressed, CLICK_INSIDE);
 
     if (!(con = con_by_frame_id(event->event))) {
+        /* Run bindings on the root window as well, see #2097. We only run it
+         * if --whole-window was set as that's the equivalent for a normal
+         * window. */
+        if (event->event == root) {
+            Binding *bind = get_binding_from_xcb_event((xcb_generic_event_t *)event);
+            if (bind != NULL && bind->whole_window) {
+                CommandResult *result = run_binding(bind, NULL);
+                command_result_free(result);
+            }
+        }
+
         /* If the root window is clicked, find the relevant output from the
          * click coordinates and focus the output's active workspace. */
         if (event->event == root && event->response_type == XCB_BUTTON_PRESS) {

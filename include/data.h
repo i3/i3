@@ -46,6 +46,7 @@ typedef struct Con Con;
 typedef struct Match Match;
 typedef struct Assignment Assignment;
 typedef struct Window i3Window;
+typedef struct mark_t mark_t;
 
 /******************************************************************************
  * Helper types
@@ -61,7 +62,7 @@ typedef enum { BS_NORMAL = 0,
                BS_NONE = 1,
                BS_PIXEL = 2 } border_style_t;
 
-/** parameter to specify whether tree_close() and x_window_kill() should kill
+/** parameter to specify whether tree_close_internal() and x_window_kill() should kill
  * only this specific window or the whole X11 client */
 typedef enum { DONT_KILL_WINDOW = 0,
                KILL_WINDOW = 1,
@@ -73,6 +74,9 @@ typedef enum { ADJ_NONE = 0,
                ADJ_RIGHT_SCREEN_EDGE = (1 << 1),
                ADJ_UPPER_SCREEN_EDGE = (1 << 2),
                ADJ_LOWER_SCREEN_EDGE = (1 << 4) } adjacent_t;
+
+typedef enum { MM_REPLACE,
+               MM_ADD } mark_mode_t;
 
 /**
  * Container layouts. See Con::layout.
@@ -175,7 +179,7 @@ struct deco_render_params {
     struct width_height con_rect;
     struct width_height con_window_rect;
     Rect con_deco_rect;
-    uint32_t background;
+    color_t background;
     layout_t parent_layout;
     bool con_is_leaf;
 };
@@ -372,8 +376,6 @@ struct Window {
 
     /** The name of the window. */
     i3String *name;
-    /** The format with which the window's name should be displayed. */
-    char *title_format;
 
     /** The WM_WINDOW_ROLE of this window (for example, the pidgin buddy window
      * sets "buddy list"). Useful to match specific windows in assignments or
@@ -395,6 +397,9 @@ struct Window {
 
     /** The _NET_WM_WINDOW_TYPE for this window. */
     xcb_atom_t window_type;
+
+    /** The _NET_WM_DESKTOP for this window. */
+    uint32_t wm_desktop;
 
     /** Whether the window says it is a dock window */
     enum { W_NODOCK = 0,
@@ -432,6 +437,9 @@ struct Window {
  *
  */
 struct Match {
+    /* Set if a criterion was specified incorrectly. */
+    char *error;
+
     struct regex *title;
     struct regex *application;
     struct regex *class;
@@ -523,6 +531,12 @@ typedef enum { CF_NONE = 0,
                CF_OUTPUT = 1,
                CF_GLOBAL = 2 } fullscreen_mode_t;
 
+struct mark_t {
+    char *name;
+
+    TAILQ_ENTRY(mark_t) marks;
+};
+
 /**
  * A 'Con' represents everything from the X11 root window down to a single X11 window.
  *
@@ -541,11 +555,10 @@ struct Con {
      * change. */
     uint8_t ignore_unmap;
 
-    /* ids/pixmap/graphics context for the frame window */
+    /* The surface used for the frame window. */
+    surface_t frame;
+    surface_t frame_buffer;
     bool pixmap_recreated;
-    xcb_window_t frame;
-    xcb_pixmap_t pixmap;
-    xcb_gcontext_t pm_gc;
 
     enum {
         CT_ROOT = 0,
@@ -562,21 +575,30 @@ struct Con {
 
     struct Con *parent;
 
+    /* The position and size for this con. These coordinates are absolute. Note
+     * that the rect of a container does not include the decoration. */
     struct Rect rect;
+    /* The position and size of the actual client window. These coordinates are
+     * relative to the container's rect. */
     struct Rect window_rect;
+    /* The position and size of the container's decoration. These coordinates
+     * are relative to the container's parent's rect. */
     struct Rect deco_rect;
     /** the geometry this window requested when getting mapped */
     struct Rect geometry;
 
     char *name;
 
+    /** The format with which the window's name should be displayed. */
+    char *title_format;
+
     /* a sticky-group is an identifier which bundles several containers to a
      * group. The contents are shared between all of them, that is they are
      * displayed on whichever of the containers is currently visible */
     char *sticky_group;
 
-    /* user-definable mark to jump to this container later */
-    char *mark;
+    /* user-definable marks to jump to this container later */
+    TAILQ_HEAD(marks_head, mark_t) marks_head;
     /* cached to decide whether a redraw is needed */
     bool mark_changed;
 

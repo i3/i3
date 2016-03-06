@@ -146,6 +146,8 @@ state ASSIGN:
 state ASSIGN_WORKSPACE:
   '→'
       ->
+  'workspace'
+      ->
   workspace = string
       -> call cfg_assign($workspace)
 
@@ -280,9 +282,15 @@ state COLOR_TEXT:
 
 state COLOR_INDICATOR:
   indicator = word
-      -> call cfg_color($colorclass, $border, $background, $text, $indicator)
+      -> COLOR_CHILD_BORDER
   end
-      -> call cfg_color($colorclass, $border, $background, $text, NULL)
+      -> call cfg_color($colorclass, $border, $background, $text, NULL, NULL)
+
+state COLOR_CHILD_BORDER:
+  child_border = word
+      -> call cfg_color($colorclass, $border, $background, $text, $indicator, $child_border)
+  end
+      -> call cfg_color($colorclass, $border, $background, $text, $indicator, NULL)
 
 # <exec|exec_always> [--no-startup-id] command
 state EXEC:
@@ -326,8 +334,10 @@ state BINDCOMMAND:
 ################################################################################
 
 state MODENAME:
+  pango_markup = '--pango_markup'
+      ->
   modename = word
-      -> call cfg_enter_mode($modename); MODEBRACE
+      -> call cfg_enter_mode($pango_markup, $modename); MODEBRACE
 
 state MODEBRACE:
   end
@@ -443,7 +453,7 @@ state BAR_ID:
       -> call cfg_bar_id($bar_id); BAR
 
 state BAR_MODIFIER:
-  modifier = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Control', 'Ctrl', 'Shift'
+  modifier = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Control', 'Ctrl', 'Shift', 'none', 'off'
       -> call cfg_bar_modifier($modifier); BAR
 
 state BAR_WHEEL_UP_CMD:
@@ -518,7 +528,7 @@ state BAR_COLORS:
   end ->
   '#' -> BAR_COLORS_IGNORE_LINE
   'set' -> BAR_COLORS_IGNORE_LINE
-  colorclass = 'background', 'statusline', 'separator'
+  colorclass = 'background', 'statusline', 'separator', 'focused_background', 'focused_statusline', 'focused_separator'
       -> BAR_COLORS_SINGLE
   colorclass = 'focused_workspace', 'active_workspace', 'inactive_workspace', 'urgent_workspace', 'binding_mode'
       -> BAR_COLORS_BORDER

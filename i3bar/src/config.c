@@ -21,6 +21,7 @@
 
 static char *cur_key;
 static bool parsing_bindings;
+static bool parsing_tray_outputs;
 
 /*
  * Parse a key.
@@ -30,19 +31,22 @@ static bool parsing_bindings;
  */
 static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
     FREE(cur_key);
+    sasprintf(&(cur_key), "%.*s", keyLen, keyVal);
 
-    cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(cur_key, (const char *)keyVal, keyLen);
-    cur_key[keyLen] = '\0';
-
-    if (strcmp(cur_key, "bindings") == 0)
+    if (strcmp(cur_key, "bindings") == 0) {
         parsing_bindings = true;
+    }
+
+    if (strcmp(cur_key, "tray_outputs") == 0) {
+        parsing_tray_outputs = true;
+    }
 
     return 1;
 }
 
 static int config_end_array_cb(void *params_) {
     parsing_bindings = false;
+    parsing_tray_outputs = false;
     return 1;
 }
 
@@ -93,6 +97,14 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
         return 0;
     }
 
+    if (parsing_tray_outputs) {
+        DLOG("Adding tray_output = %.*s to the list.\n", len, val);
+        tray_output_t *tray_output = scalloc(1, sizeof(tray_output_t));
+        sasprintf(&(tray_output->output), "%.*s", len, val);
+        TAILQ_INSERT_TAIL(&(config.tray_outputs), tray_output, tray_outputs);
+        return 1;
+    }
+
     if (!strcmp(cur_key, "mode")) {
         DLOG("mode = %.*s, len = %d\n", len, val, len);
         config.hide_on_modifier = (len == 4 && !strncmp((const char *)val, "dock", strlen("dock")) ? M_DOCK
@@ -109,6 +121,11 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 
     if (!strcmp(cur_key, "modifier")) {
         DLOG("modifier = %.*s\n", len, val);
+        if (len == 4 && !strncmp((const char *)val, "none", strlen("none"))) {
+            config.modifier = XCB_NONE;
+            return 1;
+        }
+
         if (len == 5 && !strncmp((const char *)val, "shift", strlen("shift"))) {
             config.modifier = ShiftMask;
             return 1;
@@ -128,16 +145,12 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
                 case '3':
                     config.modifier = Mod3Mask;
                     return 1;
-                /*
-                case '4':
-                    config.modifier = Mod4Mask;
-                    return 1;
-                */
                 case '5':
                     config.modifier = Mod5Mask;
                     return 1;
             }
         }
+
         config.modifier = Mod4Mask;
         return 1;
     }
@@ -198,10 +211,13 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
         return 1;
     }
 
+    /* We keep the old single tray_output working for users who only restart i3bar
+     * after updating. */
     if (!strcmp(cur_key, "tray_output")) {
-        DLOG("tray_output %.*s\n", len, val);
-        FREE(config.tray_output);
-        sasprintf(&config.tray_output, "%.*s", len, val);
+        DLOG("Found deprecated key tray_output %.*s.\n", len, val);
+        tray_output_t *tray_output = scalloc(1, sizeof(tray_output_t));
+        sasprintf(&(tray_output->output), "%.*s", len, val);
+        TAILQ_INSERT_TAIL(&(config.tray_outputs), tray_output, tray_outputs);
         return 1;
     }
 
@@ -217,6 +233,9 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
     COLOR(statusline, bar_fg);
     COLOR(background, bar_bg);
     COLOR(separator, sep_fg);
+    COLOR(focused_statusline, focus_bar_fg);
+    COLOR(focused_background, focus_bar_bg);
+    COLOR(focused_separator, focus_sep_fg);
     COLOR(focused_workspace_border, focus_ws_border);
     COLOR(focused_workspace_bg, focus_ws_bg);
     COLOR(focused_workspace_text, focus_ws_fg);
@@ -317,6 +336,7 @@ void parse_config_json(char *json) {
     handle = yajl_alloc(&outputs_callbacks, NULL, NULL);
 
     TAILQ_INIT(&(config.bindings));
+    TAILQ_INIT(&(config.tray_outputs));
 
     state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
@@ -346,6 +366,9 @@ void free_colors(struct xcb_color_strings_t *colors) {
     FREE_COLOR(bar_fg);
     FREE_COLOR(bar_bg);
     FREE_COLOR(sep_fg);
+    FREE_COLOR(focus_bar_fg);
+    FREE_COLOR(focus_bar_bg);
+    FREE_COLOR(focus_sep_fg);
     FREE_COLOR(active_ws_fg);
     FREE_COLOR(active_ws_bg);
     FREE_COLOR(active_ws_border);

@@ -47,7 +47,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
         new->depth = window->depth;
         new->window->aspect_ratio = 0.0;
     } else {
-        new->depth = XCB_COPY_FROM_PARENT;
+        new->depth = root_depth;
     }
     DLOG("opening window\n");
 
@@ -55,6 +55,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     TAILQ_INIT(&(new->nodes_head));
     TAILQ_INIT(&(new->focus_head));
     TAILQ_INIT(&(new->swallow_head));
+    TAILQ_INIT(&(new->marks_head));
 
     if (parent != NULL)
         con_attach(new, parent, false);
@@ -217,6 +218,36 @@ void con_focus(Con *con) {
         workspace_update_urgent_flag(con_get_workspace(con));
         ipc_send_window_event("urgent", con);
     }
+}
+
+/*
+ * Closes the given container.
+ *
+ */
+void con_close(Con *con, kill_window_t kill_window) {
+    assert(con != NULL);
+    DLOG("Closing con = %p.\n", con);
+
+    /* We never close output or root containers. */
+    if (con->type == CT_OUTPUT || con->type == CT_ROOT) {
+        DLOG("con = %p is of type %d, not closing anything.\n", con, con->type);
+        return;
+    }
+
+    if (con->type == CT_WORKSPACE) {
+        DLOG("con = %p is a workspace, closing all children instead.\n", con);
+        Con *child, *nextchild;
+        for (child = TAILQ_FIRST(&(con->focus_head)); child;) {
+            nextchild = TAILQ_NEXT(child, focused);
+            DLOG("killing child = %p.\n", child);
+            tree_close_internal(child, kill_window, false, false);
+            child = nextchild;
+        }
+
+        return;
+    }
+
+    tree_close_internal(con, kill_window, false, false);
 }
 
 /*
@@ -513,7 +544,7 @@ Con *con_by_window_id(xcb_window_t window) {
 Con *con_by_frame_id(xcb_window_t frame) {
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons)
-    if (con->frame == frame)
+    if (con->frame.id == frame)
         return con;
     return NULL;
 }
@@ -526,11 +557,25 @@ Con *con_by_frame_id(xcb_window_t frame) {
 Con *con_by_mark(const char *mark) {
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons) {
-        if (con->mark != NULL && strcmp(con->mark, mark) == 0)
+        if (con_has_mark(con, mark))
             return con;
     }
 
     return NULL;
+}
+
+/*
+ * Returns true if and only if the given containers holds the mark.
+ *
+ */
+bool con_has_mark(Con *con, const char *mark) {
+    mark_t *current;
+    TAILQ_FOREACH(current, &(con->marks_head), marks) {
+        if (strcmp(current->name, mark) == 0)
+            return true;
+    }
+
+    return false;
 }
 
 /*
@@ -539,14 +584,14 @@ Con *con_by_mark(const char *mark) {
  * Otherwise, the mark is assigned to the container.
  *
  */
-void con_mark_toggle(Con *con, const char *mark) {
+void con_mark_toggle(Con *con, const char *mark, mark_mode_t mode) {
     assert(con != NULL);
     DLOG("Toggling mark \"%s\" on con = %p.\n", mark, con);
 
-    if (con->mark != NULL && strcmp(con->mark, mark) == 0) {
-        con_unmark(mark);
+    if (con_has_mark(con, mark)) {
+        con_unmark(con, mark);
     } else {
-        con_mark(con, mark);
+        con_mark(con, mark, mode);
     }
 }
 
@@ -554,55 +599,77 @@ void con_mark_toggle(Con *con, const char *mark) {
  * Assigns a mark to the container.
  *
  */
-void con_mark(Con *con, const char *mark) {
+void con_mark(Con *con, const char *mark, mark_mode_t mode) {
     assert(con != NULL);
     DLOG("Setting mark \"%s\" on con = %p.\n", mark, con);
 
-    FREE(con->mark);
-    con->mark = sstrdup(mark);
-    con->mark_changed = true;
+    con_unmark(NULL, mark);
+    if (mode == MM_REPLACE) {
+        DLOG("Removing all existing marks on con = %p.\n", con);
 
-    DLOG("Clearing the mark from all other windows.\n");
-    Con *other;
-    TAILQ_FOREACH(other, &all_cons, all_cons) {
-        /* Skip the window we actually handled since we took care of it already. */
-        if (con == other)
-            continue;
-
-        if (other->mark != NULL && strcmp(other->mark, mark) == 0) {
-            FREE(other->mark);
-            other->mark_changed = true;
+        mark_t *current;
+        while (!TAILQ_EMPTY(&(con->marks_head))) {
+            current = TAILQ_FIRST(&(con->marks_head));
+            con_unmark(con, current->name);
         }
     }
+
+    mark_t *new = scalloc(1, sizeof(mark_t));
+    new->name = sstrdup(mark);
+    TAILQ_INSERT_TAIL(&(con->marks_head), new, marks);
+
+    con->mark_changed = true;
 }
 
 /*
- * If mark is NULL, this removes all existing marks.
+ * Removes marks from containers.
+ * If con is NULL, all containers are considered.
+ * If name is NULL, this removes all existing marks.
  * Otherwise, it will only remove the given mark (if it is present).
  *
  */
-void con_unmark(const char *mark) {
-    Con *con;
-    if (mark == NULL) {
+void con_unmark(Con *con, const char *name) {
+    Con *current;
+    if (name == NULL) {
         DLOG("Unmarking all containers.\n");
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            if (con->mark == NULL)
+        TAILQ_FOREACH(current, &all_cons, all_cons) {
+            if (con != NULL && current != con)
                 continue;
 
-            FREE(con->mark);
-            con->mark_changed = true;
+            if (TAILQ_EMPTY(&(current->marks_head)))
+                continue;
+
+            mark_t *mark;
+            while (!TAILQ_EMPTY(&(current->marks_head))) {
+                mark = TAILQ_FIRST(&(current->marks_head));
+                FREE(mark->name);
+                TAILQ_REMOVE(&(current->marks_head), mark, marks);
+                FREE(mark);
+            }
+
+            current->mark_changed = true;
         }
     } else {
-        DLOG("Removing mark \"%s\".\n", mark);
-        con = con_by_mark(mark);
-        if (con == NULL) {
+        DLOG("Removing mark \"%s\".\n", name);
+        current = (con == NULL) ? con_by_mark(name) : con;
+        if (current == NULL) {
             DLOG("No container found with this mark, so there is nothing to do.\n");
             return;
         }
 
-        DLOG("Found mark on con = %p. Removing it now.\n", con);
-        FREE(con->mark);
-        con->mark_changed = true;
+        DLOG("Found mark on con = %p. Removing it now.\n", current);
+        current->mark_changed = true;
+
+        mark_t *mark;
+        TAILQ_FOREACH(mark, &(current->marks_head), marks) {
+            if (strcmp(mark->name, name) != 0)
+                continue;
+
+            FREE(mark->name);
+            TAILQ_REMOVE(&(current->marks_head), mark, marks);
+            FREE(mark);
+            break;
+        }
     }
 }
 
@@ -1004,15 +1071,16 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
             startup_sequence_delete(sequence);
     }
 
-    CALL(parent, on_remove_child);
-
     /* 9. If the container was marked urgent, move the urgency hint. */
     if (urgent) {
         workspace_update_urgent_flag(source_ws);
         con_set_urgency(con, true);
     }
 
+    CALL(parent, on_remove_child);
+
     ipc_send_window_event("move", con);
+    ewmh_update_wm_desktop();
     return true;
 }
 
@@ -1126,7 +1194,7 @@ orientation_t con_orientation(Con *con) {
 
 /*
  * Returns the container which will be focused next when the given container
- * is not available anymore. Called in tree_close and con_move_to_workspace
+ * is not available anymore. Called in tree_close_internal and con_move_to_workspace
  * to properly restore focus.
  *
  */
@@ -1642,7 +1710,7 @@ static void con_on_remove_child(Con *con) {
         if (TAILQ_EMPTY(&(con->focus_head)) && !workspace_is_visible(con)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", con, con->name);
             yajl_gen gen = ipc_marshal_workspace_event("empty", con, NULL);
-            tree_close(con, DONT_KILL_WINDOW, false, false);
+            tree_close_internal(con, DONT_KILL_WINDOW, false, false);
 
             const unsigned char *payload;
             ylength length;
@@ -1663,7 +1731,7 @@ static void con_on_remove_child(Con *con) {
     int children = con_num_children(con);
     if (children == 0) {
         DLOG("Container empty, closing\n");
-        tree_close(con, DONT_KILL_WINDOW, false, false);
+        tree_close_internal(con, DONT_KILL_WINDOW, false, false);
         return;
     }
 }
@@ -1925,6 +1993,7 @@ char *con_get_tree_representation(Con *con) {
                   (TAILQ_FIRST(&(con->nodes_head)) == child ? "" : " "), child_txt);
         free(buf);
         buf = tmp_buf;
+        free(child_txt);
     }
 
     /* 3) close the brackets */
@@ -1933,4 +2002,48 @@ char *con_get_tree_representation(Con *con) {
     free(buf);
 
     return complete_buf;
+}
+
+/*
+ * Returns the container's title considering the current title format.
+ *
+ */
+i3String *con_parse_title_format(Con *con) {
+    assert(con->title_format != NULL);
+
+    i3Window *win = con->window;
+
+    /* We need to ensure that we only escape the window title if pango
+     * is used by the current font. */
+    const bool pango_markup = font_is_pango();
+
+    char *title;
+    char *class;
+    char *instance;
+    if (win == NULL) {
+        title = pango_escape_markup(con_get_tree_representation(con));
+        class = sstrdup("i3-frame");
+        instance = sstrdup("i3-frame");
+    } else {
+        title = pango_escape_markup(sstrdup((win->name == NULL) ? "" : i3string_as_utf8(win->name)));
+        class = pango_escape_markup(sstrdup((win->class_class == NULL) ? "" : win->class_class));
+        instance = pango_escape_markup(sstrdup((win->class_instance == NULL) ? "" : win->class_instance));
+    }
+
+    placeholder_t placeholders[] = {
+        {.name = "%title", .value = title},
+        {.name = "%class", .value = class},
+        {.name = "%instance", .value = instance}};
+    const size_t num = sizeof(placeholders) / sizeof(placeholder_t);
+
+    char *formatted_str = format_placeholders(con->title_format, &placeholders[0], num);
+    i3String *formatted = i3string_from_utf8(formatted_str);
+    i3string_set_markup(formatted, pango_markup);
+    FREE(formatted_str);
+
+    for (size_t i = 0; i < num; i++) {
+        FREE(placeholders[i].value);
+    }
+
+    return formatted;
 }

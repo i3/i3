@@ -24,7 +24,7 @@
 │ PCRE         │ 8.12   │ 8.35   │ http://www.pcre.org/                   │
 │ libsn¹       │ 0.10   │ 0.12   │ http://freedesktop.org/wiki/Software/startup-notification
 │ pango        │ 1.30.0 | 1.36.8 │ http://www.pango.org/                  │
-│ cairo        │ 1.12.2 │ 1.14.0 │ http://cairographics.org/              │
+│ cairo        │ 1.14.4 │ 1.14.4 │ http://cairographics.org/              │
 └──────────────┴────────┴────────┴────────────────────────────────────────┘
  ¹ libsn = libstartup-notification
  ² Pod::Simple is a Perl module required for converting the testsuite

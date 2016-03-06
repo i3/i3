@@ -53,7 +53,7 @@ mode "meh" {
 EOT
 
 my $expected = <<'EOT';
-cfg_enter_mode(meh)
+cfg_enter_mode((null), meh)
 cfg_mode_binding(bindsym, Mod1,Shift, x, (null), (null), (null), resize grow)
 cfg_mode_binding(bindcode, Mod1, 44, (null), (null), (null), resize shrink)
 cfg_mode_binding(bindsym, Mod1, x, --release, (null), (null), exec foo)
@@ -412,19 +412,19 @@ is(parser_calls($config),
 ################################################################################
 
 $config = <<'EOT';
-client.focused          #4c7899 #285577 #ffffff #2e9ef4
+client.focused          #4c7899 #285577 #ffffff #2e9ef4 #b34d4c
 client.focused_inactive #333333 #5f676a #ffffff #484e50
 client.unfocused        #333333 #222222 #888888 #292d2e
-client.urgent           #2f343a #900000 #ffffff #900000
+client.urgent           #2f343a #900000 #ffffff #900000 #c00000
 client.placeholder      #000000 #0c0c0c #ffffff #000000
 EOT
 
 $expected = <<'EOT';
-cfg_color(client.focused, #4c7899, #285577, #ffffff, #2e9ef4)
-cfg_color(client.focused_inactive, #333333, #5f676a, #ffffff, #484e50)
-cfg_color(client.unfocused, #333333, #222222, #888888, #292d2e)
-cfg_color(client.urgent, #2f343a, #900000, #ffffff, #900000)
-cfg_color(client.placeholder, #000000, #0c0c0c, #ffffff, #000000)
+cfg_color(client.focused, #4c7899, #285577, #ffffff, #2e9ef4, #b34d4c)
+cfg_color(client.focused_inactive, #333333, #5f676a, #ffffff, #484e50, NULL)
+cfg_color(client.unfocused, #333333, #222222, #888888, #292d2e, NULL)
+cfg_color(client.urgent, #2f343a, #900000, #ffffff, #900000, #c00000)
+cfg_color(client.placeholder, #000000, #0c0c0c, #ffffff, #000000, NULL)
 EOT
 
 is(parser_calls($config),
@@ -449,7 +449,7 @@ ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: hide_edge_border both
 ERROR: CONFIG:           ^^^^^^^^^^^^^^^^^^^^^
 ERROR: CONFIG: Line   2: client.focused          #4c7899 #285577 #ffffff #2e9ef4
-cfg_color(client.focused, #4c7899, #285577, #ffffff, #2e9ef4)
+cfg_color(client.focused, #4c7899, #285577, #ffffff, #2e9ef4, NULL)
 EOT
 
 $expected = $expected_all_tokens . $expected_end;
@@ -469,7 +469,7 @@ ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: hide_edge_borders FOOBAR
 ERROR: CONFIG:                             ^^^^^^
 ERROR: CONFIG: Line   2: client.focused          #4c7899 #285577 #ffffff #2e9ef4
-cfg_color(client.focused, #4c7899, #285577, #ffffff, #2e9ef4)
+cfg_color(client.focused, #4c7899, #285577, #ffffff, #2e9ef4, NULL)
 EOT
 
 is(parser_calls($config),
@@ -627,7 +627,7 @@ mode "yo" {
 EOT
 
 $expected = <<'EOT';
-cfg_enter_mode(yo)
+cfg_enter_mode((null), yo)
 cfg_mode_binding(bindsym, (null), x, (null), (null), (null), resize shrink left)
 ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', '}'
 ERROR: CONFIG: (in file <stdin>)

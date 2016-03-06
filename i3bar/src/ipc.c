@@ -17,6 +17,9 @@
 #include <sys/un.h>
 #include <i3/ipc.h>
 #include <ev.h>
+#ifdef I3_ASAN_ENABLED
+#include <sanitizer/lsan_interface.h>
+#endif
 
 #include "common.h"
 
@@ -63,7 +66,6 @@ void got_output_reply(char *reply) {
     DLOG("Parsing outputs JSON...\n");
     parse_outputs_json(reply);
     DLOG("Reconfiguring windows...\n");
-    realloc_sl_buffer();
     reconfig_windows(false);
 
     i3_output *o_walk;
@@ -175,7 +177,6 @@ void got_bar_config_update(char *event) {
     /* update fonts and colors */
     init_xcb_late(config.fontname);
     init_colors(&(config.colors));
-    realloc_sl_buffer();
 
     draw_bars(false);
 }
@@ -214,6 +215,9 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
             /* EOF received. Since i3 will restart i3bar instances as appropriate,
              * we exit here. */
             DLOG("EOF received, exiting...\n");
+#ifdef I3_ASAN_ENABLED
+            __lsan_do_leak_check();
+#endif
             clean_xcb();
             exit(EXIT_SUCCESS);
         }

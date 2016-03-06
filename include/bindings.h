@@ -15,7 +15,7 @@ extern pid_t command_error_nagbar_pid;
  * The name of the default mode.
  *
  */
-const char *DEFAULT_BINDING_MODE;
+extern const char *DEFAULT_BINDING_MODE;
 
 /**
  * Adds a binding from config parameters given as strings and returns a
@@ -25,13 +25,20 @@ const char *DEFAULT_BINDING_MODE;
  */
 Binding *configure_binding(const char *bindtype, const char *modifiers, const char *input_code,
                            const char *release, const char *border, const char *whole_window,
-                           const char *command, const char *mode);
+                           const char *command, const char *mode, bool pango_markup);
 
 /**
  * Grab the bound keys (tell X to send us keypress events for those keycodes)
  *
  */
 void grab_all_keys(xcb_connection_t *conn);
+
+/**
+ * Release the button grabs on all managed windows and regrab them,
+ * reevaluating which buttons need to be grabbed.
+ *
+ */
+void regrab_all_buttons(xcb_connection_t *conn);
 
 /**
  * Returns a pointer to the Binding that matches the given xcb event or NULL if
@@ -95,3 +102,12 @@ CommandResult *run_binding(Binding *bind, Con *con);
  *
  */
 bool load_keymap(void);
+
+/**
+ * Returns true if the current config has any binding to a scroll wheel button
+ * (4 or 5) which is a whole-window binding.
+ * We need this to figure out whether we should grab all buttons or just 1-3
+ * when managing a window. See #2049.
+ *
+ */
+bool bindings_should_grab_scrollwheel_buttons(void);

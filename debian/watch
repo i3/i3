@@ -1,2 +1,3 @@
 version=3
-http://i3wm.org/downloads/ /downloads/i3-(.*)\.tar\.bz2
+opts=pgpsigurlmangle=s/$/.asc/ \
+  https://i3wm.org/downloads/ /downloads/i3-(.*)\.tar\.bz2

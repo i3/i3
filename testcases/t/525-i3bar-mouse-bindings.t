@@ -17,6 +17,7 @@
 # Ensures that mouse bindings on the i3bar work correctly.
 # Ticket: #1695
 use i3test i3_autostart => 0;
+use i3test::XTEST;
 
 my ($cv, $timer);
 sub reset_test {
@@ -41,64 +42,72 @@ bar {
 }
 EOT
 
-SKIP: {
-    qx(command -v xdotool 2> /dev/null);
-    skip 'xdotool is required for this test', 1 if $?;
+my $pid = launch_with_config($config);
+my $i3 = i3(get_socket_path());
+$i3->connect()->recv;
+my $ws = fresh_workspace;
 
-    my $pid = launch_with_config($config);
-    my $i3 = i3(get_socket_path());
-    $i3->connect()->recv;
-    my $ws = fresh_workspace;
-
-    reset_test;
-    $i3->subscribe({
+reset_test;
+$i3->subscribe({
         window => sub {
             my ($event) = @_;
             if ($event->{change} eq 'focus') {
                 $cv->send($event->{container});
             }
+            if ($event->{change} eq 'new') {
+                if (defined($event->{container}->{window_properties}->{class}) &&
+                    $event->{container}->{window_properties}->{class} eq 'i3bar') {
+                    $cv->send($event->{container});
+                }
+            }
         },
     })->recv;
 
-    my $left = open_window;
-    my $right = open_window;
-    sync_with_i3;
-    my $con = $cv->recv;
-    is($con->{window}, $right->{id}, 'focus is initially on the right container');
-    reset_test;
+my $con = $cv->recv;
+ok($con, 'i3bar appeared');
 
-    qx(xdotool mousemove 3 3 click 1);
-    sync_with_i3;
-    $con = $cv->recv;
-    is($con->{window}, $left->{id}, 'button 1 moves focus left');
-    reset_test;
+my $left = open_window;
+my $right = open_window;
+sync_with_i3;
+$con = $cv->recv;
+is($con->{window}, $right->{id}, 'focus is initially on the right container');
+reset_test;
 
-    qx(xdotool mousemove 3 3 click 2);
-    sync_with_i3;
-    $con = $cv->recv;
-    is($con->{window}, $right->{id}, 'button 2 moves focus right');
-    reset_test;
+xtest_button_press(1, 3, 3);
+xtest_button_release(1, 3, 3);
+sync_with_i3;
+$con = $cv->recv;
+is($con->{window}, $left->{id}, 'button 1 moves focus left');
+reset_test;
 
-    qx(xdotool mousemove 3 3 click 3);
-    sync_with_i3;
-    $con = $cv->recv;
-    is($con->{window}, $left->{id}, 'button 3 moves focus left');
-    reset_test;
+xtest_button_press(2, 3, 3);
+xtest_button_release(2, 3, 3);
+sync_with_i3;
+$con = $cv->recv;
+is($con->{window}, $right->{id}, 'button 2 moves focus right');
+reset_test;
 
-    qx(xdotool mousemove 3 3 click 4);
-    sync_with_i3;
-    $con = $cv->recv;
-    is($con->{window}, $right->{id}, 'button 4 moves focus right');
-    reset_test;
+xtest_button_press(3, 3, 3);
+xtest_button_release(3, 3, 3);
+sync_with_i3;
+$con = $cv->recv;
+is($con->{window}, $left->{id}, 'button 3 moves focus left');
+reset_test;
 
-    qx(xdotool mousemove 3 3 click 5);
-    sync_with_i3;
-    $con = $cv->recv;
-    is($con->{window}, $left->{id}, 'button 5 moves focus left');
-    reset_test;
+xtest_button_press(4, 3, 3);
+xtest_button_release(4, 3, 3);
+sync_with_i3;
+$con = $cv->recv;
+is($con->{window}, $right->{id}, 'button 4 moves focus right');
+reset_test;
 
-    exit_gracefully($pid);
+xtest_button_press(5, 3, 3);
+xtest_button_release(5, 3, 3);
+sync_with_i3;
+$con = $cv->recv;
+is($con->{window}, $left->{id}, 'button 5 moves focus left');
+reset_test;
 
-}
+exit_gracefully($pid);
 
 done_testing;

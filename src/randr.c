@@ -741,7 +741,7 @@ void randr_query_outputs(void) {
                     if (current != next && TAILQ_EMPTY(&(current->focus_head))) {
                         /* the workspace is empty and not focused, get rid of it */
                         DLOG("Getting rid of current = %p / %s (empty, unfocused)\n", current, current->name);
-                        tree_close(current, DONT_KILL_WINDOW, false, false);
+                        tree_close_internal(current, DONT_KILL_WINDOW, false, false);
                         continue;
                     }
                     DLOG("Detaching current = %p / %s\n", current, current->name);
@@ -783,7 +783,7 @@ void randr_query_outputs(void) {
                 }
 
                 DLOG("destroying disappearing con %p\n", output->con);
-                tree_close(output->con, DONT_KILL_WINDOW, true, false);
+                tree_close_internal(output->con, DONT_KILL_WINDOW, true, false);
                 DLOG("Done. Should be fine now\n");
                 output->con = NULL;
             }

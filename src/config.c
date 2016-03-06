@@ -71,24 +71,29 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
  */
 void load_configuration(xcb_connection_t *conn, const char *override_configpath, bool reload) {
     if (reload) {
+        /* If we are currently in a binding mode, we first revert to the
+         * default since we have no guarantee that the current mode will even
+         * still exist after parsing the config again. See #2228. */
+        switch_mode("default");
+
         /* First ungrab the keys */
         ungrab_all_keys(conn);
 
         struct Mode *mode;
-        Binding *bind;
         while (!SLIST_EMPTY(&modes)) {
             mode = SLIST_FIRST(&modes);
             FREE(mode->name);
 
             /* Clear the old binding list */
-            bindings = mode->bindings;
-            while (!TAILQ_EMPTY(bindings)) {
-                bind = TAILQ_FIRST(bindings);
-                TAILQ_REMOVE(bindings, bind, bindings);
+            while (!TAILQ_EMPTY(mode->bindings)) {
+                Binding *bind = TAILQ_FIRST(mode->bindings);
+                TAILQ_REMOVE(mode->bindings, bind, bindings);
                 binding_free(bind);
             }
-            FREE(bindings);
+            FREE(mode->bindings);
+
             SLIST_REMOVE(&modes, mode, Mode, modes);
+            FREE(mode);
         }
 
         struct Assignment *assign;
@@ -110,14 +115,32 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(barconfig->id);
             for (int c = 0; c < barconfig->num_outputs; c++)
                 free(barconfig->outputs[c]);
+
+            while (!TAILQ_EMPTY(&(barconfig->bar_bindings))) {
+                struct Barbinding *binding = TAILQ_FIRST(&(barconfig->bar_bindings));
+                FREE(binding->command);
+                TAILQ_REMOVE(&(barconfig->bar_bindings), binding, bindings);
+                FREE(binding);
+            }
+
+            while (!TAILQ_EMPTY(&(barconfig->tray_outputs))) {
+                struct tray_output_t *tray_output = TAILQ_FIRST(&(barconfig->tray_outputs));
+                FREE(tray_output->output);
+                TAILQ_REMOVE(&(barconfig->tray_outputs), tray_output, tray_outputs);
+                FREE(tray_output);
+            }
+
             FREE(barconfig->outputs);
-            FREE(barconfig->tray_output);
             FREE(barconfig->socket_path);
             FREE(barconfig->status_command);
             FREE(barconfig->i3bar_command);
             FREE(barconfig->font);
             FREE(barconfig->colors.background);
             FREE(barconfig->colors.statusline);
+            FREE(barconfig->colors.separator);
+            FREE(barconfig->colors.focused_background);
+            FREE(barconfig->colors.focused_statusline);
+            FREE(barconfig->colors.focused_separator);
             FREE(barconfig->colors.focused_workspace_border);
             FREE(barconfig->colors.focused_workspace_bg);
             FREE(barconfig->colors.focused_workspace_text);
@@ -151,6 +174,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
         /* Get rid of the current font */
         free_font();
+
+        free(config.ipc_socket_path);
+        free(config.restart_state_path);
+        free(config.fake_outputs);
     }
 
     SLIST_INIT(&modes);
@@ -173,13 +200,14 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 /* Initialize default colors */
 #define INIT_COLOR(x, cborder, cbackground, ctext, cindicator) \
     do {                                                       \
-        x.border = get_colorpixel(cborder);                    \
-        x.background = get_colorpixel(cbackground);            \
-        x.text = get_colorpixel(ctext);                        \
-        x.indicator = get_colorpixel(cindicator);              \
+        x.border = draw_util_hex_to_color(cborder);            \
+        x.background = draw_util_hex_to_color(cbackground);    \
+        x.text = draw_util_hex_to_color(ctext);                \
+        x.indicator = draw_util_hex_to_color(cindicator);      \
+        x.child_border = draw_util_hex_to_color(cbackground);  \
     } while (0)
 
-    config.client.background = get_colorpixel("#000000");
+    config.client.background = draw_util_hex_to_color("#000000");
     INIT_COLOR(config.client.focused, "#4c7899", "#285577", "#ffffff", "#2e9ef4");
     INIT_COLOR(config.client.focused_inactive, "#333333", "#5f676a", "#ffffff", "#484e50");
     INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888", "#292d2e");
@@ -211,6 +239,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     if (reload) {
         translate_keysyms();
         grab_all_keys(conn);
+        regrab_all_buttons(conn);
     }
 
     if (config.font.type == FONT_TYPE_NONE) {

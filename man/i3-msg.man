@@ -89,7 +89,7 @@ i3-msg -t get_tree
 === I3SOCK
 
 If no ipc-socket is specified on the commandline, this variable is used
-to determine the path, at wich the unix domain socket is expected, on which
+to determine the path, at which the unix domain socket is expected, on which
 to connect to i3.
 
 == SEE ALSO

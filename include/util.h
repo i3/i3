@@ -20,7 +20,7 @@
         if (pointer == NULL)       \
             die(__VA_ARGS__);      \
     }
-#define STARTS_WITH(string, needle) (strncasecmp(string, needle, strlen(needle)) == 0)
+#define STARTS_WITH(string, needle) (strncasecmp((string), (needle), strlen((needle))) == 0)
 #define CIRCLEQ_NEXT_OR_NULL(head, elm, field) (CIRCLEQ_NEXT(elm, field) != CIRCLEQ_END(head) ? CIRCLEQ_NEXT(elm, field) : NULL)
 #define CIRCLEQ_PREV_OR_NULL(head, elm, field) (CIRCLEQ_PREV(elm, field) != CIRCLEQ_END(head) ? CIRCLEQ_PREV(elm, field) : NULL)
 #define FOR_TABLE(workspace)                             \
@@ -129,6 +129,13 @@ void i3_restart(bool forget_layout);
 void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);
 
 #endif
+
+/**
+ * Escapes the given string if a pango font is currently used.
+ * If the string has to be escaped, the input string will be free'd.
+ *
+ */
+char *pango_escape_markup(char *input);
 
 /**
  * Starts an i3-nagbar instance with the given parameters. Takes care of

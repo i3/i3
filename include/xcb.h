@@ -141,6 +141,12 @@ void xcb_set_root_cursor(int cursor);
 uint16_t get_visual_depth(xcb_visualid_t visual_id);
 
 /**
+ * Get visual type specified by visualid
+ *
+ */
+xcb_visualtype_t *get_visualtype_by_id(xcb_visualid_t visual_id);
+
+/**
  * Get visualid with specified depth
  *
  */
@@ -160,3 +166,9 @@ void xcb_add_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom
  *
  */
 void xcb_remove_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom_t property, xcb_atom_t atom);
+
+/**
+ * Grab the specified buttons on a window when managing it.
+ *
+ */
+void xcb_grab_buttons(xcb_connection_t *conn, xcb_window_t window, bool bind_scrollwheel);

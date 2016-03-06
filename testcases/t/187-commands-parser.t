@@ -44,7 +44,7 @@ sub parser_calls {
 # The first call has only a single command, the following ones are consolidated
 # for performance.
 is(parser_calls('move workspace 3'),
-   'cmd_move_con_to_workspace_name(3)',
+   'cmd_move_con_to_workspace_name(3, (null))',
    'single number (move workspace 3) ok');
 
 is(parser_calls(
@@ -57,19 +57,19 @@ is(parser_calls(
    'move workspace 3: foobar; ' .
    'move workspace "3: foobar"; ' .
    'move workspace "3: foobar, baz"; '),
-   "cmd_move_con_to_workspace_name(3)\n" .
-   "cmd_move_con_to_workspace_name(3)\n" .
-   "cmd_move_con_to_workspace_name(3)\n" .
-   "cmd_move_con_to_workspace_name(foobar)\n" .
-   "cmd_move_con_to_workspace_name(torrent)\n" .
+   "cmd_move_con_to_workspace_name(3, (null))\n" .
+   "cmd_move_con_to_workspace_name(3, (null))\n" .
+   "cmd_move_con_to_workspace_name(3, (null))\n" .
+   "cmd_move_con_to_workspace_name(foobar, (null))\n" .
+   "cmd_move_con_to_workspace_name(torrent, (null))\n" .
    "cmd_move_workspace_to_output(LVDS1)\n" .
-   "cmd_move_con_to_workspace_name(3: foobar)\n" .
-   "cmd_move_con_to_workspace_name(3: foobar)\n" .
-   "cmd_move_con_to_workspace_name(3: foobar, baz)",
+   "cmd_move_con_to_workspace_name(3: foobar, (null))\n" .
+   "cmd_move_con_to_workspace_name(3: foobar, (null))\n" .
+   "cmd_move_con_to_workspace_name(3: foobar, baz, (null))",
    'move ok');
 
 is(parser_calls('move workspace 3: foobar, nop foo'),
-   "cmd_move_con_to_workspace_name(3: foobar)\n" .
+   "cmd_move_con_to_workspace_name(3: foobar, (null))\n" .
    "cmd_nop(foo)",
    'multiple ops (move workspace 3: foobar, nop foo) ok');
 
@@ -131,11 +131,11 @@ is(parser_calls('[con_mark="yay"] focus'),
 # commands being parsed due to the configuration, people might send IPC
 # commands with leading or trailing newlines.
 is(parser_calls("workspace test\n"),
-   'cmd_workspace_name(test)',
+   'cmd_workspace_name(test, (null))',
    'trailing whitespace stripped off ok');
 
 is(parser_calls("\nworkspace test"),
-   'cmd_workspace_name(test)',
+   'cmd_workspace_name(test, (null))',
    'trailing whitespace stripped off ok');
 
 ################################################################################
@@ -177,7 +177,7 @@ is(parser_calls('unknown_literal'),
    'error for unknown literal ok');
 
 is(parser_calls('move something to somewhere'),
-   "ERROR: Expected one of these tokens: 'window', 'container', 'to', 'workspace', 'output', 'mark', 'scratchpad', 'left', 'right', 'up', 'down', 'position', 'absolute'\n" .
+   "ERROR: Expected one of these tokens: 'window', 'container', 'to', '--no-auto-back-and-forth', 'workspace', 'output', 'mark', 'scratchpad', 'left', 'right', 'up', 'down', 'position', 'absolute'\n" .
    "ERROR: Your command: move something to somewhere\n" .
    "ERROR:                    ^^^^^^^^^^^^^^^^^^^^^^",
    'error for unknown literal ok');
@@ -187,27 +187,27 @@ is(parser_calls('move something to somewhere'),
 ################################################################################
 
 is(parser_calls('workspace "foo"'),
-   'cmd_workspace_name(foo)',
+   'cmd_workspace_name(foo, (null))',
    'Command with simple double quotes ok');
 
 is(parser_calls('workspace "foo'),
-   'cmd_workspace_name(foo)',
+   'cmd_workspace_name(foo, (null))',
    'Command without ending double quotes ok');
 
 is(parser_calls('workspace "foo \"bar"'),
-   'cmd_workspace_name(foo "bar)',
+   'cmd_workspace_name(foo "bar, (null))',
    'Command with escaped double quotes ok');
 
 is(parser_calls('workspace "foo \\'),
-   'cmd_workspace_name(foo \\)',
+   'cmd_workspace_name(foo \\, (null))',
    'Command with single backslash in the end ok');
 
 is(parser_calls('workspace "foo\\\\bar"'),
-   'cmd_workspace_name(foo\\bar)',
+   'cmd_workspace_name(foo\\bar, (null))',
    'Command with escaped backslashes ok');
 
 is(parser_calls('workspace "foo\\\\\\"bar"'),
-   'cmd_workspace_name(foo\\"bar)',
+   'cmd_workspace_name(foo\\"bar, (null))',
    'Command with escaped double quotes after escaped backslashes ok');
 
 ################################################################################

@@ -50,10 +50,11 @@ struct context {
  *
  */
 struct Colortriple {
-    uint32_t border;
-    uint32_t background;
-    uint32_t text;
-    uint32_t indicator;
+    color_t border;
+    color_t background;
+    color_t text;
+    color_t indicator;
+    color_t child_border;
 };
 
 /**
@@ -77,6 +78,7 @@ struct Variable {
  */
 struct Mode {
     char *name;
+    bool pango_markup;
     struct bindings_head *bindings;
 
     SLIST_ENTRY(Mode) modes;
@@ -92,7 +94,7 @@ struct Config {
     i3Font font;
 
     char *ipc_socket_path;
-    const char *restart_state_path;
+    char *restart_state_path;
 
     layout_t default_layout;
     int container_stack_limit;
@@ -201,7 +203,7 @@ struct Config {
 
     /* Color codes are stored here */
     struct config_client {
-        uint32_t background;
+        color_t background;
         struct Colortriple focused;
         struct Colortriple focused_inactive;
         struct Colortriple unfocused;
@@ -247,9 +249,10 @@ struct Barconfig {
      * simplicity (since we store just strings). */
     char **outputs;
 
-    /** Output on which the tray should be shown. The special value of 'no'
-     * disables the tray (it’s enabled by default). */
-    char *tray_output;
+    /* List of outputs on which the tray is allowed to be shown, in order.
+     * The special value "none" disables it (per default, it will be shown) and
+     * the special value "primary" enabled it on the primary output. */
+    TAILQ_HEAD(tray_outputs_head, tray_output_t) tray_outputs;
 
     /* Padding around the tray icons. */
     int tray_padding;
@@ -322,6 +325,10 @@ struct Barconfig {
         char *statusline;
         char *separator;
 
+        char *focused_background;
+        char *focused_statusline;
+        char *focused_separator;
+
         char *focused_workspace_border;
         char *focused_workspace_bg;
         char *focused_workspace_text;
@@ -359,6 +366,12 @@ struct Barbinding {
     char *command;
 
     TAILQ_ENTRY(Barbinding) bindings;
+};
+
+struct tray_output_t {
+    char *output;
+
+    TAILQ_ENTRY(tray_output_t) tray_outputs;
 };
 
 /**

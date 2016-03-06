@@ -109,7 +109,7 @@ CFGFUN(font, const char *font) {
 }
 
 CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, DEFAULT_BINDING_MODE);
+    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, DEFAULT_BINDING_MODE, false);
 }
 
 /*******************************************************************************
@@ -117,12 +117,13 @@ CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, co
  ******************************************************************************/
 
 static char *current_mode;
+static bool current_mode_pango_markup;
 
 CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, current_mode);
+    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, current_mode, current_mode_pango_markup);
 }
 
-CFGFUN(enter_mode, const char *modename) {
+CFGFUN(enter_mode, const char *pango_markup, const char *modename) {
     if (strcasecmp(modename, DEFAULT_BINDING_MODE) == 0) {
         ELOG("You cannot use the name %s for your mode\n", DEFAULT_BINDING_MODE);
         exit(1);
@@ -130,6 +131,7 @@ CFGFUN(enter_mode, const char *modename) {
     DLOG("\t now in mode %s\n", modename);
     FREE(current_mode);
     current_mode = sstrdup(modename);
+    current_mode_pango_markup = (pango_markup != NULL);
 }
 
 CFGFUN(exec, const char *exectype, const char *no_startup_id, const char *command) {
@@ -259,6 +261,7 @@ CFGFUN(workspace_back_and_forth, const char *value) {
 }
 
 CFGFUN(fake_outputs, const char *outputs) {
+    free(config.fake_outputs);
     config.fake_outputs = sstrdup(outputs);
 }
 
@@ -311,10 +314,12 @@ CFGFUN(workspace, const char *workspace, const char *output) {
 }
 
 CFGFUN(ipc_socket, const char *path) {
+    free(config.ipc_socket_path);
     config.ipc_socket_path = sstrdup(path);
 }
 
 CFGFUN(restart_state, const char *path) {
+    free(config.restart_state_path);
     config.restart_state_path = sstrdup(path);
 }
 
@@ -330,20 +335,25 @@ CFGFUN(popup_during_fullscreen, const char *value) {
 
 CFGFUN(color_single, const char *colorclass, const char *color) {
     /* used for client.background only currently */
-    config.client.background = get_colorpixel(color);
+    config.client.background = draw_util_hex_to_color(color);
 }
 
-CFGFUN(color, const char *colorclass, const char *border, const char *background, const char *text, const char *indicator) {
-#define APPLY_COLORS(classname)                                                \
-    do {                                                                       \
-        if (strcmp(colorclass, "client." #classname) == 0) {                   \
-            config.client.classname.border = get_colorpixel(border);           \
-            config.client.classname.background = get_colorpixel(background);   \
-            config.client.classname.text = get_colorpixel(text);               \
-            if (indicator != NULL) {                                           \
-                config.client.classname.indicator = get_colorpixel(indicator); \
-            }                                                                  \
-        }                                                                      \
+CFGFUN(color, const char *colorclass, const char *border, const char *background, const char *text, const char *indicator, const char *child_border) {
+#define APPLY_COLORS(classname)                                                              \
+    do {                                                                                     \
+        if (strcmp(colorclass, "client." #classname) == 0) {                                 \
+            config.client.classname.border = draw_util_hex_to_color(border);                 \
+            config.client.classname.background = draw_util_hex_to_color(background);         \
+            config.client.classname.text = draw_util_hex_to_color(text);                     \
+            if (indicator != NULL) {                                                         \
+                config.client.classname.indicator = draw_util_hex_to_color(indicator);       \
+            }                                                                                \
+            if (child_border != NULL) {                                                      \
+                config.client.classname.child_border = draw_util_hex_to_color(child_border); \
+            } else {                                                                         \
+                config.client.classname.child_border = config.client.classname.background;   \
+            }                                                                                \
+        }                                                                                    \
     } while (0)
 
     APPLY_COLORS(focused_inactive);
@@ -385,57 +395,60 @@ CFGFUN(no_focus) {
  * Bar configuration (i3bar)
  ******************************************************************************/
 
-static Barconfig current_bar;
+static Barconfig *current_bar;
 
 CFGFUN(bar_font, const char *font) {
-    FREE(current_bar.font);
-    current_bar.font = sstrdup(font);
+    FREE(current_bar->font);
+    current_bar->font = sstrdup(font);
 }
 
 CFGFUN(bar_separator_symbol, const char *separator) {
-    FREE(current_bar.separator_symbol);
-    current_bar.separator_symbol = sstrdup(separator);
+    FREE(current_bar->separator_symbol);
+    current_bar->separator_symbol = sstrdup(separator);
 }
 
 CFGFUN(bar_mode, const char *mode) {
-    current_bar.mode = (strcmp(mode, "dock") == 0 ? M_DOCK : (strcmp(mode, "hide") == 0 ? M_HIDE : M_INVISIBLE));
+    current_bar->mode = (strcmp(mode, "dock") == 0 ? M_DOCK : (strcmp(mode, "hide") == 0 ? M_HIDE : M_INVISIBLE));
 }
 
 CFGFUN(bar_hidden_state, const char *hidden_state) {
-    current_bar.hidden_state = (strcmp(hidden_state, "hide") == 0 ? S_HIDE : S_SHOW);
+    current_bar->hidden_state = (strcmp(hidden_state, "hide") == 0 ? S_HIDE : S_SHOW);
 }
 
 CFGFUN(bar_id, const char *bar_id) {
-    current_bar.id = sstrdup(bar_id);
+    current_bar->id = sstrdup(bar_id);
 }
 
 CFGFUN(bar_output, const char *output) {
-    int new_outputs = current_bar.num_outputs + 1;
-    current_bar.outputs = srealloc(current_bar.outputs, sizeof(char *) * new_outputs);
-    current_bar.outputs[current_bar.num_outputs] = sstrdup(output);
-    current_bar.num_outputs = new_outputs;
+    int new_outputs = current_bar->num_outputs + 1;
+    current_bar->outputs = srealloc(current_bar->outputs, sizeof(char *) * new_outputs);
+    current_bar->outputs[current_bar->num_outputs] = sstrdup(output);
+    current_bar->num_outputs = new_outputs;
 }
 
 CFGFUN(bar_verbose, const char *verbose) {
-    current_bar.verbose = eval_boolstr(verbose);
+    current_bar->verbose = eval_boolstr(verbose);
 }
 
 CFGFUN(bar_modifier, const char *modifier) {
     if (strcmp(modifier, "Mod1") == 0)
-        current_bar.modifier = M_MOD1;
+        current_bar->modifier = M_MOD1;
     else if (strcmp(modifier, "Mod2") == 0)
-        current_bar.modifier = M_MOD2;
+        current_bar->modifier = M_MOD2;
     else if (strcmp(modifier, "Mod3") == 0)
-        current_bar.modifier = M_MOD3;
+        current_bar->modifier = M_MOD3;
     else if (strcmp(modifier, "Mod4") == 0)
-        current_bar.modifier = M_MOD4;
+        current_bar->modifier = M_MOD4;
     else if (strcmp(modifier, "Mod5") == 0)
-        current_bar.modifier = M_MOD5;
+        current_bar->modifier = M_MOD5;
     else if (strcmp(modifier, "Control") == 0 ||
              strcmp(modifier, "Ctrl") == 0)
-        current_bar.modifier = M_CONTROL;
+        current_bar->modifier = M_CONTROL;
     else if (strcmp(modifier, "Shift") == 0)
-        current_bar.modifier = M_SHIFT;
+        current_bar->modifier = M_SHIFT;
+    else if (strcmp(modifier, "none") == 0 ||
+             strcmp(modifier, "off") == 0)
+        current_bar->modifier = M_NONE;
 }
 
 static void bar_configure_binding(const char *button, const char *command) {
@@ -451,7 +464,7 @@ static void bar_configure_binding(const char *button, const char *command) {
     }
 
     struct Barbinding *current;
-    TAILQ_FOREACH(current, &(current_bar.bar_bindings), bindings) {
+    TAILQ_FOREACH(current, &(current_bar->bar_bindings), bindings) {
         if (current->input_code == input_code) {
             ELOG("command for button %s was already specified, ignoring.\n", button);
             return;
@@ -461,7 +474,7 @@ static void bar_configure_binding(const char *button, const char *command) {
     struct Barbinding *new_binding = scalloc(1, sizeof(struct Barbinding));
     new_binding->input_code = input_code;
     new_binding->command = sstrdup(command);
-    TAILQ_INSERT_TAIL(&(current_bar.bar_bindings), new_binding, bindings);
+    TAILQ_INSERT_TAIL(&(current_bar->bar_bindings), new_binding, bindings);
 }
 
 CFGFUN(bar_wheel_up_cmd, const char *command) {
@@ -479,29 +492,29 @@ CFGFUN(bar_bindsym, const char *button, const char *command) {
 }
 
 CFGFUN(bar_position, const char *position) {
-    current_bar.position = (strcmp(position, "top") == 0 ? P_TOP : P_BOTTOM);
+    current_bar->position = (strcmp(position, "top") == 0 ? P_TOP : P_BOTTOM);
 }
 
 CFGFUN(bar_i3bar_command, const char *i3bar_command) {
-    FREE(current_bar.i3bar_command);
-    current_bar.i3bar_command = sstrdup(i3bar_command);
+    FREE(current_bar->i3bar_command);
+    current_bar->i3bar_command = sstrdup(i3bar_command);
 }
 
 CFGFUN(bar_color, const char *colorclass, const char *border, const char *background, const char *text) {
-#define APPLY_COLORS(classname)                                          \
-    do {                                                                 \
-        if (strcmp(colorclass, #classname) == 0) {                       \
-            if (text != NULL) {                                          \
-                /* New syntax: border, background, text */               \
-                current_bar.colors.classname##_border = sstrdup(border); \
-                current_bar.colors.classname##_bg = sstrdup(background); \
-                current_bar.colors.classname##_text = sstrdup(text);     \
-            } else {                                                     \
-                /* Old syntax: text, background */                       \
-                current_bar.colors.classname##_bg = sstrdup(background); \
-                current_bar.colors.classname##_text = sstrdup(border);   \
-            }                                                            \
-        }                                                                \
+#define APPLY_COLORS(classname)                                           \
+    do {                                                                  \
+        if (strcmp(colorclass, #classname) == 0) {                        \
+            if (text != NULL) {                                           \
+                /* New syntax: border, background, text */                \
+                current_bar->colors.classname##_border = sstrdup(border); \
+                current_bar->colors.classname##_bg = sstrdup(background); \
+                current_bar->colors.classname##_text = sstrdup(text);     \
+            } else {                                                      \
+                /* Old syntax: text, background */                        \
+                current_bar->colors.classname##_bg = sstrdup(background); \
+                current_bar->colors.classname##_text = sstrdup(border);   \
+            }                                                             \
+        }                                                                 \
     } while (0)
 
     APPLY_COLORS(focused_workspace);
@@ -514,67 +527,73 @@ CFGFUN(bar_color, const char *colorclass, const char *border, const char *backgr
 }
 
 CFGFUN(bar_socket_path, const char *socket_path) {
-    FREE(current_bar.socket_path);
-    current_bar.socket_path = sstrdup(socket_path);
+    FREE(current_bar->socket_path);
+    current_bar->socket_path = sstrdup(socket_path);
 }
 
 CFGFUN(bar_tray_output, const char *output) {
-    FREE(current_bar.tray_output);
-    current_bar.tray_output = sstrdup(output);
+    struct tray_output_t *tray_output = scalloc(1, sizeof(struct tray_output_t));
+    tray_output->output = sstrdup(output);
+    TAILQ_INSERT_TAIL(&(current_bar->tray_outputs), tray_output, tray_outputs);
 }
 
 CFGFUN(bar_tray_padding, const long padding_px) {
-    current_bar.tray_padding = padding_px;
+    current_bar->tray_padding = padding_px;
 }
 
 CFGFUN(bar_color_single, const char *colorclass, const char *color) {
     if (strcmp(colorclass, "background") == 0)
-        current_bar.colors.background = sstrdup(color);
+        current_bar->colors.background = sstrdup(color);
     else if (strcmp(colorclass, "separator") == 0)
-        current_bar.colors.separator = sstrdup(color);
+        current_bar->colors.separator = sstrdup(color);
+    else if (strcmp(colorclass, "statusline") == 0)
+        current_bar->colors.statusline = sstrdup(color);
+    else if (strcmp(colorclass, "focused_background") == 0)
+        current_bar->colors.focused_background = sstrdup(color);
+    else if (strcmp(colorclass, "focused_separator") == 0)
+        current_bar->colors.focused_separator = sstrdup(color);
     else
-        current_bar.colors.statusline = sstrdup(color);
+        current_bar->colors.focused_statusline = sstrdup(color);
 }
 
 CFGFUN(bar_status_command, const char *command) {
-    FREE(current_bar.status_command);
-    current_bar.status_command = sstrdup(command);
+    FREE(current_bar->status_command);
+    current_bar->status_command = sstrdup(command);
 }
 
 CFGFUN(bar_binding_mode_indicator, const char *value) {
-    current_bar.hide_binding_mode_indicator = !eval_boolstr(value);
+    current_bar->hide_binding_mode_indicator = !eval_boolstr(value);
 }
 
 CFGFUN(bar_workspace_buttons, const char *value) {
-    current_bar.hide_workspace_buttons = !eval_boolstr(value);
+    current_bar->hide_workspace_buttons = !eval_boolstr(value);
 }
 
 CFGFUN(bar_strip_workspace_numbers, const char *value) {
-    current_bar.strip_workspace_numbers = eval_boolstr(value);
+    current_bar->strip_workspace_numbers = eval_boolstr(value);
 }
 
 CFGFUN(bar_start) {
-    TAILQ_INIT(&(current_bar.bar_bindings));
-    current_bar.tray_padding = 2;
+    current_bar = scalloc(1, sizeof(struct Barconfig));
+    TAILQ_INIT(&(current_bar->bar_bindings));
+    TAILQ_INIT(&(current_bar->tray_outputs));
+    current_bar->tray_padding = 2;
+    current_bar->modifier = M_MOD4;
 }
 
 CFGFUN(bar_finish) {
     DLOG("\t new bar configuration finished, saving.\n");
     /* Generate a unique ID for this bar if not already configured */
-    if (!current_bar.id)
-        sasprintf(&current_bar.id, "bar-%d", config.number_barconfigs);
+    if (current_bar->id == NULL)
+        sasprintf(&current_bar->id, "bar-%d", config.number_barconfigs);
 
     config.number_barconfigs++;
 
     /* If no font was explicitly set, we use the i3 font as default */
-    if (!current_bar.font && font_pattern)
-        current_bar.font = sstrdup(font_pattern);
+    if (current_bar->font == NULL && font_pattern != NULL)
+        current_bar->font = sstrdup(font_pattern);
 
-    /* Copy the current (static) structure into a dynamically allocated
-     * one, then cleanup our static one. */
-    Barconfig *bar_config = scalloc(1, sizeof(Barconfig));
-    memcpy(bar_config, &current_bar, sizeof(Barconfig));
-    TAILQ_INSERT_TAIL(&barconfigs, bar_config, configs);
-
-    memset(&current_bar, '\0', sizeof(Barconfig));
+    TAILQ_INSERT_TAIL(&barconfigs, current_bar, configs);
+    /* Simply reset the pointer, but don't free the resources. */
+    current_bar = NULL;
 }

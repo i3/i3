@@ -1,14 +1,14 @@
 #!/bin/zsh
 # This script is used to prepare a new release of i3.
 
-export RELEASE_VERSION="4.10.4"
-export PREVIOUS_VERSION="4.10.3"
-export RELEASE_BRANCH="master"
+export RELEASE_VERSION="4.11"
+export PREVIOUS_VERSION="4.10.4"
+export RELEASE_BRANCH="next"
 
 if [ ! -e "../i3.github.io" ]
 then
 	echo "../i3.github.io does not exist."
-	echo "Use git clone git://github.com/i3/i3.github.io"
+	echo "Use git clone https://github.com/i3/i3.github.io"
 	exit 1
 fi
 
@@ -41,7 +41,7 @@ STARTDIR=$PWD
 
 TMPDIR=$(mktemp -d)
 cd $TMPDIR
-if ! wget http://i3wm.org/downloads/i3-${PREVIOUS_VERSION}.tar.bz2; then
+if ! wget https://i3wm.org/downloads/i3-${PREVIOUS_VERSION}.tar.bz2; then
 	echo "Could not download i3-${PREVIOUS_VERSION}.tar.bz2 (required for comparing files)."
 	exit 1
 fi

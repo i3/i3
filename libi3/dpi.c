@@ -8,8 +8,6 @@
 #include "libi3.h"
 #include <math.h>
 
-extern xcb_screen_t *root_screen;
-
 /*
  * Convert a logical amount of pixels (e.g. 2 pixels on a “standard” 96 DPI
  * screen) to a corresponding amount of physical pixels on a standard or retina

@@ -31,9 +31,5 @@ void handle_key_press(xcb_key_press_event_t *event) {
         return;
 
     CommandResult *result = run_binding(bind, NULL);
-
-    if (result->needs_tree_render)
-        tree_render();
-
     command_result_free(result);
 }

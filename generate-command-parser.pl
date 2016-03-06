@@ -109,7 +109,7 @@ for my $line (@lines) {
 # Second step: Generate the enum values for all states.
 
 # It is important to keep the order the same, so we store the keys once.
-# We sort descendingly by length to be able to replace occurences of the state
+# We sort descendingly by length to be able to replace occurrences of the state
 # name even when one state’s name is included in another one’s (like FOR_WINDOW
 # is in FOR_WINDOW_COMMAND).
 my @keys = sort { (length($b) <=> length($a)) or ($a cmp $b) } keys %states;

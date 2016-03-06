@@ -141,7 +141,7 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
-    set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
+    set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
 
     char *bt_colour = "#FFFFFF";
     if (backtrace_done < 0)
@@ -152,14 +152,14 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
     for (int i = 0; crash_text_i3strings[i] != NULL; ++i) {
         /* fix the colour for the backtrace line when it finished */
         if (i == backtrace_string_index)
-            set_font_colors(pixmap_gc, get_colorpixel(bt_colour), get_colorpixel("#000000"));
+            set_font_colors(pixmap_gc, draw_util_hex_to_color(bt_colour), draw_util_hex_to_color("#000000"));
 
-        draw_text(crash_text_i3strings[i], pixmap, pixmap_gc,
+        draw_text(crash_text_i3strings[i], pixmap, pixmap_gc, NULL,
                   8, 5 + i * font_height, width - 16);
 
         /* and reset the colour again for other lines */
         if (i == backtrace_string_index)
-            set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
+            set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
     }
 
     /* Copy the contents of the pixmap to the real window */

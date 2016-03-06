@@ -503,7 +503,12 @@ static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
         goto ignore_end;
     }
 
-    tree_close(con, DONT_KILL_WINDOW, false, false);
+    /* Since we close the container, we need to unset _NET_WM_DESKTOP and
+     * _NET_WM_STATE according to the spec. */
+    xcb_delete_property(conn, event->window, A__NET_WM_DESKTOP);
+    xcb_delete_property(conn, event->window, A__NET_WM_STATE);
+
+    tree_close_internal(con, DONT_KILL_WINDOW, false, false);
     tree_render();
 
 ignore_end:
@@ -656,15 +661,14 @@ static void handle_expose_event(xcb_expose_event_t *event) {
         return;
     }
 
-    /* Since we render to our pixmap on every change anyways, expose events
+    /* Since we render to our surface on every change anyways, expose events
      * only tell us that the X server lost (parts of) the window contents. We
-     * can handle that by copying the appropriate part from our pixmap to the
+     * can handle that by copying the appropriate part from our surface to the
      * window. */
-    xcb_copy_area(conn, parent->pixmap, parent->frame, parent->pm_gc,
-                  event->x, event->y, event->x, event->y,
-                  event->width, event->height);
+    draw_util_copy_surface(conn, &(parent->frame_buffer), &(parent->frame),
+                           event->x, event->y, event->x, event->y,
+                           event->width, event->height);
     xcb_flush(conn);
-
     return;
 }
 
@@ -736,7 +740,9 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 con->sticky = !con->sticky;
 
             DLOG("New sticky status for con = %p is %i.\n", con, con->sticky);
+            ewmh_update_sticky(con->window->id, con->sticky);
             output_push_sticky_windows(focused);
+            ewmh_update_wm_desktop();
         }
 
         tree_render();
@@ -840,32 +846,48 @@ static void handle_client_message(xcb_client_message_event_t *event) {
          * a request to focus the given workspace. See
          * http://standards.freedesktop.org/wm-spec/latest/ar01s03.html#idm140251368135008
          * */
-        Con *output;
-        uint32_t idx = 0;
         DLOG("Request to change current desktop to index %d\n", event->data.data32[0]);
-
-        TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-            Con *ws;
-            TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
-                if (STARTS_WITH(ws->name, "__"))
-                    continue;
-
-                if (idx == event->data.data32[0]) {
-                    /* data32[1] is a timestamp used to prevent focus race conditions */
-                    if (event->data.data32[1])
-                        last_timestamp = event->data.data32[1];
-
-                    DLOG("Handling request to focus workspace %s\n", ws->name);
-
-                    workspace_show(ws);
-                    tree_render();
-
-                    return;
-                }
-
-                ++idx;
-            }
+        Con *ws = ewmh_get_workspace_by_index(event->data.data32[0]);
+        if (ws == NULL) {
+            ELOG("Could not determine workspace for this index, ignoring request.\n");
+            return;
         }
+
+        DLOG("Handling request to focus workspace %s\n", ws->name);
+        workspace_show(ws);
+        tree_render();
+    } else if (event->type == A__NET_WM_DESKTOP) {
+        uint32_t index = event->data.data32[0];
+        DLOG("Request to move window %d to EWMH desktop index %d\n", event->window, index);
+
+        Con *con = con_by_window_id(event->window);
+        if (con == NULL) {
+            DLOG("Couldn't find con for window %d, ignoring the request.\n", event->window);
+            return;
+        }
+
+        if (index == NET_WM_DESKTOP_ALL) {
+            /* The window is requesting to be visible on all workspaces, so
+             * let's float it and make it sticky. */
+            DLOG("The window was requested to be visible on all workspaces, making it sticky and floating.\n");
+
+            floating_enable(con, false);
+
+            con->sticky = true;
+            ewmh_update_sticky(con->window->id, true);
+            output_push_sticky_windows(focused);
+        } else {
+            Con *ws = ewmh_get_workspace_by_index(index);
+            if (ws == NULL) {
+                ELOG("Could not determine workspace for this index, ignoring request.\n");
+                return;
+            }
+
+            con_move_to_workspace(con, ws, true, false, false);
+        }
+
+        tree_render();
+        ewmh_update_wm_desktop();
     } else if (event->type == A__NET_CLOSE_WINDOW) {
         /*
          * Pagers wanting to close a window MUST send a _NET_CLOSE_WINDOW
@@ -879,7 +901,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             if (event->data.data32[0])
                 last_timestamp = event->data.data32[0];
 
-            tree_close(con, KILL_WINDOW, false, false);
+            tree_close_internal(con, KILL_WINDOW, false, false);
             tree_render();
         } else {
             DLOG("Couldn't find con for _NET_CLOSE_WINDOW request. (window = %d)\n", event->window);
@@ -916,8 +938,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 break;
         }
     } else {
-        DLOG("unhandled clientmessage\n");
-        return;
+        DLOG("Skipping client message for unhandled type %d\n", event->type);
     }
 }
 

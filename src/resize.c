@@ -11,8 +11,6 @@
  */
 #include "all.h"
 
-extern xcb_connection_t *conn;
-
 /*
  * This is an ugly data structure which we need because there is no standard
  * way of having nested functions (only available as a gcc extension at the
@@ -146,7 +144,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     }
 
     mask = XCB_CW_BACK_PIXEL;
-    values[0] = config.client.focused.border;
+    values[0] = config.client.focused.border.colorpixel;
 
     mask |= XCB_CW_OVERRIDE_REDIRECT;
     values[1] = 1;

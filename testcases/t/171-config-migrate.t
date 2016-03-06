@@ -22,13 +22,6 @@ use Cwd qw(abs_path);
 use File::Temp qw(tempfile tempdir);
 use v5.10;
 
-# reads in a whole file
-sub slurp {
-    open my $fh, '<', shift;
-    local $/;
-    <$fh>;
-}
-
 sub migrate_config {
     my ($config) = @_;
 

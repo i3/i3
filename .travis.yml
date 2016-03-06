@@ -1,72 +1,23 @@
+sudo: required
+dist: trusty
+services:
+  - docker
 language: c
 compiler:
   - gcc
   - clang
-addons:
-  apt:
-    sources:
-    - llvm-toolchain-precise-3.5
-    # ubuntu-toolchain-r-test contains libstdc++6 >= 4.8 which libllvm3.5 needs.
-    - ubuntu-toolchain-r-test
-    packages:
-    - clang-format-3.5
-    - libllvm3.5
-before_install:
-  # The travis VMs run on Ubuntu 12.04 which is very old and a huge pain to get
-  # into a state where we can build a recent version of i3 :(.
-  - "echo 'deb http://archive.ubuntu.com/ubuntu/ trusty main universe' | sudo tee /etc/apt/sources.list.d/trusty.list"
-  - "echo 'APT::Default-Release \"precise\";' | sudo tee /etc/apt/apt.conf.d/default-release"
-
-  - "echo 'Package: libc6' > /tmp/pin"
-  - "echo 'Pin: release n=trusty' >> /tmp/pin"
-  - "echo 'Pin-Priority: 999' >> /tmp/pin"
-  - "echo '' >> /tmp/pin"
-
-  - "echo 'Package: libxkbcommon*' >> /tmp/pin"
-  - "echo 'Pin: release n=trusty' >> /tmp/pin"
-  - "echo 'Pin-Priority: 999' >> /tmp/pin"
-  - "echo '' >> /tmp/pin"
-
-  - "echo 'Package: libyajl*' >> /tmp/pin"
-  - "echo 'Pin: release n=trusty' >> /tmp/pin"
-  - "echo 'Pin-Priority: 999' >> /tmp/pin"
-  - "echo '' >> /tmp/pin"
-
-  - "echo 'Package: libxcb-image*' >> /tmp/pin"
-  - "echo 'Pin: release n=trusty' >> /tmp/pin"
-  - "echo 'Pin-Priority: 999' >> /tmp/pin"
-  - "echo '' >> /tmp/pin"
-
-  - sudo cp /tmp/pin /etc/apt/preferences.d/trustypin
-  - sudo apt-get update
-  - sudo apt-get install -t trusty libc6 libc6-dev
-  - sudo apt-get install --no-install-recommends devscripts equivs xdotool
+env:
+  global:
+  - BASENAME="i3wm/travis-base:$(date +'%Y-%m')-$(./travis/ha.sh)"
+  - secure: "B5IICA8MPx/FKaB50rTPqL8P1NU+Q0yuWl+lElL4+a9xSyLikfm3NzUPHoVwx8lNw2AVK6br7p0OmF7vMFjqAgrgc1cajTtEae5uFRKNUrWLpXM046YgNEYLLIHsQOjInxE+S4O6EFVzsUqsu8aeo2Xhq4sm4iUocG7e5isYgYo=" # DOCKER_PASS
+  - secure: "EIvrq8PG7lRjidppG0RCv4F0X4GP3DT9F5+ixVuGPfhK/hZT3jYC2AVY9G+NnUcXVwQEpW92rlqpftQ/qZ13FoyWokC8ZyoyD06fr5FPCfoFF3OczZwAJzZYkObI/hE9+/hXcylx/Os6N4INd2My1ntGk3JPsWL9riopod5EjSg=" # DOCKER_EMAIL
+  - secure: "hvhBunS4xXTgnIOsk/BPT7I7FrJhvVwCSt5PfxxvMqNaztOJI9BuK7ZrZ5Cy38KyHwlh3VHAH5AaCygJcPauoSQCV3bpnlbaWn3ruq2F0Q697Q5uNf73liXzyUqb9/Zvfvge4y4WWOhP5tVz1C6ZBe/NfhU7pqKLMA+6ads+99c=" # DOCKER_USER
 install:
-  - sudo mk-build-deps --install --remove --tool 'apt-get --no-install-recommends' debian/control
-  # Install as many dependencies as possible via apt because cpanm is not very reliable/easy to debug.
-  - sudo apt-get install --no-install-recommends libanyevent-perl libanyevent-i3-perl libextutils-pkgconfig-perl xcb-proto cpanminus xvfb xserver-xephyr xauth libinline-perl libxml-simple-perl libmouse-perl libmousex-nativetraits-perl libextutils-depends-perl perl-modules libtest-deep-perl libtest-exception-perl libxml-parser-perl libtest-simple-perl libtest-fatal-perl libdata-dump-perl libtest-differences-perl libxml-tokeparser-perl libtest-use-ok-perl libipc-run-perl
-  - sudo /bin/sh -c 'cpanm -n -v X11::XCB || true'
-  - sudo /bin/sh -c 'cpanm -n -v AnyEvent::I3 || true'
+  - if [ -a .git/shallow ]; then git fetch --unshallow; fi
+  - docker pull ${BASENAME} || ./travis/docker-build-and-push.sh
 script:
-  - CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Werror" make -j
-  - (cd testcases && xvfb-run ./complete-run.pl --parallel=1 || (cat latest/complete-run.log; false))
-  - clang-format-3.5 -i $(find . -name "*.[ch]" | tr '\n' ' ') && git diff --exit-code || (echo 'Code was not formatted using clang-format!'; false)
-  - |
-    funcs='malloc|calloc|realloc|strdup|strndup|asprintf|write'
-    cstring='"([^"\\]|\\.)*"'
-    cchar="'[^\\\\]'|'\\\\.[^']*'"
-    regex="^([^'\"]|${cstring}|${cchar})*\<(${funcs})\>"
-    detected=0
-    while IFS= read -r file; do
-        if { cpp -w -fpreprocessed "$file" || exit "$?"; } | grep -E -- "$regex"; then
-            echo "^ $file calls a function that has a safe counterpart."
-            detected=1
-        fi
-    done << EOF
-    $(find -name '*.c' -not -name safewrappers.c -not -name strndup.c)
-    EOF
-    if [ "$detected" -ne 0 ]; then
-        echo
-        echo "Calls of functions that have safe counterparts were detected."
-        exit 1
-    fi
+  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/check-safe-wrappers.sh
+  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/check-formatting.sh
+  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC -e CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Werror" ${BASENAME} make all mans -j ASAN=1
+  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/check-spelling.pl
+  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/run-tests.sh

@@ -223,11 +223,25 @@ bool match_matches_window(Match *match, i3Window *window) {
         }
     }
 
-    /* We don’t check the mark because this function is not even called when
-     * the mark would have matched - it is checked in cmdparse.y itself */
     if (match->mark != NULL) {
-        LOG("mark does not match\n");
-        return false;
+        if ((con = con_by_window_id(window->id)) == NULL)
+            return false;
+
+        bool matched = false;
+        mark_t *mark;
+        TAILQ_FOREACH(mark, &(con->marks_head), marks) {
+            if (regex_matches(match->mark, mark->name)) {
+                matched = true;
+                break;
+            }
+        }
+
+        if (matched) {
+            LOG("mark matches\n");
+        } else {
+            LOG("mark does not match\n");
+            return false;
+        }
     }
 
     return true;
@@ -238,6 +252,7 @@ bool match_matches_window(Match *match, i3Window *window) {
  *
  */
 void match_free(Match *match) {
+    FREE(match->error);
     regex_free(match->title);
     regex_free(match->application);
     regex_free(match->class);
@@ -274,13 +289,19 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
     }
 
     if (strcmp(ctype, "con_id") == 0) {
+        if (strcmp(cvalue, "__focused__") == 0) {
+            match->con_id = focused;
+            return;
+        }
+
         char *end;
-        long parsed = strtol(cvalue, &end, 10);
+        long parsed = strtol(cvalue, &end, 0);
         if (parsed == LONG_MIN ||
             parsed == LONG_MAX ||
             parsed < 0 ||
             (end && *end != '\0')) {
             ELOG("Could not parse con id \"%s\"\n", cvalue);
+            match->error = sstrdup("invalid con_id");
         } else {
             match->con_id = (Con *)parsed;
             DLOG("id as int = %p\n", match->con_id);
@@ -290,12 +311,13 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
 
     if (strcmp(ctype, "id") == 0) {
         char *end;
-        long parsed = strtol(cvalue, &end, 10);
+        long parsed = strtol(cvalue, &end, 0);
         if (parsed == LONG_MIN ||
             parsed == LONG_MAX ||
             parsed < 0 ||
             (end && *end != '\0')) {
             ELOG("Could not parse window id \"%s\"\n", cvalue);
+            match->error = sstrdup("invalid id");
         } else {
             match->id = parsed;
             DLOG("window id as int = %d\n", match->id);
@@ -304,26 +326,30 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
     }
 
     if (strcmp(ctype, "window_type") == 0) {
-        if (strcasecmp(cvalue, "normal") == 0)
+        if (strcasecmp(cvalue, "normal") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_NORMAL;
-        else if (strcasecmp(cvalue, "dialog") == 0)
+        } else if (strcasecmp(cvalue, "dialog") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_DIALOG;
-        else if (strcasecmp(cvalue, "utility") == 0)
+        } else if (strcasecmp(cvalue, "utility") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_UTILITY;
-        else if (strcasecmp(cvalue, "toolbar") == 0)
+        } else if (strcasecmp(cvalue, "toolbar") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_TOOLBAR;
-        else if (strcasecmp(cvalue, "splash") == 0)
+        } else if (strcasecmp(cvalue, "splash") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_SPLASH;
-        else if (strcasecmp(cvalue, "menu") == 0)
+        } else if (strcasecmp(cvalue, "menu") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_MENU;
-        else if (strcasecmp(cvalue, "dropdown_menu") == 0)
+        } else if (strcasecmp(cvalue, "dropdown_menu") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU;
-        else if (strcasecmp(cvalue, "popup_menu") == 0)
+        } else if (strcasecmp(cvalue, "popup_menu") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_POPUP_MENU;
-        else if (strcasecmp(cvalue, "tooltip") == 0)
+        } else if (strcasecmp(cvalue, "tooltip") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_TOOLTIP;
-        else
+        } else if (strcasecmp(cvalue, "notification") == 0) {
+            match->window_type = A__NET_WM_WINDOW_TYPE_NOTIFICATION;
+        } else {
             ELOG("unknown window_type value \"%s\"\n", cvalue);
+            match->error = sstrdup("unknown window_type value");
+        }
 
         return;
     }

@@ -31,6 +31,12 @@ Con *con_new(Con *parent, i3Window *window);
 void con_focus(Con *con);
 
 /**
+ * Closes the given container.
+ *
+ */
+void con_close(Con *con, kill_window_t kill_window);
+
+/**
  * Returns true when this node is a leaf node (has no children)
  *
  */
@@ -153,25 +159,33 @@ Con *con_by_frame_id(xcb_window_t frame);
 Con *con_by_mark(const char *mark);
 
 /**
+ * Returns true if and only if the given containers holds the mark.
+ *
+ */
+bool con_has_mark(Con *con, const char *mark);
+
+/**
  * Toggles the mark on a container.
  * If the container already has this mark, the mark is removed.
  * Otherwise, the mark is assigned to the container.
  *
  */
-void con_mark_toggle(Con *con, const char *mark);
+void con_mark_toggle(Con *con, const char *mark, mark_mode_t mode);
 
 /**
  * Assigns a mark to the container.
  *
  */
-void con_mark(Con *con, const char *mark);
+void con_mark(Con *con, const char *mark, mark_mode_t mode);
 
-/**
- * If mark is NULL, this removes all existing marks.
+/*
+ * Removes marks from containers.
+ * If con is NULL, all containers are considered.
+ * If name is NULL, this removes all existing marks.
  * Otherwise, it will only remove the given mark (if it is present).
  *
  */
-void con_unmark(const char *mark);
+void con_unmark(Con *con, const char *name);
 
 /**
  * Returns the first container below 'con' which wants to swallow this window
@@ -270,7 +284,7 @@ orientation_t con_orientation(Con *con);
 
 /**
  * Returns the container which will be focused next when the given container
- * is not available anymore. Called in tree_close and con_move_to_workspace
+ * is not available anymore. Called in tree_close_internal and con_move_to_workspace
  * to properly restore focus.
  *
  */
@@ -419,3 +433,9 @@ char *con_get_tree_representation(Con *con);
  *
  */
 void con_force_split_parents_redraw(Con *con);
+
+/**
+ * Returns the window title considering the current title format.
+ *
+ */
+i3String *con_parse_title_format(Con *con);

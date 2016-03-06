@@ -20,6 +20,8 @@
 struct mode_json_params {
     char *json;
     char *cur_key;
+    char *name;
+    bool pango_markup;
     mode *mode;
 };
 
@@ -31,17 +33,31 @@ static int mode_string_cb(void *params_, const unsigned char *val, size_t len) {
     struct mode_json_params *params = (struct mode_json_params *)params_;
 
     if (!strcmp(params->cur_key, "change")) {
-        /* Save the name */
-        params->mode->name = i3string_from_markup_with_length((const char *)val, len);
-        /* Save its rendered width */
-        params->mode->width = predict_text_width(params->mode->name);
-
-        DLOG("Got mode change: %s\n", i3string_as_utf8(params->mode->name));
+        sasprintf(&(params->name), "%.*s", len, val);
         FREE(params->cur_key);
-
         return 1;
     }
 
+    FREE(params->cur_key);
+    return 0;
+}
+
+/*
+ * Parse a boolean.
+ *
+ */
+static int mode_boolean_cb(void *params_, int val) {
+    struct mode_json_params *params = (struct mode_json_params *)params_;
+
+    if (strcmp(params->cur_key, "pango_markup") == 0) {
+        DLOG("Setting pango_markup to %d.\n", val);
+        params->pango_markup = val;
+
+        FREE(params->cur_key);
+        return 1;
+    }
+
+    FREE(params->cur_key);
     return 0;
 }
 
@@ -54,10 +70,21 @@ static int mode_string_cb(void *params_, const unsigned char *val, size_t len) {
 static int mode_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
     struct mode_json_params *params = (struct mode_json_params *)params_;
     FREE(params->cur_key);
+    sasprintf(&(params->cur_key), "%.*s", keyLen, keyVal);
+    return 1;
+}
 
-    params->cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(params->cur_key, (const char *)keyVal, keyLen);
-    params->cur_key[keyLen] = '\0';
+static int mode_end_map_cb(void *params_) {
+    struct mode_json_params *params = (struct mode_json_params *)params_;
+
+    /* Save the name */
+    params->mode->name = i3string_from_utf8(params->name);
+    i3string_set_markup(params->mode->name, params->pango_markup);
+    /* Save its rendered width */
+    params->mode->width = predict_text_width(params->mode->name);
+
+    DLOG("Got mode change: %s\n", i3string_as_utf8(params->mode->name));
+    FREE(params->cur_key);
 
     return 1;
 }
@@ -65,7 +92,9 @@ static int mode_map_key_cb(void *params_, const unsigned char *keyVal, size_t ke
 /* A datastructure to pass all these callbacks to yajl */
 static yajl_callbacks mode_callbacks = {
     .yajl_string = mode_string_cb,
+    .yajl_boolean = mode_boolean_cb,
     .yajl_map_key = mode_map_key_cb,
+    .yajl_end_map = mode_end_map_cb,
 };
 
 /*

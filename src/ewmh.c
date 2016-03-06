@@ -21,24 +21,9 @@ xcb_window_t ewmh_window;
  *
  */
 void ewmh_update_current_desktop(void) {
-    Con *focused_ws = con_get_workspace(focused);
-    Con *output;
-    uint32_t idx = 0;
-    /* We count to get the index of this workspace because named workspaces
-     * don’t have the ->num property */
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        Con *ws;
-        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
-            if (STARTS_WITH(ws->name, "__"))
-                continue;
-
-            if (ws == focused_ws) {
-                xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
-                                    A__NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &idx);
-                return;
-            }
-            ++idx;
-        }
+    const uint32_t idx = ewmh_get_workspace_index(focused);
+    if (idx != NET_WM_DESKTOP_NONE) {
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &idx);
     }
 }
 
@@ -138,6 +123,71 @@ void ewmh_update_desktop_viewport(void) {
                         A__NET_DESKTOP_VIEWPORT, XCB_ATOM_CARDINAL, 32, current_position, &viewports);
 }
 
+static void ewmh_update_wm_desktop_recursively(Con *con, const uint32_t desktop) {
+    /* Recursively call this to descend through the entire subtree. */
+    Con *child;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        ewmh_update_wm_desktop_recursively(child, desktop);
+    }
+    /* If con is a workspace, we also need to go through the floating windows on it. */
+    if (con->type == CT_WORKSPACE) {
+        TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
+            ewmh_update_wm_desktop_recursively(child, desktop);
+        }
+    }
+
+    if (!con_has_managed_window(con))
+        return;
+
+    const xcb_window_t window = con->window->id;
+
+    uint32_t wm_desktop = desktop;
+    /* Sticky windows are only actually sticky when they are floating or inside
+     * a floating container. This is technically still slightly wrong, since
+     * sticky windows will only be on all workspaces on this output, but we
+     * ignore multi-monitor situations for this since the spec isn't too
+     * precise on this anyway. */
+    if (con_is_sticky(con) && con_is_floating(con)) {
+        wm_desktop = NET_WM_DESKTOP_ALL;
+    }
+
+    /* If this is the cached value, we don't need to do anything. */
+    if (con->window->wm_desktop == wm_desktop)
+        return;
+    con->window->wm_desktop = wm_desktop;
+
+    if (wm_desktop != NET_WM_DESKTOP_NONE) {
+        DLOG("Setting _NET_WM_DESKTOP = %d for window 0x%08x.\n", wm_desktop, window);
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, A__NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &wm_desktop);
+    } else {
+        /* If we can't determine the workspace index, delete the property. We'd
+         * rather not set it than lie. */
+        ELOG("Failed to determine the proper EWMH desktop index for window 0x%08x, deleting _NET_WM_DESKTOP.\n", window);
+        xcb_delete_property(conn, window, A__NET_WM_DESKTOP);
+    }
+}
+
+/*
+ * Updates _NET_WM_DESKTOP for all windows.
+ * A request will only be made if the cached value differs from the calculated value.
+ *
+ */
+void ewmh_update_wm_desktop(void) {
+    uint32_t desktop = 0;
+
+    Con *output;
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *workspace;
+        TAILQ_FOREACH(workspace, &(output_get_content(output)->nodes_head), nodes) {
+            if (con_is_internal(workspace))
+                continue;
+
+            ewmh_update_wm_desktop_recursively(workspace, desktop);
+            ++desktop;
+        }
+    }
+}
+
 /*
  * Updates _NET_ACTIVE_WINDOW with the currently focused window.
  *
@@ -234,7 +284,7 @@ void ewmh_update_sticky(xcb_window_t window, bool sticky) {
 void ewmh_setup_hints(void) {
     xcb_atom_t supported_atoms[] = {
 #define xmacro(atom) A_##atom,
-#include "atoms.xmacro"
+#include "atoms_NET_SUPPORTED.xmacro"
 #undef xmacro
     };
 
@@ -263,10 +313,67 @@ void ewmh_setup_hints(void) {
     /* I’m not entirely sure if we need to keep _NET_WM_NAME on root. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
-    /* only send the first 31 atoms (last one is _NET_CLOSE_WINDOW) increment that number when adding supported atoms */
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, /* number of atoms */ 32, supported_atoms);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, /* number of atoms */ sizeof(supported_atoms) / sizeof(xcb_atom_t), supported_atoms);
 
     /* We need to map this window to be able to set the input focus to it if no other window is available to be focused. */
     xcb_map_window(conn, ewmh_window);
     xcb_configure_window(conn, ewmh_window, XCB_CONFIG_WINDOW_STACK_MODE, (uint32_t[]){XCB_STACK_MODE_BELOW});
+}
+
+/*
+ * Returns the workspace container as enumerated by the EWMH desktop model.
+ * Returns NULL if no workspace could be found for the index.
+ *
+ * This is the reverse of ewmh_get_workspace_index.
+ *
+ */
+Con *ewmh_get_workspace_by_index(uint32_t idx) {
+    if (idx == NET_WM_DESKTOP_NONE)
+        return NULL;
+
+    uint32_t current_index = 0;
+
+    Con *output;
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *workspace;
+        TAILQ_FOREACH(workspace, &(output_get_content(output)->nodes_head), nodes) {
+            if (con_is_internal(workspace))
+                continue;
+
+            if (current_index == idx)
+                return workspace;
+
+            ++current_index;
+        }
+    }
+
+    return NULL;
+}
+
+/*
+ * Returns the EWMH desktop index for the workspace the given container is on.
+ * Returns NET_WM_DESKTOP_NONE if the desktop index cannot be determined.
+ *
+ * This is the reverse of ewmh_get_workspace_by_index.
+ *
+ */
+uint32_t ewmh_get_workspace_index(Con *con) {
+    uint32_t index = 0;
+
+    Con *workspace = con_get_workspace(con);
+    Con *output;
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *current;
+        TAILQ_FOREACH(current, &(output_get_content(output)->nodes_head), nodes) {
+            if (con_is_internal(current))
+                continue;
+
+            if (current == workspace)
+                return index;
+
+            ++index;
+        }
+    }
+
+    return NET_WM_DESKTOP_NONE;
 }

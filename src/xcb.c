@@ -175,7 +175,8 @@ xcb_atom_t xcb_get_preferred_window_type(xcb_get_property_reply_t *reply) {
             atoms[i] == A__NET_WM_WINDOW_TYPE_MENU ||
             atoms[i] == A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU ||
             atoms[i] == A__NET_WM_WINDOW_TYPE_POPUP_MENU ||
-            atoms[i] == A__NET_WM_WINDOW_TYPE_TOOLTIP) {
+            atoms[i] == A__NET_WM_WINDOW_TYPE_TOOLTIP ||
+            atoms[i] == A__NET_WM_WINDOW_TYPE_NOTIFICATION) {
             return atoms[i];
         }
     }
@@ -254,6 +255,27 @@ uint16_t get_visual_depth(xcb_visualid_t visual_id) {
 }
 
 /*
+ * Get visual type specified by visualid
+ *
+ */
+xcb_visualtype_t *get_visualtype_by_id(xcb_visualid_t visual_id) {
+    xcb_depth_iterator_t depth_iter;
+
+    depth_iter = xcb_screen_allowed_depths_iterator(root_screen);
+    for (; depth_iter.rem; xcb_depth_next(&depth_iter)) {
+        xcb_visualtype_iterator_t visual_iter;
+
+        visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
+        for (; visual_iter.rem; xcb_visualtype_next(&visual_iter)) {
+            if (visual_id == visual_iter.data->visual_id) {
+                return visual_iter.data;
+            }
+        }
+    }
+    return 0;
+}
+
+/*
  * Get visualid with specified depth
  *
  */
@@ -318,4 +340,26 @@ void xcb_remove_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_a
 release_grab:
     FREE(reply);
     xcb_ungrab_server(conn);
+}
+
+/*
+ * Grab the specified buttons on a window when managing it.
+ *
+ */
+void xcb_grab_buttons(xcb_connection_t *conn, xcb_window_t window, bool bind_scrollwheel) {
+    uint8_t buttons[3];
+    int num = 0;
+
+    if (bind_scrollwheel) {
+        buttons[num++] = XCB_BUTTON_INDEX_ANY;
+    } else {
+        buttons[num++] = XCB_BUTTON_INDEX_1;
+        buttons[num++] = XCB_BUTTON_INDEX_2;
+        buttons[num++] = XCB_BUTTON_INDEX_3;
+    }
+
+    for (int i = 0; i < num; i++) {
+        xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS, XCB_GRAB_MODE_SYNC,
+                        XCB_GRAB_MODE_ASYNC, root, XCB_NONE, buttons[i], XCB_BUTTON_MASK_ANY);
+    }
 }

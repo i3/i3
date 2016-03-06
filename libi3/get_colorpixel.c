@@ -7,32 +7,77 @@
  */
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
+#include "queue.h"
 #include "libi3.h"
 
+struct Colorpixel {
+    char *hex;
+    uint32_t pixel;
+
+    SLIST_ENTRY(Colorpixel)
+    colorpixels;
+};
+
+SLIST_HEAD(colorpixel_head, Colorpixel)
+colorpixels;
+
 /*
- * Returns the colorpixel to use for the given hex color (think of HTML). Only
- * works for true-color (vast majority of cases) at the moment, avoiding a
- * roundtrip to X11.
+ * Returns the colorpixel to use for the given hex color (think of HTML).
  *
  * The hex_color has to start with #, for example #FF00FF.
  *
  * NOTE that get_colorpixel() does _NOT_ check the given color code for validity.
  * This has to be done by the caller.
  *
- * NOTE that this function may in the future rely on a global xcb_connection_t
- * variable called 'conn' to be present.
- *
  */
 uint32_t get_colorpixel(const char *hex) {
-    char strgroups[3][3] = {{hex[1], hex[2], '\0'},
-                            {hex[3], hex[4], '\0'},
-                            {hex[5], hex[6], '\0'}};
+    char strgroups[3][3] = {
+        {hex[1], hex[2], '\0'},
+        {hex[3], hex[4], '\0'},
+        {hex[5], hex[6], '\0'}};
     uint8_t r = strtol(strgroups[0], NULL, 16);
     uint8_t g = strtol(strgroups[1], NULL, 16);
     uint8_t b = strtol(strgroups[2], NULL, 16);
 
-    /* We set the first 8 bits high to have 100% opacity in case of a 32 bit
-     * color depth visual. */
-    return (0xFF << 24) | (r << 16 | g << 8 | b);
+    /* Shortcut: if our screen is true color, no need to do a roundtrip to X11 */
+    if (root_screen == NULL || root_screen->root_depth == 24 || root_screen->root_depth == 32) {
+        return (0xFF << 24) | (r << 16 | g << 8 | b);
+    }
+
+    /* Lookup this colorpixel in the cache */
+    struct Colorpixel *colorpixel;
+    SLIST_FOREACH(colorpixel, &(colorpixels), colorpixels) {
+        if (strcmp(colorpixel->hex, hex) == 0)
+            return colorpixel->pixel;
+    }
+
+#define RGB_8_TO_16(i) (65535 * ((i)&0xFF) / 255)
+    int r16 = RGB_8_TO_16(r);
+    int g16 = RGB_8_TO_16(g);
+    int b16 = RGB_8_TO_16(b);
+
+    xcb_alloc_color_reply_t *reply;
+
+    reply = xcb_alloc_color_reply(conn, xcb_alloc_color(conn, root_screen->default_colormap,
+                                                        r16, g16, b16),
+                                  NULL);
+
+    if (!reply) {
+        LOG("Could not allocate color\n");
+        exit(1);
+    }
+
+    uint32_t pixel = reply->pixel;
+    free(reply);
+
+    /* Store the result in the cache */
+    struct Colorpixel *cache_pixel = scalloc(1, sizeof(struct Colorpixel));
+    cache_pixel->hex = sstrdup(hex);
+    cache_pixel->pixel = pixel;
+
+    SLIST_INSERT_HEAD(&(colorpixels), cache_pixel, colorpixels);
+
+    return pixel;
 }

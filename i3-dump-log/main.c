@@ -138,6 +138,7 @@ int main(int argc, char *argv[]) {
     if (verbose)
         printf("next_write = %d, last_wrap = %d, logbuffer_size = %d, shmname = %s\n",
                header->offset_next_write, header->offset_last_wrap, header->size, shmname);
+    free(shmname);
     walk = logbuffer + header->offset_next_write;
 
     /* We first need to print old content in case there was at least one

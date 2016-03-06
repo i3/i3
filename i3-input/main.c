@@ -137,16 +137,16 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
-    set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
+    set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
 
     /* draw the prompt … */
     if (prompt != NULL) {
-        draw_text(prompt, pixmap, pixmap_gc, logical_px(4), logical_px(4), logical_px(492));
+        draw_text(prompt, pixmap, pixmap_gc, NULL, logical_px(4), logical_px(4), logical_px(492));
     }
     /* … and the text */
     if (input_position > 0) {
         i3String *input = i3string_from_ucs2(glyphs_ucs, input_position);
-        draw_text(input, pixmap, pixmap_gc, prompt_offset + logical_px(4), logical_px(4), logical_px(492));
+        draw_text(input, pixmap, pixmap_gc, NULL, prompt_offset + logical_px(4), logical_px(4), logical_px(492));
         i3string_free(input);
     }
 
@@ -176,14 +176,14 @@ static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_rel
 static void finish_input() {
     char *command = (char *)concat_strings(glyphs_utf8, input_position);
 
-    /* count the occurences of %s in the string */
+    /* count the occurrences of %s in the string */
     int c;
     int len = strlen(format);
     int cnt = 0;
     for (c = 0; c < (len - 1); c++)
         if (format[c] == '%' && format[c + 1] == 's')
             cnt++;
-    printf("occurences = %d\n", cnt);
+    printf("occurrences = %d\n", cnt);
 
     /* allocate space for the output */
     int inputlen = strlen(command);

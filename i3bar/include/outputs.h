@@ -10,6 +10,7 @@
 #pragma once
 
 #include <xcb/xcb.h>
+#include <cairo/cairo-xcb.h>
 
 #include "common.h"
 
@@ -36,6 +37,12 @@ void init_outputs(void);
  */
 i3_output* get_output_by_name(char* name);
 
+/*
+ * Returns true if the output has the currently focused workspace
+ *
+ */
+bool output_has_focus(i3_output* output);
+
 struct i3_output {
     char* name;   /* Name of the output */
     bool active;  /* If the output is active */
@@ -44,9 +51,16 @@ struct i3_output {
     int ws;       /* The number of the currently visible ws */
     rect rect;    /* The rect (relative to the root window) */
 
-    xcb_window_t bar;     /* The id of the bar of the output */
-    xcb_pixmap_t buffer;  /* An extra pixmap for double-buffering */
-    xcb_gcontext_t bargc; /* The graphical context of the bar */
+    /* Off-screen buffer for preliminary rendering of the bar. */
+    surface_t buffer;
+    /* Off-screen buffer for pre-rendering the statusline, separated to make clipping easier. */
+    surface_t statusline_buffer;
+    /* How much of statusline_buffer's horizontal space was used on last statusline render. */
+    int statusline_width;
+    /* Whether statusline block short texts where used on last statusline render. */
+    bool statusline_short_text;
+    /* The actual window on which we draw. */
+    surface_t bar;
 
     struct ws_head* workspaces;  /* The workspaces on this output */
     struct tc_head* trayclients; /* The tray clients on this output */

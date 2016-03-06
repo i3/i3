@@ -288,5 +288,10 @@ ok(!$result->[0]->{success}, 'renaming workspace to an already existing one fail
 $result = cmd 'rename workspace notexistant to bleh';
 ok(!$result->[0]->{success}, 'renaming workspace which does not exist failed');
 
+# 8: change case
+ok(!workspace_exists('11: BAR'), 'workspace 11: BAR does not exist yet');
+$result = cmd 'rename workspace "11: bar" to "11: BAR"';
+ok($result->[0]->{success}, 'renaming workspace from 11: bar to 11: BAR worked');
+ok(workspace_exists('11: BAR'), 'workspace 11: BAR now exists');
 
 done_testing;

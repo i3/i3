@@ -59,7 +59,7 @@ xcb_window_t root;
  * pixmaps. Will use 32 bit depth and an appropriate visual, if available,
  * otherwise the root window’s default (usually 24 bit TrueColor). */
 uint8_t root_depth;
-xcb_visualid_t visual_id;
+xcb_visualtype_t *visual_type;
 xcb_colormap_t colormap;
 
 struct ev_loop *main_loop;
@@ -481,15 +481,29 @@ int main(int argc, char *argv[]) {
 #include "atoms.xmacro"
 #undef xmacro
 
-    /* By default, we use the same depth and visual as the root window, which
-     * usually is TrueColor (24 bit depth) and the corresponding visual.
-     * However, we also check if a 32 bit depth and visual are available (for
-     * transparency) and use it if so. */
     root_depth = root_screen->root_depth;
-    visual_id = root_screen->root_visual;
     colormap = root_screen->default_colormap;
+    visual_type = xcb_aux_find_visual_by_attrs(root_screen, -1, 32);
+    if (visual_type != NULL) {
+        root_depth = xcb_aux_get_depth_of_visual(root_screen, visual_type->visual_id);
+        colormap = xcb_generate_id(conn);
 
-    DLOG("root_depth = %d, visual_id = 0x%08x.\n", root_depth, visual_id);
+        xcb_void_cookie_t cm_cookie = xcb_create_colormap_checked(conn,
+                                                                  XCB_COLORMAP_ALLOC_NONE,
+                                                                  colormap,
+                                                                  root,
+                                                                  visual_type->visual_id);
+
+        xcb_generic_error_t *error = xcb_request_check(conn, cm_cookie);
+        if (error != NULL) {
+            ELOG("Could not create colormap. Error code: %d\n", error->error_code);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        visual_type = get_visualtype(root_screen);
+    }
+
+    DLOG("root_depth = %d, visual_id = 0x%08x.\n", root_depth, visual_type->visual_id);
     DLOG("root_screen->height_in_pixels = %d, root_screen->height_in_millimeters = %d, dpi = %d\n",
          root_screen->height_in_pixels, root_screen->height_in_millimeters,
          (int)((double)root_screen->height_in_pixels * 25.4 / (double)root_screen->height_in_millimeters));
@@ -660,6 +674,7 @@ int main(int argc, char *argv[]) {
         }
 
         con_focus(con_descend_focused(output_get_content(output->con)));
+        free(pointerreply);
     }
 
     tree_render();
@@ -787,6 +802,11 @@ int main(int argc, char *argv[]) {
         xcb_free_pixmap(conn, pixmap);
     }
 
+#if defined(__OpenBSD__)
+    if (pledge("stdio rpath wpath cpath proc exec unix", NULL) == -1)
+        err(EXIT_FAILURE, "pledge");
+#endif
+
     struct sigaction action;
 
     action.sa_sigaction = handle_signal;
@@ -819,18 +839,28 @@ int main(int argc, char *argv[]) {
 
     /* Autostarting exec-lines */
     if (autostart) {
-        struct Autostart *exec;
-        TAILQ_FOREACH(exec, &autostarts, autostarts) {
+        while (!TAILQ_EMPTY(&autostarts)) {
+            struct Autostart *exec = TAILQ_FIRST(&autostarts);
+
             LOG("auto-starting %s\n", exec->command);
             start_application(exec->command, exec->no_startup_id);
+
+            FREE(exec->command);
+            TAILQ_REMOVE(&autostarts, exec, autostarts);
+            FREE(exec);
         }
     }
 
     /* Autostarting exec_always-lines */
-    struct Autostart *exec_always;
-    TAILQ_FOREACH(exec_always, &autostarts_always, autostarts_always) {
+    while (!TAILQ_EMPTY(&autostarts_always)) {
+        struct Autostart *exec_always = TAILQ_FIRST(&autostarts_always);
+
         LOG("auto-starting (always!) %s\n", exec_always->command);
         start_application(exec_always->command, exec_always->no_startup_id);
+
+        FREE(exec_always->command);
+        TAILQ_REMOVE(&autostarts_always, exec_always, autostarts_always);
+        FREE(exec_always);
     }
 
     /* Start i3bar processes for all configured bars */

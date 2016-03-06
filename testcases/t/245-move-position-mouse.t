@@ -38,7 +38,7 @@ my $root_rect = $x->root->rect;
 
 $config = <<EOT;
 # i3 config file (v4)
-font pango:monospace 8
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 $pid = launch_with_config($config);
 
@@ -64,7 +64,7 @@ exit_gracefully($pid);
 
 $config = <<EOT;
 # i3 config file (v4)
-font pango:monospace 8
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 $pid = launch_with_config($config);
 
@@ -90,7 +90,7 @@ exit_gracefully($pid);
 
 $config = <<EOT;
 # i3 config file (v4)
-font pango:monospace 8
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 $pid = launch_with_config($config);
 
@@ -118,7 +118,7 @@ exit_gracefully($pid);
 
 $config = <<EOT;
 # i3 config file (v4)
-font pango:monospace 8
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 fake-outputs 500x500+0+0,500x500+500+0,500x500+0+500,500x500+500+500
 EOT
 $pid = launch_with_config($config);

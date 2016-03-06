@@ -108,9 +108,8 @@ static int outputs_string_cb(void *params_, const unsigned char *val, size_t len
     struct outputs_json_params *params = (struct outputs_json_params *)params_;
 
     if (!strcmp(params->cur_key, "current_workspace")) {
-        char *copy = smalloc(sizeof(const unsigned char) * (len + 1));
-        strncpy(copy, (const char *)val, len);
-        copy[len] = '\0';
+        char *copy = NULL;
+        sasprintf(&copy, "%.*s", len, val);
 
         char *end;
         errno = 0;
@@ -118,7 +117,8 @@ static int outputs_string_cb(void *params_, const unsigned char *val, size_t len
         if (errno == 0 &&
             (end && *end == '\0'))
             params->outputs_walk->ws = parsed_num;
-        free(copy);
+
+        FREE(copy);
         FREE(params->cur_key);
         return 1;
     }
@@ -127,14 +127,9 @@ static int outputs_string_cb(void *params_, const unsigned char *val, size_t len
         return 0;
     }
 
-    char *name = smalloc(sizeof(const unsigned char) * (len + 1));
-    strncpy(name, (const char *)val, len);
-    name[len] = '\0';
-
-    params->outputs_walk->name = name;
+    sasprintf(&(params->outputs_walk->name), "%.*s", len, val);
 
     FREE(params->cur_key);
-
     return 1;
 }
 
@@ -149,9 +144,16 @@ static int outputs_start_map_cb(void *params_) {
     if (params->cur_key == NULL) {
         new_output = smalloc(sizeof(i3_output));
         new_output->name = NULL;
+        new_output->active = false;
+        new_output->primary = false;
+        new_output->visible = false;
         new_output->ws = 0,
+        new_output->statusline_width = 0;
+        new_output->statusline_short_text = false;
         memset(&new_output->rect, 0, sizeof(rect));
-        new_output->bar = XCB_NONE;
+        memset(&new_output->bar, 0, sizeof(surface_t));
+        memset(&new_output->buffer, 0, sizeof(surface_t));
+        memset(&new_output->statusline_buffer, 0, sizeof(surface_t));
 
         new_output->workspaces = smalloc(sizeof(struct ws_head));
         TAILQ_INIT(new_output->workspaces);
@@ -227,11 +229,7 @@ static int outputs_end_map_cb(void *params_) {
 static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
     struct outputs_json_params *params = (struct outputs_json_params *)params_;
     FREE(params->cur_key);
-
-    params->cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(params->cur_key, (const char *)keyVal, keyLen);
-    params->cur_key[keyLen] = '\0';
-
+    sasprintf(&(params->cur_key), "%.*s", keyLen, keyVal);
     return 1;
 }
 
@@ -303,4 +301,18 @@ i3_output *get_output_by_name(char *name) {
     }
 
     return walk;
+}
+
+/*
+ * Returns true if the output has the currently focused workspace
+ *
+ */
+bool output_has_focus(i3_output *output) {
+    i3_ws *ws_walk;
+    TAILQ_FOREACH(ws_walk, output->workspaces, tailq) {
+        if (ws_walk->focused) {
+            return true;
+        }
+    }
+    return false;
 }

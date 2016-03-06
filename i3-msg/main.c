@@ -119,6 +119,10 @@ static yajl_callbacks reply_callbacks = {
 };
 
 int main(int argc, char *argv[]) {
+#if defined(__OpenBSD__)
+    if (pledge("stdio rpath unix", NULL) == -1)
+        err(EXIT_FAILURE, "pledge");
+#endif
     char *env_socket_path = getenv("I3SOCK");
     if (env_socket_path)
         socket_path = sstrdup(env_socket_path);

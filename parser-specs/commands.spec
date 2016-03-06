@@ -86,15 +86,15 @@ state BORDER:
   border_style = 'normal', 'pixel'
     -> BORDER_WIDTH
   border_style = 'none', 'toggle'
-    -> call cmd_border($border_style, "0")
+    -> call cmd_border($border_style, 0)
   border_style = '1pixel'
-    -> call cmd_border($border_style, "1")
+    -> call cmd_border($border_style, 1)
 
 state BORDER_WIDTH:
   end
-    -> call cmd_border($border_style, "2")
-  border_width = word
-    -> call cmd_border($border_style, $border_width)
+    -> call cmd_border($border_style, 2)
+  border_width = number
+    -> call cmd_border($border_style, &border_width)
 
 # layout default|stacked|stacking|tabbed|splitv|splith
 # layout toggle [split|all]
@@ -117,9 +117,11 @@ state APPEND_LAYOUT:
 
 # workspace next|prev|next_on_output|prev_on_output
 # workspace back_and_forth
-# workspace <name>
-# workspace number <number>
+# workspace [--no-auto-back-and-forth] <name>
+# workspace [--no-auto-back-and-forth] number <number>
 state WORKSPACE:
+  no_auto_back_and_forth = '--no-auto-back-and-forth'
+      ->
   direction = 'next_on_output', 'prev_on_output', 'next', 'prev'
       -> call cmd_workspace($direction)
   'back_and_forth'
@@ -127,11 +129,11 @@ state WORKSPACE:
   'number'
       -> WORKSPACE_NUMBER
   workspace = string 
-      -> call cmd_workspace_name($workspace)
+      -> call cmd_workspace_name($workspace, $no_auto_back_and_forth)
 
 state WORKSPACE_NUMBER:
   workspace = string
-      -> call cmd_workspace_number($workspace)
+      -> call cmd_workspace_number($workspace, $no_auto_back_and_forth)
 
 # focus left|right|up|down
 # focus output <output>
@@ -189,9 +191,9 @@ state STICKY:
   action = 'enable', 'disable', 'toggle'
       -> call cmd_sticky($action)
 
-# split v|h|vertical|horizontal
+# split v|h|t|vertical|horizontal|toggle
 state SPLIT:
-  direction = 'horizontal', 'vertical', 'v', 'h'
+  direction = 'horizontal', 'vertical', 'toggle', 'v', 'h', 't'
       -> call cmd_split($direction)
 
 # floating enable|disable|toggle
@@ -199,12 +201,14 @@ state FLOATING:
   floating = 'enable', 'disable', 'toggle'
       -> call cmd_floating($floating)
 
-# mark [--toggle] <mark>
+# mark [--add|--replace] [--toggle] <mark>
 state MARK:
+  mode = '--add', '--replace'
+      ->
   toggle = '--toggle'
       ->
   mark = string
-      -> call cmd_mark($mark, $toggle)
+      -> call cmd_mark($mark, $mode, $toggle)
 
 # unmark [mark]
 state UNMARK:
@@ -304,6 +308,8 @@ state MOVE:
       ->
   'to'
       ->
+  no_auto_back_and_forth = '--no-auto-back-and-forth'
+      ->
   'workspace'
       -> MOVE_WORKSPACE
   'output'
@@ -341,11 +347,11 @@ state MOVE_WORKSPACE:
   'number'
       -> MOVE_WORKSPACE_NUMBER
   workspace = string
-      -> call cmd_move_con_to_workspace_name($workspace)
+      -> call cmd_move_con_to_workspace_name($workspace, $no_auto_back_and_forth)
 
 state MOVE_WORKSPACE_NUMBER:
   number = string
-      -> call cmd_move_con_to_workspace_number($number)
+      -> call cmd_move_con_to_workspace_number($number, $no_auto_back_and_forth)
 
 state MOVE_TO_OUTPUT:
   output = string

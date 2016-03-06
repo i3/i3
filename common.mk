@@ -1,5 +1,6 @@
 UNAME=$(shell uname)
 DEBUG=1
+ASAN=0
 INSTALL=install
 LN=ln
 PKG_CONFIG=pkg-config
@@ -40,6 +41,11 @@ ifeq ($(DEBUG),1)
 CFLAGS ?= -pipe -gdwarf-2 -g3
 else
 CFLAGS ?= -pipe -O2 -freorder-blocks-and-partition
+endif
+
+ifeq ($(ASAN),1)
+CFLAGS += -fsanitize=address -DI3_ASAN_ENABLED
+LDFLAGS += -fsanitize=address
 endif
 
 # Default LDFLAGS that users should be able to override
@@ -109,14 +115,14 @@ XCB_WM_LIBS   := $(call ldflags_for_lib, xcb-icccm,xcb-icccm)
 XCB_WM_LIBS   += $(call ldflags_for_lib, xcb-xinerama,xcb-xinerama)
 XCB_WM_LIBS   += $(call ldflags_for_lib, xcb-randr,xcb-randr)
 
+# XCB cursor
+XCB_CURSOR_CFLAGS := $(call cflags_for_lib, xcb-cursor)
+XCB_CURSOR_LIBS   := $(call ldflags_for_lib, xcb-cursor,xcb-cursor)
+
 XKB_COMMON_CFLAGS := $(call cflags_for_lib, xkbcommon,xkbcommon)
 XKB_COMMON_LIBS := $(call ldflags_for_lib, xkbcommon,xkbcommon)
 XKB_COMMON_X11_CFLAGS := $(call cflags_for_lib, xkbcommon-x11,xkbcommon-x11)
 XKB_COMMON_X11_LIBS := $(call ldflags_for_lib, xkbcommon-x11,xkbcommon-x11)
-
-# Xcursor
-XCURSOR_CFLAGS := $(call cflags_for_lib, xcb-cursor)
-XCURSOR_LIBS   := $(call ldflags_for_lib, xcb-cursor,xcb-cursor)
 
 # yajl
 YAJL_CFLAGS := $(call cflags_for_lib, yajl)
@@ -141,6 +147,9 @@ LIBSN_LIBS   := $(call ldflags_for_lib, libstartup-notification-1.0,startup-noti
 PANGO_CFLAGS := $(call cflags_for_lib, cairo)
 PANGO_CFLAGS += $(call cflags_for_lib, pangocairo)
 I3_CPPFLAGS  += -DPANGO_SUPPORT=1
+ifeq ($(shell $(PKG_CONFIG) --atleast-version=1.14.4 cairo 2>/dev/null && echo 1),1)
+I3_CPPFLAGS  += -DCAIRO_SUPPORT=1
+endif
 PANGO_LIBS   := $(call ldflags_for_lib, cairo)
 PANGO_LIBS   += $(call ldflags_for_lib, pangocairo)
 

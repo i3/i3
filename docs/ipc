@@ -520,6 +520,14 @@ statusline::
 	Text color to be used for the statusline.
 separator::
 	Text color to be used for the separator.
+focused_background::
+	Background color of the bar on the currently focused monitor output.
+focused_statusline::
+	Text color to be used for the statusline on the currently focused
+	monitor output.
+focused_separator::
+	Text color to be used for the separator on the currently focused
+	monitor output.
 focused_workspace_text/focused_workspace_bg/focused_workspace_border::
 	Text/background/border color for a workspace button when the workspace
 	has focus.
@@ -717,11 +725,15 @@ This event consists of a single serialized map containing a property
 This event consists of a single serialized map containing a property
 +change (string)+ which holds the name of current mode in use. The name
 is the same as specified in config when creating a mode. The default
-mode is simply named default.
+mode is simply named default. It contains a second property, +pango_markup+, which
+defines whether pango markup shall be used for displaying this mode.
 
 *Example:*
 ---------------------------
-{ "change": "default" }
+{
+  "change": "default",
+  "pango_markup": true
+}
 ---------------------------
 
 === window event
@@ -814,6 +826,8 @@ know):
 C::
 	* i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
 	* https://github.com/acrisci/i3ipc-glib
+C++::
+	* https://github.com/drmgc/i3ipcpp
 Go::
 	* https://github.com/proxypoke/i3ipc
 JavaScript::

@@ -5,8 +5,8 @@ CLEAN_TARGETS += clean-i3
 i3_SOURCES           := $(filter-out $(i3_SOURCES_GENERATED),$(wildcard src/*.c))
 i3_HEADERS_CMDPARSER := $(wildcard include/GENERATED_*.h)
 i3_HEADERS           := $(filter-out $(i3_HEADERS_CMDPARSER),$(wildcard include/*.h))
-i3_CFLAGS             = $(XKB_COMMON_CFLAGS) $(XKB_COMMON_X11_CFLAGS) $(XCB_CFLAGS) $(XCB_KBD_CFLAGS) $(XCB_WM_CFLAGS) $(XCURSOR_CFLAGS) $(PANGO_CFLAGS) $(YAJL_CFLAGS) $(LIBEV_CFLAGS) $(PCRE_CFLAGS) $(LIBSN_CFLAGS)
-i3_LIBS               = $(XKB_COMMON_LIBS) $(XKB_COMMON_X11_LIBS) $(XCB_LIBS) $(XCB_XKB_LIBS) $(XCB_KBD_LIBS) $(XCB_WM_LIBS) $(XCURSOR_LIBS) $(PANGO_LIBS) $(YAJL_LIBS) $(LIBEV_LIBS) $(PCRE_LIBS) $(LIBSN_LIBS) -lm -lpthread
+i3_CFLAGS             = $(XKB_COMMON_CFLAGS) $(XKB_COMMON_X11_CFLAGS) $(XCB_CFLAGS) $(XCB_KBD_CFLAGS) $(XCB_WM_CFLAGS) $(XCB_CURSOR_CFLAGS) $(PANGO_CFLAGS) $(YAJL_CFLAGS) $(LIBEV_CFLAGS) $(PCRE_CFLAGS) $(LIBSN_CFLAGS)
+i3_LIBS               = $(XKB_COMMON_LIBS) $(XKB_COMMON_X11_LIBS) $(XCB_LIBS) $(XCB_XKB_LIBS) $(XCB_KBD_LIBS) $(XCB_WM_LIBS) $(XCB_CURSOR_LIBS) $(PANGO_LIBS) $(YAJL_LIBS) $(LIBEV_LIBS) $(PCRE_LIBS) $(LIBSN_LIBS) -lm -lpthread
 
 # When using clang, we use pre-compiled headers to speed up the build. With
 # gcc, this actually makes the build slower.

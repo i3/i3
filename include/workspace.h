@@ -14,6 +14,14 @@
 #include "tree.h"
 #include "randr.h"
 
+/* We use NET_WM_DESKTOP_NONE for cases where we cannot determine the EWMH
+ * desktop index for a window. We cannot use a negative value like -1 since we
+ * need to use uint32_t as we actually need the full range of it. This is
+ * technically dangerous, but it's safe to assume that we will never have more
+ * than 4294967279 workspaces open at a time. */
+#define NET_WM_DESKTOP_NONE 0xFFFFFFF0
+#define NET_WM_DESKTOP_ALL 0xFFFFFFFF
+
 /**
  * Returns a pointer to the workspace with the given number (starting at 0),
  * creating the workspace if necessary (by allocating the necessary amount of

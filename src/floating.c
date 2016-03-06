@@ -11,8 +11,6 @@
  */
 #include "all.h"
 
-extern xcb_connection_t *conn;
-
 /*
  * Calculates sum of heights and sum of widths of all currently active outputs
  *
@@ -29,6 +27,34 @@ static Rect total_outputs_dimensions(void) {
         outputs_dimensions.width += output->rect.width;
     }
     return outputs_dimensions;
+}
+
+/*
+ * Updates I3_FLOATING_WINDOW by either setting or removing it on the con and
+ * all its children.
+ *
+ */
+static void floating_set_hint_atom(Con *con, bool floating) {
+    if (!con_is_leaf(con)) {
+        Con *child;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            floating_set_hint_atom(child, floating);
+        }
+    }
+
+    if (con->window == NULL) {
+        return;
+    }
+
+    if (floating) {
+        uint32_t val = 1;
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
+                            A_I3_FLOATING_WINDOW, XCB_ATOM_CARDINAL, 32, 1, &val);
+    } else {
+        xcb_delete_property(conn, con->window->id, A_I3_FLOATING_WINDOW);
+    }
+
+    xcb_flush(conn);
 }
 
 /**
@@ -118,51 +144,13 @@ void floating_enable(Con *con, bool automatic) {
         return;
     }
 
-    /* 1: If the container is a workspace container, we need to create a new
-     * split-container with the same layout and make that one floating. We
-     * cannot touch the workspace container itself because floating containers
-     * are children of the workspace. */
     if (con->type == CT_WORKSPACE) {
-        LOG("This is a workspace, creating new container around content\n");
-        if (con_num_children(con) == 0) {
-            LOG("Workspace is empty, aborting\n");
-            return;
-        }
-        /* TODO: refactor this with src/con.c:con_set_layout */
-        Con *new = con_new(NULL, NULL);
-        new->parent = con;
-        new->layout = con->layout;
-
-        /* since the new container will be set into floating mode directly
-         * afterwards, we need to copy the workspace rect. */
-        memcpy(&(new->rect), &(con->rect), sizeof(Rect));
-
-        Con *old_focused = TAILQ_FIRST(&(con->focus_head));
-        if (old_focused == TAILQ_END(&(con->focus_head)))
-            old_focused = NULL;
-
-        /* 4: move the existing cons of this workspace below the new con */
-        DLOG("Moving cons\n");
-        Con *child;
-        while (!TAILQ_EMPTY(&(con->nodes_head))) {
-            child = TAILQ_FIRST(&(con->nodes_head));
-            con_detach(child);
-            con_attach(child, new, true);
-        }
-
-        /* 4: attach the new split container to the workspace */
-        DLOG("Attaching new split to ws\n");
-        con_attach(new, con, false);
-
-        if (old_focused)
-            con_focus(old_focused);
-
-        con = new;
-        set_focus = false;
+        LOG("Container is a workspace, not enabling floating mode.\n");
+        return;
     }
 
     /* 1: detach the container from its parent */
-    /* TODO: refactor this with tree_close() */
+    /* TODO: refactor this with tree_close_internal() */
     TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
     TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
 
@@ -180,7 +168,7 @@ void floating_enable(Con *con, bool automatic) {
     nc->layout = L_SPLITH;
     /* We insert nc already, even though its rect is not yet calculated. This
      * is necessary because otherwise the workspace might be empty (and get
-     * closed in tree_close()) even though it’s not. */
+     * closed in tree_close_internal()) even though it’s not. */
     TAILQ_INSERT_TAIL(&(ws->floating_head), nc, floating_windows);
     TAILQ_INSERT_TAIL(&(ws->focus_head), nc, focused);
 
@@ -188,7 +176,7 @@ void floating_enable(Con *con, bool automatic) {
     if ((con->parent->type == CT_CON || con->parent->type == CT_FLOATING_CON) &&
         con_num_children(con->parent) == 0) {
         DLOG("Old container empty after setting this child to floating, closing\n");
-        tree_close(con->parent, DONT_KILL_WINDOW, false, false);
+        tree_close_internal(con->parent, DONT_KILL_WINDOW, false, false);
     }
 
     char *name;
@@ -300,19 +288,19 @@ void floating_enable(Con *con, bool automatic) {
     /* Check if we need to re-assign it to a different workspace because of its
      * coordinates and exit if that was done successfully. */
     if (floating_maybe_reassign_ws(nc)) {
-        ipc_send_window_event("floating", con);
-        return;
+        goto done;
     }
 
     /* Sanitize coordinates: Check if they are on any output */
     if (get_output_containing(nc->rect.x, nc->rect.y) != NULL) {
-        ipc_send_window_event("floating", con);
-        return;
+        goto done;
     }
 
     ELOG("No output found at destination coordinates, centering floating window on current ws\n");
     floating_center(nc, ws->rect);
 
+done:
+    floating_set_hint_atom(nc, true);
     ipc_send_window_event("floating", con);
 }
 
@@ -333,7 +321,7 @@ void floating_disable(Con *con, bool automatic) {
     /* 2: kill parent container */
     TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
     TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
-    tree_close(con->parent, DONT_KILL_WINDOW, true, false);
+    tree_close_internal(con->parent, DONT_KILL_WINDOW, true, false);
 
     /* 3: re-attach to the parent of the currently focused con on the workspace
      * this floating con was on */
@@ -358,6 +346,7 @@ void floating_disable(Con *con, bool automatic) {
     if (set_focus)
         con_focus(con);
 
+    floating_set_hint_atom(con, false);
     ipc_send_window_event("floating", con);
 }
 

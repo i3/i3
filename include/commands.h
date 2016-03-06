@@ -49,16 +49,16 @@ void cmd_move_con_to_workspace(I3_CMD, const char *which);
 void cmd_move_con_to_workspace_back_and_forth(I3_CMD);
 
 /**
- * Implementation of 'move [window|container] [to] workspace <name>'.
+ * Implementation of 'move [--no-auto-back-and-forth] [window|container] [to] workspace <name>'.
  *
  */
-void cmd_move_con_to_workspace_name(I3_CMD, const char *name);
+void cmd_move_con_to_workspace_name(I3_CMD, const char *name, const char *no_auto_back_and_forth);
 
 /**
- * Implementation of 'move [window|container] [to] workspace number <number>'.
+ * Implementation of 'move [--no-auto-back-and-forth] [window|container] [to] workspace number <number>'.
  *
  */
-void cmd_move_con_to_workspace_number(I3_CMD, const char *which);
+void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *no_auto_back_and_forth);
 
 /**
  * Implementation of 'resize set <px> [px] <px> [px]'.
@@ -76,7 +76,7 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
  * Implementation of 'border normal|pixel [<n>]', 'border none|1pixel|toggle'.
  *
  */
-void cmd_border(I3_CMD, const char *border_style_str, const char *border_width);
+void cmd_border(I3_CMD, const char *border_style_str, long border_width);
 
 /**
  * Implementation of 'nop <comment>'.
@@ -97,10 +97,10 @@ void cmd_append_layout(I3_CMD, const char *path);
 void cmd_workspace(I3_CMD, const char *which);
 
 /**
- * Implementation of 'workspace number <number>'
+ * Implementation of 'workspace [--no-auto-back-and-forth] number <number>'
  *
  */
-void cmd_workspace_number(I3_CMD, const char *which);
+void cmd_workspace_number(I3_CMD, const char *which, const char *no_auto_back_and_forth);
 
 /**
  * Implementation of 'workspace back_and_forth'.
@@ -109,16 +109,16 @@ void cmd_workspace_number(I3_CMD, const char *which);
 void cmd_workspace_back_and_forth(I3_CMD);
 
 /**
- * Implementation of 'workspace <name>'
+ * Implementation of 'workspace [--no-auto-back-and-forth] <name>'
  *
  */
-void cmd_workspace_name(I3_CMD, const char *name);
+void cmd_workspace_name(I3_CMD, const char *name, const char *no_auto_back_and_forth);
 
 /**
- * Implementation of 'mark [--toggle] <mark>'
+ * Implementation of 'mark [--add|--replace] [--toggle] <mark>'
  *
  */
-void cmd_mark(I3_CMD, const char *mark, const char *toggle);
+void cmd_mark(I3_CMD, const char *mark, const char *mode, const char *toggle);
 
 /**
  * Implementation of 'unmark [mark]'
@@ -157,7 +157,7 @@ void cmd_floating(I3_CMD, const char *floating_mode);
 void cmd_move_workspace_to_output(I3_CMD, const char *name);
 
 /**
- * Implementation of 'split v|h|vertical|horizontal'.
+ * Implementation of 'split v|h|t|vertical|horizontal|toggle'.
  *
  */
 void cmd_split(I3_CMD, const char *direction);

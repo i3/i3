@@ -11,6 +11,7 @@
 #include <xcb/xkb.h>
 #include <xcb/xproto.h>
 #include <xcb/xcb_aux.h>
+#include <xcb/xcb_cursor.h>
 
 #ifdef XCB_COMPAT
 #include "xcb_compat.h"
@@ -31,8 +32,16 @@
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
 
+#ifdef I3_ASAN_ENABLED
+#include <sanitizer/lsan_interface.h>
+#endif
+
 #include "common.h"
 #include "libi3.h"
+
+/** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
+ * constant for that. */
+#define XCB_CURSOR_LEFT_PTR 68
 
 /* We save the atoms in an easy to access array, indexed by an enum */
 enum {
@@ -49,6 +58,7 @@ xcb_connection_t *xcb_connection;
 int screen;
 xcb_screen_t *root_screen;
 xcb_window_t xcb_root;
+static xcb_cursor_t cursor;
 
 /* selection window for tray support */
 static xcb_window_t selwin = XCB_NONE;
@@ -63,19 +73,16 @@ static i3Font font;
 /* Icon size (based on font size) */
 int icon_size;
 
+xcb_visualtype_t *visual_type;
+uint8_t depth;
+xcb_colormap_t colormap;
+
 /* Overall height of the bar (based on font size) */
 int bar_height;
 
 /* These are only relevant for XKB, which we only need for grabbing modifiers */
 int xkb_base;
 int mod_pressed = 0;
-
-/* Because the statusline is the same on all outputs, we have
- * global buffer to render it on */
-xcb_gcontext_t statusline_ctx;
-xcb_gcontext_t statusline_clear;
-xcb_pixmap_t statusline_pm;
-uint32_t statusline_width;
 
 /* Event watchers, to interact with the user */
 ev_prepare *xcb_prep;
@@ -91,24 +98,27 @@ bool activated_mode = false;
 
 /* The parsed colors */
 struct xcb_colors_t {
-    uint32_t bar_fg;
-    uint32_t bar_bg;
-    uint32_t sep_fg;
-    uint32_t active_ws_fg;
-    uint32_t active_ws_bg;
-    uint32_t active_ws_border;
-    uint32_t inactive_ws_fg;
-    uint32_t inactive_ws_bg;
-    uint32_t inactive_ws_border;
-    uint32_t urgent_ws_bg;
-    uint32_t urgent_ws_fg;
-    uint32_t urgent_ws_border;
-    uint32_t focus_ws_bg;
-    uint32_t focus_ws_fg;
-    uint32_t focus_ws_border;
-    uint32_t binding_mode_bg;
-    uint32_t binding_mode_fg;
-    uint32_t binding_mode_border;
+    color_t bar_fg;
+    color_t bar_bg;
+    color_t sep_fg;
+    color_t focus_bar_fg;
+    color_t focus_bar_bg;
+    color_t focus_sep_fg;
+    color_t active_ws_fg;
+    color_t active_ws_bg;
+    color_t active_ws_border;
+    color_t inactive_ws_fg;
+    color_t inactive_ws_bg;
+    color_t inactive_ws_border;
+    color_t urgent_ws_bg;
+    color_t urgent_ws_fg;
+    color_t urgent_ws_border;
+    color_t focus_ws_bg;
+    color_t focus_ws_fg;
+    color_t focus_ws_border;
+    color_t binding_mode_bg;
+    color_t binding_mode_fg;
+    color_t binding_mode_border;
 };
 struct xcb_colors_t colors;
 
@@ -131,8 +141,6 @@ static const int tray_loff_px = 2;
 /* Vertical offset between the bar and a separator */
 static const int sep_voff_px = 4;
 
-/* We define xcb_request_failed as a macro to include the relevant line number */
-#define xcb_request_failed(cookie, err_msg) _xcb_request_failed(cookie, err_msg, __LINE__)
 int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
     xcb_generic_error_t *err;
     if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
@@ -165,7 +173,10 @@ int get_tray_width(struct tc_head *trayclients) {
  * Draws a separator for the given block if necessary.
  *
  */
-static void draw_separator(uint32_t x, struct status_block *block) {
+static void draw_separator(i3_output *output, uint32_t x, struct status_block *block, bool use_focus_colors) {
+    color_t sep_fg = (use_focus_colors ? colors.focus_sep_fg : colors.sep_fg);
+    color_t bar_bg = (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg);
+
     uint32_t sep_offset = get_sep_offset(block);
     if (TAILQ_NEXT(block, blocks) == NULL || sep_offset == 0)
         return;
@@ -173,113 +184,149 @@ static void draw_separator(uint32_t x, struct status_block *block) {
     uint32_t center_x = x - sep_offset;
     if (config.separator_symbol == NULL) {
         /* Draw a classic one pixel, vertical separator. */
-        uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_LINE_WIDTH;
-        uint32_t values[] = {colors.sep_fg, colors.bar_bg, logical_px(1)};
-        xcb_change_gc(xcb_connection, statusline_ctx, mask, values);
-        xcb_poly_line(xcb_connection, XCB_COORD_MODE_ORIGIN, statusline_pm, statusline_ctx, 2,
-                      (xcb_point_t[]){{center_x, logical_px(sep_voff_px)},
-                                      {center_x, bar_height - logical_px(sep_voff_px)}});
+        draw_util_rectangle(xcb_connection, &output->statusline_buffer, sep_fg,
+                            center_x,
+                            logical_px(sep_voff_px),
+                            logical_px(1),
+                            bar_height - 2 * logical_px(sep_voff_px));
     } else {
         /* Draw a custom separator. */
         uint32_t separator_x = MAX(x - block->sep_block_width, center_x - separator_symbol_width / 2);
-        set_font_colors(statusline_ctx, colors.sep_fg, colors.bar_bg);
-        draw_text(config.separator_symbol, statusline_pm, statusline_ctx,
-                  separator_x, logical_px(ws_voff_px), x - separator_x);
+        draw_util_text(config.separator_symbol, &output->statusline_buffer, sep_fg, bar_bg,
+                       separator_x, logical_px(ws_voff_px), x - separator_x);
     }
 }
 
-/*
- * Redraws the statusline to the buffer
- *
- */
-void refresh_statusline(bool use_short_text) {
+uint32_t predict_statusline_length(bool use_short_text) {
+    uint32_t width = 0;
     struct status_block *block;
 
-    uint32_t old_statusline_width = statusline_width;
-    statusline_width = 0;
-
-    /* Predict the text width of all blocks (in pixels). */
     TAILQ_FOREACH(block, &statusline_head, blocks) {
-        /* Try to use the shorter text if necessary and possible. */
+        i3String *text = block->full_text;
+        struct status_block_render_desc *render = &block->full_render;
         if (use_short_text && block->short_text != NULL) {
-            I3STRING_FREE(block->full_text);
-            block->full_text = i3string_copy(block->short_text);
+            text = block->short_text;
+            render = &block->short_render;
         }
 
-        if (i3string_get_num_bytes(block->full_text) == 0)
+        if (i3string_get_num_bytes(text) == 0)
             continue;
 
-        block->width = predict_text_width(block->full_text);
+        render->width = predict_text_width(text);
+        if (block->border)
+            render->width += logical_px(2);
 
         /* Compute offset and append for text aligment in min_width. */
-        if (block->min_width <= block->width) {
-            block->x_offset = 0;
-            block->x_append = 0;
+        if (block->min_width <= render->width) {
+            render->x_offset = 0;
+            render->x_append = 0;
         } else {
-            uint32_t padding_width = block->min_width - block->width;
+            uint32_t padding_width = block->min_width - render->width;
             switch (block->align) {
                 case ALIGN_LEFT:
-                    block->x_append = padding_width;
+                    render->x_append = padding_width;
                     break;
                 case ALIGN_RIGHT:
-                    block->x_offset = padding_width;
+                    render->x_offset = padding_width;
                     break;
                 case ALIGN_CENTER:
-                    block->x_offset = padding_width / 2;
-                    block->x_append = padding_width / 2 + padding_width % 2;
+                    render->x_offset = padding_width / 2;
+                    render->x_append = padding_width / 2 + padding_width % 2;
                     break;
             }
         }
 
+        width += render->width + render->x_offset + render->x_append;
+
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL)
-            statusline_width += block->sep_block_width;
-
-        statusline_width += block->width + block->x_offset + block->x_append;
+            width += block->sep_block_width;
     }
 
-    /* If the statusline is bigger than our screen we need to make sure that
-     * the pixmap provides enough space, so re-allocate if the width grew */
-    if (statusline_width > root_screen->width_in_pixels &&
-        statusline_width > old_statusline_width)
-        realloc_sl_buffer();
+    return width;
+}
 
-    /* Clear the statusline pixmap. */
-    xcb_rectangle_t rect = {0, 0, MAX(root_screen->width_in_pixels, statusline_width), bar_height};
-    xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
+/*
+ * Redraws the statusline to the output's statusline_buffer
+ */
+void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_colors, bool use_short_text) {
+    struct status_block *block;
 
-    /* Draw the text of each block. */
-    uint32_t x = 0;
+    color_t bar_color = (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg);
+    draw_util_clear_surface(xcb_connection, &output->statusline_buffer, bar_color);
+
+    /* Use unsigned integer wraparound to clip off the left side.
+     * For example, if clip_left is 75, then x will start at the very large
+     * number INT_MAX-75, which is way outside the surface dimensions. Drawing
+     * to that x position is a no-op which XCB and Cairo safely ignore. Once x moves
+     * up by 75 and goes past INT_MAX, it will wrap around again to 0, and we start
+     * actually rendering content to the surface. */
+    uint32_t x = 0 - clip_left;
+
+    /* Draw the text of each block */
     TAILQ_FOREACH(block, &statusline_head, blocks) {
-        if (i3string_get_num_bytes(block->full_text) == 0)
-            continue;
-        uint32_t fg_color;
-
-        /* If this block is urgent, draw it with the defined color and border. */
-        if (block->urgent) {
-            fg_color = colors.urgent_ws_fg;
-
-            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
-
-            /* Draw the background */
-            uint32_t bg_color = colors.urgent_ws_bg;
-            uint32_t bg_values[] = {bg_color, bg_color};
-            xcb_change_gc(xcb_connection, statusline_ctx, mask, bg_values);
-
-            /* The urgent background “overshoots” by 2 px so that the text that
-             * is printed onto it will not be look so cut off. */
-            xcb_rectangle_t bg_rect = {x - logical_px(2), logical_px(1), block->width + logical_px(4), bar_height - logical_px(2)};
-            xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_ctx, 1, &bg_rect);
-        } else {
-            fg_color = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
+        i3String *text = block->full_text;
+        struct status_block_render_desc *render = &block->full_render;
+        if (use_short_text && block->short_text != NULL) {
+            text = block->short_text;
+            render = &block->short_render;
         }
 
-        set_font_colors(statusline_ctx, fg_color, colors.bar_bg);
-        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, logical_px(ws_voff_px), block->width);
-        x += block->width + block->sep_block_width + block->x_offset + block->x_append;
+        if (i3string_get_num_bytes(text) == 0)
+            continue;
+
+        color_t fg_color;
+        if (block->urgent) {
+            fg_color = colors.urgent_ws_fg;
+        } else if (block->color) {
+            fg_color = draw_util_hex_to_color(block->color);
+        } else if (use_focus_colors) {
+            fg_color = colors.focus_bar_fg;
+        } else {
+            fg_color = colors.bar_fg;
+        }
+
+        color_t bg_color = bar_color;
+
+        int border_width = (block->border) ? logical_px(1) : 0;
+        int full_render_width = render->width + render->x_offset + render->x_append;
+        if (block->border || block->background || block->urgent) {
+            /* Let's determine the colors first. */
+            color_t border_color = bar_color;
+            if (block->urgent) {
+                border_color = colors.urgent_ws_border;
+                bg_color = colors.urgent_ws_bg;
+            } else {
+                if (block->border)
+                    border_color = draw_util_hex_to_color(block->border);
+                if (block->background)
+                    bg_color = draw_util_hex_to_color(block->background);
+            }
+
+            /* Draw the border. */
+            draw_util_rectangle(xcb_connection, &output->statusline_buffer, border_color,
+                                x, logical_px(1),
+                                full_render_width,
+                                bar_height - logical_px(2));
+
+            /* Draw the background. */
+            draw_util_rectangle(xcb_connection, &output->statusline_buffer, bg_color,
+                                x + border_width,
+                                logical_px(1) + border_width,
+                                full_render_width - 2 * border_width,
+                                bar_height - 2 * border_width - logical_px(2));
+        }
+
+        draw_util_text(text, &output->statusline_buffer, fg_color, bg_color,
+                       x + render->x_offset + border_width, logical_px(ws_voff_px),
+                       render->width - 2 * border_width);
+        x += full_render_width;
 
         /* If this is not the last block, draw a separator. */
-        draw_separator(x, block);
+        if (TAILQ_NEXT(block, blocks) != NULL) {
+            x += block->sep_block_width;
+            draw_separator(output, x, block, use_focus_colors);
+        }
     }
 }
 
@@ -297,7 +344,7 @@ void hide_bars(void) {
         if (!walk->active) {
             continue;
         }
-        xcb_unmap_window(xcb_connection, walk->bar);
+        xcb_unmap_window(xcb_connection, walk->bar.id);
     }
     stop_child();
 }
@@ -319,7 +366,7 @@ void unhide_bars(void) {
     cont_child();
 
     SLIST_FOREACH(walk, outputs, slist) {
-        if (walk->bar == XCB_NONE) {
+        if (walk->bar.id == XCB_NONE) {
             continue;
         }
         mask = XCB_CONFIG_WINDOW_X |
@@ -337,14 +384,14 @@ void unhide_bars(void) {
         values[4] = XCB_STACK_MODE_ABOVE;
         DLOG("Reconfiguring window for output %s to %d,%d\n", walk->name, values[0], values[1]);
         cookie = xcb_configure_window_checked(xcb_connection,
-                                              walk->bar,
+                                              walk->bar.id,
                                               mask,
                                               values);
 
         if (xcb_request_failed(cookie, "Could not reconfigure window")) {
             exit(EXIT_FAILURE);
         }
-        xcb_map_window(xcb_connection, walk->bar);
+        xcb_map_window(xcb_connection, walk->bar.id);
     }
 }
 
@@ -353,9 +400,9 @@ void unhide_bars(void) {
  *
  */
 void init_colors(const struct xcb_color_strings_t *new_colors) {
-#define PARSE_COLOR(name, def)                                                   \
-    do {                                                                         \
-        colors.name = get_colorpixel(new_colors->name ? new_colors->name : def); \
+#define PARSE_COLOR(name, def)                                                           \
+    do {                                                                                 \
+        colors.name = draw_util_hex_to_color(new_colors->name ? new_colors->name : def); \
     } while (0)
     PARSE_COLOR(bar_fg, "#FFFFFF");
     PARSE_COLOR(bar_bg, "#000000");
@@ -374,9 +421,9 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(focus_ws_border, "#4c7899");
 #undef PARSE_COLOR
 
-#define PARSE_COLOR_FALLBACK(name, fallback)                                                 \
-    do {                                                                                     \
-        colors.name = new_colors->name ? get_colorpixel(new_colors->name) : colors.fallback; \
+#define PARSE_COLOR_FALLBACK(name, fallback)                                                         \
+    do {                                                                                             \
+        colors.name = new_colors->name ? draw_util_hex_to_color(new_colors->name) : colors.fallback; \
     } while (0)
 
     /* For the binding mode indicator colors, we don't hardcode a default.
@@ -384,6 +431,12 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR_FALLBACK(binding_mode_fg, urgent_ws_fg);
     PARSE_COLOR_FALLBACK(binding_mode_bg, urgent_ws_bg);
     PARSE_COLOR_FALLBACK(binding_mode_border, urgent_ws_border);
+
+    /* Similarly, for unspecified focused bar colors, we fall back to the
+     * regular bar colors. */
+    PARSE_COLOR_FALLBACK(focus_bar_fg, bar_fg);
+    PARSE_COLOR_FALLBACK(focus_bar_bg, bar_bg);
+    PARSE_COLOR_FALLBACK(focus_sep_fg, sep_fg);
 #undef PARSE_COLOR_FALLBACK
 
     init_tray_colors();
@@ -401,7 +454,7 @@ void handle_button(xcb_button_press_event_t *event) {
     i3_output *walk;
     xcb_window_t bar = event->event;
     SLIST_FOREACH(walk, outputs, slist) {
-        if (walk->bar == bar) {
+        if (walk->bar.id == bar) {
             break;
         }
     }
@@ -412,7 +465,6 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     int32_t x = event->event_x >= 0 ? event->event_x : 0;
-    int32_t original_x = x;
 
     DLOG("Got button %d\n", event->detail);
 
@@ -435,21 +487,28 @@ void handle_button(xcb_button_press_event_t *event) {
          * check if a status block has been clicked. */
         int tray_width = get_tray_width(walk->trayclients);
         int block_x = 0, last_block_x;
-        int offset = walk->rect.w - statusline_width - tray_width - logical_px(sb_hoff_px);
+        int offset = walk->rect.w - walk->statusline_width - tray_width - logical_px(sb_hoff_px);
+        int32_t statusline_x = x - offset;
 
-        x = original_x - offset;
-        if (x >= 0 && (size_t)x < statusline_width) {
+        if (statusline_x >= 0 && statusline_x < walk->statusline_width) {
             struct status_block *block;
             int sep_offset_remainder = 0;
 
             TAILQ_FOREACH(block, &statusline_head, blocks) {
-                if (i3string_get_num_bytes(block->full_text) == 0)
+                i3String *text = block->full_text;
+                struct status_block_render_desc *render = &block->full_render;
+                if (walk->statusline_short_text && block->short_text != NULL) {
+                    text = block->short_text;
+                    render = &block->short_render;
+                }
+
+                if (i3string_get_num_bytes(text) == 0)
                     continue;
 
                 last_block_x = block_x;
-                block_x += block->width + block->x_offset + block->x_append + get_sep_offset(block) + sep_offset_remainder;
+                block_x += render->width + render->x_offset + render->x_append + get_sep_offset(block) + sep_offset_remainder;
 
-                if (x <= block_x && x >= last_block_x) {
+                if (statusline_x <= block_x && statusline_x >= last_block_x) {
                     send_block_clicked(event->detail, block->name, block->instance, event->root_x, event->root_y);
                     return;
                 }
@@ -457,7 +516,6 @@ void handle_button(xcb_button_press_event_t *event) {
                 sep_offset_remainder = block->sep_block_width - get_sep_offset(block);
             }
         }
-        x = original_x;
     }
 
     /* If a custom command was specified for this mouse button, it overrides
@@ -564,7 +622,7 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
         if (!output->active) {
             continue;
         }
-        if (output->bar == event->window) {
+        if (output->bar.id == event->window) {
             if (output->visible == visible) {
                 return;
             }
@@ -680,25 +738,40 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             }
 
             DLOG("X window %08x requested docking\n", client);
-            i3_output *walk, *output = NULL;
-            SLIST_FOREACH(walk, outputs, slist) {
-                if (!walk->active)
-                    continue;
-                if (config.tray_output) {
-                    if ((strcasecmp(walk->name, config.tray_output) != 0) &&
-                        (!walk->primary || strcasecmp("primary", config.tray_output) != 0))
+            i3_output *output = NULL;
+            i3_output *walk = NULL;
+            tray_output_t *tray_output = NULL;
+            /* We need to iterate through the tray_output assignments first in
+             * order to prioritize them. Otherwise, if this bar manages two
+             * outputs and both are assigned as tray_output as well, the first
+             * output in our list would receive the tray rather than the first
+             * one defined via tray_output. */
+            TAILQ_FOREACH(tray_output, &(config.tray_outputs), tray_outputs) {
+                SLIST_FOREACH(walk, outputs, slist) {
+                    if (!walk->active)
                         continue;
+
+                    if (strcasecmp(walk->name, tray_output->output) == 0) {
+                        DLOG("Found tray_output assignment for output %s.\n", walk->name);
+                        output = walk;
+                        break;
+                    }
+
+                    if (walk->primary && strcasecmp("primary", tray_output->output) == 0) {
+                        DLOG("Found tray_output assignment on primary output %s.\n", walk->name);
+                        output = walk;
+                        break;
+                    }
                 }
 
-                DLOG("using output %s\n", walk->name);
-                output = walk;
-                break;
+                /* If we found an output, we're done. */
+                if (output != NULL)
+                    break;
             }
-            /* In case of tray_output == primary and there is no primary output
-             * configured, we fall back to the first available output. */
-            if (output == NULL &&
-                config.tray_output &&
-                strcasecmp("primary", config.tray_output) == 0) {
+
+            /* If no tray_output has been specified, we fall back to the first
+             * available output. */
+            if (output == NULL && TAILQ_EMPTY(&(config.tray_outputs))) {
                 SLIST_FOREACH(walk, outputs, slist) {
                     if (!walk->active)
                         continue;
@@ -707,15 +780,20 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                     break;
                 }
             }
+
             if (output == NULL) {
                 ELOG("No output found\n");
                 return;
             }
-            xcb_reparent_window(xcb_connection,
-                                client,
-                                output->bar,
-                                output->rect.w - icon_size - logical_px(config.tray_padding),
-                                logical_px(config.tray_padding));
+
+            xcb_void_cookie_t rcookie = xcb_reparent_window(xcb_connection,
+                                                            client,
+                                                            output->bar.id,
+                                                            output->rect.w - icon_size - logical_px(config.tray_padding),
+                                                            logical_px(config.tray_padding));
+            if (xcb_request_failed(rcookie, "Could not reparent window. Maybe it is using an incorrect depth/visual?"))
+                return;
+
             /* We reconfigure the window to use a reasonable size. The systray
              * specification explicitly says:
              *   Tray icons may be assigned any size by the system tray, and
@@ -737,8 +815,8 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             ev->type = atoms[_XEMBED];
             ev->format = 32;
             ev->data.data32[0] = XCB_CURRENT_TIME;
-            ev->data.data32[1] = atoms[XEMBED_EMBEDDED_NOTIFY];
-            ev->data.data32[2] = output->bar;
+            ev->data.data32[1] = XEMBED_EMBEDDED_NOTIFY;
+            ev->data.data32[2] = output->bar.id;
             ev->data.data32[3] = xe_version;
             xcb_send_event(xcb_connection,
                            0,
@@ -987,17 +1065,27 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
 
     if (xcb_connection_has_error(xcb_connection)) {
         ELOG("X11 connection was closed unexpectedly - maybe your X server terminated / crashed?\n");
+#ifdef I3_ASAN_ENABLED
+        __lsan_do_leak_check();
+#endif
         exit(1);
     }
 
     while ((event = xcb_poll_for_event(xcb_connection)) != NULL) {
+        if (event->response_type == 0) {
+            xcb_generic_error_t *error = (xcb_generic_error_t *)event;
+            DLOG("Received X11 error, sequence 0x%x, error_code = %d\n", error->sequence, error->error_code);
+            free(event);
+            continue;
+        }
+
         int type = (event->response_type & ~0x80);
 
         if (type == xkb_base && xkb_base > -1) {
             DLOG("received an xkb event\n");
 
             xcb_xkb_state_notify_event_t *state = (xcb_xkb_state_notify_event_t *)event;
-            if (state->xkbType == XCB_XKB_STATE_NOTIFY) {
+            if (state->xkbType == XCB_XKB_STATE_NOTIFY && config.modifier != XCB_NONE) {
                 int modstate = state->mods & config.modifier;
 
 #define DLOGMOD(modmask, status)                        \
@@ -1118,32 +1206,27 @@ char *init_xcb_early() {
     root_screen = xcb_aux_get_screen(xcb_connection, screen);
     xcb_root = root_screen->root;
 
-    /* We draw the statusline to a seperate pixmap, because it looks the same on all bars and
-     * this way, we can choose to crop it */
-    uint32_t mask = XCB_GC_FOREGROUND;
-    uint32_t vals[] = {colors.bar_bg, colors.bar_bg};
+    depth = root_screen->root_depth;
+    colormap = root_screen->default_colormap;
+    visual_type = get_visualtype(root_screen);
 
-    statusline_clear = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t clear_ctx_cookie = xcb_create_gc_checked(xcb_connection,
-                                                               statusline_clear,
-                                                               xcb_root,
-                                                               mask,
-                                                               vals);
-
-    statusline_ctx = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
-                                                            statusline_ctx,
-                                                            xcb_root,
-                                                            0,
-                                                            NULL);
-
-    statusline_pm = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               root_screen->root_depth,
-                                                               statusline_pm,
-                                                               xcb_root,
-                                                               root_screen->width_in_pixels,
-                                                               root_screen->height_in_pixels);
+    xcb_cursor_context_t *cursor_ctx;
+    if (xcb_cursor_context_new(conn, root_screen, &cursor_ctx) == 0) {
+        cursor = xcb_cursor_load_cursor(cursor_ctx, "left_ptr");
+        xcb_cursor_context_free(cursor_ctx);
+    } else {
+        cursor = xcb_generate_id(xcb_connection);
+        i3Font cursor_font = load_font("cursor", false);
+        xcb_create_glyph_cursor(
+            xcb_connection,
+            cursor,
+            cursor_font.specific.xcb.id,
+            cursor_font.specific.xcb.id,
+            XCB_CURSOR_LEFT_PTR,
+            XCB_CURSOR_LEFT_PTR + 1,
+            0, 0, 0,
+            65535, 65535, 65535);
+    }
 
     /* The various watchers to communicate with xcb */
     xcb_io = smalloc(sizeof(ev_io));
@@ -1162,12 +1245,6 @@ char *init_xcb_early() {
     get_atoms();
 
     char *path = root_atom_contents("I3_SOCKET_PATH", xcb_connection, screen);
-
-    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline buffer") ||
-        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline buffer clearcontext") ||
-        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline buffer context")) {
-        exit(EXIT_FAILURE);
-    }
 
     return path;
 }
@@ -1279,17 +1356,17 @@ void init_tray(void) {
 
     /* tray support: we need a window to own the selection */
     selwin = xcb_generate_id(xcb_connection);
-    uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
-    uint32_t selval[] = {1};
+    uint32_t selmask = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_COLORMAP;
+    uint32_t selval[] = {root_screen->black_pixel, root_screen->black_pixel, 1, colormap};
     xcb_create_window(xcb_connection,
-                      root_screen->root_depth,
+                      depth,
                       selwin,
                       xcb_root,
                       -1, -1,
                       1, 1,
                       0,
                       XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                      root_screen->root_visual,
+                      visual_type->visual_id,
                       selmask,
                       selval);
 
@@ -1303,6 +1380,14 @@ void init_tray(void) {
                         32,
                         1,
                         &orientation);
+    xcb_change_property(xcb_connection,
+                        XCB_PROP_MODE_REPLACE,
+                        selwin,
+                        atoms[_NET_SYSTEM_TRAY_VISUAL],
+                        XCB_ATOM_VISUALID,
+                        32,
+                        1,
+                        &visual_type->visual_id);
 
     init_tray_colors();
 
@@ -1337,6 +1422,8 @@ void init_tray(void) {
         free(selreply);
         return;
     }
+
+    free(selreply);
 
     send_tray_clientmessage();
 }
@@ -1399,6 +1486,9 @@ void clean_xcb(void) {
     FREE_SLIST(outputs, i3_output);
     FREE(outputs);
 
+    free_font();
+
+    xcb_free_cursor(xcb_connection, cursor);
     xcb_flush(xcb_connection);
     xcb_aux_sync(xcb_connection);
     xcb_disconnect(xcb_connection);
@@ -1483,56 +1573,13 @@ void destroy_window(i3_output *output) {
     if (output == NULL) {
         return;
     }
-    if (output->bar == XCB_NONE) {
+    if (output->bar.id == XCB_NONE) {
         return;
     }
 
     kick_tray_clients(output);
-    xcb_destroy_window(xcb_connection, output->bar);
-    output->bar = XCB_NONE;
-}
-
-/*
- * Reallocate the statusline buffer
- *
- */
-void realloc_sl_buffer(void) {
-    DLOG("Re-allocating statusline buffer, statusline_width = %d, root_screen->width_in_pixels = %d\n",
-         statusline_width, root_screen->width_in_pixels);
-    xcb_free_pixmap(xcb_connection, statusline_pm);
-    statusline_pm = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               root_screen->root_depth,
-                                                               statusline_pm,
-                                                               xcb_root,
-                                                               MAX(root_screen->width_in_pixels, statusline_width),
-                                                               bar_height);
-
-    uint32_t mask = XCB_GC_FOREGROUND;
-    uint32_t vals[2] = {colors.bar_bg, colors.bar_bg};
-    xcb_free_gc(xcb_connection, statusline_clear);
-    statusline_clear = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t clear_ctx_cookie = xcb_create_gc_checked(xcb_connection,
-                                                               statusline_clear,
-                                                               xcb_root,
-                                                               mask,
-                                                               vals);
-
-    mask |= XCB_GC_BACKGROUND;
-    vals[0] = colors.bar_fg;
-    xcb_free_gc(xcb_connection, statusline_ctx);
-    statusline_ctx = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
-                                                            statusline_ctx,
-                                                            xcb_root,
-                                                            mask,
-                                                            vals);
-
-    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline buffer") ||
-        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline buffer clearcontext") ||
-        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline buffer context")) {
-        exit(EXIT_FAILURE);
-    }
+    xcb_destroy_window(xcb_connection, output->bar.id);
+    output->bar.id = XCB_NONE;
 }
 
 /* Strut partial tells i3 where to reserve space for i3bar. This is determined
@@ -1571,7 +1618,7 @@ xcb_void_cookie_t config_strut_partial(i3_output *output) {
     }
     return xcb_change_property(xcb_connection,
                                XCB_PROP_MODE_REPLACE,
-                               output->bar,
+                               output->bar.id,
                                atoms[_NET_WM_STRUT_PARTIAL],
                                XCB_ATOM_CARDINAL,
                                32,
@@ -1585,7 +1632,7 @@ xcb_void_cookie_t config_strut_partial(i3_output *output) {
  */
 void reconfig_windows(bool redraw_bars) {
     uint32_t mask;
-    uint32_t values[5];
+    uint32_t values[6];
     static bool tray_configured = false;
 
     i3_output *walk;
@@ -1597,56 +1644,69 @@ void reconfig_windows(bool redraw_bars) {
             destroy_window(walk);
             continue;
         }
-        if (walk->bar == XCB_NONE) {
+        if (walk->bar.id == XCB_NONE) {
             DLOG("Creating window for output %s\n", walk->name);
 
-            walk->bar = xcb_generate_id(xcb_connection);
-            walk->buffer = xcb_generate_id(xcb_connection);
-            mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
-            /* Black background */
-            values[0] = colors.bar_bg;
+            xcb_window_t bar_id = xcb_generate_id(xcb_connection);
+            xcb_pixmap_t buffer_id = xcb_generate_id(xcb_connection);
+            xcb_pixmap_t statusline_buffer_id = xcb_generate_id(xcb_connection);
+            mask = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK | XCB_CW_COLORMAP | XCB_CW_CURSOR;
+
+            values[0] = colors.bar_bg.colorpixel;
+            values[1] = root_screen->black_pixel;
             /* If hide_on_modifier is set to hide or invisible mode, i3 is not supposed to manage our bar windows */
-            values[1] = (config.hide_on_modifier == M_DOCK ? 0 : 1);
+            values[2] = (config.hide_on_modifier == M_DOCK ? 0 : 1);
             /* We enable the following EventMask fields:
              * EXPOSURE, to get expose events (we have to re-draw then)
              * SUBSTRUCTURE_REDIRECT, to get ConfigureRequests when the tray
              *                        child windows use ConfigureWindow
              * BUTTON_PRESS, to handle clicks on the workspace buttons
              * */
-            values[2] = XCB_EVENT_MASK_EXPOSURE |
+            values[3] = XCB_EVENT_MASK_EXPOSURE |
                         XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
                         XCB_EVENT_MASK_BUTTON_PRESS;
             if (config.hide_on_modifier == M_DOCK) {
                 /* If the bar is normally visible, catch visibility change events to suspend
                  * the status process when the bar is obscured by full-screened windows.  */
-                values[2] |= XCB_EVENT_MASK_VISIBILITY_CHANGE;
+                values[3] |= XCB_EVENT_MASK_VISIBILITY_CHANGE;
                 walk->visible = true;
             }
+            values[4] = colormap;
+            values[5] = cursor;
+
             xcb_void_cookie_t win_cookie = xcb_create_window_checked(xcb_connection,
-                                                                     root_screen->root_depth,
-                                                                     walk->bar,
+                                                                     depth,
+                                                                     bar_id,
                                                                      xcb_root,
                                                                      walk->rect.x, walk->rect.y + walk->rect.h - bar_height,
                                                                      walk->rect.w, bar_height,
                                                                      0,
                                                                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                                                     root_screen->root_visual,
+                                                                     visual_type->visual_id,
                                                                      mask,
                                                                      values);
 
             /* The double-buffer we use to render stuff off-screen */
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    root_screen->root_depth,
-                                                                    walk->buffer,
-                                                                    walk->bar,
+                                                                    depth,
+                                                                    buffer_id,
+                                                                    bar_id,
                                                                     walk->rect.w,
                                                                     bar_height);
+
+            /* The double-buffer we use to render the statusline before copying to buffer */
+            xcb_void_cookie_t slpm_cookie = xcb_create_pixmap_checked(xcb_connection,
+                                                                      depth,
+                                                                      statusline_buffer_id,
+                                                                      bar_id,
+                                                                      walk->rect.w,
+                                                                      bar_height);
 
             /* Set the WM_CLASS and WM_NAME (we don't need UTF-8) atoms */
             xcb_void_cookie_t class_cookie;
             class_cookie = xcb_change_property(xcb_connection,
                                                XCB_PROP_MODE_REPLACE,
-                                               walk->bar,
+                                               bar_id,
                                                XCB_ATOM_WM_CLASS,
                                                XCB_ATOM_STRING,
                                                8,
@@ -1658,7 +1718,7 @@ void reconfig_windows(bool redraw_bars) {
             xcb_void_cookie_t name_cookie;
             name_cookie = xcb_change_property(xcb_connection,
                                               XCB_PROP_MODE_REPLACE,
-                                              walk->bar,
+                                              bar_id,
                                               XCB_ATOM_WM_NAME,
                                               XCB_ATOM_STRING,
                                               8,
@@ -1670,55 +1730,86 @@ void reconfig_windows(bool redraw_bars) {
              * this one */
             xcb_void_cookie_t dock_cookie = xcb_change_property(xcb_connection,
                                                                 XCB_PROP_MODE_REPLACE,
-                                                                walk->bar,
+                                                                bar_id,
                                                                 atoms[_NET_WM_WINDOW_TYPE],
                                                                 XCB_ATOM_ATOM,
                                                                 32,
                                                                 1,
                                                                 (unsigned char *)&atoms[_NET_WM_WINDOW_TYPE_DOCK]);
 
-            xcb_void_cookie_t strut_cookie = config_strut_partial(walk);
+            draw_util_surface_init(xcb_connection, &walk->bar, bar_id, NULL, walk->rect.w, bar_height);
+            draw_util_surface_init(xcb_connection, &walk->buffer, buffer_id, NULL, walk->rect.w, bar_height);
+            draw_util_surface_init(xcb_connection, &walk->statusline_buffer, statusline_buffer_id, NULL, walk->rect.w, bar_height);
 
-            /* We also want a graphics context for the bars (it defines the properties
-             * with which we draw to them) */
-            walk->bargc = xcb_generate_id(xcb_connection);
-            xcb_void_cookie_t gc_cookie = xcb_create_gc_checked(xcb_connection,
-                                                                walk->bargc,
-                                                                walk->bar,
-                                                                0,
-                                                                NULL);
+            xcb_void_cookie_t strut_cookie = config_strut_partial(walk);
 
             /* We finally map the bar (display it on screen), unless the modifier-switch is on */
             xcb_void_cookie_t map_cookie;
             if (config.hide_on_modifier == M_DOCK) {
-                map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
+                map_cookie = xcb_map_window_checked(xcb_connection, bar_id);
             }
 
             if (xcb_request_failed(win_cookie, "Could not create window") ||
                 xcb_request_failed(pm_cookie, "Could not create pixmap") ||
+                xcb_request_failed(slpm_cookie, "Could not create statusline pixmap") ||
                 xcb_request_failed(dock_cookie, "Could not set dock mode") ||
                 xcb_request_failed(class_cookie, "Could not set WM_CLASS") ||
                 xcb_request_failed(name_cookie, "Could not set WM_NAME") ||
                 xcb_request_failed(strut_cookie, "Could not set strut") ||
-                xcb_request_failed(gc_cookie, "Could not create graphical context") ||
                 ((config.hide_on_modifier == M_DOCK) && xcb_request_failed(map_cookie, "Could not map window"))) {
                 exit(EXIT_FAILURE);
             }
 
-            const char *tray_output = (config.tray_output ? config.tray_output : SLIST_FIRST(outputs)->name);
-            if (!tray_configured && strcasecmp(tray_output, "none") != 0) {
-                /* Configuration sanity check: ensure this i3bar instance handles the output on
-                 * which the tray should appear (e.g. don’t initialize a tray if tray_output ==
-                 * VGA-1 but output == [HDMI-1]).
-                 */
-                i3_output *output;
-                SLIST_FOREACH(output, outputs, slist) {
-                    if (strcasecmp(output->name, tray_output) == 0 ||
-                        (strcasecmp(tray_output, "primary") == 0 && output->primary)) {
-                        init_tray();
-                        break;
-                    }
+            /* Unless "tray_output none" was specified, we need to initialize the tray. */
+            bool no_tray = false;
+            if (!(TAILQ_EMPTY(&(config.tray_outputs)))) {
+                no_tray = strcasecmp(TAILQ_FIRST(&(config.tray_outputs))->output, "none") == 0;
+            }
+
+            /*
+             * There are three scenarios in which we need to initialize the tray:
+             *   1. A specific output was listed in tray_outputs which is also
+             *      in the list of outputs managed by this bar.
+             *   2. No tray_output directive was specified. In this case, we
+             *      use the first available output.
+             *   3. 'tray_output primary' was specified. In this case we use the
+             *      primary output.
+             *
+             * Three scenarios in which we specifically don't want to
+             * initialize the tray are:
+             *   1. 'tray_output none' was specified.
+             *   2. A specific output was listed as a tray_output, but is not
+             *      one of the outputs managed by this bar. For example, consider
+             *      tray_outputs == [VGA-1], but outputs == [HDMI-1].
+             *   3. 'tray_output primary' was specified and no output in the list
+             *      is primary.
+             */
+            if (!tray_configured && !no_tray) {
+                /* If no tray_output was specified, we go ahead and initialize the tray as
+                 * we will be using the first available output. */
+                if (TAILQ_EMPTY(&(config.tray_outputs))) {
+                    init_tray();
                 }
+
+                /* If one or more tray_output assignments were specified, we ensure that at least one of
+                 * them is actually an output managed by this instance. */
+                tray_output_t *tray_output;
+                TAILQ_FOREACH(tray_output, &(config.tray_outputs), tray_outputs) {
+                    i3_output *output;
+                    bool found = false;
+                    SLIST_FOREACH(output, outputs, slist) {
+                        if (strcasecmp(output->name, tray_output->output) == 0 ||
+                            (strcasecmp(tray_output->output, "primary") == 0 && output->primary)) {
+                            found = true;
+                            init_tray();
+                            break;
+                        }
+                    }
+
+                    if (found)
+                        break;
+                }
+
                 tray_configured = true;
             }
         } else {
@@ -1741,11 +1832,14 @@ void reconfig_windows(bool redraw_bars) {
             xcb_void_cookie_t strut_cookie = config_strut_partial(walk);
 
             DLOG("Destroying buffer for output %s\n", walk->name);
-            xcb_free_pixmap(xcb_connection, walk->buffer);
+            xcb_free_pixmap(xcb_connection, walk->buffer.id);
+
+            DLOG("Destroying statusline buffer for output %s\n", walk->name);
+            xcb_free_pixmap(xcb_connection, walk->statusline_buffer.id);
 
             DLOG("Reconfiguring window for output %s to %d,%d\n", walk->name, values[0], values[1]);
             xcb_void_cookie_t cfg_cookie = xcb_configure_window_checked(xcb_connection,
-                                                                        walk->bar,
+                                                                        walk->bar.id,
                                                                         mask,
                                                                         values);
 
@@ -1753,25 +1847,40 @@ void reconfig_windows(bool redraw_bars) {
             values[0] = (config.hide_on_modifier == M_DOCK ? 0 : 1);
             DLOG("Changing window attribute override_redirect for output %s to %d\n", walk->name, values[0]);
             xcb_void_cookie_t chg_cookie = xcb_change_window_attributes(xcb_connection,
-                                                                        walk->bar,
+                                                                        walk->bar.id,
                                                                         mask,
                                                                         values);
 
             DLOG("Recreating buffer for output %s\n", walk->name);
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    root_screen->root_depth,
-                                                                    walk->buffer,
-                                                                    walk->bar,
+                                                                    depth,
+                                                                    walk->buffer.id,
+                                                                    walk->bar.id,
                                                                     walk->rect.w,
                                                                     bar_height);
+
+            DLOG("Recreating statusline buffer for output %s\n", walk->name);
+            xcb_void_cookie_t slpm_cookie = xcb_create_pixmap_checked(xcb_connection,
+                                                                      depth,
+                                                                      walk->statusline_buffer.id,
+                                                                      walk->bar.id,
+                                                                      walk->rect.w,
+                                                                      bar_height);
+
+            draw_util_surface_free(xcb_connection, &(walk->bar));
+            draw_util_surface_free(xcb_connection, &(walk->buffer));
+            draw_util_surface_free(xcb_connection, &(walk->statusline_buffer));
+            draw_util_surface_init(xcb_connection, &(walk->bar), walk->bar.id, NULL, walk->rect.w, bar_height);
+            draw_util_surface_init(xcb_connection, &(walk->buffer), walk->buffer.id, NULL, walk->rect.w, bar_height);
+            draw_util_surface_init(xcb_connection, &(walk->statusline_buffer), walk->statusline_buffer.id, NULL, walk->rect.w, bar_height);
 
             xcb_void_cookie_t map_cookie, umap_cookie;
             if (redraw_bars) {
                 /* Unmap the window, and draw it again when in dock mode */
-                umap_cookie = xcb_unmap_window_checked(xcb_connection, walk->bar);
+                umap_cookie = xcb_unmap_window_checked(xcb_connection, walk->bar.id);
                 if (config.hide_on_modifier == M_DOCK) {
                     cont_child();
-                    map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
+                    map_cookie = xcb_map_window_checked(xcb_connection, walk->bar.id);
                 } else {
                     stop_child();
                 }
@@ -1788,6 +1897,7 @@ void reconfig_windows(bool redraw_bars) {
             if (xcb_request_failed(cfg_cookie, "Could not reconfigure window") ||
                 xcb_request_failed(chg_cookie, "Could not change window") ||
                 xcb_request_failed(pm_cookie, "Could not create pixmap") ||
+                xcb_request_failed(slpm_cookie, "Could not create statusline pixmap") ||
                 xcb_request_failed(strut_cookie, "Could not set strut") ||
                 (redraw_bars && (xcb_request_failed(umap_cookie, "Could not unmap window") ||
                                  (config.hide_on_modifier == M_DOCK && xcb_request_failed(map_cookie, "Could not map window"))))) {
@@ -1803,43 +1913,37 @@ void reconfig_windows(bool redraw_bars) {
  */
 void draw_bars(bool unhide) {
     DLOG("Drawing bars...\n");
-    int workspace_width = 0;
-    /* Is the currently-rendered statusline using short_text items? */
-    bool rendered_statusline_is_short = false;
 
-    refresh_statusline(false);
+    uint32_t full_statusline_width = predict_statusline_length(false);
+    uint32_t short_statusline_width = predict_statusline_length(true);
 
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
+        int workspace_width = 0;
+
         if (!outputs_walk->active) {
             DLOG("Output %s inactive, skipping...\n", outputs_walk->name);
             continue;
         }
-        if (outputs_walk->bar == XCB_NONE) {
+        if (outputs_walk->bar.id == XCB_NONE) {
             /* Oh shit, an active output without an own bar. Create it now! */
             reconfig_windows(false);
         }
+
+        bool use_focus_colors = output_has_focus(outputs_walk);
+
         /* First things first: clear the backbuffer */
-        uint32_t color = colors.bar_bg;
-        xcb_change_gc(xcb_connection,
-                      outputs_walk->bargc,
-                      XCB_GC_FOREGROUND,
-                      &color);
-        xcb_rectangle_t rect = {0, 0, outputs_walk->rect.w, bar_height};
-        xcb_poly_fill_rectangle(xcb_connection,
-                                outputs_walk->buffer,
-                                outputs_walk->bargc,
-                                1,
-                                &rect);
+        draw_util_clear_surface(xcb_connection, &(outputs_walk->buffer),
+                                (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg));
 
         if (!config.disable_ws) {
             i3_ws *ws_walk;
             TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
                 DLOG("Drawing button for WS %s at x = %d, len = %d\n",
                      i3string_as_utf8(ws_walk->name), workspace_width, ws_walk->name_width);
-                uint32_t fg_color = colors.inactive_ws_fg;
-                uint32_t bg_color = colors.inactive_ws_bg;
-                uint32_t border_color = colors.inactive_ws_border;
+                color_t fg_color = colors.inactive_ws_fg;
+                color_t bg_color = colors.inactive_ws_bg;
+                color_t border_color = colors.inactive_ws_border;
                 if (ws_walk->visible) {
                     if (!ws_walk->focused) {
                         fg_color = colors.active_ws_fg;
@@ -1858,40 +1962,25 @@ void draw_bars(bool unhide) {
                     border_color = colors.urgent_ws_border;
                     unhide = true;
                 }
-                uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
-                uint32_t vals_border[] = {border_color, border_color};
-                xcb_change_gc(xcb_connection,
-                              outputs_walk->bargc,
-                              mask,
-                              vals_border);
-                xcb_rectangle_t rect_border = {workspace_width,
-                                               logical_px(1),
-                                               ws_walk->name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
-                                               font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1)};
-                xcb_poly_fill_rectangle(xcb_connection,
-                                        outputs_walk->buffer,
-                                        outputs_walk->bargc,
-                                        1,
-                                        &rect_border);
-                uint32_t vals[] = {bg_color, bg_color};
-                xcb_change_gc(xcb_connection,
-                              outputs_walk->bargc,
-                              mask,
-                              vals);
-                xcb_rectangle_t rect = {workspace_width + logical_px(1),
-                                        2 * logical_px(1),
-                                        ws_walk->name_width + 2 * logical_px(ws_hoff_px),
-                                        font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1)};
-                xcb_poly_fill_rectangle(xcb_connection,
-                                        outputs_walk->buffer,
-                                        outputs_walk->bargc,
-                                        1,
-                                        &rect);
-                set_font_colors(outputs_walk->bargc, fg_color, bg_color);
-                draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc,
-                          workspace_width + logical_px(ws_hoff_px) + logical_px(1),
-                          logical_px(ws_voff_px),
-                          ws_walk->name_width);
+
+                /* Draw the border of the button. */
+                draw_util_rectangle(xcb_connection, &(outputs_walk->buffer), border_color,
+                                    workspace_width,
+                                    logical_px(1),
+                                    ws_walk->name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
+                                    font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
+
+                /* Draw the inside of the button. */
+                draw_util_rectangle(xcb_connection, &(outputs_walk->buffer), bg_color,
+                                    workspace_width + logical_px(1),
+                                    2 * logical_px(1),
+                                    ws_walk->name_width + 2 * logical_px(ws_hoff_px),
+                                    font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
+
+                draw_util_text(ws_walk->name, &(outputs_walk->buffer), fg_color, bg_color,
+                               workspace_width + logical_px(ws_hoff_px) + logical_px(1),
+                               logical_px(ws_voff_px),
+                               ws_walk->name_width);
 
                 workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + ws_walk->name_width;
                 if (TAILQ_NEXT(ws_walk, tailq) != NULL)
@@ -1902,47 +1991,25 @@ void draw_bars(bool unhide) {
         if (binding.name && !config.disable_binding_mode_indicator) {
             workspace_width += logical_px(ws_spacing_px);
 
-            uint32_t fg_color = colors.binding_mode_fg;
-            uint32_t bg_color = colors.binding_mode_bg;
-            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+            color_t fg_color = colors.binding_mode_fg;
+            color_t bg_color = colors.binding_mode_bg;
 
-            uint32_t vals_border[] = {colors.binding_mode_border, colors.binding_mode_border};
-            xcb_change_gc(xcb_connection,
-                          outputs_walk->bargc,
-                          mask,
-                          vals_border);
-            xcb_rectangle_t rect_border = {workspace_width,
-                                           logical_px(1),
-                                           binding.width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
-                                           font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1)};
-            xcb_poly_fill_rectangle(xcb_connection,
-                                    outputs_walk->buffer,
-                                    outputs_walk->bargc,
-                                    1,
-                                    &rect_border);
+            draw_util_rectangle(xcb_connection, &(outputs_walk->buffer), colors.binding_mode_border,
+                                workspace_width,
+                                logical_px(1),
+                                binding.width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
+                                font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
 
-            uint32_t vals[] = {bg_color, bg_color};
-            xcb_change_gc(xcb_connection,
-                          outputs_walk->bargc,
-                          mask,
-                          vals);
-            xcb_rectangle_t rect = {workspace_width + logical_px(1),
-                                    2 * logical_px(1),
-                                    binding.width + 2 * logical_px(ws_hoff_px),
-                                    font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1)};
-            xcb_poly_fill_rectangle(xcb_connection,
-                                    outputs_walk->buffer,
-                                    outputs_walk->bargc,
-                                    1,
-                                    &rect);
+            draw_util_rectangle(xcb_connection, &(outputs_walk->buffer), bg_color,
+                                workspace_width + logical_px(1),
+                                2 * logical_px(1),
+                                binding.width + 2 * logical_px(ws_hoff_px),
+                                font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
 
-            set_font_colors(outputs_walk->bargc, fg_color, bg_color);
-            draw_text(binding.name,
-                      outputs_walk->buffer,
-                      outputs_walk->bargc,
-                      workspace_width + logical_px(ws_hoff_px) + logical_px(1),
-                      logical_px(ws_voff_px),
-                      binding.width);
+            draw_util_text(binding.name, &(outputs_walk->buffer), fg_color, bg_color,
+                           workspace_width + logical_px(ws_hoff_px) + logical_px(1),
+                           logical_px(ws_voff_px),
+                           binding.width);
 
             unhide = true;
             workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + binding.width;
@@ -1953,32 +2020,28 @@ void draw_bars(bool unhide) {
 
             int tray_width = get_tray_width(outputs_walk->trayclients);
             uint32_t max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - 2 * logical_px(sb_hoff_px);
+            uint32_t clip_left = 0;
+            uint32_t statusline_width = full_statusline_width;
+            bool use_short_text = false;
 
-            /* If the statusline is too long, try to use short texts. */
             if (statusline_width > max_statusline_width) {
-                /* If the currently rendered statusline is long, render a short status line */
-                refresh_statusline(true);
-                rendered_statusline_is_short = true;
-            } else if (rendered_statusline_is_short) {
-                /* If the currently rendered statusline is short, render a long status line */
-                refresh_statusline(false);
-                rendered_statusline_is_short = false;
+                statusline_width = short_statusline_width;
+                use_short_text = true;
+                if (statusline_width > max_statusline_width) {
+                    clip_left = statusline_width - max_statusline_width;
+                }
             }
 
-            /* Luckily we already prepared a seperate pixmap containing the rendered
-             * statusline, we just have to copy the relevant parts to the relevant
-             * position */
-            int visible_statusline_width = MIN(statusline_width, max_statusline_width);
-            xcb_copy_area(xcb_connection,
-                          statusline_pm,
-                          outputs_walk->buffer,
-                          outputs_walk->bargc,
-                          (int16_t)(statusline_width - visible_statusline_width), 0,
-                          (int16_t)(outputs_walk->rect.w - tray_width - logical_px(sb_hoff_px) - visible_statusline_width), 0,
-                          (int16_t)visible_statusline_width, (int16_t)bar_height);
-        }
+            int16_t visible_statusline_width = MIN(statusline_width, max_statusline_width);
+            int x_dest = outputs_walk->rect.w - tray_width - logical_px(sb_hoff_px) - visible_statusline_width;
 
-        workspace_width = 0;
+            draw_statusline(outputs_walk, clip_left, use_focus_colors, use_short_text);
+            draw_util_copy_surface(xcb_connection, &outputs_walk->statusline_buffer, &outputs_walk->buffer, 0, 0,
+                                   x_dest, 0, visible_statusline_width, (int16_t)bar_height);
+
+            outputs_walk->statusline_width = statusline_width;
+            outputs_walk->statusline_short_text = use_short_text;
+        }
     }
 
     /* Assure the bar is hidden/unhidden according to the specified hidden_state and mode */
@@ -2003,14 +2066,9 @@ void redraw_bars(void) {
         if (!outputs_walk->active) {
             continue;
         }
-        xcb_copy_area(xcb_connection,
-                      outputs_walk->buffer,
-                      outputs_walk->bar,
-                      outputs_walk->bargc,
-                      0, 0,
-                      0, 0,
-                      outputs_walk->rect.w,
-                      outputs_walk->rect.h);
+
+        draw_util_copy_surface(xcb_connection, &(outputs_walk->buffer), &(outputs_walk->bar), 0, 0,
+                               0, 0, outputs_walk->rect.w, outputs_walk->rect.h);
         xcb_flush(xcb_connection);
     }
 }

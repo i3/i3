@@ -4,8 +4,9 @@ Michael Stapelberg <michael@i3wm.org>
 March 2013
 
 This document contains all the information you need to configure and use the i3
-window manager. If it does not, please check http://faq.i3wm.org/ first, then
-contact us on IRC (preferred) or post your question(s) on the mailing list.
+window manager. If it does not, please check https://www.reddit.com/r/i3wm/
+first, then contact us on IRC (preferred) or post your question(s) on the
+mailing list.
 
 == Default keybindings
 
@@ -604,9 +605,10 @@ new_window pixel 3
 ---------------------
 
 
-=== Hiding vertical borders
+[[_hiding_vertical_borders]]
+=== Hiding borders adjacent to the screen edges
 
-You can hide vertical borders adjacent to the screen edges using
+You can hide container borders adjacent to the screen edges using
 +hide_edge_borders+. This is useful if you are using scrollbars, or do not want
 to waste even two pixels in displayspace. Default is none.
 
@@ -652,7 +654,7 @@ The valid criteria are the same as those for commands, see <<command_criteria>>.
 === Don't focus window upon opening
 
 When a new window appears, it will be focused. The +no_focus+ directive allows preventing
-this from happening and can be used in combination with <<command_criteria>>.
+this from happening and must be used in combination with <<command_criteria>>.
 
 Note that this does not apply to all cases, e.g., when feeding data into a running application
 causing it to request being focused. To configure the behavior in such cases, refer to
@@ -784,7 +786,7 @@ keyword. These commands will be run in order.
 
 See <<command_chaining>> for details on the special meaning of +;+ (semicolon)
 and +,+ (comma): they chain commands together in i3, so you need to use quoted
-strings if they appear in your command.
+strings (as shown in <<exec_quoting>>) if they appear in your command.
 
 *Syntax*:
 ---------------------------------------
@@ -835,9 +837,9 @@ workspace "2: vim" output VGA1
 You can change all colors which i3 uses to draw the window decorations.
 
 *Syntax*:
-------------------------------------------------------
-<colorclass> <border> <background> <text> <indicator>
-------------------------------------------------------
+--------------------------------------------------------------------
+<colorclass> <border> <background> <text> <indicator> <child_border>
+--------------------------------------------------------------------
 
 Where colorclass can be one of:
 
@@ -862,20 +864,20 @@ client.background::
 Colors are in HTML hex format (#rrggbb), see the following example:
 
 *Examples (default colors)*:
----------------------------------------------------------
-# class                 border  backgr. text    indicator
-client.focused          #4c7899 #285577 #ffffff #2e9ef4
-client.focused_inactive #333333 #5f676a #ffffff #484e50
-client.unfocused        #333333 #222222 #888888 #292d2e
-client.urgent           #2f343a #900000 #ffffff #900000
-client.placeholder      #000000 #0c0c0c #ffffff #000000
+----------------------------------------------------------------------
+# class                 border  backgr. text    indicator child_border
+client.focused          #4c7899 #285577 #ffffff #2e9ef4   #285577
+client.focused_inactive #333333 #5f676a #ffffff #484e50   #5f676a
+client.unfocused        #333333 #222222 #888888 #292d2e   #222222
+client.urgent           #2f343a #900000 #ffffff #900000   #900000
+client.placeholder      #000000 #0c0c0c #ffffff #000000   #0c0c0c
 
 client.background       #ffffff
----------------------------------------------------------
+----------------------------------------------------------------------
 
 Note that for the window decorations, the color around the child window is the
-background color, and the border color is only the two thin lines at the top of
-the window.
+"child_border", and "border" color is only the two thin lines around the
+titlebar.
 
 The indicator color is used for indicating where a new window will be opened.
 For horizontal split containers, the right border will be painted in indicator
@@ -1236,7 +1238,7 @@ the windows key). The default value for the hidden_state is hide.
 -------------------------
 mode dock|hide|invisible
 hidden_state hide|show
-modifier <Modifier>
+modifier <Modifier>|none
 ------------------------
 
 *Example*:
@@ -1248,7 +1250,8 @@ bar {
 }
 ----------------
 
-Available modifiers are Mod1-Mod5, Shift, Control (see +xmodmap(1)+).
+Available modifiers are Mod1-Mod5, Shift, Control (see +xmodmap(1)+). You can
+also use "none" if you don't want any modifier to trigger this behavior.
 
 === Mouse button commands
 
@@ -1368,6 +1371,11 @@ NetworkManager, VLC, Pidgin, etc. can place little icons.
 
 You can configure on which output (monitor) the icons should be displayed or
 you can turn off the functionality entirely.
+
+You can use mutliple +tray_output+ directives in your config to specify a list
+of outputs on which you want the tray to appear. The first available output in
+that list as defined by the order of the directives will be used for the tray
+output.
 
 *Syntax*:
 ---------------------------------
@@ -1529,6 +1537,15 @@ statusline::
 	Text color to be used for the statusline.
 separator::
 	Text color to be used for the separator.
+focused_background::
+	Background color of the bar on the currently focused monitor output. If
+	not used, the color will be taken from +background+.
+focused_statusline::
+	Text color to be used for the statusline on the currently focused
+	monitor output. If not used, the color will be taken from +statusline+.
+focused_separator::
+	Text color to be used for the separator on the currently focused
+	monitor output. If not used, the color will be taken from +separator+.
 focused_workspace::
 	Border, background and text color for a workspace button when the workspace
 	has focus.
@@ -1643,7 +1660,7 @@ window_role::
 window_type::
 	Compare the window type (_NET_WM_WINDOW_TYPE). Possible values are
 	+normal+, +dialog+, +utility+, +toolbar+, +splash+, +menu+, +dropdown_menu+,
-	+popup_menu+ and +tooltip+.
+	+popup_menu+, +tooltip+ and +notification+.
 id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
@@ -1659,10 +1676,13 @@ workspace::
 	the special value +\_\_focused__+ to match all windows in the currently
 	focused workspace.
 con_mark::
-	Compares the mark set for this container, see <<vim_like_marks>>.
+        Compares the marks set for this container, see <<vim_like_marks>>. A
+        match is made if any of the container's marks matches the specified
+        mark.
 con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
-	interface. Handy for scripting.
+	interface. Handy for scripting. Use the special value +\_\_focused__+
+	to match only the currently focused window.
 
 The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
@@ -1678,7 +1698,7 @@ searched in your +$PATH+.
 
 See <<command_chaining>> for details on the special meaning of +;+ (semicolon)
 and +,+ (comma): they chain commands together in i3, so you need to use quoted
-strings if they appear in your command.
+strings (as shown in <<exec_quoting>>) if they appear in your command.
 
 *Syntax*:
 --------------------------------
@@ -1702,6 +1722,27 @@ launching. So, if an application is not startup-notification aware (most GTK
 and Qt using applications seem to be, though), you will end up with a watch
 cursor for 60 seconds.
 
+[[exec_quoting]]
+If the command to be executed contains a +;+ (semicolon) and/or a +,+ (comma),
+the entire command must be quoted. For example, to have a keybinding for the
+shell command +notify-send Hello, i3+, you would add an entry to your
+configuration file like this:
+
+*Example*:
+------------------------------
+# Execute a command with a comma in it
+bindsym $mod+p exec "notify-send Hello, i3"
+------------------------------
+
+If however a command with a comma and/or semicolon itself requires quotes, you
+must escape the internal quotation marks with double backslashes, like this:
+
+*Example*:
+------------------------------
+# Execute a command with a comma, semicolon and internal quotes
+bindsym $mod+p exec "notify-send \\"Hello, i3; from $USER\\""
+------------------------------
+
 === Splitting containers
 
 The split command makes the current window a split container. Split containers
@@ -1711,20 +1752,24 @@ get placed below the current one (splitv).
 
 If you apply this command to a split container with the same orientation,
 nothing will happen. If you use a different orientation, the split container’s
-orientation will be changed (if it does not have more than one window). Use
-+layout toggle split+ to change the layout of any split container from splitv
-to splith or vice-versa.
+orientation will be changed (if it does not have more than one window).
+The +toggle+ option will toggle the orientation of the split container if it
+contains a single window. Otherwise it makes the current window a split
+container with opposite orientation compared to the parent container.
+Use +layout toggle split+ to change the layout of any split container from
+splitv to splith or vice-versa.
 
 *Syntax*:
--------------------------
-split vertical|horizontal
--------------------------
+--------------------------------
+split vertical|horizontal|toggle
+--------------------------------
 
 *Example*:
-------------------------------
+-------------------------------
 bindsym $mod+v split vertical
 bindsym $mod+h split horizontal
-------------------------------
+bindsym $mod+t split toggle
+-------------------------------
 
 === Manipulating layout
 
@@ -1881,8 +1926,11 @@ for_window [instance=notepad] sticky enable
 === Changing (named) workspaces/moving to workspaces
 
 To change to a specific workspace, use the +workspace+ command, followed by the
-number or name of the workspace. To move containers to specific workspaces, use
-+move container to workspace+.
+number or name of the workspace. Pass the optional flag
++--no-auto-back-and-forth+ to disable <<back_and_forth>> for this specific call
+only.
+
+To move containers to specific workspaces, use +move container to workspace+.
 
 You can also switch to the next and previous workspace with the commands
 +workspace next+ and +workspace prev+, which is handy, for example, if you have
@@ -1892,6 +1940,10 @@ next_on_output+ and +workspace prev_on_output+. Similarly, you can use +move
 container to workspace next+, +move container to workspace prev+ to move a
 container to the next/previous workspace and +move container to workspace current+
 (the last one makes sense only when used with criteria).
+
++workspace next+ cycles through either numbered or named workspaces. But when it
+reaches the last numbered/named workspace, it looks for named workspaces after
+exhausting numbered ones and looks for numbered ones after exhausting named ones.
 
 See <<move_to_outputs>> for how to move a container/workspace to a different
 RandR output.
@@ -1906,16 +1958,16 @@ back_and_forth+; likewise, you can move containers to the previously focused
 workspace using +move container to workspace back_and_forth+.
 
 *Syntax*:
------------------------------------
+--------------------------------------------------------------------------------
 workspace next|prev|next_on_output|prev_on_output
 workspace back_and_forth
-workspace <name>
-workspace number <name>
+workspace [--no-auto-back-and-forth] <name>
+workspace [--no-auto-back-and-forth] number <name>
 
-move [window|container] [to] workspace <name>
-move [window|container] [to] workspace number <name>
+move [--no-auto-back-and-forth] [window|container] [to] workspace <name>
+move [--no-auto-back-and-forth] [window|container] [to] workspace number <name>
 move [window|container] [to] workspace prev|next|current
------------------------------------
+--------------------------------------------------------------------------------
 
 *Examples*:
 -------------------------
@@ -2109,24 +2161,36 @@ for this purpose: It lets you input a command and sends the command to i3. It
 can also prefix this command and display a custom prompt for the input dialog.
 
 The additional +--toggle+ option will remove the mark if the window already has
-this mark, add it if the window has none or replace the current mark if it has
-another mark.
+this mark or add it otherwise. Note that you may need to use this in
+combination with +--add+ (see below) as any other marks will otherwise be
+removed.
+
+By default, a window can only have one mark. You can use the +--add+ flag to
+put more than one mark on a window.
 
 Refer to <<show_marks>> if you don't want marks to be shown in the window decoration.
 
 *Syntax*:
-------------------------------
-mark [--toggle] <identifier>
+----------------------------------------------
+mark [--add|--replace] [--toggle] <identifier>
 [con_mark="identifier"] focus
 unmark <identifier>
-------------------------------
+----------------------------------------------
 
 *Example (in a terminal)*:
-------------------------------
-$ i3-msg mark irssi
-$ i3-msg '[con_mark="irssi"] focus'
-$ i3-msg unmark irssi
-------------------------------
+---------------------------------------------------------
+# marks the focused container
+mark irssi
+
+# focus the container with the mark "irssi"
+'[con_mark="irssi"] focus'
+
+# remove the mark "irssi" from whichever container has it
+unmark irssi
+
+# remove all marks on all firefox windows
+[class="(?i)firefox"] unmark
+---------------------------------------------------------
 
 ///////////////////////////////////////////////////////////////////
 TODO: make i3-input replace %s
@@ -2153,7 +2217,10 @@ https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup]
 and the following placeholders which will be replaced:
 
 +%title+::
-    The X11 window title (_NET_WM_NAME or WM_NAME as fallback).
+    For normal windows, this is the X11 window title (_NET_WM_NAME or WM_NAME
+    as fallback). When used on containers without a window (e.g., a split
+    container inside a tabbed/stacked layout), this will be the tree
+    representation of the container (e.g., "H[xterm xterm]").
 +%class+::
     The X11 window class (second part of WM_CLASS). This corresponds to the
     +class+ criterion, see <<command_criteria>>.
@@ -2188,6 +2255,10 @@ border (including window title), +border pixel 1+ to use a 1-pixel border (no wi
 and +border none+ to make the client borderless.
 
 There is also +border toggle+ which will toggle the different border styles.
+
+Note that "pixel" refers to logical pixel. On HiDPI displays, a logical pixel
+may be represented by multiple physical pixels, so +pixel 1+ might not
+necessarily translate into a single pixel row wide border.
 
 *Syntax*:
 -----------------------------------------------

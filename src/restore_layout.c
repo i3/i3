@@ -13,6 +13,10 @@
  */
 #include "all.h"
 
+#ifdef I3_ASAN_ENABLED
+#include <sanitizer/lsan_interface.h>
+#endif
+
 typedef struct placeholder_state {
     /** The X11 placeholder window. */
     xcb_window_t window;
@@ -98,7 +102,11 @@ void restore_connect(void) {
             free(state);
         }
 
-        free(restore_conn);
+        /* xcb_disconnect leaks memory in libxcb versions earlier than 1.11,
+         * but it’s the right function to call. See
+         * http://cgit.freedesktop.org/xcb/libxcb/commit/src/xcb_conn.c?id=4dcbfd77b
+         */
+        xcb_disconnect(restore_conn);
         free(xcb_watcher);
         free(xcb_check);
         free(xcb_prepare);
@@ -106,8 +114,15 @@ void restore_connect(void) {
 
     int screen;
     restore_conn = xcb_connect(NULL, &screen);
-    if (restore_conn == NULL || xcb_connection_has_error(restore_conn))
+    if (restore_conn == NULL || xcb_connection_has_error(restore_conn)) {
+        if (restore_conn != NULL) {
+            xcb_disconnect(restore_conn);
+        }
+#ifdef I3_ASAN_ENABLED
+        __lsan_do_leak_check();
+#endif
         errx(EXIT_FAILURE, "Cannot open display\n");
+    }
 
     xcb_watcher = scalloc(1, sizeof(struct ev_io));
     xcb_check = scalloc(1, sizeof(struct ev_check));
@@ -125,7 +140,7 @@ void restore_connect(void) {
 
 static void update_placeholder_contents(placeholder_state *state) {
     xcb_change_gc(restore_conn, state->gc, XCB_GC_FOREGROUND,
-                  (uint32_t[]){config.client.placeholder.background});
+                  (uint32_t[]){config.client.placeholder.background.colorpixel});
     xcb_poly_fill_rectangle(restore_conn, state->pixmap, state->gc, 1,
                             (xcb_rectangle_t[]){{0, 0, state->rect.width, state->rect.height}});
 
@@ -161,7 +176,7 @@ static void update_placeholder_contents(placeholder_state *state) {
         DLOG("con %p (placeholder 0x%08x) line %d: %s\n", state->con, state->window, n, serialized);
 
         i3String *str = i3string_from_utf8(serialized);
-        draw_text(str, state->pixmap, state->gc, 2, (n * (config.font.height + 2)) + 2, state->rect.width - 2);
+        draw_text(str, state->pixmap, state->gc, NULL, 2, (n * (config.font.height + 2)) + 2, state->rect.width - 2);
         i3string_free(str);
         n++;
         free(serialized);
@@ -172,7 +187,7 @@ static void update_placeholder_contents(placeholder_state *state) {
     int text_width = predict_text_width(line);
     int x = (state->rect.width / 2) - (text_width / 2);
     int y = (state->rect.height / 2) - (config.font.height / 2);
-    draw_text(line, state->pixmap, state->gc, x, y, text_width);
+    draw_text(line, state->pixmap, state->gc, NULL, x, y, text_width);
     i3string_free(line);
     xcb_flush(conn);
     xcb_aux_sync(conn);
@@ -193,7 +208,7 @@ static void open_placeholder_window(Con *con) {
             true,
             XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
             (uint32_t[]){
-                config.client.placeholder.background,
+                config.client.placeholder.background.colorpixel,
                 XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
             });
         /* Make i3 not focus this window. */

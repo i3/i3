@@ -12,6 +12,18 @@
 #include "all.h"
 
 /*
+ * Frees an i3Window and all its members.
+ *
+ */
+void window_free(i3Window *win) {
+    FREE(win->class_class);
+    FREE(win->class_instance);
+    i3string_free(win->name);
+    FREE(win->ran_assignments);
+    FREE(win);
+}
+
+/*
  * Updates the WM_CLASS (consisting of the class and instance) for the
  * given window.
  *
@@ -66,8 +78,13 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     i3string_free(win->name);
     win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
                                                xcb_get_property_value_length(prop));
-    if (win->title_format != NULL)
-        ewmh_update_visible_name(win->id, i3string_as_utf8(window_parse_title_format(win)));
+
+    Con *con = con_by_window_id(win->id);
+    if (con != NULL && con->title_format != NULL) {
+        i3String *name = con_parse_title_format(con);
+        ewmh_update_visible_name(win->id, i3string_as_utf8(name));
+        I3STRING_FREE(name);
+    }
     win->name_x_changed = true;
     LOG("_NET_WM_NAME changed to \"%s\"\n", i3string_as_utf8(win->name));
 
@@ -106,8 +123,13 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
     i3string_free(win->name);
     win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
                                                xcb_get_property_value_length(prop));
-    if (win->title_format != NULL)
-        ewmh_update_visible_name(win->id, i3string_as_utf8(window_parse_title_format(win)));
+
+    Con *con = con_by_window_id(win->id);
+    if (con != NULL && con->title_format != NULL) {
+        i3String *name = con_parse_title_format(con);
+        ewmh_update_visible_name(win->id, i3string_as_utf8(name));
+        I3STRING_FREE(name);
+    }
 
     LOG("WM_NAME changed to \"%s\"\n", i3string_as_utf8(win->name));
     LOG("Using legacy window title. Note that in order to get Unicode window "
@@ -234,6 +256,7 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
  */
 void window_update_type(i3Window *window, xcb_get_property_reply_t *reply) {
     xcb_atom_t new_type = xcb_get_preferred_window_type(reply);
+    free(reply);
     if (new_type == XCB_NONE) {
         DLOG("cannot read _NET_WM_WINDOW_TYPE from window.\n");
         return;
@@ -297,6 +320,9 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
      * https://people.gnome.org/~tthurman/docs/metacity/xprops_8h-source.html
      * http://stackoverflow.com/questions/13787553/detect-if-a-x11-window-has-decorations
      */
+#define MWM_HINTS_FLAGS_FIELD 0
+#define MWM_HINTS_DECORATIONS_FIELD 2
+
 #define MWM_HINTS_DECORATIONS (1 << 1)
 #define MWM_DECOR_ALL (1 << 0)
 #define MWM_DECOR_BORDER (1 << 1)
@@ -310,17 +336,23 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
         return;
     }
 
-    /* The property consists of an array of 5 uint64_t's. The first value is a bit
-     * mask of what properties the hint will specify. We are only interested in
-     * MWM_HINTS_DECORATIONS because it indicates that the second value of the
+    /* The property consists of an array of 5 uint32_t's. The first value is a
+     * bit mask of what properties the hint will specify. We are only interested
+     * in MWM_HINTS_DECORATIONS because it indicates that the third value of the
      * array tells us which decorations the window should have, each flag being
-     * a particular decoration. */
-    uint64_t *motif_hints = (uint64_t *)xcb_get_property_value(prop);
+     * a particular decoration. Notice that X11 (Xlib) often mentions 32-bit
+     * fields which in reality are implemented using unsigned long variables
+     * (64-bits long on amd64 for example). On the other hand,
+     * xcb_get_property_value() behaves strictly according to documentation,
+     * i.e. returns 32-bit data fields. */
+    uint32_t *motif_hints = (uint32_t *)xcb_get_property_value(prop);
 
-    if (motif_border_style != NULL && motif_hints[0] & MWM_HINTS_DECORATIONS) {
-        if (motif_hints[1] & MWM_DECOR_ALL || motif_hints[1] & MWM_DECOR_TITLE)
+    if (motif_border_style != NULL &&
+        motif_hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS) {
+        if (motif_hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_ALL ||
+            motif_hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_TITLE)
             *motif_border_style = BS_NORMAL;
-        else if (motif_hints[1] & MWM_DECOR_BORDER)
+        else if (motif_hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_BORDER)
             *motif_border_style = BS_PIXEL;
         else
             *motif_border_style = BS_NONE;
@@ -328,81 +360,10 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
 
     FREE(prop);
 
+#undef MWM_HINTS_FLAGS_FIELD
+#undef MWM_HINTS_DECORATIONS_FIELD
 #undef MWM_HINTS_DECORATIONS
 #undef MWM_DECOR_ALL
 #undef MWM_DECOR_BORDER
 #undef MWM_DECOR_TITLE
-}
-
-/*
- * Returns the window title considering the current title format.
- * If no format is set, this will simply return the window's name.
- *
- */
-i3String *window_parse_title_format(i3Window *win) {
-    /* We need to ensure that we only escape the window title if pango
-     * is used by the current font. */
-    const bool is_markup = font_is_pango();
-
-    char *format = win->title_format;
-    if (format == NULL)
-        return i3string_copy(win->name);
-
-    /* We initialize these lazily so we only escape them if really necessary. */
-    const char *escaped_title = NULL;
-    const char *escaped_class = NULL;
-    const char *escaped_instance = NULL;
-
-    /* We have to first iterate over the string to see how much buffer space
-     * we need to allocate. */
-    int buffer_len = strlen(format) + 1;
-    for (char *walk = format; *walk != '\0'; walk++) {
-        if (STARTS_WITH(walk, "%title")) {
-            if (escaped_title == NULL)
-                escaped_title = win->name == NULL ? "" : i3string_as_utf8(is_markup ? i3string_escape_markup(win->name) : win->name);
-
-            buffer_len = buffer_len - strlen("%title") + strlen(escaped_title);
-            walk += strlen("%title") - 1;
-        } else if (STARTS_WITH(walk, "%class")) {
-            if (escaped_class == NULL)
-                escaped_class = is_markup ? g_markup_escape_text(win->class_class, -1) : win->class_class;
-
-            buffer_len = buffer_len - strlen("%class") + strlen(escaped_class);
-            walk += strlen("%class") - 1;
-        } else if (STARTS_WITH(walk, "%instance")) {
-            if (escaped_instance == NULL)
-                escaped_instance = is_markup ? g_markup_escape_text(win->class_instance, -1) : win->class_instance;
-
-            buffer_len = buffer_len - strlen("%instance") + strlen(escaped_instance);
-            walk += strlen("%instance") - 1;
-        }
-    }
-
-    /* Now we can parse the format string. */
-    char buffer[buffer_len];
-    char *outwalk = buffer;
-    for (char *walk = format; *walk != '\0'; walk++) {
-        if (*walk != '%') {
-            *(outwalk++) = *walk;
-            continue;
-        }
-
-        if (STARTS_WITH(walk + 1, "title")) {
-            outwalk += sprintf(outwalk, "%s", escaped_title);
-            walk += strlen("title");
-        } else if (STARTS_WITH(walk + 1, "class")) {
-            outwalk += sprintf(outwalk, "%s", escaped_class);
-            walk += strlen("class");
-        } else if (STARTS_WITH(walk + 1, "instance")) {
-            outwalk += sprintf(outwalk, "%s", escaped_instance);
-            walk += strlen("instance");
-        } else {
-            *(outwalk++) = *walk;
-        }
-    }
-    *outwalk = '\0';
-
-    i3String *formatted = i3string_from_utf8(buffer);
-    i3string_set_markup(formatted, is_markup);
-    return formatted;
 }

@@ -1,47 +1,17 @@
 #!/usr/bin/make -f
 # vi: ts=8 sw=8 noet
 
-DPKG_EXPORT_BUILDFLAGS = 1
--include /usr/share/dpkg/buildflags.mk
-
-ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
-    NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
-    MAKEFLAGS += -j$(NUMJOBS)
-endif
-
-build: build-arch build-indep
-build-arch: build-stamp
-build-indep: build-stamp
-build-stamp:
-	dh build
-	touch build-stamp
-
-clean:
-	dh clean
-
-install: build install-stamp
-install-stamp:
-	dh install
-	touch install-stamp
-
-binary-arch: install
-	dh binary-arch
-
-binary-indep: install
-	dh binary-indep
-
-binary: binary-arch binary-indep
+export V:=1
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 override_dh_auto_build:
-	$(MAKE)
-	$(MAKE) -C man
-	$(MAKE) -C docs
+	dh_auto_build -- all docs mans
 
 override_dh_installchangelogs:
 	dh_installchangelogs RELEASE-NOTES-*
 
-override_dh_install:
-	$(MAKE) DESTDIR=$(CURDIR)/debian/i3-wm/ install
-
 override_dh_strip:
 	dh_strip --dbg-package=i3-wm-dbg
+
+%:
+	dh $@ --parallel
