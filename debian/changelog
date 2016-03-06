@@ -1,8 +1,11 @@
-i3-wm (4.11.1-1) unstable; urgency=medium
+i3-wm (4.12-1) unstable; urgency=medium
 
   * New upstream release.
+  * Move to debhelper 9
+  * Bump Standards-Version to 3.9.7 (no changes necessary)
+  * debian/watch: verify signature, use https
 
- -- Michael Stapelberg <stapelberg@debian.org>  Wed, 30 Sep 2015 09:03:26 +0200
+ -- Michael Stapelberg <stapelberg@debian.org>  Sun, 06 Mar 2016 14:20:38 +0100
 
 i3-wm (4.11-1) unstable; urgency=medium
 
