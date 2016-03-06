@@ -45,7 +45,7 @@ if ! wget https://i3wm.org/downloads/i3-${PREVIOUS_VERSION}.tar.bz2; then
 	echo "Could not download i3-${PREVIOUS_VERSION}.tar.bz2 (required for comparing files)."
 	exit 1
 fi
-git clone --quiet --branch "${RELEASE_BRANCH}" file://${STARTDIR}
+git clone --quiet --branch "${RELEASE_BRANCH}" https://github.com/i3/i3
 cd i3
 if [ ! -e "${STARTDIR}/RELEASE-NOTES-${RELEASE_VERSION}" ]; then
 	echo "Required file RELEASE-NOTES-${RELEASE_VERSION} not found."
