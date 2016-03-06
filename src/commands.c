@@ -1169,9 +1169,6 @@ void cmd_split(I3_CMD, const char *direction) {
         } else {
             tree_split(current->con, (direction[0] == 'v' ? VERT : HORIZ));
         }
-
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        tree_split(current->con, (direction[0] == 'v' ? VERT : HORIZ));
     }
 
     cmd_output->needs_tree_render = true;
