@@ -39,6 +39,29 @@ void update_barconfig() {
     }
 }
 
+void append_config_d_config_files(const char *configpath) {
+    // Get configdir path
+    int initial_path_len = strlen(configpath);
+    struct stat path_stat;
+    char *config_dir_name = "config.d/";
+    char *buffer = smalloc(initial_path_len + 1);
+    char *config_dir_path = smalloc(
+        initial_path_len + sizeof(strlen(config_dir_name))
+    );
+    strcpy(buffer, configpath);
+    *(strrchr(buffer, '/') + 1) = 0;
+    strcpy(config_dir_path, buffer);
+    strcat(config_dir_path, config_dir_name);
+
+    stat(config_dir_path, &path_stat);
+    if (S_ISDIR(path_stat.st_mode)) {
+        LOG("Appending %s to config\n", config_dir_path);
+    }
+    FREE(buffer);
+    FREE(config_dir_path);
+
+}
+
 /*
  * Finds the configuration file to use (either the one specified by
  * override_configpath), the user’s one or the system default) and calls
@@ -62,6 +85,7 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
         TAILQ_INIT(bindings);
     }
 
+    append_config_d_config_files(path);
     return parse_file(path, use_nagbar);
 }
 
