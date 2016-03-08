@@ -397,9 +397,11 @@ static void draw_text_xcb(const xcb_char2b_t *text, size_t text_len, xcb_drawabl
 void draw_text(i3String *text, xcb_drawable_t drawable, xcb_gcontext_t gc,
                xcb_visualtype_t *visual, int x, int y, int max_width) {
     assert(savedFont != NULL);
+#if PANGO_SUPPORT
     if (visual == NULL) {
         visual = root_visual_type;
     }
+#endif
 
     switch (savedFont->type) {
         case FONT_TYPE_NONE:

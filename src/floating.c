@@ -11,6 +11,10 @@
  */
 #include "all.h"
 
+#ifndef MAX
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#endif
+
 /*
  * Calculates sum of heights and sum of widths of all currently active outputs
  *
