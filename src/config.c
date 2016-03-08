@@ -12,6 +12,7 @@
  */
 #include "all.h"
 #include <xkbcommon/xkbcommon.h>
+#include <fcntl.h>
 
 char *current_configpath = NULL;
 Config config;
@@ -59,7 +60,21 @@ void append_config_d_config_files(const char *configpath) {
     }
     FREE(buffer);
     FREE(config_dir_path);
+}
 
+char *read_config_into_memory(const char *path, long *filesize) {
+    FILE *f;
+    char *buf;
+    if ((f = fopen(path, "rb")) == NULL)
+        die("Could not open configuration file: %s\n", strerror(errno));
+    fseek(f, 0, SEEK_END);
+    *filesize = ftell(f);
+    rewind(f);
+    buf = smalloc((*filesize * sizeof(char)) + 1);
+    fread(buf, sizeof(char), *filesize, f);
+    buf[*filesize] = -1;
+    fclose(f);
+    return buf;
 }
 
 /*
@@ -69,7 +84,8 @@ void append_config_d_config_files(const char *configpath) {
  *
  */
 bool parse_configuration(const char *override_configpath, bool use_nagbar) {
-    char *path = get_config_path(override_configpath, true);
+    char *path = get_config_path(override_configpath, true), *f;
+    long filesize;
     if (path == NULL) {
         die("Unable to find the configuration file (looked at "
             "~/.i3/config, $XDG_CONFIG_HOME/i3/config, " SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
@@ -85,8 +101,8 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
         TAILQ_INIT(bindings);
     }
 
-    append_config_d_config_files(path);
-    return parse_file(path, use_nagbar);
+    f = read_config_into_memory(path, &filesize);
+    return parse_file(f, use_nagbar, filesize);
 }
 
 /*

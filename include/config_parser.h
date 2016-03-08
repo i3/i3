@@ -44,4 +44,4 @@ void start_config_error_nagbar(const char *configpath, bool has_errors);
  * parsing.
  *
  */
-bool parse_file(const char *f, bool use_nagbar);
+bool parse_file(char *f, bool use_nagbar, long filesize);
