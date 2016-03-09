@@ -2,6 +2,7 @@
 Type=Application
 Name=i3
 NoDisplay=true
+GenericName=A dynamic tiling window manager
 Comment=improved dynamic tiling window manager
 Exec=i3
 X-GNOME-WMName=i3
