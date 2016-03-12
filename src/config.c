@@ -13,6 +13,7 @@
 #include "all.h"
 #include <xkbcommon/xkbcommon.h>
 #include <fcntl.h>
+#include <libgen.h>
 
 char *current_configpath = NULL;
 Config config;
@@ -38,43 +39,6 @@ void update_barconfig() {
     TAILQ_FOREACH(current, &barconfigs, configs) {
         ipc_send_barconfig_update_event(current);
     }
-}
-
-void append_config_d_config_files(const char *configpath) {
-    // Get configdir path
-    int initial_path_len = strlen(configpath);
-    struct stat path_stat;
-    char *config_dir_name = "config.d/";
-    char *buffer = smalloc(initial_path_len + 1);
-    char *config_dir_path = smalloc(
-        initial_path_len + sizeof(strlen(config_dir_name))
-    );
-    strcpy(buffer, configpath);
-    *(strrchr(buffer, '/') + 1) = 0;
-    strcpy(config_dir_path, buffer);
-    strcat(config_dir_path, config_dir_name);
-
-    stat(config_dir_path, &path_stat);
-    if (!S_ISDIR(path_stat.st_mode)) {
-        ELOG("%s is not a directory\n", config_dir_name);
-        FREE(buffer);
-        FREE(config_dir_path);
-        return;
-    }
-    LOG("Appending %s to config\n", config_dir_path);
-    struct dirent **dir_entries;
-    int n_files, i;
-    n_files = scandir(config_dir_path, &dir_entries, NULL, alphasort);
-    for (i = 0; i < n_files; i++) {
-        if (dir_entries[i]->d_type == DT_REG) {
-            printf("entry: %s\n", dir_entries[i]->d_name);
-        }
-        free(dir_entries[i]);
-    }
-
-
-    FREE(buffer);
-    FREE(config_dir_path);
 }
 
 /*
@@ -106,6 +70,43 @@ char *read_config_into_memory(const char *path, long *filesize) {
     return buf;
 }
 
+void append_config_d_files(char *configpath, char *stream, long *f_size) {
+    // Append 'config.d/' to configpath
+    struct stat path_stat;
+    char *config_dir_name = "config.d/", *buffer;
+    char *config_dir_path = smalloc(
+        strlen(configpath) + strlen(config_dir_name) + 1
+    );
+    strcpy(config_dir_path, dirname(configpath));
+    strcat(config_dir_path, "/");
+    strcat(config_dir_path, config_dir_name);
+
+    // Check if config.d exists as directory at config_dir_path
+    stat(config_dir_path, &path_stat);
+    if (!S_ISDIR(path_stat.st_mode)) {
+        FREE(config_dir_path);
+        return;
+    }
+
+    // Append config.d files to main config
+    struct dirent **dir_entries;
+    int n_files, i;
+    n_files = scandir(config_dir_path, &dir_entries, NULL, alphasort);
+    for (i = 0; i < n_files; i++) {
+        if (dir_entries[i]->d_type == DT_REG) {
+            buffer = smalloc(strlen(config_dir_path) + strlen(dir_entries[i]->d_name) + 1);
+            strcpy(buffer, config_dir_path);
+            strcat(buffer, dir_entries[i]->d_name);
+            read_file_into_stream(buffer, stream, f_size);
+        }
+        FREE(dir_entries[i]);
+        FREE(buffer);
+    }
+
+
+    FREE(config_dir_path);
+}
+
 /*
  * Finds the configuration file to use (either the one specified by
  * override_configpath), the user’s one or the system default) and calls
@@ -131,7 +132,7 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
     }
 
     f = read_config_into_memory(path, &filesize);
-    //append_config_d_files(path, f, &filesize);
+    append_config_d_files(path, f, &filesize);
     return parse_file(f, use_nagbar, filesize);
 }
 
