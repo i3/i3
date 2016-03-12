@@ -55,25 +55,54 @@ void append_config_d_config_files(const char *configpath) {
     strcat(config_dir_path, config_dir_name);
 
     stat(config_dir_path, &path_stat);
-    if (S_ISDIR(path_stat.st_mode)) {
-        LOG("Appending %s to config\n", config_dir_path);
+    if (!S_ISDIR(path_stat.st_mode)) {
+        ELOG("%s is not a directory\n", config_dir_name);
+        FREE(buffer);
+        FREE(config_dir_path);
+        return;
     }
+    LOG("Appending %s to config\n", config_dir_path);
+    struct dirent **dir_entries;
+    int n_files, i;
+    n_files = scandir(config_dir_path, &dir_entries, NULL, alphasort);
+    for (i = 0; i < n_files; i++) {
+        if (dir_entries[i]->d_type == DT_REG) {
+            printf("entry: %s\n", dir_entries[i]->d_name);
+        }
+        free(dir_entries[i]);
+    }
+
+
     FREE(buffer);
     FREE(config_dir_path);
 }
 
-char *read_config_into_memory(const char *path, long *filesize) {
+/*
+ * Appends file to existing stream
+*/
+char *read_file_into_stream(
+    const char *path,
+    char *stream,
+    long *stream_length
+) {
     FILE *f;
-    char *buf;
+    int filesize = 0;
     if ((f = fopen(path, "rb")) == NULL)
         die("Could not open configuration file: %s\n", strerror(errno));
     fseek(f, 0, SEEK_END);
-    *filesize = ftell(f);
+    filesize = ftell(f);
     rewind(f);
-    buf = smalloc((*filesize * sizeof(char)) + 1);
-    fread(buf, sizeof(char), *filesize, f);
-    buf[*filesize] = -1;
+    stream = srealloc(stream, (*stream_length + filesize) * sizeof(char) + 1);
+    fread(stream + *stream_length, sizeof(char), filesize, f);
+    *stream_length += filesize;
+    stream[*stream_length] = -1;
     fclose(f);
+    return stream;
+}
+
+char *read_config_into_memory(const char *path, long *filesize) {
+    char *buf = NULL;
+    buf = read_file_into_stream(path, buf, filesize);
     return buf;
 }
 
@@ -85,7 +114,7 @@ char *read_config_into_memory(const char *path, long *filesize) {
  */
 bool parse_configuration(const char *override_configpath, bool use_nagbar) {
     char *path = get_config_path(override_configpath, true), *f;
-    long filesize;
+    long filesize = 0;
     if (path == NULL) {
         die("Unable to find the configuration file (looked at "
             "~/.i3/config, $XDG_CONFIG_HOME/i3/config, " SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
@@ -102,6 +131,7 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
     }
 
     f = read_config_into_memory(path, &filesize);
+    //append_config_d_files(path, f, &filesize);
     return parse_file(f, use_nagbar, filesize);
 }
 
