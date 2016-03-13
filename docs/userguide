@@ -1837,7 +1837,7 @@ output::
 ----------------------------------------------
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
-focus output left|right|up|down|<output>
+focus output left|right|up|down|back_and_forth|<output>
 ----------------------------------------------
 
 *Examples*:
