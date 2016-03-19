@@ -444,7 +444,7 @@ EOT
     if (exists($app->{StartupNotify}) && !$app->{StartupNotify}) {
         $nosn = '--no-startup-id';
     }
-    $cmd = qq|exec $nosn "$exec"|;
+    $cmd = qq|exec $nosn $exec|;
 }
 
 system('i3-msg', $cmd) == 0 or die "Could not launch i3-msg: $?";
