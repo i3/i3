@@ -109,7 +109,7 @@ run the tests on a separate X server instance (using Xephyr).
 
 Xephyr will open a window where you can inspect the running test. You can run
 the tests without an X session with Xvfb, such as with +xvfb-run
-./complete-run+. This will also speed up the tests signficantly especially on
+./complete-run+. This will also speed up the tests significantly especially on
 machines without a powerful video card.
 
 .Example invocation of complete-run.pl+
@@ -196,7 +196,7 @@ In order to open new windows, change attributes, get events, etc., the
 testsuite uses X11::XCB, a new (and quite specific to i3 at the moment) Perl
 module which uses the XCB protocol description to generate Perl bindings to
 X11. They work in a very similar way to libxcb (which i3 uses) and provide
-relatively high-level interfaces (objects such as +X11::XCB::Window+) aswell as
+relatively high-level interfaces (objects such as +X11::XCB::Window+) as well as
 access to the low-level interface, which is very useful when testing a window
 manager.
 
@@ -450,7 +450,7 @@ cmd 'focus left';
 is($x->input_focus, $left->id, 'left window focused');
 ----------
 
-However, the test fails. Sometimes. Apparantly, there is a race condition in
+However, the test fails. Sometimes. Apparently, there is a race condition in
 your test. If you think about it, this is because you are using two different
 pieces of software: You tell i3 to update focus, i3 confirms that, and then you
 ask X11 to give you the current focus. There is a certain time i3 needs to
@@ -614,7 +614,7 @@ activation, we decreased the total amount of time necessary to run all tests
 it significantly more attractive to run the test suite more often (or at all)
 during development.
 
-An alternative approach to using socket activation is polling for the existance
+An alternative approach to using socket activation is polling for the existence
 of the IPC socket and connecting to it. While this might be slightly easier to
 implement, it wastes CPU time and is considerably uglier than this solution
 :). After all, +lib/SocketActivation.pm+ contains only 54 SLOC.

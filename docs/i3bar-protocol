@@ -6,7 +6,7 @@ August 2012
 This document explains the protocol in which i3bar expects its input. It
 provides support for colors, urgency, shortening and easy manipulation.
 
-== Rationale for chosing JSON
+== Rationale for choosing JSON
 
 Before describing the protocol, let’s cover why JSON is a building block of
 this protocol.
@@ -233,7 +233,7 @@ name::
 instance::
 	Instance of the block, if set
 x, y::
-	X11 root window coordinates where the click occured
+	X11 root window coordinates where the click occurred
 button::
 	X11 button ID (for example 1 to 3 for left/middle/right mouse button)
 

@@ -1372,7 +1372,7 @@ NetworkManager, VLC, Pidgin, etc. can place little icons.
 You can configure on which output (monitor) the icons should be displayed or
 you can turn off the functionality entirely.
 
-You can use mutliple +tray_output+ directives in your config to specify a list
+You can use multiple +tray_output+ directives in your config to specify a list
 of outputs on which you want the tray to appear. The first available output in
 that list as defined by the order of the directives will be used for the tray
 output.
@@ -2204,7 +2204,7 @@ bindsym $mod+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
 ---------------------------------------
 
 Alternatively, if you do not want to mess with +i3-input+, you could create
-seperate bindings for a specific set of labels and then only use those labels.
+separate bindings for a specific set of labels and then only use those labels.
 ///////////////////////////////////////////////////////////////////
 
 [[pango_markup]]

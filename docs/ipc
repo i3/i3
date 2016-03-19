@@ -285,7 +285,7 @@ type (string)::
 	Type of this container. Can be one of "root", "output", "con",
 	"floating_con", "workspace" or "dockarea".
 border (string)::
-	Can be either "normal", "none" or "1pixel", dependending on the
+	Can be either "normal", "none" or "1pixel", depending on the
 	container’s border style.
 current_border_width (integer)::
 	Number of pixels of the border width.
