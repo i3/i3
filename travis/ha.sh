@@ -4,4 +4,4 @@
 # installed in the container, so that any changes in what needs to be installed
 # will result in a cache invalidation.
 
-cat debian/control travis-build.Dockerfile | sha256sum | dd bs=1 count=8 status=none
+cat debian/control "$1" | sha256sum | dd bs=1 count=8 status=none

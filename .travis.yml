@@ -6,18 +6,67 @@ language: c
 compiler:
   - gcc
   - clang
+addons:
+  apt:
+    packages:
+    # For https support in HTTP::Tiny.
+    - libio-socket-ssl-perl
 env:
   global:
-  - BASENAME="i3wm/travis-base:$(date +'%Y-%m')-$(./travis/ha.sh)"
+  - BASENAME="i3wm/travis-base:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base.Dockerfile)"
+  - BASENAME_386="i3wm/travis-base-386:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base-386.Dockerfile)"
+  - BASENAME_UBUNTU="i3wm/travis-base-ubuntu:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base-ubuntu.Dockerfile)"
+  - BASENAME_UBUNTU_386="i3wm/travis-base-ubuntu-386:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base-ubuntu-386.Dockerfile)"
   - secure: "B5IICA8MPx/FKaB50rTPqL8P1NU+Q0yuWl+lElL4+a9xSyLikfm3NzUPHoVwx8lNw2AVK6br7p0OmF7vMFjqAgrgc1cajTtEae5uFRKNUrWLpXM046YgNEYLLIHsQOjInxE+S4O6EFVzsUqsu8aeo2Xhq4sm4iUocG7e5isYgYo=" # DOCKER_PASS
   - secure: "EIvrq8PG7lRjidppG0RCv4F0X4GP3DT9F5+ixVuGPfhK/hZT3jYC2AVY9G+NnUcXVwQEpW92rlqpftQ/qZ13FoyWokC8ZyoyD06fr5FPCfoFF3OczZwAJzZYkObI/hE9+/hXcylx/Os6N4INd2My1ntGk3JPsWL9riopod5EjSg=" # DOCKER_EMAIL
   - secure: "hvhBunS4xXTgnIOsk/BPT7I7FrJhvVwCSt5PfxxvMqNaztOJI9BuK7ZrZ5Cy38KyHwlh3VHAH5AaCygJcPauoSQCV3bpnlbaWn3ruq2F0Q697Q5uNf73liXzyUqb9/Zvfvge4y4WWOhP5tVz1C6ZBe/NfhU7pqKLMA+6ads+99c=" # DOCKER_USER
+  - secure: "uJuuefmnJUuEH15ZD8xQilibx7EeBvMHBLoIZ8bgGHeleEImBD0XbD1ypvhYJKpviOmw5BkZmc9bVO8DGDEHYbSlIa2xDlF6vGrwgCEaxcMIhOAhv+dW9C/maJVieLOEPM01/fK2qdKESZaLvlopkWmxZwDyMObI9L7AMW9zQD8=" # BINTRAY_USER
+  - secure: "L3aPSNLySPXtWCW+xf8h/AAdquwNgxyTQpYOwexJmTPav82Qx8uQlp1yJkUmt+a+FLZDFfQeMivaHq0311RvuQVmkAJx49DjaddrwqOJut2UPsoVDn1WeuAcSHIXOq/0H+zgFMr/PGY0HXIsw1mTMhgheGJNqg09BvYWROCEAcA=" # BINTRAY_KEY
+  - secure: "sBMVn4C/WRWgoAytEFGx4CC5O55Q63h02AcuBnb1jXcBm0RenoBpzUPtxSseJwDPUA1o/UkuEDDjm3PosT5NF+dvED01VDFMsPVE11K0u6+avYy3jYXqyUEDW3G2o6Wo/2aqNjmd++8jskBdS9+Cx9gaFbgxfzSp0Yfu3oJm/4c=" # GH_TOKEN
 install:
   - if [ -a .git/shallow ]; then git fetch --unshallow; fi
-  - docker pull ${BASENAME} || ./travis/docker-build-and-push.sh
+  - docker pull ${BASENAME} || ./travis/docker-build-and-push.sh ${BASENAME} travis/travis-base.Dockerfile
+  - ./travis/skip-pkg.sh || docker pull ${BASENAME_UBUNTU} || ./travis/docker-build-and-push.sh ${BASENAME_UBUNTU} travis/travis-base-ubuntu.Dockerfile
+  - ./travis/skip-pkg.sh || docker pull ${BASENAME_386} || ./travis/docker-build-and-push.sh ${BASENAME_386} travis/travis-base-386.Dockerfile
+  - ./travis/skip-pkg.sh || docker pull ${BASENAME_UBUNTU_386} || ./travis/docker-build-and-push.sh ${BASENAME_UBUNTU_386} travis/travis-base-ubuntu-386.Dockerfile
 script:
   - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/check-safe-wrappers.sh
   - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/check-formatting.sh
   - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC -e CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Werror" ${BASENAME} make all mans -j ASAN=1
   - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/check-spelling.pl
   - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/run-tests.sh
+  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/debian-build.sh deb/debian-amd64/DIST
+  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME_UBUNTU} ./travis/debian-build.sh deb/ubuntu-amd64/DIST
+  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME_386} linux32 ./travis/debian-build.sh deb/debian-i386/DIST
+  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME_UBUNTU_386} linux32 ./travis/debian-build.sh deb/ubuntu-i386/DIST
+  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/clang-analyze.sh
+  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/docs.sh
+  - ./travis/skip-pkg.sh || travis/prep-bintray.sh
+
+deploy:
+  - provider: bintray
+    file: travis/bintray-autobuild-debian.json
+    user: $BINTRAY_USER
+    key: $BINTRAY_KEY
+    skip_cleanup: true
+    on:
+      branch: next
+      condition: $CC = gcc
+  - provider: bintray
+    file: travis/bintray-autobuild-ubuntu.json
+    user: $BINTRAY_USER
+    key: $BINTRAY_KEY
+    skip_cleanup: true
+    on:
+      branch: next
+      condition: $CC = gcc
+  - provider: script
+    script: travis/deploy-github-pages.sh
+    skip_cleanup: true
+    on:
+      branch: next
+      condition: $CC = gcc
+
+after_deploy:
+  - travis/cleanup-bintray.pl i3-autobuild
+  - travis/cleanup-bintray.pl i3-autobuild-ubuntu
