@@ -25,7 +25,11 @@ binmode STDERR, ':utf8';
 # reads in a whole file
 sub slurp {
     my ($filename) = @_;
-    open(my $fh, '<', $filename) or die "$!";
+    my $fh;
+    if (!open($fh, '<', $filename)) {
+        warn "Could not open $filename: $!";
+        return undef;
+    }
     local $/;
     my $result;
     eval {
