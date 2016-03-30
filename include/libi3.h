@@ -20,7 +20,7 @@
 #if PANGO_SUPPORT
 #include <pango/pango.h>
 #endif
-#ifdef CAIRO_SUPPORT
+#if CAIRO_SUPPORT
 #include <cairo/cairo-xcb.h>
 #endif
 
@@ -518,7 +518,7 @@ typedef struct placeholder_t {
  */
 char *format_placeholders(char *format, placeholder_t *placeholders, int num);
 
-#ifdef CAIRO_SUPPORT
+#if CAIRO_SUPPORT
 /* We need to flush cairo surfaces twice to avoid an assertion bug. See #1989
  * and https://bugs.freedesktop.org/show_bug.cgi?id=92455. */
 #define CAIRO_SURFACE_FLUSH(surface)  \
@@ -542,7 +542,7 @@ typedef struct surface_t {
     int width;
     int height;
 
-#ifdef CAIRO_SUPPORT
+#if CAIRO_SUPPORT
     /* A cairo surface representing the drawable. */
     cairo_surface_t *surface;
 
