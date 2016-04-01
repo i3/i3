@@ -2,7 +2,15 @@ i3-wm (4.12.1-1) unstable; urgency=medium
 
   * UNRELEASED
 
- -- Michael Stapelberg <stapelberg@debian.org>  Wed, 30 Sep 2015 09:03:26 +0200
+ -- Michael Stapelberg <stapelberg@debian.org>  Fri, 01 Apr 2016 16:34:35 +0200
+
+i3-wm (4.12-2) unstable; urgency=medium
+
+  * Override lintian warning desktop-entry-contains-unknown-key for
+    DesktopNames, gdm needs that key.
+  * Remove i3-wm.menu to conform to the tech-ctte decision on #741573.
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Fri, 01 Apr 2016 15:51:23 +0200
 
 i3-wm (4.12-1) unstable; urgency=medium
 

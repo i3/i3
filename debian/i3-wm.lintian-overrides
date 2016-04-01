@@ -1,0 +1,2 @@
+# gdm needs the DesktopNames key, even though lintian doesn’t recognize it yet.
+desktop-entry-contains-unknown-key usr/share/xsessions/i3.desktop:* DesktopNames

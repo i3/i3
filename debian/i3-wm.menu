@@ -1,5 +1,0 @@
-?package(i3-wm): \
-	needs="wm" \
-	section="Window Managers" \
-	title="i3" \
-	command="/usr/bin/i3"
