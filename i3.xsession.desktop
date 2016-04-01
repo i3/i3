@@ -6,3 +6,4 @@ TryExec=i3
 Type=Application
 X-LightDM-DesktopName=i3
 DesktopNames=i3
+Keywords=tiling;wm;windowmanager;window;manager;
