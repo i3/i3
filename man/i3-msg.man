@@ -29,7 +29,7 @@ from the root window and then try /tmp/i3-ipc.sock before exiting
 with an error.
 
 *-t* 'type'::
-Send ipc message, see below.
+Send ipc message, see below. This option defaults to "command".
 
 *message*::
 Send ipc message, see below.
