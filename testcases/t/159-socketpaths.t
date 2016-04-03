@@ -65,7 +65,7 @@ ok(-S $socketpath, "file $socketpath exists and is a socket");
 exit_gracefully($pid);
 
 #####################################################################
-# configuration file case: socket gets placed whereever we specify
+# configuration file case: socket gets placed wherever we specify
 #####################################################################
 
 my $tmpdir = tempdir(CLEANUP => 1);

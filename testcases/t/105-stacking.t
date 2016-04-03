@@ -33,7 +33,7 @@ my $x = X11::XCB::Connection->new;
 
 my $i3 = i3;
 
-# Switch to the nineth workspace
+# Switch to the ninth workspace
 $i3->command('9')->recv;
 
 #####################################################################
