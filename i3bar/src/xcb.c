@@ -445,7 +445,7 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
 
 /*
  * Handle a button press event (i.e. a mouse click on one of our bars).
- * We determine, whether the click occured on a workspace button or if the scroll-
+ * We determine, whether the click occurred on a workspace button or if the scroll-
  * wheel was used and change the workspace appropriately
  *
  */

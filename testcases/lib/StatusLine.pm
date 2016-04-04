@@ -46,8 +46,8 @@ sub status_init {
     status_completed(0);
 }
 
-# generates the status text, prints it in the appropiate line
-# and returns it, so it can be used in conjuction with C<Log()>
+# generates the status text, prints it in the appropriate line
+# and returns it, so it can be used in conjunction with C<Log()>
 sub status {
     my ($display, $msg) = @_;
     my $status = "[$display] $msg";

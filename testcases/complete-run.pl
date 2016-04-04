@@ -49,7 +49,7 @@ binmode STDERR, ':utf8';
 # subshell or situations like that.
 AnyEvent::Util::close_all_fds_except(0, 1, 2);
 
-# convinience wrapper to write to the log file
+# convenience wrapper to write to the log file
 my $log;
 sub Log { say $log "@_" }
 
@@ -208,7 +208,7 @@ $single_cv->recv;
 
 $aggregator->stop();
 
-# print empty lines to seperate failed tests from statuslines
+# print empty lines to separate failed tests from statuslines
 print "\n\n";
 
 for (@done) {

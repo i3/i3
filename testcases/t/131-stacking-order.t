@@ -14,7 +14,7 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
-# Check if stacking containers can be used independantly of
+# Check if stacking containers can be used independently of
 # the split mode (horizontal/vertical) of the underlying
 # container.
 #

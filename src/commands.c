@@ -46,7 +46,7 @@
         }                                               \
     } while (0)
 
-/** If an error occured during parsing of the criteria, we want to exit instead
+/** If an error occurred during parsing of the criteria, we want to exit instead
  * of relying on fallback behavior. See #2091. */
 #define HANDLE_INVALID_MATCH                                   \
     do {                                                       \

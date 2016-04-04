@@ -420,7 +420,7 @@ void init_ws_for_output(Output *output, Con *content) {
 
         /* In case the workspace we just moved was visible but there was no
          * other workspace to switch to, we need to initialize the source
-         * output aswell */
+         * output as well */
         if (visible && previous == NULL) {
             LOG("There is no workspace left on \"%s\", re-initializing\n",
                 workspace_out->name);

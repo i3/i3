@@ -119,7 +119,7 @@ void parse_mode_json(char *json) {
 
     state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
-    /* FIXME: Propper error handling for JSON parsing */
+    /* FIXME: Proper error handling for JSON parsing */
     switch (state) {
         case yajl_status_ok:
             break;

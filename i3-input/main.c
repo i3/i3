@@ -80,7 +80,7 @@ void debuglog(char *fmt, ...) {
 }
 
 /*
- * Restores the X11 input focus to whereever it was before.
+ * Restores the X11 input focus to wherever it was before.
  * This is necessary because i3-input’s window has override_redirect=1
  * (→ unmanaged by the window manager) and thus i3-input changes focus itself.
  * This function is called on exit().

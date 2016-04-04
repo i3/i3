@@ -24,7 +24,7 @@ typedef struct i3_shmlog_header {
     /* Byte offset where the next line will be written to. */
     uint32_t offset_next_write;
 
-    /* Byte offset where the last wrap occured. */
+    /* Byte offset where the last wrap occurred. */
     uint32_t offset_last_wrap;
 
     /* The size of the logfile in bytes. Since the size is limited to 25 MiB

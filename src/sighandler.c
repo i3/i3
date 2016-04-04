@@ -116,7 +116,7 @@ static int backtrace(void) {
 
     waitpid(pid_gdb, &status, 0);
 
-    /* see if the backtrace was succesful or not */
+    /* see if the backtrace was successful or not */
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
         DLOG("GDB did not run properly\n");
         return -1;
@@ -176,7 +176,7 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
 static int sig_handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
     uint16_t state = event->state;
 
-    /* Apparantly, after activating numlock once, the numlock modifier
+    /* Apparently, after activating numlock once, the numlock modifier
      * stays turned on (use xev(1) to verify). So, to resolve useful
      * keysyms, we remove the numlock flag from the event state */
     state &= ~xcb_numlock_mask;
