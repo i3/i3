@@ -1158,6 +1158,19 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
 }
 
 /*
+ * Moves the given container to the currently focused container on the
+ * visible workspace on the given output.
+ *
+ */
+void con_move_to_output(Con *con, Output *output) {
+    Con *ws = NULL;
+    GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
+    assert(ws != NULL);
+    DLOG("Moving con %p to output %s\n", con, output->name);
+    con_move_to_workspace(con, ws, false, false, false);
+}
+
+/*
  * Returns the orientation of the given container (for stacked containers,
  * vertical orientation is used regardless of the actual orientation of the
  * container).
