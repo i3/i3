@@ -25,7 +25,7 @@ my $client = HTTP::Tiny->new(
 my $resp = $client->get($apiurl);
 die "Getting versions failed: HTTP status $resp->{status} (content: $resp->{content})" unless $resp->{success};
 my $decoded = decode_json($resp->{content});
-my @versions = sort @{$decoded->{versions}};
+my @versions = reverse sort @{$decoded->{versions}};
 
 # Keep the most recent 5 versions.
 splice(@versions, 0, 5);
