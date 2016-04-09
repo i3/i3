@@ -3,7 +3,7 @@
 set -e
 set -x
 
-make -C docs ASCIIDOC="asciidoc -a linkcss -a stylesdir=http://i3wm.org/css -a scriptsdir=http://i3wm.org/js --backend=xhtml11 -f docs/asciidoc-git.conf"
+make clean-docs docs ASCIIDOC="asciidoc -a linkcss -a stylesdir=http://i3wm.org/css -a scriptsdir=http://i3wm.org/js --backend=xhtml11 -f docs/asciidoc-git.conf"
 ./docs/i3-pod2html i3-dmenu-desktop man/i3-dmenu-desktop.html
 ./docs/i3-pod2html i3-save-tree man/i3-save-tree.html
 for file in $(sed 's/\.1$/.man/g' debian/i3-wm.manpages)
