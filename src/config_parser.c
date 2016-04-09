@@ -811,39 +811,53 @@ void start_config_error_nagbar(const char *configpath, bool has_errors) {
     free(pageraction);
 }
 
+// http://stackoverflow.com/questions/2068975/can-cs-fgets-be-coaxed-to-work-with-a-string-not-from-a-file
+char *sgets( char * str, int num, char **input )
+{
+    char *next = *input;
+    int  numread = 0;
+
+    while ( numread + 1 < num && *next ) {
+        int isnewline = ( *next == '\n' );
+        *str++ = *next++;
+        numread++;
+        // newline terminates the line but is included
+        if ( isnewline )
+            break;
+    }
+
+    if ( numread == -1 )
+        return NULL;  // "eof"
+
+    // must have hit the null terminator or end of line
+    *str = '\0';  // null terminate this tring
+    // set up input for next call
+    *input = next;
+    return str;
+}
+
 /*
  * Parses the given file by first replacing the variables, then calling
  * parse_config and possibly launching i3-nagbar.
  *
  */
-bool parse_file(const char *f, bool use_nagbar) {
+bool parse_file(char *f, bool use_nagbar, long filesize) {
     SLIST_HEAD(variables_head, Variable) variables = SLIST_HEAD_INITIALIZER(&variables);
-    int fd;
-    struct stat stbuf;
-    char *buf;
-    FILE *fstr;
+    char *buf, *index;
     char buffer[4096], key[512], value[512], *continuation = NULL;
 
-    if ((fd = open(f, O_RDONLY)) == -1)
-        die("Could not open configuration file: %s\n", strerror(errno));
+    buf = scalloc(filesize + 1, 1);
+    index = f;
 
-    if (fstat(fd, &stbuf) == -1)
-        die("Could not fstat file: %s\n", strerror(errno));
-
-    buf = scalloc(stbuf.st_size + 1, 1);
-
-    if ((fstr = fdopen(fd, "r")) == NULL)
-        die("Could not fdopen: %s\n", strerror(errno));
-
-    while (!feof(fstr)) {
+    while (*index != -1) {
         if (!continuation)
             continuation = buffer;
-        if (fgets(continuation, sizeof(buffer) - (continuation - buffer), fstr) == NULL) {
-            if (feof(fstr))
+        if (sgets(continuation, sizeof(buffer) - (continuation - buffer), &index) == NULL) {
+            if (*index == -1)
                 break;
             die("Could not read configuration file\n");
         }
-        if (buffer[strlen(buffer) - 1] != '\n' && !feof(fstr)) {
+        if (buffer[strlen(buffer) - 1] != '\n' && *index != -1) {
             ELOG("Your line continuation is too long, it exceeds %zd bytes\n", sizeof(buffer));
         }
         continuation = strstr(buffer, "\\\n");
@@ -886,7 +900,6 @@ bool parse_file(const char *f, bool use_nagbar) {
             continue;
         }
     }
-    fclose(fstr);
 
     /* For every custom variable, see how often it occurs in the file and
      * how much extra bytes it requires when replaced. */
@@ -900,7 +913,7 @@ bool parse_file(const char *f, bool use_nagbar) {
         int extra = (strlen(current->value) - strlen(current->key));
         char *next;
         for (next = bufcopy;
-             next < (bufcopy + stbuf.st_size) &&
+             next < (bufcopy + filesize) &&
                  (next = strcasestr(next, current->key)) != NULL;
              next += strlen(current->key)) {
             *next = '_';
@@ -912,14 +925,14 @@ bool parse_file(const char *f, bool use_nagbar) {
     /* Then, allocate a new buffer and copy the file over to the new one,
      * but replace occurrences of our variables */
     char *walk = buf, *destwalk;
-    char *new = smalloc(stbuf.st_size + extra_bytes + 1);
+    char *new = smalloc(filesize + extra_bytes + 1);
     destwalk = new;
-    while (walk < (buf + stbuf.st_size)) {
+    while (walk < (buf + filesize)) {
         /* Find the next variable */
         SLIST_FOREACH(current, &variables, variables)
         current->next_match = strcasestr(walk, current->key);
         nearest = NULL;
-        int distance = stbuf.st_size;
+        int distance = filesize;
         SLIST_FOREACH(current, &variables, variables) {
             if (current->next_match == NULL)
                 continue;
@@ -930,8 +943,8 @@ bool parse_file(const char *f, bool use_nagbar) {
         }
         if (nearest == NULL) {
             /* If there are no more variables, we just copy the rest */
-            strncpy(destwalk, walk, (buf + stbuf.st_size) - walk);
-            destwalk += (buf + stbuf.st_size) - walk;
+            strncpy(destwalk, walk, (buf + filesize) - walk);
+            destwalk += (buf + filesize) - walk;
             *destwalk = '\0';
             break;
         } else {
@@ -948,7 +961,7 @@ bool parse_file(const char *f, bool use_nagbar) {
     int version = detect_version(buf);
     if (version == 3) {
         /* We need to convert this v3 configuration */
-        char *converted = migrate_config(new, stbuf.st_size);
+        char *converted = migrate_config(new, filesize);
         if (converted != NULL) {
             ELOG("\n");
             ELOG("****************************************************************\n");

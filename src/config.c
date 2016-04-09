@@ -12,6 +12,8 @@
  */
 #include "all.h"
 #include <xkbcommon/xkbcommon.h>
+#include <fcntl.h>
+#include <libgen.h>
 
 char *current_configpath = NULL;
 Config config;
@@ -40,13 +42,80 @@ void update_barconfig() {
 }
 
 /*
+ * Appends file to existing stream
+*/
+char *read_file_into_stream(
+    const char *path,
+    char *stream,
+    long *stream_length
+) {
+    FILE *f;
+    int filesize = 0;
+    if ((f = fopen(path, "rb")) == NULL)
+        die("Could not open configuration file: %s\n", strerror(errno));
+    fseek(f, 0, SEEK_END);
+    filesize = ftell(f);
+    rewind(f);
+    stream = srealloc(stream, (*stream_length + filesize) * sizeof(char) + 1);
+    fread(stream + *stream_length, sizeof(char), filesize, f);
+    *stream_length += filesize;
+    stream[*stream_length] = -1;
+    fclose(f);
+    return stream;
+}
+
+char *read_config_into_memory(const char *path, long *filesize) {
+    char *buf = NULL;
+    buf = read_file_into_stream(path, buf, filesize);
+    return buf;
+}
+
+void append_config_d_files(char *configpath, char *stream, long *f_size) {
+    // Append 'config.d/' to configpath
+    struct stat path_stat;
+    char *config_dir_name = "config.d/", *buffer;
+    char *config_dir_path = smalloc(
+        strlen(configpath) + strlen(config_dir_name) + 1
+    );
+    strcpy(config_dir_path, dirname(configpath));
+    strcat(config_dir_path, "/");
+    strcat(config_dir_path, config_dir_name);
+
+    // Check if config.d exists as directory at config_dir_path
+    stat(config_dir_path, &path_stat);
+    if (!S_ISDIR(path_stat.st_mode)) {
+        FREE(config_dir_path);
+        return;
+    }
+
+    // Append config.d files to main config
+    struct dirent **dir_entries;
+    int n_files, i;
+    n_files = scandir(config_dir_path, &dir_entries, NULL, alphasort);
+    for (i = 0; i < n_files; i++) {
+        if (dir_entries[i]->d_type == DT_REG) {
+            buffer = smalloc(strlen(config_dir_path) + strlen(dir_entries[i]->d_name) + 1);
+            strcpy(buffer, config_dir_path);
+            strcat(buffer, dir_entries[i]->d_name);
+            read_file_into_stream(buffer, stream, f_size);
+        }
+        FREE(dir_entries[i]);
+        FREE(buffer);
+    }
+
+
+    FREE(config_dir_path);
+}
+
+/*
  * Finds the configuration file to use (either the one specified by
  * override_configpath), the user’s one or the system default) and calls
  * parse_file().
  *
  */
 bool parse_configuration(const char *override_configpath, bool use_nagbar) {
-    char *path = get_config_path(override_configpath, true);
+    char *path = get_config_path(override_configpath, true), *f;
+    long filesize = 0;
     if (path == NULL) {
         die("Unable to find the configuration file (looked at "
             "~/.i3/config, $XDG_CONFIG_HOME/i3/config, " SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
@@ -62,7 +131,9 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
         TAILQ_INIT(bindings);
     }
 
-    return parse_file(path, use_nagbar);
+    f = read_config_into_memory(path, &filesize);
+    append_config_d_files(path, f, &filesize);
+    return parse_file(f, use_nagbar, filesize);
 }
 
 /*
