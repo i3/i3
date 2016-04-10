@@ -56,6 +56,9 @@ cp "${STARTDIR}/RELEASE-NOTES-${RELEASE_VERSION}" "RELEASE-NOTES-${RELEASE_VERSI
 git add RELEASE-NOTES-${RELEASE_VERSION}
 git rm RELEASE-NOTES-${PREVIOUS_VERSION}
 sed -i "s,<refmiscinfo class=\"version\">[^<]*</refmiscinfo>,<refmiscinfo class=\"version\">${RELEASE_VERSION}</refmiscinfo>,g" man/asciidoc.conf
+echo "${RELEASE_VERSION}" > VERSION
+echo "${RELEASE_VERSION} ($(date +%F))" > I3_VERSION
+git add VERSION I3_VERSION
 git commit -a -m "release i3 ${RELEASE_VERSION}"
 git tag "${RELEASE_VERSION}" -m "release i3 ${RELEASE_VERSION}" --sign --local-user=0x4AC8EE1D
 
@@ -68,13 +71,12 @@ diff -u \
 	<(tar tf    i3-${RELEASE_VERSION}.tar.bz2  | sed "s,i3-${RELEASE_VERSION}/,,g"  | sort) \
 	| colordiff
 
-if ! tar xf i3-${RELEASE_VERSION}.tar.bz2 --to-stdout --strip-components=1 i3-${RELEASE_VERSION}/I3_VERSION | grep -q "^${RELEASE_VERSION} "
-then
-	echo "I3_VERSION file does not start with ${RELEASE_VERSION}"
-	exit 1
-fi
 
 gpg --armor -b i3-${RELEASE_VERSION}.tar.bz2
+
+echo "${RELEASE_VERSION}-non-git" > I3_VERSION
+git add I3_VERSION
+git commit -a -m "Set non-git version to ${RELEASE_VERSION}-non-git."
 
 if [ "${RELEASE_BRANCH}" = "master" ]; then
 	git checkout master
