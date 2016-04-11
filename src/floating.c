@@ -782,16 +782,17 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
         .callback = callback,
         .extra = extra,
     };
+    ev_check *check = &loop.check;
     if (con)
         loop.old_rect = con->rect;
-    ev_check_init(&loop.check, xcb_drag_check_cb);
+    ev_check_init(check, xcb_drag_check_cb);
     main_set_x11_cb(false);
-    ev_check_start(main_loop, &loop.check);
+    ev_check_start(main_loop, check);
 
     while (loop.result == DRAGGING)
         ev_run(main_loop, EVRUN_ONCE);
 
-    ev_check_stop(main_loop, &loop.check);
+    ev_check_stop(main_loop, check);
     main_set_x11_cb(true);
 
     xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME);
