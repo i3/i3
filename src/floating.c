@@ -621,7 +621,7 @@ void floating_resize_window(Con *con, const bool proportional,
         con->scratchpad_state = SCRATCHPAD_CHANGED;
 }
 
-/* As endorsed by “ASSOCIATING CUSTOM DATA WITH A WATCHER” in ev(3) */
+/* Custom data structure used to track dragging-related events. */
 struct drag_x11_cb {
     ev_check check;
 
@@ -643,7 +643,7 @@ struct drag_x11_cb {
 };
 
 static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
-    struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w;
+    struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w->data;
     xcb_motion_notify_event_t *last_motion_notify = NULL;
     xcb_generic_event_t *event;
 
@@ -786,6 +786,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
     if (con)
         loop.old_rect = con->rect;
     ev_check_init(check, xcb_drag_check_cb);
+    check->data = &loop;
     main_set_x11_cb(false);
     ev_check_start(main_loop, check);
 
