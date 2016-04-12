@@ -603,8 +603,9 @@ void x_draw_decoration(Con *con) {
 
             draw_util_text(mark, &(parent->frame_buffer),
                            p->color->text, p->color->background,
-                           con->deco_rect.x + con->deco_rect.width - mark_width - logical_px(2),
-                           con->deco_rect.y + text_offset_y, mark_width);
+                           con->deco_rect.x + con->deco_rect.width + br.x + br.width - mark_width,
+                           con->deco_rect.y + text_offset_y,
+                           mark_width);
 
             I3STRING_FREE(mark);
         }
