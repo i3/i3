@@ -152,7 +152,7 @@ void grab_all_keys(xcb_connection_t *conn) {
  *
  */
 void regrab_all_buttons(xcb_connection_t *conn) {
-    bool grab_scrollwheel = bindings_should_grab_scrollwheel_buttons();
+    int *buttons = bindings_get_buttons_to_grab();
     xcb_grab_server(conn);
 
     Con *con;
@@ -161,9 +161,10 @@ void regrab_all_buttons(xcb_connection_t *conn) {
             continue;
 
         xcb_ungrab_button(conn, XCB_BUTTON_INDEX_ANY, con->window->id, XCB_BUTTON_MASK_ANY);
-        xcb_grab_buttons(conn, con->window->id, grab_scrollwheel);
+        xcb_grab_buttons(conn, con->window->id, buttons);
     }
 
+    FREE(buttons);
     xcb_ungrab_server(conn);
 }
 
@@ -811,15 +812,30 @@ bool load_keymap(void) {
 }
 
 /*
- * Returns true if the current config has any binding to a scroll wheel button
- * (4 or 5) which is a whole-window binding.
- * We need this to figure out whether we should grab all buttons or just 1-3
- * when managing a window. See #2049.
- *
+ * Returns a list of buttons that should be grabbed on a window.
+ * This list will always contain 1–3, all higher buttons will only be returned
+ * if there is a whole-window binding for it on some window in the current
+ * config.
+ * The list is terminated by a 0.
  */
-bool bindings_should_grab_scrollwheel_buttons(void) {
+int *bindings_get_buttons_to_grab(void) {
+    /* Let's make the reasonable assumption that there's no more than 25
+     * buttons. */
+    int num_max = 25;
+
+    int buffer[num_max];
+    int num = 0;
+
+    /* We always return buttons 1 through 3. */
+    buffer[num++] = 1;
+    buffer[num++] = 2;
+    buffer[num++] = 3;
+
     Binding *bind;
     TAILQ_FOREACH(bind, bindings, bindings) {
+        if (num + 1 == num_max)
+            break;
+
         /* We are only interested in whole window mouse bindings. */
         if (bind->input_type != B_MOUSE || !bind->whole_window)
             continue;
@@ -831,11 +847,18 @@ bool bindings_should_grab_scrollwheel_buttons(void) {
             continue;
         }
 
-        /* If the binding is for either scrollwheel button, we need to grab everything. */
-        if (button == 4 || button == 5) {
-            return true;
+        /* Avoid duplicates. */
+        for (int i = 0; i < num_max; i++) {
+            if (buffer[i] == button)
+                continue;
         }
-    }
 
-    return false;
+        buffer[num++] = button;
+    }
+    buffer[num++] = 0;
+
+    int *buttons = scalloc(num, sizeof(int));
+    memcpy(buttons, buffer, num * sizeof(int));
+
+    return buttons;
 }
