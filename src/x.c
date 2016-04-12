@@ -455,13 +455,14 @@ void x_draw_decoration(Con *con) {
                             w->x + w->width, 0, r->width - (w->x + w->width), r->height);
     }
 
+    Rect br = con_border_style_rect(con);
+
     /* 3: draw a rectangle in border color around the client */
     if (p->border_style != BS_NONE && p->con_is_leaf) {
         /* We might hide some borders adjacent to the screen-edge */
         adjacent_t borders_to_hide = ADJ_NONE;
         borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
 
-        Rect br = con_border_style_rect(con);
 #if 0
         DLOG("con->rect spans %d x %d\n", con->rect.width, con->rect.height);
         DLOG("border_rect spans (%d, %d) with %d x %d\n", br.x, br.y, br.width, br.height);
@@ -553,8 +554,9 @@ void x_draw_decoration(Con *con) {
 
         draw_util_text(title, &(parent->frame_buffer),
                        p->color->text, p->color->background,
-                       con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
-                       con->deco_rect.width - 2);
+                       con->deco_rect.x + br.x,
+                       con->deco_rect.y + text_offset_y,
+                       con->deco_rect.width + br.width);
         I3STRING_FREE(title);
 
         goto after_title;
@@ -616,8 +618,9 @@ void x_draw_decoration(Con *con) {
     i3String *title = con->title_format == NULL ? win->name : con_parse_title_format(con);
     draw_util_text(title, &(parent->frame_buffer),
                    p->color->text, p->color->background,
-                   con->deco_rect.x + logical_px(2) + indent_px, con->deco_rect.y + text_offset_y,
-                   con->deco_rect.width - logical_px(2) - indent_px - mark_width - logical_px(2));
+                   con->deco_rect.x + br.x + indent_px,
+                   con->deco_rect.y + text_offset_y,
+                   con->deco_rect.width + br.width - indent_px - mark_width);
     if (con->title_format != NULL)
         I3STRING_FREE(title);
 
