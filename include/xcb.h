@@ -171,4 +171,4 @@ void xcb_remove_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_a
  * Grab the specified buttons on a window when managing it.
  *
  */
-void xcb_grab_buttons(xcb_connection_t *conn, xcb_window_t window, bool bind_scrollwheel);
+void xcb_grab_buttons(xcb_connection_t *conn, xcb_window_t window, int *buttons);
