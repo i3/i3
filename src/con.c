@@ -728,6 +728,26 @@ int con_num_children(Con *con) {
 }
 
 /*
+ * Count the number of windows (i.e., leaf containers).
+ *
+ */
+int con_num_windows(Con *con) {
+    if (con == NULL)
+        return 0;
+
+    if (con_has_managed_window(con))
+        return 1;
+
+    int num = 0;
+    Con *current = NULL;
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+        num += con_num_windows(current);
+    }
+
+    return num;
+}
+
+/*
  * Updates the percent attribute of the children of the given container. This
  * function needs to be called when a window is added or removed from a
  * container.

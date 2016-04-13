@@ -201,6 +201,12 @@ Con *con_for_window(Con *con, i3Window *window, Match **store_match);
 int con_num_children(Con *con);
 
 /**
+ * Count the number of windows (i.e., leaf containers).
+ *
+ */
+int con_num_windows(Con *con);
+
+/**
  * Attaches the given container to the given parent. This happens when moving
  * a container or when inserting a new container at a specific place in the
  * tree.
