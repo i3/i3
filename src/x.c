@@ -555,8 +555,9 @@ void x_draw_decoration(Con *con) {
 
         draw_util_text(title, &(parent->frame_buffer),
                        p->color->text, p->color->background,
-                       con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
-                       con->deco_rect.width - 2);
+                       con->deco_rect.x + logical_px(2),
+                       con->deco_rect.y + text_offset_y,
+                       con->deco_rect.width - 2 * logical_px(2));
         I3STRING_FREE(title);
 
         goto after_title;
@@ -617,8 +618,9 @@ void x_draw_decoration(Con *con) {
     i3String *title = con->title_format == NULL ? win->name : con_parse_title_format(con);
     draw_util_text(title, &(parent->frame_buffer),
                    p->color->text, p->color->background,
-                   con->deco_rect.x + logical_px(2) + indent_px, con->deco_rect.y + text_offset_y,
-                   con->deco_rect.width - logical_px(2) - indent_px - mark_width - logical_px(2));
+                   con->deco_rect.x + logical_px(2) + indent_px,
+                   con->deco_rect.y + text_offset_y,
+                   con->deco_rect.width - indent_px - mark_width - 2 * logical_px(2));
     if (con->title_format != NULL)
         I3STRING_FREE(title);
 
