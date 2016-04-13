@@ -327,14 +327,19 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
     assert(con->parent != NULL);
 
     Rect *dr = &(con->deco_rect);
-    Rect br = con_border_style_rect(con);
 
     /* Redraw the right border to cut off any text that went past it.
      * This is necessary when the text was drawn using XCB since cutting text off
      * automatically does not work there. For pango rendering, this isn't necessary. */
     if (!font_is_pango()) {
+        /* We actually only redraw the far right two pixels as that is the
+         * distance we keep from the edge (not the entire border width).
+         * Redrawing the entire border would cause text to be cut off. */
         draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->background,
-                            dr->x + dr->width + br.width, dr->y, -br.width, dr->height);
+                            dr->x + dr->width - 2 * logical_px(1),
+                            dr->y,
+                            2 * logical_px(1),
+                            dr->height);
     }
 
     /* Draw a 1px separator line before and after every tab, so that tabs can
