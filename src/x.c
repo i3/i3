@@ -332,8 +332,10 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
     /* Redraw the right border to cut off any text that went past it.
      * This is necessary when the text was drawn using XCB since cutting text off
      * automatically does not work there. For pango rendering, this isn't necessary. */
-    draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->background,
-                        dr->x + dr->width + br.width, dr->y, -br.width, dr->height);
+    if (!font_is_pango()) {
+        draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->background,
+                            dr->x + dr->width + br.width, dr->y, -br.width, dr->height);
+    }
 
     /* Draw a 1px separator line before and after every tab, so that tabs can
      * be easily distinguished. */
