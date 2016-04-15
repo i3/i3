@@ -74,7 +74,10 @@ uint32_t get_colorpixel(const char *hex) {
 
     /* Store the result in the cache */
     struct Colorpixel *cache_pixel = scalloc(1, sizeof(struct Colorpixel));
-    strncpy(cache_pixel->hex, hex, 8);
+
+    strncpy(cache_pixel->hex, hex, 7);
+    cache_pixel->hex[7] = '\0';
+
     cache_pixel->pixel = pixel;
 
     SLIST_INSERT_HEAD(&(colorpixels), cache_pixel, colorpixels);
