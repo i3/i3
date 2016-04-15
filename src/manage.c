@@ -577,7 +577,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         /* The first window on a workspace should always be focused. We have to
          * compare with == 1 because the container has already been inserted at
          * this point. */
-        if (con_num_children(ws) == 1) {
+        if (con_num_windows(ws) == 1) {
             DLOG("This is the first window on this workspace, ignoring no_focus.\n");
         } else {
             DLOG("no_focus was set for con = %p, not setting focus.\n", nc);
