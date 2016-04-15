@@ -9,6 +9,7 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
+#include <stdint.h>
 #include <float.h>
 #include <stdarg.h>
 
@@ -1625,7 +1626,7 @@ void cmd_open(I3_CMD) {
     ystr("success");
     y(bool, true);
     ystr("id");
-    y(integer, (long int)con);
+    y(integer, (uintptr_t)con);
     y(map_close);
 
     cmd_output->needs_tree_render = true;
