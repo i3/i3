@@ -382,6 +382,7 @@ void translate_keysyms(void) {
         if (keysym == XKB_KEY_NoSymbol) {
             ELOG("Could not translate string to key symbol: \"%s\"\n",
                  bind->symbol);
+                has_errors = true;
             continue;
         }
 
