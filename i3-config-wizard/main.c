@@ -333,10 +333,11 @@ static char *rewrite_binding(const char *input) {
 
             /* A literal. */
             if (token->name[0] == '\'') {
-                if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
+                uint32_t token_name_len = strlen(token->name);
+                if (strncasecmp(walk, token->name + 1, token_name_len - 1) == 0) {
                     if (token->identifier != NULL)
                         push_string(token->identifier, token->name + 1);
-                    walk += strlen(token->name) - 1;
+                    walk += token_name_len - 1;
                     if ((result = next_state(token)) != NULL)
                         return result;
                     break;
@@ -565,7 +566,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
                                 A__NET_WM_NAME,
                                 A_UTF8_STRING,
                                 8,
-                                strlen("i3: generate config"),
+                                sizeof("i3: generate config") - 1,
                                 "i3: generate config");
             xcb_flush(conn);
         } else
@@ -693,7 +694,7 @@ static void finish() {
 #endif
         /* skip the warning block at the beginning of the input file */
         if (head_of_file &&
-            strncmp("# WARNING", line, strlen("# WARNING")) == 0)
+            strncmp("# WARNING", line, sizeof("# WARNING") - 1) == 0)
             continue;
 
         head_of_file = false;
@@ -707,7 +708,7 @@ static void finish() {
         }
 
         /* Set the modifier the user chose */
-        if (strncmp(walk, "set $mod ", strlen("set $mod ")) == 0) {
+        if (strncmp(walk, "set $mod ", sizeof("set $mod ") - 1) == 0) {
             if (modifier == MOD_Mod1)
                 fputs("set $mod Mod1\n", ks_config);
             else
@@ -717,7 +718,7 @@ static void finish() {
 
         /* Check for 'bindcode'. If it’s not a bindcode line, we
          * just copy it to the output file */
-        if (strncmp(walk, "bindcode", strlen("bindcode")) != 0) {
+        if (strncmp(walk, "bindcode", sizeof("bindcode") - 1) != 0) {
             fputs(walk, ks_config);
             continue;
         }
@@ -739,7 +740,7 @@ static void finish() {
 
     /* tell i3 to reload the config file */
     int sockfd = ipc_connect(socket_path);
-    ipc_send_message(sockfd, strlen("reload"), 0, (uint8_t *)"reload");
+    ipc_send_message(sockfd, sizeof("reload") - 1, 0, (uint8_t *)"reload");
     close(sockfd);
 
     exit(0);
@@ -840,7 +841,7 @@ int main(int argc, char *argv[]) {
 
 /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
-    xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
+    xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, sizeof(#atom) - 1, #atom);
 #include "atoms.xmacro"
 #undef xmacro
 
@@ -909,7 +910,7 @@ int main(int argc, char *argv[]) {
                         A__NET_WM_NAME,
                         A_UTF8_STRING,
                         8,
-                        strlen("i3: first configuration"),
+                        sizeof("i3: first configuration") - 1,
                         "i3: first configuration");
 
     /* Create pixmap */
