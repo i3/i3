@@ -879,9 +879,23 @@ bool parse_file(const char *f, bool use_nagbar) {
                 v_value++;
 
             struct Variable *new = scalloc(1, sizeof(struct Variable));
+            struct Variable *test = NULL, *loc = NULL;
             new->key = sstrdup(v_key);
             new->value = sstrdup(v_value);
-            SLIST_INSERT_HEAD(&variables, new, variables);
+            /* ensure that the correct variable is matched in case of one being
+             * the prefix of another */
+            SLIST_FOREACH(test, &variables, variables) {
+                if (strlen(new->key) >= strlen(test->key))
+                    break;
+                loc = test;
+            }
+
+            if (loc == NULL) {
+                SLIST_INSERT_HEAD(&variables, new, variables);
+            } else {
+                SLIST_INSERT_AFTER(loc, new, variables);
+            }
+
             DLOG("Got new variable %s = %s\n", v_key, v_value);
             continue;
         }
