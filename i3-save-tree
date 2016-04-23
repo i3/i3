@@ -98,7 +98,7 @@ my %allowed_keys = map { ($_, 1) } qw(
     name
     geometry
     window_properties
-    mark
+    marks
     rect
 );
 
