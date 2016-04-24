@@ -602,9 +602,20 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         xcb_discard_reply(conn, wm_user_time_cookie.sequence);
     }
 
+    if (set_focus) {
+        /* Even if the client doesn't want focus, we still need to focus the
+         * container to not break focus workflows. Our handling towards X will
+         * take care of not setting the input focus. However, one exception to
+         * this are clients using the globally active input model which we
+         * don't want to focus at all. */
+        if (nc->window->doesnt_accept_focus && !nc->window->needs_take_focus) {
+            set_focus = false;
+        }
+    }
+
     /* Defer setting focus after the 'new' event has been sent to ensure the
      * proper window event sequence. */
-    if (set_focus && !nc->window->doesnt_accept_focus && nc->mapped) {
+    if (set_focus && nc->mapped) {
         DLOG("Now setting focus.\n");
         con_focus(nc);
     }
