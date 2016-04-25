@@ -150,7 +150,7 @@ static int json_end_map(void *ctx) {
         LOG("attaching\n");
         con_attach(json_node, json_node->parent, true);
         LOG("Creating window\n");
-        x_con_init(json_node, json_node->depth);
+        x_con_init(json_node);
         json_node = json_node->parent;
     }
 

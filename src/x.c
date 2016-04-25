@@ -98,7 +98,7 @@ static con_state *state_for_frame(xcb_window_t window) {
  * every container from con_new().
  *
  */
-void x_con_init(Con *con, uint16_t depth) {
+void x_con_init(Con *con) {
     /* TODO: maybe create the window when rendering first? we could then even
      * get the initial geometry right */
 
@@ -107,7 +107,7 @@ void x_con_init(Con *con, uint16_t depth) {
 
     /* For custom visuals, we need to create a colormap before creating
      * this window. It will be freed directly after creating the window. */
-    xcb_visualid_t visual = get_visualid_by_depth(depth);
+    xcb_visualid_t visual = get_visualid_by_depth(con->depth);
     xcb_colormap_t win_colormap = xcb_generate_id(conn);
     xcb_create_colormap_checked(conn, XCB_COLORMAP_ALLOC_NONE, win_colormap, root, visual);
 
@@ -133,7 +133,7 @@ void x_con_init(Con *con, uint16_t depth) {
     values[4] = win_colormap;
 
     Rect dims = {-15, -15, 10, 10};
-    xcb_window_t frame_id = create_window(conn, dims, depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
+    xcb_window_t frame_id = create_window(conn, dims, con->depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
     draw_util_surface_init(conn, &(con->frame), frame_id, get_visualtype_by_id(visual), dims.width, dims.height);
     xcb_change_property(conn,
                         XCB_PROP_MODE_REPLACE,

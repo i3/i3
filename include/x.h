@@ -18,7 +18,7 @@ extern xcb_window_t focused_id;
  * every container from con_new().
  *
  */
-void x_con_init(Con *con, uint16_t depth);
+void x_con_init(Con *con);
 
 /**
  * Moves a child window from Container src to Container dest.
