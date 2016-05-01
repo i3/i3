@@ -221,11 +221,11 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
     }
     if (strcasecmp(ctx->last_map_key, "align") == 0) {
         if (len == strlen("center") && !strncmp((const char *)val, "center", strlen("center"))) {
-            ctx->block.align = ALIGN_CENTER;
+            ctx->block.align = A_CENTER;
         } else if (len == strlen("right") && !strncmp((const char *)val, "right", strlen("right"))) {
-            ctx->block.align = ALIGN_RIGHT;
+            ctx->block.align = A_RIGHT;
         } else {
-            ctx->block.align = ALIGN_LEFT;
+            ctx->block.align = A_LEFT;
         }
         return 1;
     }

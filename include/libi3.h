@@ -392,6 +392,12 @@ char *convert_ucs2_to_utf8(xcb_char2b_t *text, size_t num_glyphs);
  */
 xcb_char2b_t *convert_utf8_to_ucs2(char *input, size_t *real_strlen);
 
+typedef enum alignment_t {
+    A_LEFT,
+    A_CENTER,
+    A_RIGHT
+} alignment_t;
+
 /* Represents a color split by color channel. */
 typedef struct color_t {
     double red;
@@ -426,7 +432,7 @@ bool font_is_pango(void);
  *
  */
 void draw_text(i3String *text, xcb_drawable_t drawable, xcb_gcontext_t gc,
-               xcb_visualtype_t *visual, int x, int y, int max_width);
+               xcb_visualtype_t *visual, int x, int y, int max_width, alignment_t align);
 
 /**
  * ASCII version of draw_text to print static strings.
@@ -584,7 +590,8 @@ color_t draw_util_hex_to_color(const char *color);
  * drawing are used. This will be the case when using XCB to draw text.
  *
  */
-void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y, int max_width);
+void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y,
+                    int max_width, alignment_t align);
 
 /**
  * Draws a filled rectangle.

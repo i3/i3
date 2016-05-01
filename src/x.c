@@ -557,7 +557,8 @@ void x_draw_decoration(Con *con) {
                        p->color->text, p->color->background,
                        con->deco_rect.x + logical_px(2),
                        con->deco_rect.y + text_offset_y,
-                       con->deco_rect.width - 2 * logical_px(2));
+                       con->deco_rect.width - 2 * logical_px(2),
+                       config.title_alignment);
         I3STRING_FREE(title);
 
         goto after_title;
@@ -590,7 +591,7 @@ void x_draw_decoration(Con *con) {
             draw_util_text(mark, &(parent->frame_buffer),
                            p->color->text, p->color->background,
                            con->deco_rect.x + con->deco_rect.width - mark_width - logical_px(2),
-                           con->deco_rect.y + text_offset_y, mark_width);
+                           con->deco_rect.y + text_offset_y, mark_width, A_LEFT);
 
             I3STRING_FREE(mark);
         }
@@ -603,7 +604,8 @@ void x_draw_decoration(Con *con) {
                    p->color->text, p->color->background,
                    con->deco_rect.x + logical_px(2),
                    con->deco_rect.y + text_offset_y,
-                   con->deco_rect.width - mark_width - 2 * logical_px(2));
+                   con->deco_rect.width - mark_width - 2 * logical_px(2),
+                   config.title_alignment);
     if (con->title_format != NULL)
         I3STRING_FREE(title);
 

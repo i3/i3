@@ -573,6 +573,26 @@ workspace_layout default|stacking|tabbed
 workspace_layout tabbed
 ---------------------
 
+[[title_alignment]]
+=== Window title alignment
+
+By default, window titles are aligned to the left side of the titlebar. Using
++title_alignment+, this can be changed to have the titles be displayed centered
+or aligned to the right.
+
+Note that this directive will only have an effect if a pango font is used. It
+does not work when using X core protocol fonts, see <<fonts>>.
+
+*Syntax*:
+---------------------------------
+title_alignment left|center|right
+---------------------------------
+
+*Example*:
+----------------------
+title_alignment center
+----------------------
+
 === Border style for new windows
 
 This option determines which border style new windows will have. The default is
