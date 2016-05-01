@@ -566,23 +566,6 @@ void x_draw_decoration(Con *con) {
     if (win->name == NULL)
         goto copy_pixmaps;
 
-    int indent_level = 0,
-        indent_mult = 0;
-    Con *il_parent = parent;
-    if (il_parent->layout != L_STACKED) {
-        while (1) {
-            //DLOG("il_parent = %p, layout = %d\n", il_parent, il_parent->layout);
-            if (il_parent->layout == L_STACKED)
-                indent_level++;
-            if (il_parent->type == CT_WORKSPACE || il_parent->type == CT_DOCKAREA || il_parent->type == CT_OUTPUT)
-                break;
-            il_parent = il_parent->parent;
-            indent_mult++;
-        }
-    }
-    //DLOG("indent_level = %d, indent_mult = %d\n", indent_level, indent_mult);
-    int indent_px = (indent_level * 5) * indent_mult;
-
     int mark_width = 0;
     if (config.show_marks && !TAILQ_EMPTY(&(con->marks_head))) {
         char *formatted_mark = sstrdup("");
@@ -618,9 +601,9 @@ void x_draw_decoration(Con *con) {
     i3String *title = con->title_format == NULL ? win->name : con_parse_title_format(con);
     draw_util_text(title, &(parent->frame_buffer),
                    p->color->text, p->color->background,
-                   con->deco_rect.x + logical_px(2) + indent_px,
+                   con->deco_rect.x + logical_px(2),
                    con->deco_rect.y + text_offset_y,
-                   con->deco_rect.width - indent_px - mark_width - 2 * logical_px(2));
+                   con->deco_rect.width - mark_width - 2 * logical_px(2));
     if (con->title_format != NULL)
         I3STRING_FREE(title);
 
