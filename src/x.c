@@ -1120,7 +1120,7 @@ void x_push_changes(Con *con) {
                     values[0] = CHILD_EVENT_MASK & ~(XCB_EVENT_MASK_FOCUS_CHANGE);
                     xcb_change_window_attributes(conn, focused->window->id, XCB_CW_EVENT_MASK, values);
                 }
-                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
+                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, last_timestamp);
                 if (focused->window != NULL) {
                     values[0] = CHILD_EVENT_MASK;
                     xcb_change_window_attributes(conn, focused->window->id, XCB_CW_EVENT_MASK, values);
@@ -1140,7 +1140,7 @@ void x_push_changes(Con *con) {
         /* If we still have no window to focus, we focus the EWMH window instead. We use this rather than the
          * root window in order to avoid an X11 fallback mechanism causing a ghosting effect (see #1378). */
         DLOG("Still no window focused, better set focus to the EWMH support window (%d)\n", ewmh_window);
-        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, ewmh_window, XCB_CURRENT_TIME);
+        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, ewmh_window, last_timestamp);
         ewmh_update_active_window(XCB_WINDOW_NONE);
         focused_id = ewmh_window;
     }
