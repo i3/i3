@@ -13,6 +13,7 @@
 
 struct Con *croot;
 struct Con *focused;
+uint8_t previous_screen;
 
 struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
 
