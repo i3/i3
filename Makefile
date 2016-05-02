@@ -32,6 +32,10 @@ real-all: $(ALL_TARGETS)
 
 install: $(INSTALL_TARGETS)
 
+store_git_version:
+	echo -n ${I3_VERSION} > I3_VERSION
+	echo -n ${VERSION} > VERSION
+
 dist: distclean
 	[ ! -d i3-${VERSION} ] || rm -rf i3-${VERSION}
 	[ ! -e i3-${VERSION}.tar.bz2 ] || rm i3-${VERSION}.tar.bz2

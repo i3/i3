@@ -5,6 +5,7 @@ set -x
 
 DEST=$1
 
+make store_git_version
 make dist
 # unpack dist tarball
 mkdir -p "${DEST}"
