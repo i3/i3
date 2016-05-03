@@ -121,14 +121,4 @@ void xinerama_init(void) {
 
         FREE(reply);
     }
-
-#if 0
-    Output *output;
-    Workspace *ws;
-    /* Just go through each active output and associate one workspace */
-    TAILQ_FOREACH(output, &outputs, outputs) {
-        ws = get_first_workspace_for_output(output);
-        initialize_output(conn, output, ws);
-    }
-#endif
 }

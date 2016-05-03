@@ -216,10 +216,6 @@ static void finish_input() {
 
     free(full);
 
-#if 0
-    free(command);
-    return 1;
-#endif
     exit(0);
 }
 
