@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}};
 
-    char *options_string = "s:t:vhq";
+    char *options_string = "+s:t:vhq";
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         if (o == 's') {
