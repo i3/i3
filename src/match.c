@@ -27,7 +27,6 @@
  */
 void match_init(Match *match) {
     memset(match, 0, sizeof(Match));
-    match->dock = M_DONTCHECK;
     match->urgent = U_DONTCHECK;
     /* we use this as the placeholder value for "not set". */
     match->window_type = UINT32_MAX;
@@ -53,7 +52,7 @@ bool match_is_empty(Match *match) {
             match->id == XCB_NONE &&
             match->window_type == UINT32_MAX &&
             match->con_id == NULL &&
-            match->dock == -1 &&
+            match->dock == M_NODOCK &&
             match->floating == M_ANY);
 }
 

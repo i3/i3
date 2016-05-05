@@ -48,6 +48,7 @@ static int json_start_map(void *ctx) {
         LOG("creating new swallow\n");
         current_swallow = smalloc(sizeof(Match));
         match_init(current_swallow);
+        current_swallow->dock = M_DONTCHECK;
         TAILQ_INSERT_TAIL(&(json_node->swallow_head), current_swallow, matches);
         swallow_is_empty = true;
     } else {

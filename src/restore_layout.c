@@ -240,6 +240,7 @@ static void open_placeholder_window(Con *con) {
         /* create temporary id swallow to match the placeholder */
         Match *temp_id = smalloc(sizeof(Match));
         match_init(temp_id);
+        temp_id->dock = M_DONTCHECK;
         temp_id->id = placeholder;
         TAILQ_INSERT_HEAD(&(con->swallow_head), temp_id, matches);
     }
