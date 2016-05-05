@@ -68,7 +68,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
  */
 Con *con_new(Con *parent, i3Window *window) {
     Con *new = con_new_skeleton(parent, window);
-    x_con_init(new, new->depth);
+    x_con_init(new);
     return new;
 }
 
