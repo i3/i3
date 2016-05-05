@@ -172,16 +172,6 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
         }
     }
 
-#if 0
-    if (client->workspace != c_ws && client->workspace->output == c_ws->output) {
-            /* This can happen when a client gets assigned to a different workspace than
-             * the current one (see src/mainx.c:reparent_window). Shortly after it was created,
-             * an enter_notify will follow. */
-            DLOG("enter_notify for a client on a different workspace but the same screen, ignoring\n");
-            return 1;
-    }
-#endif
-
     if (config.disable_focus_follows_mouse)
         return;
 
@@ -421,22 +411,6 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
 
     return;
 }
-#if 0
-
-/*
- * Configuration notifies are only handled because we need to set up ignore for
- * the following enter notify events.
- *
- */
-int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event) {
-    DLOG("configure_event, sequence %d\n", event->sequence);
-        /* We ignore this sequence twice because events for child and frame should be ignored */
-        add_ignore_event(event->sequence);
-        add_ignore_event(event->sequence);
-
-        return 1;
-}
-#endif
 
 /*
  * Gets triggered upon a RandR screen change event, that is when the user
@@ -629,23 +603,6 @@ static bool handle_windowrole_change(void *data, xcb_connection_t *conn, uint8_t
 
     return true;
 }
-
-#if 0
-/*
- * Updates the client’s WM_CLASS property
- *
- */
-static int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
-                             xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
-        return 1;
-
-    window_update_class(con->window, prop, false);
-
-    return 0;
-}
-#endif
 
 /*
  * Expose event means we should redraw our windows (= title bar)

@@ -464,11 +464,6 @@ void x_draw_decoration(Con *con) {
         borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
 
         Rect br = con_border_style_rect(con);
-#if 0
-        DLOG("con->rect spans %d x %d\n", con->rect.width, con->rect.height);
-        DLOG("border_rect spans (%d, %d) with %d x %d\n", br.x, br.y, br.width, br.height);
-        DLOG("window_rect spans (%d, %d) with %d x %d\n", con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
-#endif
 
         /* These rectangles represent the border around the child window
          * (left, bottom and right part). We don’t just fill the whole
