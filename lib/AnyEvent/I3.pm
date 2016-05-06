@@ -114,6 +114,7 @@ my %events = (
     window => ($event_mask | 3),
     barconfig_update => ($event_mask | 4),
     binding => ($event_mask | 5),
+    shutdown => ($event_mask | 6),
     _error => 0xFFFFFFFF,
 );
 
