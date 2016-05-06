@@ -198,4 +198,20 @@ EOT
 is(launch_get_border($config), 'none', 'no border');
 
 
+#####################################################################
+# test ignoring of line continuation within a comment
+#####################################################################
+
+$config = <<'EOT';
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+set $vartest \"special title\"
+for_window [title="$vartest"] border pixel 1
+# this line is not continued, so the following is not contained in this comment\
+for_window [title="$vartest"] border none
+EOT
+
+is(launch_get_border($config), 'none', 'no border');
+
 done_testing;

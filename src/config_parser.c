@@ -846,17 +846,26 @@ bool parse_file(const char *f, bool use_nagbar) {
         if (buffer[strlen(buffer) - 1] != '\n' && !feof(fstr)) {
             ELOG("Your line continuation is too long, it exceeds %zd bytes\n", sizeof(buffer));
         }
+
+        /* sscanf implicitly strips whitespace. */
+        const bool skip_line = (sscanf(buffer, "%511s %511[^\n]", key, value) < 1 || strlen(key) < 3);
+        const bool comment = (key[0] == '#');
+
         continuation = strstr(buffer, "\\\n");
         if (continuation) {
-            continue;
+            if (!comment) {
+                continue;
+            }
+            DLOG("line continuation in comment is ignored: \"%.*s\"\n", (int)strlen(buffer) - 1, buffer);
+            continuation = NULL;
         }
 
         strncpy(buf + strlen(buf), buffer, strlen(buffer) + 1);
 
-        /* sscanf implicitly strips whitespace. Also, we skip comments and empty lines. */
-        if (sscanf(buffer, "%511s %511[^\n]", key, value) < 1 ||
-            key[0] == '#' || strlen(key) < 3)
+        /* Skip comments and empty lines. */
+        if (skip_line || comment) {
             continue;
+        }
 
         if (strcasecmp(key, "set") == 0) {
             if (value[0] != '$') {
