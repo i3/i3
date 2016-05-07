@@ -286,6 +286,18 @@ CFGFUN(focus_on_window_activation, const char *mode) {
     DLOG("Set new focus_on_window_activation mode = %i.\n", config.focus_on_window_activation);
 }
 
+CFGFUN(title_alignment, const char *value) {
+    if (strcmp(value, "left") == 0) {
+        config.title_alignment = A_LEFT;
+    } else if (strcmp(value, "center") == 0) {
+        config.title_alignment = A_CENTER;
+    } else if (strcmp(value, "right") == 0) {
+        config.title_alignment = A_RIGHT;
+    } else {
+        ELOG("Unknown title_alignment \"%s\".\n", value);
+    }
+}
+
 CFGFUN(show_marks, const char *value) {
     config.show_marks = eval_boolstr(value);
 }

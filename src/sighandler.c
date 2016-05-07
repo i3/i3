@@ -155,7 +155,7 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
             set_font_colors(pixmap_gc, draw_util_hex_to_color(bt_colour), draw_util_hex_to_color("#000000"));
 
         draw_text(crash_text_i3strings[i], pixmap, pixmap_gc, NULL,
-                  8, 5 + i * font_height, width - 16);
+                  8, 5 + i * font_height, width - 16, A_LEFT);
 
         /* and reset the colour again for other lines */
         if (i == backtrace_string_index)

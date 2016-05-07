@@ -40,6 +40,7 @@ state INITIAL:
   'fake_outputs', 'fake-outputs'           -> FAKE_OUTPUTS
   'force_display_urgency_hint'             -> FORCE_DISPLAY_URGENCY_HINT
   'focus_on_window_activation'             -> FOCUS_ON_WINDOW_ACTIVATION
+  'title_alignment'                        -> TITLE_ALIGNMENT
   'show_marks'                             -> SHOW_MARKS
   'workspace'                              -> WORKSPACE
   'ipc_socket', 'ipc-socket'               -> IPC_SOCKET
@@ -217,6 +218,11 @@ state FAKE_OUTPUTS:
 state FORCE_DISPLAY_URGENCY_HINT:
   duration_ms = number
       -> FORCE_DISPLAY_URGENCY_HINT_MS
+
+# title_alignment
+state TITLE_ALIGNMENT:
+  value = 'left', 'center', 'right'
+      -> call cfg_title_alignment($value)
 
 # show_marks
 state SHOW_MARKS:

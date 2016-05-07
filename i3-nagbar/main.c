@@ -204,7 +204,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     draw_text(prompt, pixmap, pixmap_gc, NULL,
               logical_px(4) + logical_px(4),
               logical_px(4) + logical_px(4),
-              rect.width - logical_px(4) - logical_px(4));
+              rect.width - logical_px(4) - logical_px(4), A_LEFT);
 
     /* render close button */
     const char *close_button_label = "X";
@@ -272,7 +272,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         draw_text(buttons[c].label, pixmap, pixmap_gc, NULL,
                   y - w - line_width + logical_px(6),
                   logical_px(4) + logical_px(3),
-                  rect.width - y + w + line_width - logical_px(6));
+                  rect.width - y + w + line_width - logical_px(6), A_LEFT);
 
         y -= w;
     }

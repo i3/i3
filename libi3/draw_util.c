@@ -136,7 +136,8 @@ static void draw_util_set_source_color(xcb_connection_t *conn, surface_t *surfac
  * drawing are used. This will be the case when using XCB to draw text.
  *
  */
-void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y, int max_width) {
+void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y,
+                    int max_width, alignment_t align) {
     RETURN_UNLESS_SURFACE_INITIALIZED(surface);
 
 #if CAIRO_SUPPORT
@@ -145,7 +146,7 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
 #endif
 
     set_font_colors(surface->gc, fg_color, bg_color);
-    draw_text(text, surface->id, surface->gc, surface->visual_type, x, y, max_width);
+    draw_text(text, surface->id, surface->gc, surface->visual_type, x, y, max_width, align);
 
 #if CAIRO_SUPPORT
     /* Notify cairo that we (possibly) used another way to draw on the surface. */

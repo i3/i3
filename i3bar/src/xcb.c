@@ -193,7 +193,7 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
         /* Draw a custom separator. */
         uint32_t separator_x = MAX(x - block->sep_block_width, center_x - separator_symbol_width / 2);
         draw_util_text(config.separator_symbol, &output->statusline_buffer, sep_fg, bar_bg,
-                       separator_x, logical_px(ws_voff_px), x - separator_x);
+                       separator_x, logical_px(ws_voff_px), x - separator_x, A_LEFT);
     }
 }
 
@@ -223,13 +223,13 @@ uint32_t predict_statusline_length(bool use_short_text) {
         } else {
             uint32_t padding_width = block->min_width - render->width;
             switch (block->align) {
-                case ALIGN_LEFT:
+                case A_LEFT:
                     render->x_append = padding_width;
                     break;
-                case ALIGN_RIGHT:
+                case A_RIGHT:
                     render->x_offset = padding_width;
                     break;
-                case ALIGN_CENTER:
+                case A_CENTER:
                     render->x_offset = padding_width / 2;
                     render->x_append = padding_width / 2 + padding_width % 2;
                     break;
@@ -319,7 +319,7 @@ void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_color
 
         draw_util_text(text, &output->statusline_buffer, fg_color, bg_color,
                        x + render->x_offset + border_width, logical_px(ws_voff_px),
-                       render->width - 2 * border_width);
+                       render->width - 2 * border_width, A_LEFT);
         x += full_render_width;
 
         /* If this is not the last block, draw a separator. */
@@ -1980,7 +1980,8 @@ void draw_bars(bool unhide) {
                 draw_util_text(ws_walk->name, &(outputs_walk->buffer), fg_color, bg_color,
                                workspace_width + logical_px(ws_hoff_px) + logical_px(1),
                                logical_px(ws_voff_px),
-                               ws_walk->name_width);
+                               ws_walk->name_width,
+                               A_LEFT);
 
                 workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + ws_walk->name_width;
                 if (TAILQ_NEXT(ws_walk, tailq) != NULL)
@@ -2009,7 +2010,8 @@ void draw_bars(bool unhide) {
             draw_util_text(binding.name, &(outputs_walk->buffer), fg_color, bg_color,
                            workspace_width + logical_px(ws_hoff_px) + logical_px(1),
                            logical_px(ws_voff_px),
-                           binding.width);
+                           binding.width,
+                           A_LEFT);
 
             unhide = true;
             workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + binding.width;

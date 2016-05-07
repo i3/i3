@@ -181,6 +181,9 @@ struct Config {
         FOWA_NONE
     } focus_on_window_activation;
 
+    /* Specifies how the window title shall be aligned. */
+    alignment_t title_alignment;
+
     /** Specifies whether or not marks should be displayed in the window
      * decoration. Marks starting with a "_" will be ignored either way. */
     bool show_marks;

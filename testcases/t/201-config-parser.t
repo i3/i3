@@ -440,9 +440,51 @@ hide_edge_border both
 client.focused          #4c7899 #285577 #ffffff #2e9ef4
 EOT
 
-my $expected_all_tokens = <<'EOT';
-ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', 'bar', 'font', 'mode', 'floating_minimum_size', 'floating_maximum_size', 'floating_modifier', 'default_orientation', 'workspace_layout', 'new_window', 'new_float', 'hide_edge_borders', 'for_window', 'assign', 'no_focus', 'focus_follows_mouse', 'mouse_warping', 'force_focus_wrapping', 'force_xinerama', 'force-xinerama', 'workspace_auto_back_and_forth', 'fake_outputs', 'fake-outputs', 'force_display_urgency_hint', 'focus_on_window_activation', 'show_marks', 'workspace', 'ipc_socket', 'ipc-socket', 'restart_state', 'popup_during_fullscreen', 'exec_always', 'exec', 'client.background', 'client.focused_inactive', 'client.focused', 'client.unfocused', 'client.urgent', 'client.placeholder'
-EOT
+my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, " .
+    "'#', " .
+    "'set', " .
+    "'bindsym', " .
+    "'bindcode', " .
+    "'bind', " .
+    "'bar', " .
+    "'font', " .
+    "'mode', " .
+    "'floating_minimum_size', " .
+    "'floating_maximum_size', " .
+    "'floating_modifier', " .
+    "'default_orientation', " .
+    "'workspace_layout', " .
+    "'new_window', " .
+    "'new_float', " .
+    "'hide_edge_borders', " .
+    "'for_window', " .
+    "'assign', " .
+    "'no_focus', " .
+    "'focus_follows_mouse', " .
+    "'mouse_warping', " .
+    "'force_focus_wrapping', " .
+    "'force_xinerama', " .
+    "'force-xinerama', " .
+    "'workspace_auto_back_and_forth', " .
+    "'fake_outputs', " .
+    "'fake-outputs', " .
+    "'force_display_urgency_hint', " .
+    "'focus_on_window_activation', " .
+    "'title_alignment', " .
+    "'show_marks', " .
+    "'workspace', " .
+    "'ipc_socket', " .
+    "'ipc-socket', " .
+    "'restart_state', " .
+    "'popup_during_fullscreen', " .
+    "'exec_always', " .
+    "'exec', " .
+    "'client.background', " .
+    "'client.focused_inactive', " .
+    "'client.focused', " .
+    "'client.unfocused', " .
+    "'client.urgent', " .
+    "'client.placeholder'\n";
 
 my $expected_end = <<'EOT';
 ERROR: CONFIG: (in file <stdin>)

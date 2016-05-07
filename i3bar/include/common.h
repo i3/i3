@@ -24,13 +24,6 @@ struct rect_t {
     int h;
 };
 
-typedef enum {
-    /* First value to make it the default. */
-    ALIGN_LEFT,
-    ALIGN_CENTER,
-    ALIGN_RIGHT
-} blockalign_t;
-
 /* This data structure describes the way a status block should be rendered. These
  * variables are updated each time the statusline is re-rendered. */
 struct status_block_render_desc {
@@ -55,7 +48,7 @@ struct status_block {
     uint32_t min_width;
     char *min_width_str;
 
-    blockalign_t align;
+    alignment_t align;
 
     bool urgent;
     bool no_separator;

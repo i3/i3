@@ -141,12 +141,12 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
 
     /* draw the prompt … */
     if (prompt != NULL) {
-        draw_text(prompt, pixmap, pixmap_gc, NULL, logical_px(4), logical_px(4), logical_px(492));
+        draw_text(prompt, pixmap, pixmap_gc, NULL, logical_px(4), logical_px(4), logical_px(492), A_LEFT);
     }
     /* … and the text */
     if (input_position > 0) {
         i3String *input = i3string_from_ucs2(glyphs_ucs, input_position);
-        draw_text(input, pixmap, pixmap_gc, NULL, prompt_offset + logical_px(4), logical_px(4), logical_px(492));
+        draw_text(input, pixmap, pixmap_gc, NULL, prompt_offset + logical_px(4), logical_px(4), logical_px(492), A_LEFT);
         i3string_free(input);
     }
 
