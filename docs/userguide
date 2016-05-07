@@ -1115,11 +1115,15 @@ show_marks yes
 Config files support line continuation, meaning when you end a line in a
 backslash character (`\`), the line-break will be ignored by the parser. This
 feature can be used to create more readable configuration files.
+Commented lines are not continued.
 
 *Examples*:
 -------------------
 bindsym Mod1+f \
 fullscreen toggle
+
+# this line is not continued \
+bindsym Mod1+F fullscreen toggle
 -------------------
 
 == Configuring i3bar
