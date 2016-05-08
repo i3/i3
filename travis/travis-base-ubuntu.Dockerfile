@@ -28,3 +28,14 @@ COPY debian/control /usr/src/i3-debian-packaging/control
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends -y' /usr/src/i3-debian-packaging/control && \
     rm -rf /var/lib/apt/lists/*
+
+# Install xcb-util-xrm. This is a workaround until it is available in the
+# distribution packages.
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xutils-dev
+RUN git clone --recursive https://github.com/Airblader/xcb-util-xrm.git && \
+    cd xcb-util-xrm && \
+    ./autogen.sh --prefix=/usr && \
+    make && \
+    make install && \
+    cd -

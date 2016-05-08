@@ -700,6 +700,38 @@ absolutely no plans to change this. If you need a more dynamic configuration
 you should create a little script which generates a configuration file and run
 it before starting i3 (for example in your +~/.xsession+ file).
 
+Also see <<xresources>> to learn how to create variables based on resources
+loaded from the X resource database.
+
+[[xresources]]
+=== X resources
+
+<<variables>> can also be created using a value configured in the X resource
+database. This is useful, for example, to avoid configuring color values within
+the i3 configuration. Instead, the values can be configured, once, in the X
+resource database to achieve an easily maintainable, consistent color theme
+across many X applications.
+
+Defining a resource will load this resource from the resource database and
+assign its value to the specified variable. A fallback must be specified in
+case the resource cannot be loaded from the database.
+
+*Syntax*:
+----------------------------------------------------
+set_from_resource $<name> <resource_name> <fallback>
+----------------------------------------------------
+
+*Example*:
+----------------------------------------------------------------------------
+# The ~/.Xresources should contain a line such as
+#     *color0: #121212
+# and must be loaded properly, e.g., by using
+#     xrdb ~/.Xresources
+# This value is picked up on by other applications (e.g., the URxvt terminal
+# emulator) and can be used in i3 like this:
+set_from_resource $black i3wm.color0 #000000
+----------------------------------------------------------------------------
+
 [[assign_workspace]]
 === Automatically putting clients on specific workspaces
 
