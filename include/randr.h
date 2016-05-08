@@ -61,6 +61,12 @@ void init_ws_for_output(Output *output, Con *content);
 void randr_query_outputs(void);
 
 /**
+ * Disables the output and moves its content.
+ *
+ */
+void randr_disable_output(Output *output);
+
+/**
  * Returns the first output which is active.
  *
  */

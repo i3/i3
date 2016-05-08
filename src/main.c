@@ -623,7 +623,7 @@ int main(int argc, char *argv[]) {
     grab_all_keys(conn);
 
     bool needs_tree_init = true;
-    if (layout_path) {
+    if (layout_path != NULL) {
         LOG("Trying to restore the layout from \"%s\".\n", layout_path);
         needs_tree_init = !tree_restore(layout_path, greply);
         if (delete_layout_path) {
@@ -633,7 +633,6 @@ int main(int argc, char *argv[]) {
              * sockets) left. */
             rmdir(dir);
         }
-        free(layout_path);
     }
     if (needs_tree_init)
         tree_init(greply);
@@ -657,6 +656,33 @@ int main(int argc, char *argv[]) {
         DLOG("Checking for XRandR...\n");
         randr_init(&randr_base);
     }
+
+    /* We need to force disabling outputs which have been loaded from the
+     * layout file but are no longer active. This can happen if the output has
+     * been disabled in the short time between writing the restart layout file
+     * and restarting i3. See #2326. */
+    if (layout_path != NULL && randr_base > -1) {
+        Con *con;
+        TAILQ_FOREACH(con, &(croot->nodes_head), nodes) {
+            Output *output;
+            TAILQ_FOREACH(output, &outputs, outputs) {
+                if (output->active || strcmp(con->name, output->name) != 0)
+                    continue;
+
+                /* This will correctly correlate the output with its content
+                 * container. We need to make the connection to properly
+                 * disable the output. */
+                if (output->con == NULL) {
+                    output_init_con(output);
+                    output->changed = false;
+                }
+
+                output->to_be_disabled = true;
+                randr_disable_output(output);
+            }
+        }
+    }
+    FREE(layout_path);
 
     scratchpad_fix_resolution();
 
