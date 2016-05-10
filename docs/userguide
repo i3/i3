@@ -610,11 +610,13 @@ new_window pixel 3
 
 You can hide container borders adjacent to the screen edges using
 +hide_edge_borders+. This is useful if you are using scrollbars, or do not want
-to waste even two pixels in displayspace. Default is none.
+to waste even two pixels in displayspace. The "smart" setting hides borders on
+workspaces with only one window visible, but keeps them on workspaces with
+multiple windows visible. Default is none.
 
 *Syntax*:
 -----------------------------------------------
-hide_edge_borders none|vertical|horizontal|both
+hide_edge_borders none|vertical|horizontal|both|smart
 -----------------------------------------------
 
 *Example*:

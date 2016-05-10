@@ -201,6 +201,13 @@ Con *con_for_window(Con *con, i3Window *window, Match **store_match);
 int con_num_children(Con *con);
 
 /**
+ * Returns the number of visible non-floating children of this container.
+ * For example, if the container contains a hsplit which has two children,
+ * this will return 2 instead of 1.
+ */
+int con_num_visible_children(Con *con);
+
+/**
  * Count the number of windows (i.e., leaf containers).
  *
  */
