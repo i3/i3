@@ -128,7 +128,7 @@ state WORKSPACE:
       -> call cmd_workspace_back_and_forth()
   'number'
       -> WORKSPACE_NUMBER
-  workspace = string 
+  workspace = string
       -> call cmd_workspace_name($workspace, $no_auto_back_and_forth)
 
 state WORKSPACE_NUMBER:
@@ -272,11 +272,13 @@ state RENAME:
       -> RENAME_WORKSPACE
   'window'
       -> RENAME_WINDOW
+
 state RENAME_WINDOW:
   end
       -> call cmd_rename_window(NULL)
   name = string
       -> call cmd_rename_window($name)
+
 state RENAME_WORKSPACE:
   old_name = 'to'
       -> RENAME_WORKSPACE_LIKELY_TO

@@ -1884,10 +1884,14 @@ void cmd_rename_window(I3_CMD, const char *newname) {
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
         LOG("Renaming container con = %p\n", current->con);
-        current->con->custom_name = sstrdup(newname);
-        FREE(current->con->deco_render_params);
+        if (newname == NULL) {
+            current->con->custom_name = NULL;
+        } else {
+            current->con->custom_name = sstrdup(newname);
+            FREE(current->con->deco_render_params);
+            cmd_output->needs_tree_render = true;
+        }
     }
-    cmd_output->needs_tree_render = true;
     ysuccess(true);
 }
 
