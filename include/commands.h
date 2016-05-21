@@ -295,6 +295,12 @@ void cmd_scratchpad_show(I3_CMD);
 void cmd_title_format(I3_CMD, const char *format);
 
 /**
+ * Implementation of 'rename window <name>'
+ *
+ */
+void cmd_rename_window(I3_CMD, const char *name);
+
+/**
  * Implementation of 'rename workspace <name> to <name>'
  *
  */

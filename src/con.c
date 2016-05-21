@@ -2007,6 +2007,18 @@ void con_set_urgency(Con *con, bool urgent) {
  * Create a string representing the subtree under con.
  *
  */
+char *con_get_title(Con *con) {
+    LOG("Called con_get_title()");
+    if (con->custom_name != NULL) {
+      return sstrdup(con->custom_name);
+    } else {
+      return con_get_tree_representation(con);
+    }
+}
+/*
+ * Create a string representing the subtree under con.
+ *
+ */
 char *con_get_tree_representation(Con *con) {
     /* this code works as follows:
      *  1) create a string with the layout type (D/V/H/T/S) and an opening bracket
@@ -2048,7 +2060,7 @@ char *con_get_tree_representation(Con *con) {
     /* 2) append representation of children */
     Con *child;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-        char *child_txt = con_get_tree_representation(child);
+        char *child_txt = con_get_title(child);
 
         char *tmp_buf;
         sasprintf(&tmp_buf, "%s%s%s", buf,
@@ -2083,11 +2095,11 @@ i3String *con_parse_title_format(Con *con) {
     char *class;
     char *instance;
     if (win == NULL) {
-        title = pango_escape_markup(con_get_tree_representation(con));
+        title = pango_escape_markup(con_get_title(con));
         class = sstrdup("i3-frame");
         instance = sstrdup("i3-frame");
     } else {
-        title = pango_escape_markup(sstrdup((win->name == NULL) ? "" : i3string_as_utf8(win->name)));
+        title = pango_escape_markup(sstrdup((con->custom_name != NULL) ? con->custom_name : (win->name == NULL) ? "" : i3string_as_utf8(win->name)));
         class = pango_escape_markup(sstrdup((win->class_class == NULL) ? "" : win->class_class));
         instance = pango_escape_markup(sstrdup((win->class_instance == NULL) ? "" : win->class_instance));
     }

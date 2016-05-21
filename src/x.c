@@ -533,6 +533,18 @@ void x_draw_decoration(Con *con) {
     /* 6: draw the title */
     int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
 
+    if (con->custom_name != NULL) {
+        i3String *title = i3string_from_utf8(con->custom_name);
+        draw_util_text(title, &(parent->frame_buffer),
+                       p->color->text, p->color->background,
+                       con->deco_rect.x + logical_px(2),
+                       con->deco_rect.y + text_offset_y,
+                       con->deco_rect.width - 2 * logical_px(2));
+        I3STRING_FREE(title);
+
+        goto after_title;
+    }
+
     struct Window *win = con->window;
     if (win == NULL) {
         i3String *title;

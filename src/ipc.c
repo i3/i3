@@ -376,6 +376,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     else
         y(null);
 
+    if (con->custom_name != NULL) {
+        ystr("custom_name");
+        ystr(con->custom_name);
+    }
+
     if (con->title_format != NULL) {
         ystr("title_format");
         ystr(con->title_format);

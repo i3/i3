@@ -594,6 +594,7 @@ struct Con {
     struct Rect geometry;
 
     char *name;
+    char *custom_name;
 
     /** The format with which the window's name should be displayed. */
     char *title_format;

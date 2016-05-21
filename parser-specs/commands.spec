@@ -264,12 +264,19 @@ state RESIZE_HEIGHT:
   'px', end
       -> call cmd_resize_set(&width, &height)
 
+# rename window <name>
 # rename workspace <name> to <name>
 # rename workspace to <name>
 state RENAME:
   'workspace'
       -> RENAME_WORKSPACE
-
+  'window'
+      -> RENAME_WINDOW
+state RENAME_WINDOW:
+  end
+      -> call cmd_rename_window(NULL)
+  name = string
+      -> call cmd_rename_window($name)
 state RENAME_WORKSPACE:
   old_name = 'to'
       -> RENAME_WORKSPACE_LIKELY_TO

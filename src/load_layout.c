@@ -57,12 +57,14 @@ static int json_start_map(void *ctx) {
                 Con *ws = con_get_workspace(json_node);
                 json_node = con_new_skeleton(NULL, NULL);
                 json_node->name = NULL;
+                json_node->custom_name = NULL;
                 json_node->parent = ws;
                 DLOG("Parent is workspace = %p\n", ws);
             } else {
                 Con *parent = json_node;
                 json_node = con_new_skeleton(NULL, NULL);
                 json_node->name = NULL;
+                json_node->custom_name = NULL;
                 json_node->parent = parent;
             }
         }
@@ -265,6 +267,9 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         if (strcasecmp(last_key, "name") == 0) {
             json_node->name = scalloc(len + 1, 1);
             memcpy(json_node->name, val, len);
+        } else if (strcasecmp(last_key, "custom_name") == 0) {
+            json_node->custom_name = scalloc(len + 1, 1);
+            memcpy(json_node->custom_name, val, len);
         } else if (strcasecmp(last_key, "title_format") == 0) {
             json_node->title_format = scalloc(len + 1, 1);
             memcpy(json_node->title_format, val, len);
