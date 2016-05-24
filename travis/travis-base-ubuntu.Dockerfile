@@ -27,6 +27,7 @@ RUN apt-get update && \
 COPY debian/control /usr/src/i3-debian-packaging/control
 RUN apt-get update && \
     sed -i '/^\s*libxcb-xrm-dev/d' /usr/src/i3-debian-packaging/control && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates && \
     DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends -y' /usr/src/i3-debian-packaging/control && \
     rm -rf /var/lib/apt/lists/*
 
