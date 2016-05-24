@@ -26,6 +26,7 @@ RUN apt-get update && \
 # Install i3 build dependencies.
 COPY debian/control /usr/src/i3-debian-packaging/control
 RUN apt-get update && \
+    sed -i '/^\s*libxcb-xrm-dev/d' /usr/src/i3-debian-packaging/control && \
     DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends -y' /usr/src/i3-debian-packaging/control && \
     rm -rf /var/lib/apt/lists/*
 
