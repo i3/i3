@@ -33,7 +33,7 @@ RUN apt-get update && \
 # Install xcb-util-xrm. This is a workaround until it is available in the
 # distribution packages.
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xutils-dev ca-certificates autoconf
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xutils-dev ca-certificates autoconf automake autotools-dev
 RUN git clone --recursive https://github.com/Airblader/xcb-util-xrm.git && \
     cd xcb-util-xrm && \
     ./autogen.sh --prefix=/usr && \
