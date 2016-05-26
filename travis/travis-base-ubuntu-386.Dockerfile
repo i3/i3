@@ -24,18 +24,9 @@ RUN linux32 apt-get update && \
 
 # Install i3 build dependencies.
 COPY debian/control /usr/src/i3-debian-packaging/control
-RUN linux32 apt-get update && \
-    sed -i '/^\s*libxcb-xrm-dev/d' /usr/src/i3-debian-packaging/control && \
+RUN echo 'deb http://dl.bintray.com/i3/i3-autobuild-ubuntu wily main' > /etc/apt/sources.list.d/i3-autobuild.list && \
+    linux32 apt-get update && \
+    linux32 apt-get --allow-unauthenticated install i3-autobuild-keyring && \
+    linux32 apt-get update && \
     DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends -y' /usr/src/i3-debian-packaging/control && \
     rm -rf /var/lib/apt/lists/*
-
-# Install xcb-util-xrm. This is a workaround until it is available in the
-# distribution packages.
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xutils-dev ca-certificates autoconf automake autotools-dev libtool
-RUN git clone --recursive https://github.com/Airblader/xcb-util-xrm.git && \
-    cd xcb-util-xrm && \
-    ./autogen.sh --prefix=/usr && \
-    make && \
-    make install && \
-    cd -
