@@ -954,6 +954,14 @@ bool parse_file(const char *f, bool use_nagbar) {
             char v_key[512];
             char fallback[4096];
 
+            /* Ensure that this string is terminated. For example, a user might
+             * want a variable to be empty if the resource can't be found and
+             * uses
+             *   set_from_resource $foo i3wm.foo
+             * Without explicitly terminating the string first, sscanf() will
+             * leave it uninitialized, causing garbage in the config.*/
+            fallback[0] = '\0';
+
             if (sscanf(value, "%511s %511s %4095[^\n]", v_key, res_name, fallback) < 1) {
                 ELOG("Failed to parse resource specification '%s', skipping it.\n", value);
                 continue;
