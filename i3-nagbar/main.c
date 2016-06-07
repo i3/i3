@@ -356,10 +356,10 @@ void handle_timer(union sigval sigval) {
 
 
 static void set_timer(int timeout) {
-    struct itimerspec itimer = { { 0, 0 }, { timeout, 0 } };
+    struct itimerspec itimer = {{0, 0}, {timeout, 0}};
     struct sigevent sigev;
 
-    memset(&sigev, 0, sizeof (struct sigevent));
+    memset(&sigev, 0, sizeof(struct sigevent));
     sigev.sigev_value.sival_int = 0;
     sigev.sigev_notify = SIGEV_THREAD;
     sigev.sigev_notify_attributes = NULL;
