@@ -23,6 +23,7 @@
 #include <limits.h>
 #include <fcntl.h>
 #include <paths.h>
+#include <time.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -54,6 +55,7 @@ static i3Font font;
 static i3String *prompt;
 static button_t *buttons;
 static int buttoncnt;
+static timer_t timer;
 
 /* Result of get_colorpixel() for the various colors. */
 static color_t color_background;        /* background of the bar */
@@ -348,6 +350,28 @@ free_resources:
     return result;
 }
 
+void handle_timer(union sigval sigval) {
+    exit(0);
+}
+
+
+static void set_timer(int timeout) {
+    struct itimerspec itimer = { { 0, 0 }, { timeout, 0 } };
+    struct sigevent sigev;
+
+    memset(&sigev, 0, sizeof (struct sigevent));
+    sigev.sigev_value.sival_int = 0;
+    sigev.sigev_notify = SIGEV_THREAD;
+    sigev.sigev_notify_attributes = NULL;
+    sigev.sigev_notify_function = handle_timer;
+
+    if (timer_create(CLOCK_REALTIME, &sigev, &timer) < 0)
+        return;
+
+    if (timer_settime(timer, 0, &itimer, NULL) < 0)
+        return;
+}
+
 int main(int argc, char *argv[]) {
     /* The following lines are a terribly horrible kludge. Because terminal
      * emulators have different ways of interpreting the -e command line
@@ -396,9 +420,10 @@ int main(int argc, char *argv[]) {
         {"help", no_argument, 0, 'h'},
         {"message", required_argument, 0, 'm'},
         {"type", required_argument, 0, 't'},
+        {"timeout", required_argument, 0, 'x'},
         {0, 0, 0, 0}};
 
-    char *options_string = "b:f:m:t:vh";
+    char *options_string = "b:f:m:t:x:vh";
 
     prompt = i3string_from_utf8("Please do not run this program.");
 
@@ -420,7 +445,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'h':
                 printf("i3-nagbar " I3_VERSION "\n");
-                printf("i3-nagbar [-m <message>] [-b <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
+                printf("i3-nagbar [-m <message>] [-b <button> <action>] [-t warning|error] [-f <font>] [-x <timeout>] [-v]\n");
                 return 0;
             case 'b':
                 buttons = srealloc(buttons, sizeof(button_t) * (buttoncnt + 1));
@@ -433,6 +458,9 @@ int main(int argc, char *argv[]) {
                 printf("now %d buttons\n", buttoncnt);
                 if (optind < argc)
                     optind++;
+                break;
+            case 'x':
+                set_timer(atoi(optarg));
                 break;
         }
     }
