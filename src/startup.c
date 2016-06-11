@@ -103,8 +103,8 @@ static int _prune_startup_sequences(void) {
  */
 void startup_sequence_delete(struct Startup_Sequence *sequence) {
     assert(sequence != NULL);
-    DLOG("Deleting startup sequence %s, delete_at = %ld, current_time = %ld\n",
-         sequence->id, sequence->delete_at, time(NULL));
+    DLOG("Deleting startup sequence %s, delete_at = %lld, current_time = %lld\n",
+         sequence->id, (long long)sequence->delete_at, (long long)time(NULL));
 
     /* Unref the context, will be free()d */
     sn_launcher_context_unref(sequence->context);
@@ -239,8 +239,8 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
             /* Mark the given sequence for deletion in 30 seconds. */
             time_t current_time = time(NULL);
             sequence->delete_at = current_time + 30;
-            DLOG("Will delete startup sequence %s at timestamp %ld\n",
-                 sequence->id, sequence->delete_at);
+            DLOG("Will delete startup sequence %s at timestamp %lld\n",
+                 sequence->id, (long long)sequence->delete_at);
 
             if (_prune_startup_sequences() == 0) {
                 DLOG("No more startup sequences running, changing root window cursor to default pointer.\n");
