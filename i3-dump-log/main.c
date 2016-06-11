@@ -28,8 +28,10 @@
 #include "shmlog.h"
 #include <i3/ipc.h>
 
-static uint32_t offset_next_write,
-    wrap_count;
+#if !defined(__OpenBSD__)
+static uint32_t offset_next_write;
+#endif
+static uint32_t wrap_count;
 
 static i3_shmlog_header *header;
 static char *logbuffer,
@@ -57,17 +59,26 @@ static void print_till_end(void) {
 
 int main(int argc, char *argv[]) {
     int o, option_index = 0;
-    bool verbose = false,
-         follow = false;
+    bool verbose = false;
+#if !defined(__OpenBSD__)
+    bool follow = false;
+#endif
 
     static struct option long_options[] = {
         {"version", no_argument, 0, 'v'},
         {"verbose", no_argument, 0, 'V'},
+#if !defined(__OpenBSD__)
         {"follow", no_argument, 0, 'f'},
+#endif
         {"help", no_argument, 0, 'h'},
-        {0, 0, 0, 0}};
+        {0, 0, 0, 0}
+    };
 
+#if !defined(__OpenBSD__)
     char *options_string = "s:vfVh";
+#else
+    char *options_string = "vVh";
+#endif
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         if (o == 'v') {
@@ -75,11 +86,17 @@ int main(int argc, char *argv[]) {
             return 0;
         } else if (o == 'V') {
             verbose = true;
+#if !defined(__OpenBSD__)
         } else if (o == 'f') {
             follow = true;
+#endif
         } else if (o == 'h') {
             printf("i3-dump-log " I3_VERSION "\n");
-            printf("i3-dump-log [-f] [-s <socket>]\n");
+#if !defined(__OpenBSD__)
+            printf("i3-dump-log [-fhVv]\n");
+#else
+            printf("i3-dump-log [-hVv]\n");
+#endif
             return 0;
         }
     }
@@ -162,6 +179,7 @@ int main(int argc, char *argv[]) {
     walk = logbuffer + sizeof(i3_shmlog_header);
     print_till_end();
 
+#if !defined(__OpenBSD__)
     if (follow) {
         /* Since pthread_cond_wait() expects a mutex, we need to provide one.
          * To not lock i3 (that’s bad, mhkay?) we just define one outside of
@@ -177,6 +195,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+#endif
 
     return 0;
 }
