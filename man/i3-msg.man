@@ -62,6 +62,9 @@ get_bar_config::
 Gets the configuration (as JSON map) of the workspace bar with the given ID. If
 no ID is provided, an array with all configured bar IDs is returned instead.
 
+get_binding_modes::
+Gets a list of configured binding modes.
+
 get_version::
 Gets the version of i3. The reply will be a JSON-encoded dictionary with the
 major, minor, patch and human-readable version.

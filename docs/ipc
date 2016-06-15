@@ -80,6 +80,8 @@ GET_BAR_CONFIG (6)::
 GET_VERSION (7)::
 	Gets the version of i3. The reply will be a JSON-encoded dictionary
 	with the major, minor, patch and human-readable version.
+GET_BINDING_MODES (8)::
+        Gets a list of currently configured binding modes.
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -137,6 +139,8 @@ BAR_CONFIG (6)::
 	Reply to the GET_BAR_CONFIG message.
 VERSION (7)::
 	Reply to the GET_VERSION message.
+BINDING_MODES (8)::
+        Reply to the GET_BINDING_MODES message.
 
 === COMMAND reply
 
@@ -603,6 +607,15 @@ loaded_config_file_name (string)::
    "major" : 4
 }
 -------------------
+
+=== BINDING_MODES reply
+
+The reply consists of an array of all currently configured binding modes.
+
+*Example:*
+---------------------
+["default", "resize"]
+---------------------
 
 == Events
 

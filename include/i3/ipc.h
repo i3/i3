@@ -51,34 +51,22 @@ typedef struct i3_ipc_header {
 /** Request the i3 version */
 #define I3_IPC_MESSAGE_TYPE_GET_VERSION 7
 
+/** Request a list of configured binding modes. */
+#define I3_IPC_MESSAGE_TYPE_GET_BINDING_MODES 8
+
 /*
  * Messages from i3 to clients
  *
  */
-
-/** Command reply type */
 #define I3_IPC_REPLY_TYPE_COMMAND 0
-
-/** Workspaces reply type */
 #define I3_IPC_REPLY_TYPE_WORKSPACES 1
-
-/** Subscription reply type */
 #define I3_IPC_REPLY_TYPE_SUBSCRIBE 2
-
-/** Outputs reply type */
 #define I3_IPC_REPLY_TYPE_OUTPUTS 3
-
-/** Tree reply type */
 #define I3_IPC_REPLY_TYPE_TREE 4
-
-/** Marks reply type */
 #define I3_IPC_REPLY_TYPE_MARKS 5
-
-/** Bar config reply type */
 #define I3_IPC_REPLY_TYPE_BAR_CONFIG 6
-
-/** i3 version reply type */
 #define I3_IPC_REPLY_TYPE_VERSION 7
+#define I3_IPC_REPLY_TYPE_BINDING_MODES 8
 
 /*
  * Events from i3 to clients. Events have the first bit set high.
