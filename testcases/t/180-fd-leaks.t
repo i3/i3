@@ -20,6 +20,9 @@ use i3test;
 use POSIX qw(mkfifo);
 use File::Temp qw(:POSIX tempfile);
 
+SKIP: {
+skip "Procfs not available on $^O", 1 if $^O eq 'openbsd';
+
 my $i3 = i3(get_socket_path());
 
 my $tmp = tmpnam();
@@ -58,5 +61,7 @@ for my $fd (keys %fds) {
 }
 
 is(scalar keys %fds, 0, 'No file descriptors leaked');
+
+}
 
 done_testing;

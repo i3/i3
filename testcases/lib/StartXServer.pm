@@ -69,15 +69,6 @@ sub start_xserver {
     my @displays = ();
     my @childpids = ();
 
-    $SIG{CHLD} = sub {
-        my $child = waitpid -1, POSIX::WNOHANG;
-        @pids = grep { $_ != $child } @pids;
-        return unless @pids == 0;
-        print STDERR "All X server processes died.\n";
-        print STDERR "Use ./complete-run.pl --parallel 1 --keep-xserver-output\n";
-        exit 1;
-    };
-
     # Yeah, I know it’s non-standard, but Perl’s POSIX module doesn’t have
     # _SC_NPROCESSORS_CONF.
     my $num_cores;
@@ -100,6 +91,15 @@ sub start_xserver {
     $displaynum++;
 
     say "Starting $parallel Xephyr instances, starting at :$displaynum...";
+
+    $SIG{CHLD} = sub {
+        my $child = waitpid -1, POSIX::WNOHANG;
+        @pids = grep { $_ != $child } @pids;
+        return unless @pids == 0;
+        print STDERR "All X server processes died.\n";
+        print STDERR "Use ./complete-run.pl --parallel 1 --keep-xserver-output\n";
+        exit 1;
+    };
 
     my @sockets_waiting;
     for (1 .. $parallel) {
