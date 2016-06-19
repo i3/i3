@@ -263,22 +263,33 @@ static char *next_state(const cmdp_token *token) {
              * qwerty (yes, that happens quite often). */
             const xkb_keysym_t *syms;
             int num = xkb_keymap_key_get_syms_by_level(xkb_keymap, keycode, 0, 0, &syms);
-            if (num == 0)
-                errx(1, "xkb_keymap_key_get_syms_by_level returned no symbols for keycode %d", keycode);
-            if (!keysym_used_on_other_key(syms[0], keycode))
-                level = 0;
+            if (num == 0) {
+                fprintf(stderr, "xkb_keymap_key_get_syms_by_level returned no symbols for keycode %d\n",
+                        keycode);
+            } else {
+                if (!keysym_used_on_other_key(syms[0], keycode))
+                    level = 0;
+            }
         }
 
         const xkb_keysym_t *syms;
         int num = xkb_keymap_key_get_syms_by_level(xkb_keymap, keycode, 0, level, &syms);
         if (num == 0)
-            errx(1, "xkb_keymap_key_get_syms_by_level returned no symbols for keycode %d", keycode);
+            fprintf(stderr, "xkb_keymap_key_get_syms_by_level returned no symbols for keycode %d\n",
+                    keycode);
         if (num > 1)
-            printf("xkb_keymap_key_get_syms_by_level (keycode = %d) returned %d symbolsinstead of 1, using only the first one.\n", keycode, num);
-
+            fprintf(stderr, "xkb_keymap_key_get_syms_by_level (keycode = %d) returned %d symbolsinstead "
+                            "of 1, using only the first one.\n",
+                    keycode, num);
         char str[4096];
-        if (xkb_keysym_get_name(syms[0], str, sizeof(str)) == -1)
-            errx(EXIT_FAILURE, "xkb_keysym_get_name(%u) failed", syms[0]);
+        char *warn = "";
+        if (num != 0) {
+            if (xkb_keysym_get_name(syms[0], str, sizeof(str)) == -1)
+                errx(EXIT_FAILURE, "xkb_keysym_get_name(%u) failed", syms[0]);
+        } else {
+            warn = " # ERROR: Could not translate string to key symbol. Please assign a different number.";
+            strcpy(str, get_string("key"));
+        }
         const char *release = get_string("release");
         char *res;
         char *modrep = (modifiers == NULL ? sstrdup("") : sstrdup(modifiers));
@@ -286,7 +297,9 @@ static char *next_state(const cmdp_token *token) {
         while ((comma = strchr(modrep, ',')) != NULL) {
             *comma = '+';
         }
-        sasprintf(&res, "bindsym %s%s%s %s%s\n", (modifiers == NULL ? "" : modrep), (modifiers == NULL ? "" : "+"), str, (release == NULL ? "" : release), get_string("command"));
+        sasprintf(&res, "bindsym %s%s%s %s%s%s\n", (modifiers == NULL ? "" : modrep),
+                  (modifiers == NULL ? "" : "+"), str, (release == NULL ? "" : release),
+                  get_string("command"), warn);
         clear_stack();
         return res;
     }
