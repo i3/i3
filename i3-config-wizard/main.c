@@ -282,16 +282,13 @@ static char *next_state(const cmdp_token *token) {
                             "of 1, using only the first one.\n",
                     keycode, num);
         char str[4096];
-        char warn[90];
+        char *warn = "";
         if (num != 0) {
-            strcpy(warn, "");
             if (xkb_keysym_get_name(syms[0], str, sizeof(str)) == -1)
                 errx(EXIT_FAILURE, "xkb_keysym_get_name(%u) failed", syms[0]);
         } else {
+            warn = " # ERROR: Could not translate string to key symbol. Please assign a different number.";
             strcpy(str, get_string("key"));
-            strcpy(
-                warn,
-                " # ERROR: Could not translate string to key symbol. Please assign a different number.");
         }
         const char *release = get_string("release");
         char *res;
