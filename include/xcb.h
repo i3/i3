@@ -167,6 +167,13 @@ void xcb_add_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom
  */
 void xcb_remove_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom_t property, xcb_atom_t atom);
 
+/*
+ * Wrapper function for add or remove an atom to the given property, based on the
+ * 'add' parameter.
+ *
+ */
+void xcb_add_or_remove_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom_t property, xcb_atom_t atom, bool add);
+
 /**
  * Grab the specified buttons on a window when managing it.
  *

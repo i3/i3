@@ -315,6 +315,55 @@ bool con_is_hidden(Con *con) {
     return false;
 }
 
+/**
+ * Check whether a con is maximized in the given orientation.
+ *
+ * A con is considered maximized, if it:
+ *
+ *   1) is a fullscreen container
+ *   2) doesn't share space with another container in the
+ *      given orientation (horizontal/verical). Which is to
+ *      say, this container is not placed within a splith or
+ *      a splitv container with more than one child.
+ *
+ */
+bool con_is_maximized(Con *con, orientation_t orientation) {
+    /* Fullscreen con should be considered maximized */
+    if (con->fullscreen_mode != CF_NONE)
+        return true;
+
+    layout_t layout;
+    switch (orientation) {
+        case HORIZ:
+            layout = L_SPLITH;
+            break;
+        case VERT:
+            layout = L_SPLITV;
+            break;
+        default:
+            assert(false);
+    }
+
+    /* Go through all parents, if anyone of them is in a split container
+     * with more than one child, return false. */
+    Con *current = con;
+    while (current != NULL && current->type != CT_WORKSPACE) {
+        Con *parent = current->parent;
+        if (parent && parent->layout == layout) {
+            if (!con_has_num_children(parent, 1))
+                return false;
+        }
+
+        /* Should not tag floating container as maximized */
+        if (parent && parent->type == CT_FLOATING_CON)
+            return false;
+
+        current = parent;
+    }
+
+    return true;
+}
+
 /*
  * Returns whether the container or any of its children is sticky.
  *
@@ -725,6 +774,20 @@ int con_num_children(Con *con) {
     children++;
 
     return children;
+}
+
+/*
+ * Returns true if con has exactly num children
+ *
+ */
+bool con_has_num_children(Con *con, int num) {
+    Con *child;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        num--;
+        if (num < 0)
+            return false;
+    }
+    return (num == 0);
 }
 
 /**
