@@ -1172,6 +1172,38 @@ static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t stat
 }
 
 /*
+ * Handles the _MOTIF_WM_HINTS property of specifing window deocration settings.
+ *
+ */
+static bool handle_motif_hints_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                                      xcb_atom_t name, xcb_get_property_reply_t *prop) {
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
+        return false;
+
+    if (prop == NULL) {
+        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
+                                                                       false, window, A__MOTIF_WM_HINTS, XCB_GET_PROPERTY_TYPE_ANY, 0, 5 * sizeof(uint64_t)),
+                                      NULL);
+
+        if (prop == NULL)
+            return false;
+    }
+
+    border_style_t motif_border_style;
+    window_update_motif_hints(con->window, prop, &motif_border_style);
+
+    if (motif_border_style != con->border_style) {
+        DLOG("Update border style of con %p to %d\n", con, motif_border_style);
+        con_set_border_style(con, motif_border_style, con->current_border_width);
+
+        x_push_changes(croot);
+    }
+
+    return true;
+}
+
+/*
  * Handles the _NET_WM_STRUT_PARTIAL property for allocating space for dock clients.
  *
  */
@@ -1272,7 +1304,8 @@ static struct property_handler_t property_handlers[] = {
     {0, 128, handle_windowrole_change},
     {0, 128, handle_class_change},
     {0, UINT_MAX, handle_strut_partial_change},
-    {0, UINT_MAX, handle_window_type}};
+    {0, UINT_MAX, handle_window_type},
+    {0, 5 * sizeof(uint64_t), handle_motif_hints_change}};
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
 /*
@@ -1293,6 +1326,7 @@ void property_handlers_init(void) {
     property_handlers[7].atom = XCB_ATOM_WM_CLASS;
     property_handlers[8].atom = A__NET_WM_STRUT_PARTIAL;
     property_handlers[9].atom = A__NET_WM_WINDOW_TYPE;
+    property_handlers[10].atom = A__MOTIF_WM_HINTS;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
