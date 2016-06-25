@@ -1193,7 +1193,7 @@ static bool handle_motif_hints_change(void *data, xcb_connection_t *conn, uint8_
     border_style_t motif_border_style;
     window_update_motif_hints(con->window, prop, &motif_border_style);
 
-    if (motif_border_style != con->border_style) {
+    if (motif_border_style != con->border_style && motif_border_style != BS_NORMAL) {
         DLOG("Update border style of con %p to %d\n", con, motif_border_style);
         con_set_border_style(con, motif_border_style, con->current_border_width);
 
