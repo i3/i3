@@ -544,7 +544,7 @@ Con *workspace_next(void) {
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
                     continue;
-                if (!first)
+                if (!first || (child->num != -1 && child->num < first->num))
                     first = child;
                 if (!first_opposite && child->num == -1)
                     first_opposite = child;
@@ -610,7 +610,7 @@ Con *workspace_prev(void) {
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
                     continue;
-                if (!last)
+                if (!last || (child->num != -1 && last->num < child->num))
                     last = child;
                 if (!first_opposite && child->num == -1)
                     first_opposite = child;
