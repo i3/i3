@@ -82,6 +82,12 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows);
 void ewmh_update_sticky(xcb_window_t window, bool sticky);
 
 /**
+ * Set or remove _NEW_WM_STATE_FOCUSED on the window.
+ *
+ */
+void ewmh_update_focused(xcb_window_t window, bool is_focused);
+
+/**
  * Set up the EWMH hints on the root window.
  *
  */
