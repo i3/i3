@@ -20,6 +20,7 @@ It tries to start one of the following (in that order):
 * $VISUAL
 * $EDITOR
 * nano
+* nvim
 * vim
 * vi
 * emacs
