@@ -51,6 +51,7 @@ our @EXPORT = qw(
     kill_all_windows
     events_for
     listen_for_binding
+    is_net_wm_state_focused
 );
 
 =head1 NAME
@@ -1025,6 +1026,40 @@ sub listen_for_binding {
     $command =~ s/^nop //g;
     return $command;
 }
+
+=head2 is_net_wm_state_focused
+
+Returns true if the given window has the _NET_WM_STATE_FOCUSED atom.
+
+    ok(is_net_wm_state_focused($window), '_NET_WM_STATE_FOCUSED set');
+
+=cut
+sub is_net_wm_state_focused {
+    my ($window) = @_;
+
+    sync_with_i3;
+    my $atom = $x->atom(name => '_NET_WM_STATE_FOCUSED');
+    my $cookie = $x->get_property(
+        0,
+        $window->{id},
+        $x->atom(name => '_NET_WM_STATE')->id,
+        GET_PROPERTY_TYPE_ANY,
+        0,
+        4096
+    );
+
+    my $reply = $x->get_property_reply($cookie->{sequence});
+    my $len = $reply->{length};
+    return 0 if $len == 0;
+
+    my @atoms = unpack("L$len", $reply->{value});
+    for (my $i = 0; $i < $len; $i++) {
+        return 1 if $atoms[$i] == $atom->id;
+    }
+
+    return 0;
+}
+
 
 =head1 AUTHOR
 

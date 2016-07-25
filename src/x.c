@@ -100,6 +100,23 @@ static con_state *state_for_frame(xcb_window_t window) {
 }
 
 /*
+ * Changes the atoms on the root window and the windows themselves to properly
+ * reflect the current focus for ewmh compliance.
+ *
+ */
+static void change_ewmh_focus(xcb_window_t new_focus, xcb_window_t old_focus) {
+    ewmh_update_active_window(new_focus);
+
+    if (new_focus != XCB_WINDOW_NONE) {
+        ewmh_update_focused(new_focus, true);
+    }
+
+    if (old_focus != XCB_WINDOW_NONE) {
+        ewmh_update_focused(old_focus, false);
+    }
+}
+
+/*
  * Initializes the X11 part for the given container. Called exactly once for
  * every container from con_new().
  *
@@ -1120,7 +1137,7 @@ void x_push_changes(Con *con) {
                      to_focus, focused, focused->name);
                 send_take_focus(to_focus, last_timestamp);
 
-                ewmh_update_active_window((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE));
+                change_ewmh_focus((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE), last_focused);
 
                 if (to_focus != last_focused && is_con_attached(focused))
                     ipc_send_window_event("focus", focused);
@@ -1139,7 +1156,7 @@ void x_push_changes(Con *con) {
                     xcb_change_window_attributes(conn, focused->window->id, XCB_CW_EVENT_MASK, values);
                 }
 
-                ewmh_update_active_window((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE));
+                change_ewmh_focus((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE), last_focused);
 
                 if (to_focus != XCB_NONE && to_focus != last_focused && focused->window != NULL && is_con_attached(focused))
                     ipc_send_window_event("focus", focused);
@@ -1154,7 +1171,8 @@ void x_push_changes(Con *con) {
          * root window in order to avoid an X11 fallback mechanism causing a ghosting effect (see #1378). */
         DLOG("Still no window focused, better set focus to the EWMH support window (%d)\n", ewmh_window);
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, ewmh_window, last_timestamp);
-        ewmh_update_active_window(XCB_WINDOW_NONE);
+        change_ewmh_focus(XCB_WINDOW_NONE, last_focused);
+
         focused_id = ewmh_window;
     }
 
