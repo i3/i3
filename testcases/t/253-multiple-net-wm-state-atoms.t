@@ -36,11 +36,24 @@ sub get_wm_state {
     return undef if $len == 0;
 
     my @atoms = unpack("L$len", $reply->{value});
-    return \@atoms;
+    return @atoms;
 }
 
 my $wm_state_sticky = $x->atom(name => '_NET_WM_STATE_STICKY')->id;
 my $wm_state_fullscreen = $x->atom(name => '_NET_WM_STATE_FULLSCREEN')->id;
+
+sub state_contains_atom {
+    my $atom = pop;
+    my @state = @_;
+
+    foreach my $a (@state) {
+        if ($a eq $atom) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 ##########################################################################
 # Given a sticky container, when it is fullscreened, then both wm state
@@ -51,18 +64,24 @@ my $wm_state_fullscreen = $x->atom(name => '_NET_WM_STATE_FULLSCREEN')->id;
 fresh_workspace;
 my $window = open_window;
 cmd 'sticky enable';
-is_deeply(get_wm_state($window), [ $wm_state_sticky ], 'sanity check: _NET_WM_STATE_STICKY is set');
+my @state = get_wm_state($window);
+ok(state_contains_atom(@state, $wm_state_sticky), 'sanity check: _NET_WM_STATE_STICKY is set');
 
 cmd 'fullscreen enable';
-is_deeply(get_wm_state($window), [ $wm_state_sticky, $wm_state_fullscreen ],
-    'both _NET_WM_STATE_FULLSCREEN and _NET_WM_STATE_STICKY are set');
+@state = get_wm_state($window);
+ok(state_contains_atom(@state, $wm_state_sticky), '_NET_WM_STATE_STICKY is set');
+ok(state_contains_atom(@state, $wm_state_fullscreen), '_NET_WM_STATE_FULLSCREEN is set');
 
 cmd 'sticky disable';
-is_deeply(get_wm_state($window), [ $wm_state_fullscreen ], 'only _NET_WM_STATE_FULLSCREEN is set');
+@state = get_wm_state($window);
+ok(state_contains_atom(@state, $wm_state_fullscreen), '_NET_WM_STATE_FULLSCREEN is set');
+ok(!state_contains_atom(@state, $wm_state_sticky), '_NET_WM_STATE_STICKY is not set');
 
 cmd 'sticky enable';
 cmd 'fullscreen disable';
-is_deeply(get_wm_state($window), [ $wm_state_sticky ], 'only _NET_WM_STATE_STICKY is set');
+@state = get_wm_state($window);
+ok(state_contains_atom(@state, $wm_state_sticky), '_NET_WM_STATE_STICKY is set');
+ok(!state_contains_atom(@state, $wm_state_fullscreen), '_NET_WM_STATE_FULLSCREEN is not set');
 
 ###############################################################################
 # _NET_WM_STATE is removed when the window is withdrawn.
@@ -71,7 +90,8 @@ is_deeply(get_wm_state($window), [ $wm_state_sticky ], 'only _NET_WM_STATE_STICK
 fresh_workspace;
 $window = open_window;
 cmd 'sticky enable';
-is_deeply(get_wm_state($window), [ $wm_state_sticky ], 'sanity check: _NET_WM_STATE_STICKY is set');
+@state = get_wm_state($window);
+ok(state_contains_atom(@state, $wm_state_sticky), 'sanity check: _NET_WM_STATE_STICKY is set');
 
 $window->unmap;
 wait_for_unmap($window);
