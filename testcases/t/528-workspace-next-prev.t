@@ -50,6 +50,8 @@ sync_with_i3;
 $x->root->warp_pointer(0, 0);
 sync_with_i3;
 
+cmd 'focus output right';
+
 cmd 'workspace A';
 # ensure workspace A stays open
 open_window;
@@ -66,7 +68,7 @@ cmd 'workspace E';
 # ensure workspace E stays open
 open_window;
 
-cmd 'focus output right';
+cmd 'focus output left';
 
 cmd 'workspace 1';
 # ensure workspace 1 stays open
