@@ -29,6 +29,7 @@ It tries to start one of the following (in that order):
 * terminator
 * Eterm
 * aterm
+* uxterm
 * xterm
 * gnome-terminal
 * roxterm
