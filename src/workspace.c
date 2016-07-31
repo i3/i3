@@ -596,7 +596,7 @@ Con *workspace_prev(void) {
                         found_current = true;
                     } else if (child->num == -1 && found_current) {
                         prev = child;
-                        goto workspace_prev_end;
+                        return prev;
                     }
                 }
             }
@@ -628,7 +628,6 @@ Con *workspace_prev(void) {
     if (!prev)
         prev = first_opposite ? first_opposite : last;
 
-workspace_prev_end:
     return prev;
 }
 
