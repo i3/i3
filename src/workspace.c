@@ -525,7 +525,7 @@ Con *workspace_next(void) {
                     continue;
                 if (!first)
                     first = child;
-                if (!first_opposite && child->num != -1)
+                if (!first_opposite || (child->num != -1 && child->num < first_opposite->num))
                     first_opposite = child;
                 if (child == current) {
                     found_current = true;
@@ -590,7 +590,7 @@ Con *workspace_prev(void) {
                         continue;
                     if (!last)
                         last = child;
-                    if (!first_opposite && child->num != -1)
+                    if (!first_opposite || (child->num != -1 && child->num > first_opposite->num))
                         first_opposite = child;
                     if (child == current) {
                         found_current = true;
