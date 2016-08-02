@@ -99,9 +99,6 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
 }
 
 static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint32_t keycode) {
-    if (bind->input_type != B_KEYBOARD)
-        return;
-
 /* Grab the key in all combinations */
 #define GRAB_KEY(modifier)                                                                       \
     do {                                                                                         \
