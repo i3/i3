@@ -98,22 +98,32 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
     return new_binding;
 }
 
+static bool binding_in_current_group(const Binding *bind) {
+    /* If no bits are set, the binding should be installed in every group. */
+    if ((bind->event_state_mask >> 16) == I3_XKB_GROUP_MASK_ANY)
+        return true;
+    switch (xkb_current_group) {
+        case XCB_XKB_GROUP_1:
+            return ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_1);
+        case XCB_XKB_GROUP_2:
+            return ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_2);
+        case XCB_XKB_GROUP_3:
+            return ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_3);
+        case XCB_XKB_GROUP_4:
+            return ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_4);
+        default:
+            ELOG("BUG: xkb_current_group (= %d) outside of [XCB_XKB_GROUP_1..XCB_XKB_GROUP_4]\n", xkb_current_group);
+            return false;
+    }
+}
+
 static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint32_t keycode) {
 /* Grab the key in all combinations */
 #define GRAB_KEY(modifier)                                                                       \
     do {                                                                                         \
         xcb_grab_key(conn, 0, root, modifier, keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC); \
     } while (0)
-    int mods = bind->event_state_mask;
-    if (((mods >> 16) & I3_XKB_GROUP_MASK_1) && xkb_current_group != XCB_XKB_GROUP_1)
-        return;
-    if (((mods >> 16) & I3_XKB_GROUP_MASK_2) && xkb_current_group != XCB_XKB_GROUP_2)
-        return;
-    if (((mods >> 16) & I3_XKB_GROUP_MASK_3) && xkb_current_group != XCB_XKB_GROUP_3)
-        return;
-    if (((mods >> 16) & I3_XKB_GROUP_MASK_4) && xkb_current_group != XCB_XKB_GROUP_4)
-        return;
-    mods &= 0xFFFF;
+    const int mods = (bind->event_state_mask & 0xFFFF);
     DLOG("Grabbing keycode %d with event state mask 0x%x (mods 0x%x)\n",
          keycode, bind->event_state_mask, mods);
     GRAB_KEY(mods);
@@ -130,6 +140,9 @@ void grab_all_keys(xcb_connection_t *conn) {
     Binding *bind;
     TAILQ_FOREACH(bind, bindings, bindings) {
         if (bind->input_type != B_KEYBOARD)
+            continue;
+
+        if (!binding_in_current_group(bind))
             continue;
 
         /* The easy case: the user specified a keycode directly. */
