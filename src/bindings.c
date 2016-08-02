@@ -95,6 +95,8 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
     struct Mode *mode = mode_from_name(modename, pango_markup);
     TAILQ_INSERT_TAIL(mode->bindings, new_binding, bindings);
 
+    TAILQ_INIT(&(new_binding->keycodes_head));
+
     return new_binding;
 }
 
@@ -127,8 +129,11 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
     DLOG("Grabbing keycode %d with event state mask 0x%x (mods 0x%x)\n",
          keycode, bind->event_state_mask, mods);
     GRAB_KEY(mods);
+    /* Also bind the key with active NumLock */
     GRAB_KEY(mods | xcb_numlock_mask);
+    /* Also bind the key with active CapsLock */
     GRAB_KEY(mods | XCB_MOD_MASK_LOCK);
+    /* Also bind the key with active NumLock+CapsLock */
     GRAB_KEY(mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
 }
 
@@ -151,8 +156,13 @@ void grab_all_keys(xcb_connection_t *conn) {
             continue;
         }
 
-        for (uint32_t i = 0; i < bind->number_keycodes; i++)
-            grab_keycode_for_binding(conn, bind, bind->translated_to[i]);
+        struct Binding_Keycode *binding_keycode;
+        TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
+            const int keycode = binding_keycode->keycode;
+            const int mods = (binding_keycode->modifiers & 0xFFFF);
+            DLOG("Grabbing keycode %d with mods %d\n", keycode, mods);
+            xcb_grab_key(conn, 0, root, mods, keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+        }
     }
 }
 
@@ -234,9 +244,15 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
          * keycode */
         if (input_type == B_KEYBOARD && bind->symbol != NULL) {
             xcb_keycode_t input_keycode = (xcb_keycode_t)input_code;
-            if (memmem(bind->translated_to,
-                       bind->number_keycodes * sizeof(xcb_keycode_t),
-                       &input_keycode, sizeof(xcb_keycode_t)) == NULL)
+            bool found_keycode = false;
+            struct Binding_Keycode *binding_keycode;
+            TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
+                if (binding_keycode->keycode == input_keycode) {
+                    found_keycode = true;
+                    break;
+                }
+            }
+            if (!found_keycode)
                 continue;
         } else {
             /* This case is easier: The user specified a keycode */
@@ -346,11 +362,27 @@ static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key,
             return;
     }
     Binding *bind = resolving->bind;
-    bind->number_keycodes++;
-    bind->translated_to = srealloc(bind->translated_to,
-                                   (sizeof(xcb_keycode_t) *
-                                    bind->number_keycodes));
-    bind->translated_to[bind->number_keycodes - 1] = key;
+
+#define ADD_TRANSLATED_KEY(mods)                                                           \
+    do {                                                                                   \
+        struct Binding_Keycode *binding_keycode = smalloc(sizeof(struct Binding_Keycode)); \
+        binding_keycode->modifiers = (mods);                                               \
+        binding_keycode->keycode = key;                                                    \
+        TAILQ_INSERT_TAIL(&(bind->keycodes_head), binding_keycode, keycodes);              \
+    } while (0)
+
+    ADD_TRANSLATED_KEY(bind->event_state_mask);
+
+    /* Also bind the key with active NumLock */
+    ADD_TRANSLATED_KEY(bind->event_state_mask | xcb_numlock_mask);
+
+    /* Also bind the key with active CapsLock */
+    ADD_TRANSLATED_KEY(bind->event_state_mask | XCB_MOD_MASK_LOCK);
+
+    /* Also bind the key with active NumLock+CapsLock */
+    ADD_TRANSLATED_KEY(bind->event_state_mask | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+
+#undef ADD_TRANSLATED_KEY
 }
 
 /*
@@ -432,15 +464,21 @@ void translate_keysyms(void) {
             .xkb_state = dummy_state,
             .xkb_state_no_shift = dummy_state_no_shift,
         };
-        FREE(bind->translated_to);
-        bind->number_keycodes = 0;
+        while (!TAILQ_EMPTY(&(bind->keycodes_head))) {
+            struct Binding_Keycode *first = TAILQ_FIRST(&(bind->keycodes_head));
+            TAILQ_REMOVE(&(bind->keycodes_head), first, keycodes);
+            FREE(first);
+        }
         xkb_keymap_key_for_each(xkb_keymap, add_keycode_if_matches, &resolving);
         char *keycodes = sstrdup("");
-        for (uint32_t n = 0; n < bind->number_keycodes; n++) {
+        int num_keycodes = 0;
+        struct Binding_Keycode *binding_keycode;
+        TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
             char *tmp;
-            sasprintf(&tmp, "%s %d", keycodes, bind->translated_to[n]);
+            sasprintf(&tmp, "%s %d", keycodes, binding_keycode->keycode);
             free(keycodes);
             keycodes = tmp;
+            num_keycodes++;
 
             /* check for duplicate bindings */
             Binding *check;
@@ -449,8 +487,8 @@ void translate_keysyms(void) {
                     continue;
                 if (check->symbol != NULL)
                     continue;
-                if (check->keycode != bind->translated_to[n] ||
-                    check->event_state_mask != bind->event_state_mask ||
+                if (check->keycode != binding_keycode->keycode ||
+                    check->event_state_mask != binding_keycode->modifiers ||
                     check->release != bind->release)
                     continue;
                 has_errors = true;
@@ -458,7 +496,7 @@ void translate_keysyms(void) {
             }
         }
         DLOG("state=0x%x, cfg=\"%s\", sym=0x%x → keycodes%s (%d)\n",
-             bind->event_state_mask, bind->symbol, keysym, keycodes, bind->number_keycodes);
+             bind->event_state_mask, bind->symbol, keysym, keycodes, num_keycodes);
         free(keycodes);
     }
 
@@ -626,10 +664,14 @@ static Binding *binding_copy(Binding *bind) {
         ret->symbol = sstrdup(bind->symbol);
     if (bind->command != NULL)
         ret->command = sstrdup(bind->command);
-    if (bind->translated_to != NULL) {
-        ret->translated_to = smalloc(sizeof(xcb_keycode_t) * bind->number_keycodes);
-        memcpy(ret->translated_to, bind->translated_to, sizeof(xcb_keycode_t) * bind->number_keycodes);
+    TAILQ_INIT(&(ret->keycodes_head));
+    struct Binding_Keycode *binding_keycode;
+    TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
+        struct Binding_Keycode *ret_binding_keycode = smalloc(sizeof(struct Binding_Keycode));
+        *ret_binding_keycode = *binding_keycode;
+        TAILQ_INSERT_TAIL(&(ret->keycodes_head), ret_binding_keycode, keycodes);
     }
+
     return ret;
 }
 
@@ -641,8 +683,13 @@ void binding_free(Binding *bind) {
         return;
     }
 
+    while (!TAILQ_EMPTY(&(bind->keycodes_head))) {
+        struct Binding_Keycode *first = TAILQ_FIRST(&(bind->keycodes_head));
+        TAILQ_REMOVE(&(bind->keycodes_head), first, keycodes);
+        FREE(first);
+    }
+
     FREE(bind->symbol);
-    FREE(bind->translated_to);
     FREE(bind->command);
     FREE(bind);
 }

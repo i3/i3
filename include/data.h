@@ -243,6 +243,17 @@ struct regex {
     pcre_extra *extra;
 };
 
+/**
+ * Stores a resolved keycode (from a keysym), including the modifier mask. Will
+ * be passed to xcb_grab_key().
+ *
+ */
+struct Binding_Keycode {
+    xcb_keycode_t keycode;
+    i3_event_state_mask_t modifiers;
+    TAILQ_ENTRY(Binding_Keycode) keycodes;
+};
+
 /******************************************************************************
  * Major types
  *****************************************************************************/
@@ -281,8 +292,6 @@ struct Binding {
      * title bar (default). */
     bool whole_window;
 
-    uint32_t number_keycodes;
-
     /** Keycode to bind */
     uint32_t keycode;
 
@@ -296,12 +305,10 @@ struct Binding {
      * if the keyboard mapping changes (using Xmodmap for example) */
     char *symbol;
 
-    /** Only in use if symbol != NULL. Gets set to the value to which the
-     * symbol got translated when binding. Useful for unbinding and
-     * checking which binding was used when a key press event comes in.
-     *
-     * This is an array of number_keycodes size. */
-    xcb_keycode_t *translated_to;
+    /** Only in use if symbol != NULL. Contains keycodes which generate the
+     * specified symbol. Useful for unbinding and checking which binding was
+     * used when a key press event comes in. */
+    TAILQ_HEAD(keycodes_head, Binding_Keycode) keycodes_head;
 
     /** Command, like in command mode */
     char *command;
