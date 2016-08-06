@@ -91,3 +91,6 @@ typedef struct i3_ipc_header {
 
 /** The binding event will be triggered when bindings run */
 #define I3_IPC_EVENT_BINDING (I3_IPC_EVENT_MASK | 5)
+
+/** The shutdown event will be triggered when the ipc shuts down */
+#define I3_IPC_EVENT_SHUTDOWN (I3_IPC_EVENT_MASK | 6)

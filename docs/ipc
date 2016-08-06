@@ -671,6 +671,8 @@ barconfig_update (4)::
 binding (5)::
 	Sent when a configured command binding is triggered with the keyboard or
 	mouse
+shutdown (6)::
+	Sent when the ipc shuts down because of a restart or exit by user command
 
 *Example:*
 --------------------------------------------------------------------
@@ -825,6 +827,20 @@ input_type (string)::
   "symbol": "t",
   "input_type": "keyboard"
  }
+}
+---------------------------
+
+=== shutdown event
+
+This event is triggered when the connection to the ipc is about to shutdown
+because of a user action such as a +restart+ or +exit+ command. The +change
+(string)+ field indicates why the ipc is shutting down. It can be either
++"restart"+ or +"exit"+.
+
+*Example:*
+---------------------------
+{
+ "change": "restart"
 }
 ---------------------------
 
