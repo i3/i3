@@ -34,7 +34,6 @@ install: $(INSTALL_TARGETS)
 
 store_git_version:
 	echo -n ${I3_VERSION} > I3_VERSION
-	echo -n ${VERSION} > VERSION
 
 dist: distclean
 	[ ! -d i3-${VERSION} ] || rm -rf i3-${VERSION}
@@ -53,7 +52,6 @@ dist: distclean
 	mkdir i3-${VERSION}/i3-input
 	find i3-input -maxdepth 1 -type f \( -name "*.c" -or -name "*.mk" -or -name "*.h" -or -name "Makefile" \) -exec cp '{}' i3-${VERSION}/i3-input \;
 	cp I3_VERSION i3-${VERSION}/I3_VERSION
-	cp VERSION i3-${VERSION}/VERSION
 	# Pre-generate a manpage to allow distributors to skip this step and save some dependencies
 	$(MAKE) mans
 	cp man/*.1 i3-${VERSION}/man/
