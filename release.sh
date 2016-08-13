@@ -56,9 +56,8 @@ cp "${STARTDIR}/RELEASE-NOTES-${RELEASE_VERSION}" "RELEASE-NOTES-${RELEASE_VERSI
 git add RELEASE-NOTES-${RELEASE_VERSION}
 git rm RELEASE-NOTES-${PREVIOUS_VERSION}
 sed -i "s,<refmiscinfo class=\"version\">[^<]*</refmiscinfo>,<refmiscinfo class=\"version\">${RELEASE_VERSION}</refmiscinfo>,g" man/asciidoc.conf
-echo "${RELEASE_VERSION}" > VERSION
 echo "${RELEASE_VERSION} ($(date +%F))" > I3_VERSION
-git add VERSION I3_VERSION
+git add I3_VERSION
 git commit -a -m "release i3 ${RELEASE_VERSION}"
 git tag "${RELEASE_VERSION}" -m "release i3 ${RELEASE_VERSION}" --sign --local-user=0x4AC8EE1D
 

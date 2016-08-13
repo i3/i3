@@ -21,8 +21,8 @@ endif
 # In dist and snapshot tarballs, use the I3_VERSION and VERSION files. Otherwise use git information.
 ifeq ($(wildcard .git),)
   # not in git repository
-  VERSION := '$(shell [ -f $(TOPDIR)/VERSION ] && cat $(TOPDIR)/VERSION)'
-  I3_VERSION := '$(shell [ -f $(TOPDIR)/I3_VERSION ] && cat $(TOPDIR)/I3_VERSION)'
+  VERSION := $(shell [ -f $(TOPDIR)/I3_VERSION ] && cat $(TOPDIR)/I3_VERSION | cut -d '-' -f 1)
+  I3_VERSION := $(shell [ -f $(TOPDIR)/I3_VERSION ] && cat $(TOPDIR)/I3_VERSION)
 else
   VERSION := $(shell git describe --tags --abbrev=0)
   I3_VERSION := '$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch \"$(shell git describe --tags --always --all | sed s:heads/::)\")'
