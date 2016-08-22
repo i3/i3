@@ -166,6 +166,13 @@ static void i3_exit(void) {
     ev_loop_destroy(main_loop);
 #endif
 
+#ifdef I3_ASAN_ENABLED
+    __lsan_do_leak_check();
+#endif
+    ipc_shutdown();
+    unlink(config.ipc_socket_path);
+    xcb_disconnect(conn);
+
     if (*shmlogname != '\0') {
         fprintf(stderr, "Closing SHM log \"%s\"\n", shmlogname);
         fflush(stderr);
