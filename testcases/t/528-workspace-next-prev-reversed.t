@@ -65,14 +65,14 @@ sync_with_i3;
 #
 ################################################################################
 
-cmd 'focus output right';
+cmd 'focus output left';
 cmd 'workspace A'; open_window;
 cmd 'workspace D'; open_window;
 cmd 'workspace 4'; open_window;
 cmd 'workspace 5'; open_window;
 cmd 'workspace E'; open_window;
 
-cmd 'focus output left';
+cmd 'focus output right';
 cmd 'workspace 1'; open_window;
 cmd 'workspace 2'; open_window;
 cmd 'workspace B'; open_window;
