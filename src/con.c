@@ -1948,6 +1948,13 @@ bool con_has_urgent_child(Con *con) {
 void con_update_parents_urgency(Con *con) {
     Con *parent = con->parent;
 
+    /* Urgency hints should not be set on any container higher up in the
+     * hierarchy than the workspace level. Unfortunately, since the content
+     * container has type == CT_CON, that’s not easy to verify in the loop
+     * below, so we need another condition to catch that case: */
+    if (con->type == CT_WORKSPACE)
+        return;
+
     bool new_urgency_value = con->urgent;
     while (parent && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
         if (new_urgency_value) {
