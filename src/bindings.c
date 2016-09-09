@@ -394,7 +394,7 @@ static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key,
             /* Also bind the key with active NumLock+CapsLock */
             ADD_TRANSLATED_KEY(bind->event_state_mask | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
         } else {
-            DLOG("Skipping automatic numlock fallback, key %d resolves to 0x%x with unmlock\n",
+            DLOG("Skipping automatic numlock fallback, key %d resolves to 0x%x with numlock\n",
                  key, sym_numlock);
         }
     }
