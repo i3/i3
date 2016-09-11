@@ -30,6 +30,10 @@ floating_modifier $mod
 
 # start a terminal
 bindcode $mod+36 exec i3-sensible-terminal
+# If you have more than one terminal emulator enabled you can set $TERMINAL
+# to set your preferred terminal as default.
+# bindcode $mod+36 exec TERMINAL=preferred-terminal i3-sensible-terminal
+
 
 # kill focused window
 bindcode $mod+Shift+24 kill
