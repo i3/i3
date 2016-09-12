@@ -33,6 +33,10 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym Print nop Print
 bindsym --release Control+Print nop Control+Print
+
+# see issue #2442
+bindsym Mod1+b nop Mod1+b
+bindsym --release Mod1+Shift+b nop Mod1+Shift+b release
 EOT
 
 my $pid = launch_with_config($config);
@@ -59,8 +63,32 @@ is(listen_for_binding(
     'Control+Print',
     'triggered the "Control+Print" keybinding');
 
+is(listen_for_binding(
+    sub {
+        xtest_key_press(64); # Alt_L
+        xtest_key_press(56); # b
+        xtest_key_release(56); # b
+        xtest_key_release(64); # Alt_L
+    },
+    ),
+    'Mod1+b',
+    'triggered the "Mod1+b" keybinding');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(64); # Alt_L
+        xtest_key_press(50); # Shift_L
+        xtest_key_press(56); # b
+        xtest_key_release(56); # b
+        xtest_key_release(50); # Shift_L
+        xtest_key_release(64); # Alt_L
+    },
+    ),
+    'Mod1+Shift+b release',
+    'triggered the "Mod1+Shift+b" release keybinding');
+
 sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 2, 'Received exactly 2 binding events');
+is(scalar @i3test::XTEST::binding_events, 4, 'Received exactly 4 binding events');
 
 exit_gracefully($pid);
 

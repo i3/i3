@@ -271,8 +271,15 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
          * user pressed. We therefore mark it as B_UPON_KEYRELEASE_IGNORE_MODS
          * for later, so that the user can release the modifiers before the
          * actual key or button and the release event will still be matched. */
-        if (bind->release == B_UPON_KEYRELEASE && !is_release)
+        if (bind->release == B_UPON_KEYRELEASE && !is_release) {
             bind->release = B_UPON_KEYRELEASE_IGNORE_MODS;
+            DLOG("marked bind %p as B_UPON_KEYRELEASE_IGNORE_MODS\n", bind);
+            /* The correct binding has been found, so abort the search, but
+             * also don’t return this binding, since it should not be executed
+             * yet (only when the keys are released). */
+            bind = TAILQ_END(bindings);
+            break;
+        }
 
         /* Check if the binding is for a press or a release event */
         if ((bind->release == B_UPON_KEYPRESS && is_release) ||
