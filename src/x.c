@@ -105,11 +105,18 @@ void x_con_init(Con *con) {
     uint32_t mask = 0;
     uint32_t values[5];
 
-    /* For custom visuals, we need to create a colormap before creating
-     * this window. It will be freed directly after creating the window. */
     xcb_visualid_t visual = get_visualid_by_depth(con->depth);
-    xcb_colormap_t win_colormap = xcb_generate_id(conn);
-    xcb_create_colormap_checked(conn, XCB_COLORMAP_ALLOC_NONE, win_colormap, root, visual);
+    xcb_colormap_t win_colormap;
+    if (con->depth != root_depth) {
+        /* We need to create a custom colormap. */
+        win_colormap = xcb_generate_id(conn);
+        xcb_create_colormap(conn, XCB_COLORMAP_ALLOC_NONE, win_colormap, root, visual);
+        con->colormap = win_colormap;
+    } else {
+        /* Use the default colormap. */
+        win_colormap = colormap;
+        con->colormap = XCB_NONE;
+    }
 
     /* We explicitly set a background color and border color (even though we
      * don’t even have a border) because the X11 server requires us to when
@@ -143,9 +150,6 @@ void x_con_init(Con *con) {
                         8,
                         (strlen("i3-frame") + 1) * 2,
                         "i3-frame\0i3-frame\0");
-
-    if (win_colormap != XCB_NONE)
-        xcb_free_colormap(conn, win_colormap);
 
     struct con_state *state = scalloc(1, sizeof(struct con_state));
     state->id = con->frame.id;
@@ -228,6 +232,10 @@ void x_move_win(Con *src, Con *dest) {
  */
 void x_con_kill(Con *con) {
     con_state *state;
+
+    if (con->colormap != XCB_NONE) {
+        xcb_free_colormap(conn, con->colormap);
+    }
 
     draw_util_surface_free(conn, &(con->frame));
     draw_util_surface_free(conn, &(con->frame_buffer));
