@@ -188,6 +188,17 @@ void regrab_all_buttons(xcb_connection_t *conn) {
     xcb_ungrab_server(conn);
 }
 
+static bool modifiers_match(const uint32_t modifiers_mask, const uint32_t modifiers_state) {
+    /* modifiers_mask is a special case: a value of 0 does not mean “match
+     * all”, but rather “match exactly when no modifiers are present”. */
+    if (modifiers_mask == 0) {
+        /* Verify no modifiers are pressed. A bitwise AND would lead to
+         * false positives, see issue #2002. */
+        return (modifiers_state == 0);
+    }
+    return ((modifiers_state & modifiers_mask) == modifiers_mask);
+}
+
 /*
  * Returns a pointer to the Binding with the specified modifiers and
  * keycode or NULL if no such binding exists.
@@ -210,34 +221,15 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
     const uint32_t xkb_group_state = (state_filtered & 0xFFFF0000);
     const uint32_t modifiers_state = (state_filtered & 0x0000FFFF);
     TAILQ_FOREACH(bind, bindings, bindings) {
-        const uint32_t xkb_group_mask = (bind->event_state_mask & 0xFFFF0000);
-        /* modifiers_mask is a special case: a value of 0 does not mean “match all”,
-         * but rather “match exactly when no modifiers are present”. */
-        const uint32_t modifiers_mask = (bind->event_state_mask & 0x0000FFFF);
-        const bool groups_match = ((xkb_group_state & xkb_group_mask) == xkb_group_mask);
-        bool mods_match;
-        if (modifiers_mask == 0) {
-            /* Verify no modifiers are pressed. A bitwise AND would lead to
-             * false positives, see issue #2002. */
-            mods_match = (modifiers_state == 0);
-        } else {
-            mods_match = ((modifiers_state & modifiers_mask) == modifiers_mask);
-        }
-        const bool state_matches = (groups_match && mods_match);
-
-        DLOG("binding groups_match = %s, mods_match = %s, state_matches = %s\n",
-             (groups_match ? "yes" : "no"),
-             (mods_match ? "yes" : "no"),
-             (state_matches ? "yes" : "no"));
-        /* First compare the state_filtered (unless this is a
-         * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
-         * event) */
         if (bind->input_type != input_type)
             continue;
-        if (!state_matches &&
-            (bind->release != B_UPON_KEYRELEASE_IGNORE_MODS ||
-             !is_release))
+
+        const uint32_t xkb_group_mask = (bind->event_state_mask & 0xFFFF0000);
+        const bool groups_match = ((xkb_group_state & xkb_group_mask) == xkb_group_mask);
+        if (!groups_match) {
+            DLOG("skipping binding %p because XKB groups do not match\n", bind);
             continue;
+        }
 
         /* For keyboard bindings where a symbol was specified by the user, we
          * need to look in the array of translated keycodes for the event’s
@@ -247,7 +239,11 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
             bool found_keycode = false;
             struct Binding_Keycode *binding_keycode;
             TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
-                if (binding_keycode->keycode == input_keycode) {
+                const uint32_t modifiers_mask = (binding_keycode->modifiers & 0x0000FFFF);
+                const bool mods_match = modifiers_match(modifiers_mask, modifiers_state);
+                DLOG("binding_keycode->modifiers = %d, modifiers_mask = %d, modifiers_state = %d, mods_match = %s\n",
+                     binding_keycode->modifiers, modifiers_mask, modifiers_state, (mods_match ? "yes" : "no"));
+                if (binding_keycode->keycode == input_keycode && mods_match) {
                     found_keycode = true;
                     break;
                 }
@@ -255,6 +251,17 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
             if (!found_keycode)
                 continue;
         } else {
+            const uint32_t modifiers_mask = (bind->event_state_mask & 0x0000FFFF);
+            const bool mods_match = modifiers_match(modifiers_mask, modifiers_state);
+            DLOG("binding mods_match = %s\n", (mods_match ? "yes" : "no"));
+            /* First compare the state_filtered (unless this is a
+             * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
+             * event) */
+            if (!mods_match &&
+                (bind->release != B_UPON_KEYRELEASE_IGNORE_MODS ||
+                 !is_release))
+                continue;
+
             /* This case is easier: The user specified a keycode */
             if (bind->keycode != input_code)
                 continue;

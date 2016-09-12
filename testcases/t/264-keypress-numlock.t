@@ -35,6 +35,9 @@ bindsym KP_End nop KP_End
 
 # Binding which should work with numlock and without.
 bindsym Mod4+a nop a
+
+# Binding which should work with numlock and without, see issue #2418.
+bindsym Escape nop Escape
 EOT
 
 my $pid = launch_with_config($config);
@@ -52,10 +55,12 @@ is(listen_for_binding(
 
 is(listen_for_binding(
     sub {
-        xtest_key_press(77); # Num_Lock
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
         xtest_key_press(87); # KP_1
         xtest_key_release(87); # KP_1
-        xtest_key_release(77); # Num_Lock
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
     },
     ),
    'KP_1',
@@ -74,20 +79,43 @@ is(listen_for_binding(
 
 is(listen_for_binding(
     sub {
-        xtest_key_press(77); # Num_Lock
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
         xtest_key_press(133); # Super_L
         xtest_key_press(38); # a
         xtest_key_release(38); # a
         xtest_key_release(133); # Super_L
-        xtest_key_release(77); # Num_Lock
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
     },
     ),
    'a',
    'triggered the "a" keybinding');
 
+is(listen_for_binding(
+    sub {
+        xtest_key_press(9); # Escape
+        xtest_key_release(9); # Escape
+    },
+    ),
+   'Escape',
+   'triggered the "Escape" keybinding');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
+        xtest_key_press(9); # Escape
+        xtest_key_release(9); # Escape
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
+    },
+    ),
+   'Escape',
+   'triggered the "Escape" keybinding');
 
 sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 4, 'Received exactly 4 binding events');
+is(scalar @i3test::XTEST::binding_events, 6, 'Received exactly 4 binding events');
 
 exit_gracefully($pid);
 
@@ -117,10 +145,12 @@ is(listen_for_binding(
 
 is(listen_for_binding(
     sub {
-        xtest_key_press(77); # Num_Lock
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
         xtest_key_press(87); # KP_1
         xtest_key_release(87); # KP_1
-        xtest_key_release(77); # Num_Lock
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
     },
     ),
    'timeout',
@@ -129,7 +159,7 @@ is(listen_for_binding(
 # TODO: This test does not verify that i3 does _NOT_ grab keycode 87 with Mod2.
 
 sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 5, 'Received exactly 5 binding events');
+is(scalar @i3test::XTEST::binding_events, 7, 'Received exactly 5 binding events');
 
 exit_gracefully($pid);
 
