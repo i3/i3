@@ -368,6 +368,7 @@ struct resolve {
  */
 static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key, void *data) {
     const struct resolve *resolving = data;
+    struct xkb_state *numlock_state = resolving->xkb_state_numlock;
     xkb_keysym_t sym = xkb_state_key_get_one_sym(resolving->xkb_state, key);
     if (sym != resolving->keysym) {
         /* Check if Shift was specified, and try resolving the symbol without
@@ -377,6 +378,11 @@ static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key,
             return;
         if (xkb_state_key_get_level(resolving->xkb_state, key, layout) > 1)
             return;
+        /* Skip the Shift fallback for keypad keys, otherwise one cannot bind
+         * KP_1 independent of KP_End. */
+        if (sym >= XKB_KEY_KP_Space && sym <= XKB_KEY_KP_Equal)
+            return;
+        numlock_state = resolving->xkb_state_numlock_no_shift;
         sym = xkb_state_key_get_one_sym(resolving->xkb_state_no_shift, key);
         if (sym != resolving->keysym)
             return;
@@ -403,9 +409,8 @@ static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key,
          * active. If so, grab the key with NumLock as well, so that users don’t
          * need to duplicate every key binding with an additional Mod2 specified.
          */
-        xkb_keysym_t sym_numlock = xkb_state_key_get_one_sym(resolving->xkb_state_numlock, key);
-        xkb_keysym_t sym_numlock_no_shift = xkb_state_key_get_one_sym(resolving->xkb_state_numlock_no_shift, key);
-        if (sym_numlock == resolving->keysym || sym_numlock_no_shift == resolving->keysym) {
+        xkb_keysym_t sym_numlock = xkb_state_key_get_one_sym(numlock_state, key);
+        if (sym_numlock == resolving->keysym) {
             /* Also bind the key with active NumLock */
             ADD_TRANSLATED_KEY(bind->event_state_mask | xcb_numlock_mask);
 

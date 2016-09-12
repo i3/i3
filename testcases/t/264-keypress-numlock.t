@@ -41,6 +41,9 @@ bindsym Escape nop Escape
 
 # Binding which should work with numlock and without, see issue #2418.
 bindsym Shift+Escape nop Shift+Escape
+
+# Binding which should work with numlock and without, see issue #2418.
+bindsym Mod1+Shift+q nop Mod1+Shift+q
 EOT
 
 my $pid = launch_with_config($config);
@@ -143,8 +146,39 @@ is(listen_for_binding(
    'Shift+Escape',
    'triggered the "Escape" keybinding');
 
+is(listen_for_binding(
+    sub {
+        xtest_key_press(50); # Shift_L
+        xtest_key_press(64); # Alt_L
+        xtest_key_press(24); # q
+        xtest_key_release(24); # q
+        xtest_key_release(64); # Alt_L
+        xtest_key_release(50); # Shift_L
+    },
+    ),
+   'Mod1+Shift+q',
+   'triggered the "Mod1+Shift+q" keybinding');
+
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
+        xtest_key_press(50); # Shift_L
+        xtest_key_press(64); # Alt_L
+        xtest_key_press(24); # q
+        xtest_key_release(24); # q
+        xtest_key_release(64); # Alt_L
+        xtest_key_release(50); # Shift_L
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
+    },
+    ),
+   'Mod1+Shift+q',
+   'triggered the "Mod1+Shift+q" keybinding');
+
 sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 8, 'Received exactly 8 binding events');
+is(scalar @i3test::XTEST::binding_events, 10, 'Received exactly 10 binding events');
 
 exit_gracefully($pid);
 
@@ -188,7 +222,7 @@ is(listen_for_binding(
 # TODO: This test does not verify that i3 does _NOT_ grab keycode 87 with Mod2.
 
 sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 9, 'Received exactly 9 binding events');
+is(scalar @i3test::XTEST::binding_events, 11, 'Received exactly 11 binding events');
 
 exit_gracefully($pid);
 
