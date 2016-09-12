@@ -57,7 +57,7 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
                            const char *release, const char *border, const char *whole_window,
                            const char *command, const char *modename, bool pango_markup) {
     Binding *new_binding = scalloc(1, sizeof(Binding));
-    DLOG("bindtype %s, modifiers %s, input code %s, release %s\n", bindtype, modifiers, input_code, release);
+    DLOG("Binding %p bindtype %s, modifiers %s, input code %s, release %s\n", new_binding, bindtype, modifiers, input_code, release);
     new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
     new_binding->border = (border != NULL);
     new_binding->whole_window = (whole_window != NULL);
@@ -126,8 +126,8 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
         xcb_grab_key(conn, 0, root, modifier, keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC); \
     } while (0)
     const int mods = (bind->event_state_mask & 0xFFFF);
-    DLOG("Grabbing keycode %d with event state mask 0x%x (mods 0x%x)\n",
-         keycode, bind->event_state_mask, mods);
+    DLOG("Binding %p Grabbing keycode %d with event state mask 0x%x (mods 0x%x)\n",
+         bind, keycode, bind->event_state_mask, mods);
     GRAB_KEY(mods);
     /* Also bind the key with active NumLock */
     GRAB_KEY(mods | xcb_numlock_mask);
@@ -160,7 +160,7 @@ void grab_all_keys(xcb_connection_t *conn) {
         TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
             const int keycode = binding_keycode->keycode;
             const int mods = (binding_keycode->modifiers & 0xFFFF);
-            DLOG("Grabbing keycode %d with mods %d\n", keycode, mods);
+            DLOG("Binding %p Grabbing keycode %d with mods %d\n", bind, keycode, mods);
             xcb_grab_key(conn, 0, root, mods, keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
         }
     }
@@ -458,7 +458,9 @@ void translate_keysyms(void) {
         else if ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_4)
             group = XCB_XKB_GROUP_4;
 
-        DLOG("group = %d, event_state_mask = %d, &2 = %s, &3 = %s, &4 = %s\n", group,
+        DLOG("Binding %p group = %d, event_state_mask = %d, &2 = %s, &3 = %s, &4 = %s\n",
+             bind,
+             group,
              bind->event_state_mask,
              (bind->event_state_mask & I3_XKB_GROUP_MASK_2) ? "yes" : "no",
              (bind->event_state_mask & I3_XKB_GROUP_MASK_3) ? "yes" : "no",
