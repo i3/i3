@@ -348,6 +348,9 @@ struct resolve {
 
     /* Like |xkb_state|, but with NumLock. */
     struct xkb_state *xkb_state_numlock;
+
+    /* Like |xkb_state|, but with NumLock, just without the shift modifier, if shift was specified. */
+    struct xkb_state *xkb_state_numlock_no_shift;
 };
 
 /*
@@ -394,14 +397,15 @@ static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key,
          * need to duplicate every key binding with an additional Mod2 specified.
          */
         xkb_keysym_t sym_numlock = xkb_state_key_get_one_sym(resolving->xkb_state_numlock, key);
-        if (sym_numlock == resolving->keysym) {
+        xkb_keysym_t sym_numlock_no_shift = xkb_state_key_get_one_sym(resolving->xkb_state_numlock_no_shift, key);
+        if (sym_numlock == resolving->keysym || sym_numlock_no_shift == resolving->keysym) {
             /* Also bind the key with active NumLock */
             ADD_TRANSLATED_KEY(bind->event_state_mask | xcb_numlock_mask);
 
             /* Also bind the key with active NumLock+CapsLock */
             ADD_TRANSLATED_KEY(bind->event_state_mask | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
         } else {
-            DLOG("Skipping automatic numlock fallback, key %d resolves to 0x%x with unmlock\n",
+            DLOG("Skipping automatic numlock fallback, key %d resolves to 0x%x with numlock\n",
                  key, sym_numlock);
         }
     }
@@ -428,6 +432,12 @@ void translate_keysyms(void) {
 
     struct xkb_state *dummy_state_numlock = xkb_state_new(xkb_keymap);
     if (dummy_state_numlock == NULL) {
+        ELOG("Could not create XKB state, cannot translate keysyms.\n");
+        return;
+    }
+
+    struct xkb_state *dummy_state_numlock_no_shift = xkb_state_new(xkb_keymap);
+    if (dummy_state_numlock_no_shift == NULL) {
         ELOG("Could not create XKB state, cannot translate keysyms.\n");
         return;
     }
@@ -499,12 +509,22 @@ void translate_keysyms(void) {
             0 /* xkb_layout_index_t latched_group, */,
             group /* xkb_layout_index_t locked_group, */);
 
+        (void)xkb_state_update_mask(
+            dummy_state_numlock_no_shift,
+            ((bind->event_state_mask & 0x1FFF) | xcb_numlock_mask) ^ XCB_KEY_BUT_MASK_SHIFT /* xkb_mod_mask_t base_mods, */,
+            0 /* xkb_mod_mask_t latched_mods, */,
+            0 /* xkb_mod_mask_t locked_mods, */,
+            0 /* xkb_layout_index_t base_group, */,
+            0 /* xkb_layout_index_t latched_group, */,
+            group /* xkb_layout_index_t locked_group, */);
+
         struct resolve resolving = {
             .bind = bind,
             .keysym = keysym,
             .xkb_state = dummy_state,
             .xkb_state_no_shift = dummy_state_no_shift,
             .xkb_state_numlock = dummy_state_numlock,
+            .xkb_state_numlock_no_shift = dummy_state_numlock_no_shift,
         };
         while (!TAILQ_EMPTY(&(bind->keycodes_head))) {
             struct Binding_Keycode *first = TAILQ_FIRST(&(bind->keycodes_head));
@@ -545,6 +565,7 @@ void translate_keysyms(void) {
     xkb_state_unref(dummy_state);
     xkb_state_unref(dummy_state_no_shift);
     xkb_state_unref(dummy_state_numlock);
+    xkb_state_unref(dummy_state_numlock_no_shift);
 
     if (has_errors) {
         start_config_error_nagbar(current_configpath, true);
