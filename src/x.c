@@ -789,7 +789,7 @@ void x_push_node(Con *con) {
             int width = MAX((int32_t)rect.width, 1);
             int height = MAX((int32_t)rect.height, 1);
 
-            xcb_create_pixmap_checked(conn, win_depth, con->frame_buffer.id, con->frame.id, width, height);
+            xcb_create_pixmap(conn, win_depth, con->frame_buffer.id, con->frame.id, width, height);
             draw_util_surface_init(conn, &(con->frame_buffer), con->frame_buffer.id,
                                    get_visualtype_by_id(get_visualid_by_depth(win_depth)), width, height);
 
