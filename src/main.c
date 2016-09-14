@@ -538,7 +538,11 @@ int main(int argc, char *argv[]) {
 
     xcb_void_cookie_t cookie;
     cookie = xcb_change_window_attributes_checked(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){ROOT_EVENT_MASK});
-    check_error(conn, cookie, "Another window manager seems to be running");
+    xcb_generic_error_t *error = xcb_request_check(conn, cookie);
+    if (error != NULL) {
+        ELOG("Another window manager seems to be running (X error %d)\n", error->error_code);
+        return 1;
+    }
 
     xcb_get_geometry_reply_t *greply = xcb_get_geometry_reply(conn, gcookie, NULL);
     if (greply == NULL) {

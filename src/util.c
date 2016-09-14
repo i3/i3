@@ -146,20 +146,6 @@ void exec_i3_utility(char *name, char *argv[]) {
 }
 
 /*
- * Checks a generic cookie for errors and quits with the given message if there
- * was an error.
- *
- */
-void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_message) {
-    xcb_generic_error_t *error = xcb_request_check(conn, cookie);
-    if (error != NULL) {
-        fprintf(stderr, "ERROR: %s (X error %d)\n", err_message, error->error_code);
-        xcb_disconnect(conn);
-        exit(-1);
-    }
-}
-
-/*
  * Checks if the given path exists by calling stat().
  *
  */
