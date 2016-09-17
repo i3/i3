@@ -39,6 +39,7 @@ sub send_net_active_window {
         0;
 
     $x->send_event(0, $x->get_root_window(), X11::XCB::EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
+    sync_with_i3;
 }
 
 sub get_net_active_window {
@@ -130,6 +131,23 @@ is($x->input_focus, $win3->id, 'focus reverted to window 3');
 send_net_active_window($scratch->id);
 
 is($x->input_focus, $win3->id, 'window 3 still focused');
+
+################################################################################
+# A scratchpad window should be shown if _NET_ACTIVE_WINDOW from a pager
+# is received.
+################################################################################
+
+my $scratch = open_window;
+
+is($x->input_focus, $scratch->id, 'to-scratchpad window has focus');
+
+cmd 'move scratchpad';
+
+is($x->input_focus, $win3->id, 'focus reverted to window 3');
+
+send_net_active_window($scratch->id, 'pager');
+
+is($x->input_focus, $scratch->id, 'scratchpad window is shown');
 
 ################################################################################
 # Verify that the _NET_ACTIVE_WINDOW property is updated on the root window
