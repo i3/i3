@@ -471,6 +471,13 @@ char *get_process_filename(const char *prefix);
 char *get_exe_path(const char *argv0);
 
 /**
+ * Initialize the DPI setting.
+ * This will use the 'Xft.dpi' X resource if available and fall back to
+ * guessing the correct value otherwise.
+ */
+void init_dpi(void);
+
+/**
  * Convert a logical amount of pixels (e.g. 2 pixels on a “standard” 96 DPI
  * screen) to a corresponding amount of physical pixels on a standard or retina
  * screen, e.g. 5 pixels on a 227 DPI MacBook Pro 13" Retina screen.
