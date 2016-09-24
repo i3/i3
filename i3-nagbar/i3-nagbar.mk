@@ -12,7 +12,7 @@ i3_nagbar_OBJECTS := $(i3_nagbar_SOURCES:.c=.o)
 
 i3-nagbar/%.o: i3-nagbar/%.c $(i3_nagbar_HEADERS)
 	echo "[i3-nagbar] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_nagbar_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_nagbar_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 i3-nagbar/i3-nagbar: libi3.a $(i3_nagbar_OBJECTS)
 	echo "[i3-nagbar] Link i3-nagbar"
