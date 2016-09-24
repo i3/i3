@@ -13,9 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if PANGO_SUPPORT
 #include <glib.h>
-#endif
 
 #include "libi3.h"
 
@@ -192,15 +190,11 @@ void i3string_set_markup(i3String *str, bool pango_markup) {
  * Escape pango markup characters in the given string.
  */
 i3String *i3string_escape_markup(i3String *str) {
-#if PANGO_SUPPORT
     const char *text = i3string_as_utf8(str);
     char *escaped = g_markup_escape_text(text, -1);
     i3String *result = i3string_from_utf8(escaped);
     free(escaped);
     return result;
-#else
-    return str;
-#endif
 }
 
 /*

@@ -22,7 +22,7 @@ Build-Depends: debhelper (>= 9),
                libyajl-dev (>= 2.0.4),
                libpcre3-dev (>= 1:8.10),
                libstartup-notification0-dev (>= 0.10),
-               libcairo2-dev,
+               libcairo2-dev (>= 1.14.4),
                libpango1.0-dev,
                libpod-simple-perl
 Standards-Version: 3.9.7

@@ -17,12 +17,8 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_keysyms.h>
 
-#if PANGO_SUPPORT
 #include <pango/pango.h>
-#endif
-#if CAIRO_SUPPORT
 #include <cairo/cairo-xcb.h>
-#endif
 
 #define DEFAULT_DIR_MODE (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
@@ -73,10 +69,8 @@ struct Font {
             xcb_charinfo_t *table;
         } xcb;
 
-#if PANGO_SUPPORT
         /** The pango font description */
         PangoFontDescription *pango_desc;
-#endif
     } specific;
 };
 
@@ -525,7 +519,6 @@ typedef struct placeholder_t {
  */
 char *format_placeholders(char *format, placeholder_t *placeholders, int num);
 
-#if CAIRO_SUPPORT
 /* We need to flush cairo surfaces twice to avoid an assertion bug. See #1989
  * and https://bugs.freedesktop.org/show_bug.cgi?id=92455. */
 #define CAIRO_SURFACE_FLUSH(surface)  \
@@ -533,7 +526,6 @@ char *format_placeholders(char *format, placeholder_t *placeholders, int num);
         cairo_surface_flush(surface); \
         cairo_surface_flush(surface); \
     } while (0)
-#endif
 
 /* A wrapper grouping an XCB drawable and both a graphics context
  * and the corresponding cairo objects representing it. */
@@ -549,14 +541,12 @@ typedef struct surface_t {
     int width;
     int height;
 
-#if CAIRO_SUPPORT
     /* A cairo surface representing the drawable. */
     cairo_surface_t *surface;
 
     /* The cairo object representing the drawable. In general,
      * this is what one should use for any drawing operation. */
     cairo_t *cr;
-#endif
 } surface_t;
 
 /**
