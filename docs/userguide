@@ -2088,6 +2088,7 @@ See <<move_to_outputs>> for how to move a container/workspace to a different
 RandR output.
 
 [[move_to_outputs]]
+[[_moving_containers_workspaces_to_randr_outputs]]
 === Moving containers/workspaces to RandR outputs
 
 To move a container to another RandR output (addressed by names like +LVDS1+ or
@@ -2572,7 +2573,7 @@ have more than one monitor:
    track of which window you put where. Thus, you can use vim-like marks to
    quickly switch between windows. See <<vim_like_marks>>.
 4. For information on how to move existing workspaces between monitors,
-   see <<_moving_containers_workspaces_to_randr_outputs>>.
+   see <<move_to_outputs>>.
 
 == i3 and the rest of your software world
 
