@@ -112,8 +112,9 @@ sub worker_wait {
             $test->failure_output(\*STDERR);
             $test->todo_output(\*STDOUT);
 
-            @ENV{qw(DISPLAY TESTNAME OUTDIR VALGRIND STRACE XTRACE COVERAGE RESTART)}
-                = ($self->{display},
+            @ENV{qw(HOME DISPLAY TESTNAME OUTDIR VALGRIND STRACE XTRACE COVERAGE RESTART)}
+                = ($outdir,
+                   $self->{display},
                    basename($file),
                    $outdir,
                    $options->{valgrind},
