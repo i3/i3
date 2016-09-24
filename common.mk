@@ -135,8 +135,8 @@ LIBEV_LIBS   := $(call ldflags_for_lib, libev,ev)
 
 # libpcre
 PCRE_CFLAGS := $(call cflags_for_lib, libpcre)
-ifeq ($(shell $(PKG_CONFIG) --atleast-version=8.10 libpcre 2>/dev/null && echo 1),1)
-I3_CPPFLAGS += -DPCRE_HAS_UCP=1
+ifneq ($(shell $(PKG_CONFIG) --atleast-version=8.10 libpcre 2>/dev/null && echo 1),1)
+$(error "libpcre >= 8.10 not found")
 endif
 PCRE_LIBS   := $(call ldflags_for_lib, libpcre,pcre)
 
