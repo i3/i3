@@ -12,7 +12,7 @@ i3_dump_log_OBJECTS := $(i3_dump_log_SOURCES:.c=.o)
 
 i3-dump-log/%.o: i3-dump-log/%.c $(i3_dump_log_HEADERS)
 	echo "[i3-dump-log] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_dump_log_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_dump_log_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 i3-dump-log/i3-dump-log: libi3.a $(i3_dump_log_OBJECTS)
 	echo "[i3-dump-log] Link i3-dump-log"

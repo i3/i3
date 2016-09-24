@@ -12,7 +12,7 @@ i3_input_OBJECTS := $(i3_input_SOURCES:.c=.o)
 
 i3-input/%.o: i3-input/%.c $(i3_input_HEADERS)
 	echo "[i3-input] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_input_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_input_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 i3-input/i3-input: libi3.a $(i3_input_OBJECTS)
 	echo "[i3-input] Link i3-input"
