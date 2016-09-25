@@ -1811,8 +1811,8 @@ bindsym $mod+t split toggle
 
 === Manipulating layout
 
-Use +layout toggle split+, +layout stacking+, +layout tabbed+, +layout splitv+
-or +layout splith+ to change the current container layout to splith/splitv,
+Use +layout toggle split+, +layout toggle stack_tab+, +layout stacking+, +layout tabbed+, +layout splitv+
+or +layout splith+ to change the current container layout to splith/splitv, stacking/tabbed,
 stacking, tabbed layout, splitv or splith, respectively.
 
 To make the current window (!) fullscreen, use +fullscreen enable+ (or
@@ -1826,13 +1826,14 @@ enable+ respectively +floating disable+ (or +floating toggle+):
 *Syntax*:
 --------------------------------------------
 layout default|tabbed|stacking|splitv|splith
-layout toggle [split|all]
+layout toggle [split|stack_tab|all]
 --------------------------------------------
 
 *Examples*:
 --------------
 bindsym $mod+s layout stacking
 bindsym $mod+l layout toggle split
+bindsym $mod+l layout toggle stack_tab
 bindsym $mod+w layout tabbed
 
 # Toggle between stacking/tabbed/split:

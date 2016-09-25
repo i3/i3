@@ -104,11 +104,11 @@ state LAYOUT:
   'toggle'
       -> LAYOUT_TOGGLE
 
-# layout toggle [split|all]
+# layout toggle [split|stack_tab|all]
 state LAYOUT_TOGGLE:
   end
       -> call cmd_layout_toggle($toggle_mode)
-  toggle_mode = 'split', 'all'
+  toggle_mode = 'split', 'stack_tab', 'all'
       -> call cmd_layout_toggle($toggle_mode)
 
 # append_layout <path>
@@ -128,7 +128,7 @@ state WORKSPACE:
       -> call cmd_workspace_back_and_forth()
   'number'
       -> WORKSPACE_NUMBER
-  workspace = string 
+  workspace = string
       -> call cmd_workspace_name($workspace, $no_auto_back_and_forth)
 
 state WORKSPACE_NUMBER:

@@ -223,7 +223,7 @@ void cmd_move_direction(I3_CMD, const char *direction, long move_px);
 void cmd_layout(I3_CMD, const char *layout_str);
 
 /**
- * Implementation of 'layout toggle [all|split]'.
+ * Implementation of 'layout toggle [all|split|stack_tab]'.
  *
  */
 void cmd_layout_toggle(I3_CMD, const char *toggle_mode);
