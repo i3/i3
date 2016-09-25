@@ -1727,14 +1727,8 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
     } else if (strcmp(toggle_mode, "stack_tab") == 0) {
         /* Toggle between stacked / tabbed layouts. When the current layout is
          * neither, set the layout to staked first. */
-         if (parent->layout != L_STACKED && parent->layout != L_TABBED)
-            con_set_layout(con, L_TABBED);
-         else {
-            if (parent->layout == L_STACKED)
-                con_set_layout(con, L_TABBED);
-            else
-                con_set_layout(con, L_STACKED);
-         }
+        layout_t new_layout = (parent->layout == L_TABBED) ? L_STACKED : L_TABBED;
+        con_set_layout(con, new_layout);
     } else {
         if (parent->layout == L_STACKED)
             con_set_layout(con, L_TABBED);
