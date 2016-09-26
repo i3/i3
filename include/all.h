@@ -38,11 +38,6 @@
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_version.h>
 
-/* Contains compatibility definitions for old libxcb versions */
-#ifdef XCB_COMPAT
-#include "xcb_compat.h"
-#endif
-
 #include "data.h"
 #include "util.h"
 #include "ipc.h"

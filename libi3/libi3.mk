@@ -10,7 +10,7 @@ libi3_OBJECTS := $(libi3_SOURCES:.c=.o)
 
 libi3/%.o: libi3/%.c $(libi3_HEADERS)
 	echo "[libi3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(libi3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(libi3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 libi3.a: $(libi3_OBJECTS)
 	echo "[libi3] AR libi3.a"

@@ -33,33 +33,33 @@ canonical_path := ../$(shell basename $(shell pwd -P))
 
 include/all.h.pch: $(i3_HEADERS)
 	echo "[i3] PCH all.h"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -x c-header include/all.h -o include/all.h.pch
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -x c-header include/all.h -o include/all.h.pch
 
 src/version.o: src/version.c LAST_VERSION $(i3_HEADERS_DEP)
 	echo "[i3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ ${canonical_path}/$<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ ${canonical_path}/$<
 
 src/%.o: src/%.c $(i3_HEADERS_DEP)
 	echo "[i3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ ${canonical_path}/$<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ ${canonical_path}/$<
 
 test-tools: test.commands_parser test.config_parser
 
 test.commands_parser: src/commands_parser.c $(i3_HEADERS_DEP) i3-command-parser.stamp libi3.a
 	echo "[i3] Link test.commands_parser"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.commands_parser $< $(LIBS) $(i3_LIBS)
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.commands_parser $< $(LIBS) $(i3_LIBS)
 
 test.config_parser: src/config_parser.c $(i3_HEADERS_DEP) i3-config-parser.stamp libi3.a
 	echo "[i3] Link test.config_parser"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.config_parser $< $(LIBS) $(i3_LIBS)
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.config_parser $< $(LIBS) $(i3_LIBS)
 
 src/commands_parser.o: src/commands_parser.c $(i3_HEADERS_DEP) i3-command-parser.stamp
 	echo "[i3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
 src/config_parser.o: src/config_parser.c $(i3_HEADERS_DEP) i3-config-parser.stamp
 	echo "[i3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
 i3-command-parser.stamp: generate-command-parser.pl parser-specs/commands.spec
 	echo "[i3] Generating command parser"

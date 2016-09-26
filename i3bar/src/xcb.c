@@ -13,10 +13,6 @@
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_cursor.h>
 
-#ifdef XCB_COMPAT
-#include "xcb_compat.h"
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

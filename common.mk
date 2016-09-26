@@ -93,15 +93,10 @@ XCB_CFLAGS  := $(call cflags_for_lib, xcb)
 XCB_CFLAGS  += $(call cflags_for_lib, xcb-event)
 XCB_LIBS    := $(call ldflags_for_lib, xcb,xcb)
 XCB_LIBS    += $(call ldflags_for_lib, xcb-event,xcb-event)
-ifeq ($(shell $(PKG_CONFIG) --exists xcb-util 2>/dev/null || echo 1),1)
-XCB_CFLAGS  += $(call cflags_for_lib, xcb-atom)
-XCB_CFLAGS  += $(call cflags_for_lib, xcb-aux)
-XCB_LIBS    += $(call ldflags_for_lib, xcb-atom,xcb-atom)
-XCB_LIBS    += $(call ldflags_for_lib, xcb-aux,xcb-aux)
-XCB_CPPFLAGS+= -DXCB_COMPAT
-else
 XCB_CFLAGS  += $(call cflags_for_lib, xcb-util)
 XCB_LIBS    += $(call ldflags_for_lib, xcb-util)
+ifneq ($(shell $(PKG_CONFIG) --atleast-version=0.3.8 xcb-util 2>/dev/null && echo 1),1)
+$(error "xcb-util >= 0.3.8 not found")
 endif
 XCB_XKB_LIBS := $(call ldflags_for_lib, xcb-xkb,xcb-xkb)
 
