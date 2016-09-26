@@ -480,7 +480,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         if (match->restart_mode)
             continue;
         y(map_open);
-        if (match->dock != -1) {
+        if (match->dock != M_DONTCHECK) {
             ystr("dock");
             y(integer, match->dock);
             ystr("insert_where");
