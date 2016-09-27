@@ -713,14 +713,13 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         }
 
         Con *ws = con_get_workspace(con);
-
         if (ws == NULL) {
             DLOG("Window is not being managed, ignoring _NET_ACTIVE_WINDOW\n");
             return;
         }
 
-        if (con_is_internal(ws)) {
-            DLOG("Workspace is internal, ignoring _NET_ACTIVE_WINDOW\n");
+        if (con_is_internal(ws) && ws != workspace_get("__i3_scratch", NULL)) {
+            DLOG("Workspace is internal but not scratchpad, ignoring _NET_ACTIVE_WINDOW\n");
             return;
         }
 
@@ -729,10 +728,19 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             /* Always focus the con if it is from a pager, because this is most
              * likely from some user action */
             DLOG("This request came from a pager. Focusing con = %p\n", con);
-            workspace_show(ws);
-            con_focus(con);
+
+            if (con_is_internal(ws)) {
+                scratchpad_show(con);
+            } else {
+                workspace_show(ws);
+                con_focus(con);
+            }
         } else {
             /* Request is from an application. */
+            if (con_is_internal(ws)) {
+                DLOG("Ignoring request to make con = %p active because it's on an internal workspace.\n", con);
+                return;
+            }
 
             if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
                 DLOG("Focusing con = %p\n", con);
