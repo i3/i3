@@ -1679,6 +1679,9 @@ bindsym $mod+x [class="Firefox" window_role="About"] kill
 
 # enable floating mode and move container to workspace 4
 for_window [class="^evil-app$"] floating enable, move container to workspace 4
+
+# move all floating windows to the scratchpad
+bindsym $mod+x [floating] move scratchpad
 ------------------------------------
 
 The criteria which are currently implemented are:
@@ -1721,6 +1724,10 @@ con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
 	interface. Handy for scripting. Use the special value +\_\_focused__+
 	to match only the currently focused window.
+floating::
+	Only matches floating windows. This criterion requires no value.
+tiling::
+	Only matches tiling windows. This criterion requires no value.
 
 The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for

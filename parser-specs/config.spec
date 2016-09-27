@@ -173,6 +173,8 @@ state CRITERIA:
   ctype = 'title'       -> CRITERION
   ctype = 'urgent'      -> CRITERION
   ctype = 'workspace'   -> CRITERION
+  ctype = 'tiling', 'floating'
+      -> call cfg_criteria_add($ctype, NULL); CRITERIA
   ']'
       -> call cfg_criteria_pop_state()
 
