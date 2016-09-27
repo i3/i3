@@ -148,15 +148,12 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
         enter_child = true;
     }
 
-    /* If not, then the user moved their cursor to the root window. In that case, we adjust c_ws */
-    if (con == NULL) {
+    /* If we cannot find the container, the user moved their cursor to the root
+     * window. In this case and if they used it to a dock, we need to focus the
+     * workspace on the correct output. */
+    if (con == NULL || con->parent->type == CT_DOCKAREA) {
         DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
         check_crossing_screen_boundary(event->root_x, event->root_y);
-        return;
-    }
-
-    if (con->parent->type == CT_DOCKAREA) {
-        DLOG("Ignoring, this is a dock client\n");
         return;
     }
 
