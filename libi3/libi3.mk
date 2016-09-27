@@ -2,7 +2,7 @@ CLEAN_TARGETS += clean-libi3
 
 libi3_SOURCES := $(wildcard libi3/*.c)
 libi3_HEADERS := $(wildcard libi3/*.h)
-libi3_CFLAGS   = $(PANGO_CFLAGS)
+libi3_CFLAGS   = $(PANGO_CFLAGS) $(XCB_XRM_CFLAGS)
 libi3_LIBS     =
 
 libi3_OBJECTS := $(libi3_SOURCES:.c=.o)
