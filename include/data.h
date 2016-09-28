@@ -474,9 +474,9 @@ struct Match {
         M_DOCK_BOTTOM = 3
     } dock;
     xcb_window_t id;
-    enum { M_ANY = 0,
-           M_TILING,
-           M_FLOATING } floating;
+    enum { WM_ANY = 0,
+           WM_TILING,
+           WM_FLOATING } window_mode;
     Con *con_id;
 
     /* Where the window looking for a match should be inserted:

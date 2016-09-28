@@ -460,5 +460,32 @@ is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'triggered' ], "mark set for workspa
 exit_gracefully($pid);
 
 ##############################################################
+# 13: check that the tiling / floating criteria work.
+##############################################################
+
+$config = <<"EOT";
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [tiling] mark tiled
+for_window [floating] mark floated
+EOT
+
+$pid = launch_with_config($config);
+$tmp = fresh_workspace;
+
+open_window;
+open_floating_window;
+
+@nodes = @{get_ws($tmp)->{nodes}};
+cmp_ok(@nodes, '==', 1, 'one tiling container on this workspace');
+is_deeply($nodes[0]->{marks}, [ 'tiled' ], "mark set for 'tiling' criterion");
+
+@nodes = @{get_ws($tmp)->{floating_nodes}};
+cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
+is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'floated' ], "mark set for 'floating' criterion");
+
+exit_gracefully($pid);
+
+##############################################################
 
 done_testing;

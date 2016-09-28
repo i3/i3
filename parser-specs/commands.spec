@@ -53,6 +53,8 @@ state CRITERIA:
   ctype = 'title'       -> CRITERION
   ctype = 'urgent'      -> CRITERION
   ctype = 'workspace'   -> CRITERION
+  ctype = 'tiling', 'floating'
+      -> call cmd_criteria_add($ctype, NULL); CRITERIA
   ']' -> call cmd_criteria_match_windows(); INITIAL
 
 state CRITERION:
