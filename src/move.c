@@ -101,8 +101,7 @@ static void attach_to_workspace(Con *con, Con *ws, direction_t direction) {
  */
 static void move_to_output_directed(Con *con, direction_t direction) {
     Con *old_ws = con_get_workspace(con);
-    Con *current_output_con = con_get_output(con);
-    Output *current_output = get_output_by_name(current_output_con->name);
+    Output *current_output = get_output_for_con(con);
     Output *output = get_output_next(direction, current_output, CLOSEST_OUTPUT);
 
     if (!output) {

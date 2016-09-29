@@ -88,17 +88,6 @@ static bool definitelyGreaterThan(float a, float b, float epsilon) {
 }
 
 /*
- * Returns the output containing the given container.
- */
-static Output *get_output_of_con(Con *con) {
-    Con *output_con = con_get_output(con);
-    Output *output = get_output_by_name(output_con->name);
-    assert(output != NULL);
-
-    return output;
-}
-
-/*
  * Checks whether we switched to a new workspace and returns false in that case,
  * signaling that further workspace switching should be done by the calling function
  * If not, calls workspace_back_and_forth() if workspace_auto_back_and_forth is set
@@ -1036,7 +1025,7 @@ void cmd_move_con_to_output(I3_CMD, const char *name) {
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
 
-        Output *current_output = get_output_of_con(current->con);
+        Output *current_output = get_output_for_con(current->con);
         assert(current_output != NULL);
 
         Output *output = get_output_from_string(current_output, name);
@@ -1648,7 +1637,7 @@ void cmd_focus_output(I3_CMD, const char *name) {
     Output *output;
 
     TAILQ_FOREACH(current, &owindows, owindows)
-    current_output = get_output_of_con(current->con);
+    current_output = get_output_for_con(current->con);
     assert(current_output != NULL);
 
     output = get_output_from_string(current_output, name);
