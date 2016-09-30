@@ -911,17 +911,12 @@ Con *workspace_encapsulate(Con *ws) {
 bool workspace_move_to_output(Con *ws, const char *name) {
     LOG("Trying to move workspace %p / %s to output \"%s\".\n", ws, ws->name, name);
 
-    Con *current_output_con = con_get_output(ws);
-    if (!current_output_con) {
-        ELOG("Could not get the output container for workspace %p / %s.\n", ws, ws->name);
-        return false;
-    }
-
-    Output *current_output = get_output_by_name(current_output_con->name);
-    if (!current_output) {
+    Output *current_output = get_output_for_con(ws);
+    if (current_output == NULL) {
         ELOG("Cannot get current output. This is a bug in i3.\n");
         return false;
     }
+
     Output *output = get_output_from_string(current_output, name);
     if (!output) {
         ELOG("Could not get output from string \"%s\"\n", name);

@@ -2103,10 +2103,10 @@ To move a container to another RandR output (addressed by names like +LVDS1+ or
 +right+, +up+ or +down+), there are two commands:
 
 *Syntax*:
-----------------------------------------------------
-move container to output left|right|down|up|<output>
-move workspace to output left|right|down|up|<output>
-----------------------------------------------------
+------------------------------------------------------------
+move container to output left|right|down|up|current|<output>
+move workspace to output left|right|down|up|current|<output>
+------------------------------------------------------------
 
 *Examples*:
 --------------------------------------------------------

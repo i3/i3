@@ -31,18 +31,33 @@ Con *output_get_content(Con *output) {
  *
  */
 Output *get_output_from_string(Output *current_output, const char *output_str) {
-    Output *output;
+    if (strcasecmp(output_str, "current") == 0) {
+        return get_output_for_con(focused);
+    } else if (strcasecmp(output_str, "left") == 0) {
+        return get_output_next_wrap(D_LEFT, current_output);
+    } else if (strcasecmp(output_str, "right") == 0) {
+        return get_output_next_wrap(D_RIGHT, current_output);
+    } else if (strcasecmp(output_str, "up") == 0) {
+        return get_output_next_wrap(D_UP, current_output);
+    } else if (strcasecmp(output_str, "down") == 0) {
+        return get_output_next_wrap(D_DOWN, current_output);
+    }
 
-    if (strcasecmp(output_str, "left") == 0)
-        output = get_output_next_wrap(D_LEFT, current_output);
-    else if (strcasecmp(output_str, "right") == 0)
-        output = get_output_next_wrap(D_RIGHT, current_output);
-    else if (strcasecmp(output_str, "up") == 0)
-        output = get_output_next_wrap(D_UP, current_output);
-    else if (strcasecmp(output_str, "down") == 0)
-        output = get_output_next_wrap(D_DOWN, current_output);
-    else
-        output = get_output_by_name(output_str);
+    return get_output_by_name(output_str);
+}
+
+Output *get_output_for_con(Con *con) {
+    Con *output_con = con_get_output(con);
+    if (output_con == NULL) {
+        ELOG("Could not get the output container for con = %p.\n", con);
+        return NULL;
+    }
+
+    Output *output = get_output_by_name(output_con->name);
+    if (output == NULL) {
+        ELOG("Could not get output from name \"%s\".\n", output_con->name);
+        return NULL;
+    }
 
     return output;
 }

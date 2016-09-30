@@ -23,6 +23,12 @@ Con *output_get_content(Con *output);
 Output *get_output_from_string(Output *current_output, const char *output_str);
 
 /**
+ * Returns the output for the given con.
+ *
+ */
+Output *get_output_for_con(Con *con);
+
+/**
  * Iterates over all outputs and pushes sticky windows to the currently visible
  * workspace on that output.
  *
