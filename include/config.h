@@ -105,6 +105,10 @@ struct Config {
     /** Default orientation for new containers */
     int default_orientation;
 
+    /** By default, we set the layout of the parent container. The user can
+     * disable this behavior with this option. */
+    bool set_parent_layout;
+
     /** By default, focus follows mouse. If the user explicitly wants to
      * turn this off (and instead rely only on the keyboard for changing
      * focus), we allow them to do this with this relatively special option.
