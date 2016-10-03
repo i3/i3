@@ -451,7 +451,7 @@ int main(int argc, char *argv[]) {
             memset(cwd, '\0', cwd_size);
             if (read(patternfd, cwd, cwd_size) > 0)
                 /* a trailing newline is included in cwd */
-                LOG("CORE DUMPS: Your core_pattern is: \"%s\".\n", cwd);
+                LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
             close(patternfd);
         }
         free(cwd);
