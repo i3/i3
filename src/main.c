@@ -189,7 +189,7 @@ static void handle_signal(int sig, siginfo_t *info, void *data) {
 int main(int argc, char *argv[]) {
     /* Keep a symbol pointing to the I3_VERSION string constant so that we have
      * it in gdb backtraces. */
-    const char *_i3_version __attribute__((unused)) = i3_version;
+    static const char *_i3_version __attribute__((used)) = I3_VERSION;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
