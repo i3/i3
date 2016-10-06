@@ -239,6 +239,10 @@ CFGFUN(hide_edge_borders, const char *borders) {
         config.hide_edge_borders = HEBM_NONE;
 }
 
+CFGFUN(set_parent_layout, const char *value) {
+    config.set_parent_layout = eval_boolstr(value);
+}
+
 CFGFUN(focus_follows_mouse, const char *value) {
     config.disable_focus_follows_mouse = !eval_boolstr(value);
 }
