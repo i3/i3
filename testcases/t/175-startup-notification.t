@@ -192,7 +192,7 @@ is_num_children($third_ws, 2, 'two containers on the third workspace');
 # environment variable.
 ######################################################################
 
-mkfifo($tmp, 0600) or BAIL_OUT "Could not create FIFO in $tmp";
+mkfifo($tmp, 0600) or BAIL_OUT "Could not create FIFO in $tmp: $!";
 
 cmd qq|exec --no-startup-id echo \$DESKTOP_STARTUP_ID >$tmp|;
 
@@ -208,7 +208,7 @@ is($startup_id, '', 'startup_id empty');
 # 4) same thing, but with double quotes in exec
 ######################################################################
 
-mkfifo($tmp, 0600) or BAIL_OUT "Could not create FIFO in $tmp";
+mkfifo($tmp, 0600) or BAIL_OUT "Could not create FIFO in $tmp: $!";
 
 cmd qq|exec --no-startup-id "echo \$DESKTOP_STARTUP_ID >$tmp"|;
 
