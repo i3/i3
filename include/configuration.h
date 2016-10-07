@@ -4,7 +4,7 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * include/config.h: Contains all structs/variables for the configurable
+ * include/configuration.h: Contains all structs/variables for the configurable
  * part of i3 as well as functions handling the configuration file (calling
  * the parser (src/config_parse.c) with the correct path, switching key
  * bindings mode).

@@ -16,7 +16,7 @@
 
 #include "data.h"
 #include "tree.h"
-#include "config.h"
+#include "configuration.h"
 
 #include "i3/ipc.h"
 

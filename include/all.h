@@ -51,7 +51,7 @@
 #include "click.h"
 #include "key_press.h"
 #include "floating.h"
-#include "config.h"
+#include "configuration.h"
 #include "handlers.h"
 #include "randr.h"
 #include "xinerama.h"

@@ -85,6 +85,6 @@ TAILQ_HEAD(statusline_head, status_block) statusline_head;
 #include "mode.h"
 #include "trayclients.h"
 #include "xcb.h"
-#include "config.h"
+#include "configuration.h"
 #include "libi3.h"
 #include "parse_json_header.h"
