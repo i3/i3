@@ -105,7 +105,9 @@ __attribute__((format(printf, 1, 2))) static void set_statusline_error(const cha
     char *message;
     va_list args;
     va_start(args, format);
-    (void)vasprintf(&message, format, args);
+    if (vasprintf(&message, format, args) == -1) {
+        return;
+    }
 
     struct status_block *err_block = scalloc(1, sizeof(struct status_block));
     err_block->full_text = i3string_from_utf8("Error: ");
