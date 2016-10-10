@@ -28,7 +28,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 workspace 2 output DVI-I_1/digital
 EOT
 
-my $output = qx(../i3 -C -c $filename);
+my $output = qx(i3 -C -c $filename);
 unlike($output, qr/ERROR/, 'no errors in i3 -C');
 
 close($fh);

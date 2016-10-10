@@ -33,7 +33,7 @@ my $pid = launch_with_config($config);
 
 my $stdout;
 my $stderr;
-run [ '../i3-dump-log/i3-dump-log' ],
+run [ 'i3-dump-log' ],
     '>', \$stdout,
     '2>', \$stderr;
 
@@ -49,7 +49,7 @@ cmd 'shmlog on';
 my $random_nop = mktemp('nop.XXXXXX');
 cmd "nop $random_nop";
 
-run [ '../i3-dump-log/i3-dump-log' ],
+run [ 'i3-dump-log' ],
     '>', \$stdout,
     '2>', \$stderr;
 
@@ -62,7 +62,7 @@ like($stderr, qr#^$#, 'stderr empty');
 
 cmd 'shmlog ' . (23 * 1024 * 1024);
 
-run [ '../i3-dump-log/i3-dump-log' ],
+run [ 'i3-dump-log' ],
     '>', \$stdout,
     '2>', \$stderr;
 
@@ -75,7 +75,7 @@ like($stderr, qr#^$#, 'stderr empty');
 
 cmd 'shmlog off';
 
-run [ '../i3-dump-log/i3-dump-log' ],
+run [ 'i3-dump-log' ],
     '>', \$stdout,
     '2>', \$stderr;
 

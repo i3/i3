@@ -125,7 +125,7 @@ sub worker_wait {
 
             package main;
             local $@;
-            do "./$file";
+            do $file;
             $test->ok(undef, "$@") if $@;
 
             # XXX hack, we need to trigger the read watcher once more

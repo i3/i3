@@ -26,7 +26,7 @@ sub check_config {
     my ($config) = @_;
     my ($fh, $tmpfile) = tempfile(UNLINK => 1);
     print $fh $config;
-    my $output = qx(DISPLAY= ../i3 -C -c $tmpfile 2>&1);
+    my $output = qx(DISPLAY= i3 -C -c $tmpfile 2>&1);
     my $retval = $?;
     $fh->flush;
     close($fh);
