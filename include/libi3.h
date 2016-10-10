@@ -89,7 +89,7 @@ void errorlog(char *fmt, ...)
 #if !defined(DLOG)
 void debuglog(char *fmt, ...)
     __attribute__((format(printf, 1, 2)));
-#define DLOG(fmt, ...) debuglog("%s:%s:%d - " fmt, I3__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define DLOG(fmt, ...) debuglog("%s:%s:%d - " fmt, STRIPPED__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #endif
 
 /**
