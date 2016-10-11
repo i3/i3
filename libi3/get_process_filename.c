@@ -5,6 +5,8 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -16,8 +18,6 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <err.h>
-
-#include "libi3.h"
 
 /*
  * Returns the name of a temporary file with the specified prefix.

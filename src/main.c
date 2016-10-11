@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "main.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -9,6 +7,8 @@
  * main.c: Initialization, main loop
  *
  */
+#include "all.h"
+
 #include <ev.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -19,7 +19,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <libgen.h>
-#include "all.h"
 #include "shmlog.h"
 
 #include "sd-daemon.h"

@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include "commands_parser.h"
 
 /** The beginning of the prototype for every cmd_ function. */

@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 typedef enum {
     // We could not determine the content of the JSON file. This typically
     // means it’s unreadable or contains garbage.

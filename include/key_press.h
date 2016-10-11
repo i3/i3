@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * There was a key press. We compare this key code with our bindings table and pass
  * the bound action to parse_command().

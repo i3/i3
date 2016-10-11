@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "con.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -12,6 +10,7 @@
  *
  */
 #include "all.h"
+
 #include "yajl_utils.h"
 
 static void con_on_remove_child(Con *con);

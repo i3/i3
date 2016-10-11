@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "key_press.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -10,6 +8,8 @@
  *                    i3 --moreversion.
  *
  */
+#include "all.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -17,7 +17,6 @@
 #include <sys/un.h>
 #include <fcntl.h>
 #include <time.h>
-#include "all.h"
 
 static bool human_readable_key, loaded_config_file_name_key;
 static char *human_readable_version, *loaded_config_file_name;

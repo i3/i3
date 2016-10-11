@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Moves the given container in the given direction (TOK_LEFT, TOK_RIGHT,
  * TOK_UP, TOK_DOWN from cmdparse.l)

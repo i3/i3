@@ -7,6 +7,8 @@
  * child.c: Getting input for the statusline
  *
  */
+#include "common.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -24,8 +26,6 @@
 #include <yajl/yajl_version.h>
 #include <yajl/yajl_gen.h>
 #include <paths.h>
-
-#include "common.h"
 
 /* Global variables for child_*() */
 i3bar_child child;

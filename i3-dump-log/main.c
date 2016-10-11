@@ -7,6 +7,8 @@
  * i3-dump-log/main.c: Dumps the i3 SHM log to stdout.
  *
  */
+#include <config.h>
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <sys/types.h>

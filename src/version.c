@@ -8,4 +8,6 @@
  * and used dynamically without recompiling every object file.
  *
  */
+#include <config.h>
+
 const char *i3_version = I3_VERSION;

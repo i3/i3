@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 extern pid_t command_error_nagbar_pid;
 
 /**

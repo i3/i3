@@ -7,6 +7,8 @@
  * xcb.c: Communicating with X
  *
  */
+#include "common.h"
+
 #include <xcb/xcb.h>
 #include <xcb/xkb.h>
 #include <xcb/xproto.h>
@@ -32,7 +34,6 @@
 #include <sanitizer/lsan_interface.h>
 #endif
 
-#include "common.h"
 #include "libi3.h"
 
 /** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a

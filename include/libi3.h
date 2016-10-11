@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdio.h>

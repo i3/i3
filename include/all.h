@@ -10,8 +10,9 @@
  * compile-time.
  *
  */
-#ifndef I3_ALL_H
-#define I3_ALL_H
+#pragma once
+
+#include <config.h>
 
 #include <assert.h>
 #include <stdbool.h>
@@ -81,5 +82,3 @@
 #include "display_version.h"
 #include "restore_layout.h"
 #include "main.h"
-
-#endif

@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Updates _NET_CURRENT_DESKTOP with the current desktop number.
  *

@@ -12,10 +12,11 @@
  */
 #pragma once
 
+#include "libi3.h"
+
 #include <stdbool.h>
 #include "queue.h"
 #include "i3.h"
-#include "libi3.h"
 
 typedef struct Config Config;
 typedef struct Barconfig Barconfig;

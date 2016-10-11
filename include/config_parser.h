@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <yajl/yajl_gen.h>
 
 SLIST_HEAD(variables_head, Variable);

@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "config_parser.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -25,6 +23,8 @@
  *    nearest <error> token.
  *
  */
+#include "all.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,8 +36,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <xcb/xcb_xrm.h>
-
-#include "all.h"
 
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) yajl_gen_##x(command_output.json_gen, ##__VA_ARGS__)

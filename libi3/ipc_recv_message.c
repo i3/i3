@@ -5,6 +5,8 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,8 +15,6 @@
 #include <errno.h>
 
 #include <i3/ipc.h>
-
-#include "libi3.h"
 
 /*
  * Reads a message from the given socket file descriptor and stores its length

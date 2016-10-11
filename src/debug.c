@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "debug.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -10,6 +8,8 @@
  *          events.  This code is from xcb-util.
  *
  */
+#include <config.h>
+
 #include <stdio.h>
 #include <xcb/xcb.h>
 

@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Creates outputs according to the given specification.
  * The specification must be in the format wxh+x+y, for example 1024x768+0+0,

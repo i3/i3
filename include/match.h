@@ -13,6 +13,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /*
  * Initializes the Match data structure. This function is necessary because the
  * members representing boolean values (like dock) need to be initialized with

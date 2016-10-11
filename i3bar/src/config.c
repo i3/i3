@@ -7,6 +7,8 @@
  * config.c: Parses the configuration (received from i3).
  *
  */
+#include "common.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,8 +18,6 @@
 #include <yajl/yajl_version.h>
 
 #include <X11/Xlib.h>
-
-#include "common.h"
 
 static char *cur_key;
 static bool parsing_bindings;

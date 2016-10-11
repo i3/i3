@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include "data.h"
 #include "tree.h"
 #include "randr.h"

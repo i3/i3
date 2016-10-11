@@ -8,6 +8,8 @@
  *                      protocol version and features.
  *
  */
+#include "common.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -24,8 +26,6 @@
 #include <yajl/yajl_common.h>
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
-
-#include "common.h"
 
 static enum {
     KEY_VERSION,

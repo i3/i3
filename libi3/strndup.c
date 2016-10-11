@@ -5,10 +5,10 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <sys/types.h>
 #include <string.h>
-
-#include "libi3.h"
 
 #if defined(__APPLE__)
 

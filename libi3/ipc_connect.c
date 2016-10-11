@@ -5,6 +5,8 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -13,8 +15,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-
-#include "libi3.h"
 
 /*
  * Connects to the i3 IPC socket and returns the file descriptor for the

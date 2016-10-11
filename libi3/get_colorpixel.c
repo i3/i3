@@ -5,13 +5,13 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
 #include "queue.h"
-#include "libi3.h"
-
 struct Colorpixel {
     char hex[8];
     uint32_t pixel;

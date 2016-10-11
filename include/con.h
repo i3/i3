@@ -11,6 +11,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Create a new container (and attach it to the given parent, if not NULL).
  * This function only initializes the data structures.

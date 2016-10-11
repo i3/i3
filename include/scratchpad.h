@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Moves the specified window to the __i3_scratch workspace, making it floating
  * and setting the appropriate scratchpad_state.

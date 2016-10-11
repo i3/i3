@@ -7,6 +7,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <stdbool.h>
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
