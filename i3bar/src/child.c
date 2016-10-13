@@ -363,7 +363,10 @@ static void read_flat_input(char *buffer, int length) {
         buffer[length - 1] = '\0';
     else
         buffer[length] = '\0';
-    first->full_text = i3string_from_markup(buffer);
+    if (first->pango_markup)
+        first->full_text = i3string_from_markup(buffer);
+    else
+        first->full_text = i3string_from_utf8(buffer);
 }
 
 static bool read_json_input(unsigned char *input, int length) {
