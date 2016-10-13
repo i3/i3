@@ -617,6 +617,7 @@ void con_mark(Con *con, const char *mark, mark_mode_t mode) {
     mark_t *new = scalloc(1, sizeof(mark_t));
     new->name = sstrdup(mark);
     TAILQ_INSERT_TAIL(&(con->marks_head), new, marks);
+    ipc_send_window_event("mark", con);
 
     con->mark_changed = true;
 }
@@ -645,6 +646,8 @@ void con_unmark(Con *con, const char *name) {
                 FREE(mark->name);
                 TAILQ_REMOVE(&(current->marks_head), mark, marks);
                 FREE(mark);
+
+                ipc_send_window_event("mark", current);
             }
 
             current->mark_changed = true;
@@ -668,6 +671,8 @@ void con_unmark(Con *con, const char *name) {
             FREE(mark->name);
             TAILQ_REMOVE(&(current->marks_head), mark, marks);
             FREE(mark);
+
+            ipc_send_window_event("mark", current);
             break;
         }
     }
