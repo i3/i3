@@ -359,11 +359,13 @@ static void read_flat_input(char *buffer, int length) {
     I3STRING_FREE(first->full_text);
     /* Remove the trailing newline and terminate the string at the same
      * time. */
-    if (buffer[length - 1] == '\n' || buffer[length - 1] == '\r')
+    if (buffer[length - 1] == '\n' || buffer[length - 1] == '\r') {
         buffer[length - 1] = '\0';
-    else
+    } else {
         buffer[length] = '\0';
-    first->full_text = i3string_from_markup(buffer);
+    }
+
+    first->full_text = i3string_from_utf8(buffer);
 }
 
 static bool read_json_input(unsigned char *input, int length) {
