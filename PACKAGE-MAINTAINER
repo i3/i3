@@ -23,14 +23,10 @@ x-terminal-emulator symlink in Debian, please use it in i3-sensible-terminal.
 
 On debian, compilation and installing the manpages looks like this:
 
-	# Compilation
-	$(MAKE)
-	$(MAKE) -C man
-
-	# Installation
-	$(MAKE) DESTDIR=$(CURDIR)/debian/i3-wm/ install
-	mkdir -p $(CURDIR)/debian/i3-wm/usr/share/man/man1
-	cp man/*.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
+	autoreconf -fi
+	mkdir -p build && cd build
+	../configure
+	make -j8 install
 
 Please make sure that i3-migrate-config-to-v4 and i3-config-wizard are
 installed with i3. The Perl script is necessary to (automatically) convert v3
