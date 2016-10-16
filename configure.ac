@@ -35,6 +35,7 @@ AS_IF([test -d ${srcdir}/.git],
         I3_VERSION="$(cat ${srcdir}/I3_VERSION)"
         is_release="$(grep -q non-git ${srcdir}/I3_VERSION && echo no || echo yes)"
       ])
+AC_SUBST([I3_VERSION], [$I3_VERSION])
 MAJOR_VERSION="$(echo ${VERSION} | cut -d '.' -f 1)"
 MINOR_VERSION="$(echo ${VERSION} | cut -d '.' -f 2)"
 PATCH_VERSION="$(echo ${VERSION} | cut -d '.' -f 3)"

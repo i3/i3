@@ -1,5 +1,8 @@
 @CODE_COVERAGE_RULES@
 
+echo-version:
+	@echo "@I3_VERSION@"
+
 bin_PROGRAMS = \
 	i3 \
 	i3bar/i3bar \

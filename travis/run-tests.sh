@@ -3,7 +3,7 @@
 set -e
 set -x
 
-cd testcases
+cd build
 
 # TODO: remove this workaround once https://bugs.debian.org/836723 is fixed
 # Found at https://llvm.org/bugs/show_bug.cgi?id=27310#c8:
@@ -26,7 +26,7 @@ fi
 
 # Try running the tests in parallel so that the common case (tests pass) is
 # quick, but fall back to running them in sequence to make debugging easier.
-if ! xvfb-run ./complete-run.pl
+if ! xvfb-run make check
 then
-	xvfb-run ./complete-run.pl --parallel=1 || (cat latest/complete-run.log; false)
+	xvfb-run ./testcases/complete-run.pl --parallel=1 || (cat latest/complete-run.log; false)
 fi
