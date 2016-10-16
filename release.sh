@@ -57,7 +57,6 @@ git add RELEASE-NOTES-${RELEASE_VERSION}
 git rm RELEASE-NOTES-${PREVIOUS_VERSION}
 sed -i "s,RELEASE-NOTES-${PREVIOUS_VERSION},RELEASE-NOTES-${RELEASE_VERSION},g" Makefile.am
 sed -i "s/AC_INIT(\[i3\], \[${PREVIOUS_VERSION}\]/AC_INIT([i3], [${RELEASE_VERSION}]/" configure.ac
-sed -i "s,<refmiscinfo class=\"version\">[^<]*</refmiscinfo>,<refmiscinfo class=\"version\">${RELEASE_VERSION}</refmiscinfo>,g" man/asciidoc.conf
 echo "${RELEASE_VERSION} ($(date +%F))" > I3_VERSION
 git add I3_VERSION
 git commit -a -m "release i3 ${RELEASE_VERSION}"

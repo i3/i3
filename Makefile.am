@@ -86,7 +86,7 @@ EXTRA_DIST = \
 	libi3/README \
 	$(asciidoc_MANS:.1=.man) \
 	$(asciidoc_MANS:.1=.man) \
-	man/asciidoc.conf \
+	man/asciidoc.conf.in \
 	DEPENDS \
 	I3_VERSION \
 	LICENSE \
@@ -200,7 +200,7 @@ $(asciidoc_MANS): man/%.1: man/%.xml man/$(dirstamp)
 	@stamp='$@'; $(MKDIR_P) "$${stamp%/*}"
 
 man/%.xml: man/%.man man/asciidoc.conf man/$(dirstamp)
-	$(AM_V_GEN) @PATH_ASCIIDOC@ -d manpage -b docbook -f $(top_srcdir)/man/asciidoc.conf -o $@ $<
+	$(AM_V_GEN) @PATH_ASCIIDOC@ -d manpage -b docbook -f $(top_builddir)/man/asciidoc.conf -o $@ $<
 
 $(pod_MANS): man/%.1: % man/$(dirstamp)
 	$(AM_V_GEN) @PATH_POD2MAN@ --utf8 $< > $@
