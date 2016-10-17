@@ -72,18 +72,29 @@ void floating_check_size(Con *floating_con) {
     Rect floating_sane_max_dimensions;
     Con *focused_con = con_descend_focused(floating_con);
 
-    /* obey size increments */
-    if (focused_con->window != NULL && (focused_con->window->height_increment || focused_con->window->width_increment)) {
-        Rect border_rect = con_border_style_rect(focused_con);
+    Rect border_rect = con_border_style_rect(focused_con);
+    /* We have to do the opposite calculations that render_con() do
+     * to get the exact size we want. */
+    border_rect.width = -border_rect.width;
+    border_rect.width += 2 * focused_con->border_width;
+    border_rect.height = -border_rect.height;
+    border_rect.height += 2 * focused_con->border_width;
+    if (con_border_style(focused_con) == BS_NORMAL) {
+        border_rect.height += render_deco_height();
+    }
 
-        /* We have to do the opposite calculations that render_con() do
-         * to get the exact size we want. */
-        border_rect.width = -border_rect.width;
-        border_rect.width += 2 * focused_con->border_width;
-        border_rect.height = -border_rect.height;
-        border_rect.height += 2 * focused_con->border_width;
-        if (con_border_style(focused_con) == BS_NORMAL)
-            border_rect.height += render_deco_height();
+    if (focused_con->window != NULL) {
+        if (focused_con->window->min_width) {
+            floating_con->rect.width -= border_rect.width;
+            floating_con->rect.width = max(floating_con->rect.width, focused_con->window->min_width);
+            floating_con->rect.width += border_rect.width;
+        }
+
+        if (focused_con->window->min_height) {
+            floating_con->rect.height -= border_rect.height;
+            floating_con->rect.height = max(floating_con->rect.height, focused_con->window->min_height);
+            floating_con->rect.height += border_rect.height;
+        }
 
         if (focused_con->window->height_increment &&
             floating_con->rect.height >= focused_con->window->base_height + border_rect.height) {
@@ -100,36 +111,50 @@ void floating_check_size(Con *floating_con) {
         }
     }
 
+    /* Unless user requests otherwise (-1), raise the width/height to
+     * reasonable minimum dimensions */
+    if (config.floating_minimum_height != -1) {
+        floating_con->rect.height -= border_rect.height;
+        if (config.floating_minimum_height == 0) {
+            floating_con->rect.height = max(floating_con->rect.height, floating_sane_min_height);
+        } else {
+            floating_con->rect.height = max(floating_con->rect.height, config.floating_minimum_height);
+        }
+        floating_con->rect.height += border_rect.height;
+    }
+
+    if (config.floating_minimum_width != -1) {
+        floating_con->rect.width -= border_rect.width;
+        if (config.floating_minimum_width == 0) {
+            floating_con->rect.width = max(floating_con->rect.width, floating_sane_min_width);
+        } else {
+            floating_con->rect.width = max(floating_con->rect.width, config.floating_minimum_width);
+        }
+        floating_con->rect.width += border_rect.width;
+    }
+
     /* Unless user requests otherwise (-1), ensure width/height do not exceed
      * configured maxima or, if unconfigured, limit to combined width of all
      * outputs */
-    if (config.floating_minimum_height != -1) {
-        if (config.floating_minimum_height == 0)
-            floating_con->rect.height = max(floating_con->rect.height, floating_sane_min_height);
-        else
-            floating_con->rect.height = max(floating_con->rect.height, config.floating_minimum_height);
-    }
-    if (config.floating_minimum_width != -1) {
-        if (config.floating_minimum_width == 0)
-            floating_con->rect.width = max(floating_con->rect.width, floating_sane_min_width);
-        else
-            floating_con->rect.width = max(floating_con->rect.width, config.floating_minimum_width);
-    }
-
-    /* Unless user requests otherwise (-1), raise the width/height to
-     * reasonable minimum dimensions */
     floating_sane_max_dimensions = total_outputs_dimensions();
     if (config.floating_maximum_height != -1) {
-        if (config.floating_maximum_height == 0)
+        floating_con->rect.height -= border_rect.height;
+        if (config.floating_maximum_height == 0) {
             floating_con->rect.height = min(floating_con->rect.height, floating_sane_max_dimensions.height);
-        else
+        } else {
             floating_con->rect.height = min(floating_con->rect.height, config.floating_maximum_height);
+        }
+        floating_con->rect.height += border_rect.height;
     }
+
     if (config.floating_maximum_width != -1) {
-        if (config.floating_maximum_width == 0)
+        floating_con->rect.width -= border_rect.width;
+        if (config.floating_maximum_width == 0) {
             floating_con->rect.width = min(floating_con->rect.width, floating_sane_max_dimensions.width);
-        else
+        } else {
             floating_con->rect.width = min(floating_con->rect.width, config.floating_maximum_width);
+        }
+        floating_con->rect.width += border_rect.width;
     }
 }
 
@@ -208,7 +233,8 @@ void floating_enable(Con *con, bool automatic) {
         }
     }
 
-    floating_check_size(nc);
+    TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
+    TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
 
     /* 3: attach the child to the new parent container. We need to do this
      * because con_border_style_rect() needs to access con->parent. */
@@ -227,12 +253,15 @@ void floating_enable(Con *con, bool automatic) {
     nc->rect.width -= border_style_rect.width;
 
     /* Add some more pixels for the title bar */
-    if (con_border_style(con) == BS_NORMAL)
+    if (con_border_style(con) == BS_NORMAL) {
         nc->rect.height += deco_height;
+    }
 
     /* Honor the X11 border */
     nc->rect.height += con->border_width * 2;
     nc->rect.width += con->border_width * 2;
+
+    floating_check_size(nc);
 
     /* Some clients (like GIMP’s color picker window) get mapped
      * to (0, 0), so we push them to a reasonable position
@@ -279,9 +308,6 @@ void floating_enable(Con *con, bool automatic) {
     nc->rect.y -= deco_height;
 
     DLOG("Corrected y = %d (deco_height = %d)\n", nc->rect.y, deco_height);
-
-    TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
-    TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
 
     /* render the cons to get initial window_rect correct */
     render_con(nc, false);

@@ -491,6 +491,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         geom->height = wm_size_hints.height;
     }
 
+    if (wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE) {
+        DLOG("Window specifies minimum size %d x %d\n", wm_size_hints.min_width, wm_size_hints.min_height);
+        nc->window->min_width = wm_size_hints.min_width;
+        nc->window->min_height = wm_size_hints.min_height;
+    }
+
     /* Store the requested geometry. The width/height gets raised to at least
      * 75x50 when entering floating mode, which is the minimum size for a
      * window to be useful (smaller windows are usually overlays/toolbars/…
