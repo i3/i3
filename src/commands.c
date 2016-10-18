@@ -1569,11 +1569,11 @@ void cmd_exit(I3_CMD) {
  * Implementation of 'reload'.
  *
  */
-void cmd_reload(I3_CMD) {
+void cmd_reload(I3_CMD, const char* config_file) {
     LOG("reloading\n");
     kill_nagbar(&config_error_nagbar_pid, false);
     kill_nagbar(&command_error_nagbar_pid, false);
-    load_configuration(conn, NULL, true);
+    load_configuration(conn, config_file, true);
     x_set_i3_atoms();
     /* Send an IPC event just in case the ws names have changed */
     ipc_send_workspace_event("reload", NULL, NULL);
