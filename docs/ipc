@@ -754,14 +754,15 @@ defines whether pango markup shall be used for displaying this mode.
 This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change
 
-* +new+ - the window has become managed by i3
-* +close+ - the window has closed
-* +focus+ - the window has received input focus
-* +title+ - the window's title has changed
-* +fullscreen_mode+ - the window has entered or exited fullscreen mode
-* +move+ - the window has changed its position in the tree
-* +floating+ - the window has transitioned to or from floating
-* +urgent+ - the window has become urgent or lost its urgent status
+* +new+ – the window has become managed by i3
+* +close+ – the window has closed
+* +focus+ – the window has received input focus
+* +title+ – the window's title has changed
+* +fullscreen_mode+ – the window has entered or exited fullscreen mode
+* +move+ – the window has changed its position in the tree
+* +floating+ – the window has transitioned to or from floating
+* +urgent+ – the window has become urgent or lost its urgent status
+* +mark+ – a mark has been added to or removed from the window
 
 Additionally a +container (object)+ field will be present, which consists
 of the window's parent container. Be aware that for the "new" event, the
