@@ -12,16 +12,16 @@
  */
 #include "all.h"
 
-#include <sys/wait.h>
+#include <ctype.h>
 #include <stdarg.h>
+#include <sys/wait.h>
 #if defined(__OpenBSD__)
 #include <sys/cdefs.h>
 #endif
 #include <fcntl.h>
+#include <libgen.h>
 #include <pwd.h>
 #include <yajl/yajl_version.h>
-#include <libgen.h>
-#include <ctype.h>
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
@@ -261,7 +261,7 @@ void i3_restart(bool forget_layout) {
 
     restore_geometry();
 
-    ipc_shutdown();
+    ipc_shutdown(SHUTDOWN_REASON_RESTART);
 
     LOG("restarting \"%s\"...\n", start_argv[0]);
     /* make sure -a is in the argument list or add it */

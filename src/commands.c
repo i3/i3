@@ -9,9 +9,9 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
-#include <stdint.h>
 #include <float.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #ifdef I3_ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
@@ -143,7 +143,8 @@ static Con *maybe_auto_back_and_forth_workspace(Con *workspace) {
  */
 typedef struct owindow {
     Con *con;
-    TAILQ_ENTRY(owindow) owindows;
+    TAILQ_ENTRY(owindow)
+    owindows;
 } owindow;
 
 typedef TAILQ_HEAD(owindows_head, owindow) owindows_head;
@@ -1557,7 +1558,7 @@ void cmd_exit(I3_CMD) {
 #ifdef I3_ASAN_ENABLED
     __lsan_do_leak_check();
 #endif
-    ipc_shutdown();
+    ipc_shutdown(SHUTDOWN_REASON_EXIT);
     unlink(config.ipc_socket_path);
     xcb_disconnect(conn);
     exit(0);
@@ -1590,7 +1591,7 @@ void cmd_reload(I3_CMD) {
  */
 void cmd_restart(I3_CMD) {
     LOG("restarting i3\n");
-    ipc_shutdown();
+    ipc_shutdown(SHUTDOWN_REASON_RESTART);
     unlink(config.ipc_socket_path);
     /* We need to call this manually since atexit handlers don’t get called
      * when exec()ing */
