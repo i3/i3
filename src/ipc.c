@@ -294,6 +294,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("focused");
     y(bool, (con == focused));
 
+    if (con->type != CT_ROOT && con->type != CT_OUTPUT) {
+        ystr("output");
+        ystr(con_get_output(con)->name);
+    }
+
     ystr("layout");
     switch (con->layout) {
         case L_DEFAULT:
