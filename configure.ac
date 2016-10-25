@@ -32,7 +32,7 @@ AS_IF([test -d ${srcdir}/.git],
       ],
       [
         VERSION="$(cut -d '-' -f 1 ${srcdir}/I3_VERSION | cut -d ' ' -f 1)"
-        I3_VERSION="$(cat ${srcdir}/I3_VERSION)"
+        I3_VERSION="$(sed -e 's/@<:@\"?\\@:>@/\\&/g' ${srcdir}/I3_VERSION)"
         is_release="$(grep -q non-git ${srcdir}/I3_VERSION && echo no || echo yes)"
       ])
 AC_SUBST([I3_VERSION], [$I3_VERSION])
