@@ -3,6 +3,7 @@ Section: x11
 Priority: extra
 Maintainer: Michael Stapelberg <stapelberg@debian.org>
 Build-Depends: debhelper (>= 9),
+               dh-autoreconf,
                libx11-dev,
                libxcb-util0-dev (>= 0.3.8),
                libxcb-keysyms1-dev,
