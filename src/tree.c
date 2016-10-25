@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "tree.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *

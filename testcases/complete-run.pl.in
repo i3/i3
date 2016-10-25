@@ -17,19 +17,8 @@ use TAP::Parser::Aggregator;
 use Time::HiRes qw(time);
 use IO::Handle;
 
-my $dirname;
-
-BEGIN {
-    use File::Basename;
-    use Cwd qw(abs_path);
-
-    # fileparse()[1] contains the directory portion of the specified path.
-    # See File::Basename(3p) for more details.
-    $dirname = (fileparse(abs_path($0)))[1];
-}
-
 # these are shipped with the testsuite
-use lib $dirname . 'lib';
+use lib qw(@abs_top_builddir@/testcases/lib @abs_top_srcdir@/testcases/lib);
 use i3test::Util qw(slurp);
 use StartXServer;
 use StatusLine;
@@ -82,17 +71,15 @@ my $result = GetOptions(
 
 pod2usage(-verbose => 2, -exitcode => 0) if $help;
 
-chdir $dirname or die "Could not chdir into $dirname";
-
 # Check for missing executables
 my @binaries = qw(
-                   ../i3
-                   ../i3bar/i3bar
-                   ../i3-config-wizard/i3-config-wizard
-                   ../i3-dump-log/i3-dump-log
-                   ../i3-input/i3-input
-                   ../i3-msg/i3-msg
-                   ../i3-nagbar/i3-nagbar
+                   @abs_top_builddir@/i3
+                   @abs_top_builddir@/i3bar/i3bar
+                   @abs_top_builddir@/i3-config-wizard/i3-config-wizard
+                   @abs_top_builddir@/i3-dump-log/i3-dump-log
+                   @abs_top_builddir@/i3-input/i3-input
+                   @abs_top_builddir@/i3-msg/i3-msg
+                   @abs_top_builddir@/i3-nagbar/i3-nagbar
                );
 
 foreach my $binary (@binaries) {
@@ -100,15 +87,16 @@ foreach my $binary (@binaries) {
     die "$binary is not an executable" unless -x $binary;
 }
 
-if ($options{coverage}) {
-    qx(command -v lcov &> /dev/null);
-    die "Cannot find lcov needed for coverage testing." if $?;
-    qx(command -v genhtml &> /dev/null);
-    die "Cannot find genhtml needed for coverage testing." if $?;
-
-    # clean out the counters that may be left over from previous tests.
-    qx(lcov -d ../ --zerocounters &> /dev/null);
-}
+$ENV{PATH} = join(':',
+    '@abs_top_builddir@/i3-nagbar',
+    '@abs_top_builddir@/i3-msg',
+    '@abs_top_builddir@/i3-input',
+    '@abs_top_builddir@/i3-dump-log',
+    '@abs_top_builddir@/i3-config-wizard',
+    '@abs_top_builddir@/i3bar',
+    '@abs_top_builddir@',
+    '@abs_top_srcdir@',
+    $ENV{PATH});
 
 qx(Xephyr -help 2>&1);
 die "Xephyr was not found in your path. Please install Xephyr (xserver-xephyr on Debian)." if $?;
@@ -120,7 +108,17 @@ die "Xephyr was not found in your path. Please install Xephyr (xserver-xephyr on
 my @testfiles = @ARGV;
 
 # if no files were passed on command line, run all tests from t/
-@testfiles = <t/*.t> if @testfiles == 0;
+if (scalar @testfiles == 0) {
+    @testfiles = <@abs_top_srcdir@/testcases/t/*.t> if @testfiles == 0;
+} else {
+    @testfiles = map {
+        # Fully qualify each specified file if necessary
+        if (! -e $_) {
+            $_ = "@abs_top_srcdir@/testcases/$_";
+        }
+        $_
+    } @testfiles;
+}
 
 my $numtests = scalar @testfiles;
 
@@ -250,17 +248,6 @@ if ($numtests == 1) {
 }
 
 END { cleanup() }
-
-if ($options{coverage}) {
-    print("\nGenerating test coverage report...\n");
-    qx(lcov -d ../ -b ../ --capture -o latest/i3-coverage.info);
-    qx(genhtml -o latest/i3-coverage latest/i3-coverage.info);
-    if ($?) {
-        print("Could not generate test coverage html. Did you compile i3 with test coverage support?\n");
-    } else {
-        print("Test coverage report generated in latest/i3-coverage\n");
-    }
-}
 
 # Report logfiles that match “(Leak|Address)Sanitizer:”.
 my @logs_with_leaks;

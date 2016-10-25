@@ -8,6 +8,8 @@
  *                  to i3.
  *
  */
+#include "libi3.h"
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <stdlib.h>
@@ -30,8 +32,6 @@
 #include "keysym2ucs.h"
 
 #include "i3-input.h"
-
-#include "libi3.h"
 
 /* IPC format string. %s will be replaced with what the user entered, then
  * the command will be sent to i3 */

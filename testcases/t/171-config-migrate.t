@@ -29,7 +29,7 @@ sub migrate_config {
     print $fh $config;
     close($fh);
 
-    my $cmd = "sh -c 'exec " . abs_path("../i3-migrate-config-to-v4") . " --v3 <$tmpfile'";
+    my $cmd = "sh -c 'exec i3-migrate-config-to-v4 --v3 <$tmpfile'";
     return [ split /\n/, qx($cmd) ];
 }
 

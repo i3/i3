@@ -836,7 +836,7 @@ sub launch_with_config {
     if ($config ne '-default') {
         say $fh $config;
     } else {
-        open(my $conf_fh, '<', './i3-test.config')
+        open(my $conf_fh, '<', '@abs_top_srcdir@/testcases/i3-test.config')
             or $tester->BAIL_OUT("could not open default config: $!");
         local $/;
         say $fh scalar <$conf_fh>;

@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "manage.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -10,6 +8,7 @@
  *
  */
 #include "all.h"
+
 #include "yajl_utils.h"
 
 #include <yajl/yajl_gen.h>

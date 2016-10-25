@@ -5,6 +5,8 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -12,8 +14,6 @@
 #include <stdio.h>
 #include <err.h>
 #include <errno.h>
-
-#include "libi3.h"
 
 /*
  * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of

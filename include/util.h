@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <err.h>
 
 #include "data.h"

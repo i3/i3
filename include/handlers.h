@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <xcb/randr.h>
 
 extern int randr_base;

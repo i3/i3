@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Connects to i3 to find out the currently running version. Useful since it
  * might be different from the version compiled into this binary (maybe the

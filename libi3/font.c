@@ -5,6 +5,8 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,8 +16,6 @@
 
 #include <cairo/cairo-xcb.h>
 #include <pango/pangocairo.h>
-
-#include "libi3.h"
 
 static const i3Font *savedFont = NULL;
 

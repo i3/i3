@@ -8,6 +8,8 @@
  *                   keysyms.
  *
  */
+#include <config.h>
+
 #if defined(__FreeBSD__)
 #include <sys/param.h>
 #endif

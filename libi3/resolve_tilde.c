@@ -5,8 +5,8 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
-
 #include "libi3.h"
+
 #include <err.h>
 #include <glob.h>
 #include <stdlib.h>

@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <xcb/xcb.h>
 #include <cairo/cairo-xcb.h>
 

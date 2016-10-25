@@ -7,6 +7,8 @@
  * child.c: Getting input for the statusline
  *
  */
+#include "common.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -24,8 +26,6 @@
 #include <yajl/yajl_version.h>
 #include <yajl/yajl_gen.h>
 #include <paths.h>
-
-#include "common.h"
 
 /* Global variables for child_*() */
 i3bar_child child;
@@ -105,7 +105,9 @@ __attribute__((format(printf, 1, 2))) static void set_statusline_error(const cha
     char *message;
     va_list args;
     va_start(args, format);
-    (void)vasprintf(&message, format, args);
+    if (vasprintf(&message, format, args) == -1) {
+        return;
+    }
 
     struct status_block *err_block = scalloc(1, sizeof(struct status_block));
     err_block->full_text = i3string_from_utf8("Error: ");

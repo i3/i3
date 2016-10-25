@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "commands.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -9,6 +7,8 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
+#include "all.h"
+
 #include <stdint.h>
 #include <float.h>
 #include <stdarg.h>
@@ -17,7 +17,6 @@
 #include <sanitizer/lsan_interface.h>
 #endif
 
-#include "all.h"
 #include "shmlog.h"
 
 // Macros to make the YAJL API a bit easier to use.

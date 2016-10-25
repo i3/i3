@@ -5,6 +5,8 @@
  * © 2010 Axel Wagner and contributors (see also: LICENSE)
  *
  */
+#include "common.h"
+
 #include <stdio.h>
 #include <i3/ipc.h>
 #include <string.h>
@@ -14,8 +16,6 @@
 #include <ev.h>
 #include <getopt.h>
 #include <glob.h>
-
-#include "common.h"
 
 /*
  * Having verboselog(), errorlog() and debuglog() is necessary when using libi3.

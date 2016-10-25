@@ -25,7 +25,7 @@ sub parser_calls {
 
     # TODO: use a timeout, so that we can error out if it doesn’t terminate
     # TODO: better way of passing arguments
-    my $stdout = qx(../test.commands_parser '$command' 2>&1 >&-);
+    my $stdout = qx(test.commands_parser '$command' 2>&1 >&-);
 
     # Filter out all debugging output.
     my @lines = split("\n", $stdout);

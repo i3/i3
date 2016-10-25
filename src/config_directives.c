@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "config_directives.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -9,10 +7,10 @@
  * config_directives.c: all config storing functions (see config_parser.c)
  *
  */
+#include "all.h"
+
 #include <float.h>
 #include <stdarg.h>
-
-#include "all.h"
 
 /*******************************************************************************
  * Criteria functions.

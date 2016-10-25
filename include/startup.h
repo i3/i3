@@ -12,6 +12,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-monitor.h>
 

@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Checks the list of assignments for the given window and runs all matching
  * ones (unless they have already been run for this specific window).

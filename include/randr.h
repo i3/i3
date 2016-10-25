@@ -11,6 +11,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include "data.h"
 #include <xcb/randr.h>
 

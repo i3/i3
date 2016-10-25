@@ -14,6 +14,8 @@
  * Additionally, it’s even useful sometimes :-).
  *
  */
+#include "libi3.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <sys/types.h>
@@ -34,7 +36,6 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
 
-#include "libi3.h"
 #include <i3/ipc.h>
 
 static char *socket_path;

@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /* This is used to keep a state to pass around when rendering a con in render_con(). */
 typedef struct render_params {
     /* A copy of the coordinates of the container which is being rendered. */

@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "log.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -9,6 +7,8 @@
  * log.c: Logging functions.
  *
  */
+#include <config.h>
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>

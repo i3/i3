@@ -5,11 +5,11 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-
-#include "libi3.h"
 
 #ifndef STARTS_WITH
 #define STARTS_WITH(string, needle) (strncasecmp((string), (needle), strlen((needle))) == 0)

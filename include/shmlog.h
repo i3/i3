@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <stdint.h>
 #if !defined(__OpenBSD__)
 #include <pthread.h>

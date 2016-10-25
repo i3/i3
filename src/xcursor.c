@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "xcursor.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -9,6 +7,8 @@
  * xcursor.c: xcursor support for themed cursors.
  *
  */
+#include <config.h>
+
 #include <assert.h>
 #include <xcb/xcb_cursor.h>
 

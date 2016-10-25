@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <xcb/xproto.h>
 
 #include "common.h"

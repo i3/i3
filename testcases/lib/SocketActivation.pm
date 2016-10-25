@@ -62,14 +62,6 @@ sub activate_i3 {
             mkdir $ENV{XDG_RUNTIME_DIR};
         }
         $ENV{DISPLAY} = $args{display};
-        $ENV{PATH} = join(':',
-            '../i3-nagbar',
-            '../i3-msg',
-            '../i3-config-wizard',
-            '../i3bar',
-            '..',
-            $ENV{PATH}
-        );
 
         # We are about to exec, but we did not modify $^F to include $socket
         # when creating the socket (because the file descriptor could have a
@@ -96,7 +88,7 @@ sub activate_i3 {
         # the interactive signalhandler to make it crash immediately instead.
         # Also disable logging to SHM since we redirect the logs anyways.
         # Force Xinerama because we use Xdmx for multi-monitor tests.
-        my $i3cmd = abs_path("../i3") . q| --shmlog-size=0 --disable-signalhandler --force-xinerama|;
+        my $i3cmd = q|i3 --shmlog-size=0 --disable-signalhandler --force-xinerama|;
         if (!$args{validate_config}) {
             # We only set logging if i3 is actually started, but not if we only
             # validate the config file. This is to keep logging to a minimum as

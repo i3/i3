@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "config.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -11,6 +9,7 @@
  *
  */
 #include "all.h"
+
 #include <xkbcommon/xkbcommon.h>
 
 char *current_configpath = NULL;

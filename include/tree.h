@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 extern Con *croot;
 /* TODO: i am not sure yet how much access to the focused container should
  * be permitted to source files */

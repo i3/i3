@@ -10,8 +10,9 @@
  * compile-time.
  *
  */
-#ifndef I3_ALL_H
-#define I3_ALL_H
+#pragma once
+
+#include <config.h>
 
 #include <assert.h>
 #include <stdbool.h>
@@ -51,7 +52,7 @@
 #include "click.h"
 #include "key_press.h"
 #include "floating.h"
-#include "config.h"
+#include "configuration.h"
 #include "handlers.h"
 #include "randr.h"
 #include "xinerama.h"
@@ -81,5 +82,3 @@
 #include "display_version.h"
 #include "restore_layout.h"
 #include "main.h"
-
-#endif

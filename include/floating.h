@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include "tree.h"
 
 /** Callback for dragging */

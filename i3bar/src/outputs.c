@@ -7,6 +7,8 @@
  * outputs.c: Maintaining the outputs list
  *
  */
+#include "common.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,8 +16,6 @@
 #include <i3/ipc.h>
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
-
-#include "common.h"
 
 /* A datatype to pass through the callbacks to save the state */
 struct outputs_json_params {
