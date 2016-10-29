@@ -178,7 +178,10 @@ void floating_enable(Con *con, bool automatic) {
     if ((con->parent->type == CT_CON || con->parent->type == CT_FLOATING_CON) &&
         con_num_children(con->parent) == 0) {
         DLOG("Old container empty after setting this child to floating, closing\n");
-        tree_close_internal(con->parent, DONT_KILL_WINDOW, false, false);
+        Con *parent = con->parent;
+        /* clear the pointer before calling tree_close_internal in which the memory is freed */
+        con->parent = NULL;
+        tree_close_internal(parent, DONT_KILL_WINDOW, false, false);
     }
 
     char *name;
@@ -315,6 +318,7 @@ void floating_disable(Con *con, bool automatic) {
     const bool set_focus = (con == focused);
 
     Con *ws = con_get_workspace(con);
+    Con *parent = con->parent;
 
     /* 1: detach from parent container */
     TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
@@ -323,7 +327,9 @@ void floating_disable(Con *con, bool automatic) {
     /* 2: kill parent container */
     TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
     TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
-    tree_close_internal(con->parent, DONT_KILL_WINDOW, true, false);
+    /* clear the pointer before calling tree_close_internal in which the memory is freed */
+    con->parent = NULL;
+    tree_close_internal(parent, DONT_KILL_WINDOW, true, false);
 
     /* 3: re-attach to the parent of the currently focused con on the workspace
      * this floating con was on */
