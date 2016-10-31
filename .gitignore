@@ -34,6 +34,7 @@ i3-command-parser.stamp
 i3-config-parser.stamp
 .clang_complete
 LAST_VERSION
+build
 
 ################################################################################
 # https://raw.githubusercontent.com/github/gitignore/master/Autotools.gitignore
