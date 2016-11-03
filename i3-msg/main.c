@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!payload)
-        payload = "";
+        payload = sstrdup("");
 
     int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
     if (sockfd == -1)
@@ -221,6 +221,7 @@ int main(int argc, char *argv[]) {
 
     if (ipc_send_message(sockfd, strlen(payload), message_type, (uint8_t *)payload) == -1)
         err(EXIT_FAILURE, "IPC: write()");
+    free(payload);
 
     if (quiet)
         return 0;

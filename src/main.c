@@ -403,12 +403,14 @@ int main(int argc, char *argv[]) {
         memset(&addr, 0, sizeof(struct sockaddr_un));
         addr.sun_family = AF_LOCAL;
         strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
+        FREE(socket_path);
         if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0)
             err(EXIT_FAILURE, "Could not connect to i3");
 
         if (ipc_send_message(sockfd, strlen(payload), I3_IPC_MESSAGE_TYPE_COMMAND,
                              (uint8_t *)payload) == -1)
             err(EXIT_FAILURE, "IPC: write()");
+        FREE(payload);
 
         uint32_t reply_length;
         uint32_t reply_type;
@@ -422,6 +424,7 @@ int main(int argc, char *argv[]) {
         if (reply_type != I3_IPC_MESSAGE_TYPE_COMMAND)
             errx(EXIT_FAILURE, "IPC: received reply of type %d but expected %d (COMMAND)", reply_type, I3_IPC_MESSAGE_TYPE_COMMAND);
         printf("%.*s\n", reply_length, reply);
+        FREE(reply);
         return 0;
     }
 
