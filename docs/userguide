@@ -152,7 +152,7 @@ and move it to the wanted size.
 
 You can also use <<binding_modes>> to define a mode for resizing via the
 keyboard. To see an example for this, look at the
-https://github.com/i3/i3/blob/next/i3.config.keycodes[default config] provided
+https://github.com/i3/i3/blob/next/etc/config.keycodes[default config] provided
 by i3.
 
 === Restarting i3 inplace
@@ -181,7 +181,7 @@ can also do that by using the <<floating_modifier>>. Another way to resize
 floating windows using the mouse is to right-click on the titlebar and drag.
 
 For resizing floating windows with your keyboard, see the resizing binding mode
-provided by the i3 https://github.com/i3/i3/blob/next/i3.config.keycodes[default config].
+provided by the i3 https://github.com/i3/i3/blob/next/etc/config.keycodes[default config].
 
 Floating windows are always on top of tiling windows.
 
@@ -2161,7 +2161,7 @@ floating containers.
 
 It is recommended to define bindings for resizing in a dedicated binding mode.
 See <<binding_modes>> and the example in the i3
-https://github.com/i3/i3/blob/next/i3.config.keycodes[default config] for more
+https://github.com/i3/i3/blob/next/etc/config.keycodes[default config] for more
 context.
 
 *Example*:
