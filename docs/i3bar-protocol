@@ -111,7 +111,7 @@ cont_signal::
 	processing.
 	The default value (if none is specified) is SIGCONT.
 click_events::
-	If specified and true i3bar will write a infinite array (same as above)
+	If specified and true i3bar will write an infinite array (same as above)
 	to your stdin.
 
 === Blocks in detail
