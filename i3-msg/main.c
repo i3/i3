@@ -240,9 +240,10 @@ int main(int argc, char *argv[]) {
     /* For the reply of commands, have a look if that command was successful.
      * If not, nicely format the error message. */
     if (reply_type == I3_IPC_MESSAGE_TYPE_COMMAND) {
-        yajl_handle handle;
-        handle = yajl_alloc(&reply_callbacks, NULL, NULL);
+        yajl_handle handle = yajl_alloc(&reply_callbacks, NULL, NULL);
         yajl_status state = yajl_parse(handle, (const unsigned char *)reply, reply_length);
+        yajl_free(handle);
+
         switch (state) {
             case yajl_status_ok:
                 break;
