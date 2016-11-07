@@ -146,6 +146,15 @@ else
 	print_BUILD_MANS=no
 fi
 
+git_dir=`git rev-parse --git-dir 2>/dev/null`
+if test -n "$git_dir"; then
+	srcdir=`dirname "$git_dir"`
+	exclude_dir=`pwd | sed "s,^$srcdir,,g"`
+	if ! grep -q "^$exclude_dir" "$git_dir/info/exclude"; then
+		echo "$exclude_dir" >> "$git_dir/info/exclude"
+	fi
+fi
+
 echo \
 "--------------------------------------------------------------------------------
 build configured:
