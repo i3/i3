@@ -31,7 +31,8 @@ typedef struct ipc_client {
     int num_events;
     char **events;
 
-    TAILQ_ENTRY(ipc_client) clients;
+    TAILQ_ENTRY(ipc_client)
+    clients;
 } ipc_client;
 
 /*

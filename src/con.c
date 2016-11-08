@@ -410,7 +410,8 @@ Con *con_parent_with_orientation(Con *con, orientation_t orientation) {
 struct bfs_entry {
     Con *con;
 
-    TAILQ_ENTRY(bfs_entry) entries;
+    TAILQ_ENTRY(bfs_entry)
+    entries;
 };
 
 /*
@@ -422,7 +423,9 @@ Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode) {
 
     /* TODO: is breadth-first-search really appropriate? (check as soon as
      * fullscreen levels and fullscreen for containers is implemented) */
-    TAILQ_HEAD(bfs_head, bfs_entry) bfs_head = TAILQ_HEAD_INITIALIZER(bfs_head);
+    TAILQ_HEAD(bfs_head, bfs_entry)
+    bfs_head = TAILQ_HEAD_INITIALIZER(bfs_head);
+
     struct bfs_entry *entry = smalloc(sizeof(struct bfs_entry));
     entry->con = con;
     TAILQ_INSERT_TAIL(&bfs_head, entry, entries);

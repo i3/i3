@@ -1002,7 +1002,7 @@ bool parse_file(const char *f, bool use_nagbar) {
         char *next;
         for (next = bufcopy;
              next < (bufcopy + stbuf.st_size) &&
-                 (next = strcasestr(next, current->key)) != NULL;
+             (next = strcasestr(next, current->key)) != NULL;
              next += strlen(current->key)) {
             *next = '_';
             extra_bytes += extra;

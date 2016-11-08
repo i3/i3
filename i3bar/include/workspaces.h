@@ -40,5 +40,6 @@ struct i3_ws {
     rect rect;                /* The rect of the ws (not used (yet)) */
     struct i3_output *output; /* The current output of the ws */
 
-    TAILQ_ENTRY(i3_ws) tailq; /* Pointer for the TAILQ-Macro */
+    TAILQ_ENTRY(i3_ws)
+    tailq; /* Pointer for the TAILQ-Macro */
 };
