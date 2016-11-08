@@ -1,2 +1,2 @@
-etc
-usr
+debian/tmp/etc
+debian/tmp/usr
