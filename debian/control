@@ -26,7 +26,7 @@ Build-Depends: debhelper (>= 9),
                libcairo2-dev (>= 1.14.4),
                libpango1.0-dev,
                libpod-simple-perl
-Standards-Version: 3.9.7
+Standards-Version: 3.9.8
 Homepage: http://i3wm.org/
 
 Package: i3
