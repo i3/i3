@@ -7,14 +7,14 @@
  * workspaces.c: Maintaining the workspace lists
  *
  */
+#include "common.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
-
-#include "common.h"
 
 /* A datatype to pass through the callbacks to save the state */
 struct workspaces_json_params {
@@ -233,7 +233,7 @@ void parse_workspaces_json(char *json) {
 
     state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
-    /* FIXME: Propper error handling for JSON parsing */
+    /* FIXME: Proper error handling for JSON parsing */
     switch (state) {
         case yajl_status_ok:
             break;

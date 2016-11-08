@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "con.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -12,6 +10,7 @@
  *
  */
 #include "all.h"
+
 #include "yajl_utils.h"
 
 static void con_on_remove_child(Con *con);
@@ -68,7 +67,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
  */
 Con *con_new(Con *parent, i3Window *window) {
     Con *new = con_new_skeleton(parent, window);
-    x_con_init(new, new->depth);
+    x_con_init(new);
     return new;
 }
 
@@ -617,6 +616,7 @@ void con_mark(Con *con, const char *mark, mark_mode_t mode) {
     mark_t *new = scalloc(1, sizeof(mark_t));
     new->name = sstrdup(mark);
     TAILQ_INSERT_TAIL(&(con->marks_head), new, marks);
+    ipc_send_window_event("mark", con);
 
     con->mark_changed = true;
 }
@@ -645,6 +645,8 @@ void con_unmark(Con *con, const char *name) {
                 FREE(mark->name);
                 TAILQ_REMOVE(&(current->marks_head), mark, marks);
                 FREE(mark);
+
+                ipc_send_window_event("mark", current);
             }
 
             current->mark_changed = true;
@@ -668,6 +670,8 @@ void con_unmark(Con *con, const char *name) {
             FREE(mark->name);
             TAILQ_REMOVE(&(current->marks_head), mark, marks);
             FREE(mark);
+
+            ipc_send_window_event("mark", current);
             break;
         }
     }
@@ -725,6 +729,49 @@ int con_num_children(Con *con) {
     children++;
 
     return children;
+}
+
+/**
+ * Returns the number of visible non-floating children of this container.
+ * For example, if the container contains a hsplit which has two children,
+ * this will return 2 instead of 1.
+ */
+int con_num_visible_children(Con *con) {
+    if (con == NULL)
+        return 0;
+
+    int children = 0;
+    Con *current = NULL;
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+        /* Visible leaf nodes are a child. */
+        if (!con_is_hidden(current) && con_is_leaf(current))
+            children++;
+        /* All other containers need to be recursed. */
+        else
+            children += con_num_visible_children(current);
+    }
+
+    return children;
+}
+
+/*
+ * Count the number of windows (i.e., leaf containers).
+ *
+ */
+int con_num_windows(Con *con) {
+    if (con == NULL)
+        return 0;
+
+    if (con_has_managed_window(con))
+        return 1;
+
+    int num = 0;
+    Con *current = NULL;
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+        num += con_num_windows(current);
+    }
+
+    return num;
 }
 
 /*
@@ -1158,6 +1205,19 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
 }
 
 /*
+ * Moves the given container to the currently focused container on the
+ * visible workspace on the given output.
+ *
+ */
+void con_move_to_output(Con *con, Output *output) {
+    Con *ws = NULL;
+    GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
+    assert(ws != NULL);
+    DLOG("Moving con %p to output %s\n", con, output->name);
+    con_move_to_workspace(con, ws, false, false, false);
+}
+
+/*
  * Returns the orientation of the given container (for stacked containers,
  * vertical orientation is used regardless of the actual orientation of the
  * container).
@@ -1411,6 +1471,12 @@ Con *con_descend_direction(Con *con, direction_t direction) {
  *
  */
 Rect con_border_style_rect(Con *con) {
+    if (config.hide_edge_borders == HEBM_SMART && con_num_visible_children(con_get_workspace(con)) <= 1) {
+        if (!con_is_floating(con)) {
+            return (Rect){0, 0, 0, 0};
+        }
+    }
+
     adjacent_t borders_to_hide = ADJ_NONE;
     int border_width = con->current_border_width;
     DLOG("The border width for con is set to: %d\n", con->current_border_width);
@@ -1885,6 +1951,13 @@ bool con_has_urgent_child(Con *con) {
  */
 void con_update_parents_urgency(Con *con) {
     Con *parent = con->parent;
+
+    /* Urgency hints should not be set on any container higher up in the
+     * hierarchy than the workspace level. Unfortunately, since the content
+     * container has type == CT_CON, that’s not easy to verify in the loop
+     * below, so we need another condition to catch that case: */
+    if (con->type == CT_WORKSPACE)
+        return;
 
     bool new_urgency_value = con->urgent;
     while (parent && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {

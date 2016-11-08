@@ -346,5 +346,25 @@ kill_windows;
 exit_gracefully($pid);
 
 ###############################################################################
+# _NET_WM_DESKTOP is updated when a window is moved to the scratchpad.
+###############################################################################
+
+$pid = launch_with_config($config);
+
+cmd 'workspace 0';
+$con = open_window;
+cmd 'floating enable';
+is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set sanity check)');
+
+cmd 'move scratchpad';
+is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP is updated');
+
+cmd 'scratchpad show';
+is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set sanity check)');
+
+kill_windows;
+exit_gracefully($pid);
+
+###############################################################################
 
 done_testing;

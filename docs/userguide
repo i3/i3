@@ -152,7 +152,7 @@ and move it to the wanted size.
 
 You can also use <<binding_modes>> to define a mode for resizing via the
 keyboard. To see an example for this, look at the
-https://github.com/i3/i3/blob/next/i3.config.keycodes[default config] provided
+https://github.com/i3/i3/blob/next/etc/config.keycodes[default config] provided
 by i3.
 
 === Restarting i3 inplace
@@ -181,7 +181,7 @@ can also do that by using the <<floating_modifier>>. Another way to resize
 floating windows using the mouse is to right-click on the titlebar and drag.
 
 For resizing floating windows with your keyboard, see the resizing binding mode
-provided by the i3 https://github.com/i3/i3/blob/next/i3.config.keycodes[default config].
+provided by the i3 https://github.com/i3/i3/blob/next/etc/config.keycodes[default config].
 
 Floating windows are always on top of tiling windows.
 
@@ -610,11 +610,13 @@ new_window pixel 3
 
 You can hide container borders adjacent to the screen edges using
 +hide_edge_borders+. This is useful if you are using scrollbars, or do not want
-to waste even two pixels in displayspace. Default is none.
+to waste even two pixels in displayspace. The "smart" setting hides borders on
+workspaces with only one window visible, but keeps them on workspaces with
+multiple windows visible. Default is none.
 
 *Syntax*:
 -----------------------------------------------
-hide_edge_borders none|vertical|horizontal|both
+hide_edge_borders none|vertical|horizontal|both|smart
 -----------------------------------------------
 
 *Example*:
@@ -699,6 +701,38 @@ containing another variable. There is no fancy handling and there are
 absolutely no plans to change this. If you need a more dynamic configuration
 you should create a little script which generates a configuration file and run
 it before starting i3 (for example in your +~/.xsession+ file).
+
+Also see <<xresources>> to learn how to create variables based on resources
+loaded from the X resource database.
+
+[[xresources]]
+=== X resources
+
+<<variables>> can also be created using a value configured in the X resource
+database. This is useful, for example, to avoid configuring color values within
+the i3 configuration. Instead, the values can be configured, once, in the X
+resource database to achieve an easily maintainable, consistent color theme
+across many X applications.
+
+Defining a resource will load this resource from the resource database and
+assign its value to the specified variable. A fallback must be specified in
+case the resource cannot be loaded from the database.
+
+*Syntax*:
+----------------------------------------------------
+set_from_resource $<name> <resource_name> <fallback>
+----------------------------------------------------
+
+*Example*:
+----------------------------------------------------------------------------
+# The ~/.Xresources should contain a line such as
+#     *color0: #121212
+# and must be loaded properly, e.g., by using
+#     xrdb ~/.Xresources
+# This value is picked up on by other applications (e.g., the URxvt terminal
+# emulator) and can be used in i3 like this:
+set_from_resource $black i3wm.color0 #000000
+----------------------------------------------------------------------------
 
 [[assign_workspace]]
 === Automatically putting clients on specific workspaces
@@ -1115,11 +1149,15 @@ show_marks yes
 Config files support line continuation, meaning when you end a line in a
 backslash character (`\`), the line-break will be ignored by the parser. This
 feature can be used to create more readable configuration files.
+Commented lines are not continued.
 
 *Examples*:
 -------------------
 bindsym Mod1+f \
 fullscreen toggle
+
+# this line is not continued \
+bindsym Mod1+F fullscreen toggle
 -------------------
 
 == Configuring i3bar
@@ -1372,7 +1410,7 @@ NetworkManager, VLC, Pidgin, etc. can place little icons.
 You can configure on which output (monitor) the icons should be displayed or
 you can turn off the functionality entirely.
 
-You can use mutliple +tray_output+ directives in your config to specify a list
+You can use multiple +tray_output+ directives in your config to specify a list
 of outputs on which you want the tray to appear. The first available output in
 that list as defined by the order of the directives will be used for the tray
 output.
@@ -1641,6 +1679,9 @@ bindsym $mod+x [class="Firefox" window_role="About"] kill
 
 # enable floating mode and move container to workspace 4
 for_window [class="^evil-app$"] floating enable, move container to workspace 4
+
+# move all floating windows to the scratchpad
+bindsym $mod+x [floating] move scratchpad
 ------------------------------------
 
 The criteria which are currently implemented are:
@@ -1683,6 +1724,10 @@ con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
 	interface. Handy for scripting. Use the special value +\_\_focused__+
 	to match only the currently focused window.
+floating::
+	Only matches floating windows. This criterion requires no value.
+tiling::
+	Only matches tiling windows. This criterion requires no value.
 
 The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
@@ -2050,6 +2095,7 @@ See <<move_to_outputs>> for how to move a container/workspace to a different
 RandR output.
 
 [[move_to_outputs]]
+[[_moving_containers_workspaces_to_randr_outputs]]
 === Moving containers/workspaces to RandR outputs
 
 To move a container to another RandR output (addressed by names like +LVDS1+ or
@@ -2057,10 +2103,10 @@ To move a container to another RandR output (addressed by names like +LVDS1+ or
 +right+, +up+ or +down+), there are two commands:
 
 *Syntax*:
-----------------------------------------------------
-move container to output left|right|down|up|<output>
-move workspace to output left|right|down|up|<output>
-----------------------------------------------------
+------------------------------------------------------------
+move container to output left|right|down|up|current|<output>
+move workspace to output left|right|down|up|current|<output>
+------------------------------------------------------------
 
 *Examples*:
 --------------------------------------------------------
@@ -2115,7 +2161,7 @@ floating containers.
 
 It is recommended to define bindings for resizing in a dedicated binding mode.
 See <<binding_modes>> and the example in the i3
-https://github.com/i3/i3/blob/next/i3.config.keycodes[default config] for more
+https://github.com/i3/i3/blob/next/etc/config.keycodes[default config] for more
 context.
 
 *Example*:
@@ -2204,7 +2250,7 @@ bindsym $mod+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
 ---------------------------------------
 
 Alternatively, if you do not want to mess with +i3-input+, you could create
-seperate bindings for a specific set of labels and then only use those labels.
+separate bindings for a specific set of labels and then only use those labels.
 ///////////////////////////////////////////////////////////////////
 
 [[pango_markup]]
@@ -2534,7 +2580,7 @@ have more than one monitor:
    track of which window you put where. Thus, you can use vim-like marks to
    quickly switch between windows. See <<vim_like_marks>>.
 4. For information on how to move existing workspaces between monitors,
-   see <<_moving_containers_workspaces_to_randr_outputs>>.
+   see <<move_to_outputs>>.
 
 == i3 and the rest of your software world
 

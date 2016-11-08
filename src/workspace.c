@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "workspace.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -525,7 +523,7 @@ Con *workspace_next(void) {
                     continue;
                 if (!first)
                     first = child;
-                if (!first_opposite && child->num != -1)
+                if (!first_opposite || (child->num != -1 && child->num < first_opposite->num))
                     first_opposite = child;
                 if (child == current) {
                     found_current = true;
@@ -544,7 +542,7 @@ Con *workspace_next(void) {
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
                     continue;
-                if (!first)
+                if (!first || (child->num != -1 && child->num < first->num))
                     first = child;
                 if (!first_opposite && child->num == -1)
                     first_opposite = child;
@@ -590,13 +588,13 @@ Con *workspace_prev(void) {
                         continue;
                     if (!last)
                         last = child;
-                    if (!first_opposite && child->num != -1)
+                    if (!first_opposite || (child->num != -1 && child->num > first_opposite->num))
                         first_opposite = child;
                     if (child == current) {
                         found_current = true;
                     } else if (child->num == -1 && found_current) {
                         prev = child;
-                        goto workspace_prev_end;
+                        return prev;
                     }
                 }
             }
@@ -610,7 +608,7 @@ Con *workspace_prev(void) {
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
                     continue;
-                if (!last)
+                if (!last || (child->num != -1 && last->num < child->num))
                     last = child;
                 if (!first_opposite && child->num == -1)
                     first_opposite = child;
@@ -628,7 +626,6 @@ Con *workspace_prev(void) {
     if (!prev)
         prev = first_opposite ? first_opposite : last;
 
-workspace_prev_end:
     return prev;
 }
 
@@ -912,17 +909,12 @@ Con *workspace_encapsulate(Con *ws) {
 bool workspace_move_to_output(Con *ws, const char *name) {
     LOG("Trying to move workspace %p / %s to output \"%s\".\n", ws, ws->name, name);
 
-    Con *current_output_con = con_get_output(ws);
-    if (!current_output_con) {
-        ELOG("Could not get the output container for workspace %p / %s.\n", ws, ws->name);
-        return false;
-    }
-
-    Output *current_output = get_output_by_name(current_output_con->name);
-    if (!current_output) {
+    Output *current_output = get_output_for_con(ws);
+    if (current_output == NULL) {
         ELOG("Cannot get current output. This is a bug in i3.\n");
         return false;
     }
+
     Output *output = get_output_from_string(current_output, name);
     if (!output) {
         ELOG("Could not get output from string \"%s\"\n", name);

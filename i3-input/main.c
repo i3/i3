@@ -8,6 +8,8 @@
  *                  to i3.
  *
  */
+#include "libi3.h"
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <stdlib.h>
@@ -30,8 +32,6 @@
 #include "keysym2ucs.h"
 
 #include "i3-input.h"
-
-#include "libi3.h"
 
 /* IPC format string. %s will be replaced with what the user entered, then
  * the command will be sent to i3 */
@@ -80,7 +80,7 @@ void debuglog(char *fmt, ...) {
 }
 
 /*
- * Restores the X11 input focus to whereever it was before.
+ * Restores the X11 input focus to wherever it was before.
  * This is necessary because i3-input’s window has override_redirect=1
  * (→ unmanaged by the window manager) and thus i3-input changes focus itself.
  * This function is called on exit().
@@ -216,10 +216,6 @@ static void finish_input() {
 
     free(full);
 
-#if 0
-    free(command);
-    return 1;
-#endif
     exit(0);
 }
 
@@ -317,9 +313,30 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 static xcb_rectangle_t get_window_position(void) {
     xcb_rectangle_t result = (xcb_rectangle_t){logical_px(50), logical_px(50), logical_px(500), font.height + logical_px(8)};
 
+    xcb_get_property_reply_t *supporting_wm_reply = NULL;
     xcb_get_input_focus_reply_t *input_focus = NULL;
     xcb_get_geometry_reply_t *geometry = NULL;
+    xcb_get_property_reply_t *wm_class = NULL;
     xcb_translate_coordinates_reply_t *coordinates = NULL;
+
+    xcb_atom_t A__NET_SUPPORTING_WM_CHECK;
+    xcb_intern_atom_cookie_t nswc_cookie = xcb_intern_atom(conn, 0, strlen("_NET_SUPPORTING_WM_CHECK"), "_NET_SUPPORTING_WM_CHECK");
+    xcb_intern_atom_reply_t *nswc_reply = xcb_intern_atom_reply(conn, nswc_cookie, NULL);
+    if (nswc_reply == NULL) {
+        ELOG("Could not intern atom _NET_SUPPORTING_WM_CHECK\n");
+        exit(-1);
+    }
+    A__NET_SUPPORTING_WM_CHECK = nswc_reply->atom;
+    free(nswc_reply);
+
+    supporting_wm_reply = xcb_get_property_reply(
+        conn, xcb_get_property(conn, false, root, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 0, 32), NULL);
+    xcb_window_t *supporting_wm_win = NULL;
+    if (supporting_wm_reply == NULL || xcb_get_property_value_length(supporting_wm_reply) == 0) {
+        DLOG("Could not determine EWMH support window.\n");
+    } else {
+        supporting_wm_win = xcb_get_property_value(supporting_wm_reply);
+    }
 
     /* In rare cases, the window holding the input focus might disappear while we are figuring out its
      * position. To avoid this, we grab the server in the meantime. */
@@ -331,29 +348,47 @@ static xcb_rectangle_t get_window_position(void) {
         goto free_resources;
     }
 
+    /* We need to ignore the EWMH support window to which the focus can be set if there's no suitable window to focus. */
+    if (supporting_wm_win != NULL && input_focus->focus == *supporting_wm_win) {
+        DLOG("Input focus is on the EWMH support window, ignoring.\n");
+        goto free_resources;
+    }
+
     geometry = xcb_get_geometry_reply(conn, xcb_get_geometry(conn, input_focus->focus), NULL);
     if (geometry == NULL) {
         DLOG("Failed to received window geometry.\n");
         goto free_resources;
     }
 
-    coordinates = xcb_translate_coordinates_reply(
-        conn, xcb_translate_coordinates(conn, input_focus->focus, root, geometry->x, geometry->y), NULL);
-    if (coordinates == NULL) {
-        DLOG("Failed to translate coordinates.\n");
-        goto free_resources;
-    }
+    wm_class = xcb_get_property_reply(
+        conn, xcb_get_property(conn, false, input_focus->focus, XCB_ATOM_WM_CLASS, XCB_GET_PROPERTY_TYPE_ANY, 0, 32), NULL);
 
-    DLOG("Determined coordinates of window with input focus at x = %i / y = %i.\n", coordinates->dst_x, coordinates->dst_y);
-    result.x += coordinates->dst_x;
-    result.y += coordinates->dst_y;
+    /* We need to find out whether the input focus is on an i3 frame window. If it is, we must not translate the coordinates. */
+    if (wm_class == NULL || xcb_get_property_value_length(wm_class) == 0 || strcmp(xcb_get_property_value(wm_class), "i3-frame") != 0) {
+        coordinates = xcb_translate_coordinates_reply(
+            conn, xcb_translate_coordinates(conn, input_focus->focus, root, geometry->x, geometry->y), NULL);
+        if (coordinates == NULL) {
+            DLOG("Failed to translate coordinates.\n");
+            goto free_resources;
+        }
+
+        DLOG("Determined coordinates of window with input focus at x = %i / y = %i.\n", coordinates->dst_x, coordinates->dst_y);
+        result.x += coordinates->dst_x;
+        result.y += coordinates->dst_y;
+    } else {
+        DLOG("Determined coordinates of window with input focus at x = %i / y = %i.\n", geometry->x, geometry->y);
+        result.x += geometry->x;
+        result.y += geometry->y;
+    }
 
 free_resources:
     xcb_ungrab_server(conn);
     xcb_flush(conn);
 
+    FREE(supporting_wm_reply);
     FREE(input_focus);
     FREE(geometry);
+    FREE(wm_class);
     FREE(coordinates);
     return result;
 }

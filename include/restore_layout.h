@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Opens a separate connection to X11 for placeholder windows when restoring
  * layouts. This is done as a safety measure (users can xkill a placeholder

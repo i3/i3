@@ -5,6 +5,8 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -14,8 +16,6 @@
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-
-#include "libi3.h"
 
 /*
  * Try to get the contents of the given atom (for example I3_SOCKET_PATH) from

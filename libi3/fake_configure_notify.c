@@ -5,13 +5,13 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <stdlib.h>
 #include <stdbool.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
-
-#include "libi3.h"
 
 /*
  * Generates a configure_notify event and sends it to the given window

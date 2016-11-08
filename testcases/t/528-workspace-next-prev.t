@@ -31,6 +31,17 @@ sub assert_next {
     is(focused_ws, $expected, "workspace $expected focused");
 }
 
+sub assert_prev {
+    my ($expected) = @_;
+
+    cmd 'workspace prev';
+    # We need to sync after changing focus to a different output to wait for the
+    # EnterNotify to be processed, otherwise it will be processed at some point
+    # later in time and mess up our subsequent tests.
+    sync_with_i3;
+
+    is(focused_ws, $expected, "workspace $expected focused");
+}
 
 my $config = <<EOT;
 # i3 config file (v4)
@@ -40,87 +51,78 @@ fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
 my $pid = launch_with_config($config);
 
-################################################################################
-# Setup workspaces so that they stay open (with an empty container).
-# Have only named workspaces in the 1st output and numbered + named workspaces
-# in the 2nd output.
-################################################################################
-
 sync_with_i3;
 $x->root->warp_pointer(0, 0);
 sync_with_i3;
 
-cmd 'workspace A';
-# ensure workspace A stays open
-open_window;
-
-cmd 'workspace B';
-# ensure workspace B stays open
-open_window;
-
-cmd 'workspace D';
-# ensure workspace D stays open
-open_window;
-
-cmd 'workspace E';
-# ensure workspace E stays open
-open_window;
+################################################################################
+# Setup workspaces so that they stay open (with an empty container).
+# open_window ensures, this
+#
+#                   numbered       named
+# output 1 (left) : 1, 2, 3, 6, 7, B, F, C
+# output 2 (right): 4, 5,          A, D, E
+#
+################################################################################
 
 cmd 'focus output right';
+cmd 'workspace A'; open_window;
+cmd 'workspace D'; open_window;
+cmd 'workspace 4'; open_window;
+cmd 'workspace 5'; open_window;
+cmd 'workspace E'; open_window;
 
-cmd 'workspace 1';
-# ensure workspace 1 stays open
-open_window;
-
-cmd 'workspace 2';
-# ensure workspace 2 stays open
-open_window;
-
-cmd 'workspace 3';
-# ensure workspace 3 stays open
-open_window;
-
-cmd 'workspace 4';
-# ensure workspace 4 stays open
-open_window;
-
-cmd 'workspace 5';
-# ensure workspace 5 stays open
-open_window;
-
-cmd 'workspace C';
-# ensure workspace C stays open
-open_window;
-
-cmd 'workspace F';
-# ensure workspace F stays open
-open_window;
-
-cmd 'focus output right';
+cmd 'focus output left';
+cmd 'workspace 1'; open_window;
+cmd 'workspace 2'; open_window;
+cmd 'workspace B'; open_window;
+cmd 'workspace 3'; open_window;
+cmd 'workspace F'; open_window;
+cmd 'workspace 6'; open_window;
+cmd 'workspace C'; open_window;
+cmd 'workspace 7'; open_window;
 
 ################################################################################
 # Use workspace next and verify the correct order.
+# numbered -> numerical sort
+# named -> sort by creation time
 ################################################################################
+cmd 'workspace 1';
+is(focused_ws, '1', 'back on workspace 1');
 
-# The current order should be:
-# output 1: A, B, D, E
-# output 2: 1, 2, 3, 4, 5, C, F
-
-cmd 'workspace A';
-is(focused_ws, 'A', 'back on workspace A');
-
-assert_next('B');
-assert_next('D');
-assert_next('E');
-assert_next('C');
-assert_next('F');
-assert_next('1');
 assert_next('2');
 assert_next('3');
 assert_next('4');
 assert_next('5');
-assert_next('A');
+assert_next('6');
+assert_next('7');
+
 assert_next('B');
+assert_next('F');
+assert_next('C');
+assert_next('A');
+assert_next('D');
+assert_next('E');
+assert_next('1');
+
+cmd 'workspace 1';
+is(focused_ws, '1', 'back on workspace 1');
+
+assert_prev('E');
+assert_prev('D');
+assert_prev('A');
+assert_prev('C');
+assert_prev('F');
+assert_prev('B');
+
+assert_prev('7');
+assert_prev('6');
+assert_prev('5');
+assert_prev('4');
+assert_prev('3');
+assert_prev('2');
+assert_prev('1');
+
 
 exit_gracefully($pid);
 

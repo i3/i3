@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Frees an i3Window and all its members.
  *

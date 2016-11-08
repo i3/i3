@@ -187,7 +187,7 @@ cleanup ("flatten") the tree. See also +src/move.c+ for another similar
 function, which was moved into its own file because it is so long.
 
 src/util.c::
-Contains useful functions which are not really dependant on anything.
+Contains useful functions which are not really dependent on anything.
 
 src/window.c::
 Handlers to update X11 window properties like +WM_CLASS+, +_NET_WM_NAME+,
@@ -593,7 +593,7 @@ optimize this and call +x_push_node+ on the appropriate con directly.
    itself for the container’s children. This function actually pushes the
    state, see the next paragraph.
 4. If the pointer needs to be warped to a different position (for example when
-   changing focus to a differnt output), it will be warped now.
+   changing focus to a different output), it will be warped now.
 5. The eventmask is restored for all mapped windows.
 6. Window decorations will be rendered by calling +x_deco_recurse+ on the root
    container, which then recursively calls itself for the children.
@@ -850,7 +850,7 @@ empty.
 Afterwards, +con_focus+ will be called to fix the focus stack and the tree will
 be flattened.
 
-=== Case 3: Moving to non-existant top/bottom
+=== Case 3: Moving to non-existent top/bottom
 
 Like in case 1, the reference layout for this case is a single workspace in
 horizontal orientation with two containers on it. Focus is on the left
@@ -877,7 +877,7 @@ container and the container above/below the current one (on the level of
 Now, +con_focus+ will be called to fix the focus stack and the tree will be
 flattened.
 
-=== Case 4: Moving to existant top/bottom
+=== Case 4: Moving to existent top/bottom
 
 The reference layout for this case is a vertical workspace with two containers.
 The bottom one is a h-split containing two containers (1 and 2). Focus is on

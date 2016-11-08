@@ -1,9 +1,27 @@
+i3-wm (4.12.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Move to debhelper 9
+  * Bump Standards-Version to 3.9.7 (no changes necessary)
+  * debian/watch: verify signature, use https
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Fri, 01 Apr 2016 16:34:35 +0200
+
+i3-wm (4.12-2) unstable; urgency=medium
+
+  * Override lintian warning desktop-entry-contains-unknown-key for
+    DesktopNames, gdm needs that key.
+  * Remove i3-wm.menu to conform to the tech-ctte decision on #741573.
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Fri, 01 Apr 2016 15:51:23 +0200
+
 i3-wm (4.12-1) unstable; urgency=medium
 
   * New upstream release.
   * Move to debhelper 9
   * Bump Standards-Version to 3.9.7 (no changes necessary)
   * debian/watch: verify signature, use https
+  * Enable full hardening
 
  -- Michael Stapelberg <stapelberg@debian.org>  Sun, 06 Mar 2016 14:20:38 +0100
 

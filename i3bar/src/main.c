@@ -5,6 +5,8 @@
  * © 2010 Axel Wagner and contributors (see also: LICENSE)
  *
  */
+#include "common.h"
+
 #include <stdio.h>
 #include <i3/ipc.h>
 #include <string.h>
@@ -14,8 +16,6 @@
 #include <ev.h>
 #include <getopt.h>
 #include <glob.h>
-
-#include "common.h"
 
 /*
  * Having verboselog(), errorlog() and debuglog() is necessary when using libi3.
@@ -93,6 +93,9 @@ int main(int argc, char **argv) {
     int opt;
     int option_index = 0;
     char *socket_path = getenv("I3SOCK");
+    if (socket_path != NULL) {
+        socket_path = sstrdup(socket_path);
+    }
     char *i3_default_sock_path = "/tmp/i3-ipc.sock";
 
     /* Initialize the standard config to use 0 as default */

@@ -7,6 +7,8 @@
  * ipc.c: Communicating with i3
  *
  */
+#include "common.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -20,8 +22,6 @@
 #ifdef I3_ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
 #endif
-
-#include "common.h"
 
 ev_io *i3_connection;
 

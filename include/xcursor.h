@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <xcb/xcb_cursor.h>
 
 enum xcursor_cursor_t {

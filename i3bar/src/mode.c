@@ -7,14 +7,14 @@
  * mode.c: Handle mode event and show current binding mode in the bar
  *
  */
+#include "common.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
-
-#include "common.h"
 
 /* A datatype to pass through the callbacks to save the state */
 struct mode_json_params {
@@ -119,7 +119,7 @@ void parse_mode_json(char *json) {
 
     state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
-    /* FIXME: Propper error handling for JSON parsing */
+    /* FIXME: Proper error handling for JSON parsing */
     switch (state) {
         case yajl_status_ok:
             break;

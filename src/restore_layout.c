@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "restore_layout.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -240,6 +238,7 @@ static void open_placeholder_window(Con *con) {
         /* create temporary id swallow to match the placeholder */
         Match *temp_id = smalloc(sizeof(Match));
         match_init(temp_id);
+        temp_id->dock = M_DONTCHECK;
         temp_id->id = placeholder;
         TAILQ_INSERT_HEAD(&(con->swallow_head), temp_id, matches);
     }

@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "randr.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -102,6 +100,27 @@ Output *get_output_containing(unsigned int x, unsigned int y) {
              x, y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
         if (x >= output->rect.x && x < (output->rect.x + output->rect.width) &&
             y >= output->rect.y && y < (output->rect.y + output->rect.height))
+            return output;
+    }
+
+    return NULL;
+}
+
+/*
+ * Returns the active output which spans exactly the area specified by
+ * rect or NULL if there is no output like this.
+ *
+ */
+Output *get_output_with_dimensions(Rect rect) {
+    Output *output;
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (!output->active)
+            continue;
+        DLOG("comparing x=%d y=%d %dx%d with x=%d and y=%d %dx%d\n",
+             rect.x, rect.y, rect.width, rect.height,
+             output->rect.x, output->rect.y, output->rect.width, output->rect.height);
+        if (rect.x == output->rect.x && rect.width == output->rect.width &&
+            rect.y == output->rect.y && rect.height == output->rect.height)
             return output;
     }
 
@@ -420,7 +439,7 @@ void init_ws_for_output(Output *output, Con *content) {
 
         /* In case the workspace we just moved was visible but there was no
          * other workspace to switch to, we need to initialize the source
-         * output aswell */
+         * output as well */
         if (visible && previous == NULL) {
             LOG("There is no workspace left on \"%s\", re-initializing\n",
                 workspace_out->name);
@@ -601,7 +620,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
  *
  */
 void randr_query_outputs(void) {
-    Output *output, *other, *first;
+    Output *output, *other;
     xcb_randr_get_output_primary_cookie_t pcookie;
     xcb_randr_get_screen_resources_current_cookie_t rcookie;
 
@@ -712,84 +731,7 @@ void randr_query_outputs(void) {
      * because the user disabled them or because they are clones) */
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (output->to_be_disabled) {
-            output->active = false;
-            DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
-
-            first = get_first_output();
-
-            /* TODO: refactor the following code into a nice function. maybe
-             * use an on_destroy callback which is implement differently for
-             * different container types (CT_CONTENT vs. CT_DOCKAREA)? */
-            Con *first_content = output_get_content(first->con);
-
-            if (output->con != NULL) {
-                /* We need to move the workspaces from the disappearing output to the first output */
-                /* 1: Get the con to focus next, if the disappearing ws is focused */
-                Con *next = NULL;
-                if (TAILQ_FIRST(&(croot->focus_head)) == output->con) {
-                    DLOG("This output (%p) was focused! Getting next\n", output->con);
-                    next = focused;
-                    DLOG("next = %p\n", next);
-                }
-
-                /* 2: iterate through workspaces and re-assign them, fixing the coordinates
-                 * of floating containers as we go */
-                Con *current;
-                Con *old_content = output_get_content(output->con);
-                while (!TAILQ_EMPTY(&(old_content->nodes_head))) {
-                    current = TAILQ_FIRST(&(old_content->nodes_head));
-                    if (current != next && TAILQ_EMPTY(&(current->focus_head))) {
-                        /* the workspace is empty and not focused, get rid of it */
-                        DLOG("Getting rid of current = %p / %s (empty, unfocused)\n", current, current->name);
-                        tree_close_internal(current, DONT_KILL_WINDOW, false, false);
-                        continue;
-                    }
-                    DLOG("Detaching current = %p / %s\n", current, current->name);
-                    con_detach(current);
-                    DLOG("Re-attaching current = %p / %s\n", current, current->name);
-                    con_attach(current, first_content, false);
-                    DLOG("Fixing the coordinates of floating containers\n");
-                    Con *floating_con;
-                    TAILQ_FOREACH(floating_con, &(current->floating_head), floating_windows)
-                    floating_fix_coordinates(floating_con, &(output->con->rect), &(first->con->rect));
-                    DLOG("Done, next\n");
-                }
-                DLOG("re-attached all workspaces\n");
-
-                if (next) {
-                    DLOG("now focusing next = %p\n", next);
-                    con_focus(next);
-                    workspace_show(con_get_workspace(next));
-                }
-
-                /* 3: move the dock clients to the first output */
-                Con *child;
-                TAILQ_FOREACH(child, &(output->con->nodes_head), nodes) {
-                    if (child->type != CT_DOCKAREA)
-                        continue;
-                    DLOG("Handling dock con %p\n", child);
-                    Con *dock;
-                    while (!TAILQ_EMPTY(&(child->nodes_head))) {
-                        dock = TAILQ_FIRST(&(child->nodes_head));
-                        Con *nc;
-                        Match *match;
-                        nc = con_for_window(first->con, dock->window, &match);
-                        DLOG("Moving dock client %p to nc %p\n", dock, nc);
-                        con_detach(dock);
-                        DLOG("Re-attaching\n");
-                        con_attach(dock, nc, false);
-                        DLOG("Done\n");
-                    }
-                }
-
-                DLOG("destroying disappearing con %p\n", output->con);
-                tree_close_internal(output->con, DONT_KILL_WINDOW, true, false);
-                DLOG("Done. Should be fine now\n");
-                output->con = NULL;
-            }
-
-            output->to_be_disabled = false;
-            output->changed = false;
+            randr_disable_output(output);
         }
 
         if (output->changed) {
@@ -823,6 +765,96 @@ void randr_query_outputs(void) {
 
     FREE(res);
     FREE(primary);
+}
+
+/*
+ * Disables the output and moves its content.
+ *
+ */
+void randr_disable_output(Output *output) {
+    assert(output->to_be_disabled);
+
+    output->active = false;
+    DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
+
+    Output *first = get_first_output();
+
+    /* TODO: refactor the following code into a nice function. maybe
+     * use an on_destroy callback which is implement differently for
+     * different container types (CT_CONTENT vs. CT_DOCKAREA)? */
+    Con *first_content = output_get_content(first->con);
+
+    if (output->con != NULL) {
+        /* We need to move the workspaces from the disappearing output to the first output */
+        /* 1: Get the con to focus next, if the disappearing ws is focused */
+        Con *next = NULL;
+        if (TAILQ_FIRST(&(croot->focus_head)) == output->con) {
+            DLOG("This output (%p) was focused! Getting next\n", output->con);
+            next = focused;
+            DLOG("next = %p\n", next);
+        }
+
+        /* 2: iterate through workspaces and re-assign them, fixing the coordinates
+         * of floating containers as we go */
+        Con *current;
+        Con *old_content = output_get_content(output->con);
+        while (!TAILQ_EMPTY(&(old_content->nodes_head))) {
+            current = TAILQ_FIRST(&(old_content->nodes_head));
+            if (current != next && TAILQ_EMPTY(&(current->focus_head))) {
+                /* the workspace is empty and not focused, get rid of it */
+                DLOG("Getting rid of current = %p / %s (empty, unfocused)\n", current, current->name);
+                tree_close_internal(current, DONT_KILL_WINDOW, false, false);
+                continue;
+            }
+            DLOG("Detaching current = %p / %s\n", current, current->name);
+            con_detach(current);
+            DLOG("Re-attaching current = %p / %s\n", current, current->name);
+            con_attach(current, first_content, false);
+            DLOG("Fixing the coordinates of floating containers\n");
+            Con *floating_con;
+            TAILQ_FOREACH(floating_con, &(current->floating_head), floating_windows) {
+                floating_fix_coordinates(floating_con, &(output->con->rect), &(first->con->rect));
+            }
+            DLOG("Done, next\n");
+        }
+        DLOG("re-attached all workspaces\n");
+
+        if (next) {
+            DLOG("now focusing next = %p\n", next);
+            con_focus(next);
+            workspace_show(con_get_workspace(next));
+        }
+
+        /* 3: move the dock clients to the first output */
+        Con *child;
+        TAILQ_FOREACH(child, &(output->con->nodes_head), nodes) {
+            if (child->type != CT_DOCKAREA)
+                continue;
+            DLOG("Handling dock con %p\n", child);
+            Con *dock;
+            while (!TAILQ_EMPTY(&(child->nodes_head))) {
+                dock = TAILQ_FIRST(&(child->nodes_head));
+                Con *nc;
+                Match *match;
+                nc = con_for_window(first->con, dock->window, &match);
+                DLOG("Moving dock client %p to nc %p\n", dock, nc);
+                con_detach(dock);
+                DLOG("Re-attaching\n");
+                con_attach(dock, nc, false);
+                DLOG("Done\n");
+            }
+        }
+
+        DLOG("destroying disappearing con %p\n", output->con);
+        Con *con = output->con;
+        /* clear the pointer before calling tree_close_internal in which the memory is freed */
+        output->con = NULL;
+        tree_close_internal(con, DONT_KILL_WINDOW, true, false);
+        DLOG("Done. Should be fine now\n");
+    }
+
+    output->to_be_disabled = false;
+    output->changed = false;
 }
 
 /*

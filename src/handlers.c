@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "handlers.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -148,15 +146,12 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
         enter_child = true;
     }
 
-    /* If not, then the user moved their cursor to the root window. In that case, we adjust c_ws */
-    if (con == NULL) {
+    /* If we cannot find the container, the user moved their cursor to the root
+     * window. In this case and if they used it to a dock, we need to focus the
+     * workspace on the correct output. */
+    if (con == NULL || con->parent->type == CT_DOCKAREA) {
         DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
         check_crossing_screen_boundary(event->root_x, event->root_y);
-        return;
-    }
-
-    if (con->parent->type == CT_DOCKAREA) {
-        DLOG("Ignoring, this is a dock client\n");
         return;
     }
 
@@ -171,16 +166,6 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
             break;
         }
     }
-
-#if 0
-    if (client->workspace != c_ws && client->workspace->output == c_ws->output) {
-            /* This can happen when a client gets assigned to a different workspace than
-             * the current one (see src/mainx.c:reparent_window). Shortly after it was created,
-             * an enter_notify will follow. */
-            DLOG("enter_notify for a client on a different workspace but the same screen, ignoring\n");
-            return 1;
-    }
-#endif
 
     if (config.disable_focus_follows_mouse)
         return;
@@ -421,22 +406,6 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
 
     return;
 }
-#if 0
-
-/*
- * Configuration notifies are only handled because we need to set up ignore for
- * the following enter notify events.
- *
- */
-int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event) {
-    DLOG("configure_event, sequence %d\n", event->sequence);
-        /* We ignore this sequence twice because events for child and frame should be ignored */
-        add_ignore_event(event->sequence);
-        add_ignore_event(event->sequence);
-
-        return 1;
-}
-#endif
 
 /*
  * Gets triggered upon a RandR screen change event, that is when the user
@@ -630,23 +599,6 @@ static bool handle_windowrole_change(void *data, xcb_connection_t *conn, uint8_t
     return true;
 }
 
-#if 0
-/*
- * Updates the client’s WM_CLASS property
- *
- */
-static int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
-                             xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
-        return 1;
-
-    window_update_class(con->window, prop, false);
-
-    return 0;
-}
-#endif
-
 /*
  * Expose event means we should redraw our windows (= title bar)
  *
@@ -759,14 +711,13 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         }
 
         Con *ws = con_get_workspace(con);
-
         if (ws == NULL) {
             DLOG("Window is not being managed, ignoring _NET_ACTIVE_WINDOW\n");
             return;
         }
 
-        if (con_is_internal(ws)) {
-            DLOG("Workspace is internal, ignoring _NET_ACTIVE_WINDOW\n");
+        if (con_is_internal(ws) && ws != workspace_get("__i3_scratch", NULL)) {
+            DLOG("Workspace is internal but not scratchpad, ignoring _NET_ACTIVE_WINDOW\n");
             return;
         }
 
@@ -775,10 +726,19 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             /* Always focus the con if it is from a pager, because this is most
              * likely from some user action */
             DLOG("This request came from a pager. Focusing con = %p\n", con);
-            workspace_show(ws);
-            con_focus(con);
+
+            if (con_is_internal(ws)) {
+                scratchpad_show(con);
+            } else {
+                workspace_show(ws);
+                con_focus(con);
+            }
         } else {
             /* Request is from an application. */
+            if (con_is_internal(ws)) {
+                DLOG("Ignoring request to make con = %p active because it's on an internal workspace.\n", con);
+                return;
+            }
 
             if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
                 DLOG("Focusing con = %p\n", con);
@@ -1215,6 +1175,38 @@ static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t stat
 }
 
 /*
+ * Handles the _MOTIF_WM_HINTS property of specifing window deocration settings.
+ *
+ */
+static bool handle_motif_hints_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                                      xcb_atom_t name, xcb_get_property_reply_t *prop) {
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
+        return false;
+
+    if (prop == NULL) {
+        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
+                                                                       false, window, A__MOTIF_WM_HINTS, XCB_GET_PROPERTY_TYPE_ANY, 0, 5 * sizeof(uint64_t)),
+                                      NULL);
+
+        if (prop == NULL)
+            return false;
+    }
+
+    border_style_t motif_border_style;
+    window_update_motif_hints(con->window, prop, &motif_border_style);
+
+    if (motif_border_style != con->border_style && motif_border_style != BS_NORMAL) {
+        DLOG("Update border style of con %p to %d\n", con, motif_border_style);
+        con_set_border_style(con, motif_border_style, con->current_border_width);
+
+        x_push_changes(croot);
+    }
+
+    return true;
+}
+
+/*
  * Handles the _NET_WM_STRUT_PARTIAL property for allocating space for dock clients.
  *
  */
@@ -1315,7 +1307,8 @@ static struct property_handler_t property_handlers[] = {
     {0, 128, handle_windowrole_change},
     {0, 128, handle_class_change},
     {0, UINT_MAX, handle_strut_partial_change},
-    {0, UINT_MAX, handle_window_type}};
+    {0, UINT_MAX, handle_window_type},
+    {0, 5 * sizeof(uint64_t), handle_motif_hints_change}};
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
 /*
@@ -1336,6 +1329,7 @@ void property_handlers_init(void) {
     property_handlers[7].atom = XCB_ATOM_WM_CLASS;
     property_handlers[8].atom = A__NET_WM_STRUT_PARTIAL;
     property_handlers[9].atom = A__NET_WM_WINDOW_TYPE;
+    property_handlers[10].atom = A__MOTIF_WM_HINTS;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {

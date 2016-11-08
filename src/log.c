@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "log.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -9,6 +7,8 @@
  * log.c: Logging functions.
  *
  */
+#include <config.h>
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,7 +20,9 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <errno.h>
+#if !defined(__OpenBSD__)
 #include <pthread.h>
+#endif
 
 #include "util.h"
 #include "log.h"
@@ -157,11 +159,13 @@ void open_logbuffer(void) {
 
     header = (i3_shmlog_header *)logbuffer;
 
+#if !defined(__OpenBSD__)
     pthread_condattr_t cond_attr;
     pthread_condattr_init(&cond_attr);
     if (pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED) != 0)
         fprintf(stderr, "pthread_condattr_setpshared() failed, i3-dump-log -f will not work!\n");
     pthread_cond_init(&(header->condvar), &cond_attr);
+#endif
 
     logwalk = logbuffer + sizeof(i3_shmlog_header);
     loglastwrap = logbuffer + logbuffer_size;
@@ -277,8 +281,10 @@ static void vlog(const bool print, const char *fmt, va_list args) {
 
         store_log_markers();
 
+#if !defined(__OpenBSD__)
         /* Wake up all (i3-dump-log) processes waiting for condvar. */
         pthread_cond_broadcast(&(header->condvar));
+#endif
 
         if (print)
             fwrite(message, len, 1, stdout);

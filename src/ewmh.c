@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "ewmh.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -124,11 +122,13 @@ void ewmh_update_desktop_viewport(void) {
 }
 
 static void ewmh_update_wm_desktop_recursively(Con *con, const uint32_t desktop) {
-    /* Recursively call this to descend through the entire subtree. */
     Con *child;
+
+    /* Recursively call this to descend through the entire subtree. */
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
         ewmh_update_wm_desktop_recursively(child, desktop);
     }
+
     /* If con is a workspace, we also need to go through the floating windows on it. */
     if (con->type == CT_WORKSPACE) {
         TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
@@ -138,8 +138,6 @@ static void ewmh_update_wm_desktop_recursively(Con *con, const uint32_t desktop)
 
     if (!con_has_managed_window(con))
         return;
-
-    const xcb_window_t window = con->window->id;
 
     uint32_t wm_desktop = desktop;
     /* Sticky windows are only actually sticky when they are floating or inside
@@ -151,11 +149,20 @@ static void ewmh_update_wm_desktop_recursively(Con *con, const uint32_t desktop)
         wm_desktop = NET_WM_DESKTOP_ALL;
     }
 
+    /* If the window is on the scratchpad we assign the sticky value to it
+     * since showing it works on any workspace. We cannot remove the property
+     * as per specification. */
+    Con *ws = con_get_workspace(con);
+    if (ws != NULL && con_is_internal(ws)) {
+        wm_desktop = NET_WM_DESKTOP_ALL;
+    }
+
     /* If this is the cached value, we don't need to do anything. */
     if (con->window->wm_desktop == wm_desktop)
         return;
     con->window->wm_desktop = wm_desktop;
 
+    const xcb_window_t window = con->window->id;
     if (wm_desktop != NET_WM_DESKTOP_NONE) {
         DLOG("Setting _NET_WM_DESKTOP = %d for window 0x%08x.\n", wm_desktop, window);
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, A__NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &wm_desktop);
@@ -179,11 +186,11 @@ void ewmh_update_wm_desktop(void) {
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         Con *workspace;
         TAILQ_FOREACH(workspace, &(output_get_content(output)->nodes_head), nodes) {
-            if (con_is_internal(workspace))
-                continue;
-
             ewmh_update_wm_desktop_recursively(workspace, desktop);
-            ++desktop;
+
+            if (!con_is_internal(workspace)) {
+                ++desktop;
+            }
         }
     }
 }

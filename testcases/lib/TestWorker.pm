@@ -112,8 +112,9 @@ sub worker_wait {
             $test->failure_output(\*STDERR);
             $test->todo_output(\*STDOUT);
 
-            @ENV{qw(DISPLAY TESTNAME OUTDIR VALGRIND STRACE XTRACE COVERAGE RESTART)}
-                = ($self->{display},
+            @ENV{qw(HOME DISPLAY TESTNAME OUTDIR VALGRIND STRACE XTRACE COVERAGE RESTART)}
+                = ($outdir,
+                   $self->{display},
                    basename($file),
                    $outdir,
                    $options->{valgrind},
@@ -124,7 +125,7 @@ sub worker_wait {
 
             package main;
             local $@;
-            do "./$file";
+            do $file;
             $test->ok(undef, "$@") if $@;
 
             # XXX hack, we need to trigger the read watcher once more

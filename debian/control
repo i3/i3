@@ -3,6 +3,7 @@ Section: x11
 Priority: extra
 Maintainer: Michael Stapelberg <stapelberg@debian.org>
 Build-Depends: debhelper (>= 9),
+               dh-autoreconf,
                libx11-dev,
                libxcb-util0-dev (>= 0.3.8),
                libxcb-keysyms1-dev,
@@ -10,6 +11,7 @@ Build-Depends: debhelper (>= 9),
                libxcb-randr0-dev,
                libxcb-icccm4-dev,
                libxcb-cursor-dev,
+               libxcb-xrm-dev,
                libxcb-xkb-dev,
                libxkbcommon-dev (>= 0.4.0),
                libxkbcommon-x11-dev (>= 0.4.0),
@@ -19,12 +21,12 @@ Build-Depends: debhelper (>= 9),
                pkg-config,
                libev-dev (>= 1:4.04),
                libyajl-dev (>= 2.0.4),
-               libpcre3-dev,
+               libpcre3-dev (>= 1:8.10),
                libstartup-notification0-dev (>= 0.10),
-               libcairo2-dev,
+               libcairo2-dev (>= 1.14.4),
                libpango1.0-dev,
                libpod-simple-perl
-Standards-Version: 3.9.7
+Standards-Version: 3.9.8
 Homepage: http://i3wm.org/
 
 Package: i3

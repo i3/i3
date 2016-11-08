@@ -80,6 +80,8 @@ GET_BAR_CONFIG (6)::
 GET_VERSION (7)::
 	Gets the version of i3. The reply will be a JSON-encoded dictionary
 	with the major, minor, patch and human-readable version.
+GET_BINDING_MODES (8)::
+        Gets a list of currently configured binding modes.
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -137,6 +139,8 @@ BAR_CONFIG (6)::
 	Reply to the GET_BAR_CONFIG message.
 VERSION (7)::
 	Reply to the GET_VERSION message.
+BINDING_MODES (8)::
+        Reply to the GET_BINDING_MODES message.
 
 === COMMAND reply
 
@@ -285,7 +289,7 @@ type (string)::
 	Type of this container. Can be one of "root", "output", "con",
 	"floating_con", "workspace" or "dockarea".
 border (string)::
-	Can be either "normal", "none" or "1pixel", dependending on the
+	Can be either "normal", "none" or "pixel", depending on the
 	container’s border style.
 current_border_width (integer)::
 	Number of pixels of the border width.
@@ -604,6 +608,15 @@ loaded_config_file_name (string)::
 }
 -------------------
 
+=== BINDING_MODES reply
+
+The reply consists of an array of all currently configured binding modes.
+
+*Example:*
+---------------------
+["default", "resize"]
+---------------------
+
 == Events
 
 [[events]]
@@ -741,14 +754,15 @@ defines whether pango markup shall be used for displaying this mode.
 This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change
 
-* +new+ - the window has become managed by i3
-* +close+ - the window has closed
-* +focus+ - the window has received input focus
-* +title+ - the window's title has changed
-* +fullscreen_mode+ - the window has entered or exited fullscreen mode
-* +move+ - the window has changed its position in the tree
-* +floating+ - the window has transitioned to or from floating
-* +urgent+ - the window has become urgent or lost its urgent status
+* +new+ – the window has become managed by i3
+* +close+ – the window has closed
+* +focus+ – the window has received input focus
+* +title+ – the window's title has changed
+* +fullscreen_mode+ – the window has entered or exited fullscreen mode
+* +move+ – the window has changed its position in the tree
+* +floating+ – the window has transitioned to or from floating
+* +urgent+ – the window has become urgent or lost its urgent status
+* +mark+ – a mark has been added to or removed from the window
 
 Additionally a +container (object)+ field will be present, which consists
 of the window's parent container. Be aware that for the "new" event, the

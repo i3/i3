@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <ev.h>
 #include <stdbool.h>
 #include <yajl/yajl_gen.h>
@@ -16,7 +18,7 @@
 
 #include "data.h"
 #include "tree.h"
-#include "config.h"
+#include "configuration.h"
 
 #include "i3/ipc.h"
 

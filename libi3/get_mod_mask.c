@@ -5,12 +5,12 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_keysyms.h>
-
-#include "libi3.h"
 
 /*
  * All-in-one function which returns the modifier mask (XCB_MOD_MASK_*) for the

@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <err.h>
 
 #include "data.h"
@@ -97,14 +99,6 @@ bool update_if_necessary(uint32_t *destination, const uint32_t new_value);
  *
  */
 void exec_i3_utility(char *name, char *argv[]);
-
-/**
- * Checks a generic cookie for errors and quits with the given message if
- * there was an error.
- *
- */
-void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie,
-                 char *err_message);
 
 /**
  * Checks if the given path exists by calling stat().

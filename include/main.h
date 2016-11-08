@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Enable or disable the main X11 event handling function.
  * This is used by drag_pointer() which has its own, modal event handler, which

@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * The button press X callback. This function determines whether the floating
  * modifier is pressed and where the user clicked (decoration, border, inside

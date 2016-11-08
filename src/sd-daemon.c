@@ -45,9 +45,6 @@
 #include "sd-daemon.h"
 
 int sd_listen_fds(int unset_environment) {
-#if defined(DISABLE_SYSTEMD) || !defined(__linux__)
-    return 0;
-#else
     int r, fd;
     const char *e;
     char *p = NULL;
@@ -121,7 +118,6 @@ finish:
     }
 
     return r;
-#endif
 }
 
 int sd_is_fifo(int fd, const char *path) {

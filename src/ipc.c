@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "ipc.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -10,8 +8,10 @@
  *
  */
 #include "all.h"
+
 #include "yajl_utils.h"
 
+#include <stdint.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <fcntl.h>
@@ -217,7 +217,7 @@ static void dump_binding(yajl_gen gen, Binding *bind) {
 void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(map_open);
     ystr("id");
-    y(integer, (long int)con);
+    y(integer, (uintptr_t)con);
 
     ystr("type");
     switch (con->type) {
@@ -292,6 +292,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     ystr("focused");
     y(bool, (con == focused));
+
+    if (con->type != CT_ROOT && con->type != CT_OUTPUT) {
+        ystr("output");
+        ystr(con_get_output(con)->name);
+    }
 
     ystr("layout");
     switch (con->layout) {
@@ -444,7 +449,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("focus");
     y(array_open);
     TAILQ_FOREACH(node, &(con->focus_head), focused) {
-        y(integer, (long int)node);
+        y(integer, (uintptr_t)node);
     }
     y(array_close);
 
@@ -479,7 +484,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         if (match->restart_mode)
             continue;
         y(map_open);
-        if (match->dock != -1) {
+        if (match->dock != M_DONTCHECK) {
             ystr("dock");
             y(integer, match->dock);
             ystr("insert_where");
@@ -958,6 +963,28 @@ IPC_HANDLER(get_bar_config) {
 }
 
 /*
+ * Returns a list of configured binding modes
+ *
+ */
+IPC_HANDLER(get_binding_modes) {
+    yajl_gen gen = ygenalloc();
+
+    y(array_open);
+    struct Mode *mode;
+    SLIST_FOREACH(mode, &modes, modes) {
+        ystr(mode->name);
+    }
+    y(array_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_BINDING_MODES, payload);
+    y(free);
+}
+
+/*
  * Callback for the YAJL parser (will be called when a string is parsed).
  *
  */
@@ -1033,7 +1060,7 @@ IPC_HANDLER(subscribe) {
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[8] = {
+handler_t handlers[9] = {
     handle_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -1042,6 +1069,7 @@ handler_t handlers[8] = {
     handle_get_marks,
     handle_get_bar_config,
     handle_get_version,
+    handle_get_binding_modes,
 };
 
 /*

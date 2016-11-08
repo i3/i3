@@ -9,4 +9,6 @@
  */
 #pragma once
 
+#include <config.h>
+
 char *parse_cmd(const char *new);

@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "load_layout.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -48,6 +46,7 @@ static int json_start_map(void *ctx) {
         LOG("creating new swallow\n");
         current_swallow = smalloc(sizeof(Match));
         match_init(current_swallow);
+        current_swallow->dock = M_DONTCHECK;
         TAILQ_INSERT_TAIL(&(json_node->swallow_head), current_swallow, matches);
         swallow_is_empty = true;
     } else {
@@ -150,7 +149,7 @@ static int json_end_map(void *ctx) {
         LOG("attaching\n");
         con_attach(json_node, json_node->parent, true);
         LOG("Creating window\n");
-        x_con_init(json_node, json_node->depth);
+        x_con_init(json_node);
         json_node = json_node->parent;
     }
 

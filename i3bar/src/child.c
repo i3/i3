@@ -7,6 +7,8 @@
  * child.c: Getting input for the statusline
  *
  */
+#include "common.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -24,8 +26,6 @@
 #include <yajl/yajl_version.h>
 #include <yajl/yajl_gen.h>
 #include <paths.h>
-
-#include "common.h"
 
 /* Global variables for child_*() */
 i3bar_child child;
@@ -105,7 +105,9 @@ __attribute__((format(printf, 1, 2))) static void set_statusline_error(const cha
     char *message;
     va_list args;
     va_start(args, format);
-    (void)vasprintf(&message, format, args);
+    if (vasprintf(&message, format, args) == -1) {
+        return;
+    }
 
     struct status_block *err_block = scalloc(1, sizeof(struct status_block));
     err_block->full_text = i3string_from_utf8("Error: ");
@@ -359,11 +361,13 @@ static void read_flat_input(char *buffer, int length) {
     I3STRING_FREE(first->full_text);
     /* Remove the trailing newline and terminate the string at the same
      * time. */
-    if (buffer[length - 1] == '\n' || buffer[length - 1] == '\r')
+    if (buffer[length - 1] == '\n' || buffer[length - 1] == '\r') {
         buffer[length - 1] = '\0';
-    else
+    } else {
         buffer[length] = '\0';
-    first->full_text = i3string_from_markup(buffer);
+    }
+
+    first->full_text = i3string_from_utf8(buffer);
 }
 
 static bool read_json_input(unsigned char *input, int length) {

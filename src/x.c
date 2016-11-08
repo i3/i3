@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "x.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -11,6 +9,10 @@
  *
  */
 #include "all.h"
+
+#ifndef MAX
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#endif
 
 xcb_window_t ewmh_window;
 
@@ -94,18 +96,25 @@ static con_state *state_for_frame(xcb_window_t window) {
  * every container from con_new().
  *
  */
-void x_con_init(Con *con, uint16_t depth) {
+void x_con_init(Con *con) {
     /* TODO: maybe create the window when rendering first? we could then even
      * get the initial geometry right */
 
     uint32_t mask = 0;
     uint32_t values[5];
 
-    /* For custom visuals, we need to create a colormap before creating
-     * this window. It will be freed directly after creating the window. */
-    xcb_visualid_t visual = get_visualid_by_depth(depth);
-    xcb_colormap_t win_colormap = xcb_generate_id(conn);
-    xcb_create_colormap_checked(conn, XCB_COLORMAP_ALLOC_NONE, win_colormap, root, visual);
+    xcb_visualid_t visual = get_visualid_by_depth(con->depth);
+    xcb_colormap_t win_colormap;
+    if (con->depth != root_depth) {
+        /* We need to create a custom colormap. */
+        win_colormap = xcb_generate_id(conn);
+        xcb_create_colormap(conn, XCB_COLORMAP_ALLOC_NONE, win_colormap, root, visual);
+        con->colormap = win_colormap;
+    } else {
+        /* Use the default colormap. */
+        win_colormap = colormap;
+        con->colormap = XCB_NONE;
+    }
 
     /* We explicitly set a background color and border color (even though we
      * don’t even have a border) because the X11 server requires us to when
@@ -129,7 +138,7 @@ void x_con_init(Con *con, uint16_t depth) {
     values[4] = win_colormap;
 
     Rect dims = {-15, -15, 10, 10};
-    xcb_window_t frame_id = create_window(conn, dims, depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
+    xcb_window_t frame_id = create_window(conn, dims, con->depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
     draw_util_surface_init(conn, &(con->frame), frame_id, get_visualtype_by_id(visual), dims.width, dims.height);
     xcb_change_property(conn,
                         XCB_PROP_MODE_REPLACE,
@@ -139,9 +148,6 @@ void x_con_init(Con *con, uint16_t depth) {
                         8,
                         (strlen("i3-frame") + 1) * 2,
                         "i3-frame\0i3-frame\0");
-
-    if (win_colormap != XCB_NONE)
-        xcb_free_colormap(conn, win_colormap);
 
     struct con_state *state = scalloc(1, sizeof(struct con_state));
     state->id = con->frame.id;
@@ -224,6 +230,10 @@ void x_move_win(Con *src, Con *dest) {
  */
 void x_con_kill(Con *con) {
     con_state *state;
+
+    if (con->colormap != XCB_NONE) {
+        xcb_free_colormap(conn, con->colormap);
+    }
 
     draw_util_surface_free(conn, &(con->frame));
     draw_util_surface_free(conn, &(con->frame_buffer));
@@ -323,13 +333,20 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
     assert(con->parent != NULL);
 
     Rect *dr = &(con->deco_rect);
-    Rect br = con_border_style_rect(con);
 
     /* Redraw the right border to cut off any text that went past it.
      * This is necessary when the text was drawn using XCB since cutting text off
      * automatically does not work there. For pango rendering, this isn't necessary. */
-    draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->background,
-                        dr->x + dr->width + br.width, dr->y, -br.width, dr->height);
+    if (!font_is_pango()) {
+        /* We actually only redraw the far right two pixels as that is the
+         * distance we keep from the edge (not the entire border width).
+         * Redrawing the entire border would cause text to be cut off. */
+        draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->background,
+                            dr->x + dr->width - 2 * logical_px(1),
+                            dr->y,
+                            2 * logical_px(1),
+                            dr->height);
+    }
 
     /* Draw a 1px separator line before and after every tab, so that tabs can
      * be easily distinguished. */
@@ -453,11 +470,6 @@ void x_draw_decoration(Con *con) {
         borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
 
         Rect br = con_border_style_rect(con);
-#if 0
-        DLOG("con->rect spans %d x %d\n", con->rect.width, con->rect.height);
-        DLOG("border_rect spans (%d, %d) with %d x %d\n", br.x, br.y, br.width, br.height);
-        DLOG("window_rect spans (%d, %d) with %d x %d\n", con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
-#endif
 
         /* These rectangles represent the border around the child window
          * (left, bottom and right part). We don’t just fill the whole
@@ -544,8 +556,9 @@ void x_draw_decoration(Con *con) {
 
         draw_util_text(title, &(parent->frame_buffer),
                        p->color->text, p->color->background,
-                       con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
-                       con->deco_rect.width - 2);
+                       con->deco_rect.x + logical_px(2),
+                       con->deco_rect.y + text_offset_y,
+                       con->deco_rect.width - 2 * logical_px(2));
         I3STRING_FREE(title);
 
         goto after_title;
@@ -553,23 +566,6 @@ void x_draw_decoration(Con *con) {
 
     if (win->name == NULL)
         goto copy_pixmaps;
-
-    int indent_level = 0,
-        indent_mult = 0;
-    Con *il_parent = parent;
-    if (il_parent->layout != L_STACKED) {
-        while (1) {
-            //DLOG("il_parent = %p, layout = %d\n", il_parent, il_parent->layout);
-            if (il_parent->layout == L_STACKED)
-                indent_level++;
-            if (il_parent->type == CT_WORKSPACE || il_parent->type == CT_DOCKAREA || il_parent->type == CT_OUTPUT)
-                break;
-            il_parent = il_parent->parent;
-            indent_mult++;
-        }
-    }
-    //DLOG("indent_level = %d, indent_mult = %d\n", indent_level, indent_mult);
-    int indent_px = (indent_level * 5) * indent_mult;
 
     int mark_width = 0;
     if (config.show_marks && !TAILQ_EMPTY(&(con->marks_head))) {
@@ -606,8 +602,9 @@ void x_draw_decoration(Con *con) {
     i3String *title = con->title_format == NULL ? win->name : con_parse_title_format(con);
     draw_util_text(title, &(parent->frame_buffer),
                    p->color->text, p->color->background,
-                   con->deco_rect.x + logical_px(2) + indent_px, con->deco_rect.y + text_offset_y,
-                   con->deco_rect.width - logical_px(2) - indent_px - mark_width - logical_px(2));
+                   con->deco_rect.x + logical_px(2),
+                   con->deco_rect.y + text_offset_y,
+                   con->deco_rect.width - mark_width - 2 * logical_px(2));
     if (con->title_format != NULL)
         I3STRING_FREE(title);
 
@@ -790,7 +787,7 @@ void x_push_node(Con *con) {
             int width = MAX((int32_t)rect.width, 1);
             int height = MAX((int32_t)rect.height, 1);
 
-            xcb_create_pixmap_checked(conn, win_depth, con->frame_buffer.id, con->frame.id, width, height);
+            xcb_create_pixmap(conn, win_depth, con->frame_buffer.id, con->frame.id, width, height);
             draw_util_surface_init(conn, &(con->frame_buffer), con->frame_buffer.id,
                                    get_visualtype_by_id(get_visualid_by_depth(win_depth)), width, height);
 
@@ -1124,7 +1121,7 @@ void x_push_changes(Con *con) {
                     values[0] = CHILD_EVENT_MASK & ~(XCB_EVENT_MASK_FOCUS_CHANGE);
                     xcb_change_window_attributes(conn, focused->window->id, XCB_CW_EVENT_MASK, values);
                 }
-                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
+                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, last_timestamp);
                 if (focused->window != NULL) {
                     values[0] = CHILD_EVENT_MASK;
                     xcb_change_window_attributes(conn, focused->window->id, XCB_CW_EVENT_MASK, values);
@@ -1144,7 +1141,7 @@ void x_push_changes(Con *con) {
         /* If we still have no window to focus, we focus the EWMH window instead. We use this rather than the
          * root window in order to avoid an X11 fallback mechanism causing a ghosting effect (see #1378). */
         DLOG("Still no window focused, better set focus to the EWMH support window (%d)\n", ewmh_window);
-        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, ewmh_window, XCB_CURRENT_TIME);
+        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, ewmh_window, last_timestamp);
         ewmh_update_active_window(XCB_WINDOW_NONE);
         focused_id = ewmh_window;
     }

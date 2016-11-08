@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -17,12 +19,8 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_keysyms.h>
 
-#if PANGO_SUPPORT
 #include <pango/pango.h>
-#endif
-#ifdef CAIRO_SUPPORT
 #include <cairo/cairo-xcb.h>
-#endif
 
 #define DEFAULT_DIR_MODE (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
@@ -73,10 +71,8 @@ struct Font {
             xcb_charinfo_t *table;
         } xcb;
 
-#if PANGO_SUPPORT
         /** The pango font description */
         PangoFontDescription *pango_desc;
-#endif
     } specific;
 };
 
@@ -95,7 +91,7 @@ void errorlog(char *fmt, ...)
 #if !defined(DLOG)
 void debuglog(char *fmt, ...)
     __attribute__((format(printf, 1, 2)));
-#define DLOG(fmt, ...) debuglog("%s:%s:%d - " fmt, I3__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define DLOG(fmt, ...) debuglog("%s:%s:%d - " fmt, STRIPPED__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #endif
 
 /**
@@ -471,6 +467,13 @@ char *get_process_filename(const char *prefix);
 char *get_exe_path(const char *argv0);
 
 /**
+ * Initialize the DPI setting.
+ * This will use the 'Xft.dpi' X resource if available and fall back to
+ * guessing the correct value otherwise.
+ */
+void init_dpi(void);
+
+/**
  * Convert a logical amount of pixels (e.g. 2 pixels on a “standard” 96 DPI
  * screen) to a corresponding amount of physical pixels on a standard or retina
  * screen, e.g. 5 pixels on a 227 DPI MacBook Pro 13" Retina screen.
@@ -518,7 +521,6 @@ typedef struct placeholder_t {
  */
 char *format_placeholders(char *format, placeholder_t *placeholders, int num);
 
-#ifdef CAIRO_SUPPORT
 /* We need to flush cairo surfaces twice to avoid an assertion bug. See #1989
  * and https://bugs.freedesktop.org/show_bug.cgi?id=92455. */
 #define CAIRO_SURFACE_FLUSH(surface)  \
@@ -526,7 +528,6 @@ char *format_placeholders(char *format, placeholder_t *placeholders, int num);
         cairo_surface_flush(surface); \
         cairo_surface_flush(surface); \
     } while (0)
-#endif
 
 /* A wrapper grouping an XCB drawable and both a graphics context
  * and the corresponding cairo objects representing it. */
@@ -542,14 +543,12 @@ typedef struct surface_t {
     int width;
     int height;
 
-#ifdef CAIRO_SUPPORT
     /* A cairo surface representing the drawable. */
     cairo_surface_t *surface;
 
     /* The cairo object representing the drawable. In general,
      * this is what one should use for any drawing operation. */
     cairo_t *cr;
-#endif
 } surface_t;
 
 /**

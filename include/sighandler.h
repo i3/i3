@@ -11,6 +11,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Setup signal handlers to safely handle SIGSEGV and SIGFPE
  *

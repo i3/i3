@@ -25,7 +25,7 @@ sub parser_calls {
     my ($command) = @_;
 
     my $stdout;
-    run [ '../test.config_parser', $command ],
+    run [ 'test.config_parser', $command ],
         '>/dev/null',
         '2>', \$stdout;
     # TODO: use a timeout, so that we can error out if it doesn’t terminate
@@ -286,6 +286,7 @@ hide_edge_borders none
 hide_edge_borders vertical
 hide_edge_borders horizontal
 hide_edge_borders both
+hide_edge_borders smart
 EOT
 
 $expected = <<'EOT';
@@ -293,6 +294,7 @@ cfg_hide_edge_borders(none)
 cfg_hide_edge_borders(vertical)
 cfg_hide_edge_borders(horizontal)
 cfg_hide_edge_borders(both)
+cfg_hide_edge_borders(smart)
 EOT
 
 is(parser_calls($config),
@@ -440,9 +442,51 @@ hide_edge_border both
 client.focused          #4c7899 #285577 #ffffff #2e9ef4
 EOT
 
-my $expected_all_tokens = <<'EOT';
-ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', 'bar', 'font', 'mode', 'floating_minimum_size', 'floating_maximum_size', 'floating_modifier', 'default_orientation', 'workspace_layout', 'new_window', 'new_float', 'hide_edge_borders', 'for_window', 'assign', 'no_focus', 'focus_follows_mouse', 'mouse_warping', 'force_focus_wrapping', 'force_xinerama', 'force-xinerama', 'workspace_auto_back_and_forth', 'fake_outputs', 'fake-outputs', 'force_display_urgency_hint', 'focus_on_window_activation', 'show_marks', 'workspace', 'ipc_socket', 'ipc-socket', 'restart_state', 'popup_during_fullscreen', 'exec_always', 'exec', 'client.background', 'client.focused_inactive', 'client.focused', 'client.unfocused', 'client.urgent', 'client.placeholder'
-EOT
+my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '#', '" . join("', '", qw(
+        set
+        set_from_resource
+        bindsym
+        bindcode
+        bind
+        bar
+        font
+        mode
+        floating_minimum_size
+        floating_maximum_size
+        floating_modifier
+        default_orientation
+        workspace_layout
+        new_window
+        new_float
+        hide_edge_borders
+        for_window
+        assign
+        no_focus
+        focus_follows_mouse
+        mouse_warping
+        force_focus_wrapping
+        force_xinerama
+        force-xinerama
+        workspace_auto_back_and_forth
+        fake_outputs
+        fake-outputs
+        force_display_urgency_hint
+        focus_on_window_activation
+        show_marks
+        workspace
+        ipc_socket
+        ipc-socket
+        restart_state
+        popup_during_fullscreen
+        exec_always
+        exec
+        client.background
+        client.focused_inactive
+        client.focused
+        client.unfocused
+        client.urgent
+        client.placeholder
+    )) . "'\n";
 
 my $expected_end = <<'EOT';
 ERROR: CONFIG: (in file <stdin>)
@@ -464,7 +508,7 @@ client.focused          #4c7899 #285577 #ffffff #2e9ef4
 EOT
 
 $expected = <<'EOT';
-ERROR: CONFIG: Expected one of these tokens: 'none', 'vertical', 'horizontal', 'both', '1', 'yes', 'true', 'on', 'enable', 'active'
+ERROR: CONFIG: Expected one of these tokens: 'none', 'vertical', 'horizontal', 'both', 'smart', '1', 'yes', 'true', 'on', 'enable', 'active'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: hide_edge_borders FOOBAR
 ERROR: CONFIG:                             ^^^^^^

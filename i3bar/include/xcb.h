@@ -9,12 +9,10 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include <stdint.h>
 //#include "outputs.h"
-
-#ifdef XCB_COMPAT
-#define XCB_ATOM_CARDINAL CARDINAL
-#endif
 
 #define _NET_SYSTEM_TRAY_ORIENTATION_HORZ 0
 #define _NET_SYSTEM_TRAY_ORIENTATION_VERT 1

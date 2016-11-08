@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "tree.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -477,7 +475,7 @@ static void mark_unmapped(Con *con) {
     TAILQ_FOREACH(current, &(con->nodes_head), nodes)
     mark_unmapped(current);
     if (con->type == CT_WORKSPACE) {
-        /* We need to call mark_unmapped on floating nodes aswell since we can
+        /* We need to call mark_unmapped on floating nodes as well since we can
          * make containers floating. */
         TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
         mark_unmapped(current);

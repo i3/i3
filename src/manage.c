@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "manage.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -10,6 +8,7 @@
  *
  */
 #include "all.h"
+
 #include "yajl_utils.h"
 
 #include <yajl/yajl_gen.h>
@@ -170,7 +169,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     cwindow->id = window;
     cwindow->depth = get_visual_depth(attr->visual);
 
-    xcb_grab_buttons(conn, window, bindings_should_grab_scrollwheel_buttons());
+    int *buttons = bindings_get_buttons_to_grab();
+    xcb_grab_buttons(conn, window, buttons);
+    FREE(buttons);
 
     /* update as much information as possible so far (some replies may be NULL) */
     window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL), true);
@@ -359,8 +360,16 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_FULLSCREEN)) {
         /* If this window is already fullscreen (after restarting!), skip
          * toggling fullscreen, that would drop it out of fullscreen mode. */
-        if (fs != nc)
+        if (fs != nc) {
+            Output *output = get_output_with_dimensions((Rect){geom->x, geom->y, geom->width, geom->height});
+            /* If the requested window geometry spans the whole area
+             * of an output, move the window to that output. This is
+             * needed e.g. for LibreOffice Impress multi-monitor
+             * presentations to work out of the box. */
+            if (output != NULL)
+                con_move_to_output(nc, output);
             con_toggle_fullscreen(nc, CF_OUTPUT);
+        }
         fs = NULL;
     }
 
@@ -420,7 +429,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_STICKY))
         nc->sticky = true;
 
-    if (cwindow->wm_desktop == NET_WM_DESKTOP_ALL) {
+    /* We ignore the hint for an internal workspace because windows in the
+     * scratchpad also have this value, but upon restarting i3 we don't want
+     * them to become sticky windows. */
+    if (cwindow->wm_desktop == NET_WM_DESKTOP_ALL && (ws == NULL || !con_is_internal(ws))) {
         DLOG("This window has _NET_WM_DESKTOP = 0xFFFFFFFF. Will float it and make it sticky.\n");
         nc->sticky = true;
         want_floating = true;
@@ -567,7 +579,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         /* The first window on a workspace should always be focused. We have to
          * compare with == 1 because the container has already been inserted at
          * this point. */
-        if (con_num_children(ws) == 1) {
+        if (con_num_windows(ws) == 1) {
             DLOG("This is the first window on this workspace, ignoring no_focus.\n");
         } else {
             DLOG("no_focus was set for con = %p, not setting focus.\n", nc);
@@ -592,9 +604,20 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         xcb_discard_reply(conn, wm_user_time_cookie.sequence);
     }
 
+    if (set_focus) {
+        /* Even if the client doesn't want focus, we still need to focus the
+         * container to not break focus workflows. Our handling towards X will
+         * take care of not setting the input focus. However, one exception to
+         * this are clients using the globally active input model which we
+         * don't want to focus at all. */
+        if (nc->window->doesnt_accept_focus && !nc->window->needs_take_focus) {
+            set_focus = false;
+        }
+    }
+
     /* Defer setting focus after the 'new' event has been sent to ensure the
      * proper window event sequence. */
-    if (set_focus && !nc->window->doesnt_accept_focus && nc->mapped) {
+    if (set_focus && nc->mapped) {
         DLOG("Now setting focus.\n");
         con_focus(nc);
     }

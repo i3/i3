@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 extern pid_t command_error_nagbar_pid;
 
 /**
@@ -104,10 +106,10 @@ CommandResult *run_binding(Binding *bind, Con *con);
 bool load_keymap(void);
 
 /**
- * Returns true if the current config has any binding to a scroll wheel button
- * (4 or 5) which is a whole-window binding.
- * We need this to figure out whether we should grab all buttons or just 1-3
- * when managing a window. See #2049.
- *
+ * Returns a list of buttons that should be grabbed on a window.
+ * This list will always contain 1–3, all higher buttons will only be returned
+ * if there is a whole-window binding for it on some window in the current
+ * config.
+ * The list is terminated by a 0.
  */
-bool bindings_should_grab_scrollwheel_buttons(void);
+int *bindings_get_buttons_to_grab(void);

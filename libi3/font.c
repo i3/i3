@@ -5,6 +5,8 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -13,15 +15,10 @@
 #include <err.h>
 
 #include <cairo/cairo-xcb.h>
-#if PANGO_SUPPORT
 #include <pango/pangocairo.h>
-#endif
-
-#include "libi3.h"
 
 static const i3Font *savedFont = NULL;
 
-#if PANGO_SUPPORT
 static xcb_visualtype_t *root_visual_type;
 static double pango_font_red;
 static double pango_font_green;
@@ -166,7 +163,6 @@ static int predict_text_width_pango(const char *text, size_t text_len, bool pang
 
     return width;
 }
-#endif
 
 /*
  * Loads a font for usage, also getting its metrics. If fallback is true,
@@ -187,7 +183,6 @@ i3Font load_font(const char *pattern, const bool fallback) {
         return font;
     }
 
-#if PANGO_SUPPORT
     /* Try to load a pango font if specified */
     if (strlen(pattern) > strlen("pango:") && !strncmp(pattern, "pango:", strlen("pango:"))) {
         const char *font_pattern = pattern + strlen("pango:");
@@ -202,7 +197,6 @@ i3Font load_font(const char *pattern, const bool fallback) {
             return font;
         }
     }
-#endif
 
     /* Send all our requests first */
     font.specific.xcb.id = xcb_generate_id(conn);
@@ -297,12 +291,10 @@ void free_font(void) {
                 free(savedFont->specific.xcb.info);
             break;
         }
-#if PANGO_SUPPORT
         case FONT_TYPE_PANGO:
             /* Free the font description */
             pango_font_description_free(savedFont->specific.pango_desc);
             break;
-#endif
         default:
             assert(false);
             break;
@@ -329,14 +321,12 @@ void set_font_colors(xcb_gcontext_t gc, color_t foreground, color_t background) 
             xcb_change_gc(conn, gc, mask, values);
             break;
         }
-#if PANGO_SUPPORT
         case FONT_TYPE_PANGO:
             /* Save the foreground font */
             pango_font_red = foreground.red;
             pango_font_green = foreground.green;
             pango_font_blue = foreground.blue;
             break;
-#endif
         default:
             assert(false);
             break;
@@ -348,11 +338,7 @@ void set_font_colors(xcb_gcontext_t gc, color_t foreground, color_t background) 
  *
  */
 bool font_is_pango(void) {
-#if PANGO_SUPPORT
     return savedFont->type == FONT_TYPE_PANGO;
-#else
-    return false;
-#endif
 }
 
 static int predict_text_width_xcb(const xcb_char2b_t *text, size_t text_len);
@@ -409,13 +395,11 @@ void draw_text(i3String *text, xcb_drawable_t drawable, xcb_gcontext_t gc,
             draw_text_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text),
                           drawable, gc, x, y, max_width);
             break;
-#if PANGO_SUPPORT
         case FONT_TYPE_PANGO:
             /* Render the text using Pango */
             draw_text_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
                             drawable, visual, x, y, max_width, i3string_is_markup(text));
             return;
-#endif
         default:
             assert(false);
     }
@@ -448,13 +432,11 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
             }
             break;
         }
-#if PANGO_SUPPORT
         case FONT_TYPE_PANGO:
             /* Render the text using Pango */
             draw_text_pango(text, strlen(text),
                             drawable, root_visual_type, x, y, max_width, false);
             return;
-#endif
         default:
             assert(false);
     }
@@ -545,12 +527,10 @@ int predict_text_width(i3String *text) {
             return 0;
         case FONT_TYPE_XCB:
             return predict_text_width_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text));
-#if PANGO_SUPPORT
         case FONT_TYPE_PANGO:
             /* Calculate extents using Pango */
             return predict_text_width_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
                                             i3string_is_markup(text));
-#endif
         default:
             assert(false);
             return 0;

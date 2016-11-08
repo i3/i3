@@ -56,7 +56,8 @@ subtest 'Window without WM_TAKE_FOCUS', sub {
 
     ok(!recv_take_focus($window), 'did not receive ClientMessage');
 
-    my $con = shift get_ws_content($ws);
+    my ($nodes) = get_ws_content($ws);
+    my $con = shift @$nodes;
     ok($con->{focused}, 'con is focused');
 
     done_testing;
@@ -91,7 +92,8 @@ subtest 'Window with WM_TAKE_FOCUS and without InputHint', sub {
 
     ok(!recv_take_focus($window), 'did not receive ClientMessage');
 
-    my $con = shift get_ws_content($ws);
+    my ($nodes) = get_ws_content($ws);
+    my $con = shift @$nodes;
     ok($con->{focused}, 'con is focused');
 
     done_testing;
@@ -111,7 +113,8 @@ subtest 'Window with WM_TAKE_FOCUS and unspecified InputHint', sub {
 
     ok(!recv_take_focus($window), 'did not receive ClientMessage');
 
-    my $con = shift get_ws_content($ws);
+    my ($nodes) = get_ws_content($ws);
+    my $con = shift @$nodes;
     ok($con->{focused}, 'con is focused');
 
     done_testing;

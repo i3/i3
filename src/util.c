@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "util.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -143,20 +141,6 @@ void exec_i3_utility(char *name, char *argv[]) {
 
     warn("Could not start %s", name);
     _exit(2);
-}
-
-/*
- * Checks a generic cookie for errors and quits with the given message if there
- * was an error.
- *
- */
-void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_message) {
-    xcb_generic_error_t *error = xcb_request_check(conn, cookie);
-    if (error != NULL) {
-        fprintf(stderr, "ERROR: %s (X error %d)\n", err_message, error->error_code);
-        xcb_disconnect(conn);
-        exit(-1);
-    }
 }
 
 /*

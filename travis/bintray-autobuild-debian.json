@@ -1,0 +1,36 @@
+{
+   "package": {
+        "name": "i3-wm",
+        "repo": "i3-autobuild",
+        "subject": "i3"
+    },
+
+    "version": {
+        "name": "%version%",
+        "desc": "TODO",
+        "gpgSign": false
+    },
+
+    "files": [
+        {
+            "includePattern": "build/deb/debian-amd64/(.*\\.deb)$",
+	    "matrixParams": {
+                "deb_distribution": "sid",
+                "deb_component": "main",
+                "deb_architecture": "amd64"
+	    },
+	    "uploadPattern": "$1"
+        },
+        {
+            "includePattern": "build/deb/debian-i386/(.*\\.deb)$",
+	    "matrixParams": {
+                "deb_distribution": "sid",
+                "deb_component": "main",
+                "deb_architecture": "i386"
+	    },
+	    "uploadPattern": "$1"
+        }
+    ],
+
+    "publish": true
+}

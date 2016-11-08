@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "regex.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -28,11 +26,9 @@ struct regex *regex_new(const char *pattern) {
     struct regex *re = scalloc(1, sizeof(struct regex));
     re->pattern = sstrdup(pattern);
     int options = PCRE_UTF8;
-#ifdef PCRE_HAS_UCP
     /* We use PCRE_UCP so that \B, \b, \D, \d, \S, \s, \W, \w and some POSIX
      * character classes play nicely with Unicode */
     options |= PCRE_UCP;
-#endif
     while (!(re->regex = pcre_compile2(pattern, options, &errorcode, &error, &offset, NULL))) {
         /* If the error is that PCRE was not compiled with UTF-8 support we
          * disable it and try again */

@@ -11,6 +11,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include "data.h"
 #include <xcb/randr.h>
 
@@ -61,6 +63,12 @@ void init_ws_for_output(Output *output, Con *content);
 void randr_query_outputs(void);
 
 /**
+ * Disables the output and moves its content.
+ *
+ */
+void randr_disable_output(Output *output);
+
+/**
  * Returns the first output which is active.
  *
  */
@@ -78,6 +86,13 @@ Output *get_output_by_name(const char *name);
  *
  */
 Output *get_output_containing(unsigned int x, unsigned int y);
+
+/**
+ * Returns the active output which spans exactly the area specified by
+ * rect or NULL if there is no output like this.
+ *
+ */
+Output *get_output_with_dimensions(Rect rect);
 
 /*
  * In contained_by_output, we check if any active output contains part of the container.

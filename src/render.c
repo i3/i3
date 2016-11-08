@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "render.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -167,7 +165,7 @@ void render_con(Con *con, bool render_fullscreen) {
                 /* By rendering the stacked container again, we handle the case
              * that we have a non-leaf-container inside the stack. In that
              * case, the children of the non-leaf-container need to be raised
-             * aswell. */
+             * as well. */
                 render_con(child, false);
             }
 

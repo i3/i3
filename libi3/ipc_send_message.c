@@ -5,6 +5,8 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
+#include "libi3.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,8 +15,6 @@
 #include <errno.h>
 
 #include <i3/ipc.h>
-
-#include "libi3.h"
 
 /*
  * Formats a message (payload) of the given size and type and sends it to i3 via

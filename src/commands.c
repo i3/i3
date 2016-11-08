@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "commands.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -9,6 +7,9 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
+#include "all.h"
+
+#include <stdint.h>
 #include <float.h>
 #include <stdarg.h>
 
@@ -16,7 +17,6 @@
 #include <sanitizer/lsan_interface.h>
 #endif
 
-#include "all.h"
 #include "shmlog.h"
 
 // Macros to make the YAJL API a bit easier to use.
@@ -46,7 +46,7 @@
         }                                               \
     } while (0)
 
-/** If an error occured during parsing of the criteria, we want to exit instead
+/** If an error occurred during parsing of the criteria, we want to exit instead
  * of relying on fallback behavior. See #2091. */
 #define HANDLE_INVALID_MATCH                                   \
     do {                                                       \
@@ -84,17 +84,6 @@
  */
 static bool definitelyGreaterThan(float a, float b, float epsilon) {
     return (a - b) > ((fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
-}
-
-/*
- * Returns the output containing the given container.
- */
-static Output *get_output_of_con(Con *con) {
-    Con *output_con = con_get_output(con);
-    Output *output = get_output_by_name(output_con->name);
-    assert(output != NULL);
-
-    return output;
 }
 
 /*
@@ -1035,7 +1024,7 @@ void cmd_move_con_to_output(I3_CMD, const char *name) {
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
 
-        Output *current_output = get_output_of_con(current->con);
+        Output *current_output = get_output_for_con(current->con);
         assert(current_output != NULL);
 
         Output *output = get_output_from_string(current_output, name);
@@ -1625,7 +1614,7 @@ void cmd_open(I3_CMD) {
     ystr("success");
     y(bool, true);
     ystr("id");
-    y(integer, (long int)con);
+    y(integer, (uintptr_t)con);
     y(map_close);
 
     cmd_output->needs_tree_render = true;
@@ -1647,7 +1636,7 @@ void cmd_focus_output(I3_CMD, const char *name) {
     Output *output;
 
     TAILQ_FOREACH(current, &owindows, owindows)
-    current_output = get_output_of_con(current->con);
+    current_output = get_output_for_con(current->con);
     assert(current_output != NULL);
 
     output = get_output_from_string(current_output, name);

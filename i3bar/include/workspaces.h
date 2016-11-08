@@ -9,9 +9,9 @@
  */
 #pragma once
 
-#include <xcb/xproto.h>
-
 #include "common.h"
+
+#include <xcb/xproto.h>
 
 typedef struct i3_ws i3_ws;
 

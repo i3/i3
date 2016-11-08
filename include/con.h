@@ -11,6 +11,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Create a new container (and attach it to the given parent, if not NULL).
  * This function only initializes the data structures.
@@ -201,6 +203,19 @@ Con *con_for_window(Con *con, i3Window *window, Match **store_match);
 int con_num_children(Con *con);
 
 /**
+ * Returns the number of visible non-floating children of this container.
+ * For example, if the container contains a hsplit which has two children,
+ * this will return 2 instead of 1.
+ */
+int con_num_visible_children(Con *con);
+
+/**
+ * Count the number of windows (i.e., leaf containers).
+ *
+ */
+int con_num_windows(Con *con);
+
+/**
  * Attaches the given container to the given parent. This happens when moving
  * a container or when inserting a new container at a specific place in the
  * tree.
@@ -267,6 +282,13 @@ void con_disable_fullscreen(Con *con);
  */
 void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates,
                            bool dont_warp, bool ignore_focus);
+
+/**
+ * Moves the given container to the currently focused container on the
+ * visible workspace on the given output.
+ *
+ */
+void con_move_to_output(Con *con, Output *output);
 
 /**
  * Moves the given container to the given mark.

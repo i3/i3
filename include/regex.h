@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 /**
  * Creates a new 'regex' struct containing the given pattern and a PCRE
  * compiled regular expression. Also, calls pcre_study because this regex will

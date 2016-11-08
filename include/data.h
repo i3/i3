@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include "libi3.h"
+
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
 
@@ -17,7 +19,6 @@
 #include <pcre.h>
 #include <sys/time.h>
 
-#include "libi3.h"
 #include "queue.h"
 
 /*
@@ -74,6 +75,12 @@ typedef enum { ADJ_NONE = 0,
                ADJ_RIGHT_SCREEN_EDGE = (1 << 1),
                ADJ_UPPER_SCREEN_EDGE = (1 << 2),
                ADJ_LOWER_SCREEN_EDGE = (1 << 4) } adjacent_t;
+
+typedef enum { HEBM_NONE = ADJ_NONE,
+               HEBM_VERTICAL = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE,
+               HEBM_HORIZONTAL = ADJ_UPPER_SCREEN_EDGE | ADJ_LOWER_SCREEN_EDGE,
+               HEBM_BOTH = HEBM_VERTICAL | HEBM_HORIZONTAL,
+               HEBM_SMART = (1 << 5) } hide_edge_borders_mode_t;
 
 typedef enum { MM_REPLACE,
                MM_ADD } mark_mode_t;
@@ -237,6 +244,17 @@ struct regex {
     pcre_extra *extra;
 };
 
+/**
+ * Stores a resolved keycode (from a keysym), including the modifier mask. Will
+ * be passed to xcb_grab_key().
+ *
+ */
+struct Binding_Keycode {
+    xcb_keycode_t keycode;
+    i3_event_state_mask_t modifiers;
+    TAILQ_ENTRY(Binding_Keycode) keycodes;
+};
+
 /******************************************************************************
  * Major types
  *****************************************************************************/
@@ -275,8 +293,6 @@ struct Binding {
      * title bar (default). */
     bool whole_window;
 
-    uint32_t number_keycodes;
-
     /** Keycode to bind */
     uint32_t keycode;
 
@@ -290,12 +306,10 @@ struct Binding {
      * if the keyboard mapping changes (using Xmodmap for example) */
     char *symbol;
 
-    /** Only in use if symbol != NULL. Gets set to the value to which the
-     * symbol got translated when binding. Useful for unbinding and
-     * checking which binding was used when a key press event comes in.
-     *
-     * This is an array of number_keycodes size. */
-    xcb_keycode_t *translated_to;
+    /** Only in use if symbol != NULL. Contains keycodes which generate the
+     * specified symbol. Useful for unbinding and checking which binding was
+     * used when a key press event comes in. */
+    TAILQ_HEAD(keycodes_head, Binding_Keycode) keycodes_head;
 
     /** Command, like in command mode */
     char *command;
@@ -461,9 +475,9 @@ struct Match {
         M_DOCK_BOTTOM = 3
     } dock;
     xcb_window_t id;
-    enum { M_ANY = 0,
-           M_TILING,
-           M_FLOATING } floating;
+    enum { WM_ANY = 0,
+           WM_TILING,
+           WM_FLOATING } window_mode;
     Con *con_id;
 
     /* Where the window looking for a match should be inserted:
@@ -686,4 +700,7 @@ struct Con {
 
     /* Depth of the container window */
     uint16_t depth;
+
+    /* The colormap for this con if a custom one is used. */
+    xcb_colormap_t colormap;
 };

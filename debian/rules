@@ -4,14 +4,18 @@
 export V:=1
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
-override_dh_auto_build:
-	dh_auto_build -- all docs mans
-
 override_dh_installchangelogs:
 	dh_installchangelogs RELEASE-NOTES-*
 
 override_dh_strip:
 	dh_strip --dbg-package=i3-wm-dbg
 
+override_dh_auto_test:
+	# TODO: enable tests
+
+override_dh_auto_configure:
+	# The default is /usr/share/doc/i3
+	dh_auto_configure -- --docdir=/usr/share/doc/i3-wm
+
 %:
-	dh $@ --parallel
+	dh $@ --parallel --builddirectory=build --with=autoreconf

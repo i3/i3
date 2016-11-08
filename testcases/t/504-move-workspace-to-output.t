@@ -19,9 +19,6 @@
 use List::Util qw(first);
 use i3test i3_autostart => 0;
 
-# TODO:
-# introduce 'move workspace 3 to output <output>' with synonym 'move workspace 3 to <output>'
-
 # Ensure the pointer is at (0, 0) so that we really start on the first
 # (the left) workspace.
 $x->root->warp_pointer(0, 0);
@@ -163,6 +160,26 @@ ok(!($empty_ws ~~ @$x0), 'empty_ws not on fake-0');
 ok(!($empty_ws ~~ @$x1), 'empty_ws not on fake-1');
 ok($other_output_ws ~~ @$x0, 'other_output_ws on fake-0');
 
-exit_gracefully($pid);
+################################################################################
+# Verify that the special word 'current' can be used for the output.
+################################################################################
 
+my $ws1 = fresh_workspace(output => 1);
+open_window;
+cmd 'mark marked';
+
+my $ws0 = fresh_workspace(output => 0);
+
+($x0, $x1) = workspaces_per_screen();
+ok($ws0 ~~ @$x0, 'ws0 on fake-0');
+ok($ws1 ~~ @$x1, 'ws1 on fake-1');
+
+cmd '[con_mark=marked] move workspace to output current';
+
+($x0, $x1) = workspaces_per_screen();
+ok($ws1 ~~ @$x0, 'ws1 on fake-0');
+
+################################################################################
+
+exit_gracefully($pid);
 done_testing;

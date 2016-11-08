@@ -25,7 +25,7 @@ sub parser_calls {
 
     # TODO: use a timeout, so that we can error out if it doesn’t terminate
     # TODO: better way of passing arguments
-    my $stdout = qx(../test.commands_parser '$command' 2>&1 >&-);
+    my $stdout = qx(test.commands_parser '$command' 2>&1 >&-);
 
     # Filter out all debugging output.
     my @lines = split("\n", $stdout);
@@ -144,34 +144,35 @@ is(parser_calls("\nworkspace test"),
 ################################################################################
 
 is(parser_calls('unknown_literal'),
-   "ERROR: Expected one of these tokens: <end>, '[', " .
-   "'move', " .
-   "'exec', " .
-   "'exit', " .
-   "'restart', " .
-   "'reload', " .
-   "'shmlog', " .
-   "'debuglog', " .
-   "'border', " .
-   "'layout', " .
-   "'append_layout', " .
-   "'workspace', " .
-   "'focus', " .
-   "'kill', " .
-   "'open', " .
-   "'fullscreen', " .
-   "'sticky', " .
-   "'split', " .
-   "'floating', " .
-   "'mark', " .
-   "'unmark', " .
-   "'resize', " .
-   "'rename', " .
-   "'nop', " .
-   "'scratchpad', " .
-   "'title_format', " .
-   "'mode', " .
-   "'bar'\n" .
+   "ERROR: Expected one of these tokens: <end>, '[', '" . join("', '", qw(
+       move
+       exec
+       exit
+       restart
+       reload
+       shmlog
+       debuglog
+       border
+       layout
+       append_layout
+       workspace
+       focus
+       kill
+       open
+       fullscreen
+       sticky
+       split
+       floating
+       mark
+       unmark
+       resize
+       rename
+       nop
+       scratchpad
+       title_format
+       mode
+       bar
+    )) . "'\n" .
    "ERROR: Your command: unknown_literal\n" .
    "ERROR:               ^^^^^^^^^^^^^^^",
    'error for unknown literal ok');

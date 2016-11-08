@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=i3 (with debug log)
-Comment=improved dynamic tiling window manager
-Exec=i3-with-shmlog
-Type=Application

@@ -7,6 +7,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include "queue.h"
 
 /* Get the maximum/minimum of x and y */

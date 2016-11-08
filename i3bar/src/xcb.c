@@ -7,15 +7,13 @@
  * xcb.c: Communicating with X
  *
  */
+#include "common.h"
+
 #include <xcb/xcb.h>
 #include <xcb/xkb.h>
 #include <xcb/xproto.h>
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_cursor.h>
-
-#ifdef XCB_COMPAT
-#include "xcb_compat.h"
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +34,6 @@
 #include <sanitizer/lsan_interface.h>
 #endif
 
-#include "common.h"
 #include "libi3.h"
 
 /** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
@@ -445,7 +442,7 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
 
 /*
  * Handle a button press event (i.e. a mouse click on one of our bars).
- * We determine, whether the click occured on a workspace button or if the scroll-
+ * We determine, whether the click occurred on a workspace button or if the scroll-
  * wheel was used and change the workspace appropriately
  *
  */
@@ -689,15 +686,17 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         if (op == SYSTEM_TRAY_REQUEST_DOCK) {
             xcb_window_t client = event->data.data32[2];
 
-            /* Listen for PropertyNotify events to get the most recent value of
-             * the XEMBED_MAPPED atom, also listen for UnmapNotify events */
             mask = XCB_CW_EVENT_MASK;
-            values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE |
-                        XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-            xcb_change_window_attributes(xcb_connection,
-                                         client,
-                                         mask,
-                                         values);
+
+            /* Needed to get the most recent value of XEMBED_MAPPED. */
+            values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE;
+            /* Needed for UnmapNotify events. */
+            values[0] |= XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+            /* Needed because some tray applications (e.g., VLC) use
+             * override_redirect which causes no ConfigureRequest to be sent. */
+            values[0] |= XCB_EVENT_MASK_RESIZE_REDIRECT;
+
+            xcb_change_window_attributes(xcb_connection, client, mask, values);
 
             /* Request the _XEMBED_INFO property. The XEMBED specification
              * (which is referred by the tray specification) says this *has* to
@@ -1008,13 +1007,11 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
 }
 
 /*
- * Handle ConfigureRequests by denying them and sending the client a
- * ConfigureNotify with its actual size.
+ * If a tray client attempts to change its size we deny the request and respond
+ * by telling it its actual size.
  *
  */
-static void handle_configure_request(xcb_configure_request_event_t *event) {
-    DLOG("ConfigureRequest for window = %08x\n", event->window);
-
+static void handle_configuration_change(xcb_window_t window) {
     trayclient *trayclient;
     i3_output *output;
     SLIST_FOREACH(output, outputs, slist) {
@@ -1027,7 +1024,7 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
                 continue;
             clients++;
 
-            if (trayclient->win != event->window)
+            if (trayclient->win != window)
                 continue;
 
             xcb_rectangle_t rect;
@@ -1037,12 +1034,22 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
             rect.height = icon_size;
 
             DLOG("This is a tray window. x = %d\n", rect.x);
-            fake_configure_notify(xcb_connection, rect, event->window, 0);
+            fake_configure_notify(xcb_connection, rect, window, 0);
             return;
         }
     }
 
     DLOG("WARNING: Could not find corresponding tray window.\n");
+}
+
+static void handle_configure_request(xcb_configure_request_event_t *event) {
+    DLOG("ConfigureRequest for window = %08x\n", event->window);
+    handle_configuration_change(event->window);
+}
+
+static void handle_resize_request(xcb_resize_request_event_t *event) {
+    DLOG("ResizeRequest for window = %08x\n", event->window);
+    handle_configuration_change(event->window);
 }
 
 /*
@@ -1170,6 +1177,9 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
             case XCB_CONFIGURE_REQUEST:
                 /* ConfigureRequest, sent by a tray child */
                 handle_configure_request((xcb_configure_request_event_t *)event);
+            case XCB_RESIZE_REQUEST:
+                /* ResizeRequest sent by a tray child using override_redirect. */
+                handle_resize_request((xcb_resize_request_event_t *)event);
                 break;
         }
         free(event);

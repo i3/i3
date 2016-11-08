@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <config.h>
+
 #include "tree.h"
 
 /** Callback for dragging */
@@ -76,25 +78,6 @@ void floating_center(Con *con, Rect rect);
  */
 void floating_move_to_pointer(Con *con);
 
-#if 0
-/**
- * Removes the floating client from its workspace and attaches it to the new
- * workspace. This is centralized here because it may happen if you move it
- * via keyboard and if you move it using your mouse.
- *
- */
-void floating_assign_to_workspace(Client *client, Workspace *new_workspace);
-
-/**
- * Called whenever the user clicks on a border (not the titlebar!) of a
- * floating window. Determines on which border the user clicked and launches
- * the drag_pointer function with the resize_callback.
- *
- */
-int floating_border_click(xcb_connection_t *conn, Client *client,
-                          xcb_button_press_event_t *event);
-
-#endif
 /**
  * Called when the user clicked on the titlebar of a floating window.
  * Calls the drag_pointer function with the drag_window callback
@@ -118,32 +101,6 @@ void floating_resize_window(Con *con, const bool proportional, const xcb_button_
  */
 void floating_check_size(Con *floating_con);
 
-#if 0
-/**
- * Changes focus in the given direction for floating clients.
- *
- * Changing to the left/right means going to the previous/next floating client,
- * changing to top/bottom means cycling through the Z-index.
- *
- */
-void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused,
-                              direction_t direction);
-
-/**
- * Moves the client 10px to the specified direction.
- *
- */
-void floating_move(xcb_connection_t *conn, Client *currently_focused,
-                   direction_t direction);
-
-/**
- * Hides all floating clients (or show them if they are currently hidden) on
- * the specified workspace.
- *
- */
-void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace);
-
-#endif
 /**
  * This is the return value of a drag operation like drag_pointer.
  *

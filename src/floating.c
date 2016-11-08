@@ -1,5 +1,3 @@
-#undef I3__FILE__
-#define I3__FILE__ "floating.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -10,6 +8,10 @@
  *
  */
 #include "all.h"
+
+#ifndef MAX
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#endif
 
 /*
  * Calculates sum of heights and sum of widths of all currently active outputs
@@ -176,7 +178,10 @@ void floating_enable(Con *con, bool automatic) {
     if ((con->parent->type == CT_CON || con->parent->type == CT_FLOATING_CON) &&
         con_num_children(con->parent) == 0) {
         DLOG("Old container empty after setting this child to floating, closing\n");
-        tree_close_internal(con->parent, DONT_KILL_WINDOW, false, false);
+        Con *parent = con->parent;
+        /* clear the pointer before calling tree_close_internal in which the memory is freed */
+        con->parent = NULL;
+        tree_close_internal(parent, DONT_KILL_WINDOW, false, false);
     }
 
     char *name;
@@ -313,6 +318,7 @@ void floating_disable(Con *con, bool automatic) {
     const bool set_focus = (con == focused);
 
     Con *ws = con_get_workspace(con);
+    Con *parent = con->parent;
 
     /* 1: detach from parent container */
     TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
@@ -321,7 +327,9 @@ void floating_disable(Con *con, bool automatic) {
     /* 2: kill parent container */
     TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
     TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
-    tree_close_internal(con->parent, DONT_KILL_WINDOW, true, false);
+    /* clear the pointer before calling tree_close_internal in which the memory is freed */
+    con->parent = NULL;
+    tree_close_internal(parent, DONT_KILL_WINDOW, true, false);
 
     /* 3: re-attach to the parent of the currently focused con on the workspace
      * this floating con was on */
@@ -617,7 +625,7 @@ void floating_resize_window(Con *con, const bool proportional,
         con->scratchpad_state = SCRATCHPAD_CHANGED;
 }
 
-/* As endorsed by “ASSOCIATING CUSTOM DATA WITH A WATCHER” in ev(3) */
+/* Custom data structure used to track dragging-related events. */
 struct drag_x11_cb {
     ev_check check;
 
@@ -639,7 +647,7 @@ struct drag_x11_cb {
 };
 
 static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
-    struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w;
+    struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w->data;
     xcb_motion_notify_event_t *last_motion_notify = NULL;
     xcb_generic_event_t *event;
 
@@ -778,16 +786,18 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
         .callback = callback,
         .extra = extra,
     };
+    ev_check *check = &loop.check;
     if (con)
         loop.old_rect = con->rect;
-    ev_check_init(&loop.check, xcb_drag_check_cb);
+    ev_check_init(check, xcb_drag_check_cb);
+    check->data = &loop;
     main_set_x11_cb(false);
-    ev_check_start(main_loop, &loop.check);
+    ev_check_start(main_loop, check);
 
     while (loop.result == DRAGGING)
         ev_run(main_loop, EVRUN_ONCE);
 
-    ev_check_stop(main_loop, &loop.check);
+    ev_check_stop(main_loop, check);
     main_set_x11_cb(true);
 
     xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME);
@@ -880,80 +890,3 @@ void floating_fix_coordinates(Con *con, Rect *old_rect, Rect *new_rect) {
     con->rect.y = (int32_t)new_rect->y + (double)(rel_y * (int32_t)new_rect->height) / (int32_t)old_rect->height - (int32_t)(con->rect.height / 2);
     DLOG("Resulting coordinates: x = %d, y = %d\n", con->rect.x, con->rect.y);
 }
-
-#if 0
-/*
- * Moves the client 10px to the specified direction.
- *
- */
-void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_t direction) {
-        DLOG("floating move\n");
-
-        Rect destination = currently_focused->rect;
-        Rect *screen = &(currently_focused->workspace->output->rect);
-
-        switch (direction) {
-                case D_LEFT:
-                        destination.x -= 10;
-                        break;
-                case D_RIGHT:
-                        destination.x += 10;
-                        break;
-                case D_UP:
-                        destination.y -= 10;
-                        break;
-                case D_DOWN:
-                        destination.y += 10;
-                        break;
-                /* to make static analyzers happy */
-                default:
-                        break;
-        }
-
-        /* Prevent windows from vanishing completely */
-        if ((int32_t)(destination.x + destination.width - 5) <= (int32_t)screen->x ||
-            (int32_t)(destination.x + 5) >= (int32_t)(screen->x + screen->width) ||
-            (int32_t)(destination.y + destination.height - 5) <= (int32_t)screen->y ||
-            (int32_t)(destination.y + 5) >= (int32_t)(screen->y + screen->height)) {
-                DLOG("boundary check failed, not moving\n");
-                return;
-        }
-
-        currently_focused->rect = destination;
-        reposition_client(conn, currently_focused);
-
-        /* Because reposition_client does not send a faked configure event (only resize does),
-         * we need to initiate that on our own */
-        fake_absolute_configure_notify(conn, currently_focused);
-        /* fake_absolute_configure_notify flushes */
-}
-
-/*
- * Hides all floating clients (or show them if they are currently hidden) on
- * the specified workspace.
- *
- */
-void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace) {
-        Client *client;
-
-        workspace->floating_hidden = !workspace->floating_hidden;
-        DLOG("floating_hidden is now: %d\n", workspace->floating_hidden);
-        TAILQ_FOREACH(client, &(workspace->floating_clients), floating_clients) {
-                if (workspace->floating_hidden)
-                        client_unmap(conn, client);
-                else client_map(conn, client);
-        }
-
-        /* If we just unmapped all floating windows we should ensure that the focus
-         * is set correctly, that ist, to the first non-floating client in stack */
-        if (workspace->floating_hidden)
-                SLIST_FOREACH(client, &(workspace->focus_stack), focus_clients) {
-                        if (client_is_floating(client))
-                                continue;
-                        set_focus(conn, client, true);
-                        return;
-                }
-
-        xcb_flush(conn);
-}
-#endif
