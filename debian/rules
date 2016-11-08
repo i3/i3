@@ -13,5 +13,9 @@ override_dh_strip:
 override_dh_auto_test:
 	# TODO: enable tests
 
+override_dh_auto_configure:
+	# The default is /usr/share/doc/i3
+	dh_auto_configure -- --docdir=/usr/share/doc/i3-wm
+
 %:
 	dh $@ --parallel --builddirectory=build --with=autoreconf
