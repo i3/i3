@@ -18,5 +18,6 @@ struct trayclient {
     bool mapped;      /* Whether this window is mapped */
     int xe_version;   /* The XEMBED version supported by the client */
 
-    TAILQ_ENTRY(trayclient) tailq; /* Pointer for the TAILQ-Macro */
+    TAILQ_ENTRY(trayclient)
+    tailq; /* Pointer for the TAILQ-Macro */
 };

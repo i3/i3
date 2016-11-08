@@ -68,7 +68,8 @@ struct Variable {
     char *value;
     char *next_match;
 
-    SLIST_ENTRY(Variable) variables;
+    SLIST_ENTRY(Variable)
+    variables;
 };
 
 /**
@@ -82,7 +83,8 @@ struct Mode {
     bool pango_markup;
     struct bindings_head *bindings;
 
-    SLIST_ENTRY(Mode) modes;
+    SLIST_ENTRY(Mode)
+    modes;
 };
 
 /**
@@ -253,7 +255,8 @@ struct Barconfig {
     /* List of outputs on which the tray is allowed to be shown, in order.
      * The special value "none" disables it (per default, it will be shown) and
      * the special value "primary" enabled it on the primary output. */
-    TAILQ_HEAD(tray_outputs_head, tray_output_t) tray_outputs;
+    TAILQ_HEAD(tray_outputs_head, tray_output_t)
+    tray_outputs;
 
     /* Padding around the tray icons. */
     int tray_padding;
@@ -284,7 +287,8 @@ struct Barconfig {
         M_MOD5 = 7
     } modifier;
 
-    TAILQ_HEAD(bar_bindings_head, Barbinding) bar_bindings;
+    TAILQ_HEAD(bar_bindings_head, Barbinding)
+    bar_bindings;
 
     /** Bar position (bottom by default). */
     enum { P_BOTTOM = 0,
@@ -351,7 +355,8 @@ struct Barconfig {
         char *binding_mode_text;
     } colors;
 
-    TAILQ_ENTRY(Barconfig) configs;
+    TAILQ_ENTRY(Barconfig)
+    configs;
 };
 
 /**
@@ -366,13 +371,15 @@ struct Barbinding {
     /** The command which is to be executed for this button. */
     char *command;
 
-    TAILQ_ENTRY(Barbinding) bindings;
+    TAILQ_ENTRY(Barbinding)
+    bindings;
 };
 
 struct tray_output_t {
     char *output;
 
-    TAILQ_ENTRY(tray_output_t) tray_outputs;
+    TAILQ_ENTRY(tray_output_t)
+    tray_outputs;
 };
 
 /**

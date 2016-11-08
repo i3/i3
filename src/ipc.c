@@ -22,7 +22,8 @@
 
 char *current_socketpath = NULL;
 
-TAILQ_HEAD(ipc_client_head, ipc_client) all_clients = TAILQ_HEAD_INITIALIZER(all_clients);
+TAILQ_HEAD(ipc_client_head, ipc_client)
+all_clients = TAILQ_HEAD_INITIALIZER(all_clients);
 
 /*
  * Puts the given socket file descriptor into non-blocking mode or dies if

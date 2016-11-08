@@ -29,7 +29,8 @@ typedef struct placeholder_state {
     /** The graphics context for “pixmap”. */
     xcb_gcontext_t gc;
 
-    TAILQ_ENTRY(placeholder_state) state;
+    TAILQ_ENTRY(placeholder_state)
+    state;
 } placeholder_state;
 
 static TAILQ_HEAD(state_head, placeholder_state) state_head =

@@ -167,7 +167,7 @@ bool match_matches_window(Match *match, i3Window *window) {
         /* if we find a window that is newer than this one, bail */
         TAILQ_FOREACH(con, &all_cons, all_cons) {
             if ((con->window != NULL) &&
-                _i3_timercmp(con->window->urgent, window->urgent, > )) {
+                _i3_timercmp(con->window->urgent, window->urgent, >)) {
                 return false;
             }
         }
@@ -183,7 +183,7 @@ bool match_matches_window(Match *match, i3Window *window) {
         TAILQ_FOREACH(con, &all_cons, all_cons) {
             if ((con->window != NULL) &&
                 (con->window->urgent.tv_sec != 0) &&
-                _i3_timercmp(con->window->urgent, window->urgent, < )) {
+                _i3_timercmp(con->window->urgent, window->urgent, <)) {
                 return false;
             }
         }

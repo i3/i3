@@ -28,18 +28,23 @@ typedef struct binding_t {
     int input_code;
     char *command;
 
-    TAILQ_ENTRY(binding_t) bindings;
+    TAILQ_ENTRY(binding_t)
+    bindings;
 } binding_t;
 
 typedef struct tray_output_t {
     char *output;
 
-    TAILQ_ENTRY(tray_output_t) tray_outputs;
+    TAILQ_ENTRY(tray_output_t)
+    tray_outputs;
 } tray_output_t;
 
 typedef struct config_t {
     int modifier;
-    TAILQ_HEAD(bindings_head, binding_t) bindings;
+
+    TAILQ_HEAD(bindings_head, binding_t)
+    bindings;
+
     position_t position;
     int verbose;
     struct xcb_color_strings_t colors;
@@ -50,7 +55,10 @@ typedef struct config_t {
     char *command;
     char *fontname;
     i3String *separator_symbol;
-    TAILQ_HEAD(tray_outputs_head, tray_output_t) tray_outputs;
+
+    TAILQ_HEAD(tray_outputs_head, tray_output_t)
+    tray_outputs;
+
     int tray_padding;
     int num_outputs;
     char **outputs;
