@@ -71,7 +71,7 @@ char *get_config_path(const char *override_configpath, bool use_system_paths) {
 
     /* 4: check for $XDG_CONFIG_DIRS/i3/config */
     if ((xdg_config_dirs = getenv("XDG_CONFIG_DIRS")) == NULL)
-        xdg_config_dirs = "/etc/xdg";
+        xdg_config_dirs = SYSCONFDIR "/xdg";
 
     char *buf = sstrdup(xdg_config_dirs);
     char *tok = strtok(buf, ":");
