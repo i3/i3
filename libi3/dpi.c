@@ -65,6 +65,14 @@ init_dpi_end:
 }
 
 /*
+ * This function returns the value of the DPI setting.
+ *
+ */
+long get_dpi_value(void) {
+    return dpi;
+}
+
+/*
  * Convert a logical amount of pixels (e.g. 2 pixels on a “standard” 96 DPI
  * screen) to a corresponding amount of physical pixels on a standard or retina
  * screen, e.g. 5 pixels on a 227 DPI MacBook Pro 13" Retina screen.

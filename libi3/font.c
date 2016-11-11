@@ -24,24 +24,12 @@ static double pango_font_red;
 static double pango_font_green;
 static double pango_font_blue;
 
-/* Necessary to track whether the dpi changes and trigger a LOG() message,
- * which is more easily visible to users. */
-static double logged_dpi = 0.0;
-
 static PangoLayout *create_layout_with_dpi(cairo_t *cr) {
     PangoLayout *layout;
     PangoContext *context;
 
     context = pango_cairo_create_context(cr);
-    const double dpi = (double)root_screen->height_in_pixels * 25.4 /
-                       (double)root_screen->height_in_millimeters;
-    if (logged_dpi != dpi) {
-        logged_dpi = dpi;
-        LOG("X11 root window dictates %f DPI\n", dpi);
-    } else {
-        DLOG("X11 root window dictates %f DPI\n", dpi);
-    }
-    pango_cairo_context_set_resolution(context, dpi);
+    pango_cairo_context_set_resolution(context, get_dpi_value());
     layout = pango_layout_new(context);
     g_object_unref(context);
 
