@@ -182,4 +182,7 @@ void display_running_version(void) {
 #endif
 
     yajl_free(handle);
+    free(reply);
+    free(pid_from_atom);
+    free(socket_path);
 }
