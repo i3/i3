@@ -893,8 +893,10 @@ void cmd_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_a
         cmd_output->needs_tree_render = true;
         return;
     }
-    if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, workspace->name))
+    if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, workspace->name)) {
+        ysuccess(true);
         return;
+    }
     workspace_show(workspace);
 
     cmd_output->needs_tree_render = true;
@@ -940,8 +942,10 @@ void cmd_workspace_name(I3_CMD, const char *name, const char *_no_auto_back_and_
     }
 
     DLOG("should switch to workspace %s\n", name);
-    if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, name))
+    if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, name)) {
+        ysuccess(true);
         return;
+    }
     workspace_show_by_name(name);
 
     cmd_output->needs_tree_render = true;
