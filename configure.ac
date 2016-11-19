@@ -15,6 +15,12 @@ AC_CONFIG_SRCDIR([libi3/ipc_recv_message.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
+dnl Verify macros defined in m4/ such as AX_SANITIZERS are not present in the
+dnl output, i.e. are replaced as expected. This line results in a better error
+dnl message when using aclocal < 1.13 (which does not understand
+dnl AC_CONFIG_MACRO_DIR) without passing the -I m4 parameter.
+m4_pattern_forbid([AX_SANITIZERS])
+
 # Verify we are using GNU make because we use '%'-style pattern rules in
 # Makefile.am, which are a GNU make extension. Pull requests to replace
 # '%'-style pattern rules with a more portable alternative are welcome.
