@@ -861,6 +861,7 @@ sub launch_with_config {
         cv => $cv,
         dont_create_temp_dir => $args{dont_create_temp_dir},
         validate_config => $args{validate_config},
+        inject_randr15 => $args{inject_randr15},
     );
 
     # If we called i3 with -C, we wait for it to exit and then return as
