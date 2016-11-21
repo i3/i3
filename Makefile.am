@@ -473,7 +473,6 @@ i3_SOURCES = \
 	include/config_parser.h \
 	include/con.h \
 	include/data.h \
-	include/debug.h \
 	include/display_version.h \
 	include/ewmh.h \
 	include/fake_outputs.h \
