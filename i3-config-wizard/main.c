@@ -854,6 +854,7 @@ int main(int argc, char *argv[]) {
 
     xcb_numlock_mask = get_mod_mask_for(XCB_NUM_LOCK, symbols, modmap_reply);
 
+    init_dpi();
     font = load_font(pattern, true);
     bold_font = load_font(patternbold, true);
 
