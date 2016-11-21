@@ -329,6 +329,12 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
         match_free(match);
         free(match);
     }
+    while (!TAILQ_EMPTY(&(con->marks_head))) {
+        mark_t *mark = TAILQ_FIRST(&(con->marks_head));
+        TAILQ_REMOVE(&(con->marks_head), mark, marks);
+        FREE(mark->name);
+        FREE(mark);
+    }
     free(con);
 
     /* in the case of floating windows, we already focused another container
