@@ -70,22 +70,6 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t depth, xcb_v
                            uint16_t window_class, enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values);
 
 /**
- * Draws a line from x,y to to_x,to_y using the given color
- *
- */
-void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable,
-                   xcb_gcontext_t gc, uint32_t colorpixel, uint32_t x,
-                   uint32_t y, uint32_t to_x, uint32_t to_y);
-
-/**
- * Draws a rectangle from x,y with width,height using the given color
- *
- */
-void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable,
-                   xcb_gcontext_t gc, uint32_t colorpixel, uint32_t x,
-                   uint32_t y, uint32_t width, uint32_t height);
-
-/**
  * Generates a configure_notify_event with absolute coordinates (relative to
  * the X root window, not to the client’s frame) for the given client.
  *
@@ -97,12 +81,6 @@ void fake_absolute_configure_notify(Con *con);
  *
  */
 void send_take_focus(xcb_window_t window, xcb_timestamp_t timestamp);
-
-/**
- * Raises the given window (typically client->frame) above all other windows
- *
- */
-void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window);
 
 /**
  * Configures the given window to have the size/position specified by given rect
@@ -121,12 +99,6 @@ xcb_atom_t xcb_get_preferred_window_type(xcb_get_property_reply_t *reply);
  *
  */
 bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom);
-
-/**
- * Moves the mouse pointer into the middle of rect.
- *
- */
-void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect);
 
 /**
  * Set the cursor of the root window to the given cursor id.

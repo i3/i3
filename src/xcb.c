@@ -63,28 +63,6 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims,
 }
 
 /*
- * Draws a line from x,y to to_x,to_y using the given color
- *
- */
-void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
-                   uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t to_x, uint32_t to_y) {
-    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]){colorpixel});
-    xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, drawable, gc, 2,
-                  (xcb_point_t[]){{x, y}, {to_x, to_y}});
-}
-
-/*
- * Draws a rectangle from x,y with width,height using the given color
- *
- */
-void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
-                   uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
-    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]){colorpixel});
-    xcb_rectangle_t rect = {x, y, width, height};
-    xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
-}
-
-/*
  * Generates a configure_notify_event with absolute coordinates (relative to the X root
  * window, not to the client’s frame) for the given client.
  *
@@ -125,15 +103,6 @@ void send_take_focus(xcb_window_t window, xcb_timestamp_t timestamp) {
     DLOG("Sending WM_TAKE_FOCUS to the client\n");
     xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char *)ev);
     free(event);
-}
-
-/*
- * Raises the given window (typically client->frame) above all other windows
- *
- */
-void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
-    uint32_t values[] = {XCB_STACK_MODE_ABOVE};
-    xcb_configure_window(conn, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
 }
 
 /*
@@ -199,18 +168,6 @@ bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom) {
             return true;
 
     return false;
-}
-
-/**
- * Moves the mouse pointer into the middle of rect.
- *
- */
-void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect) {
-    int mid_x = rect->x + (rect->width / 2);
-    int mid_y = rect->y + (rect->height / 2);
-
-    LOG("warp pointer to: %d %d\n", mid_x, mid_y);
-    xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0, mid_x, mid_y);
 }
 
 /*
