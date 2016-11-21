@@ -518,7 +518,6 @@ i3_SOURCES = \
 	src/config.c \
 	src/config_directives.c \
 	src/config_parser.c \
-	src/debug.c \
 	src/display_version.c \
 	src/ewmh.c \
 	src/fake_outputs.c \

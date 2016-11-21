@@ -119,9 +119,6 @@ src/config.c::
 Contains all functions handling the configuration file (calling the parser
 src/config_parser.c) with the correct path, switching key bindings mode).
 
-src/debug.c::
-Contains debugging functions to print unhandled X events.
-
 src/ewmh.c::
 Functions to get/set certain EWMH properties easily.
 
