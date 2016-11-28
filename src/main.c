@@ -194,6 +194,7 @@ int main(int argc, char *argv[]) {
     char *layout_path = NULL;
     bool delete_layout_path = false;
     bool force_xinerama = false;
+    bool disable_randr15 = false;
     char *fake_outputs = NULL;
     bool disable_signalhandler = false;
     bool only_check_config = false;
@@ -209,6 +210,8 @@ int main(int argc, char *argv[]) {
         {"restart", required_argument, 0, 0},
         {"force-xinerama", no_argument, 0, 0},
         {"force_xinerama", no_argument, 0, 0},
+        {"disable-randr15", no_argument, 0, 0},
+        {"disable_randr15", no_argument, 0, 0},
         {"disable-signalhandler", no_argument, 0, 0},
         {"shmlog-size", required_argument, 0, 0},
         {"shmlog_size", required_argument, 0, 0},
@@ -288,6 +291,10 @@ int main(int argc, char *argv[]) {
                          "of screens, so you cannot configure displays at runtime. "
                          "Please check if your driver really does not support RandR "
                          "and disable this option as soon as you can.\n");
+                    break;
+                } else if (strcmp(long_options[option_index].name, "disable-randr15") == 0 ||
+                           strcmp(long_options[option_index].name, "disable_randr15") == 0) {
+                    disable_randr15 = true;
                     break;
                 } else if (strcmp(long_options[option_index].name, "disable-signalhandler") == 0) {
                     disable_signalhandler = true;
@@ -661,7 +668,7 @@ int main(int argc, char *argv[]) {
         xinerama_init();
     } else {
         DLOG("Checking for XRandR...\n");
-        randr_init(&randr_base);
+        randr_init(&randr_base, disable_randr15 || config.disable_randr15);
     }
 
     /* We need to force disabling outputs which have been loaded from the

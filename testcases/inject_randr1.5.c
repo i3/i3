@@ -294,7 +294,6 @@ static void read_server_x11_packet_cb(EV_P_ ev_io *w, int revents) {
 
             if (sequence == connstate->getmonitors) {
                 printf("RRGetMonitors reply!\n");
-                xcb_randr_get_monitors_reply_t *reply = packet;
                 if (injected_reply != NULL) {
                     printf("injecting reply\n");
                     ((generic_x11_reply_t *)injected_reply)->sequence = sequence;

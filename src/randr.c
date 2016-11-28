@@ -14,11 +14,6 @@
 #include <time.h>
 #include <xcb/randr.h>
 
-/* While a clean namespace is usually a pretty good thing, we really need
- * to use shorter names than the whole xcb_randr_* default names. */
-typedef xcb_randr_get_crtc_info_reply_t crtc_info;
-typedef xcb_randr_get_screen_resources_current_reply_t resources_reply;
-
 /* Pointer to the result of the query for primary output */
 xcb_randr_get_output_primary_reply_t *primary;
 
@@ -27,6 +22,7 @@ struct outputs_head outputs = TAILQ_HEAD_INITIALIZER(outputs);
 
 /* This is the output covering the root window */
 static Output *root_output;
+static bool has_randr_1_5 = false;
 
 /*
  * Get a specific output by its internal X11 id. Used by randr_query_outputs
@@ -534,18 +530,112 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
 }
 
 /*
- * Gets called by randr_query_outputs() for each output. The function adds new
- * outputs to the list of outputs, checks if the mode of existing outputs has
- * been changed or if an existing output has been disabled. It will then change
- * either the "changed" or the "to_be_deleted" flag of the output, if
+ * randr_query_outputs_15 uses RandR ≥ 1.5 to update outputs.
+ *
+ */
+static bool randr_query_outputs_15(void) {
+#if XCB_RANDR_MINOR_VERSION < 5
+    return false;
+#else
+    /* RandR 1.5 available at compile-time, i.e. libxcb is new enough */
+    if (!has_randr_1_5) {
+        return false;
+    }
+    /* RandR 1.5 available at run-time (supported by the server and not
+     * disabled by the user) */
+    DLOG("Querying outputs using RandR 1.5\n");
+    xcb_generic_error_t *err;
+    xcb_randr_get_monitors_reply_t *monitors =
+        xcb_randr_get_monitors_reply(
+            conn, xcb_randr_get_monitors(conn, root, true), &err);
+    if (err != NULL) {
+        ELOG("Could not get RandR monitors: X11 error code %d\n", err->error_code);
+        free(err);
+        /* Fall back to RandR ≤ 1.4 */
+        return false;
+    }
+
+    /* Mark all outputs as to_be_disabled, since xcb_randr_get_monitors() will
+     * only return active outputs. */
+    Output *output;
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (output != root_output) {
+            output->to_be_disabled = true;
+        }
+    }
+
+    DLOG("%d RandR monitors found (timestamp %d)\n",
+         xcb_randr_get_monitors_monitors_length(monitors),
+         monitors->timestamp);
+
+    xcb_randr_monitor_info_iterator_t iter;
+    for (iter = xcb_randr_get_monitors_monitors_iterator(monitors);
+         iter.rem;
+         xcb_randr_monitor_info_next(&iter)) {
+        const xcb_randr_monitor_info_t *monitor_info = iter.data;
+        xcb_get_atom_name_reply_t *atom_reply =
+            xcb_get_atom_name_reply(
+                conn, xcb_get_atom_name(conn, monitor_info->name), &err);
+        if (err != NULL) {
+            ELOG("Could not get RandR monitor name: X11 error code %d\n", err->error_code);
+            free(err);
+            continue;
+        }
+        char *name;
+        sasprintf(&name, "%.*s",
+                  xcb_get_atom_name_name_length(atom_reply),
+                  xcb_get_atom_name_name(atom_reply));
+        free(atom_reply);
+
+        Output *new = get_output_by_name(name);
+        if (new == NULL) {
+            new = scalloc(1, sizeof(Output));
+            new->name = sstrdup(name);
+            if (monitor_info->primary) {
+                TAILQ_INSERT_HEAD(&outputs, new, outputs);
+            } else {
+                TAILQ_INSERT_TAIL(&outputs, new, outputs);
+            }
+        }
+        /* We specified get_active == true in xcb_randr_get_monitors(), so we
+         * will only receive active outputs. */
+        new->active = true;
+        new->to_be_disabled = false;
+
+        new->primary = monitor_info->primary;
+
+        new->changed =
+            update_if_necessary(&(new->rect.x), monitor_info->x) |
+            update_if_necessary(&(new->rect.y), monitor_info->y) |
+            update_if_necessary(&(new->rect.width), monitor_info->width) |
+            update_if_necessary(&(new->rect.height), monitor_info->height);
+
+        DLOG("name %s, x %d, y %d, width %d px, height %d px, width %d mm, height %d mm, primary %d, automatic %d\n",
+             name,
+             monitor_info->x, monitor_info->y, monitor_info->width, monitor_info->height,
+             monitor_info->width_in_millimeters, monitor_info->height_in_millimeters,
+             monitor_info->primary, monitor_info->automatic);
+        free(name);
+    }
+    free(monitors);
+    return true;
+#endif
+}
+
+/*
+ * Gets called by randr_query_outputs_14() for each output. The function adds
+ * new outputs to the list of outputs, checks if the mode of existing outputs
+ * has been changed or if an existing output has been disabled. It will then
+ * change either the "changed" or the "to_be_deleted" flag of the output, if
  * appropriate.
  *
  */
 static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
                           xcb_randr_get_output_info_reply_t *output,
-                          xcb_timestamp_t cts, resources_reply *res) {
+                          xcb_timestamp_t cts,
+                          xcb_randr_get_screen_resources_current_reply_t *res) {
     /* each CRT controller has a position in which we are interested in */
-    crtc_info *crtc;
+    xcb_randr_get_crtc_info_reply_t *crtc;
 
     Output *new = get_output_by_id(id);
     bool existing = (new != NULL);
@@ -614,25 +704,16 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
 }
 
 /*
- * (Re-)queries the outputs via RandR and stores them in the list of outputs.
- *
- * If no outputs are found use the root window.
+ * randr_query_outputs_14 uses RandR ≤ 1.4 to update outputs.
  *
  */
-void randr_query_outputs(void) {
-    Output *output, *other;
-    xcb_randr_get_output_primary_cookie_t pcookie;
-    xcb_randr_get_screen_resources_current_cookie_t rcookie;
-
-    /* timestamp of the configuration so that we get consistent replies to all
-     * requests (if the configuration changes between our different calls) */
-    xcb_timestamp_t cts;
-
-    /* an output is VGA-1, LVDS-1, etc. (usually physical video outputs) */
-    xcb_randr_output_t *randr_outputs;
+static void randr_query_outputs_14(void) {
+    DLOG("Querying outputs using RandR ≤ 1.4\n");
 
     /* Get screen resources (primary output, crtcs, outputs, modes) */
+    xcb_randr_get_screen_resources_current_cookie_t rcookie;
     rcookie = xcb_randr_get_screen_resources_current(conn, root);
+    xcb_randr_get_output_primary_cookie_t pcookie;
     pcookie = xcb_randr_get_output_primary(conn, root);
 
     if ((primary = xcb_randr_get_output_primary_reply(conn, pcookie, NULL)) == NULL)
@@ -640,30 +721,52 @@ void randr_query_outputs(void) {
     else
         DLOG("primary output is %08x\n", primary->output);
 
-    resources_reply *res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL);
+    xcb_randr_get_screen_resources_current_reply_t *res =
+        xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL);
     if (res == NULL) {
         ELOG("Could not query screen resources.\n");
-    } else {
-        cts = res->config_timestamp;
+        return;
+    }
 
-        int len = xcb_randr_get_screen_resources_current_outputs_length(res);
-        randr_outputs = xcb_randr_get_screen_resources_current_outputs(res);
+    /* timestamp of the configuration so that we get consistent replies to all
+     * requests (if the configuration changes between our different calls) */
+    const xcb_timestamp_t cts = res->config_timestamp;
 
-        /* Request information for each output */
-        xcb_randr_get_output_info_cookie_t ocookie[len];
-        for (int i = 0; i < len; i++)
-            ocookie[i] = xcb_randr_get_output_info(conn, randr_outputs[i], cts);
+    const int len = xcb_randr_get_screen_resources_current_outputs_length(res);
 
-        /* Loop through all outputs available for this X11 screen */
-        for (int i = 0; i < len; i++) {
-            xcb_randr_get_output_info_reply_t *output;
+    /* an output is VGA-1, LVDS-1, etc. (usually physical video outputs) */
+    xcb_randr_output_t *randr_outputs = xcb_randr_get_screen_resources_current_outputs(res);
 
-            if ((output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL)) == NULL)
-                continue;
+    /* Request information for each output */
+    xcb_randr_get_output_info_cookie_t ocookie[len];
+    for (int i = 0; i < len; i++)
+        ocookie[i] = xcb_randr_get_output_info(conn, randr_outputs[i], cts);
 
-            handle_output(conn, randr_outputs[i], output, cts, res);
-            free(output);
-        }
+    /* Loop through all outputs available for this X11 screen */
+    for (int i = 0; i < len; i++) {
+        xcb_randr_get_output_info_reply_t *output;
+
+        if ((output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL)) == NULL)
+            continue;
+
+        handle_output(conn, randr_outputs[i], output, cts, res);
+        free(output);
+    }
+
+    FREE(res);
+}
+
+/*
+ * (Re-)queries the outputs via RandR and stores them in the list of outputs.
+ *
+ * If no outputs are found use the root window.
+ *
+ */
+void randr_query_outputs(void) {
+    Output *output, *other;
+
+    if (!randr_query_outputs_15()) {
+        randr_query_outputs_14();
     }
 
     /* If there's no randr output, enable the output covering the root window. */
@@ -763,7 +866,6 @@ void randr_query_outputs(void) {
     /* render_layout flushes */
     tree_render();
 
-    FREE(res);
     FREE(primary);
 }
 
@@ -857,12 +959,18 @@ void randr_disable_output(Output *output) {
     output->changed = false;
 }
 
+static void fallback_to_root_output(void) {
+    root_output->active = true;
+    output_init_con(root_output);
+    init_ws_for_output(root_output, output_get_content(root_output->con));
+}
+
 /*
  * We have just established a connection to the X server and need the initial
  * XRandR information to setup workspaces for each screen.
  *
  */
-void randr_init(int *event_base) {
+void randr_init(int *event_base, const bool disable_randr15) {
     const xcb_query_extension_reply_t *extreply;
 
     root_output = create_root_output(conn);
@@ -871,12 +979,26 @@ void randr_init(int *event_base) {
     extreply = xcb_get_extension_data(conn, &xcb_randr_id);
     if (!extreply->present) {
         DLOG("RandR is not present, activating root output.\n");
-        root_output->active = true;
-        output_init_con(root_output);
-        init_ws_for_output(root_output, output_get_content(root_output->con));
-
+        fallback_to_root_output();
         return;
     }
+
+    xcb_generic_error_t *err;
+    xcb_randr_query_version_reply_t *randr_version =
+        xcb_randr_query_version_reply(
+            conn, xcb_randr_query_version(conn, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION), &err);
+    if (err != NULL) {
+        free(err);
+        ELOG("Could not query RandR version: X11 error code %d\n", err->error_code);
+        fallback_to_root_output();
+        return;
+    }
+
+    has_randr_1_5 = (randr_version->major_version >= 1) &&
+                    (randr_version->minor_version >= 5) &&
+                    !disable_randr15;
+
+    free(randr_version);
 
     randr_query_outputs();
 

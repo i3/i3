@@ -29,7 +29,7 @@ typedef enum {
  * XRandR information to setup workspaces for each screen.
  *
  */
-void randr_init(int *event_base);
+void randr_init(int *event_base, const bool disable_randr15);
 
 /**
  * Initializes a CT_OUTPUT Con (searches existing ones from inplace restart
