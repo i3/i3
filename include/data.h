@@ -450,6 +450,10 @@ struct Window {
     int width_increment;
     int height_increment;
 
+    /* Minimum size specified for the window. */
+    int min_width;
+    int min_height;
+
     /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
     double aspect_ratio;
 };
