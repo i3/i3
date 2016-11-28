@@ -468,6 +468,7 @@ int main(int argc, char *argv[]) {
         color_border_bottom = draw_util_hex_to_color("#ab7100");
     }
 
+    init_dpi();
     font = load_font(pattern, true);
     set_font(&font);
 
