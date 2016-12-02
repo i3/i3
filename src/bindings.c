@@ -981,7 +981,7 @@ int *bindings_get_buttons_to_grab(void) {
         }
 
         /* Avoid duplicates. */
-        for (int i = 0; i < num_max; i++) {
+        for (int i = 0; i < num; i++) {
             if (buffer[i] == button)
                 continue;
         }
