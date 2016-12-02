@@ -54,7 +54,6 @@ static int limit;
 xcb_window_t root;
 xcb_connection_t *conn;
 xcb_screen_t *root_screen;
-static xcb_get_input_focus_cookie_t focus_cookie;
 
 /*
  * Having verboselog(), errorlog() and debuglog() is necessary when using libi3.
@@ -77,24 +76,6 @@ void errorlog(char *fmt, ...) {
 }
 
 void debuglog(char *fmt, ...) {
-}
-
-/*
- * Restores the X11 input focus to wherever it was before.
- * This is necessary because i3-input’s window has override_redirect=1
- * (→ unmanaged by the window manager) and thus i3-input changes focus itself.
- * This function is called on exit().
- *
- */
-static void restore_input_focus(void) {
-    xcb_generic_error_t *error;
-    xcb_get_input_focus_reply_t *reply = xcb_get_input_focus_reply(conn, focus_cookie, &error);
-    if (error != NULL) {
-        fprintf(stderr, "[i3-input] ERROR: Could not restore input focus (X error %d)\n", error->error_code);
-        return;
-    }
-    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, reply->focus, XCB_CURRENT_TIME);
-    xcb_flush(conn);
 }
 
 /*
@@ -208,10 +189,6 @@ static void finish_input() {
     /* prefix the command if a prefix was specified on commandline */
     printf("command = %s\n", full);
 
-    restore_input_focus();
-
-    xcb_aux_sync(conn);
-
     ipc_send_message(sockfd, strlen(full), 0, (uint8_t *)full);
 
     free(full);
@@ -265,7 +242,6 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         return 1;
     }
     if (sym == XK_Escape) {
-        restore_input_focus();
         exit(0);
     }
 
@@ -467,9 +443,6 @@ int main(int argc, char *argv[]) {
 
     sockfd = ipc_connect(socket_path);
 
-    /* Request the current InputFocus to restore when i3-input exits. */
-    focus_cookie = xcb_get_input_focus(conn);
-
     root_screen = xcb_aux_get_screen(conn, screen);
     root = root_screen->root;
 
@@ -509,10 +482,6 @@ int main(int argc, char *argv[]) {
     xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, logical_px(500), font.height + logical_px(8));
     xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
-    /* Set input focus (we have override_redirect=1, so the wm will not do
-     * this for us) */
-    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win, XCB_CURRENT_TIME);
-
     /* Grab the keyboard to get all input */
     xcb_flush(conn);
 
@@ -531,7 +500,6 @@ int main(int argc, char *argv[]) {
 
     if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
         fprintf(stderr, "Could not grab keyboard, status = %d\n", reply->status);
-        restore_input_focus();
         exit(-1);
     }
 
