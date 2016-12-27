@@ -196,7 +196,11 @@ void floating_enable(Con *con, bool automatic) {
     /* We insert nc already, even though its rect is not yet calculated. This
      * is necessary because otherwise the workspace might be empty (and get
      * closed in tree_close_internal()) even though it’s not. */
-    TAILQ_INSERT_TAIL(&(ws->floating_head), nc, floating_windows);
+    if (set_focus) {
+        TAILQ_INSERT_TAIL(&(ws->floating_head), nc, floating_windows);
+    } else {
+        TAILQ_INSERT_HEAD(&(ws->floating_head), nc, floating_windows);
+    }
     TAILQ_INSERT_TAIL(&(ws->focus_head), nc, focused);
 
     /* check if the parent container is empty and close it if so */
