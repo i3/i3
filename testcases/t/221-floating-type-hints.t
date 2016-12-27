@@ -81,8 +81,8 @@ sub open_with_fixed_size {
                 $atomname->id,
                 $atomtype->id,
                 32,
-                12,
-                pack('C5N7', $flags, $pad, $pad, $pad, $pad, 0, 0, 0, $min_width, $min_height, $max_width, $max_height),
+                13,
+                pack('C5N8', $flags, $pad, $pad, $pad, $pad, 0, 0, 0, $min_width, $min_height, $max_width, $max_height, 0),
             );
         },
     );
