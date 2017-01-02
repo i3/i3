@@ -53,6 +53,10 @@ void init_dpi(void) {
     DLOG("Found Xft.dpi = %ld.\n", dpi);
 
 init_dpi_end:
+    if (resource != NULL) {
+        free(resource);
+    }
+
     if (database != NULL) {
         xcb_xrm_database_free(database);
     }
