@@ -14,6 +14,9 @@ Note that bug reports and feature requests for related projects should be filed 
    having access to the source code is too time-consuming. Additionally,
    experience has shown that often, the software in question is responsible for
    the issue. Please raise an issue with the software in question, not i3.
+5. Please note that i3 does not support compositors (e.g. compton). If you
+   encountered the issue you are about to report while using a compositor,
+   please try reproducing it without a compositor.
 
 ## Pull requests
 
