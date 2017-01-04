@@ -3,10 +3,6 @@
  *
  * i3 - an improved dynamic tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
- * © 2009 Jan-Erik Rediger
- *
- * sighandler.c: Interactive crash dialog upon SIGSEGV/SIGABRT/SIGFPE (offers
- *               to restart inplace).
  *
  */
 #include "all.h"
@@ -20,28 +16,44 @@
 
 #include <X11/keysym.h>
 
-static void open_popups(void);
+typedef struct dialog_t {
+    xcb_window_t id;
+    xcb_colormap_t colormap;
+    Rect dims;
+    surface_t surface;
 
-static xcb_gcontext_t pixmap_gc;
-static xcb_pixmap_t pixmap;
+    TAILQ_ENTRY(dialog_t)
+    dialogs;
+} dialog_t;
+
+static TAILQ_HEAD(dialogs_head, dialog_t) dialogs = TAILQ_HEAD_INITIALIZER(dialogs);
 static int raised_signal;
-
-static char *crash_text[] = {
-    "i3 just crashed.",
-    "To debug this problem, either attach gdb now",
-    "or press",
-    "- 'b' to save a backtrace (needs GDB),",
-    "- 'r' to restart i3 in-place or",
-    "- 'f' to forget the current layout and restart"};
-static int crash_text_longest = 5;
-static int backtrace_string_index = 3;
 static int backtrace_done = 0;
+
+static int sighandler_backtrace(void);
+static void sighandler_setup(void);
+static void sighandler_create_dialogs(void);
+static void sighandler_destroy_dialogs(void);
+static void sighandler_handle_expose(void);
+static void sighandler_draw_dialog(dialog_t *dialog);
+static void sighandler_handle_key_press(xcb_key_press_event_t *event);
+
+static i3String *message_intro;
+static i3String *message_intro2;
+static i3String *message_option_backtrace;
+static i3String *message_option_restart;
+static i3String *message_option_forget;
+static int dialog_width;
+static int dialog_height;
+
+static int border_width = 2;
+static int margin = 4;
 
 /*
  * Attach gdb to pid_parent and dump a backtrace to i3-backtrace.$pid in the
  * tmpdir
  */
-static int backtrace(void) {
+static int sighandler_backtrace(void) {
     char *tmpdir = getenv("TMPDIR");
     if (tmpdir == NULL)
         tmpdir = "/tmp";
@@ -125,53 +137,144 @@ static int backtrace(void) {
     return 1;
 }
 
-/*
- * Draw the window containing the info text
- *
- */
-static int sig_draw_window(xcb_window_t win, int width, int height, int font_height, i3String **crash_text_i3strings) {
-    /* re-draw the background */
-    xcb_rectangle_t border = {0, 0, width, height},
-                    inner = {2, 2, width - 4, height - 4};
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#FF0000")});
-    xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#000000")});
-    xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
+static void sighandler_setup(void) {
+    border_width = logical_px(border_width);
+    margin = logical_px(margin);
 
-    /* restore font color */
-    set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
+    int num_lines = 5;
+    message_intro = i3string_from_utf8("i3 has just crashed. Please report a bug for this.");
+    message_intro2 = i3string_from_utf8("To debug this problem, you can either attach gdb or choose from the following options:");
+    message_option_backtrace = i3string_from_utf8("- 'b' to save a backtrace (requires gdb)");
+    message_option_restart = i3string_from_utf8("- 'r' to restart i3 in-place");
+    message_option_forget = i3string_from_utf8("- 'f' to forget the previous layout and restart i3");
 
-    char *bt_colour = "#FFFFFF";
-    if (backtrace_done < 0)
-        bt_colour = "#AA0000";
-    else if (backtrace_done > 0)
-        bt_colour = "#00AA00";
+    int width_longest_message = predict_text_width(message_intro2);
 
-    for (int i = 0; crash_text_i3strings[i] != NULL; ++i) {
-        /* fix the colour for the backtrace line when it finished */
-        if (i == backtrace_string_index)
-            set_font_colors(pixmap_gc, draw_util_hex_to_color(bt_colour), draw_util_hex_to_color("#000000"));
-
-        draw_text(crash_text_i3strings[i], pixmap, pixmap_gc, NULL,
-                  8, 5 + i * font_height, width - 16);
-
-        /* and reset the colour again for other lines */
-        if (i == backtrace_string_index)
-            set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
-    }
-
-    /* Copy the contents of the pixmap to the real window */
-    xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, width, height);
-    xcb_flush(conn);
-
-    return 1;
+    dialog_width = width_longest_message + 2 * border_width + 2 * margin;
+    dialog_height = num_lines * config.font.height + 2 * border_width + 2 * margin;
 }
 
-/*
- * Handles keypresses of 'b', 'r' and 'f' to get a backtrace or restart i3
- *
- */
-static int sig_handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
+static void sighandler_create_dialogs(void) {
+    Output *output;
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (!output->active) {
+            continue;
+        }
+
+        dialog_t *dialog = scalloc(1, sizeof(struct dialog_t));
+        TAILQ_INSERT_TAIL(&dialogs, dialog, dialogs);
+
+        xcb_visualid_t visual = get_visualid_by_depth(root_depth);
+        dialog->colormap = xcb_generate_id(conn);
+        xcb_create_colormap(conn, XCB_COLORMAP_ALLOC_NONE, dialog->colormap, root, visual);
+
+        uint32_t mask = 0;
+        uint32_t values[4];
+        int i = 0;
+
+        /* Needs to be set in the case of a 32-bit root depth. */
+        mask |= XCB_CW_BACK_PIXEL;
+        values[i++] = root_screen->black_pixel;
+
+        /* Needs to be set in the case of a 32-bit root depth. */
+        mask |= XCB_CW_BORDER_PIXEL;
+        values[i++] = root_screen->black_pixel;
+
+        mask |= XCB_CW_OVERRIDE_REDIRECT;
+        values[i++] = 1;
+
+        /* Needs to be set in the case of a 32-bit root depth. */
+        mask |= XCB_CW_COLORMAP;
+        values[i++] = dialog->colormap;
+
+        dialog->dims.x = output->rect.x + (output->rect.width / 2);
+        dialog->dims.y = output->rect.y + (output->rect.height / 2);
+        dialog->dims.width = dialog_width;
+        dialog->dims.height = dialog_height;
+
+        /* Make sure the dialog is centered. */
+        dialog->dims.x -= dialog->dims.width / 2;
+        dialog->dims.y -= dialog->dims.height / 2;
+
+        dialog->id = create_window(conn, dialog->dims, root_depth, visual,
+                                   XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER,
+                                   true, mask, values);
+
+        draw_util_surface_init(conn, &(dialog->surface), dialog->id, get_visualtype_by_id(visual),
+                               dialog->dims.width, dialog->dims.height);
+
+        xcb_grab_keyboard(conn, false, dialog->id, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+
+        /* Confine the pointer to the crash dialog. */
+        xcb_grab_pointer(conn, false, dialog->id, XCB_NONE, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, dialog->id,
+                         XCB_NONE, XCB_CURRENT_TIME);
+    }
+
+    sighandler_handle_expose();
+    xcb_flush(conn);
+}
+
+static void sighandler_destroy_dialogs(void) {
+    while (!TAILQ_EMPTY(&dialogs)) {
+        dialog_t *dialog = TAILQ_FIRST(&dialogs);
+
+        xcb_free_colormap(conn, dialog->colormap);
+        draw_util_surface_free(conn, &(dialog->surface));
+        xcb_destroy_window(conn, dialog->id);
+
+        TAILQ_REMOVE(&dialogs, dialog, dialogs);
+        free(dialog);
+    }
+
+    xcb_flush(conn);
+}
+
+static void sighandler_handle_expose(void) {
+    dialog_t *current;
+    TAILQ_FOREACH(current, &dialogs, dialogs) {
+        sighandler_draw_dialog(current);
+    }
+
+    xcb_flush(conn);
+}
+
+static void sighandler_draw_dialog(dialog_t *dialog) {
+    const color_t black = draw_util_hex_to_color("#000000");
+    const color_t white = draw_util_hex_to_color("#FFFFFF");
+    const color_t red = draw_util_hex_to_color("#FF0000");
+
+    /* Start with a clean slate and draw a red border. */
+    draw_util_clear_surface(conn, &(dialog->surface), red);
+    draw_util_rectangle(conn, &(dialog->surface), black, border_width, border_width,
+                        dialog->dims.width - 2 * border_width, dialog->dims.height - 2 * border_width);
+
+    int y = border_width + margin;
+    const int x = border_width + margin;
+    const int max_width = dialog->dims.width - 2 * x;
+
+    draw_util_text(message_intro, &(dialog->surface), white, black, x, y, max_width);
+    y += config.font.height;
+
+    draw_util_text(message_intro2, &(dialog->surface), white, black, x, y, max_width);
+    y += config.font.height;
+
+    char *bt_color = "#FFFFFF";
+    if (backtrace_done < 0) {
+        bt_color = "#AA0000";
+    } else if (backtrace_done > 0) {
+        bt_color = "#00AA00";
+    }
+    draw_util_text(message_option_backtrace, &(dialog->surface), draw_util_hex_to_color(bt_color), black, x, y, max_width);
+    y += config.font.height;
+
+    draw_util_text(message_option_restart, &(dialog->surface), white, black, x, y, max_width);
+    y += config.font.height;
+
+    draw_util_text(message_option_forget, &(dialog->surface), white, black, x, y, max_width);
+    y += config.font.height;
+}
+
+static void sighandler_handle_key_press(xcb_key_press_event_t *event) {
     uint16_t state = event->state;
 
     /* Apparently, after activating numlock once, the numlock modifier
@@ -186,106 +289,17 @@ static int sig_handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_p
 
         /* fork and exec/attach GDB to the parent to get a backtrace in the
          * tmpdir */
-        backtrace_done = backtrace();
-
-        /* re-open the windows to indicate that it's finished */
-        open_popups();
-    }
-
-    if (sym == 'r')
+        backtrace_done = sighandler_backtrace();
+        sighandler_handle_expose();
+    } else if (sym == 'r') {
+        sighandler_destroy_dialogs();
         i3_restart(false);
-
-    if (sym == 'f')
+    } else if (sym == 'f') {
+        sighandler_destroy_dialogs();
         i3_restart(true);
-
-    return 1;
-}
-
-/*
- * Opens the window we use for input/output and maps it
- *
- */
-static xcb_window_t open_input_window(xcb_connection_t *conn, Rect screen_rect, uint32_t width, uint32_t height) {
-    xcb_window_t win = xcb_generate_id(conn);
-
-    uint32_t mask = 0;
-    uint32_t values[2];
-
-    mask |= XCB_CW_BACK_PIXEL;
-    values[0] = 0;
-
-    mask |= XCB_CW_OVERRIDE_REDIRECT;
-    values[1] = 1;
-
-    /* center each popup on the specified screen */
-    uint32_t x = screen_rect.x + ((screen_rect.width / 2) - (width / 2)),
-             y = screen_rect.y + ((screen_rect.height / 2) - (height / 2));
-
-    xcb_create_window(conn,
-                      XCB_COPY_FROM_PARENT,
-                      win,                 /* the window id */
-                      root,                /* parent == root */
-                      x, y, width, height, /* dimensions */
-                      0,                   /* border = 0, we draw our own */
-                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                      XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
-                      mask,
-                      values);
-
-    /* Map the window (= make it visible) */
-    xcb_map_window(conn, win);
-
-    return win;
-}
-
-static void open_popups() {
-    /* width and height of the popup window, so that the text fits in */
-    int crash_text_num = sizeof(crash_text) / sizeof(char *);
-    int height = 13 + (crash_text_num * config.font.height);
-
-    int crash_text_length = sizeof(crash_text) / sizeof(char *);
-    i3String **crash_text_i3strings = smalloc(sizeof(i3String *) * (crash_text_length + 1));
-    /* Pre-compute i3Strings for our text */
-    for (int i = 0; i < crash_text_length; ++i) {
-        crash_text_i3strings[i] = i3string_from_utf8(crash_text[i]);
-    }
-    crash_text_i3strings[crash_text_length] = NULL;
-    /* calculate width for longest text */
-    int font_width = predict_text_width(crash_text_i3strings[crash_text_longest]);
-    int width = font_width + 20;
-
-    /* Open a popup window on each virtual screen */
-    Output *screen;
-    xcb_window_t win;
-    TAILQ_FOREACH(screen, &outputs, outputs) {
-        if (!screen->active)
-            continue;
-        win = open_input_window(conn, screen->rect, width, height);
-
-        /* Create pixmap */
-        pixmap = xcb_generate_id(conn);
-        pixmap_gc = xcb_generate_id(conn);
-        xcb_create_pixmap(conn, root_depth, pixmap, win, width, height);
-        xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
-
-        /* Grab the keyboard to get all input */
-        xcb_grab_keyboard(conn, false, win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-
-        /* Grab the cursor inside the popup */
-        xcb_grab_pointer(conn, false, win, XCB_NONE, XCB_GRAB_MODE_ASYNC,
-                         XCB_GRAB_MODE_ASYNC, win, XCB_NONE, XCB_CURRENT_TIME);
-
-        sig_draw_window(win, width, height, config.font.height, crash_text_i3strings);
-        xcb_flush(conn);
     }
 }
 
-/*
- * Handle signals
- * It creates a window asking the user to restart in-place
- * or exit to generate a core dump
- *
- */
 void handle_signal(int sig, siginfo_t *info, void *data) {
     DLOG("i3 crashed. SIG: %d\n", sig);
 
@@ -294,22 +308,33 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
     sigaction(sig, &action, NULL);
     raised_signal = sig;
 
-    open_popups();
+    sighandler_setup();
+    sighandler_create_dialogs();
 
     xcb_generic_event_t *event;
     /* Yay, more own eventhandlers… */
     while ((event = xcb_wait_for_event(conn))) {
         /* Strip off the highest bit (set if the event is generated) */
         int type = (event->response_type & 0x7F);
-        if (type == XCB_KEY_PRESS) {
-            sig_handle_key_press(NULL, conn, (xcb_key_press_event_t *)event);
+        switch (type) {
+            case XCB_KEY_PRESS:
+                sighandler_handle_key_press((xcb_key_press_event_t *)event);
+                break;
+            case XCB_EXPOSE:
+                if (((xcb_expose_event_t *)event)->count == 0) {
+                    sighandler_handle_expose();
+                }
+
+                break;
         }
+
         free(event);
     }
 }
 
 /*
- * Setup signal handlers to safely handle SIGSEGV and SIGFPE
+ * Configured a signal handler to gracefully handle crashes and allow the user
+ * to generate a backtrace and rescue their session.
  *
  */
 void setup_signal_handler(void) {

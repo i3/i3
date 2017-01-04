@@ -3,10 +3,6 @@
  *
  * i3 - an improved dynamic tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
- * © 2009 Jan-Erik Rediger
- *
- * sighandler.c: Interactive crash dialog upon SIGSEGV/SIGABRT/SIGFPE (offers
- *               to restart inplace).
  *
  */
 #pragma once
@@ -14,7 +10,8 @@
 #include <config.h>
 
 /**
- * Setup signal handlers to safely handle SIGSEGV and SIGFPE
+ * Configured a signal handler to gracefully handle crashes and allow the user
+ * to generate a backtrace and rescue their session.
  *
  */
 void setup_signal_handler(void);
