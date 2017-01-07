@@ -88,8 +88,13 @@ void init_logging(void) {
             fprintf(stderr, "Could not initialize errorlog\n");
         else {
             errorfile = fopen(errorfilename, "w");
-            if (fcntl(fileno(errorfile), F_SETFD, FD_CLOEXEC)) {
-                fprintf(stderr, "Could not set close-on-exec flag\n");
+            if (!errorfile) {
+                fprintf(stderr, "Could not initialize errorlog on %s: %s\n",
+                        errorfilename, strerror(errno));
+            } else {
+                if (fcntl(fileno(errorfile), F_SETFD, FD_CLOEXEC)) {
+                    fprintf(stderr, "Could not set close-on-exec flag\n");
+                }
             }
         }
     }
