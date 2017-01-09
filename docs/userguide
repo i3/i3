@@ -1127,9 +1127,9 @@ none::
 [[show_marks]]
 === Drawing marks on window decoration
 
-If activated, marks on windows are drawn in their window decoration. However,
-any mark starting with an underscore in its name (+_+) will not be drawn even if
-this option is activated.
+If activated, marks (see <<vim_like_marks>>) on windows are drawn in their window
+decoration. However, any mark starting with an underscore in its name (+_+) will
+not be drawn even if this option is activated.
 
 The default for this option is +yes+.
 
