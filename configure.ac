@@ -31,8 +31,8 @@ AX_EXTEND_SRCDIR
 
 AS_IF([test -d ${srcdir}/.git],
       [
-        VERSION="$(git describe --tags --abbrev=0)"
-        I3_VERSION="$(git describe --tags --always) ($(git log --pretty=format:%cd --date=short -n1), branch \\\"$(git describe --tags --always --all | sed s:heads/::)\\\")"
+        VERSION="$(git -C ${srcdir} describe --tags --abbrev=0)"
+        I3_VERSION="$(git -C ${srcdir} describe --tags --always) ($(git -C ${srcdir} log --pretty=format:%cd --date=short -n1), branch \\\"$(git -C ${srcdir} describe --tags --always --all | sed s:heads/::)\\\")"
         # Mirrors what libi3/is_debug_build.c does:
         is_release=$(test $(echo "${I3_VERSION}" | cut -d '(' -f 1 | wc -m) -lt 10 && echo yes || echo no)
       ],
@@ -154,8 +154,9 @@ else
 	print_BUILD_MANS=no
 fi
 
-git_dir=`git rev-parse --git-dir 2>/dev/null`
-if test -n "$git_dir"; then
+in_git_worktree=`git rev-parse --is-inside-work-tree 2>/dev/null`
+if "$in_git_worktree" == "true"; then
+	git_dir=`git rev-parse --git-dir 2>/dev/null`
 	srcdir=`dirname "$git_dir"`
 	exclude_dir=`pwd | sed "s,^$srcdir,,g"`
 	if ! grep -q "^$exclude_dir" "$git_dir/info/exclude"; then
