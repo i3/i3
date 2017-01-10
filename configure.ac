@@ -31,8 +31,8 @@ AX_EXTEND_SRCDIR
 
 AS_IF([test -d ${srcdir}/.git],
       [
-        VERSION="$(git describe --tags --abbrev=0)"
-        I3_VERSION="$(git describe --tags --always) ($(git log --pretty=format:%cd --date=short -n1), branch \\\"$(git describe --tags --always --all | sed s:heads/::)\\\")"
+        VERSION="$(git -C ${srcdir} describe --tags --abbrev=0)"
+        I3_VERSION="$(git -C ${srcdir} describe --tags --always) ($(git -C ${srcdir} log --pretty=format:%cd --date=short -n1), branch \\\"$(git -C ${srcdir} describe --tags --always --all | sed s:heads/::)\\\")"
         # Mirrors what libi3/is_debug_build.c does:
         is_release=$(test $(echo "${I3_VERSION}" | cut -d '(' -f 1 | wc -m) -lt 10 && echo yes || echo no)
       ],
