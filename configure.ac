@@ -155,7 +155,7 @@ else
 fi
 
 in_git_worktree=`git rev-parse --is-inside-work-tree 2>/dev/null`
-if "$in_git_worktree" == "true"; then
+if [[ "$in_git_worktree" = "true" ]]; then
 	git_dir=`git rev-parse --git-dir 2>/dev/null`
 	srcdir=`dirname "$git_dir"`
 	exclude_dir=`pwd | sed "s,^$srcdir,,g"`
