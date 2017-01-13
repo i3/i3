@@ -596,7 +596,10 @@ int main(int argc, char *argv[]) {
 
         switch (type) {
             case XCB_EXPOSE:
-                handle_expose(conn, (xcb_expose_event_t *)event);
+                if (((xcb_expose_event_t *)event)->count == 0) {
+                    handle_expose(conn, (xcb_expose_event_t *)event);
+                }
+
                 break;
 
             case XCB_BUTTON_PRESS:

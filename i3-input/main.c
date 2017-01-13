@@ -525,7 +525,10 @@ int main(int argc, char *argv[]) {
                 break;
 
             case XCB_EXPOSE:
-                handle_expose(NULL, conn, (xcb_expose_event_t *)event);
+                if (((xcb_expose_event_t *)event)->count == 0) {
+                    handle_expose(NULL, conn, (xcb_expose_event_t *)event);
+                }
+
                 break;
         }
 

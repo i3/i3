@@ -1477,7 +1477,10 @@ void handle_event(int type, xcb_generic_event_t *event) {
             break;
 
         case XCB_EXPOSE:
-            handle_expose_event((xcb_expose_event_t *)event);
+            if (((xcb_expose_event_t *)event)->count == 0) {
+                handle_expose_event((xcb_expose_event_t *)event);
+            }
+
             break;
 
         case XCB_MOTION_NOTIFY:
