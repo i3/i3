@@ -870,11 +870,13 @@ static void handle_destroy_notify(xcb_destroy_notify_event_t *event) {
         DLOG("checking output %s\n", walk->name);
         trayclient *trayclient;
         TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
-            if (trayclient->win != event->window)
+            if (trayclient->win != event->window) {
                 continue;
+            }
 
             DLOG("Removing tray client with window ID %08x\n", event->window);
             TAILQ_REMOVE(walk->trayclients, trayclient, tailq);
+            FREE(trayclient);
 
             /* Trigger an update, we now have more space for the statusline */
             configure_trayclients();
@@ -1558,6 +1560,7 @@ void kick_tray_clients(i3_output *output) {
         /* We remove the trayclient right here. We might receive an UnmapNotify
          * event afterwards, but better safe than sorry. */
         TAILQ_REMOVE(output->trayclients, trayclient, tailq);
+        FREE(trayclient);
     }
 
     /* Fake a DestroyNotify so that Qt re-adds tray icons.
