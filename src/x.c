@@ -572,9 +572,6 @@ void x_draw_decoration(Con *con) {
         goto after_title;
     }
 
-    if (win->name == NULL)
-        goto copy_pixmaps;
-
     int mark_width = 0;
     if (config.show_marks && !TAILQ_EMPTY(&(con->marks_head))) {
         char *formatted_mark = sstrdup("");
@@ -608,13 +605,19 @@ void x_draw_decoration(Con *con) {
     }
 
     i3String *title = con->title_format == NULL ? win->name : con_parse_title_format(con);
+    if (title == NULL) {
+        goto copy_pixmaps;
+    }
+
     draw_util_text(title, &(parent->frame_buffer),
                    p->color->text, p->color->background,
                    con->deco_rect.x + logical_px(2),
                    con->deco_rect.y + text_offset_y,
                    con->deco_rect.width - mark_width - 2 * logical_px(2));
-    if (con->title_format != NULL)
+
+    if (con->title_format != NULL) {
         I3STRING_FREE(title);
+    }
 
 after_title:
     x_draw_decoration_after_title(con, p);
