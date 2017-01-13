@@ -244,8 +244,8 @@ static void sighandler_draw_dialog(dialog_t *dialog) {
     const color_t red = draw_util_hex_to_color("#FF0000");
 
     /* Start with a clean slate and draw a red border. */
-    draw_util_clear_surface(conn, &(dialog->surface), red);
-    draw_util_rectangle(conn, &(dialog->surface), black, border_width, border_width,
+    draw_util_clear_surface(&(dialog->surface), red);
+    draw_util_rectangle(&(dialog->surface), black, border_width, border_width,
                         dialog->dims.width - 2 * border_width, dialog->dims.height - 2 * border_width);
 
     int y = border_width + margin;

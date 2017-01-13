@@ -617,7 +617,7 @@ static void handle_expose_event(xcb_expose_event_t *event) {
      * only tell us that the X server lost (parts of) the window contents. We
      * can handle that by copying the appropriate part from our surface to the
      * window. */
-    draw_util_copy_surface(conn, &(parent->frame_buffer), &(parent->frame),
+    draw_util_copy_surface(&(parent->frame_buffer), &(parent->frame),
                            event->x, event->y, event->x, event->y,
                            event->width, event->height);
     xcb_flush(conn);

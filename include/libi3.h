@@ -597,17 +597,17 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
  * surface as well as restoring the cairo state.
  *
  */
-void draw_util_rectangle(xcb_connection_t *conn, surface_t *surface, color_t color, double x, double y, double w, double h);
+void draw_util_rectangle(surface_t *surface, color_t color, double x, double y, double w, double h);
 
 /**
  * Clears a surface with the given color.
  *
  */
-void draw_util_clear_surface(xcb_connection_t *conn, surface_t *surface, color_t color);
+void draw_util_clear_surface(surface_t *surface, color_t color);
 
 /**
  * Copies a surface onto another surface.
  *
  */
-void draw_util_copy_surface(xcb_connection_t *conn, surface_t *src, surface_t *dest, double src_x, double src_y,
+void draw_util_copy_surface(surface_t *src, surface_t *dest, double src_x, double src_y,
                             double dest_x, double dest_y, double width, double height);
