@@ -32,8 +32,9 @@ static struct Mode *mode_from_name(const char *name, bool pango_markup) {
 
     /* Try to find the mode in the list of modes and return it */
     SLIST_FOREACH(mode, &modes, modes) {
-        if (strcmp(mode->name, name) == 0)
+        if (strcmp(mode->name, name) == 0) {
             return mode;
+        }
     }
 
     /* If the mode was not found, create a new one */

@@ -126,6 +126,15 @@ CFGFUN(enter_mode, const char *pango_markup, const char *modename) {
         ELOG("You cannot use the name %s for your mode\n", DEFAULT_BINDING_MODE);
         exit(1);
     }
+
+    struct Mode *mode;
+    SLIST_FOREACH(mode, &modes, modes) {
+        if (strcmp(mode->name, modename) == 0) {
+            ELOG("The binding mode with name \"%s\" is defined at least twice.\n", modename);
+            exit(1);
+        }
+    }
+
     DLOG("\t now in mode %s\n", modename);
     FREE(current_mode);
     current_mode = sstrdup(modename);
