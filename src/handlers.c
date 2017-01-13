@@ -637,6 +637,11 @@ static void handle_expose_event(xcb_expose_event_t *event) {
 #define _NET_WM_MOVERESIZE_MOVE_KEYBOARD 10 /* move via keyboard */
 #define _NET_WM_MOVERESIZE_CANCEL 11        /* cancel operation */
 
+#define _NET_MOVERESIZE_WINDOW_X (1 << 8)
+#define _NET_MOVERESIZE_WINDOW_Y (1 << 9)
+#define _NET_MOVERESIZE_WINDOW_WIDTH (1 << 10)
+#define _NET_MOVERESIZE_WINDOW_HEIGHT (1 << 11)
+
 /*
  * Handle client messages (EWMH)
  *
@@ -897,6 +902,35 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 DLOG("_NET_WM_MOVERESIZE direction %d not implemented\n", direction);
                 break;
         }
+    } else if (event->type == A__NET_MOVERESIZE_WINDOW) {
+        DLOG("Received _NET_MOVE_RESIZE_WINDOW. Handling by faking a configure request.\n");
+
+        void *_generated_event = scalloc(32, 1);
+        xcb_configure_request_event_t *generated_event = _generated_event;
+
+        generated_event->window = event->window;
+        generated_event->response_type = XCB_CONFIGURE_REQUEST;
+
+        generated_event->value_mask = 0;
+        if (event->data.data32[0] & _NET_MOVERESIZE_WINDOW_X) {
+            generated_event->value_mask |= XCB_CONFIG_WINDOW_X;
+            generated_event->x = event->data.data32[1];
+        }
+        if (event->data.data32[0] & _NET_MOVERESIZE_WINDOW_Y) {
+            generated_event->value_mask |= XCB_CONFIG_WINDOW_Y;
+            generated_event->y = event->data.data32[2];
+        }
+        if (event->data.data32[0] & _NET_MOVERESIZE_WINDOW_WIDTH) {
+            generated_event->value_mask |= XCB_CONFIG_WINDOW_WIDTH;
+            generated_event->width = event->data.data32[3];
+        }
+        if (event->data.data32[0] & _NET_MOVERESIZE_WINDOW_HEIGHT) {
+            generated_event->value_mask |= XCB_CONFIG_WINDOW_HEIGHT;
+            generated_event->height = event->data.data32[4];
+        }
+
+        handle_configure_request(generated_event);
+        FREE(generated_event);
     } else {
         DLOG("Skipping client message for unhandled type %d\n", event->type);
     }
