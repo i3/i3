@@ -206,6 +206,15 @@ void con_focus(Con *con) {
         con_focus(con->parent);
 
     focused = con;
+
+    /* Raise floating window unless it is fullscreen */
+    Con *ws = con_get_workspace(con);
+    Con *fs = (ws ? con_get_fullscreen_con(ws, CF_OUTPUT) : NULL);
+    Con *floatingcon = con_inside_floating(con);
+    if (floatingcon != NULL && fs != con) {
+      floating_raise_con(floatingcon);
+    }
+
     /* We can't blindly reset non-leaf containers since they might have
      * other urgent children. Therefore we only reset leafs and propagate
      * the changes upwards via con_update_parents_urgency() which does proper
@@ -500,7 +509,9 @@ bool con_is_docked(Con *con) {
  *
  */
 Con *con_inside_floating(Con *con) {
-    assert(con != NULL);
+    if (con == NULL)
+        return NULL;
+
     if (con->type == CT_FLOATING_CON)
         return con;
 
