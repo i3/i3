@@ -181,7 +181,7 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
     uint32_t center_x = x - sep_offset;
     if (config.separator_symbol == NULL) {
         /* Draw a classic one pixel, vertical separator. */
-        draw_util_rectangle(xcb_connection, &output->statusline_buffer, sep_fg,
+        draw_util_rectangle(&output->statusline_buffer, sep_fg,
                             center_x,
                             logical_px(sep_voff_px),
                             logical_px(1),
@@ -250,7 +250,7 @@ void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_color
     struct status_block *block;
 
     color_t bar_color = (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg);
-    draw_util_clear_surface(xcb_connection, &output->statusline_buffer, bar_color);
+    draw_util_clear_surface(&output->statusline_buffer, bar_color);
 
     /* Use unsigned integer wraparound to clip off the left side.
      * For example, if clip_left is 75, then x will start at the very large
@@ -301,13 +301,13 @@ void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_color
             }
 
             /* Draw the border. */
-            draw_util_rectangle(xcb_connection, &output->statusline_buffer, border_color,
+            draw_util_rectangle(&output->statusline_buffer, border_color,
                                 x, logical_px(1),
                                 full_render_width,
                                 bar_height - logical_px(2));
 
             /* Draw the background. */
-            draw_util_rectangle(xcb_connection, &output->statusline_buffer, bg_color,
+            draw_util_rectangle(&output->statusline_buffer, bg_color,
                                 x + border_width,
                                 logical_px(1) + border_width,
                                 full_render_width - 2 * border_width,
@@ -1946,8 +1946,7 @@ void draw_bars(bool unhide) {
         bool use_focus_colors = output_has_focus(outputs_walk);
 
         /* First things first: clear the backbuffer */
-        draw_util_clear_surface(xcb_connection, &(outputs_walk->buffer),
-                                (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg));
+        draw_util_clear_surface(&(outputs_walk->buffer), (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg));
 
         if (!config.disable_ws) {
             i3_ws *ws_walk;
@@ -1977,14 +1976,14 @@ void draw_bars(bool unhide) {
                 }
 
                 /* Draw the border of the button. */
-                draw_util_rectangle(xcb_connection, &(outputs_walk->buffer), border_color,
+                draw_util_rectangle(&(outputs_walk->buffer), border_color,
                                     workspace_width,
                                     logical_px(1),
                                     ws_walk->name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
                                     font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
 
                 /* Draw the inside of the button. */
-                draw_util_rectangle(xcb_connection, &(outputs_walk->buffer), bg_color,
+                draw_util_rectangle(&(outputs_walk->buffer), bg_color,
                                     workspace_width + logical_px(1),
                                     2 * logical_px(1),
                                     ws_walk->name_width + 2 * logical_px(ws_hoff_px),
@@ -2007,13 +2006,13 @@ void draw_bars(bool unhide) {
             color_t fg_color = colors.binding_mode_fg;
             color_t bg_color = colors.binding_mode_bg;
 
-            draw_util_rectangle(xcb_connection, &(outputs_walk->buffer), colors.binding_mode_border,
+            draw_util_rectangle(&(outputs_walk->buffer), colors.binding_mode_border,
                                 workspace_width,
                                 logical_px(1),
                                 binding.width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
                                 font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
 
-            draw_util_rectangle(xcb_connection, &(outputs_walk->buffer), bg_color,
+            draw_util_rectangle(&(outputs_walk->buffer), bg_color,
                                 workspace_width + logical_px(1),
                                 2 * logical_px(1),
                                 binding.width + 2 * logical_px(ws_hoff_px),
@@ -2049,7 +2048,7 @@ void draw_bars(bool unhide) {
             int x_dest = outputs_walk->rect.w - tray_width - logical_px(sb_hoff_px) - visible_statusline_width;
 
             draw_statusline(outputs_walk, clip_left, use_focus_colors, use_short_text);
-            draw_util_copy_surface(xcb_connection, &outputs_walk->statusline_buffer, &outputs_walk->buffer, 0, 0,
+            draw_util_copy_surface(&outputs_walk->statusline_buffer, &outputs_walk->buffer, 0, 0,
                                    x_dest, 0, visible_statusline_width, (int16_t)bar_height);
 
             outputs_walk->statusline_width = statusline_width;
@@ -2080,7 +2079,7 @@ void redraw_bars(void) {
             continue;
         }
 
-        draw_util_copy_surface(xcb_connection, &(outputs_walk->buffer), &(outputs_walk->bar), 0, 0,
+        draw_util_copy_surface(&(outputs_walk->buffer), &(outputs_walk->bar), 0, 0,
                                0, 0, outputs_walk->rect.w, outputs_walk->rect.h);
         xcb_flush(xcb_connection);
     }
