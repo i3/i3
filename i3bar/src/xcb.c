@@ -1149,8 +1149,11 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
                 handle_visibility_notify((xcb_visibility_notify_event_t *)event);
                 break;
             case XCB_EXPOSE:
-                /* Expose-events happen, when the window needs to be redrawn */
-                redraw_bars();
+                if (((xcb_expose_event_t *)event)->count == 0) {
+                    /* Expose-events happen, when the window needs to be redrawn */
+                    redraw_bars();
+                }
+
                 break;
             case XCB_BUTTON_PRESS:
                 /* Button press events are mouse buttons clicked on one of our bars */
