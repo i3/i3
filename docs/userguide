@@ -479,7 +479,7 @@ mode <name>
 
 *Example*:
 ------------------------------------------------------------------------
-# Press $mod+o followed by either f, t, Esc or Return to launch firefox,
+# Press $mod+o followed by either f, t, Escape or Return to launch firefox,
 # thunderbird or return to the default mode, respectively.
 set $mode_launcher Launch: [f]irefox [t]hunderbird
 bindsym $mod+o mode "$mode_launcher"
@@ -488,7 +488,7 @@ mode "$mode_launcher" {
     bindsym f exec firefox
     bindsym t exec thunderbird
 
-    bindsym Esc mode "default"
+    bindsym Escape mode "default"
     bindsym Return mode "default"
 }
 ------------------------------------------------------------------------
