@@ -110,7 +110,7 @@ state LAYOUT:
 state LAYOUT_TOGGLE:
   end
       -> call cmd_layout_toggle($toggle_mode)
-  toggle_mode = 'split', 'all'
+  toggle_mode = string
       -> call cmd_layout_toggle($toggle_mode)
 
 # append_layout <path>
