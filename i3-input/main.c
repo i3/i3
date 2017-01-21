@@ -33,6 +33,10 @@
 
 #include "i3-input.h"
 
+#define MAX_WIDTH logical_px(500)
+#define BORDER logical_px(2)
+#define PADDING logical_px(2)
+
 /* IPC format string. %s will be replaced with what the user entered, then
  * the command will be sent to i3 */
 static char *format;
@@ -42,8 +46,7 @@ static int sockfd;
 static xcb_key_symbols_t *symbols;
 static bool modeswitch_active = false;
 static xcb_window_t win;
-static xcb_pixmap_t pixmap;
-static xcb_gcontext_t pixmap_gc;
+static surface_t surface;
 static xcb_char2b_t glyphs_ucs[512];
 static char *glyphs_utf8[512];
 static int input_position;
@@ -109,30 +112,30 @@ static uint8_t *concat_strings(char **glyphs, int max) {
 static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t *event) {
     printf("expose!\n");
 
-    /* re-draw the background */
-    xcb_rectangle_t border = {0, 0, logical_px(500), font.height + logical_px(8)},
-                    inner = {logical_px(2), logical_px(2), logical_px(496), font.height + logical_px(8) - logical_px(4)};
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#FF0000")});
-    xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#000000")});
-    xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
+    color_t border_color = draw_util_hex_to_color("#FF0000");
+    color_t fg_color = draw_util_hex_to_color("#FFFFFF");
+    color_t bg_color = draw_util_hex_to_color("#000000");
 
-    /* restore font color */
-    set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
+    int text_offset = BORDER + PADDING;
+
+    /* draw border */
+    draw_util_rectangle(&surface, border_color, 0, 0, surface.width, surface.height);
+
+    /* draw background */
+    draw_util_rectangle(&surface, bg_color, BORDER, BORDER, surface.width - 2 * BORDER, surface.height - 2 * BORDER);
 
     /* draw the prompt … */
     if (prompt != NULL) {
-        draw_text(prompt, pixmap, pixmap_gc, NULL, logical_px(4), logical_px(4), logical_px(492));
+        draw_util_text(prompt, &surface, fg_color, bg_color, text_offset, text_offset, MAX_WIDTH - text_offset);
     }
+
     /* … and the text */
     if (input_position > 0) {
         i3String *input = i3string_from_ucs2(glyphs_ucs, input_position);
-        draw_text(input, pixmap, pixmap_gc, NULL, prompt_offset + logical_px(4), logical_px(4), logical_px(492));
+        draw_util_text(input, &surface, fg_color, bg_color, text_offset + prompt_offset, text_offset, MAX_WIDTH - text_offset);
         i3string_free(input);
     }
 
-    /* Copy the contents of the pixmap to the real window */
-    xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, logical_px(500), font.height + logical_px(8));
     xcb_flush(conn);
 
     return 1;
@@ -287,7 +290,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 }
 
 static xcb_rectangle_t get_window_position(void) {
-    xcb_rectangle_t result = (xcb_rectangle_t){logical_px(50), logical_px(50), logical_px(500), font.height + logical_px(8)};
+    xcb_rectangle_t result = (xcb_rectangle_t){logical_px(50), logical_px(50), MAX_WIDTH, font.height + 2 * BORDER + 2 * PADDING};
 
     xcb_get_property_reply_t *supporting_wm_reply = NULL;
     xcb_get_input_focus_reply_t *input_focus = NULL;
@@ -448,6 +451,7 @@ int main(int argc, char *argv[]) {
 
     symbols = xcb_key_symbols_alloc(conn);
 
+    init_dpi();
     font = load_font(pattern, true);
     set_font(&font);
 
@@ -476,11 +480,8 @@ int main(int argc, char *argv[]) {
     /* Map the window (make it visible) */
     xcb_map_window(conn, win);
 
-    /* Create pixmap */
-    pixmap = xcb_generate_id(conn);
-    pixmap_gc = xcb_generate_id(conn);
-    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, logical_px(500), font.height + logical_px(8));
-    xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
+    /* Initialize the drawable surface */
+    draw_util_surface_init(conn, &surface, win, get_visualtype(root_screen), win_pos.width, win_pos.height);
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);
@@ -535,5 +536,6 @@ int main(int argc, char *argv[]) {
         free(event);
     }
 
+    draw_util_surface_free(conn, &surface);
     return 0;
 }
