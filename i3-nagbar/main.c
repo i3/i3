@@ -38,6 +38,13 @@
  * constant for that. */
 #define XCB_CURSOR_LEFT_PTR 68
 
+#define MSG_PADDING logical_px(8)
+#define BTN_PADDING logical_px(3)
+#define BTN_BORDER logical_px(3)
+#define BTN_GAP logical_px(20)
+#define CLOSE_BTN_GAP logical_px(15)
+#define BAR_BORDER logical_px(2)
+
 static char *argv0 = NULL;
 
 typedef struct {
@@ -48,11 +55,12 @@ typedef struct {
 } button_t;
 
 static xcb_window_t win;
-static xcb_pixmap_t pixmap;
-static xcb_gcontext_t pixmap_gc;
-static xcb_rectangle_t rect = {0, 0, 600, 20};
+static surface_t bar;
+
 static i3Font font;
 static i3String *prompt;
+
+static button_t btn_close;
 static button_t *buttons;
 static int buttoncnt;
 
@@ -138,7 +146,7 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     printf("button released on x = %d, y = %d\n",
            event->event_x, event->event_y);
     /* If the user hits the close button, we exit(0) */
-    if (event->event_x >= (rect.width - logical_px(32)))
+    if (event->event_x >= btn_close.x && event->event_x < btn_close.x + btn_close.width)
         exit(0);
     button_t *button = get_button_at(event->event_x, event->event_y);
     if (!button)
@@ -191,107 +199,63 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
 }
 
 /*
+ * Draws a button and returns its width
+ *
+ */
+static int button_draw(button_t *button, int position) {
+    int text_width = predict_text_width(button->label);
+    button->width = text_width + 2 * BTN_PADDING + 2 * BTN_BORDER;
+    button->x = position - button->width;
+
+    /* draw border */
+    draw_util_rectangle(&bar, color_border,
+                        position - button->width,
+                        MSG_PADDING - BTN_PADDING - BTN_BORDER,
+                        button->width,
+                        font.height + 2 * BTN_PADDING + 2 * BTN_BORDER);
+    /* draw background */
+    draw_util_rectangle(&bar, color_button_background,
+                        position - button->width + BTN_BORDER,
+                        MSG_PADDING - BTN_PADDING,
+                        text_width + 2 * BTN_PADDING,
+                        font.height + 2 * BTN_PADDING);
+    /* draw label */
+    draw_util_text(button->label, &bar, color_text, color_button_background,
+                   position - button->width + BTN_BORDER + BTN_PADDING,
+                   MSG_PADDING,
+                   200);
+    return button->width;
+}
+
+/*
  * Handles expose events (redraws of the window) and rendering in general. Will
  * be called from the code with event == NULL or from X with event != NULL.
  *
  */
 static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
-    /* re-draw the background */
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_background.colorpixel});
-    xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &rect);
+    /* draw background */
+    draw_util_clear_surface(&bar, color_background);
+    /* draw message */
+    draw_util_text(prompt, &bar, color_text, color_background,
+                   MSG_PADDING, MSG_PADDING,
+                   bar.width - 2 * MSG_PADDING);
 
-    /* restore font color */
-    set_font_colors(pixmap_gc, color_text, color_background);
-    draw_text(prompt, pixmap, pixmap_gc, NULL,
-              logical_px(4) + logical_px(4),
-              logical_px(4) + logical_px(4),
-              rect.width - logical_px(4) - logical_px(4));
+    int position = bar.width - (MSG_PADDING - BTN_BORDER - BTN_PADDING);
 
     /* render close button */
-    const char *close_button_label = "X";
-    int line_width = logical_px(4);
-    /* set width to the width of the label */
-    int w = predict_text_width(i3string_from_utf8(close_button_label));
-    /* account for left/right padding, which seems to be set to 8px (total) below */
-    w += logical_px(8);
-    int y = rect.width;
-    uint32_t values[3];
-    values[0] = color_button_background.colorpixel;
-    values[1] = line_width;
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH, values);
-
-    xcb_rectangle_t close = {y - w - (2 * line_width), 0, w + (2 * line_width), rect.height};
-    xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &close);
-
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_border.colorpixel});
-    xcb_point_t points[] = {
-        {y - w - (2 * line_width), line_width / 2},
-        {y - (line_width / 2), line_width / 2},
-        {y - (line_width / 2), (rect.height - (line_width / 2)) - logical_px(2)},
-        {y - w - (2 * line_width), (rect.height - (line_width / 2)) - logical_px(2)},
-        {y - w - (2 * line_width), line_width / 2}};
-    xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, pixmap, pixmap_gc, 5, points);
-
-    values[0] = 1;
-    set_font_colors(pixmap_gc, color_text, color_button_background);
-    /* the x term here seems to set left/right padding */
-    draw_text_ascii(close_button_label, pixmap, pixmap_gc,
-                    y - w - line_width + w / 2 - logical_px(4),
-                    logical_px(4) + logical_px(3),
-                    rect.width - y + w + line_width - w / 2 + logical_px(4));
-    y -= w;
-
-    y -= logical_px(20);
+    position -= button_draw(&btn_close, position);
+    position -= CLOSE_BTN_GAP;
 
     /* render custom buttons */
-    line_width = 1;
-    for (int c = 0; c < buttoncnt; c++) {
-        /* set w to the width of the label */
-        w = predict_text_width(buttons[c].label);
-        /* account for left/right padding, which seems to be set to 12px (total) below */
-        w += logical_px(12);
-        y -= logical_px(30);
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_button_background.colorpixel});
-        close = (xcb_rectangle_t){y - w - (2 * line_width), logical_px(2), w + (2 * line_width), rect.height - logical_px(6)};
-        xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &close);
-
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){color_border.colorpixel});
-        buttons[c].x = y - w - (2 * line_width);
-        buttons[c].width = w;
-        xcb_point_t points2[] = {
-            {y - w - (2 * line_width), (line_width / 2) + logical_px(2)},
-            {y - (line_width / 2), (line_width / 2) + logical_px(2)},
-            {y - (line_width / 2), (rect.height - logical_px(4) - (line_width / 2))},
-            {y - w - (2 * line_width), (rect.height - logical_px(4) - (line_width / 2))},
-            {y - w - (2 * line_width), (line_width / 2) + logical_px(2)}};
-        xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, pixmap, pixmap_gc, 5, points2);
-
-        values[0] = color_text.colorpixel;
-        values[1] = color_button_background.colorpixel;
-        set_font_colors(pixmap_gc, color_text, color_button_background);
-        /* the x term seems to set left/right padding */
-        draw_text(buttons[c].label, pixmap, pixmap_gc, NULL,
-                  y - w - line_width + logical_px(6),
-                  logical_px(4) + logical_px(3),
-                  rect.width - y + w + line_width - logical_px(6));
-
-        y -= w;
+    for (int i = 0; i < buttoncnt; i++) {
+        position -= BTN_GAP;
+        position -= button_draw(&buttons[i], position);
     }
 
     /* border line at the bottom */
-    line_width = logical_px(2);
-    values[0] = color_border_bottom.colorpixel;
-    values[1] = line_width;
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH, values);
-    xcb_point_t bottom[] = {
-        {0, rect.height - 0},
-        {rect.width, rect.height - 0}};
-    xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, pixmap, pixmap_gc, 2, bottom);
+    draw_util_rectangle(&bar, color_border_bottom, 0, bar.height - BAR_BORDER, bar.width, BAR_BORDER);
 
-    /* Copy the contents of the pixmap to the real window */
-    xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, rect.width, rect.height);
     xcb_flush(conn);
-
     return 1;
 }
 
@@ -301,7 +265,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
  */
 static xcb_rectangle_t get_window_position(void) {
     /* Default values if we cannot determine the primary output or its CRTC info. */
-    xcb_rectangle_t result = (xcb_rectangle_t){50, 50, 500, font.height + logical_px(8) + logical_px(8)};
+    xcb_rectangle_t result = (xcb_rectangle_t){50, 50, 500, font.height + 2 * MSG_PADDING + BAR_BORDER};
 
     xcb_randr_get_screen_resources_current_cookie_t rcookie = xcb_randr_get_screen_resources_current(conn, root);
     xcb_randr_get_output_primary_cookie_t pcookie = xcb_randr_get_output_primary(conn, root);
@@ -437,6 +401,8 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
+
+    btn_close.label = i3string_from_utf8("X");
 
     int screens;
     if ((conn = xcb_connect(NULL, &screens)) == NULL ||
@@ -575,11 +541,8 @@ int main(int argc, char *argv[]) {
                         12,
                         &strut_partial);
 
-    /* Create pixmap */
-    pixmap = xcb_generate_id(conn);
-    pixmap_gc = xcb_generate_id(conn);
-    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, font.height + logical_px(8));
-    xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
+    /* Initialize the drawable bar */
+    draw_util_surface_init(conn, &bar, win, get_visualtype(root_screen), win_pos.width, win_pos.height);
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);
@@ -612,18 +575,7 @@ int main(int argc, char *argv[]) {
 
             case XCB_CONFIGURE_NOTIFY: {
                 xcb_configure_notify_event_t *configure_notify = (xcb_configure_notify_event_t *)event;
-                rect = (xcb_rectangle_t){
-                    configure_notify->x,
-                    configure_notify->y,
-                    configure_notify->width,
-                    configure_notify->height};
-
-                /* Recreate the pixmap / gc */
-                xcb_free_pixmap(conn, pixmap);
-                xcb_free_gc(conn, pixmap_gc);
-
-                xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, rect.width, rect.height);
-                xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
+                draw_util_surface_set_size(&bar, configure_notify->width, configure_notify->height);
                 break;
             }
         }
@@ -632,6 +584,7 @@ int main(int argc, char *argv[]) {
     }
 
     FREE(pattern);
+    draw_util_surface_free(conn, &bar);
 
     return 0;
 }
