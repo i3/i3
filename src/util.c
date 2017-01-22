@@ -259,7 +259,7 @@ void i3_restart(bool forget_layout) {
 
     restore_geometry();
 
-    ipc_shutdown();
+    ipc_shutdown(SHUTDOWN_REASON_RESTART);
 
     LOG("restarting \"%s\"...\n", start_argv[0]);
     /* make sure -a is in the argument list or add it */
