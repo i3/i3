@@ -499,6 +499,7 @@ i3_SOURCES = \
 	include/shmlog.h \
 	include/sighandler.h \
 	include/startup.h \
+	include/tiling_drag.h \
 	include/tree.h \
 	include/util.h \
 	include/window.h \
@@ -540,6 +541,7 @@ i3_SOURCES = \
 	src/sd-daemon.c \
 	src/sighandler.c \
 	src/startup.c \
+	src/tiling_drag.c \
 	src/tree.c \
 	src/util.c \
 	src/version.c \
