@@ -62,11 +62,39 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
 }
 
 /*
- * Calls shutdown() on each socket and closes it. This function to be called
+ * For shutdown events, we send the reason for the shutdown.
+ */
+static void ipc_send_shutdown_event(shutdown_reason_t reason) {
+    yajl_gen gen = ygenalloc();
+    y(map_open);
+
+    ystr("change");
+
+    if (reason == SHUTDOWN_REASON_RESTART) {
+        ystr("restart");
+    } else if (reason == SHUTDOWN_REASON_EXIT) {
+        ystr("exit");
+    }
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+
+    y(get_buf, &payload, &length);
+    ipc_send_event("shutdown", I3_IPC_EVENT_SHUTDOWN, (const char *)payload);
+
+    y(free);
+}
+
+/*
+ * Calls shutdown() on each socket and closes it. This function is to be called
  * when exiting or restarting only!
  *
  */
-void ipc_shutdown(void) {
+void ipc_shutdown(shutdown_reason_t reason) {
+    ipc_send_shutdown_event(reason);
+
     ipc_client *current;
     while (!TAILQ_EMPTY(&all_clients)) {
         current = TAILQ_FIRST(&all_clients);
