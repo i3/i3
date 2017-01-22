@@ -23,6 +23,10 @@
 
 #include "sd-daemon.h"
 
+#ifdef I3_ASAN_ENABLED
+#include <sanitizer/lsan_interface.h>
+#endif
+
 /* The original value of RLIMIT_CORE when i3 was started. We need to restore
  * this before starting any other process, since we set RLIMIT_CORE to
  * RLIM_INFINITY for i3 debugging versions. */
@@ -164,6 +168,13 @@ static void i3_exit(void) {
 #if EV_VERSION_MAJOR >= 4
     ev_loop_destroy(main_loop);
 #endif
+
+#ifdef I3_ASAN_ENABLED
+    __lsan_do_leak_check();
+#endif
+    ipc_shutdown();
+    unlink(config.ipc_socket_path);
+    xcb_disconnect(conn);
 
     if (*shmlogname != '\0') {
         fprintf(stderr, "Closing SHM log \"%s\"\n", shmlogname);
