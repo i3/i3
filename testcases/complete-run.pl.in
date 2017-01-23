@@ -87,6 +87,17 @@ foreach my $binary (@binaries) {
     die "$binary is not an executable" unless -x $binary;
 }
 
+my @test_binaries = qw(
+                        @abs_top_builddir@/test.commands_parser
+                        @abs_top_builddir@/test.config_parser
+                        @abs_top_builddir@/test.inject_randr15
+                    );
+
+foreach my $binary (@test_binaries) {
+    die "$binary executable not found, did you run “make check”?" unless -e $binary;
+    die "$binary is not an executable" unless -x $binary;
+}
+
 $ENV{PATH} = join(':',
     '@abs_top_builddir@/i3-nagbar',
     '@abs_top_builddir@/i3-msg',
