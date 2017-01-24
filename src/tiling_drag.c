@@ -28,10 +28,14 @@ static Con *find_drop_target(uint32_t x, uint32_t y) {
     return NULL;
 }
 
+typedef enum { DT_SIBLING,
+               DT_SPLIT } drop_type_t;
+
 struct callback_params {
     xcb_window_t indicator;
     Con **target;
     direction_t *direction;
+    drop_type_t *drop_type;
 };
 
 /*
@@ -45,8 +49,14 @@ struct callback_params {
 DRAGGING_CB(drag_callback) {
     const struct callback_params *params = extra;
 
+    /* The threshold for the outer region. Drops in this region indicate the
+     * drop should move the window into the parent as a sibling in the given
+     * direction. */
+    static const uint32_t outer_threshold = 30;
+
     Con *target = find_drop_target(new_x, new_y);
     direction_t direction = 0;
+    drop_type_t drop_type = 0;
 
     DLOG("new x = %d, y = %d, con = %p, target = %p\n", new_x, new_y, con, target);
     if (target == NULL)
@@ -67,12 +77,32 @@ DRAGGING_CB(drag_callback) {
         uint32_t d_bottom = rect.y + rect.height - new_y;
         uint32_t d_min = min(min(d_left, d_right), min(d_top, d_bottom));
 
+        drop_type = (d_min < outer_threshold ? DT_SIBLING : DT_SPLIT);
+
         if (d_left == d_min) {
             rect.width /= 2;
             direction = D_LEFT;
+
+            if (drop_type == DT_SPLIT) {
+                rect.x += outer_threshold;
+                rect.width -= outer_threshold;
+                rect.y += outer_threshold;
+                rect.height -= outer_threshold * 2;
+            } else if (drop_type == DT_SIBLING) {
+                rect.width = outer_threshold;
+            }
         } else if (d_top == d_min) {
             rect.height /= 2;
             direction = D_UP;
+
+            if (drop_type == DT_SPLIT) {
+                rect.x += outer_threshold;
+                rect.height -= outer_threshold;
+                rect.y += outer_threshold;
+                rect.width -= outer_threshold * 2;
+            } else if (drop_type == DT_SIBLING) {
+                rect.height = outer_threshold;
+            }
         } else if (d_right == d_min) {
             /* This is done in three steps to get symmetric rounding behavior
              * with the first two cases. */
@@ -80,6 +110,15 @@ DRAGGING_CB(drag_callback) {
             rect.width /= 2;
             rect.x -= rect.width;
             direction = D_RIGHT;
+
+            if (drop_type == DT_SPLIT) {
+                rect.width -= outer_threshold;
+                rect.y += outer_threshold;
+                rect.height -= outer_threshold * 2;
+            } else if (drop_type == DT_SIBLING) {
+                rect.x += (rect.width - outer_threshold);
+                rect.width = outer_threshold;
+            }
         } else if (d_bottom == d_min) {
             /* This is done in three steps to get symmetric rounding behavior
              * with the first two cases. */
@@ -87,6 +126,15 @@ DRAGGING_CB(drag_callback) {
             rect.height /= 2;
             rect.y -= rect.height;
             direction = D_DOWN;
+
+            if (drop_type == DT_SPLIT) {
+                rect.x += outer_threshold;
+                rect.height -= outer_threshold;
+                rect.width -= outer_threshold * 2;
+            } else if (drop_type == DT_SIBLING) {
+                rect.y += (rect.height - outer_threshold);
+                rect.height = outer_threshold;
+            }
         }
     }
 
