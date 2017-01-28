@@ -145,6 +145,7 @@ DRAGGING_CB(drag_callback) {
 
     *(params->target) = target;
     *(params->direction) = direction;
+    *(params->drop_type) = drop_type;
 }
 
 /*
@@ -195,7 +196,8 @@ void tiling_drag(Con *con, xcb_button_press_event_t *event) {
     /* Indicate drop location while dragging. This blocks until the drag is completed. */
     Con *target = NULL;
     direction_t direction;
-    const struct callback_params params = {create_drop_indicator(con->rect), &target, &direction};
+    drop_type_t drop_type;
+    const struct callback_params params = {create_drop_indicator(con->rect), &target, &direction, &drop_type};
 
     drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, BORDER_TOP, XCURSOR_CURSOR_MOVE, drag_callback, &params);
 
@@ -205,7 +207,27 @@ void tiling_drag(Con *con, xcb_button_press_event_t *event) {
 
     /* Move the container to the drop position. */
     if (drag_result != DRAG_REVERT && target != NULL && target != con) {
-        con_move_to_side_of_con(con, target, direction);
+        if (drop_type == DT_SPLIT) {
+            con_move_to_side_of_con(con, target, direction);
+        } else if (drop_type == DT_SIBLING) {
+            Con *parent = target->parent;
+            orientation_t orientation = con_orientation(parent);
+
+            /* move out if the move goes against the grain of the parent */
+            /* orientation */
+            bool move_out = (orientation == HORIZ && (direction == D_UP || direction == D_DOWN)) ||
+                (orientation == VERT && (direction == D_LEFT || direction == D_RIGHT));
+
+            position_t position = (direction == D_LEFT || direction == D_UP ? BEFORE : AFTER);
+            insert_con_into(con, target, position);
+
+            /* TODO need to emit an event if we don't move out */
+
+            if (move_out) {
+                tree_move(con, direction);
+            }
+        }
+        con_focus(con);
         tree_render();
     }
 }

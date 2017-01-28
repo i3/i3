@@ -9,15 +9,14 @@
  */
 #include "all.h"
 
-typedef enum { BEFORE,
-               AFTER } position_t;
-
 /*
  * This function detaches 'con' from its parent and inserts it either before or
  * after 'target'.
  *
+ * TODO refactor me into con.c
+ *
  */
-static void insert_con_into(Con *con, Con *target, position_t position) {
+void insert_con_into(Con *con, Con *target, position_t position) {
     Con *parent = target->parent;
     /* We need to preserve the old con->parent. While it might still be used to
      * insert the entry before/after it, we call the on_remove_child callback
