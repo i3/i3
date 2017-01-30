@@ -301,6 +301,25 @@ is(parser_calls($config),
    $expected,
    'hide_edge_borders ok');
 
+
+################################################################################
+# hide_tab_container 
+################################################################################
+
+$config = <<'EOT';
+hide_tab_container yes
+hide_tab_container no
+EOT
+
+$expected = <<'EOT';
+cfg_hide_tab_container(yes)
+cfg_hide_tab_container(no)
+EOT
+
+is(parser_calls($config),
+   $expected,
+   'hide_tab_container ok');
+
 ################################################################################
 # focus_follows_mouse
 ################################################################################

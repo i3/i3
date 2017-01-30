@@ -33,6 +33,7 @@ state INITIAL:
   'for_window'                             -> FOR_WINDOW
   'assign'                                 -> ASSIGN
   'no_focus'                               -> NO_FOCUS
+  'hide_tab_container'                     -> HIDE_TAB_CONTAINER
   'focus_follows_mouse'                    -> FOCUS_FOLLOWS_MOUSE
   'mouse_warping'                          -> MOUSE_WARPING
   'force_focus_wrapping'                   -> FORCE_FOCUS_WRAPPING
@@ -185,6 +186,11 @@ state CRITERION:
 state CRITERION_STR:
   cvalue = word
       -> call cfg_criteria_add($ctype, $cvalue); CRITERIA
+
+# hide_tab_container bool
+state HIDE_TAB_CONTAINER:
+  value = word
+      -> call cfg_hide_tab_container($value)
 
 # focus_follows_mouse bool
 state FOCUS_FOLLOWS_MOUSE:
