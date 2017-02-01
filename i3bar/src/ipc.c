@@ -178,6 +178,11 @@ void got_bar_config_update(char *event) {
     init_xcb_late(config.fontname);
     init_colors(&(config.colors));
 
+    /* restart status command process */
+    kill_child();
+    start_child(config.command);
+    FREE(config.command);
+
     draw_bars(false);
 }
 
