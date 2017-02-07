@@ -254,7 +254,7 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
         } else {
             const uint32_t modifiers_mask = (bind->event_state_mask & 0x0000FFFF);
             const bool mods_match = modifiers_match(modifiers_mask, modifiers_state);
-            DLOG("binding mods_match = %s\n (mask: 0x%x, state: 0x%x)", (mods_match ? "yes" : "no"), modifiers_mask, modifiers_state);
+            DLOG("binding mods_match = %s (mask: 0x%x, state: 0x%x)\n", (mods_match ? "yes" : "no"), modifiers_mask, modifiers_state);
             /* First compare the state_filtered (unless this is a
              * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
              * event) */
