@@ -34,7 +34,6 @@
 #define XCB_BUTTON_SCROLL_LEFT 6
 #define XCB_BUTTON_SCROLL_RIGHT 7
 
-
 /**
  * XCB connection and root screen
  *

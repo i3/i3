@@ -229,7 +229,9 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     if (in_stacked &&
         dest == CLICK_DECORATION &&
         (event->detail == XCB_BUTTON_SCROLL_UP ||
-         event->detail == XCB_BUTTON_SCROLL_DOWN)) {
+         event->detail == XCB_BUTTON_SCROLL_DOWN ||
+         event->detail == XCB_BUTTON_SCROLL_LEFT ||
+         event->detail == XCB_BUTTON_SCROLL_RIGHT)) {
         DLOG("Scrolling on a window decoration\n");
         orientation_t orientation = (con->parent->layout == L_STACKED ? VERT : HORIZ);
         /* Focus the currently focused container on the same level that the
@@ -244,10 +246,12 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
          * #557), we first check if scrolling is possible at all. */
         bool scroll_prev_possible = (TAILQ_PREV(focused, nodes_head, nodes) != NULL);
         bool scroll_next_possible = (TAILQ_NEXT(focused, nodes) != NULL);
-        if (event->detail == XCB_BUTTON_SCROLL_UP && scroll_prev_possible)
+        if ((event->detail == XCB_BUTTON_SCROLL_UP || event->detail == XCB_BUTTON_SCROLL_LEFT) && scroll_prev_possible) {
             tree_next('p', orientation);
-        else if (event->detail == XCB_BUTTON_SCROLL_DOWN && scroll_next_possible)
+        } else if ((event->detail == XCB_BUTTON_SCROLL_DOWN || event->detail == XCB_BUTTON_SCROLL_RIGHT) && scroll_next_possible) {
             tree_next('n', orientation);
+        }
+
         goto done;
     }
 

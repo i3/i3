@@ -532,6 +532,7 @@ void handle_button(xcb_button_press_event_t *event) {
     }
     switch (event->detail) {
         case XCB_BUTTON_SCROLL_UP:
+        case XCB_BUTTON_SCROLL_LEFT:
             /* Mouse wheel up. We select the previous ws, if any.
              * If there is no more workspace, don’t even send the workspace
              * command, otherwise (with workspace auto_back_and_forth) we’d end
@@ -542,6 +543,7 @@ void handle_button(xcb_button_press_event_t *event) {
             cur_ws = TAILQ_PREV(cur_ws, ws_head, tailq);
             break;
         case XCB_BUTTON_SCROLL_DOWN:
+        case XCB_BUTTON_SCROLL_RIGHT:
             /* Mouse wheel down. We select the next ws, if any.
              * If there is no more workspace, don’t even send the workspace
              * command, otherwise (with workspace auto_back_and_forth) we’d end
