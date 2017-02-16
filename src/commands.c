@@ -95,6 +95,8 @@ static bool definitelyGreaterThan(float a, float b, float epsilon) {
  */
 static bool maybe_back_and_forth(struct CommandResultIR *cmd_output, const char *name) {
     Con *ws = con_get_workspace(focused);
+    if (ws == NULL)
+        return false;
 
     /* If we switched to a different workspace, do nothing */
     if (strcmp(ws->name, name) != 0)
