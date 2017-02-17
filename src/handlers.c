@@ -614,12 +614,9 @@ static void handle_expose_event(xcb_expose_event_t *event) {
     }
 
     /* Since we render to our surface on every change anyways, expose events
-     * only tell us that the X server lost (parts of) the window contents. We
-     * can handle that by copying the appropriate part from our surface to the
-     * window. */
+     * only tell us that the X server lost (parts of) the window contents. */
     draw_util_copy_surface(&(parent->frame_buffer), &(parent->frame),
-                           event->x, event->y, event->x, event->y,
-                           event->width, event->height);
+                           0, 0, 0, 0, parent->rect.width, parent->rect.height);
     xcb_flush(conn);
     return;
 }
