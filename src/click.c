@@ -178,8 +178,8 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     if (con->parent->type == CT_DOCKAREA)
         goto done;
 
-    const bool is_left_or_right_click = (event->detail == XCB_BUTTON_INDEX_1 ||
-                                         event->detail == XCB_BUTTON_INDEX_3);
+    const bool is_left_or_right_click = (event->detail == XCB_BUTTON_CLICK_LEFT ||
+                                         event->detail == XCB_BUTTON_CLICK_RIGHT);
 
     /* if the user has bound an action to this click, it should override the
      * default behavior. */
@@ -228,8 +228,10 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     /* 1: see if the user scrolled on the decoration of a stacked/tabbed con */
     if (in_stacked &&
         dest == CLICK_DECORATION &&
-        (event->detail == XCB_BUTTON_INDEX_4 ||
-         event->detail == XCB_BUTTON_INDEX_5)) {
+        (event->detail == XCB_BUTTON_SCROLL_UP ||
+         event->detail == XCB_BUTTON_SCROLL_DOWN ||
+         event->detail == XCB_BUTTON_SCROLL_LEFT ||
+         event->detail == XCB_BUTTON_SCROLL_RIGHT)) {
         DLOG("Scrolling on a window decoration\n");
         orientation_t orientation = (con->parent->layout == L_STACKED ? VERT : HORIZ);
         /* Focus the currently focused container on the same level that the
@@ -244,10 +246,12 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
          * #557), we first check if scrolling is possible at all. */
         bool scroll_prev_possible = (TAILQ_PREV(focused, nodes_head, nodes) != NULL);
         bool scroll_next_possible = (TAILQ_NEXT(focused, nodes) != NULL);
-        if (event->detail == XCB_BUTTON_INDEX_4 && scroll_prev_possible)
+        if ((event->detail == XCB_BUTTON_SCROLL_UP || event->detail == XCB_BUTTON_SCROLL_LEFT) && scroll_prev_possible) {
             tree_next('p', orientation);
-        else if (event->detail == XCB_BUTTON_INDEX_5 && scroll_next_possible)
+        } else if ((event->detail == XCB_BUTTON_SCROLL_DOWN || event->detail == XCB_BUTTON_SCROLL_RIGHT) && scroll_next_possible) {
             tree_next('n', orientation);
+        }
+
         goto done;
     }
 
@@ -261,7 +265,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         floating_raise_con(floatingcon);
 
         /* 4: floating_modifier plus left mouse button drags */
-        if (mod_pressed && event->detail == XCB_BUTTON_INDEX_1) {
+        if (mod_pressed && event->detail == XCB_BUTTON_CLICK_LEFT) {
             floating_drag_window(floatingcon, event);
             return 1;
         }
@@ -269,7 +273,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         /*  5: resize (floating) if this was a (left or right) click on the
          * left/right/bottom border, or a right click on the decoration.
          * also try resizing (tiling) if it was a click on the top */
-        if (mod_pressed && event->detail == XCB_BUTTON_INDEX_3) {
+        if (mod_pressed && event->detail == XCB_BUTTON_CLICK_RIGHT) {
             DLOG("floating resize due to floatingmodifier\n");
             floating_resize_window(floatingcon, proportional, event);
             return 1;
@@ -283,7 +287,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
                 goto done;
         }
 
-        if (dest == CLICK_DECORATION && event->detail == XCB_BUTTON_INDEX_3) {
+        if (dest == CLICK_DECORATION && event->detail == XCB_BUTTON_CLICK_RIGHT) {
             DLOG("floating resize due to decoration right click\n");
             floating_resize_window(floatingcon, proportional, event);
             return 1;
@@ -298,7 +302,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         /* 6: dragging, if this was a click on a decoration (which did not lead
          * to a resize) */
         if (!in_stacked && dest == CLICK_DECORATION &&
-            (event->detail == XCB_BUTTON_INDEX_1)) {
+            (event->detail == XCB_BUTTON_CLICK_LEFT)) {
             floating_drag_window(floatingcon, event);
             return 1;
         }
@@ -313,7 +317,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     }
 
     /* 7: floating modifier pressed, initiate a resize */
-    if (dest == CLICK_INSIDE && mod_pressed && event->detail == XCB_BUTTON_INDEX_3) {
+    if (dest == CLICK_INSIDE && mod_pressed && event->detail == XCB_BUTTON_CLICK_RIGHT) {
         if (floating_mod_on_tiled_client(con, event))
             return 1;
     }
