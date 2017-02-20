@@ -1706,8 +1706,8 @@ void con_set_layout(Con *con, layout_t layout) {
 /*
  * This function toggles the layout of a given container. toggle_mode can be
  * either 'default' (toggle only between stacked/tabbed/last_split_layout),
- * 'split' (toggle only between splitv/splith) or 'all' (toggle between all
- * layouts).
+ * 'split' (toggle only between splitv/splith), 'stack_tab' (toggle only between
+ * stacking/tabbed) or 'all' (toggle between all layouts).
  *
  */
 void con_toggle_layout(Con *con, const char *toggle_mode) {
@@ -1731,6 +1731,11 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
             else
                 con_set_layout(con, L_SPLITH);
         }
+    } else if (strcmp(toggle_mode, "stack_tab") == 0) {
+        /* Toggle between stacked / tabbed layouts. When the current layout is
+         * neither, set the layout to staked first. */
+        layout_t new_layout = (parent->layout == L_TABBED) ? L_STACKED : L_TABBED;
+        con_set_layout(con, new_layout);
     } else {
         if (parent->layout == L_STACKED)
             con_set_layout(con, L_TABBED);

@@ -95,4 +95,16 @@ cmd 'layout toggle all';
 ($nodes, $focus) = get_ws_content($tmp);
 is($nodes->[1]->{layout}, 'splitv', 'layout now splitv');
 
+cmd 'layout toggle stack_tab';
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[1]->{layout}, 'tabbed', 'layout now tabbed');
+
+cmd 'layout toggle stack_tab';
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[1]->{layout}, 'stacked', 'layout now stacked');
+
+cmd 'layout toggle stack_tab';
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[1]->{layout}, 'tabbed', 'layout now tabbed');
+
 done_testing;
