@@ -2438,6 +2438,19 @@ bindsym $mod+minus scratchpad show
 bindsym mod4+s [title="^Sup ::"] scratchpad show
 ------------------------------------------------
 
+Scratchpad can include not single windows only but entire containers. The only
+restriction is, the container layout should be one of +stacking+ or +tabbed+. If
+you move to the scratchpad a container with layout of +splith/splitv+, the
+windows of the container will be added to the scratchpad individually.
+
+Maybe later you would like to extend the container inside the scratchpad with
+new windows. Keep in mind that the way you launch new applications will affect
+the placement of new windows. For example, the new non-floating window of an
+applications launched from the scratchpad will be placed inside the scratchpad
+container. The other method to to add a new window into the scratchpad container
+is to provide +--no-startup-id+ parameter to the <<exec>> command, while the
+scratchpad is focused.
+
 === Nop
 
 There is a no operation command +nop+ which allows you to override default
