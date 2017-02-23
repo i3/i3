@@ -70,6 +70,14 @@ Rect rect_sub(Rect a, Rect b);
 __attribute__((pure)) bool name_is_digits(const char *name);
 
 /**
+ * Set 'out' to the layout_t value for the given layout. The function
+ * returns true on success or false if the passed string is not a valid
+ * layout name.
+ *
+ */
+bool layout_from_name(const char *layout_str, layout_t *out);
+
+/**
  * Parses the workspace name as a number. Returns -1 if the workspace should be
  * interpreted as a "named workspace".
  *

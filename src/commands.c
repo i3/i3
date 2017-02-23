@@ -1489,21 +1489,8 @@ void cmd_move_direction(I3_CMD, const char *direction, long move_px) {
 void cmd_layout(I3_CMD, const char *layout_str) {
     HANDLE_EMPTY_MATCH;
 
-    if (strcmp(layout_str, "stacking") == 0)
-        layout_str = "stacked";
     layout_t layout;
-    /* default is a special case which will be handled in con_set_layout(). */
-    if (strcmp(layout_str, "default") == 0)
-        layout = L_DEFAULT;
-    else if (strcmp(layout_str, "stacked") == 0)
-        layout = L_STACKED;
-    else if (strcmp(layout_str, "tabbed") == 0)
-        layout = L_TABBED;
-    else if (strcmp(layout_str, "splitv") == 0)
-        layout = L_SPLITV;
-    else if (strcmp(layout_str, "splith") == 0)
-        layout = L_SPLITH;
-    else {
+    if (!layout_from_name(layout_str, &layout)) {
         ELOG("Unknown layout \"%s\", this is a mismatch between code and parser spec.\n", layout_str);
         return;
     }

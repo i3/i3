@@ -1802,7 +1802,8 @@ The +toggle+ option will toggle the orientation of the split container if it
 contains a single window. Otherwise it makes the current window a split
 container with opposite orientation compared to the parent container.
 Use +layout toggle split+ to change the layout of any split container from
-splitv to splith or vice-versa.
+splitv to splith or vice-versa. You can also define a custom sequence of layouts
+to cycle through with +layout toggle+, see <<manipulating_layout>>.
 
 *Syntax*:
 --------------------------------
@@ -1822,6 +1823,11 @@ Use +layout toggle split+, +layout stacking+, +layout tabbed+, +layout splitv+
 or +layout splith+ to change the current container layout to splith/splitv,
 stacking, tabbed layout, splitv or splith, respectively.
 
+Specify up to four layouts after +layout toggle+ to cycle through them. Every
+time the command is executed, the layout specified after the currently active
+one will be applied. If the currently active layout is not in the list, the
+first layout in the list will be activated.
+
 To make the current window (!) fullscreen, use +fullscreen enable+ (or
 +fullscreen enable global+ for the global mode), to leave either fullscreen
 mode use +fullscreen disable+, and to toggle between these two states use
@@ -1834,6 +1840,7 @@ enable+ respectively +floating disable+ (or +floating toggle+):
 --------------------------------------------
 layout default|tabbed|stacking|splitv|splith
 layout toggle [split|all]
+layout toggle [split|tabbed|stacking|splitv|splith] [split|tabbed|stacking|splitv|splith]…
 --------------------------------------------
 
 *Examples*:
@@ -1847,6 +1854,15 @@ bindsym $mod+x layout toggle
 
 # Toggle between stacking/tabbed/splith/splitv:
 bindsym $mod+x layout toggle all
+
+# Toggle between stacking/tabbed/splith:
+bindsym $mod+x layout toggle stacking tabbed splith
+
+# Toggle between splitv/tabbed
+bindsym $mod+x layout toggle splitv tabbed
+
+# Toggle between last split layout/tabbed/stacking
+bindsym $mod+x layout toggle split tabbed stacking
 
 # Toggle fullscreen
 bindsym $mod+f fullscreen toggle

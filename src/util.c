@@ -67,6 +67,34 @@ __attribute__((pure)) bool name_is_digits(const char *name) {
 }
 
 /*
+ * Set 'out' to the layout_t value for the given layout. The function
+ * returns true on success or false if the passed string is not a valid
+ * layout name.
+ *
+ */
+bool layout_from_name(const char *layout_str, layout_t *out) {
+    if (strcmp(layout_str, "default") == 0) {
+        *out = L_DEFAULT;
+        return true;
+    } else if (strcasecmp(layout_str, "stacked") == 0 ||
+               strcasecmp(layout_str, "stacking") == 0) {
+        *out = L_STACKED;
+        return true;
+    } else if (strcasecmp(layout_str, "tabbed") == 0) {
+        *out = L_TABBED;
+        return true;
+    } else if (strcasecmp(layout_str, "splitv") == 0) {
+        *out = L_SPLITV;
+        return true;
+    } else if (strcasecmp(layout_str, "splith") == 0) {
+        *out = L_SPLITH;
+        return true;
+    }
+
+    return false;
+}
+
+/*
  * Parses the workspace name as a number. Returns -1 if the workspace should be
  * interpreted as a "named workspace".
  *
