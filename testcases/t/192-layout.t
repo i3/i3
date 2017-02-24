@@ -122,11 +122,11 @@ is($nodes->[1]->{layout}, 'stacked', 'layout now stacked');
 cmd 'layout toggle stacked';
 ($nodes, $focus) = get_ws_content($tmp);
 # this is correct if it does nothing
-is($nodes->[1]->{layout}, 'stacked', 'layout now tabbed');
+is($nodes->[1]->{layout}, 'stacked', 'layout now stacked');
 
 cmd 'layout toggle tabbed stacked';
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[1]->{layout}, 'tabbed', 'layout now stacked');
+is($nodes->[1]->{layout}, 'tabbed', 'layout now tabbed');
 
 # obsoletes 'split' ;)
 cmd 'layout toggle splith splitv';
