@@ -232,6 +232,8 @@ name (string)::
 	The name of this output (as seen in +xrandr(1)+). Encoded in UTF-8.
 active (boolean)::
 	Whether this output is currently active (has a valid mode).
+primary (boolean)::
+	Whether this output is currently the primary output.
 current_workspace (string)::
 	The name of the current workspace that is visible on this output. +null+ if
 	the output is not active.
