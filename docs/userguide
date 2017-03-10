@@ -412,9 +412,9 @@ button in the scope of the clicked container (see <<command_criteria>>). You
 can configure mouse bindings in a similar way to key bindings.
 
 *Syntax*:
--------------------------------------------------------------------------------
-bindsym [--release] [--border] [--whole-window] [<Modifiers>+]button<n> command
--------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+bindsym [--release] [--border] [--whole-window] [--exclude-titlebar] [<Modifiers>+]button<n> command
+----------------------------------------------------------------------------------------------------
 
 By default, the binding will only run when you click on the titlebar of the
 window. If the +--release+ flag is given, it will run when the mouse button
@@ -423,6 +423,9 @@ is released.
 If the +--whole-window+ flag is given, the binding will also run when any part
 of the window is clicked, with the exception of the border. To have a bind run
 when the border is clicked, specify the +--border+ flag.
+
+If the +--exclude-titlebar+ flag is given, the titlebar will not be considered
+for the keybinding.
 
 *Examples*:
 --------------------------------

@@ -186,7 +186,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     if (dest == CLICK_DECORATION || dest == CLICK_INSIDE || dest == CLICK_BORDER) {
         Binding *bind = get_binding_from_xcb_event((xcb_generic_event_t *)event);
 
-        if (bind != NULL && (dest == CLICK_DECORATION ||
+        if (bind != NULL && ((dest == CLICK_DECORATION && !bind->exclude_titlebar) ||
                              (dest == CLICK_INSIDE && bind->whole_window) ||
                              (dest == CLICK_BORDER && bind->border))) {
             CommandResult *result = run_binding(bind, con);

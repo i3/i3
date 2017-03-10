@@ -27,7 +27,8 @@ extern const char *DEFAULT_BINDING_MODE;
  */
 Binding *configure_binding(const char *bindtype, const char *modifiers, const char *input_code,
                            const char *release, const char *border, const char *whole_window,
-                           const char *command, const char *mode, bool pango_markup);
+                           const char *exclude_titlebar, const char *command, const char *mode,
+                           bool pango_markup);
 
 /**
  * Grab the bound keys (tell X to send us keypress events for those keycodes)
