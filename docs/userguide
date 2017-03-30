@@ -1378,7 +1378,7 @@ directive multiple times.
 
 *Syntax*:
 ---------------
-output <output>
+output primary|<output>
 ---------------
 
 *Example*:
@@ -1400,7 +1400,19 @@ bar {
         statusline #ffffff
     }
 }
+
+# show bar on the primary monitor and on HDMI2
+bar {
+    output primary
+    output HDMI2
+    status_command i3status
+}
+
 -------------------------------
+Note that you might not have a primary output configured yet. To do so, run:
+-------------------------
+xrandr --output <output> --primary
+-------------------------
 
 === Tray output
 
