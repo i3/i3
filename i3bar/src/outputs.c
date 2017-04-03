@@ -190,8 +190,8 @@ static int outputs_end_map_cb(void *params_) {
         bool handle_output = false;
         for (int c = 0; c < config.num_outputs; c++) {
             if (strcasecmp(params->outputs_walk->name, config.outputs[c]) == 0 ||
-                    (strcasecmp(config.outputs[c], "primary") == 0 &&
-                     params->outputs_walk->primary)) {
+                (strcasecmp(config.outputs[c], "primary") == 0 &&
+                 params->outputs_walk->primary)) {
                 handle_output = true;
                 break;
             }
