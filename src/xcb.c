@@ -28,16 +28,21 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims,
         visual = XCB_COPY_FROM_PARENT;
     }
 
-    xcb_create_window(conn,
-                      depth,
-                      result,                                  /* the window id */
-                      root,                                    /* parent == root */
-                      dims.x, dims.y, dims.width, dims.height, /* dimensions */
-                      0,                                       /* border = 0, we draw our own */
-                      window_class,
-                      visual,
-                      mask,
-                      values);
+    xcb_void_cookie_t gc_cookie = xcb_create_window(conn,
+                                                    depth,
+                                                    result,                                  /* the window id */
+                                                    root,                                    /* parent == root */
+                                                    dims.x, dims.y, dims.width, dims.height, /* dimensions */
+                                                    0,                                       /* border = 0, we draw our own */
+                                                    window_class,
+                                                    visual,
+                                                    mask,
+                                                    values);
+
+    xcb_generic_error_t *error = xcb_request_check(conn, gc_cookie);
+    if (error != NULL) {
+        ELOG("Could not create window. Error code: %d.\n", error->error_code);
+    }
 
     /* Set the cursor */
     if (xcursor_supported) {
