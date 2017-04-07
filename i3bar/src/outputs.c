@@ -189,11 +189,12 @@ static int outputs_end_map_cb(void *params_) {
     if (config.num_outputs > 0) {
         bool handle_output = false;
         for (int c = 0; c < config.num_outputs; c++) {
-            if (strcasecmp(params->outputs_walk->name, config.outputs[c]) != 0)
-                continue;
-
-            handle_output = true;
-            break;
+            if (strcasecmp(params->outputs_walk->name, config.outputs[c]) == 0 ||
+                (strcasecmp(config.outputs[c], "primary") == 0 &&
+                 params->outputs_walk->primary)) {
+                handle_output = true;
+                break;
+            }
         }
         if (!handle_output) {
             DLOG("Ignoring output \"%s\", not configured to handle it.\n",
