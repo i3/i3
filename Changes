@@ -1,5 +1,10 @@
 Revision history for AnyEvent-I3
 
+0.17    2017-04-09
+
+   * support the shutdown event
+   * use lib '.' for Perl 5.25.11+
+
 0.16    2014-10-03
 
    * support the barconfig_update and binding event
