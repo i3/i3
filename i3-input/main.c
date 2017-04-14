@@ -399,6 +399,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'v':
                 printf("i3-input " I3_VERSION);
+                free(pattern);
                 return 0;
             case 'p':
                 /* This option is deprecated, but will still work in i3 v4.1, 4.2 and 4.3 */
@@ -427,6 +428,7 @@ int main(int argc, char *argv[]) {
                 printf("\n");
                 printf("Example:\n");
                 printf("    i3-input -F 'workspace \"%%s\"' -P 'Switch to workspace: '\n");
+                free(pattern);
                 return 0;
         }
     }
