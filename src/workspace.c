@@ -19,6 +19,10 @@ static char *previous_workspace_name = NULL;
  * keybindings. */
 static char **binding_workspace_names = NULL;
 
+/* Stores the name of the previously selected output, for use when switching
+ * back and forth between outputs. */
+char *previous_output_name = NULL;
+
 /*
  * Sets ws->layout to splith/splitv if default_orientation was specified in the
  * configfile. Otherwise, it uses splith/splitv depending on whether the output
@@ -473,6 +477,9 @@ static void _workspace_show(Con *workspace) {
     Con *new_output = con_get_output(focused);
     if (old_output != new_output) {
         x_set_warp_to(&next->rect);
+
+        FREE(previous_output_name);
+        previous_output_name = sstrdup(old_output->name);
     }
 
     /* Update the EWMH hints */

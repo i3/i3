@@ -138,13 +138,15 @@ state WORKSPACE_NUMBER:
       -> call cmd_workspace_number($workspace, $no_auto_back_and_forth)
 
 # focus left|right|up|down
-# focus output <output>
+# focus output back_and_forth|<output>
 # focus tiling|floating|mode_toggle
 # focus parent|child
 # focus
 state FOCUS:
   direction = 'left', 'right', 'up', 'down'
       -> call cmd_focus_direction($direction)
+  'back_and_forth'
+      -> FOCUS_OUTPUT
   'output'
       -> FOCUS_OUTPUT
   window_mode = 'tiling', 'floating', 'mode_toggle'

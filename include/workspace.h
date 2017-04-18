@@ -24,6 +24,12 @@
 #define NET_WM_DESKTOP_NONE 0xFFFFFFF0
 #define NET_WM_DESKTOP_ALL 0xFFFFFFFF
 
+/* This contains the name of the previous output we were on if our current
+ * workspace's output is different, for use when switching output focus back
+ * and forth.
+ */
+extern char *previous_output_name;
+
 /**
  * Returns a pointer to the workspace with the given number (starting at 0),
  * creating the workspace if necessary (by allocating the necessary amount of

@@ -1632,7 +1632,16 @@ void cmd_focus_output(I3_CMD, const char *name) {
     current_output = get_output_for_con(current->con);
     assert(current_output != NULL);
 
-    output = get_output_from_string(current_output, name);
+    if (strcasecmp(name, "back_and_forth") == 0) {
+        if (!previous_output_name) {
+            DLOG("No previous output recorded. Not changing focus.\n");
+            return;
+        }
+
+        output = get_output_from_string(current_output, previous_output_name);
+    } else {
+        output = get_output_from_string(current_output, name);
+    }
 
     if (!output) {
         LOG("No such output found.\n");
