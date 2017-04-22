@@ -21,9 +21,9 @@ void handle_key_press(xcb_key_press_event_t *event) {
     last_timestamp = event->time;
 
     DLOG("%s %d, state raw = 0x%x\n", (key_release ? "KeyRelease" : "KeyPress"), event->detail, event->state);
-
+    
     Binding *bind = get_binding_from_xcb_event((xcb_generic_event_t *)event);
-
+    
     /* if we couldn't find a binding, we are done */
     if (bind == NULL)
         return;

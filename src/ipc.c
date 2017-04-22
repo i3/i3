@@ -48,6 +48,7 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
         /* see if this client is interested in this event */
         bool interested = false;
         for (int i = 0; i < current->num_events; i++) {
+            DLOG("Checking %s & %s\n", current->events[i], event);
             if (strcasecmp(current->events[i], event) != 0)
                 continue;
             interested = true;
@@ -56,6 +57,7 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
         if (!interested)
             continue;
 
+        DLOG("Sending message (%s, %d)\n", payload, message_type);
         ipc_send_message(current->fd, strlen(payload), message_type, (const uint8_t *)payload);
     }
 }
