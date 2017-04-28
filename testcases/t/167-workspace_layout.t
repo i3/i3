@@ -145,6 +145,237 @@ is($x->input_focus, $second->id, 'second window focused');
 ok(@content == 1, 'one con at workspace level');
 is($content[0]->{layout}, 'stacked', 'layout stacked');
 
+#####################################################################
+# 8: when the workspace is empty check that its layout can be changed
+# from stacked to horizontal split using the 'layout splith' command.
+#####################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'layout stacked';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+is($content[0]->{layout}, 'stacked', 'layout stacked');
+
+cmd '[id="' . $first->id . '"] kill';
+cmd '[id="' . $second->id . '"] kill';
+sync_with_i3;
+
+ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
+
+cmd 'layout splith';
+$first = open_window;
+$second = open_window;
+@content = @{get_ws_content($tmp)};
+ok(@content == 2, 'two containers opened');
+isnt($content[0]->{layout}, 'stacked', 'layout not stacked');
+isnt($content[1]->{layout}, 'stacked', 'layout not stacked');
+
+#####################################################################
+# 9: when the workspace is empty check that its layout can be changed
+# from stacked to vertical split using the 'layout splitv' command.
+#####################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'layout stacked';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+is($content[0]->{layout}, 'stacked', 'layout stacked');
+
+cmd '[id="' . $first->id . '"] kill';
+cmd '[id="' . $second->id . '"] kill';
+sync_with_i3;
+
+ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
+
+cmd 'layout splitv';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+ok(@content == 2, 'two containers opened');
+isnt($content[0]->{layout}, 'stacked', 'layout not stacked');
+isnt($content[1]->{layout}, 'stacked', 'layout not stacked');
+
+#####################################################################
+# 10: when the workspace is empty check that its layout can be changed
+# from tabbed to horizontal split using the 'layout splith' command.
+#####################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'layout tabbed';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+is($content[0]->{layout}, 'tabbed', 'layout tabbed');
+
+cmd '[id="' . $first->id . '"] kill';
+cmd '[id="' . $second->id . '"] kill';
+sync_with_i3;
+
+ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
+
+cmd 'layout splith';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+ok(@content == 2, 'two containers opened');
+isnt($content[0]->{layout}, 'tabbed', 'layout not tabbed');
+isnt($content[1]->{layout}, 'tabbed', 'layout not tabbed');
+
+#####################################################################
+# 11: when the workspace is empty check that its layout can be changed
+# from tabbed to vertical split using the 'layout splitv' command.
+#####################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'layout tabbed';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+is($content[0]->{layout}, 'tabbed', 'layout tabbed');
+
+cmd '[id="' . $first->id . '"] kill';
+cmd '[id="' . $second->id . '"] kill';
+sync_with_i3;
+
+ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
+
+cmd 'layout splitv';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+ok(@content == 2, 'two containers opened');
+isnt($content[0]->{layout}, 'tabbed', 'layout not tabbed');
+isnt($content[1]->{layout}, 'tabbed', 'layout not tabbed');
+
+#####################################################################
+# 12: when the workspace is empty check that its layout can be changed
+# from stacked to horizontal split using the 'split horizontal' command.
+#####################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'layout stacked';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+is($content[0]->{layout}, 'stacked', 'layout stacked');
+
+cmd '[id="' . $first->id . '"] kill';
+cmd '[id="' . $second->id . '"] kill';
+sync_with_i3;
+
+ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
+
+cmd 'split horizontal';
+$first = open_window;
+$second = open_window;
+@content = @{get_ws_content($tmp)};
+ok(@content == 2, 'two containers opened');
+isnt($content[0]->{layout}, 'stacked', 'layout not stacked');
+isnt($content[1]->{layout}, 'stacked', 'layout not stacked');
+
+#####################################################################
+# 13: when the workspace is empty check that its layout can be changed
+# from stacked to vertical split using the 'split vertical' command.
+#####################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'layout stacked';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+is($content[0]->{layout}, 'stacked', 'layout stacked');
+
+cmd '[id="' . $first->id . '"] kill';
+cmd '[id="' . $second->id . '"] kill';
+sync_with_i3;
+
+ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
+
+cmd 'split vertical';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+ok(@content == 2, 'two containers opened');
+isnt($content[0]->{layout}, 'stacked', 'layout not stacked');
+isnt($content[1]->{layout}, 'stacked', 'layout not stacked');
+
+#####################################################################
+# 14: when the workspace is empty check that its layout can be changed
+# from tabbed to horizontal split using the 'split horizontal' command.
+#####################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'layout tabbed';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+is($content[0]->{layout}, 'tabbed', 'layout tabbed');
+
+cmd '[id="' . $first->id . '"] kill';
+cmd '[id="' . $second->id . '"] kill';
+sync_with_i3;
+
+ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
+
+cmd 'split horizontal';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+ok(@content == 2, 'two containers opened');
+isnt($content[0]->{layout}, 'tabbed', 'layout not tabbed');
+isnt($content[1]->{layout}, 'tabbed', 'layout not tabbed');
+
+#####################################################################
+# 15: when the workspace is empty check that its layout can be changed
+# from tabbed to vertical split using the 'split vertical' command.
+#####################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'layout tabbed';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+is($content[0]->{layout}, 'tabbed', 'layout tabbed');
+
+cmd '[id="' . $first->id . '"] kill';
+cmd '[id="' . $second->id . '"] kill';
+sync_with_i3;
+
+ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
+
+cmd 'split vertical';
+$first = open_window;
+$second = open_window;
+
+@content = @{get_ws_content($tmp)};
+ok(@content == 2, 'two containers opened');
+isnt($content[0]->{layout}, 'tabbed', 'layout not tabbed');
+isnt($content[1]->{layout}, 'tabbed', 'layout not tabbed');
+
+
 exit_gracefully($pid);
 
 done_testing;

@@ -1639,12 +1639,14 @@ void con_set_layout(Con *con, layout_t layout) {
      * whole workspace into stacked/tabbed mode. To do this and still allow
      * intuitive operations (like level-up and then opening a new window), we
      * need to create a new split container. */
-    if (con->type == CT_WORKSPACE &&
-        (layout == L_STACKED || layout == L_TABBED)) {
+    if (con->type == CT_WORKSPACE) {
         if (con_num_children(con) == 0) {
-            DLOG("Setting workspace_layout to %d\n", layout);
-            con->workspace_layout = layout;
-        } else {
+            layout_t ws_layout = (layout == L_STACKED || layout == L_TABBED) ? layout : L_DEFAULT;
+            DLOG("Setting workspace_layout to %d\n", ws_layout);
+            con->workspace_layout = ws_layout;
+            DLOG("Setting layout to %d\n", layout);
+            con->layout = layout;
+        } else if (layout == L_STACKED || layout == L_TABBED) {
             DLOG("Creating new split container\n");
             /* 1: create a new split container */
             Con *new = con_new(NULL, NULL);
