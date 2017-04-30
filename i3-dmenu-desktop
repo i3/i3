@@ -282,7 +282,31 @@ for my $app (keys %apps) {
     }
 
     if ((scalar grep { $_ eq 'command' } @entry_types) > 0) {
-        my ($command) = split(' ', $apps{$app}->{Exec});
+        my $command = $apps{$app}->{Exec};
+
+        # Handle escape sequences (should be done for all string values, but does
+        # matter here).
+        my %escapes = (
+            '\\s' => ' ',
+            '\\n' => '\n',
+            '\\t' => '\t',
+            '\\r' => '\r',
+            '\\\\' => '\\',
+        );
+        $command =~ s/(\\[sntr\\])/$escapes{$1}/go;
+
+        # Extract executable
+        if ($command =~ m/^\s*([^\s\"]+)(?:\s|$)/) {
+            # No quotes
+            $command = $1;
+        } elsif ($command =~ m/^\s*\"([^\"\\]*(?:\\.[^\"\\]*)*)\"(?:\s|$)/) {
+            # Quoted, remove quotes and fix escaped characters
+            $command = $1;
+            $command =~ s/\\([\"\`\$\\])/$1/g;
+        } else {
+            # Invalid quotes, fallback to whitespace
+            ($command) = split(' ', $command);
+        }
 
         # Don’t add “geany” if “Geany” is already present.
         my @keys = map { lc } keys %choices;
