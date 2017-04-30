@@ -79,6 +79,10 @@ void got_output_reply(char *reply) {
         kick_tray_clients(o_walk);
     }
 
+    if (!config.disable_ws) {
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+    }
+
     draw_bars(false);
 }
 
