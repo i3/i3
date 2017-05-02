@@ -861,7 +861,7 @@ C::
 C++::
 	* https://github.com/drmgc/i3ipcpp
 Go::
-	* https://github.com/proxypoke/i3ipc
+	* https://github.com/mdirkse/i3ipc-go
 JavaScript::
 	* https://github.com/acrisci/i3ipc-gjs
 Lua::
