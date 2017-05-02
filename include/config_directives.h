@@ -67,10 +67,10 @@ CFGFUN(color_single, const char *colorclass, const char *color);
 CFGFUN(floating_modifier, const char *modifiers);
 CFGFUN(new_window, const char *windowtype, const char *border, const long width);
 CFGFUN(workspace, const char *workspace, const char *output);
-CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command);
+CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command);
 
 CFGFUN(enter_mode, const char *pango_markup, const char *mode);
-CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command);
+CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command);
 
 CFGFUN(bar_font, const char *font);
 CFGFUN(bar_separator_symbol, const char *separator);

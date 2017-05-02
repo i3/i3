@@ -298,6 +298,10 @@ struct Binding {
      * title bar (default). */
     bool whole_window;
 
+    /** If this is true for a mouse binding, the binding should only be
+     * executed if the button press was not on the titlebar. */
+    bool exclude_titlebar;
+
     /** Keycode to bind */
     uint32_t keycode;
 

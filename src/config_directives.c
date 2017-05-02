@@ -106,8 +106,8 @@ CFGFUN(font, const char *font) {
     font_pattern = sstrdup(font);
 }
 
-CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, DEFAULT_BINDING_MODE, false);
+CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command) {
+    configure_binding(bindtype, modifiers, key, release, border, whole_window, exclude_titlebar, command, DEFAULT_BINDING_MODE, false);
 }
 
 /*******************************************************************************
@@ -117,8 +117,8 @@ CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, co
 static char *current_mode;
 static bool current_mode_pango_markup;
 
-CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, current_mode, current_mode_pango_markup);
+CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command) {
+    configure_binding(bindtype, modifiers, key, release, border, whole_window, exclude_titlebar, command, current_mode, current_mode_pango_markup);
 }
 
 CFGFUN(enter_mode, const char *pango_markup, const char *modename) {

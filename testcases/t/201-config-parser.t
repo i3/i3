@@ -49,18 +49,22 @@ mode "meh" {
     bindsym --release --whole-window button3 nop
     bindsym --border button3 nop
     bindsym --release --border button3 nop
+    bindsym --exclude-titlebar button3 nop
+    bindsym --whole-window --border --exclude-titlebar button3 nop
 }
 EOT
 
 my $expected = <<'EOT';
 cfg_enter_mode((null), meh)
-cfg_mode_binding(bindsym, Mod1,Shift, x, (null), (null), (null), resize grow)
-cfg_mode_binding(bindcode, Mod1, 44, (null), (null), (null), resize shrink)
-cfg_mode_binding(bindsym, Mod1, x, --release, (null), (null), exec foo)
-cfg_mode_binding(bindsym, (null), button3, (null), (null), --whole-window, nop)
-cfg_mode_binding(bindsym, (null), button3, --release, (null), --whole-window, nop)
-cfg_mode_binding(bindsym, (null), button3, (null), --border, (null), nop)
-cfg_mode_binding(bindsym, (null), button3, --release, --border, (null), nop)
+cfg_mode_binding(bindsym, Mod1,Shift, x, (null), (null), (null), (null), resize grow)
+cfg_mode_binding(bindcode, Mod1, 44, (null), (null), (null), (null), resize shrink)
+cfg_mode_binding(bindsym, Mod1, x, --release, (null), (null), (null), exec foo)
+cfg_mode_binding(bindsym, (null), button3, (null), (null), --whole-window, (null), nop)
+cfg_mode_binding(bindsym, (null), button3, --release, (null), --whole-window, (null), nop)
+cfg_mode_binding(bindsym, (null), button3, (null), --border, (null), (null), nop)
+cfg_mode_binding(bindsym, (null), button3, --release, --border, (null), (null), nop)
+cfg_mode_binding(bindsym, (null), button3, (null), (null), (null), --exclude-titlebar, nop)
+cfg_mode_binding(bindsym, (null), button3, (null), --border, --whole-window, --exclude-titlebar, nop)
 EOT
 
 is(parser_calls($config),
@@ -674,7 +678,7 @@ EOT
 
 $expected = <<'EOT';
 cfg_enter_mode((null), yo)
-cfg_mode_binding(bindsym, (null), x, (null), (null), (null), resize shrink left)
+cfg_mode_binding(bindsym, (null), x, (null), (null), (null), (null), resize shrink left)
 ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', '}'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: mode "yo" {
