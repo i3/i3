@@ -297,6 +297,15 @@ keyboard layout. To start the wizard, use the command +i3-config-wizard+.
 Please note that you must not have +~/.i3/config+, otherwise the wizard will
 exit.
 
+Since i3 4.0, a new configuration format is used. i3 will try to automatically
+detect the format version of a config file based on a few different keywords,
+but if you want to make sure that your config is read with the new format,
+include the following line in your config file:
+
+---------------------
+# i3 config file (v4)
+---------------------
+
 === Comments
 
 It is possible and recommended to use comments in your configuration file to
