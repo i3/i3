@@ -261,6 +261,14 @@ void con_enable_fullscreen(Con *con, fullscreen_mode_t fullscreen_mode);
 void con_disable_fullscreen(Con *con);
 
 /**
+ * Moves a container to the side of a target container. This makes the container
+ * and its target the only two children of a split container with appropriate
+ * layout.
+ *
+ */
+void con_move_to_side_of_con(Con *con, Con *target, direction_t direction);
+
+/**
  * Moves the given container to the currently focused container on the given
  * workspace.
  *
