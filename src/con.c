@@ -1127,6 +1127,9 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
         con_set_urgency(con, true);
     }
 
+    /* Ensure the container will be redrawn. */
+    FREE(con->deco_render_params);
+
     CALL(parent, on_remove_child);
 
     ipc_send_window_event("move", con);
