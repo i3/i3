@@ -904,8 +904,9 @@ void x_push_node(Con *con) {
     /* Handle all children and floating windows of this node. We recurse
      * in focus order to display the focused client in a stack first when
      * switching workspaces (reduces flickering). */
-    TAILQ_FOREACH(current, &(con->focus_head), focused)
-    x_push_node(current);
+    TAILQ_FOREACH(current, &(con->focus_head), focused) {
+        x_push_node(current);
+    }
 }
 
 /*

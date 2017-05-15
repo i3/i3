@@ -291,6 +291,12 @@ void cmd_move_scratchpad(I3_CMD);
 void cmd_scratchpad_show(I3_CMD);
 
 /**
+ * Implementation of 'swap [container] [with] id|con_id|mark <arg>'.
+ *
+ */
+void cmd_swap(I3_CMD, const char *mode, const char *arg);
+
+/**
  * Implementation of 'title_format <format>'
  *
  */

@@ -157,3 +157,10 @@ void start_nagbar(pid_t *nagbar_pid, char *argv[]);
  *
  */
 void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it);
+
+/**
+ * Converts a string into a long using strtol().
+ * This is a convenience wrapper checking the parsing result. It returns true
+ * if the number could be parsed.
+ */
+bool parse_long(const char *str, long *out, int base);

@@ -140,6 +140,12 @@ Con *con_inside_floating(Con *con);
 bool con_inside_focused(Con *con);
 
 /**
+ * Checks if the container has the given parent as an actual parent.
+ *
+ */
+bool con_has_parent(Con *con, Con *parent);
+
+/**
  * Returns the container with the given client window ID or NULL if no such
  * container exists.
  *
@@ -461,3 +467,9 @@ void con_force_split_parents_redraw(Con *con);
  *
  */
 i3String *con_parse_title_format(Con *con);
+
+/**
+ * Swaps the two containers.
+ *
+ */
+bool con_swap(Con *first, Con *second);

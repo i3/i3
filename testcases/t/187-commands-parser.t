@@ -169,6 +169,7 @@ is(parser_calls('unknown_literal'),
        rename
        nop
        scratchpad
+       swap
        title_format
        mode
        bar

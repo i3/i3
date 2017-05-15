@@ -71,15 +71,15 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
 
         new_binding->symbol = sstrdup(input_code);
     } else {
-        char *endptr;
-        long keycode = strtol(input_code, &endptr, 10);
-        new_binding->keycode = keycode;
-        new_binding->input_type = B_KEYBOARD;
-        if (keycode == LONG_MAX || keycode == LONG_MIN || keycode < 0 || *endptr != '\0' || endptr == input_code) {
+        long keycode;
+        if (!parse_long(input_code, &keycode, 10)) {
             ELOG("Could not parse \"%s\" as an input code, ignoring this binding.\n", input_code);
             FREE(new_binding);
             return NULL;
         }
+
+        new_binding->keycode = keycode;
+        new_binding->input_type = B_KEYBOARD;
     }
     new_binding->command = sstrdup(command);
     new_binding->event_state_mask = event_state_from_str(modifiers);
@@ -461,13 +461,12 @@ void translate_keysyms(void) {
     Binding *bind;
     TAILQ_FOREACH(bind, bindings, bindings) {
         if (bind->input_type == B_MOUSE) {
-            char *endptr;
-            long button = strtol(bind->symbol + (sizeof("button") - 1), &endptr, 10);
-            bind->keycode = button;
-
-            if (button == LONG_MAX || button == LONG_MIN || button < 0 || *endptr != '\0' || endptr == bind->symbol)
+            long button;
+            if (!parse_long(bind->symbol + (sizeof("button") - 1), &button, 10)) {
                 ELOG("Could not translate string to button: \"%s\"\n", bind->symbol);
+            }
 
+            bind->keycode = button;
             continue;
         }
 
@@ -976,9 +975,8 @@ int *bindings_get_buttons_to_grab(void) {
         if (bind->input_type != B_MOUSE || !bind->whole_window)
             continue;
 
-        char *endptr;
-        long button = strtol(bind->symbol + (sizeof("button") - 1), &endptr, 10);
-        if (button == LONG_MAX || button == LONG_MIN || button < 0 || *endptr != '\0' || endptr == bind->symbol) {
+        long button;
+        if (!parse_long(bind->symbol + (sizeof("button") - 1), &button, 10)) {
             ELOG("Could not parse button number, skipping this binding. Please report this bug in i3.\n");
             continue;
         }
