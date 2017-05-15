@@ -279,6 +279,7 @@ for my $app (keys %apps) {
         }
 
         $choices{$name} = $app;
+        next;
     }
 
     if ((scalar grep { $_ eq 'command' } @entry_types) > 0) {
@@ -310,9 +311,10 @@ for my $app (keys %apps) {
 
         # Don’t add “geany” if “Geany” is already present.
         my @keys = map { lc } keys %choices;
-        next if (scalar grep { $_ eq lc(basename($command)) } @keys) > 0;
-
-        $choices{basename($command)} = $app;
+        if (!(scalar grep { $_ eq lc(basename($command)) } @keys) > 0) {
+            $choices{basename($command)} = $app;
+        }
+        next;
     }
 
     if ((scalar grep { $_ eq 'filename' } @entry_types) > 0) {
