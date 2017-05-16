@@ -45,10 +45,13 @@ static Output *get_output_by_id(xcb_randr_output_t id) {
  */
 Output *get_output_by_name(const char *name) {
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs)
-    if (output->active &&
-        strcasecmp(output->name, name) == 0)
-        return output;
+    bool get_primary = (strcasecmp("primary", name) == 0);
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if ((output->primary && get_primary) ||
+            (output->active && strcasecmp(output->name, name) == 0)) {
+            return output;
+        }
+    }
 
     return NULL;
 }

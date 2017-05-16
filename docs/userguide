@@ -1922,7 +1922,7 @@ output::
 ----------------------------------------------
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
-focus output left|right|up|down|<output>
+focus output left|right|up|down|primary|<output>
 ----------------------------------------------
 
 *Examples*:
@@ -1944,7 +1944,16 @@ bindsym $mod+x focus output right
 
 # Focus the big output
 bindsym $mod+x focus output HDMI-2
+
+# Focus the primary output
+bindsym $mod+x focus output primary
 -------------------------------------------------
+
+-------------------------------
+Note that you might not have a primary output configured yet. To do so, run:
+-------------------------
+xrandr --output <output> --primary
+-------------------------
 
 === Moving containers
 
@@ -2195,8 +2204,8 @@ To move a container to another RandR output (addressed by names like +LVDS1+ or
 
 *Syntax*:
 ------------------------------------------------------------
-move container to output left|right|down|up|current|<output>
-move workspace to output left|right|down|up|current|<output>
+move container to output left|right|down|up|current|primary|<output>
+move workspace to output left|right|down|up|current|primary|<output>
 ------------------------------------------------------------
 
 *Examples*:
@@ -2207,7 +2216,16 @@ bindsym $mod+x move workspace to output right
 
 # Put this window on the presentation output.
 bindsym $mod+x move container to output VGA1
+
+# Put this window on the primary output.
+bindsym $mod+x move container to output primary
 --------------------------------------------------------
+
+-------------------------------
+Note that you might not have a primary output configured yet. To do so, run:
+-------------------------
+xrandr --output <output> --primary
+-------------------------
 
 === Moving containers/windows to marks
 
