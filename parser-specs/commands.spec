@@ -18,7 +18,7 @@ state INITIAL:
   'exec' -> EXEC
   'exit' -> call cmd_exit()
   'restart' -> call cmd_restart()
-  'reload' -> call cmd_reload()
+  'reload' -> RELOAD
   'shmlog' -> SHMLOG
   'debuglog' -> DEBUGLOG
   'border' -> BORDER
@@ -71,6 +71,13 @@ state EXEC:
       ->
   command = string
       -> call cmd_exec($nosn, $command)
+
+# reload [config_file]
+state RELOAD:
+  end
+    -> call cmd_reload($config_file)
+  config_file = string
+    -> call cmd_reload($config_file)
 
 # shmlog <size>|toggle|on|off
 state SHMLOG:

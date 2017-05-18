@@ -240,7 +240,7 @@ void cmd_exit(I3_CMD);
  * Implementation of 'reload'.
  *
  */
-void cmd_reload(I3_CMD);
+void cmd_reload(I3_CMD, const char* config_file);
 
 /**
  * Implementation of 'restart'.
