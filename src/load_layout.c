@@ -29,6 +29,8 @@ static bool parsing_focus;
 static bool parsing_marks;
 struct Match *current_swallow;
 static bool swallow_is_empty;
+static int num_marks;
+static char **marks;
 
 /* This list is used for reordering the focus stack after parsing the 'focus'
  * array. */
@@ -148,6 +150,16 @@ static int json_end_map(void *ctx) {
             floating_check_size(json_node);
         }
 
+        if (num_marks > 0) {
+            for (int i = 0; i < num_marks; i++) {
+                con_mark(json_node, marks[i], MM_ADD);
+                free(marks[i]);
+            }
+
+            free(marks);
+            num_marks = 0;
+        }
+
         LOG("attaching\n");
         con_attach(json_node, json_node->parent, true);
         LOG("Creating window\n");
@@ -230,8 +242,10 @@ static int json_key(void *ctx, const unsigned char *val, size_t len) {
     if (strcasecmp(last_key, "focus") == 0)
         parsing_focus = true;
 
-    if (strcasecmp(last_key, "marks") == 0)
+    if (strcasecmp(last_key, "marks") == 0) {
+        num_marks = 0;
         parsing_marks = true;
+    }
 
     return 1;
 }
@@ -261,7 +275,8 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         char *mark;
         sasprintf(&mark, "%.*s", (int)len, val);
 
-        con_mark(json_node, mark, MM_ADD);
+        marks = srealloc(marks, (++num_marks) * sizeof(char *));
+        marks[num_marks - 1] = sstrdup(mark);
     } else {
         if (strcasecmp(last_key, "name") == 0) {
             json_node->name = scalloc(len + 1, 1);
