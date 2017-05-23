@@ -274,7 +274,9 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
                     break;
                 }
             }
-            if (!found_keycode) {
+            if (!found_keycode &&
+                (bind->release != B_UPON_KEYRELEASE_IGNORE_MODS ||
+                 !is_release)) {
                 continue;
             }
         }

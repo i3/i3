@@ -207,6 +207,49 @@ is(scalar @i3test::XTEST::binding_events, 12, 'Received exactly 12 binding event
 exit_gracefully($pid);
 
 ################################################################################
+# Verify bindings for modifiers work
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+# Binding which should work with numlock and without, see issue #2559.
+bindcode --release 133 nop Super_L
+EOT
+
+$pid = launch_with_config($config);
+
+start_binding_capture;
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(133); # Super_L
+        xtest_key_release(133); # Super_L
+    },
+    ),
+   'Super_L',
+   'triggered the "Super_L" keybinding without Num_Lock');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
+        xtest_key_press(133); # Super_L
+        xtest_key_release(133); # Super_L
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
+    },
+    ),
+   'Super_L',
+   'triggered the "Super_L" keybinding with Num_Lock');
+
+sync_with_i3;
+is(scalar @i3test::XTEST::binding_events, 14, 'Received exactly 14 binding events');
+
+exit_gracefully($pid);
+
+################################################################################
 # Verify the binding is only triggered for KP_End, not KP_1
 ################################################################################
 
@@ -269,7 +312,7 @@ is(listen_for_binding(
 # TODO: This test does not verify that i3 does _NOT_ grab keycode 87 with Mod2.
 
 sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 14, 'Received exactly 14 binding events');
+is(scalar @i3test::XTEST::binding_events, 16, 'Received exactly 16 binding events');
 
 exit_gracefully($pid);
 
