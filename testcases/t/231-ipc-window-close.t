@@ -44,6 +44,7 @@ $i3->subscribe({
 my $window = open_window;
 
 cmd 'kill';
+sync_with_i3;
 my $con = $cv->recv;
 
 ok($con, 'closing a window should send the window::close event');
