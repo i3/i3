@@ -483,8 +483,9 @@ void translate_keysyms(void) {
                 ELOG("Could not translate string to button: \"%s\"\n", bind->symbol);
             }
 
-            bind->keycode = button;
-            ADD_TRANSLATED_KEY(button, bind->event_state_mask);
+            xcb_keycode_t key = button;
+            bind->keycode = key;
+            ADD_TRANSLATED_KEY(key, bind->event_state_mask);
             continue;
         }
 
