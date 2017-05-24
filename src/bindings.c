@@ -191,17 +191,6 @@ void regrab_all_buttons(xcb_connection_t *conn) {
     xcb_ungrab_server(conn);
 }
 
-static bool modifiers_match(const uint32_t modifiers_mask, const uint32_t modifiers_state) {
-    /* modifiers_mask is a special case: a value of 0 does not mean “match
-     * all”, but rather “match exactly when no modifiers are present”. */
-    if (modifiers_mask == 0) {
-        /* Verify no modifiers are pressed. A bitwise AND would lead to
-         * false positives, see issue #2002. */
-        return (modifiers_state == 0);
-    }
-    return ((modifiers_state & modifiers_mask) == modifiers_mask);
-}
-
 /*
  * Returns a pointer to the Binding with the specified modifiers and
  * keycode or NULL if no such binding exists.
@@ -244,7 +233,7 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
             struct Binding_Keycode *binding_keycode;
             TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
                 const uint32_t modifiers_mask = (binding_keycode->modifiers & 0x0000FFFF);
-                const bool mods_match = modifiers_match(modifiers_mask, modifiers_state);
+                const bool mods_match = (modifiers_mask == modifiers_state);
                 DLOG("binding_keycode->modifiers = %d, modifiers_mask = %d, modifiers_state = %d, mods_match = %s\n",
                      binding_keycode->modifiers, modifiers_mask, modifiers_state, (mods_match ? "yes" : "no"));
                 if (binding_keycode->keycode == input_keycode && mods_match) {
@@ -265,7 +254,7 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
             struct Binding_Keycode *binding_keycode;
             TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
                 const uint32_t modifiers_mask = (binding_keycode->modifiers & 0x0000FFFF);
-                const bool mods_match = modifiers_match(modifiers_mask, modifiers_state);
+                const bool mods_match = (modifiers_mask == modifiers_state);
                 DLOG("binding_keycode->modifiers = %d, modifiers_mask = %d, modifiers_state = %d, mods_match = %s\n",
                      binding_keycode->modifiers, modifiers_mask, modifiers_state, (mods_match ? "yes" : "no"));
                 if (mods_match || (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS && is_release)) {

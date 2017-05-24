@@ -214,6 +214,8 @@ $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
+bindsym Mod4+Return nop Return
+
 # Binding which should work with numlock and without, see issue #2559.
 bindcode --release 133 nop Super_L
 EOT
@@ -244,8 +246,34 @@ is(listen_for_binding(
    'Super_L',
    'triggered the "Super_L" keybinding with Num_Lock');
 
+is(listen_for_binding(
+    sub {
+        xtest_key_press(133); # Super_L
+        xtest_key_press(36); # Return
+        xtest_key_release(36); # Return
+        xtest_key_release(133); # Super_L
+    },
+    ),
+   'Return',
+   'triggered the "Return" keybinding without Num_Lock');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
+        xtest_key_press(133); # Super_L
+        xtest_key_press(36); # Return
+        xtest_key_release(36); # Return
+        xtest_key_release(133); # Super_L
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
+    },
+    ),
+   'Return',
+   'triggered the "Return" keybinding with Num_Lock');
+
 sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 14, 'Received exactly 14 binding events');
+is(scalar @i3test::XTEST::binding_events, 16, 'Received exactly 16 binding events');
 
 exit_gracefully($pid);
 
@@ -312,7 +340,7 @@ is(listen_for_binding(
 # TODO: This test does not verify that i3 does _NOT_ grab keycode 87 with Mod2.
 
 sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 16, 'Received exactly 16 binding events');
+is(scalar @i3test::XTEST::binding_events, 18, 'Received exactly 18 binding events');
 
 exit_gracefully($pid);
 
