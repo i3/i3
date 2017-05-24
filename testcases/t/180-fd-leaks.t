@@ -26,7 +26,7 @@ skip "Procfs not available on $^O", 1 if $^O eq 'openbsd';
 my $i3 = i3(get_socket_path());
 
 my $tmp = tmpnam();
-mkfifo($tmp, 0600) or die "Could not create FIFO in $tmp";
+mkfifo($tmp, 0600) or BAIL_OUT("Could not create FIFO in $tmp");
 my ($outfh, $outname) = tempfile('/tmp/i3-ls-output.XXXXXX', UNLINK => 1);
 
 cmd qq|exec ls -l /proc/self/fd >$outname && echo done >$tmp|;
