@@ -27,6 +27,9 @@ typedef struct i3_ipc_header {
 /** Never change this, only on major IPC breakage (don’t do that) */
 #define I3_IPC_MAGIC "i3-ipc"
 
+/** Used not to have to always calculate the length of a const string  */
+#define I3_IPC_MAGIC_LEN (sizeof(I3_IPC_MAGIC) - 1)
+
 /** The payload of the message will be interpreted as a command */
 #define I3_IPC_MESSAGE_TYPE_COMMAND 0
 

@@ -31,7 +31,7 @@
 int ipc_recv_message(int sockfd, uint32_t *message_type,
                      uint32_t *reply_length, uint8_t **reply) {
     /* Read the message header first */
-    const uint32_t to_read = strlen(I3_IPC_MAGIC) + sizeof(uint32_t) + sizeof(uint32_t);
+    const uint32_t to_read = I3_IPC_MAGIC_LEN + sizeof(uint32_t) + sizeof(uint32_t);
     char msg[to_read];
     char *walk = msg;
 
@@ -47,12 +47,12 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
         read_bytes += n;
     }
 
-    if (memcmp(walk, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC)) != 0) {
+    if (memcmp(walk, I3_IPC_MAGIC, I3_IPC_MAGIC_LEN) != 0) {
         ELOG("IPC: invalid magic in reply\n");
         return -3;
     }
 
-    walk += strlen(I3_IPC_MAGIC);
+    walk += I3_IPC_MAGIC_LEN;
     memcpy(reply_length, walk, sizeof(uint32_t));
     walk += sizeof(uint32_t);
     if (message_type != NULL)
