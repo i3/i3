@@ -219,10 +219,15 @@ char *parse_string(const char **walk, bool as_word) {
              * comma (,) and semicolon (;) which introduce a new
              * operation or command, respectively. Also, newlines
              * end a command. */
-            while (**walk != ';' && **walk != ',' &&
+            bool quote = false;
+            while ((**walk != ';' || quote) &&
+                   (**walk != ',' || quote) &&
                    **walk != '\0' && **walk != '\r' &&
-                   **walk != '\n')
+                   **walk != '\n') {
+                if (**walk == '"')
+                    quote = !quote;
                 (*walk)++;
+            }
         } else {
             /* For a word, the delimiters are white space (' ' or
              * '\t'), closing square bracket (]), comma (,) and
