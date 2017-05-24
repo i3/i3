@@ -261,7 +261,6 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
                 continue;
             }
 
-            xcb_keycode_t input_keycode = (xcb_keycode_t)input_code;
             bool found_keycode = false;
             struct Binding_Keycode *binding_keycode;
             TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
@@ -269,7 +268,7 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
                 const bool mods_match = modifiers_match(modifiers_mask, modifiers_state);
                 DLOG("binding_keycode->modifiers = %d, modifiers_mask = %d, modifiers_state = %d, mods_match = %s\n",
                      binding_keycode->modifiers, modifiers_mask, modifiers_state, (mods_match ? "yes" : "no"));
-                if (binding_keycode->keycode == input_keycode && mods_match) {
+                if (mods_match) {
                     found_keycode = true;
                     break;
                 }
