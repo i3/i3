@@ -91,6 +91,9 @@ void got_output_reply(char *reply) {
  *
  */
 void got_bar_config(char *reply) {
+    const char *command;
+    char *command_ = NULL;
+
     DLOG("Received bar config \"%s\"\n", reply);
     /* We initiate the main function by requesting infos about the outputs and
      * workspaces. Everything else (creating the bars, showing the right workspace-
@@ -112,7 +115,16 @@ void got_bar_config(char *reply) {
     /* Resolve color strings to colorpixels and save them, then free the strings. */
     init_colors(&(config.colors));
 
-    start_child(config.command);
+    if (strncmp(config.command, "exec ", strlen("exec ")) == 0) {
+        command = config.command;
+    } else {
+        sasprintf(&command_, "exec %s", config.command);
+        command = command_;
+    }
+
+    start_child(command);
+
+    FREE(command_);
     FREE(config.command);
 }
 
