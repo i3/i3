@@ -15,6 +15,8 @@ extern Con *croot;
 /* TODO: i am not sure yet how much access to the focused container should
  * be permitted to source files */
 extern Con *focused;
+extern Con *previous_focused;
+extern bool infocusloop;
 TAILQ_HEAD(all_cons_head, Con);
 extern struct all_cons_head all_cons;
 

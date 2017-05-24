@@ -1275,6 +1275,19 @@ void cmd_focus_window_mode(I3_CMD, const char *window_mode) {
 }
 
 /*
+ * Implementation of 'focus previous'.
+ *
+ */
+void cmd_focus_previous(I3_CMD) {
+	if (focused != previous_focused)
+		con_focus(previous_focused);
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'focus parent|child'.
  *
  */

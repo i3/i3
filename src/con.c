@@ -200,13 +200,19 @@ void con_focus(Con *con) {
     assert(con != NULL);
     DLOG("con_focus = %p\n", con);
 
+	if (!infocusloop)
+		previous_focused = focused;
+
     /* 1: set focused-pointer to the new con */
     /* 2: exchange the position of the container in focus stack of the parent all the way up */
     TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
     TAILQ_INSERT_HEAD(&(con->parent->focus_head), con, focused);
-    if (con->parent->parent != NULL)
+    if (con->parent->parent != NULL) {
+		infocusloop = true;
         con_focus(con->parent);
-
+	}
+	
+	infocusloop = false;
     focused = con;
     /* We can't blindly reset non-leaf containers since they might have
      * other urgent children. Therefore we only reset leafs and propagate

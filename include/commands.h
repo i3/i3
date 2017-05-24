@@ -189,6 +189,12 @@ void cmd_focus_direction(I3_CMD, const char *direction);
 void cmd_focus_window_mode(I3_CMD, const char *window_mode);
 
 /**
+ * Implementation of 'focus previous'.
+ *
+ */
+void cmd_focus_previous(I3_CMD);
+	
+/**
  * Implementation of 'focus parent|child'.
  *
  */

@@ -148,6 +148,8 @@ state FOCUS:
       -> call cmd_focus_direction($direction)
   'output'
       -> FOCUS_OUTPUT
+  'previous'
+      -> call cmd_focus_previous()
   window_mode = 'tiling', 'floating', 'mode_toggle'
       -> call cmd_focus_window_mode($window_mode)
   level = 'parent', 'child'

@@ -11,6 +11,8 @@
 
 struct Con *croot;
 struct Con *focused;
+struct Con *previous_focused;
+bool infocusloop = false;
 
 struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
 
