@@ -143,7 +143,10 @@ void render_con(Con *con, bool render_fullscreen) {
             if (con->layout == L_SPLITH || con->layout == L_SPLITV) {
                 render_con_split(con, child, &params, i);
             } else if (con->layout == L_STACKED) {
-                render_con_stacked(con, child, &params, i);
+                if (config.hide_tab_container)
+                    render_con_tabbed(con, child, &params, i);
+                else
+                    render_con_stacked(con, child, &params, i);
             } else if (con->layout == L_TABBED) {
                 render_con_tabbed(con, child, &params, i);
             } else if (con->layout == L_DOCKAREA) {
@@ -434,7 +437,7 @@ static void render_con_stacked(Con *con, Con *child, render_params *p, int i) {
 }
 
 static void render_con_tabbed(Con *con, Con *child, render_params *p, int i) {
-    assert(con->layout == L_TABBED);
+    assert(con->layout == L_TABBED || con->layout == L_STACKED);
 
     child->rect.x = p->x;
     child->rect.y = p->y;
@@ -451,7 +454,9 @@ static void render_con_tabbed(Con *con, Con *child, render_params *p, int i) {
         child->deco_rect.width += (child->rect.width - (child->deco_rect.x + child->deco_rect.width));
     }
 
-    if (p->children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
+    if (config.hide_tab_container) {
+       child->deco_rect.height = 0;
+    } else if (p->children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
         child->rect.y += p->deco_height;
         child->rect.height -= p->deco_height;
         child->deco_rect.height = p->deco_height;

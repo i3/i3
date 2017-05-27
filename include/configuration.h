@@ -108,6 +108,9 @@ struct Config {
     /** Default orientation for new containers */
     int default_orientation;
 
+    /** Hide containers in tabbed or stacked mode */
+    bool hide_tab_container;
+
     /** By default, focus follows mouse. If the user explicitly wants to
      * turn this off (and instead rely only on the keyboard for changing
      * focus), we allow them to do this with this relatively special option.
