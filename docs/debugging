@@ -147,6 +147,30 @@ After pressing "b" in the crash dialog, you will get a file called
 id (PID) and the second one is incremented each time you generate a backtrace,
 starting at 0.
 
+== On hangs: Obtaining a backtrace from a virtual console
+
+When the crash dialogue is not shown, for example in the case of a hang, you
+need to attach +gdb+ to the running i3.  To do so, switch to another TTY 
+(Ctrl + Alt + F2), log in and run
+
+------------------------------------------------------------------------------
+$ gdb $(which i3) $(pidof i3)
+------------------------------------------------------------------------------
+
+(Note that this may require sudo)
+This should attach gdb to the (only running) i3 instance. Now enable logging
+to a file and then get the current backtrace by entering this in your gdb
+shell:
+
+------------------------------------------------------------------------------
+set logging file /tmp/i3hang.log
+set logging on
+bt full
+------------------------------------------------------------------------------
+
+You can now quit gdb again and switch back to your main TTY (with the hanging
+i3 session).
+
 == Sending bug reports/debugging on IRC
 
 When sending bug reports, please attach the *whole* log file. Even if you think
