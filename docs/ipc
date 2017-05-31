@@ -877,3 +877,5 @@ Ruby::
 	* https://github.com/badboy/i3-ipc (not maintained)
 Rust::
 	* https://github.com/tmerr/i3ipc-rs
+OCaml::
+	* https://github.com/Armael/ocaml-i3ipc
