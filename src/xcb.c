@@ -303,6 +303,20 @@ release_grab:
 }
 
 /*
+ * Wrapper function for add or remote an atom to the given property, based on the
+ * 'add' parameter.
+ *
+ */
+
+void xcb_add_or_remove_property_atom(xcb_connection_t *conn, xcb_window_t window, xcb_atom_t property, xcb_atom_t atom, bool add) {
+    if (add) {
+        xcb_add_property_atom(conn, window, property, atom);
+    } else {
+        xcb_remove_property_atom(conn, window, property, atom);
+    }
+}
+
+/*
  * Grab the specified buttons on a window when managing it.
  *
  */

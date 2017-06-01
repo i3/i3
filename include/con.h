@@ -64,6 +64,20 @@ bool con_is_split(Con *con);
 bool con_is_hidden(Con *con);
 
 /**
+ * Check whether a con is maximized in the given orientation.
+ *
+ * A con is considered maximized, if it:
+ *
+ *   1) is a fullscreen container
+ *   2) doesn't share space with another container in the
+ *      given orientation (horizontal/verical). Which is to
+ *      say, this container is not placed within a splith or
+ *      a splitv container with more than one child.
+ *
+ */
+bool con_is_maximized(Con *con, orientation_t o);
+
+/**
  * Returns whether the container or any of its children is sticky.
  *
  */
@@ -207,6 +221,12 @@ Con *con_for_window(Con *con, i3Window *window, Match **store_match);
  *
  */
 int con_num_children(Con *con);
+
+/**
+ * Returns true if con has exactly num children
+ *
+ */
+bool con_has_num_children(Con *con, int num);
 
 /**
  * Returns the number of visible non-floating children of this container.
