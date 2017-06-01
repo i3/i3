@@ -245,6 +245,10 @@ CFGFUN(hide_edge_borders, const char *borders) {
         config.hide_edge_borders = HEBM_NONE;
 }
 
+CFGFUN(title_vertical_margin, const long margin_height) {
+    config.title_vertical_margin = logical_px(margin_height);
+}
+
 CFGFUN(focus_follows_mouse, const char *value) {
     config.disable_focus_follows_mouse = !eval_boolstr(value);
 }

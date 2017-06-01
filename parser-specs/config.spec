@@ -30,6 +30,7 @@ state INITIAL:
   'workspace_layout'                       -> WORKSPACE_LAYOUT
   windowtype = 'new_window', 'new_float'   -> NEW_WINDOW
   'hide_edge_borders'                      -> HIDE_EDGE_BORDERS
+  'title_vertical_margin'                  -> TITLE_VERTICAL_MARGIN
   'for_window'                             -> FOR_WINDOW
   'assign'                                 -> ASSIGN
   'no_focus'                               -> NO_FOCUS
@@ -130,6 +131,11 @@ state HIDE_EDGE_BORDERS:
       -> call cfg_hide_edge_borders($hide_borders)
   hide_borders = '1', 'yes', 'true', 'on', 'enable', 'active'
       -> call cfg_hide_edge_borders($hide_borders)
+
+# title_vertical_margin <margin_height>
+state TITLE_VERTICAL_MARGIN:
+  margin_height = number
+      -> call cfg_title_vertical_margin(&margin_height)
 
 # for_window <criteria> command
 state FOR_WINDOW:
