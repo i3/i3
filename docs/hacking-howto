@@ -990,6 +990,47 @@ New features are only found in the “next” branch. Therefore, if you are work
 on a new feature, use the “next” branch. If you are working on a bugfix, use the
 “next” branch, too, but make sure your code also works on “master”.
 
+=== How to build?
+
+You can build i3 like you build any other software package which uses autotools.
+Here’s a memory refresher:
+
+    $ autoreconf -fi
+    $ mkdir -p build && cd build
+    $ ../configure
+    $ make -j8
+
+(The autoreconf -fi step is unnecessary if you are building from a release tarball,
+ but shouldn’t hurt either.)
+
+==== Build system features
+
+* We use the AX_ENABLE_BUILDDIR macro to enforce builds happening in a separate
+  directory. This is a prerequisite for the AX_EXTEND_SRCDIR macro and building
+  in a separate directory is common practice anyway. In case this causes any
+  trouble when packaging i3 for your distribution, please open an issue.
+
+* “make check” runs the i3 testsuite. See docs/testsuite for details.
+
+* “make distcheck” (runs testsuite on “make dist” result, tiny bit quicker
+  feedback cycle than waiting for the travis build to catch the issue).
+
+* “make uninstall” (occasionally requested by users who compile from source)
+
+* “make” will build manpages/docs by default if the tools are installed.
+  Conversely, manpages/docs are not tried to be built for users who don’t want
+  to install all these dependencies to get started hacking on i3.
+
+* non-release builds will enable address sanitizer by default. Use the
+  --disable-sanitizers configure option to turn off all sanitizers, and see
+  --help for available sanitizers.
+
+* Support for pre-compiled headers (PCH) has been dropped for now in the
+  interest of simplicity. If you need support for PCH, please open an issue.
+
+* Coverage reports are now generated using “make check-code-coverage”, which
+  requires specifying --enable-code-coverage when calling configure.
+
 == Thought experiments
 
 In this section, we collect thought experiments, so that we don’t forget our
