@@ -20,6 +20,7 @@
 int randr_base = -1;
 int xkb_base = -1;
 int xkb_current_group;
+extern uint8_t previous_screen;
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -86,7 +87,7 @@ bool event_is_ignored(const int sequence, const int response_type) {
  * current workspace, if so.
  *
  */
-static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
+static void check_crossing_screen_boundary(uint32_t x, uint32_t y, bool force_treerender) {
     Output *output;
 
     /* If the user disable focus follows mouse, we have nothing to do here */
@@ -112,8 +113,27 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
     con_focus(next);
 
     /* If the focus changed, we re-render to get updated decorations */
-    if (old_focused != focused)
+    if (old_focused != focused || force_treerender)
         tree_render();
+}
+
+/*
+ * This is called when the pointer leaves the root window
+ *
+ */
+static void handle_leave_notify(xcb_enter_notify_event_t *event) {
+    DLOG("leave_notify for %08x, mode = %d, detail %d, serial %d, focus %d\n",
+         event->event, event->mode, event->detail, event->sequence,
+         event->same_screen_focus);
+
+    if (event->mode != XCB_NOTIFY_MODE_NORMAL) {
+        DLOG("This was not a normal notify, ignoring\n");
+        return;
+    }
+
+    /* When leaving we don't care about the previous value */
+    previous_screen = event->same_screen_focus;
+    return;
 }
 
 /*
@@ -122,11 +142,11 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
  */
 static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     Con *con;
-
     last_timestamp = event->time;
 
-    DLOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n",
-         event->event, event->mode, event->detail, event->sequence);
+    DLOG("enter_notify for %08x, mode = %d, detail %d, serial %d, focus %d\n",
+         event->event, event->mode, event->detail, event->sequence,
+         event->same_screen_focus);
     DLOG("coordinates %d, %d\n", event->event_x, event->event_y);
     if (event->mode != XCB_NOTIFY_MODE_NORMAL) {
         DLOG("This was not a normal notify, ignoring\n");
@@ -137,6 +157,18 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     if (event_is_ignored(event->sequence, XCB_ENTER_NOTIFY)) {
         DLOG("Event ignored\n");
         return;
+    }
+
+    bool focus_crossed_screen = false;
+    if (event->same_screen_focus != previous_screen) {
+        /* Note we should not skip on previous_screen being
+         * UINT8_MAX because we don't want the first display
+         * switch to be missed (say we have i3 on :0.0 and :0.1,
+         * the :0.1 i3 will not get an event in general until
+         * the first time the user tries to use it, since the
+         * mouse pointer is likely on :0.0 to start with */
+        DLOG("The user changed screens %d -> %d\n", previous_screen, event->same_screen_focus);
+        focus_crossed_screen = true;
     }
 
     bool enter_child = false;
@@ -151,7 +183,12 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
      * workspace on the correct output. */
     if (con == NULL || con->parent->type == CT_DOCKAREA) {
         DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
-        check_crossing_screen_boundary(event->root_x, event->root_y);
+        /* The user entered the root window coming from another X
+         * screen, this means that the above will not have called
+         * tree_render (leaving the keyboard focus on the other
+         * screen). Force a rerender depending on focus_crossed_screen.
+         */
+        check_crossing_screen_boundary(event->root_x, event->root_y, focus_crossed_screen);
         return;
     }
 
@@ -170,21 +207,25 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     if (config.disable_focus_follows_mouse)
         return;
 
-    /* if this container is already focused, there is nothing to do. */
-    if (con == focused)
+    /* if this container is already focused, there is nothing to do
+     * unless we have switched screens.
+     */
+    if (con == focused && !focus_crossed_screen)
         return;
 
-    /* Get the currently focused workspace to check if the focus change also
-     * involves changing workspaces. If so, we need to call workspace_show() to
-     * correctly update state and send the IPC event. */
+    /* Get the currently focused workspace to check if the focus change
+     * also involves changing workspaces. If so, or if we switched
+     * screens, we need to call workspace_show() to correctly update
+     * state and send the IPC event. */
     Con *ws = con_get_workspace(con);
-    if (ws != con_get_workspace(focused))
+    if (ws != con_get_workspace(focused) || focus_crossed_screen)
         workspace_show(ws);
 
     focused_id = XCB_NONE;
     con_focus(con_descend_focused(con));
     tree_render();
 
+    previous_screen = event->same_screen_focus;
     return;
 }
 
@@ -205,7 +246,7 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
     Con *con;
     if ((con = con_by_frame_id(event->event)) == NULL) {
         DLOG("MotionNotify for an unknown container, checking if it crosses screen boundaries.\n");
-        check_crossing_screen_boundary(event->root_x, event->root_y);
+        check_crossing_screen_boundary(event->root_x, event->root_y, false);
         return;
     }
 
@@ -1521,6 +1562,10 @@ void handle_event(int type, xcb_generic_event_t *event) {
         /* Enter window = user moved their mouse over the window */
         case XCB_ENTER_NOTIFY:
             handle_enter_notify((xcb_enter_notify_event_t *)event);
+            break;
+
+        case XCB_LEAVE_NOTIFY:
+            handle_leave_notify((xcb_enter_notify_event_t *)event);
             break;
 
         /* Client message are sent to the root window. The only interesting

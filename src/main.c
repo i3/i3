@@ -36,6 +36,7 @@ int listen_fds;
 static struct ev_check *xcb_check;
 
 extern Con *focused;
+extern uint8_t previous_screen;
 
 char **start_argv;
 
@@ -483,6 +484,7 @@ int main(int argc, char *argv[]) {
 
     root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
+    previous_screen = UINT8_MAX;
 
 /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
