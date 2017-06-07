@@ -457,6 +457,12 @@ void con_set_urgency(Con *con, bool urgent);
 char *con_get_tree_representation(Con *con);
 
 /**
+ * Returns the container title.
+ *
+ */
+char *con_get_title(Con *con);
+
+/**
  * force parent split containers to be redrawn
  *
  */

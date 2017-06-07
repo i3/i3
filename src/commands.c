@@ -1915,6 +1915,27 @@ void cmd_title_format(I3_CMD, const char *format) {
 }
 
 /*
+ * Implementation of 'rename window <name>'
+ *
+ */
+void cmd_rename_window(I3_CMD, const char *newname) {
+    owindow *current;
+    HANDLE_EMPTY_MATCH;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        DLOG("matching: %p / %s\n", current->con, current->con->name);
+        LOG("Renaming container con = %p\n", current->con);
+        if (newname == NULL) {
+            current->con->custom_name = NULL;
+        } else {
+            current->con->custom_name = sstrdup(newname);
+            FREE(current->con->deco_render_params);
+            cmd_output->needs_tree_render = true;
+        }
+    }
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'rename workspace [<name>] to <name>'
  *
  */
