@@ -274,24 +274,28 @@ state RENAME:
       -> RENAME_WORKSPACE
 
 state RENAME_WORKSPACE:
-  old_name = 'to'
+  'to'
       -> RENAME_WORKSPACE_LIKELY_TO
   old_name = word
       -> RENAME_WORKSPACE_TO
 
 state RENAME_WORKSPACE_LIKELY_TO:
-  'to'
-      -> RENAME_WORKSPACE_NEW_NAME
+  'to '
+      -> RENAME_WORKSPACE_LIKELY_TO_NEW_NAME
   new_name = word
       -> call cmd_rename_workspace(NULL, $new_name)
 
-state RENAME_WORKSPACE_TO:
-  'to'
-      -> RENAME_WORKSPACE_NEW_NAME
-
-state RENAME_WORKSPACE_NEW_NAME:
+state RENAME_WORKSPACE_LIKELY_TO_NEW_NAME:
+  new_name = string
+      -> call cmd_rename_workspace("to", $new_name)
   end
       -> call cmd_rename_workspace(NULL, "to")
+
+state RENAME_WORKSPACE_TO:
+  'to'
+      -> RENAME_WORKSPACE_TO_NEW_NAME
+
+state RENAME_WORKSPACE_TO_NEW_NAME:
   new_name = string
       -> call cmd_rename_workspace($old_name, $new_name)
 
