@@ -196,9 +196,12 @@ void con_detach(Con *con) {
  * run of x_push_changes().
  *
  */
-void con_focus(Con *con) {
+static void _con_focus(Con *con, bool warp) {
     assert(con != NULL);
     DLOG("con_focus = %p\n", con);
+
+    if (warp && con_is_leaf(con) && config.mouse_warping == POINTER_WARPING_ALWAYS)
+        x_set_warp_to(&(con->rect));
 
     /* 1: set focused-pointer to the new con */
     /* 2: exchange the position of the container in focus stack of the parent all the way up */
@@ -219,6 +222,14 @@ void con_focus(Con *con) {
         workspace_update_urgent_flag(con_get_workspace(con));
         ipc_send_window_event("urgent", con);
     }
+}
+
+void con_focus(Con *con) {
+    _con_focus(con, true);
+}
+
+void con_focus_nowarp(Con *con) {
+    _con_focus(con, false);
 }
 
 /*
