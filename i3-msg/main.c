@@ -180,6 +180,8 @@ int main(int argc, char *argv[]) {
             printf("i3-msg " I3_VERSION "\n");
             printf("i3-msg [-s <socket>] [-t <type>] <message>\n");
             return 0;
+        } else if (o == '?') {
+            exit(EXIT_FAILURE);
         }
     }
 
