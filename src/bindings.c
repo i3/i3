@@ -474,8 +474,7 @@ void translate_keysyms(void) {
 
             xcb_keycode_t key = button;
             bind->keycode = key;
-            ADD_TRANSLATED_KEY(key, bind->event_state_mask);
-            continue;
+            DLOG("Binding Mouse button, Keycode = %d\n", key);
         }
 
         xkb_layout_index_t group = XCB_XKB_GROUP_1;
