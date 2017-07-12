@@ -59,8 +59,6 @@ AX_CHECK_ENABLE_DEBUG([yes], , [UNUSED_NDEBUG], [$is_release])
 
 AC_PROG_CC_C99
 
-AC_DEFINE_UNQUOTED(SYSCONFDIR, "`eval echo $sysconfdir`", [Location of system configuration files])
-
 # For strnlen() and vasprintf().
 AC_USE_SYSTEM_EXTENSIONS
 

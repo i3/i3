@@ -215,6 +215,7 @@ asciidoc_MANS =
 endif
 
 AM_CPPFLAGS = \
+	-DSYSCONFDIR="\"$(sysconfdir)\"" \
 	-I$(top_builddir)/parser \
 	-I$(top_srcdir)/include \
 	@AX_EXTEND_SRCDIR_CPPFLAGS@
