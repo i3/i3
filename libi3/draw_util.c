@@ -84,6 +84,11 @@ void draw_util_surface_set_size(surface_t *surface, int width, int height) {
  *
  */
 color_t draw_util_hex_to_color(const char *color) {
+    if (strlen(color) < 6 || color[0] != '#') {
+        ELOG("Could not parse color: %s\n", color);
+        return draw_util_hex_to_color("#A9A9A9");
+    }
+
     char alpha[2];
     if (strlen(color) == strlen("#rrggbbaa")) {
         alpha[0] = color[7];
