@@ -38,7 +38,7 @@ bool event_is_ignored(const int sequence, const int response_type);
  * event type.
  *
  */
-void handle_event(int type, xcb_generic_event_t *event);
+void handle_event(int type, xcb_generic_event_t* event, bool need_new_timestamp);
 
 /**
  * Sets the appropriate atoms for the property handlers after the atoms were
@@ -46,6 +46,15 @@ void handle_event(int type, xcb_generic_event_t *event);
  *
  */
 void property_handlers_init(void);
+
+/**
+ * These two functions implement an event queue, that can be used when
+ * we synchronously have to wait for a specific event in the middle of
+ * business logic, but we don't want to drop the events that are in
+ * front of it in the event queue.
+ */
+void queue_event(xcb_generic_event_t*);
+xcb_generic_event_t* pop_event();
 
 #if 0
 /**
