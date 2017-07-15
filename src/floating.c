@@ -697,7 +697,7 @@ static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
             case XCB_KEY_PRESS:
                 DLOG("A key was pressed during drag, reverting changes.\n");
                 dragloop->result = DRAG_REVERT;
-                handle_event(type, event);
+                handle_event(type, event, false);
                 break;
 
             case XCB_UNMAP_NOTIFY: {
@@ -713,7 +713,7 @@ static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
                     }
                 }
 
-                handle_event(type, event);
+                handle_event(type, event, false);
                 break;
             }
 
@@ -725,7 +725,7 @@ static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
 
             default:
                 DLOG("Passing to original handler\n");
-                handle_event(type, event);
+                handle_event(type, event, false);
                 break;
         }
 

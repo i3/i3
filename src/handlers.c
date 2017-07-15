@@ -21,6 +21,35 @@ int randr_base = -1;
 int xkb_base = -1;
 int xkb_current_group;
 
+struct Queued_Event {
+    xcb_generic_event_t *ev;
+
+    TAILQ_ENTRY(Queued_Event)
+    queued_events;
+};
+
+static TAILQ_HEAD(queued_event_head, Queued_Event) queued_events = TAILQ_HEAD_INITIALIZER(queued_events);
+
+void init_queued_events() {
+    TAILQ_INIT(&queued_events);
+}
+
+void queue_event(xcb_generic_event_t *ev) {
+    struct Queued_Event *new = smalloc(sizeof(struct Queued_Event));
+    new->ev = ev;
+    TAILQ_INSERT_TAIL(&queued_events, new, queued_events);
+}
+
+xcb_generic_event_t *pop_event() {
+    if (TAILQ_EMPTY(&queued_events))
+        return NULL;
+    struct Queued_Event *next = TAILQ_FIRST(&queued_events);
+    xcb_generic_event_t *ev = next->ev;
+    TAILQ_REMOVE(&queued_events, next, queued_events);
+    free(next);
+    return ev;
+}
+
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
    changing workspaces */
@@ -442,7 +471,7 @@ static void handle_screen_change(xcb_generic_event_t *e) {
  * now, so we better clean up before.
  *
  */
-static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
+static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event, bool needs_new_timestamp) {
     DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
     xcb_get_input_focus_cookie_t cookie;
     Con *con = con_by_window_id(event->window);
@@ -478,6 +507,48 @@ static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
     xcb_delete_property(conn, event->window, A__NET_WM_STATE);
 
     tree_close_internal(con, DONT_KILL_WINDOW, false, false);
+
+    /* See testcases/t/534-setinputfocus-and-exit.t.  The issue is
+       that if a window that previously called XSetInputFocus with
+       NONE or PARENT quits, then we are left with no keyboard focus,
+       which means no keyboard shortcuts will work until the user
+       manages to focus some window with the mouse.
+
+       This is happening, because in the tree_redner->x_push_changes
+       function when we handle the case of no focus, we give focus out
+       with last_timestamp, not XCB_CURRENT_TIME.  But last_timestamp
+       can be older than the one that the client used in their
+       XSetInputFocus call.  We can't use XCB_CURRENT_TIME, because
+       that was annoying for users with focus follows mouse.
+
+       Solution: refresh the last_timestamp here to the current server
+       timestamp, before tree render.  We can do that by doing a fake
+       property change on the EWMH support window and waiting for the
+       resulting event (that contains the correct time).
+    */
+    if (needs_new_timestamp) {
+        xcb_void_cookie_t cookie_check =
+            xcb_change_property_checked(conn,
+                                        XCB_PROP_MODE_APPEND,
+                                        ewmh_window,
+                                        XCB_ATOM_WM_CLASS,
+                                        A_UTF8_STRING,
+                                        8, 0, NULL);
+        xcb_request_check(conn, cookie_check);
+
+        xcb_generic_event_t *next_event;
+        while ((next_event = xcb_poll_for_queued_event(conn)) != NULL) {
+            xcb_property_notify_event_t *next_prop_event = (xcb_property_notify_event_t *)next_event;
+            if (next_event->response_type == (XCB_PROPERTY_NOTIFY | XCB_PROPERTY_NEW_VALUE) && next_prop_event->window == ewmh_window) {
+                last_timestamp = next_prop_event->time;
+                free(next_event);
+                break;
+            } else {
+                queue_event(next_event);
+            }
+        }
+    }
+
     tree_render();
 
 ignore_end:
@@ -513,7 +584,7 @@ ignore_end:
  * important fields in the event data structure).
  *
  */
-static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
+static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event, bool needs_new_timestamp) {
     DLOG("destroy notify for 0x%08x, 0x%08x\n", event->event, event->window);
 
     xcb_unmap_notify_event_t unmap;
@@ -521,7 +592,7 @@ static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
     unmap.event = event->event;
     unmap.window = event->window;
 
-    handle_unmap_notify_event(&unmap);
+    handle_unmap_notify_event(&unmap, needs_new_timestamp);
 }
 
 static bool window_name_changed(i3Window *window, char *old_name) {
@@ -1436,7 +1507,7 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
  * event type.
  *
  */
-void handle_event(int type, xcb_generic_event_t *event) {
+void handle_event(int type, xcb_generic_event_t *event, bool needs_new_timestamp) {
     if (type != XCB_MOTION_NOTIFY)
         DLOG("event type %d, xkb_base %d\n", type, xkb_base);
 
@@ -1500,11 +1571,11 @@ void handle_event(int type, xcb_generic_event_t *event) {
             break;
 
         case XCB_UNMAP_NOTIFY:
-            handle_unmap_notify_event((xcb_unmap_notify_event_t *)event);
+            handle_unmap_notify_event((xcb_unmap_notify_event_t *)event, needs_new_timestamp);
             break;
 
         case XCB_DESTROY_NOTIFY:
-            handle_destroy_notify_event((xcb_destroy_notify_event_t *)event);
+            handle_destroy_notify_event((xcb_destroy_notify_event_t *)event, needs_new_timestamp);
             break;
 
         case XCB_EXPOSE:

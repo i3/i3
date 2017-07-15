@@ -113,7 +113,16 @@ static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
 static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
     xcb_generic_event_t *event;
 
-    while ((event = xcb_poll_for_event(conn)) != NULL) {
+    while (true) {
+        bool needs_new_timestamp = false;
+
+        event = pop_event();
+        if (event == NULL) {
+            needs_new_timestamp = true;
+            if ((event = xcb_poll_for_event(conn)) == NULL)
+                break;
+        }
+
         if (event->response_type == 0) {
             if (event_is_ignored(event->sequence, 0))
                 DLOG("Expected X11 Error received for sequence %x\n", event->sequence);
@@ -129,7 +138,7 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
         /* Strip off the highest bit (set if the event is generated) */
         int type = (event->response_type & 0x7F);
 
-        handle_event(type, event);
+        handle_event(type, event, needs_new_timestamp);
 
         free(event);
     }
@@ -813,7 +822,7 @@ int main(int argc, char *argv[]) {
              * timespan starting from when we register as a window manager and
              * this piece of code which drops events. */
             if (type == XCB_MAP_REQUEST)
-                handle_event(type, event);
+                handle_event(type, event, false);
 
             free(event);
         }

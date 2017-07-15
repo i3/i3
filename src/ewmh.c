@@ -311,8 +311,8 @@ void ewmh_setup_hints(void) {
         0,                           /* border */
         XCB_WINDOW_CLASS_INPUT_ONLY, /* window class */
         XCB_COPY_FROM_PARENT,        /* visual */
-        XCB_CW_OVERRIDE_REDIRECT,
-        (uint32_t[]){1});
+        XCB_CW_EVENT_MASK | XCB_CW_OVERRIDE_REDIRECT,
+        (uint32_t[]){1, XCB_EVENT_MASK_PROPERTY_CHANGE});
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, ewmh_window, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &ewmh_window);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, ewmh_window, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &ewmh_window);
