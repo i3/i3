@@ -9,7 +9,7 @@ i3-nagbar - displays an error bar on top of your screen
 
 == SYNOPSIS
 
-i3-nagbar [-m <message>] [-b <button> <terminal-action>] [-B <button> <shell-action>] [-t warning|error] [-f <font>] [-v]
+i3-nagbar [-m <message>] [-b <button> <terminal-action>] [-B <button> <shell-action>] [-t warning|error] [-f <font>] [-d <seconds>] [-v]
 
 == OPTIONS
 
@@ -28,6 +28,9 @@ Display 'message' as text on the left of the i3-nagbar.
 
 *-f, --font* 'font'::
 Select font that is being used.
+
+*-d, --autodismiss* 'autodismiss'::
+Automatically dismiss the nagbar after given seconds
 
 *-b, --button* 'button' 'terminal-action'::
 Adds a button labelled 'button' to the bar. When pressed, the command given
