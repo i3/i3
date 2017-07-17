@@ -25,6 +25,8 @@
 #include <limits.h>
 #include <fcntl.h>
 #include <paths.h>
+#include <time.h>
+#include <pthread.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -60,6 +62,7 @@ static surface_t bar;
 
 static i3Font font;
 static i3String *prompt;
+static unsigned int timeout = 0;
 
 static button_t btn_close;
 static button_t *buttons;
@@ -269,6 +272,14 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     return 1;
 }
 
+static void *autoCloseIfTime(void *vargp) {
+    if (timeout) {
+        while (time(0) < timeout);
+        exit(0);
+    }
+    return NULL;
+}
+
 /**
  * Return the position and size the i3-nagbar window should use.
  * This will be the primary output or a fallback if it cannot be determined.
@@ -371,10 +382,11 @@ int main(int argc, char *argv[]) {
         {"button-sh", required_argument, 0, 'B'},
         {"help", no_argument, 0, 'h'},
         {"message", required_argument, 0, 'm'},
+        {"autodismiss", required_argument, 0, 'd'},
         {"type", required_argument, 0, 't'},
         {0, 0, 0, 0}};
 
-    char *options_string = "B:b:f:m:t:vh";
+    char *options_string = "B:b:f:m:t:vhd:";
 
     prompt = i3string_from_utf8("Please do not run this program.");
 
@@ -391,13 +403,16 @@ int main(int argc, char *argv[]) {
                 i3string_free(prompt);
                 prompt = i3string_from_utf8(optarg);
                 break;
+            case 'd':
+                timeout = time(0) + atoi(optarg);
+                break;
             case 't':
                 bar_type = (strcasecmp(optarg, "warning") == 0 ? TYPE_WARNING : TYPE_ERROR);
                 break;
             case 'h':
                 printf("i3-nagbar " I3_VERSION "\n");
                 printf("i3-nagbar [-m <message>] [-b <button> <terminal-action>] "
-                       "[-B <button> <shell-action> [-t warning|error] [-f <font>] [-v]\n");
+                       "[-B <button> <shell-action> [-t warning|error] [-f <font>] [-d <seconds>] [-v]\n");
                 return 0;
             /* falls through */
             case 'B':
@@ -570,6 +585,10 @@ int main(int argc, char *argv[]) {
     xcb_flush(conn);
 
     xcb_generic_event_t *event;
+
+    pthread_t timeout_thread_id;
+    pthread_create(&timeout_thread_id, NULL, autoCloseIfTime, NULL);
+
     while ((event = xcb_wait_for_event(conn)) != NULL) {
         if (event->response_type == 0) {
             fprintf(stderr, "X11 Error received! sequence %x\n", event->sequence);
