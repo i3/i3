@@ -1756,7 +1756,7 @@ void con_set_layout(Con *con, layout_t layout) {
             con->workspace_layout = ws_layout;
             DLOG("Setting layout to %d\n", layout);
             con->layout = layout;
-        } else if (layout == L_STACKED || layout == L_TABBED) {
+        } else if (layout == L_STACKED || layout == L_TABBED || layout == L_SPLITV || layout == L_SPLITH) {
             DLOG("Creating new split container\n");
             /* 1: create a new split container */
             Con *new = con_new(NULL, NULL);
