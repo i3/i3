@@ -40,15 +40,16 @@ static Output *get_output_by_id(xcb_randr_output_t id) {
 }
 
 /*
- * Returns the output with the given name if it is active (!) or NULL.
+ * Returns the output with the given name or NULL.
+ * If require_active is true, only active outputs are considered.
  *
  */
-Output *get_output_by_name(const char *name) {
+Output *get_output_by_name(const char *name, const bool require_active) {
     Output *output;
     bool get_primary = (strcasecmp("primary", name) == 0);
     TAILQ_FOREACH(output, &outputs, outputs) {
         if ((output->primary && get_primary) ||
-            (output->active && strcasecmp(output->name, name) == 0)) {
+            ((!require_active || output->active) && strcasecmp(output->name, name) == 0)) {
             return output;
         }
     }
@@ -442,7 +443,7 @@ void init_ws_for_output(Output *output, Con *content) {
         if (visible && previous == NULL) {
             LOG("There is no workspace left on \"%s\", re-initializing\n",
                 workspace_out->name);
-            init_ws_for_output(get_output_by_name(workspace_out->name),
+            init_ws_for_output(get_output_by_name(workspace_out->name, true),
                                output_get_content(workspace_out));
             DLOG("Done re-initializing, continuing with \"%s\"\n", output->name);
         }
@@ -590,7 +591,7 @@ static bool randr_query_outputs_15(void) {
                   xcb_get_atom_name_name(atom_reply));
         free(atom_reply);
 
-        Output *new = get_output_by_name(name);
+        Output *new = get_output_by_name(name, false);
         if (new == NULL) {
             new = scalloc(1, sizeof(Output));
             new->name = sstrdup(name);
