@@ -1087,9 +1087,30 @@ IPC_HANDLER(subscribe) {
     ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
 }
 
+/*
+ * Returns the raw last loaded i3 configuration file contents.
+ */
+IPC_HANDLER(get_config) {
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("config");
+    ystr(current_config);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_CONFIG, payload);
+    y(free);
+}
+
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[9] = {
+handler_t handlers[10] = {
     handle_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -1099,6 +1120,7 @@ handler_t handlers[9] = {
     handle_get_bar_config,
     handle_get_version,
     handle_get_binding_modes,
+    handle_get_config,
 };
 
 /*

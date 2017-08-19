@@ -13,6 +13,7 @@
 #include <xkbcommon/xkbcommon.h>
 
 char *current_configpath = NULL;
+char *current_config = NULL;
 Config config;
 struct modes_head modes;
 struct barconfig_head barconfigs = TAILQ_HEAD_INITIALIZER(barconfigs);
