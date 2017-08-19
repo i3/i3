@@ -898,6 +898,11 @@ bool parse_file(const char *f, bool use_nagbar) {
     if ((fstr = fdopen(fd, "r")) == NULL)
         die("Could not fdopen: %s\n", strerror(errno));
 
+    FREE(current_config);
+    current_config = scalloc(stbuf.st_size + 1, 1);
+    fread(current_config, 1, stbuf.st_size, fstr);
+    rewind(fstr);
+
     while (!feof(fstr)) {
         if (!continuation)
             continuation = buffer;

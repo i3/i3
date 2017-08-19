@@ -21,6 +21,7 @@
 typedef struct Config Config;
 typedef struct Barconfig Barconfig;
 extern char *current_configpath;
+extern char *current_config;
 extern Config config;
 extern SLIST_HEAD(modes_head, Mode) modes;
 extern TAILQ_HEAD(barconfig_head, Barconfig) barconfigs;

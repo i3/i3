@@ -580,7 +580,7 @@ i3-config-parser.stamp: parser/$(dirstamp) generate-command-parser.pl parser-spe
 # AnyEvent-I3 build process
 ################################################################################
 
-anyevent-i3.stamp: generate-command-parser.pl parser-specs/config.spec
+anyevent-i3.stamp: AnyEvent-I3/lib/AnyEvent/I3.pm
 	$(AM_V_BUILD) (cd $(top_srcdir)/AnyEvent-I3 && perl Makefile.PL && make)
 	$(AM_V_at) touch $@
 

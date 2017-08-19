@@ -16,11 +16,11 @@ AnyEvent::I3 - communicate with the i3 window manager
 
 =cut
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 =head1 VERSION
 
-Version 0.17
+Version 0.18
 
 =head1 SYNOPSIS
 
@@ -95,10 +95,13 @@ use constant TYPE_GET_TREE => 4;
 use constant TYPE_GET_MARKS => 5;
 use constant TYPE_GET_BAR_CONFIG => 6;
 use constant TYPE_GET_VERSION => 7;
+use constant TYPE_GET_BINDING_MODES => 8;
+use constant TYPE_GET_CONFIG => 9;
 
 our %EXPORT_TAGS = ( 'all' => [
     qw(i3 TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS
-       TYPE_GET_TREE TYPE_GET_MARKS TYPE_GET_BAR_CONFIG TYPE_GET_VERSION)
+       TYPE_GET_TREE TYPE_GET_MARKS TYPE_GET_BAR_CONFIG TYPE_GET_VERSION
+       TYPE_GET_BINDING_MODES TYPE_GET_CONFIG)
 ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
@@ -500,6 +503,20 @@ sub get_version {
 
     return $cv;
 }
+
+=head2 get_config
+
+Gets the raw last read config from i3. Requires i3 >= 4.14
+
+=cut
+sub get_config {
+    my ($self) = @_;
+
+    $self->_ensure_connection;
+
+    $self->message(TYPE_GET_CONFIG);
+}
+
 
 =head2 command($content)
 
