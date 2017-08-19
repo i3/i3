@@ -1184,6 +1184,7 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
             case XCB_CONFIGURE_REQUEST:
                 /* ConfigureRequest, sent by a tray child */
                 handle_configure_request((xcb_configure_request_event_t *)event);
+                break;
             case XCB_RESIZE_REQUEST:
                 /* ResizeRequest sent by a tray child using override_redirect. */
                 handle_resize_request((xcb_resize_request_event_t *)event);
