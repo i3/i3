@@ -75,10 +75,11 @@ void randr_disable_output(Output *output);
 Output *get_first_output(void);
 
 /**
- * Returns the output with the given name if it is active (!) or NULL.
+ * Returns the output with the given name or NULL.
+ * If require_active is true, only active outputs are considered.
  *
  */
-Output *get_output_by_name(const char *name);
+Output *get_output_by_name(const char *name, const bool require_active);
 
 /**
  * Returns the active (!) output which contains the coordinates x, y or NULL

@@ -41,7 +41,7 @@ Output *get_output_from_string(Output *current_output, const char *output_str) {
         return get_output_next_wrap(D_DOWN, current_output);
     }
 
-    return get_output_by_name(output_str);
+    return get_output_by_name(output_str, true);
 }
 
 Output *get_output_for_con(Con *con) {
@@ -51,7 +51,7 @@ Output *get_output_for_con(Con *con) {
         return NULL;
     }
 
-    Output *output = get_output_by_name(output_con->name);
+    Output *output = get_output_by_name(output_con->name, true);
     if (output == NULL) {
         ELOG("Could not get output from name \"%s\".\n", output_con->name);
         return NULL;
