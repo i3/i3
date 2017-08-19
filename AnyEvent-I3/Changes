@@ -1,5 +1,9 @@
 Revision history for AnyEvent-I3
 
+0.18    2017-08-19
+
+   * support the GET_CONFIG command
+
 0.17    2017-04-09
 
    * support the shutdown event
