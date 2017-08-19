@@ -8,7 +8,6 @@ BEGIN {
         X11::XCB::Connection
         X11::XCB::Window
         AnyEvent
-        AnyEvent::I3
         IPC::Run
         ExtUtils::PkgConfig
         Inline

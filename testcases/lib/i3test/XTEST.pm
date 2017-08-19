@@ -6,6 +6,7 @@ use warnings;
 use v5.10;
 
 use i3test i3_autostart => 0;
+use lib qw(@abs_top_srcdir@/AnyEvent-I3/blib/lib);
 use AnyEvent::I3;
 use ExtUtils::PkgConfig;
 

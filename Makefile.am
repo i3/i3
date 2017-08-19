@@ -53,6 +53,9 @@ check_PROGRAMS = \
 check_SCRIPTS = \
 	testcases/complete-run.pl
 
+check_DATA = \
+	anyevent-i3.stamp
+
 clean-check:
 	rm -rf testsuite-* latest i3-cfg-for-* _Inline
 clean-local: clean-check
@@ -573,6 +576,15 @@ i3-config-parser.stamp: parser/$(dirstamp) generate-command-parser.pl parser-spe
 	$(AM_V_at) mv GENERATED_config_* $(top_builddir)/parser
 	$(AM_V_at) touch $@
 
+################################################################################
+# AnyEvent-I3 build process
+################################################################################
+
+anyevent-i3.stamp: generate-command-parser.pl parser-specs/config.spec
+	$(AM_V_BUILD) (cd $(top_srcdir)/AnyEvent-I3 && perl Makefile.PL && make)
+	$(AM_V_at) touch $@
+
 CLEANFILES = \
 	i3-command-parser.stamp \
-	i3-config-parser.stamp
+	i3-config-parser.stamp \
+	anyevent-i3.stamp
