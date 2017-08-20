@@ -1105,8 +1105,13 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
     /* Descend focus stack in case focus_next is a workspace which can
      * occur if we move to the same workspace.  Also show current workspace
      * to ensure it is focused. */
-    if (!ignore_focus)
+    if (!ignore_focus) {
         workspace_show(current_ws);
+        if (dont_warp) {
+            DLOG("x_set_warp_to(NULL) because dont_warp is set\n");
+            x_set_warp_to(NULL);
+        }
+    }
 
     /* Set focus only if con was on current workspace before moving.
      * Otherwise we would give focus to some window on different workspace. */
