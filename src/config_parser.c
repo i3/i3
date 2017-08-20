@@ -903,6 +903,8 @@ bool parse_file(const char *f, bool use_nagbar) {
     fread(current_config, 1, stbuf.st_size, fstr);
     rewind(fstr);
 
+    bool invalid_sets = false;
+
     while (!feof(fstr)) {
         if (!continuation)
             continuation = buffer;
@@ -943,11 +945,13 @@ bool parse_file(const char *f, bool use_nagbar) {
 
             if (sscanf(value, "%511s %4095[^\n]", v_key, v_value) < 1) {
                 ELOG("Failed to parse variable specification '%s', skipping it.\n", value);
+                invalid_sets = true;
                 continue;
             }
 
             if (v_key[0] != '$') {
                 ELOG("Malformed variable assignment, name has to start with $\n");
+                invalid_sets = true;
                 continue;
             }
 
@@ -968,11 +972,13 @@ bool parse_file(const char *f, bool use_nagbar) {
 
             if (sscanf(value, "%511s %511s %4095[^\n]", v_key, res_name, fallback) < 1) {
                 ELOG("Failed to parse resource specification '%s', skipping it.\n", value);
+                invalid_sets = true;
                 continue;
             }
 
             if (v_key[0] != '$') {
                 ELOG("Malformed variable assignment, name has to start with $\n");
+                invalid_sets = true;
                 continue;
             }
 
@@ -1088,12 +1094,12 @@ bool parse_file(const char *f, bool use_nagbar) {
     check_for_duplicate_bindings(context);
     reorder_bindings();
 
-    if (use_nagbar && (context->has_errors || context->has_warnings)) {
+    if (use_nagbar && (context->has_errors || context->has_warnings || invalid_sets)) {
         ELOG("FYI: You are using i3 version %s\n", i3_version);
         if (version == 3)
             ELOG("Please convert your configfile first, then fix any remaining errors (see above).\n");
 
-        start_config_error_nagbar(f, context->has_errors);
+        start_config_error_nagbar(f, context->has_errors || invalid_sets);
     }
 
     bool has_errors = context->has_errors;
