@@ -916,6 +916,7 @@ bool parse_file(const char *f, bool use_nagbar) {
         }
 
         /* sscanf implicitly strips whitespace. */
+        value[0] = '\0';
         const bool skip_line = (sscanf(buffer, "%511s %4095[^\n]", key, value) < 1 || strlen(key) < 3);
         const bool comment = (key[0] == '#');
         value[4095] = '\n';
@@ -938,7 +939,7 @@ bool parse_file(const char *f, bool use_nagbar) {
 
         if (strcasecmp(key, "set") == 0) {
             char v_key[512];
-            char v_value[4096];
+            char v_value[4096] = {'\0'};
 
             if (sscanf(value, "%511s %4095[^\n]", v_key, v_value) < 1) {
                 ELOG("Failed to parse variable specification '%s', skipping it.\n", value);
@@ -953,9 +954,9 @@ bool parse_file(const char *f, bool use_nagbar) {
             upsert_variable(&variables, v_key, v_value);
             continue;
         } else if (strcasecmp(key, "set_from_resource") == 0) {
-            char res_name[512];
+            char res_name[512] = {'\0'};
             char v_key[512];
-            char fallback[4096];
+            char fallback[4096] = {'\0'};
 
             /* Ensure that this string is terminated. For example, a user might
              * want a variable to be empty if the resource can't be found and
