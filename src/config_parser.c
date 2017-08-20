@@ -937,7 +937,7 @@ bool parse_file(const char *f, bool use_nagbar) {
             continue;
         }
 
-        if (strcasecmp(key, "set") == 0) {
+        if (strcasecmp(key, "set") == 0 && *value != '\0') {
             char v_key[512];
             char v_value[4096] = {'\0'};
 
