@@ -1255,6 +1255,12 @@ char *init_xcb_early() {
     ev_prepare_init(xcb_prep, &xcb_prep_cb);
     ev_check_init(xcb_chk, &xcb_chk_cb);
 
+    /* Within an event loop iteration, run the xcb_chk watcher last: other
+     * watchers might call xcb_flush(), which, unexpectedly, can also read
+     * events into the queue (see _xcb_conn_wait). Hence, we need to drain xcb’s
+     * queue last, otherwise we risk dead-locking. */
+    ev_set_priority(xcb_chk, EV_MINPRI);
+
     ev_io_start(main_loop, xcb_io);
     ev_prepare_start(main_loop, xcb_prep);
     ev_check_start(main_loop, xcb_chk);
