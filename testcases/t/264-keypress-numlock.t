@@ -344,6 +344,47 @@ is(scalar @i3test::XTEST::binding_events, 18, 'Received exactly 18 binding event
 
 exit_gracefully($pid);
 
+################################################################################
+# Verify mouse bindings are unaffected by NumLock
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bindsym --whole-window button4 nop button4
+EOT
+
+$pid = launch_with_config($config);
+
+my $win = open_window;
+
+start_binding_capture;
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
+        xtest_button_press(4, 50, 50);
+        xtest_button_release(4, 50, 50);
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
+    },
+    ),
+   'button4',
+   'triggered the button4 keybinding with NumLock');
+
+is(listen_for_binding(
+    sub {
+	xtest_button_press(4, 50, 50);
+	xtest_button_release(4, 50, 50);
+    },
+    ),
+   'button4',
+   'triggered the button4 keybinding without NumLock');
+
+exit_gracefully($pid);
+
 }
 
 done_testing;
