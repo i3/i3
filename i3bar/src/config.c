@@ -185,6 +185,7 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 
     if (!strcmp(cur_key, "status_command")) {
         DLOG("command = %.*s\n", len, val);
+        FREE(config.command);
         sasprintf(&config.command, "%.*s", len, val);
         return 1;
     }
