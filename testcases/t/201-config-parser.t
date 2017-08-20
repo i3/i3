@@ -446,8 +446,7 @@ hide_edge_border both
 client.focused          #4c7899 #285577 #ffffff #2e9ef4
 EOT
 
-my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '#', '" . join("', '", qw(
-        set
+my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '#', '" . join("', '", 'set ', 'set	', qw(
         set_from_resource
         bindsym
         bindcode
