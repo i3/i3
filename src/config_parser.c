@@ -235,7 +235,7 @@ static void next_state(const cmdp_token *token) {
  *
  */
 static const char *start_of_line(const char *walk, const char *beginning) {
-    while (*walk != '\n' && *walk != '\r' && walk >= beginning) {
+    while (walk >= beginning && *walk != '\n' && *walk != '\r') {
         walk--;
     }
 
