@@ -112,7 +112,7 @@ the tests without an X session with Xvfb, such as with +xvfb-run
 ./complete-run+. This will also speed up the tests significantly especially on
 machines without a powerful video card.
 
-.Example invocation of complete-run.pl+
+.Example invocation of +complete-run.pl+
 ---------------------------------------
 $ cd ~/i3
 
@@ -171,11 +171,11 @@ $ ./complete-run.pl --parallel=1 --keep-xserver-output
 This will show the output of Xephyr, which is the X server implementation we
 use for testing.
 
-===== make command: make check
+===== make command: +make check+
 Make check runs the i3 testsuite.
 You can still use ./testcases/complete-run.pl to get the interactive progress output.
 
-.Example invocation of make check+
+.Example invocation of +make check+
 ---------------------------------------
 $ cd ~/i3
 
