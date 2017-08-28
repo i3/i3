@@ -377,15 +377,21 @@ CFGFUN(color, const char *colorclass, const char *border, const char *background
 #undef APPLY_COLORS
 }
 
-CFGFUN(assign, const char *workspace) {
+CFGFUN(assign, const char *workspace, bool is_number) {
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this assignment\n");
         return;
     }
+
+    if (is_number && ws_name_to_number(workspace) == -1) {
+        ELOG("Could not parse initial part of \"%s\" as a number.\n", workspace);
+        return;
+    }
+
     DLOG("New assignment, using above criteria, to workspace \"%s\".\n", workspace);
     Assignment *assignment = scalloc(1, sizeof(Assignment));
     match_copy(&(assignment->match), current_match);
-    assignment->type = A_TO_WORKSPACE;
+    assignment->type = is_number ? A_TO_WORKSPACE_NUMBER : A_TO_WORKSPACE;
     assignment->dest.workspace = sstrdup(workspace);
     TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
 }

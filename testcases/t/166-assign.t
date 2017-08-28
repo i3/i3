@@ -33,6 +33,33 @@ sub open_special {
     return $window;
 }
 
+sub test_workspace_assignment {
+    my $target_ws = "@_";
+
+    # initialize the target workspace, then go to a fresh one
+    ok(!($target_ws ~~ @{get_workspace_names()}), "$target_ws does not exist yet");
+    cmd "workspace $target_ws";
+    cmp_ok(@{get_ws_content($target_ws)}, '==', 0, "no containers on $target_ws yet");
+    cmd 'open';
+    cmp_ok(@{get_ws_content($target_ws)}, '==', 1, "one container on $target_ws");
+    my $tmp = fresh_workspace;
+
+    ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+    ok($target_ws ~~ @{get_workspace_names()}, "$target_ws does not exist yet");
+
+    # We use sync_with_i3 instead of wait_for_map here because i3 will not actually
+    # map the window -- it will be assigned to a different workspace and will only
+    # be mapped once you switch to that workspace
+    my $window = open_special(dont_map => 1);
+    $window->map;
+    sync_with_i3;
+
+    ok(@{get_ws_content($tmp)} == 0, 'still no containers');
+    ok(@{get_ws_content($target_ws)} == 2, "two containers on $target_ws");
+
+    return $window
+}
+
 #####################################################################
 # start a window and see that it does not get assigned with an empty config
 #####################################################################
@@ -87,33 +114,67 @@ $window->destroy;
 exit_gracefully($pid);
 
 #####################################################################
-# start a window and see that it gets assigned to a workspace which has content
-# already, next to the existing node.
+# start a window and see that it gets assigned to a formerly unused
+# numbered workspace
+#####################################################################
+
+my $config_numbered = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+assign [class="special"] → workspace number 2
+EOT
+
+$pid = launch_with_config($config_numbered);
+
+$tmp = fresh_workspace;
+
+ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+$workspaces = get_workspace_names;
+ok(!("2" ~~ @{$workspaces}), 'workspace number 2 does not exist yet');
+
+$window = open_special;
+sync_with_i3;
+
+ok(@{get_ws_content($tmp)} == 0, 'still no containers');
+ok("2" ~~ @{get_workspace_names()}, 'workspace number 2 exists');
+
+$window->destroy;
+
+exit_gracefully($pid);
+
+#####################################################################
+# start a window and see that it gets assigned to a numbered
+# workspace which has content already, next to the existing node.
+#####################################################################
+
+$pid = launch_with_config($config_numbered);
+
+$window = test_workspace_assignment("2");
+$window->destroy;
+
+exit_gracefully($pid);
+
+#####################################################################
+# start a window and see that it gets assigned to a numbered workspace with
+# a name which has content already, next to the existing node.
+#####################################################################
+
+$pid = launch_with_config($config_numbered);
+
+cmd 'workspace 2';  # Make sure that we are not testing for "2" again.
+$window = test_workspace_assignment("2: targetws");
+$window->destroy;
+
+exit_gracefully($pid);
+
+#####################################################################
+# start a window and see that it gets assigned to a workspace which
+# has content already, next to the existing node.
 #####################################################################
 
 $pid = launch_with_config($config);
 
-# initialize the target workspace, then go to a fresh one
-ok(!("targetws" ~~ @{get_workspace_names()}), 'targetws does not exist yet');
-cmd 'workspace targetws';
-cmp_ok(@{get_ws_content('targetws')}, '==', 0, 'no containers on targetws yet');
-cmd 'open';
-cmp_ok(@{get_ws_content('targetws')}, '==', 1, 'one container on targetws');
-$tmp = fresh_workspace;
-
-ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
-ok("targetws" ~~ @{get_workspace_names()}, 'targetws does not exist yet');
-
-
-# We use sync_with_i3 instead of wait_for_map here because i3 will not actually
-# map the window -- it will be assigned to a different workspace and will only
-# be mapped once you switch to that workspace
-$window = open_special(dont_map => 1);
-$window->map;
-sync_with_i3;
-
-ok(@{get_ws_content($tmp)} == 0, 'still no containers');
-ok(@{get_ws_content('targetws')} == 2, 'two containers on targetws');
+test_workspace_assignment("targetws");
 
 exit_gracefully($pid);
 
