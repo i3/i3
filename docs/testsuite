@@ -82,6 +82,8 @@ The tests additionally require +Xephyr(1)+ to run a nested X server. Install
 $ cd ~/i3/testcases
 $ sudo apt-get install cpanminus
 $ sudo cpanm .
+$ cd ~/i3/AnyEvent-I3
+$ sudo cpanm .
 --------------------------------------------------------------------------------
 
 If you don’t want to use cpanminus for some reason, the same works with cpan:
@@ -89,6 +91,8 @@ If you don’t want to use cpanminus for some reason, the same works with cpan:
 .Installing testsuite dependencies using cpan
 --------------------------------------------------------------------------------
 $ cd ~/i3/testcases
+$ sudo cpan .
+$ cd ~/i3/AnyEvent-I3
 $ sudo cpan .
 --------------------------------------------------------------------------------
 
