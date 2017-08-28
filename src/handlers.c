@@ -406,21 +406,45 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
 
     if (event->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
         DLOG("window 0x%08x wants to be stacked %d\n", event->window, event->stack_mode);
-        if (event->stack_mode == XCB_STACK_MODE_ABOVE) {
-            /* Emacs and IntelliJ Idea “request focus” by stacking their window
-             * above all others. */
-            if (!fullscreen && con_is_leaf(con)) {
-                if (strcmp(con_get_workspace(con)->name, "__i3_scratch") == 0) {
-                    DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
-                    return;
-                }
 
-                con_focus(con);
-                tree_render();
-            }
+        /* Emacs and IntelliJ Idea “request focus” by stacking their window
+             * above all others. */
+        if (event->stack_mode != XCB_STACK_MODE_ABOVE) {
+            DLOG("stack_mode != XCB_STACK_MODE_ABOVE, ignoring ConfigureRequest\n");
+            goto out;
+        }
+
+        if (fullscreen || !con_is_leaf(con)) {
+            DLOG("fullscreen or not a leaf, ignoring ConfigureRequest\n");
+            goto out;
+        }
+
+        Con *ws = con_get_workspace(con);
+        if (ws == NULL) {
+            DLOG("Window is not being managed, ignoring ConfigureRequest\n");
+            goto out;
+        }
+
+        if (strcmp(ws->name, "__i3_scratch") == 0) {
+            DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
+            goto out;
+        }
+
+        if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
+            DLOG("Focusing con = %p\n", con);
+            workspace_show(ws);
+            con_focus(con);
+            tree_render();
+        } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(ws))) {
+            DLOG("Marking con = %p urgent\n", con);
+            con_set_urgency(con, true);
+            tree_render();
+        } else {
+            DLOG("Ignoring request for con = %p.\n", con);
         }
     }
 
+out:
     fake_absolute_configure_notify(con);
 }
 
