@@ -36,4 +36,20 @@ sync_with_i3;
 is($x->input_focus, $left_window->id, 'left window has focus');
 isnt(get_focused($ws), $old_focus, 'right window is no longer focused');
 
+################################################################################
+# Verify the ConfigureWindow request is only applied when on the active
+# workspace.
+################################################################################
+
+$ws = fresh_workspace;
+my $new_window = open_window;
+
+is($x->input_focus, $new_window->id, 'new window has focus');
+$x->configure_window($left_window->id, CONFIG_WINDOW_STACK_MODE, (STACK_MODE_ABOVE));
+$x->flush;
+
+sync_with_i3;
+
+is($x->input_focus, $new_window->id, 'new window still has focus');
+
 done_testing;
