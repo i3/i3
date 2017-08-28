@@ -38,6 +38,7 @@ struct regex *regex_new(const char *pattern) {
         }
         ELOG("PCRE regular expression compilation failed at %d: %s\n",
              offset, error);
+        regex_free(re);
         return NULL;
     }
     re->extra = pcre_study(re->regex, 0, &error);
