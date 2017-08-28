@@ -21,6 +21,10 @@
 #include <libgen.h>
 #include "shmlog.h"
 
+#ifdef I3_ASAN_ENABLED
+#include <sanitizer/lsan_interface.h>
+#endif
+
 #include "sd-daemon.h"
 
 /* The original value of RLIMIT_CORE when i3 was started. We need to restore
@@ -551,6 +555,9 @@ int main(int argc, char *argv[]) {
     xcb_generic_error_t *error = xcb_request_check(conn, cookie);
     if (error != NULL) {
         ELOG("Another window manager seems to be running (X error %d)\n", error->error_code);
+#ifdef I3_ASAN_ENABLED
+        __lsan_do_leak_check();
+#endif
         return 1;
     }
 
