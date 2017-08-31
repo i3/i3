@@ -50,7 +50,6 @@ static char *argv0 = NULL;
 typedef struct {
     i3String *label;
     char *action;
-    bool exec_in_terminal;
     int16_t x;
     uint16_t width;
 } button_t;
@@ -124,51 +123,6 @@ static void start_application(const char *command) {
     wait(0);
 }
 
-static void execute_in_terminal(const char *command) {
-    /* We need to create a custom script containing our actual command
-     * since not every terminal emulator which is contained in
-     * i3-sensible-terminal supports -e with multiple arguments (and not
-     * all of them support -e with one quoted argument either).
-     *
-     * NB: The paths need to be unique, that is, don’t assume users close
-     * their nagbars at any point in time (and they still need to work).
-     * */
-    char *script_path = get_process_filename("nagbar-cmd");
-
-    int fd = open(script_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    if (fd == -1) {
-        warn("Could not create temporary script to store the nagbar command");
-        return;
-    }
-    FILE *script = fdopen(fd, "w");
-    if (script == NULL) {
-        warn("Could not fdopen() temporary script to store the nagbar command");
-        return;
-    }
-    fprintf(script, "#!/bin/sh\nrm %s\n%s", script_path, command);
-    /* Also closes fd */
-    fclose(script);
-
-    char *link_path;
-    char *exe_path = get_exe_path(argv0);
-    sasprintf(&link_path, "%s.nagbar_cmd", script_path);
-    if (symlink(exe_path, link_path) == -1) {
-        err(EXIT_FAILURE, "Failed to symlink %s to %s", link_path, exe_path);
-    }
-
-    char *terminal_cmd;
-    sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", link_path);
-    printf("argv0 = %s\n", argv0);
-    printf("terminal_cmd = %s\n", terminal_cmd);
-
-    start_application(terminal_cmd);
-
-    free(link_path);
-    free(terminal_cmd);
-    free(script_path);
-    free(exe_path);
-}
-
 static button_t *get_button_at(int16_t x, int16_t y) {
     for (int c = 0; c < buttoncnt; c++)
         if (x >= (buttons[c].x) && x <= (buttons[c].x + buttons[c].width))
@@ -195,15 +149,51 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     if (event->event_x >= btn_close.x && event->event_x < btn_close.x + btn_close.width)
         exit(0);
     button_t *button = get_button_at(event->event_x, event->event_y);
-    if (!button) {
+    if (!button)
+        return;
+
+    /* We need to create a custom script containing our actual command
+     * since not every terminal emulator which is contained in
+     * i3-sensible-terminal supports -e with multiple arguments (and not
+     * all of them support -e with one quoted argument either).
+     *
+     * NB: The paths need to be unique, that is, don’t assume users close
+     * their nagbars at any point in time (and they still need to work).
+     * */
+    char *script_path = get_process_filename("nagbar-cmd");
+
+    int fd = open(script_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        warn("Could not create temporary script to store the nagbar command");
         return;
     }
-
-    if (button->exec_in_terminal) {
-        execute_in_terminal(button->action);
-    } else {
-        start_application(button->action);
+    FILE *script = fdopen(fd, "w");
+    if (script == NULL) {
+        warn("Could not fdopen() temporary script to store the nagbar command");
+        return;
     }
+    fprintf(script, "#!/bin/sh\nrm %s\n%s", script_path, button->action);
+    /* Also closes fd */
+    fclose(script);
+
+    char *link_path;
+    char *exe_path = get_exe_path(argv0);
+    sasprintf(&link_path, "%s.nagbar_cmd", script_path);
+    if (symlink(exe_path, link_path) == -1) {
+        err(EXIT_FAILURE, "Failed to symlink %s to %s", link_path, exe_path);
+    }
+
+    char *terminal_cmd;
+    sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", link_path);
+    printf("argv0 = %s\n", argv0);
+    printf("terminal_cmd = %s\n", terminal_cmd);
+
+    start_application(terminal_cmd);
+
+    free(link_path);
+    free(terminal_cmd);
+    free(script_path);
+    free(exe_path);
 
     /* TODO: unset flag, re-render */
 }
@@ -368,13 +358,12 @@ int main(int argc, char *argv[]) {
         {"version", no_argument, 0, 'v'},
         {"font", required_argument, 0, 'f'},
         {"button", required_argument, 0, 'b'},
-        {"button-sh", required_argument, 0, 'B'},
         {"help", no_argument, 0, 'h'},
         {"message", required_argument, 0, 'm'},
         {"type", required_argument, 0, 't'},
         {0, 0, 0, 0}};
 
-    char *options_string = "B:b:f:m:t:vh";
+    char *options_string = "b:f:m:t:vh";
 
     prompt = i3string_from_utf8("Please do not run this program.");
 
@@ -396,26 +385,15 @@ int main(int argc, char *argv[]) {
                 break;
             case 'h':
                 printf("i3-nagbar " I3_VERSION "\n");
-                printf("i3-nagbar [-m <message>] [-b <button> <terminal-action>] "
-                       "[-B <button> <shell-action> [-t warning|error] [-f <font>] [-v]\n");
+                printf("i3-nagbar [-m <message>] [-b <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
                 return 0;
-            /* falls through */
-            case 'B':
             case 'b':
                 buttons = srealloc(buttons, sizeof(button_t) * (buttoncnt + 1));
                 buttons[buttoncnt].label = i3string_from_utf8(optarg);
                 buttons[buttoncnt].action = argv[optind];
-                if (o == 'b') {
-                    buttons[buttoncnt].exec_in_terminal = true;
-                    printf("button with label *%s* and terminal action *%s*\n",
-                           i3string_as_utf8(buttons[buttoncnt].label),
-                           buttons[buttoncnt].action);
-                } else {
-                    buttons[buttoncnt].exec_in_terminal = false;
-                    printf("button with label *%s* and shell action *%s*\n",
-                           i3string_as_utf8(buttons[buttoncnt].label),
-                           buttons[buttoncnt].action);
-                }
+                printf("button with label *%s* and action *%s*\n",
+                       i3string_as_utf8(buttons[buttoncnt].label),
+                       buttons[buttoncnt].action);
                 buttoncnt++;
                 printf("now %d buttons\n", buttoncnt);
                 if (optind < argc)
