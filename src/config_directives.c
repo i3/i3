@@ -106,8 +106,8 @@ CFGFUN(font, const char *font) {
     font_pattern = sstrdup(font);
 }
 
-CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, DEFAULT_BINDING_MODE, false);
+CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command) {
+    configure_binding(bindtype, modifiers, key, release, border, whole_window, exclude_titlebar, command, DEFAULT_BINDING_MODE, false);
 }
 
 /*******************************************************************************
@@ -117,15 +117,23 @@ CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, co
 static char *current_mode;
 static bool current_mode_pango_markup;
 
-CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command) {
-    configure_binding(bindtype, modifiers, key, release, border, whole_window, command, current_mode, current_mode_pango_markup);
+CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command) {
+    configure_binding(bindtype, modifiers, key, release, border, whole_window, exclude_titlebar, command, current_mode, current_mode_pango_markup);
 }
 
 CFGFUN(enter_mode, const char *pango_markup, const char *modename) {
     if (strcasecmp(modename, DEFAULT_BINDING_MODE) == 0) {
         ELOG("You cannot use the name %s for your mode\n", DEFAULT_BINDING_MODE);
-        exit(1);
+        return;
     }
+
+    struct Mode *mode;
+    SLIST_FOREACH(mode, &modes, modes) {
+        if (strcmp(mode->name, modename) == 0) {
+            ELOG("The binding mode with name \"%s\" is defined at least twice.\n", modename);
+        }
+    }
+
     DLOG("\t now in mode %s\n", modename);
     FREE(current_mode);
     current_mode = sstrdup(modename);
@@ -250,6 +258,10 @@ CFGFUN(mouse_warping, const char *value) {
 
 CFGFUN(force_xinerama, const char *value) {
     config.force_xinerama = eval_boolstr(value);
+}
+
+CFGFUN(disable_randr15, const char *value) {
+    config.disable_randr15 = eval_boolstr(value);
 }
 
 CFGFUN(force_focus_wrapping, const char *value) {

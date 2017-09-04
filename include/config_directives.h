@@ -51,6 +51,7 @@ CFGFUN(focus_follows_mouse, const char *value);
 CFGFUN(mouse_warping, const char *value);
 CFGFUN(force_focus_wrapping, const char *value);
 CFGFUN(force_xinerama, const char *value);
+CFGFUN(disable_randr15, const char *value);
 CFGFUN(fake_outputs, const char *outputs);
 CFGFUN(force_display_urgency_hint, const long duration_ms);
 CFGFUN(focus_on_window_activation, const char *mode);
@@ -66,10 +67,10 @@ CFGFUN(color_single, const char *colorclass, const char *color);
 CFGFUN(floating_modifier, const char *modifiers);
 CFGFUN(new_window, const char *windowtype, const char *border, const long width);
 CFGFUN(workspace, const char *workspace, const char *output);
-CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command);
+CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command);
 
 CFGFUN(enter_mode, const char *pango_markup, const char *mode);
-CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *command);
+CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command);
 
 CFGFUN(bar_font, const char *font);
 CFGFUN(bar_separator_symbol, const char *separator);

@@ -58,18 +58,26 @@ typedef struct con_state {
 
     char *name;
 
-    CIRCLEQ_ENTRY(con_state) state;
-    CIRCLEQ_ENTRY(con_state) old_state;
-    TAILQ_ENTRY(con_state) initial_mapping_order;
+    CIRCLEQ_ENTRY(con_state)
+    state;
+
+    CIRCLEQ_ENTRY(con_state)
+    old_state;
+
+    TAILQ_ENTRY(con_state)
+    initial_mapping_order;
 } con_state;
 
-CIRCLEQ_HEAD(state_head, con_state) state_head =
+CIRCLEQ_HEAD(state_head, con_state)
+state_head =
     CIRCLEQ_HEAD_INITIALIZER(state_head);
 
-CIRCLEQ_HEAD(old_state_head, con_state) old_state_head =
+CIRCLEQ_HEAD(old_state_head, con_state)
+old_state_head =
     CIRCLEQ_HEAD_INITIALIZER(old_state_head);
 
-TAILQ_HEAD(initial_mapping_head, con_state) initial_mapping_head =
+TAILQ_HEAD(initial_mapping_head, con_state)
+initial_mapping_head =
     TAILQ_HEAD_INITIALIZER(initial_mapping_head);
 
 /*
@@ -322,10 +330,10 @@ static void x_draw_title_border(Con *con, struct deco_render_params *p) {
         deco_diff_r = 0;
     }
 
-    draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->border,
+    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
                         dr->x, dr->y, dr->width, 1);
 
-    draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->border,
+    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
                         dr->x + deco_diff_l, dr->y + dr->height - 1, dr->width - (deco_diff_l + deco_diff_r), 1);
 }
 
@@ -341,7 +349,7 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
         /* We actually only redraw the far right two pixels as that is the
          * distance we keep from the edge (not the entire border width).
          * Redrawing the entire border would cause text to be cut off. */
-        draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->background,
+        draw_util_rectangle(&(con->parent->frame_buffer), p->color->background,
                             dr->x + dr->width - 2 * logical_px(1),
                             dr->y,
                             2 * logical_px(1),
@@ -352,11 +360,11 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
      * be easily distinguished. */
     if (con->parent->layout == L_TABBED) {
         /* Left side */
-        draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->border,
+        draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
                             dr->x, dr->y, 1, dr->height);
 
         /* Right side */
-        draw_util_rectangle(conn, &(con->parent->frame_buffer), p->color->border,
+        draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
                             dr->x + dr->width - 1, dr->y, 1, dr->height);
     }
 
@@ -450,16 +458,16 @@ void x_draw_decoration(Con *con) {
     /* 2: draw the client.background, but only for the parts around the window_rect */
     if (con->window != NULL) {
         /* top area */
-        draw_util_rectangle(conn, &(con->frame_buffer), config.client.background,
+        draw_util_rectangle(&(con->frame_buffer), config.client.background,
                             0, 0, r->width, w->y);
         /* bottom area */
-        draw_util_rectangle(conn, &(con->frame_buffer), config.client.background,
+        draw_util_rectangle(&(con->frame_buffer), config.client.background,
                             0, w->y + w->height, r->width, r->height - (w->y + w->height));
         /* left area */
-        draw_util_rectangle(conn, &(con->frame_buffer), config.client.background,
+        draw_util_rectangle(&(con->frame_buffer), config.client.background,
                             0, 0, w->x, r->height);
         /* right area */
-        draw_util_rectangle(conn, &(con->frame_buffer), config.client.background,
+        draw_util_rectangle(&(con->frame_buffer), config.client.background,
                             w->x + w->width, 0, r->width - (w->x + w->width), r->height);
     }
 
@@ -476,21 +484,21 @@ void x_draw_decoration(Con *con) {
          * rectangle because some childs are not freely resizable and we want
          * their background color to "shine through". */
         if (!(borders_to_hide & ADJ_LEFT_SCREEN_EDGE)) {
-            draw_util_rectangle(conn, &(con->frame_buffer), p->color->child_border, 0, 0, br.x, r->height);
+            draw_util_rectangle(&(con->frame_buffer), p->color->child_border, 0, 0, br.x, r->height);
         }
         if (!(borders_to_hide & ADJ_RIGHT_SCREEN_EDGE)) {
-            draw_util_rectangle(conn, &(con->frame_buffer),
+            draw_util_rectangle(&(con->frame_buffer),
                                 p->color->child_border, r->width + (br.width + br.x), 0,
                                 -(br.width + br.x), r->height);
         }
         if (!(borders_to_hide & ADJ_LOWER_SCREEN_EDGE)) {
-            draw_util_rectangle(conn, &(con->frame_buffer),
+            draw_util_rectangle(&(con->frame_buffer),
                                 p->color->child_border, br.x, r->height + (br.height + br.y),
                                 r->width + br.width, -(br.height + br.y));
         }
         /* pixel border needs an additional line at the top */
         if (p->border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
-            draw_util_rectangle(conn, &(con->frame_buffer),
+            draw_util_rectangle(&(con->frame_buffer),
                                 p->color->child_border, br.x, 0, r->width + br.width, br.y);
         }
 
@@ -502,10 +510,10 @@ void x_draw_decoration(Con *con) {
             TAILQ_PREV(con, nodes_head, nodes) == NULL &&
             con->parent->type != CT_FLOATING_CON) {
             if (p->parent_layout == L_SPLITH) {
-                draw_util_rectangle(conn, &(con->frame_buffer), p->color->indicator,
+                draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
                                     r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height);
             } else if (p->parent_layout == L_SPLITV) {
-                draw_util_rectangle(conn, &(con->frame_buffer), p->color->indicator,
+                draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
                                     br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
             }
         }
@@ -525,12 +533,12 @@ void x_draw_decoration(Con *con) {
      * garbage left on there. This is important to avoid tearing when using
      * transparency. */
     if (con == TAILQ_FIRST(&(con->parent->nodes_head))) {
-        draw_util_clear_surface(conn, &(con->parent->frame_buffer), COLOR_TRANSPARENT);
+        draw_util_clear_surface(&(con->parent->frame_buffer), COLOR_TRANSPARENT);
         FREE(con->parent->deco_render_params);
     }
 
     /* 4: paint the bar */
-    draw_util_rectangle(conn, &(parent->frame_buffer), p->color->background,
+    draw_util_rectangle(&(parent->frame_buffer), p->color->background,
                         con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
 
     /* 5: draw two unconnected horizontal lines in border color */
@@ -563,9 +571,6 @@ void x_draw_decoration(Con *con) {
 
         goto after_title;
     }
-
-    if (win->name == NULL)
-        goto copy_pixmaps;
 
     int mark_width = 0;
     if (config.show_marks && !TAILQ_EMPTY(&(con->marks_head))) {
@@ -600,18 +605,24 @@ void x_draw_decoration(Con *con) {
     }
 
     i3String *title = con->title_format == NULL ? win->name : con_parse_title_format(con);
+    if (title == NULL) {
+        goto copy_pixmaps;
+    }
+
     draw_util_text(title, &(parent->frame_buffer),
                    p->color->text, p->color->background,
                    con->deco_rect.x + logical_px(2),
                    con->deco_rect.y + text_offset_y,
                    con->deco_rect.width - mark_width - 2 * logical_px(2));
-    if (con->title_format != NULL)
+
+    if (con->title_format != NULL) {
         I3STRING_FREE(title);
+    }
 
 after_title:
     x_draw_decoration_after_title(con, p);
 copy_pixmaps:
-    draw_util_copy_surface(conn, &(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+    draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
 }
 
 /*
@@ -634,7 +645,7 @@ void x_deco_recurse(Con *con) {
         x_deco_recurse(current);
 
         if (state->mapped) {
-            draw_util_copy_surface(conn, &(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+            draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
         }
     }
 
@@ -821,7 +832,7 @@ void x_push_node(Con *con) {
         xcb_flush(conn);
         xcb_set_window_rect(conn, con->frame.id, rect);
         if (con->frame_buffer.id != XCB_NONE) {
-            draw_util_copy_surface(conn, &(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+            draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
         }
         xcb_flush(conn);
 
@@ -873,7 +884,7 @@ void x_push_node(Con *con) {
 
         /* copy the pixmap contents to the frame window immediately after mapping */
         if (con->frame_buffer.id != XCB_NONE) {
-            draw_util_copy_surface(conn, &(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+            draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
         }
         xcb_flush(conn);
 
@@ -893,8 +904,9 @@ void x_push_node(Con *con) {
     /* Handle all children and floating windows of this node. We recurse
      * in focus order to display the focused client in a stack first when
      * switching workspaces (reduces flickering). */
-    TAILQ_FOREACH(current, &(con->focus_head), focused)
-    x_push_node(current);
+    TAILQ_FOREACH(current, &(con->focus_head), focused) {
+        x_push_node(current);
+    }
 }
 
 /*

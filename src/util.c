@@ -67,6 +67,34 @@ __attribute__((pure)) bool name_is_digits(const char *name) {
 }
 
 /*
+ * Set 'out' to the layout_t value for the given layout. The function
+ * returns true on success or false if the passed string is not a valid
+ * layout name.
+ *
+ */
+bool layout_from_name(const char *layout_str, layout_t *out) {
+    if (strcmp(layout_str, "default") == 0) {
+        *out = L_DEFAULT;
+        return true;
+    } else if (strcasecmp(layout_str, "stacked") == 0 ||
+               strcasecmp(layout_str, "stacking") == 0) {
+        *out = L_STACKED;
+        return true;
+    } else if (strcasecmp(layout_str, "tabbed") == 0) {
+        *out = L_TABBED;
+        return true;
+    } else if (strcasecmp(layout_str, "splitv") == 0) {
+        *out = L_SPLITV;
+        return true;
+    } else if (strcasecmp(layout_str, "splith") == 0) {
+        *out = L_SPLITH;
+        return true;
+    }
+
+    return false;
+}
+
+/*
  * Parses the workspace name as a number. Returns -1 if the workspace should be
  * interpreted as a "named workspace".
  *
@@ -259,7 +287,7 @@ void i3_restart(bool forget_layout) {
 
     restore_geometry();
 
-    ipc_shutdown();
+    ipc_shutdown(SHUTDOWN_REASON_RESTART);
 
     LOG("restarting \"%s\"...\n", start_argv[0]);
     /* make sure -a is in the argument list or add it */
@@ -429,4 +457,21 @@ void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it) {
      * for us and we would end up with a <defunct> process. Therefore we
      * waitpid() here. */
     waitpid(*nagbar_pid, NULL, 0);
+}
+
+/*
+ * Converts a string into a long using strtol().
+ * This is a convenience wrapper checking the parsing result. It returns true
+ * if the number could be parsed.
+ */
+bool parse_long(const char *str, long *out, int base) {
+    char *end;
+    long result = strtol(str, &end, base);
+    if (result == LONG_MIN || result == LONG_MAX || result < 0 || (end != NULL && *end != '\0')) {
+        *out = result;
+        return false;
+    }
+
+    *out = result;
+    return true;
 }

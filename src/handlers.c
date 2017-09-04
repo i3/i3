@@ -400,11 +400,52 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
                 DLOG("Dock client will not be moved, we only support moving it to another output.\n");
             }
         }
+        fake_absolute_configure_notify(con);
+        return;
     }
 
-    fake_absolute_configure_notify(con);
+    if (event->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
+        DLOG("window 0x%08x wants to be stacked %d\n", event->window, event->stack_mode);
 
-    return;
+        /* Emacs and IntelliJ Idea “request focus” by stacking their window
+             * above all others. */
+        if (event->stack_mode != XCB_STACK_MODE_ABOVE) {
+            DLOG("stack_mode != XCB_STACK_MODE_ABOVE, ignoring ConfigureRequest\n");
+            goto out;
+        }
+
+        if (fullscreen || !con_is_leaf(con)) {
+            DLOG("fullscreen or not a leaf, ignoring ConfigureRequest\n");
+            goto out;
+        }
+
+        Con *ws = con_get_workspace(con);
+        if (ws == NULL) {
+            DLOG("Window is not being managed, ignoring ConfigureRequest\n");
+            goto out;
+        }
+
+        if (strcmp(ws->name, "__i3_scratch") == 0) {
+            DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
+            goto out;
+        }
+
+        if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
+            DLOG("Focusing con = %p\n", con);
+            workspace_show(ws);
+            con_focus(con);
+            tree_render();
+        } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(ws))) {
+            DLOG("Marking con = %p urgent\n", con);
+            con_set_urgency(con, true);
+            tree_render();
+        } else {
+            DLOG("Ignoring request for con = %p.\n", con);
+        }
+    }
+
+out:
+    fake_absolute_configure_notify(con);
 }
 
 /*
@@ -614,12 +655,9 @@ static void handle_expose_event(xcb_expose_event_t *event) {
     }
 
     /* Since we render to our surface on every change anyways, expose events
-     * only tell us that the X server lost (parts of) the window contents. We
-     * can handle that by copying the appropriate part from our surface to the
-     * window. */
-    draw_util_copy_surface(conn, &(parent->frame_buffer), &(parent->frame),
-                           event->x, event->y, event->x, event->y,
-                           event->width, event->height);
+     * only tell us that the X server lost (parts of) the window contents. */
+    draw_util_copy_surface(&(parent->frame_buffer), &(parent->frame),
+                           0, 0, 0, 0, parent->rect.width, parent->rect.height);
     xcb_flush(conn);
     return;
 }
@@ -636,6 +674,11 @@ static void handle_expose_event(xcb_expose_event_t *event) {
 #define _NET_WM_MOVERESIZE_SIZE_KEYBOARD 9  /* size via keyboard */
 #define _NET_WM_MOVERESIZE_MOVE_KEYBOARD 10 /* move via keyboard */
 #define _NET_WM_MOVERESIZE_CANCEL 11        /* cancel operation */
+
+#define _NET_MOVERESIZE_WINDOW_X (1 << 8)
+#define _NET_MOVERESIZE_WINDOW_Y (1 << 9)
+#define _NET_MOVERESIZE_WINDOW_WIDTH (1 << 10)
+#define _NET_MOVERESIZE_WINDOW_HEIGHT (1 << 11)
 
 /*
  * Handle client messages (EWMH)
@@ -897,6 +940,35 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 DLOG("_NET_WM_MOVERESIZE direction %d not implemented\n", direction);
                 break;
         }
+    } else if (event->type == A__NET_MOVERESIZE_WINDOW) {
+        DLOG("Received _NET_MOVE_RESIZE_WINDOW. Handling by faking a configure request.\n");
+
+        void *_generated_event = scalloc(32, 1);
+        xcb_configure_request_event_t *generated_event = _generated_event;
+
+        generated_event->window = event->window;
+        generated_event->response_type = XCB_CONFIGURE_REQUEST;
+
+        generated_event->value_mask = 0;
+        if (event->data.data32[0] & _NET_MOVERESIZE_WINDOW_X) {
+            generated_event->value_mask |= XCB_CONFIG_WINDOW_X;
+            generated_event->x = event->data.data32[1];
+        }
+        if (event->data.data32[0] & _NET_MOVERESIZE_WINDOW_Y) {
+            generated_event->value_mask |= XCB_CONFIG_WINDOW_Y;
+            generated_event->y = event->data.data32[2];
+        }
+        if (event->data.data32[0] & _NET_MOVERESIZE_WINDOW_WIDTH) {
+            generated_event->value_mask |= XCB_CONFIG_WINDOW_WIDTH;
+            generated_event->width = event->data.data32[3];
+        }
+        if (event->data.data32[0] & _NET_MOVERESIZE_WINDOW_HEIGHT) {
+            generated_event->value_mask |= XCB_CONFIG_WINDOW_HEIGHT;
+            generated_event->height = event->data.data32[4];
+        }
+
+        handle_configure_request(generated_event);
+        FREE(generated_event);
     } else {
         DLOG("Skipping client message for unhandled type %d\n", event->type);
     }
@@ -929,54 +1001,72 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
 
     xcb_size_hints_t size_hints;
 
-    //CLIENT_LOG(client);
-
     /* If the hints were already in this event, use them, if not, request them */
-    if (reply != NULL)
+    if (reply != NULL) {
         xcb_icccm_get_wm_size_hints_from_reply(&size_hints, reply);
-    else
+    } else {
         xcb_icccm_get_wm_normal_hints_reply(conn, xcb_icccm_get_wm_normal_hints_unchecked(conn, con->window->id), &size_hints, NULL);
+    }
+
+    int win_width = con->window_rect.width;
+    int win_height = con->window_rect.height;
 
     if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE)) {
-        // TODO: Minimum size is not yet implemented
         DLOG("Minimum size: %d (width) x %d (height)\n", size_hints.min_width, size_hints.min_height);
+
+        con->window->min_width = size_hints.min_width;
+        con->window->min_height = size_hints.min_height;
+    }
+
+    if (con_is_floating(con)) {
+        win_width = MAX(win_width, con->window->min_width);
+        win_height = MAX(win_height, con->window->min_height);
     }
 
     bool changed = false;
     if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_RESIZE_INC)) {
-        if (size_hints.width_inc > 0 && size_hints.width_inc < 0xFFFF)
+        if (size_hints.width_inc > 0 && size_hints.width_inc < 0xFFFF) {
             if (con->window->width_increment != size_hints.width_inc) {
                 con->window->width_increment = size_hints.width_inc;
                 changed = true;
             }
-        if (size_hints.height_inc > 0 && size_hints.height_inc < 0xFFFF)
+        }
+
+        if (size_hints.height_inc > 0 && size_hints.height_inc < 0xFFFF) {
             if (con->window->height_increment != size_hints.height_inc) {
                 con->window->height_increment = size_hints.height_inc;
                 changed = true;
             }
+        }
 
-        if (changed)
+        if (changed) {
             DLOG("resize increments changed\n");
+        }
     }
 
-    int base_width = 0, base_height = 0;
+    bool has_base_size = false;
+    int base_width = 0;
+    int base_height = 0;
 
-    /* base_width/height are the desired size of the window.
-       We check if either the program-specified size or the program-specified
-       min-size is available */
+    /* The base width / height is the desired size of the window. */
     if (size_hints.flags & XCB_ICCCM_SIZE_HINT_BASE_SIZE) {
         base_width = size_hints.base_width;
         base_height = size_hints.base_height;
-    } else if (size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE) {
-        /* TODO: is this right? icccm says not */
+        has_base_size = true;
+    }
+
+    /* If the window didn't specify a base size, the ICCCM tells us to fall
+     * back to the minimum size instead, if available. */
+    if (!has_base_size && size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE) {
         base_width = size_hints.min_width;
         base_height = size_hints.min_height;
     }
 
-    if (base_width != con->window->base_width ||
-        base_height != con->window->base_height) {
+    // TODO XXX Should we only do this is the base size is > 0?
+    if (base_width != con->window->base_width || base_height != con->window->base_height) {
         con->window->base_width = base_width;
         con->window->base_height = base_height;
+
         DLOG("client's base_height changed to %d\n", base_height);
         DLOG("client's base_width changed to %d\n", base_width);
         changed = true;
@@ -989,9 +1079,13 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
         goto render_and_return;
     }
 
-    /* XXX: do we really use rect here, not window_rect? */
-    double width = con->rect.width - base_width;
-    double height = con->rect.height - base_height;
+    /* The ICCCM says to subtract the base size from the window size for aspect
+     * ratio calculations. However, unlike determining the base size itself we
+     * must not fall back to using the minimum size in this case according to
+     * the ICCCM. */
+    double width = win_width - base_width * has_base_size;
+    double height = win_height - base_height * has_base_size;
+
     /* Convert numerator/denominator to a double */
     double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
     double max_aspect = (double)size_hints.max_aspect_num / size_hints.min_aspect_den;
@@ -1000,8 +1094,9 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
     DLOG("width = %f, height = %f\n", width, height);
 
     /* Sanity checks, this is user-input, in a way */
-    if (max_aspect <= 0 || min_aspect <= 0 || height == 0 || (width / height) <= 0)
+    if (max_aspect <= 0 || min_aspect <= 0 || height == 0 || (width / height) <= 0) {
         goto render_and_return;
+    }
 
     /* Check if we need to set proportional_* variables using the correct ratio */
     double aspect_ratio = 0.0;
@@ -1009,8 +1104,9 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
         aspect_ratio = min_aspect;
     } else if ((width / height) > max_aspect) {
         aspect_ratio = max_aspect;
-    } else
+    } else {
         goto render_and_return;
+    }
 
     if (fabs(con->window->aspect_ratio - aspect_ratio) > DBL_EPSILON) {
         con->window->aspect_ratio = aspect_ratio;
@@ -1018,8 +1114,10 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
     }
 
 render_and_return:
-    if (changed)
+    if (changed) {
         tree_render();
+    }
+
     FREE(reply);
     return true;
 }
@@ -1148,6 +1246,21 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
     focused_id = event->event;
     x_push_changes(croot);
     return;
+}
+
+/*
+ * Handles ConfigureNotify events for the root window, which are generated when
+ * the monitor configuration changed.
+ *
+ */
+static void handle_configure_notify(xcb_configure_notify_event_t *event) {
+    if (event->event != root) {
+        DLOG("ConfigureNotify for non-root window 0x%08x, ignoring\n", event->event);
+        return;
+    }
+    DLOG("ConfigureNotify for root window 0x%08x\n", event->event);
+
+    randr_query_outputs();
 }
 
 /*
@@ -1436,7 +1549,10 @@ void handle_event(int type, xcb_generic_event_t *event) {
             break;
 
         case XCB_EXPOSE:
-            handle_expose_event((xcb_expose_event_t *)event);
+            if (((xcb_expose_event_t *)event)->count == 0) {
+                handle_expose_event((xcb_expose_event_t *)event);
+            }
+
             break;
 
         case XCB_MOTION_NOTIFY:
@@ -1475,6 +1591,10 @@ void handle_event(int type, xcb_generic_event_t *event) {
             property_notify(e->state, e->window, e->atom);
             break;
         }
+
+        case XCB_CONFIGURE_NOTIFY:
+            handle_configure_notify((xcb_configure_notify_event_t *)event);
+            break;
 
         default:
             //DLOG("Unhandled event of type %d\n", type);

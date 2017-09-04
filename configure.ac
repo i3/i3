@@ -2,7 +2,7 @@
 # Run autoreconf -fi to generate a configure script from this file.
 
 AC_PREREQ([2.69])
-AC_INIT([i3], [4.13], [https://github.com/i3/i3/issues])
+AC_INIT([i3], [4.14], [https://github.com/i3/i3/issues])
 # For AX_EXTEND_SRCDIR
 AX_ENABLE_BUILDDIR
 AM_INIT_AUTOMAKE([foreign subdir-objects -Wall no-dist-gzip dist-bzip2])
@@ -15,6 +15,12 @@ AC_CONFIG_SRCDIR([libi3/ipc_recv_message.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
+dnl Verify macros defined in m4/ such as AX_SANITIZERS are not present in the
+dnl output, i.e. are replaced as expected. This line results in a better error
+dnl message when using aclocal < 1.13 (which does not understand
+dnl AC_CONFIG_MACRO_DIR) without passing the -I m4 parameter.
+m4_pattern_forbid([AX_SANITIZERS])
+
 # Verify we are using GNU make because we use '%'-style pattern rules in
 # Makefile.am, which are a GNU make extension. Pull requests to replace
 # '%'-style pattern rules with a more portable alternative are welcome.
@@ -25,8 +31,8 @@ AX_EXTEND_SRCDIR
 
 AS_IF([test -d ${srcdir}/.git],
       [
-        VERSION="$(git describe --tags --abbrev=0)"
-        I3_VERSION="$(git describe --tags --always) ($(git log --pretty=format:%cd --date=short -n1), branch \\\"$(git describe --tags --always --all | sed s:heads/::)\\\")"
+        VERSION="$(git -C ${srcdir} describe --tags --abbrev=0)"
+        I3_VERSION="$(git -C ${srcdir} describe --tags --always) ($(git -C ${srcdir} log --pretty=format:%cd --date=short -n1), branch \\\"$(git -C ${srcdir} describe --tags --always --all | sed s:heads/::)\\\")"
         # Mirrors what libi3/is_debug_build.c does:
         is_release=$(test $(echo "${I3_VERSION}" | cut -d '(' -f 1 | wc -m) -lt 10 && echo yes || echo no)
       ],
@@ -53,8 +59,6 @@ AX_CHECK_ENABLE_DEBUG([yes], , [UNUSED_NDEBUG], [$is_release])
 
 AC_PROG_CC_C99
 
-AC_DEFINE_UNQUOTED(SYSCONFDIR, "`eval echo $sysconfdir`", [Location of system configuration files])
-
 # For strnlen() and vasprintf().
 AC_USE_SYSTEM_EXTENSIONS
 
@@ -78,6 +82,8 @@ AC_SEARCH_LIBS([floor], [m], , [AC_MSG_FAILURE([cannot find the required floor()
 AC_SEARCH_LIBS([ev_run], [ev], , [AC_MSG_FAILURE([cannot find the required ev_run() function despite trying to link with -lev])])
 
 AC_SEARCH_LIBS([shm_open], [rt])
+
+AC_SEARCH_LIBS([iconv_open], [iconv], , [AC_MSG_FAILURE([cannot find the required iconv_open() function despite trying to link with -liconv])])
 
 AX_PTHREAD
 
@@ -146,8 +152,9 @@ else
 	print_BUILD_MANS=no
 fi
 
-git_dir=`git rev-parse --git-dir 2>/dev/null`
-if test -n "$git_dir"; then
+in_git_worktree=`git rev-parse --is-inside-work-tree 2>/dev/null`
+if [[ "$in_git_worktree" = "true" ]]; then
+	git_dir=`git rev-parse --git-dir 2>/dev/null`
 	srcdir=`dirname "$git_dir"`
 	exclude_dir=`pwd | sed "s,^$srcdir,,g"`
 	if ! grep -q "^$exclude_dir" "$git_dir/info/exclude"; then

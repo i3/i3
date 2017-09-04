@@ -69,10 +69,16 @@
 #include "xcb.h"
 #include "libi3.h"
 
+#define TEXT_PADDING logical_px(4)
+#define WIN_POS_X logical_px(490)
+#define WIN_POS_Y logical_px(297)
+#define WIN_WIDTH logical_px(300)
+#define WIN_HEIGHT (15 * font.height + TEXT_PADDING)
+
+#define col_x(col) \
+    (((col)-1) * char_width + TEXT_PADDING)
 #define row_y(row) \
-    (((row)-1) * font.height + logical_px(4))
-#define window_height() \
-    (row_y(15) + font.height)
+    (((row)-1) * font.height + TEXT_PADDING)
 
 enum { STEP_WELCOME,
        STEP_GENERATE } current_step = STEP_WELCOME;
@@ -90,8 +96,7 @@ static i3Font bold_font;
 static int char_width;
 static char *socket_path;
 static xcb_window_t win;
-static xcb_pixmap_t pixmap;
-static xcb_gcontext_t pixmap_gc;
+static surface_t surface;
 static xcb_key_symbols_t *symbols;
 xcb_window_t root;
 static struct xkb_keymap *xkb_keymap;
@@ -463,82 +468,73 @@ void errorlog(char *fmt, ...) {
 void debuglog(char *fmt, ...) {
 }
 
+static void txt(int col, int row, char *text, color_t fg, color_t bg) {
+    int x = col_x(col);
+    int y = row_y(row);
+    i3String *string = i3string_from_utf8(text);
+    draw_util_text(string, &surface, fg, bg, x, y, WIN_WIDTH - x - TEXT_PADDING);
+    i3string_free(string);
+}
+
 /*
  * Handles expose events, that is, draws the window contents.
  *
  */
 static int handle_expose() {
-    /* re-draw the background */
-    xcb_rectangle_t border = {0, 0, logical_px(300), window_height()};
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){get_colorpixel("#000000")});
-    xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
+    const color_t black = draw_util_hex_to_color("#000000");
+    const color_t white = draw_util_hex_to_color("#FFFFFF");
+    const color_t green = draw_util_hex_to_color("#00FF00");
+    const color_t red = draw_util_hex_to_color("#FF0000");
+
+    /* draw background */
+    draw_util_clear_surface(&surface, black);
 
     set_font(&font);
 
-#define txt(x, row, text)                    \
-    draw_text_ascii(text, pixmap, pixmap_gc, \
-                    x, row_y(row), logical_px(500) - x * 2)
-
     if (current_step == STEP_WELCOME) {
-        /* restore font color */
-        set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
-
-        txt(logical_px(10), 2, "You have not configured i3 yet.");
-        txt(logical_px(10), 3, "Do you want me to generate a config at");
+        txt(2, 2, "You have not configured i3 yet.", white, black);
+        txt(2, 3, "Do you want me to generate a config at", white, black);
 
         char *msg;
         sasprintf(&msg, "%s?", config_path);
-        txt(logical_px(10), 4, msg);
+        txt(2, 4, msg, white, black);
         free(msg);
 
-        txt(logical_px(85), 6, "Yes, generate the config");
-        txt(logical_px(85), 8, "No, I will use the defaults");
+        txt(13, 6, "Yes, generate the config", white, black);
+        txt(13, 8, "No, I will use the defaults", white, black);
 
-        /* green */
-        set_font_colors(pixmap_gc, draw_util_hex_to_color("#00FF00"), draw_util_hex_to_color("#000000"));
-        txt(logical_px(25), 6, "<Enter>");
+        txt(4, 6, "<Enter>", green, black);
 
-        /* red */
-        set_font_colors(pixmap_gc, draw_util_hex_to_color("#FF0000"), draw_util_hex_to_color("#000000"));
-        txt(logical_px(31), 8, "<ESC>");
+        txt(5, 8, "<ESC>", red, black);
     }
 
     if (current_step == STEP_GENERATE) {
-        set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
-
-        txt(logical_px(10), 2, "Please choose either:");
-        txt(logical_px(85), 4, "Win as default modifier");
-        txt(logical_px(85), 5, "Alt as default modifier");
-        txt(logical_px(10), 7, "Afterwards, press");
-        txt(logical_px(85), 9, "to write the config");
-        txt(logical_px(85), 10, "to abort");
+        txt(2, 2, "Please choose either:", white, black);
+        txt(13, 4, "Win as default modifier", white, black);
+        txt(13, 5, "Alt as default modifier", white, black);
+        txt(2, 7, "Afterwards, press", white, black);
+        txt(13, 9, "to write the config", white, black);
+        txt(13, 10, "to abort", white, black);
 
         /* the not-selected modifier */
         if (modifier == MOD_Mod4)
-            txt(logical_px(31), 5, "<Alt>");
+            txt(5, 5, "<Alt>", white, black);
         else
-            txt(logical_px(31), 4, "<Win>");
+            txt(5, 4, "<Win>", white, black);
 
         /* the selected modifier */
         set_font(&bold_font);
-        set_font_colors(pixmap_gc, draw_util_hex_to_color("#FFFFFF"), draw_util_hex_to_color("#000000"));
         if (modifier == MOD_Mod4)
-            txt(logical_px(10), 4, "-> <Win>");
+            txt(2, 4, "-> <Win>", white, black);
         else
-            txt(logical_px(10), 5, "-> <Alt>");
+            txt(2, 5, "-> <Alt>", white, black);
 
-        /* green */
         set_font(&font);
-        set_font_colors(pixmap_gc, draw_util_hex_to_color("#00FF00"), draw_util_hex_to_color("#000000"));
-        txt(logical_px(25), 9, "<Enter>");
+        txt(4, 9, "<Enter>", green, black);
 
-        /* red */
-        set_font_colors(pixmap_gc, draw_util_hex_to_color("#FF0000"), draw_util_hex_to_color("#000000"));
-        txt(logical_px(31), 10, "<ESC>");
+        txt(5, 10, "<ESC>", red, black);
     }
 
-    /* Copy the contents of the pixmap to the real window */
-    xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, logical_px(500), logical_px(500));
     xcb_flush(conn);
 
     return 1;
@@ -625,8 +621,7 @@ static void handle_button_press(xcb_button_press_event_t *event) {
     if (current_step != STEP_GENERATE)
         return;
 
-    if (event->event_x < logical_px(32) ||
-        event->event_x > (logical_px(32) + char_width * 5))
+    if (event->event_x < col_x(5) || event->event_x > col_x(10))
         return;
 
     if (event->event_y >= row_y(4) && event->event_y <= (row_y(4) + font.height)) {
@@ -854,6 +849,7 @@ int main(int argc, char *argv[]) {
 
     xcb_numlock_mask = get_mod_mask_for(XCB_NUM_LOCK, symbols, modmap_reply);
 
+    init_dpi();
     font = load_font(pattern, true);
     bold_font = load_font(patternbold, true);
 
@@ -866,10 +862,10 @@ int main(int argc, char *argv[]) {
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,
-        win,                                                                /* the window id */
-        root,                                                               /* parent == root */
-        logical_px(490), logical_px(297), logical_px(300), window_height(), /* dimensions */
-        0,                                                                  /* X11 border = 0, we draw our own */
+        win,                                         /* the window id */
+        root,                                        /* parent == root */
+        WIN_POS_X, WIN_POS_Y, WIN_WIDTH, WIN_HEIGHT, /* dimensions */
+        0,                                           /* X11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
@@ -914,11 +910,8 @@ int main(int argc, char *argv[]) {
                         strlen("i3: first configuration"),
                         "i3: first configuration");
 
-    /* Create pixmap */
-    pixmap = xcb_generate_id(conn);
-    pixmap_gc = xcb_generate_id(conn);
-    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, logical_px(500), logical_px(500));
-    xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
+    /* Initialize drawable surface */
+    draw_util_surface_init(conn, &surface, win, get_visualtype(root_screen), WIN_WIDTH, WIN_HEIGHT);
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);
@@ -965,12 +958,18 @@ int main(int argc, char *argv[]) {
                 break;
 
             case XCB_EXPOSE:
-                handle_expose();
+                if (((xcb_expose_event_t *)event)->count == 0) {
+                    handle_expose();
+                }
+
                 break;
         }
 
         free(event);
     }
+
+    /* Dismiss drawable surface */
+    draw_util_surface_free(conn, &surface);
 
     return 0;
 }

@@ -18,7 +18,7 @@ use Time::HiRes qw(time);
 use IO::Handle;
 
 # these are shipped with the testsuite
-use lib qw(@abs_top_builddir@/testcases/lib @abs_top_srcdir@/testcases/lib);
+use lib qw(@abs_top_builddir@/testcases/lib @abs_top_srcdir@/testcases/lib @abs_top_srcdir@/AnyEvent-I3/blib/lib);
 use i3test::Util qw(slurp);
 use StartXServer;
 use StatusLine;
@@ -84,6 +84,17 @@ my @binaries = qw(
 
 foreach my $binary (@binaries) {
     die "$binary executable not found, did you run “make”?" unless -e $binary;
+    die "$binary is not an executable" unless -x $binary;
+}
+
+my @test_binaries = qw(
+                        @abs_top_builddir@/test.commands_parser
+                        @abs_top_builddir@/test.config_parser
+                        @abs_top_builddir@/test.inject_randr15
+                    );
+
+foreach my $binary (@test_binaries) {
+    die "$binary executable not found, did you run “make check”?" unless -e $binary;
     die "$binary is not an executable" unless -x $binary;
 }
 

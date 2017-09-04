@@ -38,6 +38,7 @@ state INITIAL:
   'rename' -> RENAME
   'nop' -> NOP
   'scratchpad' -> SCRATCHPAD
+  'swap' -> SWAP
   'title_format' -> TITLE_FORMAT
   'mode' -> MODE
   'bar' -> BAR
@@ -110,7 +111,7 @@ state LAYOUT:
 state LAYOUT_TOGGLE:
   end
       -> call cmd_layout_toggle($toggle_mode)
-  toggle_mode = 'split', 'all'
+  toggle_mode = string
       -> call cmd_layout_toggle($toggle_mode)
 
 # append_layout <path>
@@ -273,24 +274,28 @@ state RENAME:
       -> RENAME_WORKSPACE
 
 state RENAME_WORKSPACE:
-  old_name = 'to'
+  'to'
       -> RENAME_WORKSPACE_LIKELY_TO
   old_name = word
       -> RENAME_WORKSPACE_TO
 
 state RENAME_WORKSPACE_LIKELY_TO:
-  'to'
-      -> RENAME_WORKSPACE_NEW_NAME
+  'to '
+      -> RENAME_WORKSPACE_LIKELY_TO_NEW_NAME
   new_name = word
       -> call cmd_rename_workspace(NULL, $new_name)
 
-state RENAME_WORKSPACE_TO:
-  'to'
-      -> RENAME_WORKSPACE_NEW_NAME
-
-state RENAME_WORKSPACE_NEW_NAME:
+state RENAME_WORKSPACE_LIKELY_TO_NEW_NAME:
+  new_name = string
+      -> call cmd_rename_workspace("to", $new_name)
   end
       -> call cmd_rename_workspace(NULL, "to")
+
+state RENAME_WORKSPACE_TO:
+  'to'
+      -> RENAME_WORKSPACE_TO_NEW_NAME
+
+state RENAME_WORKSPACE_TO_NEW_NAME:
   new_name = string
       -> call cmd_rename_workspace($old_name, $new_name)
 
@@ -405,6 +410,21 @@ state NOP:
 state SCRATCHPAD:
   'show'
       -> call cmd_scratchpad_show()
+
+# swap [container] [with] id <window>
+# swap [container] [with] con_id <con_id>
+# swap [container] [with] mark <mark>
+state SWAP:
+  'container'
+      ->
+  'with'
+      ->
+  mode = 'id', 'con_id', 'mark'
+      -> SWAP_ARGUMENT
+
+state SWAP_ARGUMENT:
+  arg = string
+      -> call cmd_swap($mode, $arg)
 
 state TITLE_FORMAT:
   format = string

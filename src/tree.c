@@ -329,6 +329,12 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
         match_free(match);
         free(match);
     }
+    while (!TAILQ_EMPTY(&(con->marks_head))) {
+        mark_t *mark = TAILQ_FIRST(&(con->marks_head));
+        TAILQ_REMOVE(&(con->marks_head), mark, marks);
+        FREE(mark->name);
+        FREE(mark);
+    }
     free(con);
 
     /* in the case of floating windows, we already focused another container
@@ -377,7 +383,11 @@ void tree_split(Con *con, orientation_t orientation) {
 
     if (con->type == CT_WORKSPACE) {
         if (con_num_children(con) < 2) {
-            DLOG("Just changing orientation of workspace\n");
+            if (con_num_children(con) == 0) {
+                DLOG("Changing workspace_layout to L_DEFAULT\n");
+                con->workspace_layout = L_DEFAULT;
+            }
+            DLOG("Changing orientation of workspace\n");
             con->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
             return;
         } else {

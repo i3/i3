@@ -65,7 +65,7 @@ for my $line (@raw_lines) {
 my $current_state;
 
 for my $line (@lines) {
-    if (my ($state) = ($line =~ /^state ([A-Z_]+):$/)) {
+    if (my ($state) = ($line =~ /^state ([A-Z0-9_]+):$/)) {
         #say "got a new state: $state";
         $current_state = $state;
     } else {
@@ -155,11 +155,19 @@ for my $state (@keys) {
         # to generate a format string. The format uses %d for <number>s,
         # literal numbers or state IDs and %s for NULL, <string>s and literal
         # strings.
+
+        # remove the function name temporarily, so that the following
+        # replacements only apply to the arguments.
+        my ($funcname) = ($fmt =~ /^(.+)\(/);
+        $fmt =~ s/^$funcname//;
+
         $fmt =~ s/$_/%d/g for @keys;
         $fmt =~ s/\$([a-z_]+)/%s/g;
         $fmt =~ s/\&([a-z_]+)/%ld/g;
         $fmt =~ s/"([a-z0-9_]+)"/%s/g;
         $fmt =~ s/(?:-?|\b)[0-9]+\b/%d/g;
+
+        $fmt = $funcname . $fmt;
 
         say $callfh "         case $call_id:";
         say $callfh "             result->next_state = $next_state;";

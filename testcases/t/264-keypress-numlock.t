@@ -44,6 +44,9 @@ bindsym Shift+Escape nop Shift+Escape
 
 # Binding which should work with numlock and without, see issue #2418.
 bindsym Mod1+Shift+q nop Mod1+Shift+q
+
+# Binding which should work with numlock and without, see issue #2559.
+bindcode 39 nop s
 EOT
 
 my $pid = launch_with_config($config);
@@ -159,7 +162,6 @@ is(listen_for_binding(
    'Mod1+Shift+q',
    'triggered the "Mod1+Shift+q" keybinding');
 
-
 is(listen_for_binding(
     sub {
         xtest_key_press(77); # enable Num_Lock
@@ -177,8 +179,101 @@ is(listen_for_binding(
    'Mod1+Shift+q',
    'triggered the "Mod1+Shift+q" keybinding');
 
+is(listen_for_binding(
+    sub {
+        xtest_key_press(39); # s
+        xtest_key_release(39); # s
+    },
+    ),
+   's',
+   'triggered the "s" keybinding without Num_Lock');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
+        xtest_key_press(39); # s
+        xtest_key_release(39); # s
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
+    },
+    ),
+   's',
+   'triggered the "s" keybinding with Num_Lock');
+
 sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 10, 'Received exactly 10 binding events');
+is(scalar @i3test::XTEST::binding_events, 12, 'Received exactly 12 binding events');
+
+exit_gracefully($pid);
+
+################################################################################
+# Verify bindings for modifiers work
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bindsym Mod4+Return nop Return
+
+# Binding which should work with numlock and without, see issue #2559.
+bindcode --release 133 nop Super_L
+EOT
+
+$pid = launch_with_config($config);
+
+start_binding_capture;
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(133); # Super_L
+        xtest_key_release(133); # Super_L
+    },
+    ),
+   'Super_L',
+   'triggered the "Super_L" keybinding without Num_Lock');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
+        xtest_key_press(133); # Super_L
+        xtest_key_release(133); # Super_L
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
+    },
+    ),
+   'Super_L',
+   'triggered the "Super_L" keybinding with Num_Lock');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(133); # Super_L
+        xtest_key_press(36); # Return
+        xtest_key_release(36); # Return
+        xtest_key_release(133); # Super_L
+    },
+    ),
+   'Return',
+   'triggered the "Return" keybinding without Num_Lock');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
+        xtest_key_press(133); # Super_L
+        xtest_key_press(36); # Return
+        xtest_key_release(36); # Return
+        xtest_key_release(133); # Super_L
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
+    },
+    ),
+   'Return',
+   'triggered the "Return" keybinding with Num_Lock');
+
+sync_with_i3;
+is(scalar @i3test::XTEST::binding_events, 16, 'Received exactly 16 binding events');
 
 exit_gracefully($pid);
 
@@ -191,6 +286,7 @@ $config = <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym KP_End nop KP_End
+bindcode 88 nop KP_Down
 EOT
 
 $pid = launch_with_config($config);
@@ -208,6 +304,15 @@ is(listen_for_binding(
 
 is(listen_for_binding(
     sub {
+        xtest_key_press(88); # KP_Down
+        xtest_key_release(88); # KP_Down
+    },
+    ),
+   'KP_Down',
+   'triggered the "KP_Down" keybinding');
+
+is(listen_for_binding(
+    sub {
         xtest_key_press(77); # enable Num_Lock
         xtest_key_release(77); # enable Num_Lock
         xtest_key_press(87); # KP_1
@@ -219,10 +324,64 @@ is(listen_for_binding(
    'timeout',
    'Did not trigger the KP_End keybinding with KP_1');
 
+is(listen_for_binding(
+    sub {
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
+        xtest_key_press(88); # KP_2
+        xtest_key_release(88); # KP_2
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
+    },
+    ),
+   'timeout',
+   'Did not trigger the KP_Down keybinding with KP_2');
+
 # TODO: This test does not verify that i3 does _NOT_ grab keycode 87 with Mod2.
 
 sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 11, 'Received exactly 11 binding events');
+is(scalar @i3test::XTEST::binding_events, 18, 'Received exactly 18 binding events');
+
+exit_gracefully($pid);
+
+################################################################################
+# Verify mouse bindings are unaffected by NumLock
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bindsym --whole-window button4 nop button4
+EOT
+
+$pid = launch_with_config($config);
+
+my $win = open_window;
+
+start_binding_capture;
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(77); # enable Num_Lock
+        xtest_key_release(77); # enable Num_Lock
+        xtest_button_press(4, 50, 50);
+        xtest_button_release(4, 50, 50);
+        xtest_key_press(77); # disable Num_Lock
+        xtest_key_release(77); # disable Num_Lock
+    },
+    ),
+   'button4',
+   'triggered the button4 keybinding with NumLock');
+
+is(listen_for_binding(
+    sub {
+	xtest_button_press(4, 50, 50);
+	xtest_button_release(4, 50, 50);
+    },
+    ),
+   'button4',
+   'triggered the button4 keybinding without NumLock');
 
 exit_gracefully($pid);
 

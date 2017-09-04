@@ -142,7 +142,9 @@ static Con *maybe_auto_back_and_forth_workspace(Con *workspace) {
  */
 typedef struct owindow {
     Con *con;
-    TAILQ_ENTRY(owindow) owindows;
+
+    TAILQ_ENTRY(owindow)
+    owindows;
 } owindow;
 
 typedef TAILQ_HEAD(owindows_head, owindow) owindows_head;
@@ -891,8 +893,10 @@ void cmd_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_a
         cmd_output->needs_tree_render = true;
         return;
     }
-    if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, workspace->name))
+    if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, workspace->name)) {
+        ysuccess(true);
         return;
+    }
     workspace_show(workspace);
 
     cmd_output->needs_tree_render = true;
@@ -938,8 +942,10 @@ void cmd_workspace_name(I3_CMD, const char *name, const char *_no_auto_back_and_
     }
 
     DLOG("should switch to workspace %s\n", name);
-    if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, name))
+    if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, name)) {
+        ysuccess(true);
         return;
+    }
     workspace_show_by_name(name);
 
     cmd_output->needs_tree_render = true;
@@ -1483,21 +1489,8 @@ void cmd_move_direction(I3_CMD, const char *direction, long move_px) {
 void cmd_layout(I3_CMD, const char *layout_str) {
     HANDLE_EMPTY_MATCH;
 
-    if (strcmp(layout_str, "stacking") == 0)
-        layout_str = "stacked";
     layout_t layout;
-    /* default is a special case which will be handled in con_set_layout(). */
-    if (strcmp(layout_str, "default") == 0)
-        layout = L_DEFAULT;
-    else if (strcmp(layout_str, "stacked") == 0)
-        layout = L_STACKED;
-    else if (strcmp(layout_str, "tabbed") == 0)
-        layout = L_TABBED;
-    else if (strcmp(layout_str, "splitv") == 0)
-        layout = L_SPLITV;
-    else if (strcmp(layout_str, "splith") == 0)
-        layout = L_SPLITH;
-    else {
+    if (!layout_from_name(layout_str, &layout)) {
         ELOG("Unknown layout \"%s\", this is a mismatch between code and parser spec.\n", layout_str);
         return;
     }
@@ -1556,7 +1549,7 @@ void cmd_exit(I3_CMD) {
 #ifdef I3_ASAN_ENABLED
     __lsan_do_leak_check();
 #endif
-    ipc_shutdown();
+    ipc_shutdown(SHUTDOWN_REASON_EXIT);
     unlink(config.ipc_socket_path);
     xcb_disconnect(conn);
     exit(0);
@@ -1589,7 +1582,7 @@ void cmd_reload(I3_CMD) {
  */
 void cmd_restart(I3_CMD) {
     LOG("restarting i3\n");
-    ipc_shutdown();
+    ipc_shutdown(SHUTDOWN_REASON_RESTART);
     unlink(config.ipc_socket_path);
     /* We need to call this manually since atexit handlers don’t get called
      * when exec()ing */
@@ -1817,6 +1810,65 @@ void cmd_scratchpad_show(I3_CMD) {
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
+}
+
+/*
+ * Implementation of 'swap [container] [with] id|con_id|mark <arg>'.
+ *
+ */
+void cmd_swap(I3_CMD, const char *mode, const char *arg) {
+    HANDLE_EMPTY_MATCH;
+
+    owindow *match = TAILQ_FIRST(&owindows);
+    if (match == NULL) {
+        DLOG("No match found for swapping.\n");
+        return;
+    }
+
+    Con *con;
+    if (strcmp(mode, "id") == 0) {
+        long target;
+        if (!parse_long(arg, &target, 0)) {
+            yerror("Failed to parse %s into a window id.\n", arg);
+            return;
+        }
+
+        con = con_by_window_id(target);
+    } else if (strcmp(mode, "con_id") == 0) {
+        long target;
+        if (!parse_long(arg, &target, 0)) {
+            yerror("Failed to parse %s into a container id.\n", arg);
+            return;
+        }
+
+        con = (Con *)target;
+    } else if (strcmp(mode, "mark") == 0) {
+        con = con_by_mark(arg);
+    } else {
+        yerror("Unhandled swap mode \"%s\". This is a bug.\n", mode);
+        return;
+    }
+
+    if (con == NULL) {
+        yerror("Could not find container for %s = %s\n", mode, arg);
+        return;
+    }
+
+    if (match == TAILQ_LAST(&owindows, owindows_head)) {
+        DLOG("More than one container matched the swap command, only using the first one.");
+    }
+
+    if (match->con == NULL) {
+        DLOG("Match %p has no container.\n", match);
+        ysuccess(false);
+        return;
+    }
+
+    DLOG("Swapping %p with %p.\n", match->con, con);
+    bool result = con_swap(match->con, con);
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(result);
 }
 
 /*

@@ -298,11 +298,11 @@ sub get_floating_rect {
 # focus is on the right window, so we resize the left one using criteria
 my $leftold = get_floating_rect($left->id);
 my $rightold = get_floating_rect($right->id);
-cmd '[id="' . $left->id . '"] resize shrink height 10px or 10ppt';
+cmd '[id="' . $left->id . '"] resize grow height 10px or 10ppt';
 
 my $leftnew = get_floating_rect($left->id);
 my $rightnew = get_floating_rect($right->id);
 is($rightnew->{height}, $rightold->{height}, 'height of right container unchanged');
-is($leftnew->{height}, $leftold->{height} - 10, 'height of left container changed');
+is($leftnew->{height}, $leftold->{height} + 10, 'height of left container changed');
 
 done_testing;

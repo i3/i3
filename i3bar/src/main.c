@@ -149,6 +149,8 @@ int main(int argc, char **argv) {
         socket_path = expand_path(i3_default_sock_path);
     }
 
+    init_dpi();
+
     init_outputs();
     if (init_connection(socket_path)) {
         /* Request the bar configuration. When it arrives, we fill the config array. */

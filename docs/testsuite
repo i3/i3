@@ -82,6 +82,8 @@ The tests additionally require +Xephyr(1)+ to run a nested X server. Install
 $ cd ~/i3/testcases
 $ sudo apt-get install cpanminus
 $ sudo cpanm .
+$ cd ~/i3/AnyEvent-I3
+$ sudo cpanm .
 --------------------------------------------------------------------------------
 
 If you don’t want to use cpanminus for some reason, the same works with cpan:
@@ -89,6 +91,8 @@ If you don’t want to use cpanminus for some reason, the same works with cpan:
 .Installing testsuite dependencies using cpan
 --------------------------------------------------------------------------------
 $ cd ~/i3/testcases
+$ sudo cpan .
+$ cd ~/i3/AnyEvent-I3
 $ sudo cpan .
 --------------------------------------------------------------------------------
 
@@ -112,9 +116,20 @@ the tests without an X session with Xvfb, such as with +xvfb-run
 ./complete-run+. This will also speed up the tests significantly especially on
 machines without a powerful video card.
 
-.Example invocation of complete-run.pl+
+.Example invocation of +complete-run.pl+
 ---------------------------------------
-$ cd ~/i3/testcases
+$ cd ~/i3
+
+$ autoreconf -fi
+
+$ mkdir -p build && cd build
+
+$ ../configure
+
+$ make -j8
+# output omitted because it is very long
+
+$ cd testcases
 
 $ ./complete-run.pl
 # output omitted because it is very long
@@ -159,6 +174,41 @@ $ ./complete-run.pl --parallel=1 --keep-xserver-output
 
 This will show the output of Xephyr, which is the X server implementation we
 use for testing.
+
+===== make command: +make check+
+Make check runs the i3 testsuite.
+You can still use ./testcases/complete-run.pl to get the interactive progress output.
+
+.Example invocation of +make check+
+---------------------------------------
+$ cd ~/i3
+
+$ autoreconf -fi
+
+$ mkdir -p build && cd build
+
+$ ../configure
+
+$ make -j8
+# output omitted because it is very long
+
+$ make check
+# output omitted because it is very long
+PASS: testcases/complete-run.pl
+============================================================================
+Testsuite summary for i3 4.13
+============================================================================
+# TOTAL: 1
+# PASS:  1
+# SKIP:  0
+# XFAIL: 0
+# FAIL:  0
+# XPASS: 0
+# ERROR: 0
+============================================================================
+
+$ less test-suite.log
+----------------------------------------
 
 ==== Coverage testing
 

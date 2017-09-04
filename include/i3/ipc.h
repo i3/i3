@@ -54,6 +54,9 @@ typedef struct i3_ipc_header {
 /** Request a list of configured binding modes. */
 #define I3_IPC_MESSAGE_TYPE_GET_BINDING_MODES 8
 
+/** Request the raw last loaded i3 config. */
+#define I3_IPC_MESSAGE_TYPE_GET_CONFIG 9
+
 /*
  * Messages from i3 to clients
  *
@@ -67,6 +70,7 @@ typedef struct i3_ipc_header {
 #define I3_IPC_REPLY_TYPE_BAR_CONFIG 6
 #define I3_IPC_REPLY_TYPE_VERSION 7
 #define I3_IPC_REPLY_TYPE_BINDING_MODES 8
+#define I3_IPC_REPLY_TYPE_CONFIG 9
 
 /*
  * Events from i3 to clients. Events have the first bit set high.
@@ -91,3 +95,6 @@ typedef struct i3_ipc_header {
 
 /** The binding event will be triggered when bindings run */
 #define I3_IPC_EVENT_BINDING (I3_IPC_EVENT_MASK | 5)
+
+/** The shutdown event will be triggered when the ipc shuts down */
+#define I3_IPC_EVENT_SHUTDOWN (I3_IPC_EVENT_MASK | 6)

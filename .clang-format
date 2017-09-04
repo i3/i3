@@ -8,3 +8,4 @@ IndentWidth: 4
 PointerBindsToType: false
 ColumnLimit: 0
 SpaceBeforeParens: ControlStatements
+SortIncludes: false

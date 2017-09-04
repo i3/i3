@@ -45,10 +45,16 @@ dist_xsessions_DATA = \
 
 noinst_LIBRARIES = libi3.a
 
-check_PROGRAMS = test.commands_parser test.config_parser
+check_PROGRAMS = \
+	test.commands_parser \
+	test.config_parser \
+	test.inject_randr15
 
 check_SCRIPTS = \
 	testcases/complete-run.pl
+
+check_DATA = \
+	anyevent-i3.stamp
 
 clean-check:
 	rm -rf testsuite-* latest i3-cfg-for-* _Inline
@@ -94,7 +100,7 @@ EXTRA_DIST = \
 	I3_VERSION \
 	LICENSE \
 	PACKAGE-MAINTAINER \
-	RELEASE-NOTES-4.13 \
+	RELEASE-NOTES-4.14 \
 	generate-command-parser.pl \
 	parser-specs/commands.spec \
 	parser-specs/config.spec \
@@ -212,6 +218,7 @@ asciidoc_MANS =
 endif
 
 AM_CPPFLAGS = \
+	-DSYSCONFDIR="\"$(sysconfdir)\"" \
 	-I$(top_builddir)/parser \
 	-I$(top_srcdir)/include \
 	@AX_EXTEND_SRCDIR_CPPFLAGS@
@@ -401,6 +408,19 @@ i3_config_wizard_i3_config_wizard_SOURCES = \
 	i3-config-wizard/main.c \
 	i3-config-wizard/xcb.h
 
+test_inject_randr15_CPPFLAGS = \
+	$(AM_CPPFLAGS)
+
+test_inject_randr15_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(i3_CFLAGS)
+
+test_inject_randr15_SOURCES = \
+	testcases/inject_randr1.5.c
+
+test_inject_randr15_LDADD = \
+	$(i3_LDADD)
+
 test_commands_parser_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	-DTEST_PARSER
@@ -457,7 +477,6 @@ i3_SOURCES = \
 	include/config_parser.h \
 	include/con.h \
 	include/data.h \
-	include/debug.h \
 	include/display_version.h \
 	include/ewmh.h \
 	include/fake_outputs.h \
@@ -502,7 +521,6 @@ i3_SOURCES = \
 	src/config.c \
 	src/config_directives.c \
 	src/config_parser.c \
-	src/debug.c \
 	src/display_version.c \
 	src/ewmh.c \
 	src/fake_outputs.c \
@@ -558,6 +576,15 @@ i3-config-parser.stamp: parser/$(dirstamp) generate-command-parser.pl parser-spe
 	$(AM_V_at) mv GENERATED_config_* $(top_builddir)/parser
 	$(AM_V_at) touch $@
 
+################################################################################
+# AnyEvent-I3 build process
+################################################################################
+
+anyevent-i3.stamp: AnyEvent-I3/lib/AnyEvent/I3.pm
+	$(AM_V_BUILD) (cd $(top_srcdir)/AnyEvent-I3 && perl Makefile.PL && make)
+	$(AM_V_at) touch $@
+
 CLEANFILES = \
 	i3-command-parser.stamp \
-	i3-config-parser.stamp
+	i3-config-parser.stamp \
+	anyevent-i3.stamp

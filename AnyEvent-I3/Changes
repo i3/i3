@@ -1,0 +1,73 @@
+Revision history for AnyEvent-I3
+
+0.18    2017-08-19
+
+   * support the GET_CONFIG command
+
+0.17    2017-04-09
+
+   * support the shutdown event
+   * use lib '.' for Perl 5.25.11+
+
+0.16    2014-10-03
+
+   * support the barconfig_update and binding event
+
+0.15    2013-02-18
+
+    * support the window event
+
+0.14    2012-09-22
+
+    * support the mode event
+
+0.13    2012-08-05
+
+    * support the GET_VERSION request with a fall-back to i3 --version
+
+0.12    2012-07-11
+
+    * taint mode fix: remove relative directories from $ENV{PATH}
+
+0.11    2012-07-10
+
+    * taint mode fix for FreeBSD
+
+0.10    2012-07-09
+
+    * Use i3 --get-socketpath by default for determining the socket path
+    * Bugfix: Also delete callbacks which are triggered due to an error
+
+0.09    2011-10-12
+
+    * Implement GET_BAR_CONFIG request
+
+0.08    2011-09-26
+
+    * Implement GET_MARKS request
+    * The synopsis mentioned ->workspaces, but it’s ->get_workspaces
+
+0.07    2010-11-21
+
+    * Implement GET_TREE request
+
+0.06    2010-06-16
+
+    * Add check to Makefile to abort in a Windows environment (neither i3 nor
+      unix sockets available)
+
+0.05    2010-06-09
+
+    * use getpwuid() to resolve ~ in socket paths instead of glob()
+
+0.04    2010-03-27
+
+    * use new default ipc-socket path, glob() path, bump version
+
+0.03    2010-03-26
+
+    * fix MANIFEST
+
+0.02    2010-03-23
+
+    * first upload to CPAN

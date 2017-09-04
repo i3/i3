@@ -53,6 +53,10 @@ void init_dpi(void) {
     DLOG("Found Xft.dpi = %ld.\n", dpi);
 
 init_dpi_end:
+    if (resource != NULL) {
+        free(resource);
+    }
+
     if (database != NULL) {
         xcb_xrm_database_free(database);
     }
@@ -62,6 +66,14 @@ init_dpi_end:
         dpi = init_dpi_fallback();
         DLOG("Using dpi = %ld\n", dpi);
     }
+}
+
+/*
+ * This function returns the value of the DPI setting.
+ *
+ */
+long get_dpi_value(void) {
+    return dpi;
 }
 
 /*

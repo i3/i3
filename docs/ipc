@@ -232,6 +232,8 @@ name (string)::
 	The name of this output (as seen in +xrandr(1)+). Encoded in UTF-8.
 active (boolean)::
 	Whether this output is currently active (has a valid mode).
+primary (boolean)::
+	Whether this output is currently the primary output.
 current_workspace (string)::
 	The name of the current workspace that is visible on this output. +null+ if
 	the output is not active.
@@ -262,7 +264,7 @@ rect (map)::
    "y": 0,
    "width": 1280,
    "height": 1024
-  },
+  }
  }
 ]
 -------------------
@@ -390,7 +392,7 @@ JSON dump:
 	 "y": 0,
 	 "width": 1280,
 	 "height": 0
-       },
+       }
       },
 
       {
@@ -671,6 +673,8 @@ barconfig_update (4)::
 binding (5)::
 	Sent when a configured command binding is triggered with the keyboard or
 	mouse
+shutdown (6)::
+	Sent when the ipc shuts down because of a restart or exit by user command
 
 *Example:*
 --------------------------------------------------------------------
@@ -694,9 +698,9 @@ if ($is_event) {
 
 This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change ("focus", "init",
-"empty", "urgent"). A +current (object)+ property will be present with the
-affected workspace whenever the type of event affects a workspace (otherwise,
-it will be +null).
+"empty", "urgent", "reload", "rename", "restored", "move"). A
++current (object)+ property will be present with the affected workspace
+whenever the type of event affects a workspace (otherwise, it will be +null).
 
 When the change is "focus", an +old (object)+ property will be present with the
 previous workspace.  When the first switch occurs (when i3 focuses the
@@ -791,7 +795,7 @@ same as a +GET_BAR_CONFIG+ reply for the bar with the given id.
 === binding event
 
 This event consists of a single serialized map reporting on the details of a
-binding that ran a command because of user input. The +change (sring)+ field
+binding that ran a command because of user input. The +change (string)+ field
 indicates what sort of binding event was triggered (right now it will always be
 +"run"+ but may be expanded in the future).
 
@@ -829,6 +833,20 @@ input_type (string)::
 }
 ---------------------------
 
+=== shutdown event
+
+This event is triggered when the connection to the ipc is about to shutdown
+because of a user action such as a +restart+ or +exit+ command. The +change
+(string)+ field indicates why the ipc is shutting down. It can be either
++"restart"+ or +"exit"+.
+
+*Example:*
+---------------------------
+{
+ "change": "restart"
+}
+---------------------------
+
 == See also (existing libraries)
 
 [[libraries]]
@@ -843,7 +861,7 @@ C::
 C++::
 	* https://github.com/drmgc/i3ipcpp
 Go::
-	* https://github.com/proxypoke/i3ipc
+	* https://github.com/mdirkse/i3ipc-go
 JavaScript::
 	* https://github.com/acrisci/i3ipc-gjs
 Lua::
@@ -859,3 +877,5 @@ Ruby::
 	* https://github.com/badboy/i3-ipc (not maintained)
 Rust::
 	* https://github.com/tmerr/i3ipc-rs
+OCaml::
+	* https://github.com/Armael/ocaml-i3ipc

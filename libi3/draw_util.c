@@ -19,7 +19,7 @@
 xcb_visualtype_t *visual_type;
 
 /* Forward declarations */
-static void draw_util_set_source_color(xcb_connection_t *conn, surface_t *surface, color_t color);
+static void draw_util_set_source_color(surface_t *surface, color_t color);
 
 #define RETURN_UNLESS_SURFACE_INITIALIZED(surface)                               \
     do {                                                                         \
@@ -84,6 +84,11 @@ void draw_util_surface_set_size(surface_t *surface, int width, int height) {
  *
  */
 color_t draw_util_hex_to_color(const char *color) {
+    if (strlen(color) < 6 || color[0] != '#') {
+        ELOG("Could not parse color: %s\n", color);
+        return draw_util_hex_to_color("#A9A9A9");
+    }
+
     char alpha[2];
     if (strlen(color) == strlen("#rrggbbaa")) {
         alpha[0] = color[7];
@@ -110,7 +115,7 @@ color_t draw_util_hex_to_color(const char *color) {
  * Set the given color as the source color on the surface.
  *
  */
-static void draw_util_set_source_color(xcb_connection_t *conn, surface_t *surface, color_t color) {
+static void draw_util_set_source_color(surface_t *surface, color_t color) {
     RETURN_UNLESS_SURFACE_INITIALIZED(surface);
 
     cairo_set_source_rgba(surface->cr, color.red, color.green, color.blue, color.alpha);
@@ -141,7 +146,7 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
  * surface as well as restoring the cairo state.
  *
  */
-void draw_util_rectangle(xcb_connection_t *conn, surface_t *surface, color_t color, double x, double y, double w, double h) {
+void draw_util_rectangle(surface_t *surface, color_t color, double x, double y, double w, double h) {
     RETURN_UNLESS_SURFACE_INITIALIZED(surface);
 
     cairo_save(surface->cr);
@@ -150,7 +155,7 @@ void draw_util_rectangle(xcb_connection_t *conn, surface_t *surface, color_t col
      * onto the surface rather than blending it. This is a bit more efficient and
      * allows better color control for the user when using opacity. */
     cairo_set_operator(surface->cr, CAIRO_OPERATOR_SOURCE);
-    draw_util_set_source_color(conn, surface, color);
+    draw_util_set_source_color(surface, color);
 
     cairo_rectangle(surface->cr, x, y, w, h);
     cairo_fill(surface->cr);
@@ -166,7 +171,7 @@ void draw_util_rectangle(xcb_connection_t *conn, surface_t *surface, color_t col
  * Clears a surface with the given color.
  *
  */
-void draw_util_clear_surface(xcb_connection_t *conn, surface_t *surface, color_t color) {
+void draw_util_clear_surface(surface_t *surface, color_t color) {
     RETURN_UNLESS_SURFACE_INITIALIZED(surface);
 
     cairo_save(surface->cr);
@@ -175,7 +180,7 @@ void draw_util_clear_surface(xcb_connection_t *conn, surface_t *surface, color_t
      * onto the surface rather than blending it. This is a bit more efficient and
      * allows better color control for the user when using opacity. */
     cairo_set_operator(surface->cr, CAIRO_OPERATOR_SOURCE);
-    draw_util_set_source_color(conn, surface, color);
+    draw_util_set_source_color(surface, color);
 
     cairo_paint(surface->cr);
 
@@ -190,7 +195,7 @@ void draw_util_clear_surface(xcb_connection_t *conn, surface_t *surface, color_t
  * Copies a surface onto another surface.
  *
  */
-void draw_util_copy_surface(xcb_connection_t *conn, surface_t *src, surface_t *dest, double src_x, double src_y,
+void draw_util_copy_surface(surface_t *src, surface_t *dest, double src_x, double src_y,
                             double dest_x, double dest_y, double width, double height) {
     RETURN_UNLESS_SURFACE_INITIALIZED(src);
     RETURN_UNLESS_SURFACE_INITIALIZED(dest);

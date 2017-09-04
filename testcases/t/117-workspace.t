@@ -279,6 +279,12 @@ is(focused_ws(), 'bla', 'now on workspace bla');
 cmd 'rename workspace to to';
 ok(!workspace_exists('bla'), 'workspace bla does not exist anymore');
 is(focused_ws(), 'to', 'now on workspace to');
+cmd 'rename workspace to bla';
+ok(!workspace_exists('to'), 'workspace to does not exist anymore');
+is(focused_ws(), 'bla', 'now on workspace bla');
+cmd 'rename workspace to tosomething';
+ok(!workspace_exists('bla'), 'workspace bla does not exist anymore');
+is(focused_ws(), 'tosomething', 'now on workspace tosomething');
 
 # 6: already existing workspace
 my $result = cmd 'rename workspace qux to 11: bar';

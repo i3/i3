@@ -74,7 +74,7 @@
 AC_DEFUN([AX_EXTEND_SRCDIR],
 [dnl
 AS_CASE([$srcdir],
-  [.|.*],
+  [.|.*|/*],
   [
     # pwd -P is specified in IEEE 1003.1 from 2004
     as_dir=`cd "$srcdir" && pwd -P`
