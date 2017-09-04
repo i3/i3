@@ -24,6 +24,7 @@ static long init_dpi_fallback(void) {
  */
 void init_dpi(void) {
     xcb_xrm_database_t *database = NULL;
+    char *resource = NULL;
 
     if (conn == NULL) {
         goto init_dpi_end;
@@ -35,7 +36,6 @@ void init_dpi(void) {
         goto init_dpi_end;
     }
 
-    char *resource;
     xcb_xrm_resource_get_string(database, "Xft.dpi", NULL, &resource);
     if (resource == NULL) {
         DLOG("Resource Xft.dpi not specified, skipping.\n");
