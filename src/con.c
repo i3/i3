@@ -558,6 +558,22 @@ Con *con_by_window_id(xcb_window_t window) {
 }
 
 /*
+ * Returns the container with the given container ID or NULL if no such
+ * container exists.
+ *
+ */
+Con *con_by_con_id(long target) {
+    Con *con;
+    TAILQ_FOREACH(con, &all_cons, all_cons) {
+        if (con == (Con *)target) {
+            return con;
+        }
+    }
+
+    return NULL;
+}
+
+/*
  * Returns the container with the given frame ID or NULL if no such container
  * exists.
  *
