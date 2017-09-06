@@ -2276,15 +2276,14 @@ bool con_swap(Con *first, Con *second) {
     Con *current_ws = con_get_workspace(old_focus);
     const bool focused_within_first = (first == old_focus || con_has_parent(old_focus, first));
     const bool focused_within_second = (second == old_focus || con_has_parent(old_focus, second));
+    fullscreen_mode_t first_fullscreen_mode = first->fullscreen_mode;
+    fullscreen_mode_t second_fullscreen_mode = second->fullscreen_mode;
 
-    if (!con_fullscreen_permits_focusing(first_ws)) {
-        DLOG("Cannot swap because target workspace \"%s\" is obscured.\n", first_ws->name);
-        return false;
+    if (first_fullscreen_mode != CF_NONE) {
+        con_disable_fullscreen(first);
     }
-
-    if (!con_fullscreen_permits_focusing(second_ws)) {
-        DLOG("Cannot swap because target workspace \"%s\" is obscured.\n", second_ws->name);
-        return false;
+    if (second_fullscreen_mode != CF_NONE) {
+        con_disable_fullscreen(second);
     }
 
     double first_percent = first->percent;
@@ -2385,7 +2384,17 @@ bool con_swap(Con *first, Con *second) {
     second->percent = first_percent;
     fake->percent = 0.0;
 
+    SWAP(first_fullscreen_mode, second_fullscreen_mode, fullscreen_mode_t);
+
 swap_end:
+    /* The two windows exchange their original fullscreen status */
+    if (first_fullscreen_mode != CF_NONE) {
+        con_enable_fullscreen(first, first_fullscreen_mode);
+    }
+    if (second_fullscreen_mode != CF_NONE) {
+        con_enable_fullscreen(second, second_fullscreen_mode);
+    }
+
     /* We don't actually need this since percentages-wise we haven't changed
      * anything, but we'll better be safe than sorry and just make sure as we'd
      * otherwise crash i3. */
