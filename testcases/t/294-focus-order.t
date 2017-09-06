@@ -177,6 +177,45 @@ cmd '[id=' . $windows[1]->id . '] move to workspace ' . $ws;
 confirm_focus('\'move to workspace\' focus order when moving containers from other workspace');
 
 ######################################################################
+# Swapping sibling containers correctly swaps focus order.
+######################################################################
+
+sub swap_with_ids {
+    my ($idx1, $idx2) = @_;
+    cmd '[id=' . $windows[$idx1]->id . '] swap container with id ' . $windows[$idx2]->id;
+}
+
+$ws = fresh_workspace;
+$windows[2] = open_window;
+$windows[0] = open_window;
+$windows[3] = open_window;
+$windows[1] = open_window;
+
+# If one of the swapees is focused we deliberately preserve its focus, switch
+# workspaces to move focus away from the windows.
+fresh_workspace;
+
+# 2 0 3 1 <- focus order in this direction
+swap_with_ids(3, 1);
+# 2 0 1 3
+swap_with_ids(2, 3);
+# 3 0 1 2
+swap_with_ids(0, 2);
+# 3 2 1 0
+
+# Restore input focus for confirm_focus
+cmd "workspace $ws";
+
+# Also confirm swap worked
+$ws = get_ws($ws);
+for my $i (0 .. 3) {
+    my $node = $ws->{nodes}->[3 - $i];
+    is($node->{window}, $windows[$i]->id, "window $i in correct position after swap");
+}
+
+confirm_focus('\'swap container with id\' focus order');
+
+######################################################################
 # Test focus order with floating and tiling windows.
 # See issue: 1975
 ######################################################################

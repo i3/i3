@@ -2092,8 +2092,7 @@ using one of the following methods:
 +mark+:: A container with the specified mark, see <<vim_like_marks>>.
 
 Note that swapping does not work with all containers. Most notably, swapping
-floating containers or containers that have a parent-child relationship to one
-another does not work.
+containers that have a parent-child relationship to one another does not work.
 
 *Syntax*:
 ----------------------------------------
