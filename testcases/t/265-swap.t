@@ -33,6 +33,38 @@ my ($result);
 my @urgent;
 
 ###############################################################################
+# Invalid con_id should not crash i3
+# See issue #2895.
+###############################################################################
+
+$pid = launch_with_config($config);
+$ws = fresh_workspace;
+
+open_window;
+cmd "swap container with con_id 1";
+
+does_i3_live;
+exit_gracefully($pid);
+
+###############################################################################
+# Swap 2 windows in different workspaces using con_id
+###############################################################################
+
+$pid = launch_with_config($config);
+
+$ws = fresh_workspace;
+open_window;
+$A = get_focused($ws);
+
+$ws = fresh_workspace;
+open_window;
+
+cmd "swap container with con_id $A";
+is(get_focused($ws), $A, 'A is now focused');
+
+exit_gracefully($pid);
+
+###############################################################################
 # Swap two containers next to each other.
 # Focus should stay on B because both windows are on the focused workspace.
 # The focused container is B.
