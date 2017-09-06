@@ -189,7 +189,7 @@ $nodes = get_ws_content($ws1);
 is($nodes->[0]->{window}, $B->{id}, 'B is on ws1:left');
 
 $nodes = get_ws_content($ws2);
-is($nodes->[1]->{window}, $A->{id}, 'A is on ws1:right');
+is($nodes->[1]->{window}, $A->{id}, 'A is on ws2:right');
 is(get_focused($ws2), $expected_focus, 'A is focused');
 
 exit_gracefully($pid);
