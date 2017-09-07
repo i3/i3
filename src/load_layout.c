@@ -157,6 +157,7 @@ static int json_end_map(void *ctx) {
             }
 
             free(marks);
+            marks = NULL;
             num_marks = 0;
         }
 
