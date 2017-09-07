@@ -20,6 +20,8 @@ use i3test;
 
 cmd 'open';
 cmd 'mark foo';
+cmd 'open';
+cmd 'mark bar';
 
 cmd 'restart';
 
