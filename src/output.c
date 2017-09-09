@@ -49,7 +49,7 @@ Output *get_output_from_string(Output *current_output, const char *output_str) {
  *
  */
 char *output_primary_name(Output *output) {
-    return output->name;
+    return SLIST_FIRST(&output->names_head)->name;
 }
 
 Output *get_output_for_con(Con *con) {

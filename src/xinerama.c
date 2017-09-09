@@ -55,7 +55,10 @@ static void query_screens(xcb_connection_t *conn) {
             s->rect.height = min(s->rect.height, screen_info[screen].height);
         } else {
             s = scalloc(1, sizeof(Output));
-            sasprintf(&(s->name), "xinerama-%d", num_screens);
+            struct output_name *output_name = scalloc(1, sizeof(struct output_name));
+            sasprintf(&output_name->name, "xinerama-%d", num_screens);
+            SLIST_INIT(&s->names_head);
+            SLIST_INSERT_HEAD(&s->names_head, output_name, names);
             DLOG("Created new Xinerama screen %s (%p)\n", output_primary_name(s), s);
             s->active = true;
             s->rect.x = screen_info[screen].x_org;

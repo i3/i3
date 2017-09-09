@@ -266,7 +266,11 @@ Output *create_root_output(xcb_connection_t *conn) {
     s->rect.y = 0;
     s->rect.width = root_screen->width_in_pixels;
     s->rect.height = root_screen->height_in_pixels;
-    s->name = "xroot-0";
+
+    struct output_name *output_name = scalloc(1, sizeof(struct output_name));
+    output_name->name = "xroot-0";
+    SLIST_INIT(&s->names_head);
+    SLIST_INSERT_HEAD(&s->names_head, output_name, names);
 
     return s;
 }
@@ -594,7 +598,12 @@ static bool randr_query_outputs_15(void) {
         Output *new = get_output_by_name(name, false);
         if (new == NULL) {
             new = scalloc(1, sizeof(Output));
-            new->name = sstrdup(name);
+
+            struct output_name *output_name = scalloc(1, sizeof(struct output_name));
+            output_name->name = sstrdup(name);
+            SLIST_INIT(&new->names_head);
+            SLIST_INSERT_HEAD(&new->names_head, output_name, names);
+
             if (monitor_info->primary) {
                 TAILQ_INSERT_HEAD(&outputs, new, outputs);
             } else {
@@ -643,14 +652,23 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
 
     Output *new = get_output_by_id(id);
     bool existing = (new != NULL);
-    if (!existing)
+    if (!existing) {
         new = scalloc(1, sizeof(Output));
+        SLIST_INIT(&new->names_head);
+    }
     new->id = id;
     new->primary = (primary && primary->output == id);
-    FREE(new->name);
-    sasprintf(&new->name, "%.*s",
+    while (!SLIST_EMPTY(&new->names_head)) {
+        FREE(SLIST_FIRST(&new->names_head)->name);
+        struct output_name *old_head = SLIST_FIRST(&new->names_head);
+        SLIST_REMOVE_HEAD(&new->names_head, names);
+        FREE(old_head);
+    }
+    struct output_name *output_name = scalloc(1, sizeof(struct output_name));
+    sasprintf(&output_name->name, "%.*s",
               xcb_randr_get_output_info_name_length(output),
               xcb_randr_get_output_info_name(output));
+    SLIST_INSERT_HEAD(&new->names_head, output_name, names);
 
     DLOG("found output with name %s\n", output_primary_name(new));
 
