@@ -6,7 +6,6 @@ set -x
 GITVERSION=$(git describe --tags)
 
 mkdir build.i3wm.org
-cp -r deb/CLANG build.i3wm.org/clang-analyze
 cp -r deb/COPY-DOCS build.i3wm.org/docs
 cd build.i3wm.org
 echo build.i3wm.org > CNAME
