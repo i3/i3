@@ -349,6 +349,13 @@ struct Autostart {
     autostarts_always;
 };
 
+struct output_name {
+    char *name;
+
+    SLIST_ENTRY(output_name)
+    names;
+};
+
 /**
  * An Output is a physical output on your graphics driver. Outputs which
  * are currently in use have (output->active == true). Each output has a
@@ -370,8 +377,11 @@ struct xoutput {
     bool to_be_disabled;
     bool primary;
 
-    /** Name of the output */
-    char *name;
+    /** List of names for the output.
+     * An output always has at least one name; the first name is
+     * considered the primary one. */
+    SLIST_HEAD(names_head, output_name)
+    names_head;
 
     /** Pointer to the Con which represents this output */
     Con *con;
