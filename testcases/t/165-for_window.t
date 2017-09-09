@@ -19,6 +19,61 @@ use X11::XCB qw(PROP_MODE_REPLACE);
 
 my (@nodes);
 
+my $config = <<'EOT';
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+# test 1, test 2
+for_window [class="borderless$"] border none
+for_window [title="special borderless title"] border none
+
+# test 3
+for_window [class="borderless3$" title="usethis"] border none
+for_window [class="borderless3$"] border none
+for_window [title="special borderless title"] border none
+for_window [title="special mark title"] border none, mark bleh
+
+# test 4
+for_window [class="borderless4$" title="usethis"] border none
+
+# test 5, test 6
+for_window [class="foo$"] border 1pixel
+
+# test 6
+for_window [instance="foo6"] border none
+
+# test 7
+for_window [id="asdf"] border none
+
+# test 8, test 9
+for_window [window_role="i3test"] border none
+
+# test 12
+for_window [workspace="trigger"] floating enable, mark triggered
+EOT
+
+# test all window types
+my %window_types = (
+    'normal'        => '_NET_WM_WINDOW_TYPE_NORMAL',
+    'dialog'        => '_NET_WM_WINDOW_TYPE_DIALOG',
+    'utility'       => '_NET_WM_WINDOW_TYPE_UTILITY',
+    'toolbar'       => '_NET_WM_WINDOW_TYPE_TOOLBAR',
+    'splash'        => '_NET_WM_WINDOW_TYPE_SPLASH',
+    'menu'          => '_NET_WM_WINDOW_TYPE_MENU',
+    'dropdown_menu' => '_NET_WM_WINDOW_TYPE_DROPDOWN_MENU',
+    'popup_menu'    => '_NET_WM_WINDOW_TYPE_POPUP_MENU',
+    'tooltip'       => '_NET_WM_WINDOW_TYPE_TOOLTIP',
+    'notification'  => '_NET_WM_WINDOW_TYPE_NOTIFICATION'
+);
+
+for my $window_type (keys %window_types) {
+    $config .= <<EOT;
+for_window [window_type="$window_type"] floating enable, mark branded-$window_type
+EOT
+}
+
+my $pid = launch_with_config($config);
+
 ##############################################################
 # 1: test the following directive:
 #    for_window [class="borderless"] border none
@@ -26,15 +81,6 @@ my (@nodes);
 # the normal border), then creating a window with the class
 # "borderless" (should get no border)
 ##############################################################
-
-my $config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [class="borderless"] border none
-for_window [title="special borderless title"] border none
-EOT
-
-my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -66,21 +112,10 @@ wait_for_unmap $window;
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
 
-exit_gracefully($pid);
-
 ##############################################################
 # 2: match on the title, check if for_window is really executed
 # only once
 ##############################################################
-
-$config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [class="borderless"] border none
-for_window [title="special borderless title"] border none
-EOT
-
-$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -116,22 +151,9 @@ wait_for_unmap $window;
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
 
-exit_gracefully($pid);
-
 ##############################################################
 # 3: match on the title, set border style *and* a mark
 ##############################################################
-
-$config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [class="borderless" title="usethis"] border none
-for_window [class="borderless"] border none
-for_window [title="special borderless title"] border none
-for_window [title="special mark title"] border none, mark bleh
-EOT
-
-$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -154,25 +176,15 @@ cmd qq|[con_mark="bleh"] focus|;
 @content = @{get_ws_content($tmp)};
 ok($content[0]->{focused}, 'first node focused');
 
-exit_gracefully($pid);
-
 ##############################################################
 # 4: multiple criteria for the for_window command
 ##############################################################
-
-$config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [class="borderless" title="usethis"] border none
-EOT
-
-$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
 $window = open_window(
     name => 'usethis',
-    wm_class => 'borderless',
+    wm_class => 'borderless4',
 );
 
 @content = @{get_ws_content($tmp)};
@@ -190,7 +202,7 @@ sync_with_i3;
 cmp_ok(@content, '==', 0, 'no nodes on this workspace now');
 
 $window->_create;
-$window->wm_class('borderless');
+$window->wm_class('borderless4');
 $window->name('notthis');
 $window->map;
 wait_for_map $window;
@@ -199,23 +211,11 @@ wait_for_map $window;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'no border');
 
-
-exit_gracefully($pid);
-
 ##############################################################
 # 5: check that a class criterion does not match the instance
 ##############################################################
 
-$config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [class="foo"] border 1pixel
-EOT
-
-$pid = launch_with_config($config);
-
 $tmp = fresh_workspace;
-
 
 $window = open_window(
     name => 'usethis',
@@ -227,49 +227,25 @@ $window = open_window(
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border, not matched');
 
-exit_gracefully($pid);
-
 ##############################################################
 # 6: check that the 'instance' criterion works
 ##############################################################
-
-$config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [class="foo"] border 1pixel
-for_window [instance="foo"] border none
-EOT
-
-$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
 $window = open_window(
     name => 'usethis',
     wm_class => 'bar',
-    instance => 'foo',
+    instance => 'foo6',
 );
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
-exit_gracefully($pid);
-
 ##############################################################
 # 7: check that invalid criteria don’t end up matching all windows
 ##############################################################
-
-# this configuration is broken because "asdf" is not a valid integer
-# the for_window should therefore recognize this error and don’t add the
-# assignment
-$config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [id="asdf"] border none
-EOT
-
-$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -283,19 +259,9 @@ $window = open_window(
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border');
 
-exit_gracefully($pid);
-
 ##############################################################
 # 8: check that the role criterion works properly
 ##############################################################
-
-$config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [window_role="i3test"] border none
-EOT
-
-$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -321,20 +287,10 @@ $window = open_window(
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border (window_role)');
 
-exit_gracefully($pid);
-
 ##############################################################
 # 9: another test for the window_role, but this time it changes
 #    *after* the window has been mapped
 ##############################################################
-
-$config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [window_role="i3test"] border none
-EOT
-
-$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -364,45 +320,18 @@ sync_with_i3;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border (window_role 2)');
 
-exit_gracefully($pid);
-
 ##############################################################
 # 10: check that the criterion 'window_type' works
 ##############################################################
 
-# test all window types
-my %window_types = (
-    'normal'        => '_NET_WM_WINDOW_TYPE_NORMAL',
-    'dialog'        => '_NET_WM_WINDOW_TYPE_DIALOG',
-    'utility'       => '_NET_WM_WINDOW_TYPE_UTILITY',
-    'toolbar'       => '_NET_WM_WINDOW_TYPE_TOOLBAR',
-    'splash'        => '_NET_WM_WINDOW_TYPE_SPLASH',
-    'menu'          => '_NET_WM_WINDOW_TYPE_MENU',
-    'dropdown_menu' => '_NET_WM_WINDOW_TYPE_DROPDOWN_MENU',
-    'popup_menu'    => '_NET_WM_WINDOW_TYPE_POPUP_MENU',
-    'tooltip'       => '_NET_WM_WINDOW_TYPE_TOOLTIP',
-    'notification'  => '_NET_WM_WINDOW_TYPE_NOTIFICATION'
-);
-
 while (my ($window_type, $atom) = each %window_types) {
-
-    $config = <<"EOT";
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [window_type="$window_type"] floating enable, mark branded
-EOT
-
-    $pid = launch_with_config($config);
     $tmp = fresh_workspace;
 
     $window = open_window(window_type => $x->atom(name => $atom));
 
     my @nodes = @{get_ws($tmp)->{floating_nodes}};
     cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
-    is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'branded' ], "mark set (window_type = $atom)");
-
-    exit_gracefully($pid);
-
+    is_deeply($nodes[0]->{nodes}[0]->{marks}, [ "branded-$window_type" ], "mark set (window_type = $atom)");
 }
 
 ##############################################################
@@ -411,14 +340,6 @@ EOT
 ##############################################################
 
 while (my ($window_type, $atom) = each %window_types) {
-
-    $config = <<"EOT";
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [window_type="$window_type"] floating enable, mark branded
-EOT
-
-    $pid = launch_with_config($config);
     $tmp = fresh_workspace;
 
     $window = open_window();
@@ -432,23 +353,12 @@ EOT
 
     my @nodes = @{get_ws($tmp)->{floating_nodes}};
     cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
-    is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'branded' ], "mark set (window_type = $atom)");
-
-    exit_gracefully($pid);
-
+    is_deeply($nodes[0]->{nodes}[0]->{marks}, [ "branded-$window_type" ], "mark set (window_type = $atom)");
 }
 
 ##############################################################
 # 12: check that the criterion 'workspace' works
 ##############################################################
-
-$config = <<"EOT";
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [workspace="trigger"] floating enable, mark triggered
-EOT
-
-$pid = launch_with_config($config);
 
 cmd 'workspace trigger';
 $window = open_window;
@@ -457,35 +367,8 @@ $window = open_window;
 cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
 is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'triggered' ], "mark set for workspace criterion");
 
-exit_gracefully($pid);
-
 ##############################################################
-# 13: check that the tiling / floating criteria work.
-##############################################################
-
-$config = <<"EOT";
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-for_window [tiling] mark tiled
-for_window [floating] mark floated
-EOT
-
-$pid = launch_with_config($config);
-$tmp = fresh_workspace;
-
-open_window;
-open_floating_window;
-
-@nodes = @{get_ws($tmp)->{nodes}};
-cmp_ok(@nodes, '==', 1, 'one tiling container on this workspace');
-is_deeply($nodes[0]->{marks}, [ 'tiled' ], "mark set for 'tiling' criterion");
-
-@nodes = @{get_ws($tmp)->{floating_nodes}};
-cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
-is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'floated' ], "mark set for 'floating' criterion");
 
 exit_gracefully($pid);
-
-##############################################################
 
 done_testing;
