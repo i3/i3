@@ -56,7 +56,7 @@ static void query_screens(xcb_connection_t *conn) {
         } else {
             s = scalloc(1, sizeof(Output));
             sasprintf(&(s->name), "xinerama-%d", num_screens);
-            DLOG("Created new Xinerama screen %s (%p)\n", s->name, s);
+            DLOG("Created new Xinerama screen %s (%p)\n", output_primary_name(s), s);
             s->active = true;
             s->rect.x = screen_info[screen].x_org;
             s->rect.y = screen_info[screen].y_org;

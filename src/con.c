@@ -1264,7 +1264,7 @@ void con_move_to_output(Con *con, Output *output) {
     Con *ws = NULL;
     GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
     assert(ws != NULL);
-    DLOG("Moving con %p to output %s\n", con, output->name);
+    DLOG("Moving con %p to output %s\n", con, output_primary_name(output));
     con_move_to_workspace(con, ws, false, false, false);
 }
 

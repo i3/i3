@@ -188,7 +188,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         struct Workspace_Assignment *assignment;
         TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
             if (strcmp(assignment->name, target_name) != 0 ||
-                strcmp(assignment->output, output->name) == 0)
+                strcmp(assignment->output, output_primary_name(output)) == 0)
                 continue;
 
             assigned = true;
@@ -935,7 +935,7 @@ bool workspace_move_to_output(Con *ws, const char *name) {
         bool used_assignment = false;
         struct Workspace_Assignment *assignment;
         TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-            if (assignment->output == NULL || strcmp(assignment->output, current_output->name) != 0)
+            if (assignment->output == NULL || strcmp(assignment->output, output_primary_name(current_output)) != 0)
                 continue;
 
             /* check if this workspace is already attached to the tree */
