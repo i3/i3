@@ -599,9 +599,39 @@ static bool randr_query_outputs_15(void) {
         if (new == NULL) {
             new = scalloc(1, sizeof(Output));
 
+            SLIST_INIT(&new->names_head);
+
+            /* Register associated output names in addition to the monitor name */
+            xcb_randr_output_t *randr_outputs = xcb_randr_monitor_info_outputs(monitor_info);
+            int randr_output_len = xcb_randr_monitor_info_outputs_length(monitor_info);
+            for (int i = 0; i < randr_output_len; i++) {
+                xcb_randr_output_t randr_output = randr_outputs[i];
+
+                xcb_randr_get_output_info_reply_t *info =
+                    xcb_randr_get_output_info_reply(conn,
+                                                    xcb_randr_get_output_info(conn, randr_output, monitors->timestamp),
+                                                    NULL);
+
+                if (info != NULL && info->crtc != XCB_NONE) {
+                    char *oname;
+                    sasprintf(&oname, "%.*s",
+                              xcb_randr_get_output_info_name_length(info),
+                              xcb_randr_get_output_info_name(info));
+
+                    if (strcmp(name, oname) != 0) {
+                        struct output_name *output_name = scalloc(1, sizeof(struct output_name));
+                        output_name->name = sstrdup(oname);
+                        SLIST_INSERT_HEAD(&new->names_head, output_name, names);
+                    } else {
+                        free(oname);
+                    }
+                }
+                FREE(info);
+            }
+
+            /* Insert the monitor name last, so that it's used as the primary name */
             struct output_name *output_name = scalloc(1, sizeof(struct output_name));
             output_name->name = sstrdup(name);
-            SLIST_INIT(&new->names_head);
             SLIST_INSERT_HEAD(&new->names_head, output_name, names);
 
             if (monitor_info->primary) {
