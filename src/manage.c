@@ -219,7 +219,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         LOG("This window is of type dock\n");
         Output *output = get_output_containing(geom->x, geom->y);
         if (output != NULL) {
-            DLOG("Starting search at output %s\n", output->name);
+            DLOG("Starting search at output %s\n", output_primary_name(output));
             search_at = output->con;
         }
 

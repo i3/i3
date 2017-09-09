@@ -829,7 +829,7 @@ IPC_HANDLER(get_outputs) {
         y(map_open);
 
         ystr("name");
-        ystr(output->name);
+        ystr(output_primary_name(output));
 
         ystr("active");
         y(bool, output->active);
