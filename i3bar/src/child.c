@@ -333,10 +333,12 @@ static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
                 break;
             }
             ELOG("read() failed!: %s\n", strerror(errno));
+            FREE(buffer);
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
             ELOG("stdin: received EOF\n");
+            FREE(buffer);
             *ret_buffer_len = -1;
             return NULL;
         }
