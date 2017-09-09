@@ -1,5 +1,8 @@
 sudo: false
 dist: trusty
+# TODO: remove “group” once trusty kernel is no longer affected by
+# https://github.com/google/sanitizers/issues/837
+group: deprecated-2017Q3
 services:
   - docker
 language: c
