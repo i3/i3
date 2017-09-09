@@ -13,6 +13,13 @@ testcases/MYMETA.json
 testcases/MYMETA.yml
 testcases/blib/
 testcases/pm_to_blib
+AnyEvent-I3/Makefile
+AnyEvent-I3/META.yml
+AnyEvent-I3/MYMETA.json
+AnyEvent-I3/MYMETA.yml
+AnyEvent-I3/blib/
+AnyEvent-I3/inc/
+AnyEvent-I3/pm_to_blib
 *.output
 *.tab.*
 *.yy.c
