@@ -46,6 +46,7 @@ our @EXPORT = qw(
     wait_for_map
     wait_for_unmap
     $x
+    kill_all_windows
 );
 
 =head1 NAME
@@ -897,6 +898,17 @@ Returns the content of the log file for the current test.
 sub get_i3_log {
     my $logfile = "$ENV{OUTDIR}/i3-log-for-$ENV{TESTNAME}";
     return slurp($logfile);
+}
+
+=head2 kill_all_windows
+
+Kills all windows to clean up between tests.
+
+=cut
+sub kill_all_windows {
+    # Sync in case not all windows are managed by i3 just yet.
+    sync_with_i3;
+    cmd '[title=".*"] kill';
 }
 
 =head1 AUTHOR
