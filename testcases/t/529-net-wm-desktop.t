@@ -78,13 +78,6 @@ sub open_window_with_net_wm_desktop {
     return $window;
 }
 
-# We need to kill all windows in between tests since they survive the i3 restart
-# and will interfere with the following tests.
-sub kill_windows {
-    sync_with_i3;
-    cmd '[title="Window.*"] kill';
-}
-
 ###############################################################################
 
 my $config = <<EOT;
@@ -108,7 +101,7 @@ my $con = open_window;
 
 is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set upon managing a window');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # Upon managing a window which sets _NET_WM_DESKTOP, the window is moved to
@@ -127,7 +120,7 @@ $con = open_window_with_net_wm_desktop(1);
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP still has the correct value');
 is_num_children('1', 2, 'The window was moved to workspace 1');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # Upon managing a window which sets _NET_WM_DESKTOP to the appropriate value,
@@ -141,7 +134,7 @@ is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP still has the correct 
 is(@{get_ws('0')->{floating_nodes}}, 1, 'The window is floating');
 ok(get_ws('0')->{floating_nodes}->[0]->{nodes}->[0]->{sticky}, 'The window is sticky');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when the window is moved to another workspace
@@ -159,7 +152,7 @@ cmd 'move window to workspace 1';
 
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP is updated when moving the window');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when the floating window is moved to another
@@ -178,7 +171,7 @@ cmd 'move window to workspace 1';
 
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP is updated when moving the window');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is removed when the window is withdrawn.
@@ -192,7 +185,7 @@ wait_for_unmap($con);
 
 is(get_net_wm_desktop($con), undef, '_NET_WM_DESKTOP is removed');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # A _NET_WM_DESKTOP client message sent to the root window moves a window
@@ -214,7 +207,7 @@ is_num_children('0', 1, 'The window is no longer on workspace 0');
 is_num_children('1', 2, 'The window is now on workspace 1');
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP is updated');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # A _NET_WM_DESKTOP client message sent to the root window can make a window
@@ -230,7 +223,7 @@ is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP is updated');
 is(@{get_ws('0')->{floating_nodes}}, 1, 'The window is floating');
 ok(get_ws('0')->{floating_nodes}->[0]->{nodes}->[0]->{sticky}, 'The window is sticky');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when a new workspace with a lower number is
@@ -244,7 +237,7 @@ is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set sanity check)');
 cmd 'workspace 0';
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP is updated');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when a window is made sticky by command.
@@ -258,7 +251,7 @@ is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set sanity check)');
 cmd 'sticky enable';
 is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP is updated');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when a window is made sticky by client message.
@@ -282,7 +275,7 @@ sync_with_i3;
 
 is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP is updated');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when a window is moved to the scratchpad.
@@ -299,7 +292,7 @@ is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP is updated');
 cmd 'scratchpad show';
 is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set sanity check)');
 
-kill_windows;
+kill_all_windows;
 
 ###############################################################################
 
