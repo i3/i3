@@ -147,6 +147,10 @@ ok(@{get_ws_content($tmp)} == 2, 'after split & new window, two containers');
 
 $wscontent = get_ws($tmp);
 
+# Ensure i3’s X11 requests are processed before our inquiry via
+# $tilewindow->rect:
+sync_with_i3;
+
 @tiled = @{$wscontent->{nodes}};
 ok(@tiled == 2, 'two tiled container opened in another container');
 is($tiled[0]->{current_border_width}, -1, 'first tiled current border width set to -1');
