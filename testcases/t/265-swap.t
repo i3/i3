@@ -45,6 +45,7 @@ open_window;
 cmd "swap container with con_id 1";
 
 does_i3_live;
+kill_all_windows;
 
 ###############################################################################
 # Swap 2 windows in different workspaces using con_id
@@ -59,6 +60,8 @@ open_window;
 
 cmd "swap container with con_id $A";
 is(get_focused($ws), $A, 'A is now focused');
+
+kill_all_windows;
 
 ###############################################################################
 # Swap two containers next to each other.
@@ -81,6 +84,8 @@ $nodes = get_ws_content($ws);
 is($nodes->[0]->{window}, $B->{id}, 'B is on the left');
 is($nodes->[1]->{window}, $A->{id}, 'A is on the right');
 is(get_focused($ws), $expected_focus, 'B is still focused');
+
+kill_all_windows;
 
 ###############################################################################
 # Swap two containers with different parents.
@@ -112,6 +117,8 @@ is($nodes->[0]->{nodes}->[0]->{window}, $B->{id}, 'B is on the top left');
 is($nodes->[1]->{nodes}->[1]->{window}, $A->{id}, 'A is on the bottom right');
 is(get_focused($ws), $expected_focus, 'B is still focused');
 
+kill_all_windows;
+
 ###############################################################################
 # Swap two containers with different parents.
 # In this test, the focus head of the left v-split container is _not_ A.
@@ -141,6 +148,8 @@ $nodes = get_ws_content($ws);
 is($nodes->[0]->{nodes}->[0]->{window}, $B->{id}, 'B is on the top left');
 is($nodes->[1]->{nodes}->[1]->{window}, $A->{id}, 'A is on the bottom right');
 is(get_focused($ws), $expected_focus, 'B is still focused');
+
+kill_all_windows;
 
 ###############################################################################
 # Swap two containers with one being on a different workspace.
@@ -177,6 +186,8 @@ $nodes = get_ws_content($ws2);
 is($nodes->[1]->{window}, $A->{id}, 'A is on ws2:right');
 is(get_focused($ws2), $expected_focus, 'A is focused');
 
+kill_all_windows;
+
 ###############################################################################
 # Swap two non-focused containers within the same workspace.
 #
@@ -204,6 +215,8 @@ $nodes = get_ws_content($ws);
 is($nodes->[0]->{nodes}->[0]->{window}, $B->{id}, 'B is on the top left');
 is($nodes->[1]->{nodes}->[1]->{window}, $A->{id}, 'A is on the bottom right');
 is(get_focused($ws), $expected_focus, 'F is still focused');
+
+kill_all_windows;
 
 ###############################################################################
 # Swap two non-focused containers which are both on different workspaces.
@@ -244,6 +257,8 @@ is($nodes->[0]->{window}, $A->{id}, 'A is on the second workspace');
 
 is(get_focused($ws3), $expected_focus, 'F is still focused');
 
+kill_all_windows;
+
 ###############################################################################
 # Swap two non-focused containers with one being on a different workspace.
 #
@@ -277,6 +292,8 @@ $nodes = get_ws_content($ws2);
 is($nodes->[0]->{window}, $A->{id}, 'A is on the left of the second workspace');
 is(get_focused($ws2), $expected_focus, 'F is still focused');
 
+kill_all_windows;
+
 ###############################################################################
 # 1. A container cannot be swapped with its parent.
 # 2. A container cannot be swapped with one of its children.
@@ -300,6 +317,8 @@ is($result->[0]->{success}, 0, 'B cannot be swappd with its parent');
 
 $result = cmd '[con_mark=A] swap container with mark B';
 is($result->[0]->{success}, 0, 'A cannot be swappd with one of its children');
+
+kill_all_windows;
 
 ###############################################################################
 # Swapping two containers preserves the geometry of the container they are
@@ -330,6 +349,8 @@ cmd '[con_mark=B] swap container with mark A';
 $nodes = get_ws_content($ws);
 cmp_float($nodes->[0]->{percent}, 0.25, 'B has 25% width');
 cmp_float($nodes->[1]->{percent}, 0.75, 'A has 75% width');
+
+kill_all_windows;
 
 ###############################################################################
 # Swapping containers not sharing the same parent preserves the geometry of
@@ -375,6 +396,8 @@ $nodes = get_ws_content($ws);
 cmp_float($nodes->[0]->{nodes}->[0]->{percent}, 0.25, 'B has 25% height');
 cmp_float($nodes->[1]->{nodes}->[0]->{percent}, 0.75, 'A has 75% height');
 
+kill_all_windows;
+
 ###############################################################################
 # Swapping containers moves the urgency hint correctly.
 ###############################################################################
@@ -397,6 +420,8 @@ is(get_ws($ws1)->{urgent}, 1, 'the first workspace is marked urgent');
 @urgent = grep { $_->{urgent} } @{get_ws_content($ws2)};
 is(@urgent, 0, 'A is not marked urgent');
 is(get_ws($ws2)->{urgent}, 0, 'the second workspace is not marked urgent');
+
+kill_all_windows;
 
 ###############################################################################
 

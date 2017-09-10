@@ -112,6 +112,8 @@ wait_for_unmap $window;
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
 
+kill_all_windows;
+
 ##############################################################
 # 2: match on the title, check if for_window is really executed
 # only once
@@ -151,6 +153,8 @@ wait_for_unmap $window;
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
 
+kill_all_windows;
+
 ##############################################################
 # 3: match on the title, set border style *and* a mark
 ##############################################################
@@ -175,6 +179,8 @@ cmd qq|[con_mark="bleh"] focus|;
 
 @content = @{get_ws_content($tmp)};
 ok($content[0]->{focused}, 'first node focused');
+
+kill_all_windows;
 
 ##############################################################
 # 4: multiple criteria for the for_window command
@@ -211,6 +217,8 @@ wait_for_map $window;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'no border');
 
+kill_all_windows;
+
 ##############################################################
 # 5: check that a class criterion does not match the instance
 ##############################################################
@@ -226,6 +234,8 @@ $window = open_window(
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border, not matched');
+
+kill_all_windows;
 
 ##############################################################
 # 6: check that the 'instance' criterion works
@@ -243,6 +253,8 @@ $window = open_window(
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
+kill_all_windows;
+
 ##############################################################
 # 7: check that invalid criteria don’t end up matching all windows
 ##############################################################
@@ -258,6 +270,8 @@ $window = open_window(
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border');
+
+kill_all_windows;
 
 ##############################################################
 # 8: check that the role criterion works properly
@@ -286,6 +300,8 @@ $window = open_window(
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border (window_role)');
+
+kill_all_windows;
 
 ##############################################################
 # 9: another test for the window_role, but this time it changes
@@ -320,6 +336,8 @@ sync_with_i3;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border (window_role 2)');
 
+kill_all_windows;
+
 ##############################################################
 # 10: check that the criterion 'window_type' works
 ##############################################################
@@ -332,6 +350,8 @@ while (my ($window_type, $atom) = each %window_types) {
     my @nodes = @{get_ws($tmp)->{floating_nodes}};
     cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
     is_deeply($nodes[0]->{nodes}[0]->{marks}, [ "branded-$window_type" ], "mark set (window_type = $atom)");
+
+    kill_all_windows;
 }
 
 ##############################################################
@@ -354,6 +374,8 @@ while (my ($window_type, $atom) = each %window_types) {
     my @nodes = @{get_ws($tmp)->{floating_nodes}};
     cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
     is_deeply($nodes[0]->{nodes}[0]->{marks}, [ "branded-$window_type" ], "mark set (window_type = $atom)");
+
+    kill_all_windows;
 }
 
 ##############################################################
@@ -366,6 +388,8 @@ $window = open_window;
 @nodes = @{get_ws('trigger')->{floating_nodes}};
 cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
 is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'triggered' ], "mark set for workspace criterion");
+
+kill_all_windows;
 
 ##############################################################
 
