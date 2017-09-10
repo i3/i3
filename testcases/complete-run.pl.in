@@ -177,9 +177,16 @@ my $timingsjson = slurp('.last_run_timings.json') if -e '.last_run_timings.json'
              map  { [$_, $timings{$_} // 999] } @testfiles;
 
 # Run 000-load-deps.t first to bail out early when dependencies are missing.
-my $loadtest = "t/000-load-deps.t";
-if ((scalar grep { $_ eq $loadtest } @testfiles) > 0) {
+my ($loadtest) = grep { $_ =~ m,t/000-load-deps.t$, } @testfiles;
+if (defined($loadtest)) {
     @testfiles = ($loadtest, grep { $_ ne $loadtest } @testfiles);
+}
+
+# Run 533-randr15.t last because it destructively modifies the RandR
+# configuration of the X session, interfering with any test started afterwards.
+my ($randrtest) = grep { $_ =~ m,t/533-randr15.t$, } @testfiles;
+if (defined($randrtest)) {
+    @testfiles = ((grep { $_ ne $randrtest } @testfiles), $randrtest);
 }
 
 printf("\nRough time estimate for this run: %.2f seconds\n\n", $timings{GLOBAL})
