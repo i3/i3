@@ -18,7 +18,11 @@ WriteMakefile(
     PM => {}, # do not install any files from this directory
     clean => {
         FILES => 'testsuite-* latest i3-cfg-for-*',
-    }
+    },
+    # This is a pure-Perl distribution:
+    linkext => {
+        LINKTYPE => '',
+    },
 );
 
 package MY;
