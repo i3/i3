@@ -66,23 +66,21 @@ sub open_window_with_net_wm_desktop {
                 pack('L', $idx),
             );
         },
+	dont_map => 1,
     );
+
+    # We don’t wait for MapNotify and instead sync with i3 so that we don’t need
+    # to encounter the full timeout of 4s when opening a window on a non-visible
+    # workspace.
+    $window->map;
+    sync_with_i3;
 
     return $window;
 }
 
-# We need to kill all windows in between tests since they survive the i3 restart
-# and will interfere with the following tests.
-sub kill_windows {
-    sync_with_i3;
-    cmd '[title="Window.*"] kill';
-}
-
 ###############################################################################
 
-my ($config, $config_mm, $pid, $con);
-
-$config = <<EOT;
+my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -91,41 +89,24 @@ bar {
 }
 EOT
 
-$config_mm = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-
-workspace "0" output "fake-0"
-workspace "1" output "fake-0"
-workspace "2" output "fake-0"
-workspace "10" output "fake-1"
-workspace "11" output "fake-1"
-workspace "12" output "fake-1"
-
-fake-outputs 1024x768+0+0,1024x768+1024+0
-EOT
+my $pid = launch_with_config($config);
 
 ###############################################################################
 # Upon managing a window which does not set _NET_WM_DESKTOP, the property is
 # set on the window.
 ###############################################################################
 
-$pid = launch_with_config($config);
-
 cmd 'workspace 1';
-$con = open_window;
+my $con = open_window;
 
 is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set upon managing a window');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # Upon managing a window which sets _NET_WM_DESKTOP, the window is moved to
 # the specified desktop.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 cmd 'workspace 0';
 open_window;
@@ -139,15 +120,12 @@ $con = open_window_with_net_wm_desktop(1);
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP still has the correct value');
 is_num_children('1', 2, 'The window was moved to workspace 1');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # Upon managing a window which sets _NET_WM_DESKTOP to the appropriate value,
 # the window is made sticky and floating.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 cmd 'workspace 0';
 $con = open_window_with_net_wm_desktop(0xFFFFFFFF);
@@ -156,15 +134,12 @@ is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP still has the correct 
 is(@{get_ws('0')->{floating_nodes}}, 1, 'The window is floating');
 ok(get_ws('0')->{floating_nodes}->[0]->{nodes}->[0]->{sticky}, 'The window is sticky');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when the window is moved to another workspace
 # on the same output.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 cmd 'workspace 0';
 open_window;
@@ -177,15 +152,12 @@ cmd 'move window to workspace 1';
 
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP is updated when moving the window');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when the floating window is moved to another
 # workspace on the same output.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 cmd 'workspace 0';
 open_window;
@@ -199,35 +171,11 @@ cmd 'move window to workspace 1';
 
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP is updated when moving the window');
 
-kill_windows;
-exit_gracefully($pid);
-
-###############################################################################
-# _NET_WM_DESKTOP is updated when the window is moved to another workspace
-# on another output.
-###############################################################################
-
-$pid = launch_with_config($config_mm);
-
-cmd 'workspace 0';
-open_window;
-cmd 'workspace 10';
-open_window;
-cmd 'workspace 0';
-$con = open_window;
-
-cmd 'move window to workspace 10';
-
-is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP is updated when moving the window');
-
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is removed when the window is withdrawn.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 $con = open_window;
 is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set (sanity check)');
@@ -237,15 +185,12 @@ wait_for_unmap($con);
 
 is(get_net_wm_desktop($con), undef, '_NET_WM_DESKTOP is removed');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # A _NET_WM_DESKTOP client message sent to the root window moves a window
 # to the correct workspace.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 cmd 'workspace 0';
 open_window;
@@ -262,15 +207,12 @@ is_num_children('0', 1, 'The window is no longer on workspace 0');
 is_num_children('1', 2, 'The window is now on workspace 1');
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP is updated');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # A _NET_WM_DESKTOP client message sent to the root window can make a window
 # sticky.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 cmd 'workspace 0';
 $con = open_window;
@@ -281,15 +223,12 @@ is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP is updated');
 is(@{get_ws('0')->{floating_nodes}}, 1, 'The window is floating');
 ok(get_ws('0')->{floating_nodes}->[0]->{nodes}->[0]->{sticky}, 'The window is sticky');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when a new workspace with a lower number is
 # opened and closed.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 cmd 'workspace 1';
 $con = open_window;
@@ -298,14 +237,11 @@ is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set sanity check)');
 cmd 'workspace 0';
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP is updated');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when a window is made sticky by command.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 cmd 'workspace 0';
 $con = open_window;
@@ -315,14 +251,11 @@ is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set sanity check)');
 cmd 'sticky enable';
 is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP is updated');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when a window is made sticky by client message.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 cmd 'workspace 0';
 $con = open_window;
@@ -342,14 +275,11 @@ sync_with_i3;
 
 is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP is updated');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
 # _NET_WM_DESKTOP is updated when a window is moved to the scratchpad.
 ###############################################################################
-
-$pid = launch_with_config($config);
 
 cmd 'workspace 0';
 $con = open_window;
@@ -362,9 +292,10 @@ is(get_net_wm_desktop($con), 0xFFFFFFFF, '_NET_WM_DESKTOP is updated');
 cmd 'scratchpad show';
 is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set sanity check)');
 
-kill_windows;
-exit_gracefully($pid);
+kill_all_windows;
 
 ###############################################################################
+
+exit_gracefully($pid);
 
 done_testing;
