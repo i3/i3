@@ -75,7 +75,7 @@ used to install the testsuite. Many users prefer to use the more modern
 +cpanminus+ instead, though (because it asks no questions and just works):
 
 The tests additionally require +Xephyr(1)+ to run a nested X server. Install
-+xserver-xephyr+ on Debian or +xorg-xserver-xephyr+ on Arch Linux.
++xserver-xephyr+ on Debian or +xorg-server-xephyr+ on Arch Linux.
 
 .Installing testsuite dependencies using cpanminus (preferred)
 --------------------------------------------------------------------------------
