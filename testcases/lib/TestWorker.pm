@@ -99,6 +99,11 @@ sub worker_wait {
 
             $0 = $file;
 
+            # Re-seed rand() so that File::Temp’s tempnam produces different
+            # results, making a TOCTOU between e.g. t/175-startup-notification.t
+            # and t/180-fd-leaks.t less likely.
+            srand(time ^ $$);
+
             POSIX::dup2($ipc_fd, 0);
             POSIX::dup2($ipc_fd, 1);
             POSIX::dup2(1, 2);
