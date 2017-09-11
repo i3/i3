@@ -8,9 +8,7 @@ touching i3’s source code. It should contain all important information to help
 you understand why things are like they are. If it does not mention something
 you find necessary, please do not hesitate to contact me.
 
-== Using git / sending patches
-
-=== How to build?
+== Building i3
 
 You can build i3 like you build any other software package which uses autotools.
 Here’s a memory refresher:
@@ -23,7 +21,7 @@ Here’s a memory refresher:
 (The autoreconf -fi step is unnecessary if you are building from a release tarball,
  but shouldn’t hurt either.)
 
-==== Build system features
+=== Build system features
 
 * We use the AX_ENABLE_BUILDDIR macro to enforce builds happening in a separate
   directory. This is a prerequisite for the AX_EXTEND_SRCDIR macro and building
@@ -51,7 +49,7 @@ Here’s a memory refresher:
 * Coverage reports are now generated using “make check-code-coverage”, which
   requires specifying --enable-code-coverage when calling configure.
 
-=== Introduction
+== Using git / sending patches
 
 For a short introduction into using git, see
 http://web.archive.org/web/20121024222556/http://www.spheredev.org/wiki/Git_for_the_lazy
