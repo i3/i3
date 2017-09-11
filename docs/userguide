@@ -1949,7 +1949,6 @@ bindsym $mod+x focus output HDMI-2
 bindsym $mod+x focus output primary
 -------------------------------------------------
 
--------------------------------
 Note that you might not have a primary output configured yet. To do so, run:
 -------------------------
 xrandr --output <output> --primary
