@@ -33,12 +33,12 @@ my ($outfh, $outname) = tempfile('i3-randr15reply-XXXXXX', UNLINK => 1);
 my $reply = pack('cxSLLLLx[LLL]',
      1, # reply
      0, # sequence (will be filled in by inject_randr15)
-     # 56 = length($reply) + length($monitor1)
+     # 60 = length($reply) + length($monitor1)
      # 32 = minimum X11 reply length
-     (56-32) / 4, # length in words
+     (60-32) / 4, # length in words
      0, # timestamp TODO
      1, # nmonitors
-     0); # noutputs
+     1); # noutputs
 
 # Manually intern _NET_CURRENT_DESKTOP as $x->atom will not create atoms if
 # they are not yet interned.
@@ -47,24 +47,45 @@ my $DP3 = $x->intern_atom_reply($atom_cookie->{sequence})->{atom};
 
 # MONITORINFO is defined in A.1.1 in
 # https://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
-my $monitor1 = pack('LccSssSSLL',
+my $monitor1 = pack('LccSssSSLLL',
         $DP3, # name (ATOM)
         1, # primary
         1, # automatic
-        0, # ncrtcs
+        1, # ncrtcs
         0, # x
         0, # y
         3840, # width in pixels
         2160, # height in pixels
         520, # width in millimeters
-        290); # height in millimeters
+        290, # height in millimeters
+        12345); # output ID #0
 
 print $outfh $reply;
 print $outfh $monitor1;
 
 close($outfh);
 
-my $pid = launch_with_config($config, inject_randr15 => $outname);
+# Prepare a RRGetOutputInfo reply as well; see RRGetOutputInfo in
+# https://www.x.org/releases/current/doc/randrproto/randrproto.txt
+my $output_name = 'i3-fake-output';
+($outfh, my $outname_moninfo) = tempfile('i3-randr15reply-XXXXXX', UNLINK => 1);
+my $moninfo = pack('cxSLLLx[LLccSSSS]S a* x!4',
+                   1, # reply
+                   0, # sequence (will be filled in by inject_randr15)
+                   # 36 = length($moninfo) (without name and padding)
+                   # 32 = minimum X11 reply length
+                   ((36 + length($output_name) - 32) + 3) / 4, # length in words
+                   0, # timestamp TODO
+                   12345, # CRTC
+                   length($output_name), # length of name
+                   $output_name); # name
+
+print $outfh $moninfo;
+close($outfh);
+
+my $pid = launch_with_config($config,
+                             inject_randr15 => $outname,
+                             inject_randr15_outputinfo => $outname_moninfo);
 
 my $tree = i3->get_tree->recv;
 my @outputs = map { $_->{name} } @{$tree->{nodes}};
@@ -86,7 +107,7 @@ exit_gracefully($pid);
 
 # When inject_randr15 is defined but false, fake-xinerama will be turned off,
 # but inject_randr15 will not actually be used.
-my $pid = launch_with_config($config, inject_randr15 => '');
+$pid = launch_with_config($config, inject_randr15 => '');
 
 $tree = i3->get_tree->recv;
 @outputs = map { $_->{name} } @{$tree->{nodes}};
