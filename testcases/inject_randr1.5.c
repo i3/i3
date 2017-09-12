@@ -48,6 +48,7 @@ struct injected_reply {
 
 /* BEGIN RandR 1.5 specific */
 static struct injected_reply getmonitors_reply = {NULL, 0};
+static struct injected_reply getoutputinfo_reply = {NULL, 0};
 /* END RandR 1.5 specific */
 
 #define XCB_PAD(i) (-(i)&3)
@@ -70,6 +71,8 @@ struct connstate {
     int getext_randr;
     /* sequence number of the most recent RRGetMonitors request */
     int getmonitors;
+    /* sequence number of the most recent RRGetOutputInfo request */
+    int getoutputinfo;
 
     int randr_major_opcode;
     /* END RandR 1.5 specific */
@@ -263,6 +266,8 @@ static void read_client_x11_packet_cb(EV_P_ ev_io *w, int revents) {
         const uint8_t randr_opcode = ((generic_x11_request_t *)request)->pad0;
         if (randr_opcode == XCB_RANDR_GET_MONITORS) {
             connstate->getmonitors = connstate->sequence;
+        } else if (randr_opcode == XCB_RANDR_GET_OUTPUT_INFO) {
+            connstate->getoutputinfo = connstate->sequence;
         }
     }
     /* END RandR 1.5 specific */
@@ -302,6 +307,17 @@ static void read_server_x11_packet_cb(EV_P_ ev_io *w, int revents) {
                     printf("injecting reply\n");
                     ((generic_x11_reply_t *)getmonitors_reply.buf)->sequence = sequence;
                     must_write(writeall(connstate->clientw->fd, getmonitors_reply.buf, getmonitors_reply.len));
+                    free(packet);
+                    return;
+                }
+            }
+
+            if (sequence == connstate->getoutputinfo) {
+                printf("RRGetOutputInfo reply!\n");
+                if (getoutputinfo_reply.buf != NULL) {
+                    printf("injecting reply\n");
+                    ((generic_x11_reply_t *)getoutputinfo_reply.buf)->sequence = sequence;
+                    must_write(writeall(connstate->clientw->fd, getoutputinfo_reply.buf, getoutputinfo_reply.len));
                     free(packet);
                     return;
                 }
@@ -347,6 +363,7 @@ static void must_read_reply(const char *filename, struct injected_reply *reply) 
 int main(int argc, char *argv[]) {
     static struct option long_options[] = {
         {"getmonitors_reply", required_argument, 0, 0},
+        {"getoutputinfo_reply", required_argument, 0, 0},
         {0, 0, 0, 0},
     };
     char *options_string = "";
@@ -355,11 +372,15 @@ int main(int argc, char *argv[]) {
 
     while ((opt = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (opt) {
-            case 0:
-                if (strcmp(long_options[option_index].name, "getmonitors_reply") == 0) {
+            case 0: {
+                const char *option_name = long_options[option_index].name;
+                if (strcmp(option_name, "getmonitors_reply") == 0) {
                     must_read_reply(optarg, &getmonitors_reply);
+                } else if (strcmp(option_name, "getoutputinfo_reply") == 0) {
+                    must_read_reply(optarg, &getoutputinfo_reply);
                 }
                 break;
+            }
             default:
                 exit(EXIT_FAILURE);
         }
