@@ -105,7 +105,7 @@ sub start_xserver {
     for (1 .. $parallel) {
         my $socket = fork_xserver($keep_xserver_output, $displaynum,
                 'Xephyr', ":$displaynum", '-screen', '1280x800',
-                '-nolisten', 'tcp');
+                '-nolisten', 'tcp', '-name', "i3test");
         push(@displays, ":$displaynum");
         push(@sockets_waiting, $socket);
         $displaynum++;
