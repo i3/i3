@@ -20,10 +20,16 @@
 use File::Temp qw(tempfile);
 use i3test i3_autostart => 0;
 
+my $monitor_name = 'i3-fake-monitor';
+my $output_name = 'i3-fake-output';
+
 my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
+bar {
+    output $output_name
+}
 EOT
 
 my ($outfh, $outname) = tempfile('i3-randr15reply-XXXXXX', UNLINK => 1);
@@ -42,7 +48,6 @@ my $reply = pack('cxSLLLLx[LLL]',
 
 # Manually intern _NET_CURRENT_DESKTOP as $x->atom will not create atoms if
 # they are not yet interned.
-my $monitor_name = 'i3-fake-monitor';
 my $atom_cookie = $x->intern_atom(0, length($monitor_name), $monitor_name);
 my $monitor_name_atom = $x->intern_atom_reply($atom_cookie->{sequence})->{atom};
 
@@ -68,7 +73,6 @@ close($outfh);
 
 # Prepare a RRGetOutputInfo reply as well; see RRGetOutputInfo in
 # https://www.x.org/releases/current/doc/randrproto/randrproto.txt
-my $output_name = 'i3-fake-output';
 ($outfh, my $outname_moninfo) = tempfile('i3-randr15reply-XXXXXX', UNLINK => 1);
 my $moninfo = pack('cxSLLLx[LLccSSSS]S a* x!4',
                    1, # reply
@@ -99,6 +103,17 @@ is_deeply($output_data->{rect}, {
         x => 0,
         y => 0,
     }, "Fake output at 3840x2160+0+0");
+
+# Verify that i3 canonicalizes RandR output names to i3 output names
+# (RandR monitor names) for bar configs
+
+my $bars = i3->get_bar_config()->recv;
+is(@$bars, 1, 'one bar configured');
+
+my $bar_id = shift @$bars;
+
+my $bar_config = i3->get_bar_config($bar_id)->recv;
+is_deeply($bar_config->{outputs}, [ $monitor_name ], 'bar_config output name is normalized');
 
 exit_gracefully($pid);
 
