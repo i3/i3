@@ -42,13 +42,14 @@ my $reply = pack('cxSLLLLx[LLL]',
 
 # Manually intern _NET_CURRENT_DESKTOP as $x->atom will not create atoms if
 # they are not yet interned.
-my $atom_cookie = $x->intern_atom(0, length("DP3"), "DP3");
-my $DP3 = $x->intern_atom_reply($atom_cookie->{sequence})->{atom};
+my $monitor_name = 'i3-fake-monitor';
+my $atom_cookie = $x->intern_atom(0, length($monitor_name), $monitor_name);
+my $monitor_name_atom = $x->intern_atom_reply($atom_cookie->{sequence})->{atom};
 
 # MONITORINFO is defined in A.1.1 in
 # https://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
 my $monitor1 = pack('LccSssSSLLL',
-        $DP3, # name (ATOM)
+        $monitor_name_atom, # name (ATOM)
         1, # primary
         1, # automatic
         1, # ncrtcs
@@ -89,15 +90,15 @@ my $pid = launch_with_config($config,
 
 my $tree = i3->get_tree->recv;
 my @outputs = map { $_->{name} } @{$tree->{nodes}};
-is_deeply(\@outputs, [ '__i3', 'DP3' ], 'outputs are __i3 and DP3');
+is_deeply(\@outputs, [ '__i3', $monitor_name ], 'outputs are __i3 and the fake monitor');
 
-my ($dp3) = grep { $_->{name} eq 'DP3' } @{$tree->{nodes}};
-is_deeply($dp3->{rect}, {
+my ($output_data) = grep { $_->{name} eq $monitor_name } @{$tree->{nodes}};
+is_deeply($output_data->{rect}, {
         width => 3840,
         height => 2160,
         x => 0,
         y => 0,
-    }, 'Output DP3 at 3840x2160+0+0');
+    }, "Fake output at 3840x2160+0+0");
 
 exit_gracefully($pid);
 
