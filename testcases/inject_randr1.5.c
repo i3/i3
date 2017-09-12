@@ -41,9 +41,13 @@ void cleanup_socket(void) {
     }
 }
 
+struct injected_reply {
+    void *buf;
+    off_t len;
+};
+
 /* BEGIN RandR 1.5 specific */
-static void *injected_reply = NULL;
-static off_t injected_reply_len = 0;
+static struct injected_reply getmonitors_reply = {NULL, 0};
 /* END RandR 1.5 specific */
 
 #define XCB_PAD(i) (-(i)&3)
@@ -294,10 +298,10 @@ static void read_server_x11_packet_cb(EV_P_ ev_io *w, int revents) {
 
             if (sequence == connstate->getmonitors) {
                 printf("RRGetMonitors reply!\n");
-                if (injected_reply != NULL) {
+                if (getmonitors_reply.buf != NULL) {
                     printf("injecting reply\n");
-                    ((generic_x11_reply_t *)injected_reply)->sequence = sequence;
-                    must_write(writeall(connstate->clientw->fd, injected_reply, injected_reply_len));
+                    ((generic_x11_reply_t *)getmonitors_reply.buf)->sequence = sequence;
+                    must_write(writeall(connstate->clientw->fd, getmonitors_reply.buf, getmonitors_reply.len));
                     free(packet);
                     return;
                 }
@@ -322,7 +326,7 @@ static void child_cb(EV_P_ ev_child *w, int revents) {
     }
 }
 
-static void must_read_reply(const char *filename) {
+static void must_read_reply(const char *filename, struct injected_reply *reply) {
     FILE *f;
     if ((f = fopen(filename, "r")) == NULL) {
         err(EXIT_FAILURE, "fopen(%s)", filename);
@@ -331,11 +335,9 @@ static void must_read_reply(const char *filename) {
     if (fstat(fileno(f), &stbuf) != 0) {
         err(EXIT_FAILURE, "fstat(%s)", filename);
     }
-    /* BEGIN RandR 1.5 specific */
-    injected_reply_len = stbuf.st_size;
-    injected_reply = smalloc(stbuf.st_size);
-    int n = fread(injected_reply, 1, stbuf.st_size, f);
-    /* END RandR 1.5 specific */
+    reply->len = stbuf.st_size;
+    reply->buf = smalloc(stbuf.st_size);
+    int n = fread(reply->buf, 1, stbuf.st_size, f);
     if (n != stbuf.st_size) {
         err(EXIT_FAILURE, "fread(%s)", filename);
     }
@@ -355,7 +357,7 @@ int main(int argc, char *argv[]) {
         switch (opt) {
             case 0:
                 if (strcmp(long_options[option_index].name, "getmonitors_reply") == 0) {
-                    must_read_reply(optarg);
+                    must_read_reply(optarg, &getmonitors_reply);
                 }
                 break;
             default:
