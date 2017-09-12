@@ -1025,7 +1025,7 @@ bool parse_file(const char *f, bool use_nagbar) {
     /* Then, allocate a new buffer and copy the file over to the new one,
      * but replace occurrences of our variables */
     char *walk = buf, *destwalk;
-    char *new = smalloc(stbuf.st_size + extra_bytes + 1);
+    char *new = scalloc(stbuf.st_size + extra_bytes + 1, 1);
     destwalk = new;
     while (walk < (buf + stbuf.st_size)) {
         /* Find the next variable */
