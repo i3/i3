@@ -83,6 +83,7 @@ $ cd ~/i3/testcases
 $ sudo apt-get install cpanminus
 $ sudo cpanm .
 $ cd ~/i3/AnyEvent-I3
+$ sudo cpanm Module::Install
 $ sudo cpanm .
 --------------------------------------------------------------------------------
 
@@ -93,6 +94,7 @@ If you don’t want to use cpanminus for some reason, the same works with cpan:
 $ cd ~/i3/testcases
 $ sudo cpan .
 $ cd ~/i3/AnyEvent-I3
+$ sudo cpan Module::Install
 $ sudo cpan .
 --------------------------------------------------------------------------------
 
