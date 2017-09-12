@@ -276,6 +276,32 @@ static void read_client_x11_packet_cb(EV_P_ ev_io *w, int revents) {
     free(request);
 }
 
+static bool handle_sequence(struct connstate *connstate, uint16_t sequence) {
+    /* BEGIN RandR 1.5 specific */
+    if (sequence == connstate->getmonitors) {
+        printf("RRGetMonitors reply!\n");
+        if (getmonitors_reply.buf != NULL) {
+            printf("injecting reply\n");
+            ((generic_x11_reply_t *)getmonitors_reply.buf)->sequence = sequence;
+            must_write(writeall(connstate->clientw->fd, getmonitors_reply.buf, getmonitors_reply.len));
+            return true;
+        }
+    }
+
+    if (sequence == connstate->getoutputinfo) {
+        printf("RRGetOutputInfo reply!\n");
+        if (getoutputinfo_reply.buf != NULL) {
+            printf("injecting reply\n");
+            ((generic_x11_reply_t *)getoutputinfo_reply.buf)->sequence = sequence;
+            must_write(writeall(connstate->clientw->fd, getoutputinfo_reply.buf, getoutputinfo_reply.len));
+            return true;
+        }
+    }
+    /* END RandR 1.5 specific */
+
+    return false;
+}
+
 static void read_server_x11_packet_cb(EV_P_ ev_io *w, int revents) {
     struct connstate *connstate = (struct connstate *)w->data;
     // all packets from the server are at least 32 bytes in length
@@ -283,9 +309,14 @@ static void read_server_x11_packet_cb(EV_P_ ev_io *w, int revents) {
     void *packet = smalloc(len);
     must_read(readall_into(packet, len, connstate->serverw->fd));
     switch (((generic_x11_reply_t *)packet)->code) {
-        case 0:  // error
+        case 0: {  // error
+            const uint16_t sequence = ((xcb_request_error_t *)packet)->sequence;
+            if (handle_sequence(connstate, sequence)) {
+                free(packet);
+                return;
+            }
             break;
-
+        }
         case 1:  // reply
             len += ((generic_x11_reply_t *)packet)->length * 4;
             if (len > 32) {
@@ -300,29 +331,12 @@ static void read_server_x11_packet_cb(EV_P_ ev_io *w, int revents) {
                 xcb_query_extension_reply_t *reply = packet;
                 connstate->randr_major_opcode = reply->major_opcode;
             }
-
-            if (sequence == connstate->getmonitors) {
-                printf("RRGetMonitors reply!\n");
-                if (getmonitors_reply.buf != NULL) {
-                    printf("injecting reply\n");
-                    ((generic_x11_reply_t *)getmonitors_reply.buf)->sequence = sequence;
-                    must_write(writeall(connstate->clientw->fd, getmonitors_reply.buf, getmonitors_reply.len));
-                    free(packet);
-                    return;
-                }
-            }
-
-            if (sequence == connstate->getoutputinfo) {
-                printf("RRGetOutputInfo reply!\n");
-                if (getoutputinfo_reply.buf != NULL) {
-                    printf("injecting reply\n");
-                    ((generic_x11_reply_t *)getoutputinfo_reply.buf)->sequence = sequence;
-                    must_write(writeall(connstate->clientw->fd, getoutputinfo_reply.buf, getoutputinfo_reply.len));
-                    free(packet);
-                    return;
-                }
-            }
             /* END RandR 1.5 specific */
+
+            if (handle_sequence(connstate, sequence)) {
+                free(packet);
+                return;
+            }
 
             break;
 
