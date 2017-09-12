@@ -869,6 +869,18 @@ The 'output' is the name of the RandR output you attach your screen to. On a
 laptop, you might have VGA1 and LVDS1 as output names. You can see the
 available outputs by running +xrandr --current+.
 
+If your X server supports RandR 1.5 or newer, i3 will use RandR monitor objects
+instead of output objects. Run +xrandr --listmonitors+ to see a list. Usually,
+a monitor object contains exactly one output, and has the same name as the
+output; but should that not be the case, you may specify the name of either the
+monitor or the output in i3's configuration. For example, the Dell UP2414Q uses
+two scalers internally, so its output names might be “DP1” and “DP2”, but the
+monitor name is “Dell UP2414Q”.
+
+(Note that even if you specify the name of an output which doesn't span the
+entire monitor, i3 will still use the entire area of the containing monitor
+rather than that of just the output's.)
+
 If you use named workspaces, they must be quoted:
 
 *Examples*:
