@@ -320,22 +320,7 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
         DLOG("parent container killed\n");
     }
 
-    free(con->name);
-    FREE(con->deco_render_params);
-    TAILQ_REMOVE(&all_cons, con, all_cons);
-    while (!TAILQ_EMPTY(&(con->swallow_head))) {
-        Match *match = TAILQ_FIRST(&(con->swallow_head));
-        TAILQ_REMOVE(&(con->swallow_head), match, matches);
-        match_free(match);
-        free(match);
-    }
-    while (!TAILQ_EMPTY(&(con->marks_head))) {
-        mark_t *mark = TAILQ_FIRST(&(con->marks_head));
-        TAILQ_REMOVE(&(con->marks_head), mark, marks);
-        FREE(mark->name);
-        FREE(mark);
-    }
-    free(con);
+    con_free(con);
 
     /* in the case of floating windows, we already focused another container
      * when closing the parent, so we can exit now. */
