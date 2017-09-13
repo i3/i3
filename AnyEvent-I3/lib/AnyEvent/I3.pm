@@ -9,6 +9,7 @@ use AnyEvent::Socket;
 use AnyEvent;
 use Encode;
 use Scalar::Util qw(tainted);
+use Carp;
 
 =head1 NAME
 
@@ -186,7 +187,7 @@ sub new {
         # We use getpwuid() instead of $ENV{HOME} because the latter is tainted
         # and thus produces warnings when running tests with perl -T
         my $home = (getpwuid($<))[7];
-        die "Could not get home directory" unless $home and -d $home;
+        confess "Could not get home directory" unless $home and -d $home;
         $path =~ s/~/$home/g;
     }
 
@@ -330,9 +331,9 @@ scalar), if specified.
 sub message {
     my ($self, $type, $content) = @_;
 
-    die "No message type specified" unless defined($type);
+    confess "No message type specified" unless defined($type);
 
-    die "No connection to i3" unless defined($self->{ipchdl});
+    confess "No connection to i3" unless defined($self->{ipchdl});
 
     my $payload = "";
     if ($content) {
@@ -373,7 +374,7 @@ sub _ensure_connection {
 
     return if defined($self->{ipchdl});
 
-    $self->connect->recv or die "Unable to connect to i3 (socket path " . $self->{path} . ")";
+    $self->connect->recv or confess "Unable to connect to i3 (socket path " . $self->{path} . ")";
 }
 
 =head2 get_workspaces
