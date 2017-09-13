@@ -64,12 +64,19 @@ static Con *_create___i3(void) {
  *
  */
 bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
+    bool result = false;
     char *globbed = resolve_tilde(path);
 
     if (!path_exists(globbed)) {
         LOG("%s does not exist, not restoring tree\n", globbed);
-        free(globbed);
-        return false;
+        goto out;
+    }
+
+    char *buf = NULL;
+    ssize_t len;
+    if ((len = slurp(globbed, &buf)) < 0) {
+        /* slurp already logged an error. */
+        goto out;
     }
 
     /* TODO: refactor the following */
@@ -81,8 +88,7 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
         geometry->height};
     focused = croot;
 
-    tree_append_json(focused, globbed, NULL);
-    free(globbed);
+    tree_append_json(focused, buf, len, NULL);
 
     DLOG("appended tree, using new root\n");
     croot = TAILQ_FIRST(&(croot->nodes_head));
@@ -104,8 +110,12 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
     }
 
     restore_open_placeholder_windows(croot);
+    result = true;
 
-    return true;
+out:
+    free(globbed);
+    free(buf);
+    return result;
 }
 
 /*

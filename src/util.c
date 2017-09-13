@@ -475,3 +475,35 @@ bool parse_long(const char *str, long *out, int base) {
     *out = result;
     return true;
 }
+
+/*
+ * Slurp reads path in its entirety into buf, returning the length of the file
+ * or -1 if the file could not be read. buf is set to a buffer of appropriate
+ * size, or NULL if -1 is returned.
+ *
+ */
+ssize_t slurp(const char *path, char **buf) {
+    FILE *f;
+    if ((f = fopen(path, "r")) == NULL) {
+        ELOG("Cannot open file \"%s\": %s\n", path, strerror(errno));
+        return -1;
+    }
+    struct stat stbuf;
+    if (fstat(fileno(f), &stbuf) != 0) {
+        ELOG("Cannot fstat() \"%s\": %s\n", path, strerror(errno));
+        fclose(f);
+        return -1;
+    }
+    /* Allocate one extra NUL byte to make the buffer usable with C string
+     * functions. yajl doesn’t need this, but this makes slurp safer. */
+    *buf = scalloc(stbuf.st_size + 1, 1);
+    size_t n = fread(*buf, 1, stbuf.st_size, f);
+    fclose(f);
+    if ((ssize_t)n != stbuf.st_size) {
+        ELOG("File \"%s\" could not be read entirely: got %zd, want %zd\n", path, n, stbuf.st_size);
+        free(buf);
+        *buf = NULL;
+        return -1;
+    }
+    return (ssize_t)n;
+}
