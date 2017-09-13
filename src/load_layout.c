@@ -69,9 +69,9 @@ static int json_start_map(void *ctx) {
                 json_node->name = NULL;
                 json_node->parent = parent;
             }
-	    /* json_node is incomplete and should be removed if parsing fails */
-	    incomplete++;
-	    DLOG("incomplete = %d\n", incomplete);
+            /* json_node is incomplete and should be removed if parsing fails */
+            incomplete++;
+            DLOG("incomplete = %d\n", incomplete);
         }
     }
     return 1;
@@ -170,8 +170,8 @@ static int json_end_map(void *ctx) {
         LOG("Creating window\n");
         x_con_init(json_node);
         json_node = json_node->parent;
-	incomplete--;
-	DLOG("incomplete = %d\n", incomplete);
+        incomplete--;
+        DLOG("incomplete = %d\n", incomplete);
     }
 
     if (parsing_swallows && swallow_is_empty) {
@@ -538,36 +538,42 @@ static int json_determine_content_string(void *ctx, const unsigned char *val, si
     return 0;
 }
 
+/*
+ * Returns true if the provided JSON could be parsed by yajl.
+ *
+ */
+bool json_validate(const char *buf, const size_t len) {
+    bool valid = true;
+    yajl_handle hand = yajl_alloc(NULL, NULL, NULL);
+    /* Allowing comments allows for more user-friendly layout files. */
+    yajl_config(hand, yajl_allow_comments, true);
+    /* Allow multiple values, i.e. multiple nodes to attach */
+    yajl_config(hand, yajl_allow_multiple_values, true);
+
+    setlocale(LC_NUMERIC, "C");
+    if (yajl_parse(hand, (const unsigned char *)buf, len) != yajl_status_ok) {
+        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, len);
+        ELOG("JSON parsing error: %s\n", str);
+        yajl_free_error(hand, str);
+        valid = false;
+    }
+    setlocale(LC_NUMERIC, "");
+
+    yajl_complete_parse(hand);
+    yajl_free(hand);
+
+    return valid;
+}
+
 /* Parses the given JSON file until it encounters the first “type” property to
  * determine whether the file contains workspaces or regular containers, which
  * is important to know when deciding where (and how) to append the contents.
  * */
-json_content_t json_determine_content(const char *filename) {
-    FILE *f;
-    if ((f = fopen(filename, "r")) == NULL) {
-        ELOG("Cannot open file \"%s\"\n", filename);
-        return JSON_CONTENT_UNKNOWN;
-    }
-    struct stat stbuf;
-    if (fstat(fileno(f), &stbuf) != 0) {
-        ELOG("Cannot fstat() \"%s\"\n", filename);
-        fclose(f);
-        return JSON_CONTENT_UNKNOWN;
-    }
-    char *buf = smalloc(stbuf.st_size);
-    int n = fread(buf, 1, stbuf.st_size, f);
-    if (n != stbuf.st_size) {
-        ELOG("File \"%s\" could not be read entirely, not loading.\n", filename);
-        fclose(f);
-        return JSON_CONTENT_UNKNOWN;
-    }
-    DLOG("read %d bytes\n", n);
+json_content_t json_determine_content(const char *buf, const size_t len) {
     // We default to JSON_CONTENT_CON because it is legal to not include
     // “"type": "con"” in the JSON files for better readability.
     content_result = JSON_CONTENT_CON;
     content_level = 0;
-    yajl_gen g;
-    yajl_handle hand;
     static yajl_callbacks callbacks = {
         .yajl_string = json_determine_content_string,
         .yajl_map_key = json_key,
@@ -576,51 +582,27 @@ json_content_t json_determine_content(const char *filename) {
         .yajl_end_map = json_determine_content_shallower,
         .yajl_end_array = json_determine_content_shallower,
     };
-    g = yajl_gen_alloc(NULL);
-    hand = yajl_alloc(&callbacks, NULL, (void *)g);
+    yajl_handle hand = yajl_alloc(&callbacks, NULL, NULL);
     /* Allowing comments allows for more user-friendly layout files. */
     yajl_config(hand, yajl_allow_comments, true);
     /* Allow multiple values, i.e. multiple nodes to attach */
     yajl_config(hand, yajl_allow_multiple_values, true);
-    yajl_status stat;
     setlocale(LC_NUMERIC, "C");
-    stat = yajl_parse(hand, (const unsigned char *)buf, n);
+    const yajl_status stat = yajl_parse(hand, (const unsigned char *)buf, len);
     if (stat != yajl_status_ok && stat != yajl_status_client_canceled) {
-        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, n);
+        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, len);
         ELOG("JSON parsing error: %s\n", str);
         yajl_free_error(hand, str);
     }
 
     setlocale(LC_NUMERIC, "");
     yajl_complete_parse(hand);
-
-    fclose(f);
+    yajl_free(hand);
 
     return content_result;
 }
 
-void tree_append_json(Con *con, const char *filename, char **errormsg) {
-    FILE *f;
-    if ((f = fopen(filename, "r")) == NULL) {
-        ELOG("Cannot open file \"%s\"\n", filename);
-        return;
-    }
-    struct stat stbuf;
-    if (fstat(fileno(f), &stbuf) != 0) {
-        ELOG("Cannot fstat() \"%s\"\n", filename);
-        fclose(f);
-        return;
-    }
-    char *buf = smalloc(stbuf.st_size);
-    int n = fread(buf, 1, stbuf.st_size, f);
-    if (n != stbuf.st_size) {
-        ELOG("File \"%s\" could not be read entirely, not loading.\n", filename);
-        fclose(f);
-        return;
-    }
-    DLOG("read %d bytes\n", n);
-    yajl_gen g;
-    yajl_handle hand;
+void tree_append_json(Con *con, const char *buf, const size_t len, char **errormsg) {
     static yajl_callbacks callbacks = {
         .yajl_boolean = json_bool,
         .yajl_integer = json_int,
@@ -631,13 +613,11 @@ void tree_append_json(Con *con, const char *filename, char **errormsg) {
         .yajl_end_map = json_end_map,
         .yajl_end_array = json_end_array,
     };
-    g = yajl_gen_alloc(NULL);
-    hand = yajl_alloc(&callbacks, NULL, (void *)g);
+    yajl_handle hand = yajl_alloc(&callbacks, NULL, NULL);
     /* Allowing comments allows for more user-friendly layout files. */
     yajl_config(hand, yajl_allow_comments, true);
     /* Allow multiple values, i.e. multiple nodes to attach */
     yajl_config(hand, yajl_allow_multiple_values, true);
-    yajl_status stat;
     json_node = con;
     to_focus = NULL;
     incomplete = 0;
@@ -649,19 +629,19 @@ void tree_append_json(Con *con, const char *filename, char **errormsg) {
     parsing_focus = false;
     parsing_marks = false;
     setlocale(LC_NUMERIC, "C");
-    stat = yajl_parse(hand, (const unsigned char *)buf, n);
+    const yajl_status stat = yajl_parse(hand, (const unsigned char *)buf, len);
     if (stat != yajl_status_ok) {
-        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, n);
+        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, len);
         ELOG("JSON parsing error: %s\n", str);
         if (errormsg != NULL)
             *errormsg = sstrdup((const char *)str);
         yajl_free_error(hand, str);
-	while (incomplete-- > 0) {
-	  Con *parent = json_node->parent;
-	  DLOG("freeing incomplete container %p\n", json_node);
-	  con_free(json_node);
-	  json_node = parent;
-	}
+        while (incomplete-- > 0) {
+            Con *parent = json_node->parent;
+            DLOG("freeing incomplete container %p\n", json_node);
+            con_free(json_node);
+            json_node = parent;
+        }
     }
 
     /* In case not all containers were restored, we need to fix the
@@ -672,10 +652,8 @@ void tree_append_json(Con *con, const char *filename, char **errormsg) {
     setlocale(LC_NUMERIC, "");
     yajl_complete_parse(hand);
     yajl_free(hand);
-    yajl_gen_free(g);
 
-    fclose(f);
-    free(buf);
-    if (to_focus)
+    if (to_focus) {
         con_focus(to_focus);
+    }
 }

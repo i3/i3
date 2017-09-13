@@ -31,6 +31,12 @@ typedef enum {
  * determine whether the file contains workspaces or regular containers, which
  * is important to know when deciding where (and how) to append the contents.
  * */
-json_content_t json_determine_content(const char *filename);
+json_content_t json_determine_content(const char *buf, const size_t len);
 
-void tree_append_json(Con *con, const char *filename, char **errormsg);
+/**
+ * Returns true if the provided JSON could be parsed by yajl.
+ *
+ */
+bool json_validate(const char *buf, const size_t len);
+
+void tree_append_json(Con *con, const char *buf, const size_t len, char **errormsg);
