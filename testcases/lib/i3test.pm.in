@@ -835,17 +835,17 @@ sub launch_with_config {
 
     my ($fh, $tmpfile) = tempfile("i3-cfg-for-$ENV{TESTNAME}-XXXXX", UNLINK => 1);
 
+    say $fh "ipc-socket $tmp_socket_path"
+        unless $args{dont_add_socket_path};
+
     if ($config ne '-default') {
-        say $fh $config;
+        print $fh $config;
     } else {
         open(my $conf_fh, '<', '@abs_top_srcdir@/testcases/i3-test.config')
             or $tester->BAIL_OUT("could not open default config: $!");
         local $/;
         say $fh scalar <$conf_fh>;
     }
-
-    say $fh "ipc-socket $tmp_socket_path"
-        unless $args{dont_add_socket_path};
 
     close($fh);
 
