@@ -25,6 +25,12 @@ Con *output_get_content(Con *output);
 Output *get_output_from_string(Output *current_output, const char *output_str);
 
 /**
+ * Retrieves the primary name of an output.
+ *
+ */
+char *output_primary_name(Output *output);
+
+/**
  * Returns the output for the given con.
  *
  */

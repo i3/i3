@@ -388,7 +388,7 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
             Con *current_output = con_get_output(con);
             Output *target = get_output_containing(x, y);
             if (target != NULL && current_output != target->con) {
-                DLOG("Dock client is requested to be moved to output %s, moving it there.\n", target->name);
+                DLOG("Dock client is requested to be moved to output %s, moving it there.\n", output_primary_name(target));
                 Match *match;
                 Con *nc = con_for_window(target->con, con->window, &match);
                 DLOG("Dock client will be moved to container %p.\n", nc);

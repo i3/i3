@@ -44,6 +44,14 @@ Output *get_output_from_string(Output *current_output, const char *output_str) {
     return get_output_by_name(output_str, true);
 }
 
+/*
+ * Retrieves the primary name of an output.
+ *
+ */
+char *output_primary_name(Output *output) {
+    return SLIST_FIRST(&output->names_head)->name;
+}
+
 Output *get_output_for_con(Con *con) {
     Con *output_con = con_get_output(con);
     if (output_con == NULL) {

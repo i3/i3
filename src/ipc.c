@@ -579,6 +579,11 @@ static void dump_bar_bindings(yajl_gen gen, Barconfig *config) {
     y(array_close);
 }
 
+static char *canonicalize_output_name(char *name) {
+    Output *output = get_output_by_name(name, false);
+    return output ? output_primary_name(output) : name;
+}
+
 static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     y(map_open);
 
@@ -588,8 +593,13 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     if (config->num_outputs > 0) {
         ystr("outputs");
         y(array_open);
-        for (int c = 0; c < config->num_outputs; c++)
-            ystr(config->outputs[c]);
+        for (int c = 0; c < config->num_outputs; c++) {
+            /* Convert monitor names (RandR ≥ 1.5) or output names
+             * (RandR < 1.5) into monitor names. This way, existing
+             * configs which use output names transparently keep
+             * working. */
+            ystr(canonicalize_output_name(config->outputs[c]));
+        }
         y(array_close);
     }
 
@@ -599,7 +609,7 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
 
         struct tray_output_t *tray_output;
         TAILQ_FOREACH(tray_output, &(config->tray_outputs), tray_outputs) {
-            ystr(tray_output->output);
+            ystr(canonicalize_output_name(tray_output->output));
         }
 
         y(array_close);
@@ -829,7 +839,7 @@ IPC_HANDLER(get_outputs) {
         y(map_open);
 
         ystr("name");
-        ystr(output->name);
+        ystr(output_primary_name(output));
 
         ystr("active");
         y(bool, output->active);

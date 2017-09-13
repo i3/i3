@@ -145,7 +145,12 @@ sub activate_i3 {
         if ($args{inject_randr15}) {
             # See comment in $args{strace} branch.
             $cmd = 'test.inject_randr15 --getmonitors_reply="' .
-                   $args{inject_randr15} . '" -- ' .
+                   $args{inject_randr15} . '" ' .
+                   ($args{inject_randr15_outputinfo}
+                    ? '--getoutputinfo_reply="' .
+                      $args{inject_randr15_outputinfo} . '" '
+                    : '') .
+                   '-- ' .
                    'sh -c "export LISTEN_PID=\$\$; ' . $cmd . '"';
         }
 

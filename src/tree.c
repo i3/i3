@@ -537,7 +537,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
 
         if (!current_output)
             return false;
-        DLOG("Current output is %s\n", current_output->name);
+        DLOG("Current output is %s\n", output_primary_name(current_output));
 
         /* Try to find next output */
         direction_t direction;
@@ -555,7 +555,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         next_output = get_output_next(direction, current_output, CLOSEST_OUTPUT);
         if (!next_output)
             return false;
-        DLOG("Next output is %s\n", next_output->name);
+        DLOG("Next output is %s\n", output_primary_name(next_output));
 
         /* Find visible workspace on next output */
         Con *workspace = NULL;

@@ -687,7 +687,7 @@ int main(int argc, char *argv[]) {
         TAILQ_FOREACH(con, &(croot->nodes_head), nodes) {
             Output *output;
             TAILQ_FOREACH(output, &outputs, outputs) {
-                if (output->active || strcmp(con->name, output->name) != 0)
+                if (output->active || strcmp(con->name, output_primary_name(output)) != 0)
                     continue;
 
                 /* This will correctly correlate the output with its content

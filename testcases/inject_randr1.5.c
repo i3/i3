@@ -41,9 +41,14 @@ void cleanup_socket(void) {
     }
 }
 
+struct injected_reply {
+    void *buf;
+    off_t len;
+};
+
 /* BEGIN RandR 1.5 specific */
-static void *injected_reply = NULL;
-static off_t injected_reply_len = 0;
+static struct injected_reply getmonitors_reply = {NULL, 0};
+static struct injected_reply getoutputinfo_reply = {NULL, 0};
 /* END RandR 1.5 specific */
 
 #define XCB_PAD(i) (-(i)&3)
@@ -66,6 +71,8 @@ struct connstate {
     int getext_randr;
     /* sequence number of the most recent RRGetMonitors request */
     int getmonitors;
+    /* sequence number of the most recent RRGetOutputInfo request */
+    int getoutputinfo;
 
     int randr_major_opcode;
     /* END RandR 1.5 specific */
@@ -259,12 +266,40 @@ static void read_client_x11_packet_cb(EV_P_ ev_io *w, int revents) {
         const uint8_t randr_opcode = ((generic_x11_request_t *)request)->pad0;
         if (randr_opcode == XCB_RANDR_GET_MONITORS) {
             connstate->getmonitors = connstate->sequence;
+        } else if (randr_opcode == XCB_RANDR_GET_OUTPUT_INFO) {
+            connstate->getoutputinfo = connstate->sequence;
         }
     }
     /* END RandR 1.5 specific */
 
     must_write(writeall(connstate->serverw->fd, request, len));
     free(request);
+}
+
+static bool handle_sequence(struct connstate *connstate, uint16_t sequence) {
+    /* BEGIN RandR 1.5 specific */
+    if (sequence == connstate->getmonitors) {
+        printf("RRGetMonitors reply!\n");
+        if (getmonitors_reply.buf != NULL) {
+            printf("injecting reply\n");
+            ((generic_x11_reply_t *)getmonitors_reply.buf)->sequence = sequence;
+            must_write(writeall(connstate->clientw->fd, getmonitors_reply.buf, getmonitors_reply.len));
+            return true;
+        }
+    }
+
+    if (sequence == connstate->getoutputinfo) {
+        printf("RRGetOutputInfo reply!\n");
+        if (getoutputinfo_reply.buf != NULL) {
+            printf("injecting reply\n");
+            ((generic_x11_reply_t *)getoutputinfo_reply.buf)->sequence = sequence;
+            must_write(writeall(connstate->clientw->fd, getoutputinfo_reply.buf, getoutputinfo_reply.len));
+            return true;
+        }
+    }
+    /* END RandR 1.5 specific */
+
+    return false;
 }
 
 static void read_server_x11_packet_cb(EV_P_ ev_io *w, int revents) {
@@ -274,9 +309,14 @@ static void read_server_x11_packet_cb(EV_P_ ev_io *w, int revents) {
     void *packet = smalloc(len);
     must_read(readall_into(packet, len, connstate->serverw->fd));
     switch (((generic_x11_reply_t *)packet)->code) {
-        case 0:  // error
+        case 0: {  // error
+            const uint16_t sequence = ((xcb_request_error_t *)packet)->sequence;
+            if (handle_sequence(connstate, sequence)) {
+                free(packet);
+                return;
+            }
             break;
-
+        }
         case 1:  // reply
             len += ((generic_x11_reply_t *)packet)->length * 4;
             if (len > 32) {
@@ -291,18 +331,12 @@ static void read_server_x11_packet_cb(EV_P_ ev_io *w, int revents) {
                 xcb_query_extension_reply_t *reply = packet;
                 connstate->randr_major_opcode = reply->major_opcode;
             }
-
-            if (sequence == connstate->getmonitors) {
-                printf("RRGetMonitors reply!\n");
-                if (injected_reply != NULL) {
-                    printf("injecting reply\n");
-                    ((generic_x11_reply_t *)injected_reply)->sequence = sequence;
-                    must_write(writeall(connstate->clientw->fd, injected_reply, injected_reply_len));
-                    free(packet);
-                    return;
-                }
-            }
             /* END RandR 1.5 specific */
+
+            if (handle_sequence(connstate, sequence)) {
+                free(packet);
+                return;
+            }
 
             break;
 
@@ -322,7 +356,7 @@ static void child_cb(EV_P_ ev_child *w, int revents) {
     }
 }
 
-static void must_read_reply(const char *filename) {
+static void must_read_reply(const char *filename, struct injected_reply *reply) {
     FILE *f;
     if ((f = fopen(filename, "r")) == NULL) {
         err(EXIT_FAILURE, "fopen(%s)", filename);
@@ -331,11 +365,9 @@ static void must_read_reply(const char *filename) {
     if (fstat(fileno(f), &stbuf) != 0) {
         err(EXIT_FAILURE, "fstat(%s)", filename);
     }
-    /* BEGIN RandR 1.5 specific */
-    injected_reply_len = stbuf.st_size;
-    injected_reply = smalloc(stbuf.st_size);
-    int n = fread(injected_reply, 1, stbuf.st_size, f);
-    /* END RandR 1.5 specific */
+    reply->len = stbuf.st_size;
+    reply->buf = smalloc(stbuf.st_size);
+    int n = fread(reply->buf, 1, stbuf.st_size, f);
     if (n != stbuf.st_size) {
         err(EXIT_FAILURE, "fread(%s)", filename);
     }
@@ -345,6 +377,7 @@ static void must_read_reply(const char *filename) {
 int main(int argc, char *argv[]) {
     static struct option long_options[] = {
         {"getmonitors_reply", required_argument, 0, 0},
+        {"getoutputinfo_reply", required_argument, 0, 0},
         {0, 0, 0, 0},
     };
     char *options_string = "";
@@ -353,11 +386,15 @@ int main(int argc, char *argv[]) {
 
     while ((opt = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (opt) {
-            case 0:
-                if (strcmp(long_options[option_index].name, "getmonitors_reply") == 0) {
-                    must_read_reply(optarg);
+            case 0: {
+                const char *option_name = long_options[option_index].name;
+                if (strcmp(option_name, "getmonitors_reply") == 0) {
+                    must_read_reply(optarg, &getmonitors_reply);
+                } else if (strcmp(option_name, "getoutputinfo_reply") == 0) {
+                    must_read_reply(optarg, &getoutputinfo_reply);
                 }
                 break;
+            }
             default:
                 exit(EXIT_FAILURE);
         }

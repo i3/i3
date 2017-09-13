@@ -48,9 +48,17 @@ Output *get_output_by_name(const char *name, const bool require_active) {
     Output *output;
     bool get_primary = (strcasecmp("primary", name) == 0);
     TAILQ_FOREACH(output, &outputs, outputs) {
-        if ((output->primary && get_primary) ||
-            ((!require_active || output->active) && strcasecmp(output->name, name) == 0)) {
+        if (output->primary && get_primary) {
             return output;
+        }
+        if (require_active && !output->active) {
+            continue;
+        }
+        struct output_name *output_name;
+        SLIST_FOREACH(output_name, &output->names_head, names) {
+            if (strcasecmp(output_name->name, name) == 0) {
+                return output;
+            }
         }
     }
 
@@ -178,7 +186,7 @@ Output *get_output_next_wrap(direction_t direction, Output *current) {
     }
     if (!best)
         best = current;
-    DLOG("current = %s, best = %s\n", current->name, best->name);
+    DLOG("current = %s, best = %s\n", output_primary_name(current), output_primary_name(best));
     return best;
 }
 
@@ -250,7 +258,7 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
         }
     }
 
-    DLOG("current = %s, best = %s\n", current->name, (best ? best->name : "NULL"));
+    DLOG("current = %s, best = %s\n", output_primary_name(current), (best ? output_primary_name(best) : "NULL"));
     return best;
 }
 
@@ -266,7 +274,11 @@ Output *create_root_output(xcb_connection_t *conn) {
     s->rect.y = 0;
     s->rect.width = root_screen->width_in_pixels;
     s->rect.height = root_screen->height_in_pixels;
-    s->name = "xroot-0";
+
+    struct output_name *output_name = scalloc(1, sizeof(struct output_name));
+    output_name->name = "xroot-0";
+    SLIST_INIT(&s->names_head);
+    SLIST_INSERT_HEAD(&s->names_head, output_name, names);
 
     return s;
 }
@@ -280,12 +292,12 @@ void output_init_con(Output *output) {
     Con *con = NULL, *current;
     bool reused = false;
 
-    DLOG("init_con for output %s\n", output->name);
+    DLOG("init_con for output %s\n", output_primary_name(output));
 
     /* Search for a Con with that name directly below the root node. There
      * might be one from a restored layout. */
     TAILQ_FOREACH(current, &(croot->nodes_head), nodes) {
-        if (strcmp(current->name, output->name) != 0)
+        if (strcmp(current->name, output_primary_name(output)) != 0)
             continue;
 
         con = current;
@@ -297,7 +309,7 @@ void output_init_con(Output *output) {
     if (con == NULL) {
         con = con_new(croot, NULL);
         FREE(con->name);
-        con->name = sstrdup(output->name);
+        con->name = sstrdup(output_primary_name(output));
         con->type = CT_OUTPUT;
         con->layout = L_OUTPUT;
         con_fix_percent(croot);
@@ -384,7 +396,7 @@ void init_ws_for_output(Output *output, Con *content) {
     /* go through all assignments and move the existing workspaces to this output */
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-        if (strcmp(assignment->output, output->name) != 0)
+        if (strcmp(assignment->output, output_primary_name(output)) != 0)
             continue;
 
         /* check if this workspace actually exists */
@@ -402,13 +414,13 @@ void init_ws_for_output(Output *output, Con *content) {
             LOG("Workspace \"%s\" assigned to output \"%s\", but it is already "
                 "there. Do you have two assignment directives for the same "
                 "workspace in your configuration file?\n",
-                workspace->name, output->name);
+                workspace->name, output_primary_name(output));
             continue;
         }
 
         /* if so, move it over */
         LOG("Moving workspace \"%s\" from output \"%s\" to \"%s\" due to assignment\n",
-            workspace->name, workspace_out->name, output->name);
+            workspace->name, workspace_out->name, output_primary_name(output));
 
         /* if the workspace is currently visible on that output, we need to
          * switch to a different workspace - otherwise the output would end up
@@ -445,7 +457,7 @@ void init_ws_for_output(Output *output, Con *content) {
                 workspace_out->name);
             init_ws_for_output(get_output_by_name(workspace_out->name, true),
                                output_get_content(workspace_out));
-            DLOG("Done re-initializing, continuing with \"%s\"\n", output->name);
+            DLOG("Done re-initializing, continuing with \"%s\"\n", output_primary_name(output));
         }
     }
 
@@ -465,7 +477,7 @@ void init_ws_for_output(Output *output, Con *content) {
 
     /* otherwise, we create the first assigned ws for this output */
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-        if (strcmp(assignment->output, output->name) != 0)
+        if (strcmp(assignment->output, output_primary_name(output)) != 0)
             continue;
 
         LOG("Initializing first assigned workspace \"%s\" for output \"%s\"\n",
@@ -594,7 +606,42 @@ static bool randr_query_outputs_15(void) {
         Output *new = get_output_by_name(name, false);
         if (new == NULL) {
             new = scalloc(1, sizeof(Output));
-            new->name = sstrdup(name);
+
+            SLIST_INIT(&new->names_head);
+
+            /* Register associated output names in addition to the monitor name */
+            xcb_randr_output_t *randr_outputs = xcb_randr_monitor_info_outputs(monitor_info);
+            int randr_output_len = xcb_randr_monitor_info_outputs_length(monitor_info);
+            for (int i = 0; i < randr_output_len; i++) {
+                xcb_randr_output_t randr_output = randr_outputs[i];
+
+                xcb_randr_get_output_info_reply_t *info =
+                    xcb_randr_get_output_info_reply(conn,
+                                                    xcb_randr_get_output_info(conn, randr_output, monitors->timestamp),
+                                                    NULL);
+
+                if (info != NULL && info->crtc != XCB_NONE) {
+                    char *oname;
+                    sasprintf(&oname, "%.*s",
+                              xcb_randr_get_output_info_name_length(info),
+                              xcb_randr_get_output_info_name(info));
+
+                    if (strcmp(name, oname) != 0) {
+                        struct output_name *output_name = scalloc(1, sizeof(struct output_name));
+                        output_name->name = sstrdup(oname);
+                        SLIST_INSERT_HEAD(&new->names_head, output_name, names);
+                    } else {
+                        free(oname);
+                    }
+                }
+                FREE(info);
+            }
+
+            /* Insert the monitor name last, so that it's used as the primary name */
+            struct output_name *output_name = scalloc(1, sizeof(struct output_name));
+            output_name->name = sstrdup(name);
+            SLIST_INSERT_HEAD(&new->names_head, output_name, names);
+
             if (monitor_info->primary) {
                 TAILQ_INSERT_HEAD(&outputs, new, outputs);
             } else {
@@ -643,16 +690,25 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
 
     Output *new = get_output_by_id(id);
     bool existing = (new != NULL);
-    if (!existing)
+    if (!existing) {
         new = scalloc(1, sizeof(Output));
+        SLIST_INIT(&new->names_head);
+    }
     new->id = id;
     new->primary = (primary && primary->output == id);
-    FREE(new->name);
-    sasprintf(&new->name, "%.*s",
+    while (!SLIST_EMPTY(&new->names_head)) {
+        FREE(SLIST_FIRST(&new->names_head)->name);
+        struct output_name *old_head = SLIST_FIRST(&new->names_head);
+        SLIST_REMOVE_HEAD(&new->names_head, names);
+        FREE(old_head);
+    }
+    struct output_name *output_name = scalloc(1, sizeof(struct output_name));
+    sasprintf(&output_name->name, "%.*s",
               xcb_randr_get_output_info_name_length(output),
               xcb_randr_get_output_info_name(output));
+    SLIST_INSERT_HEAD(&new->names_head, output_name, names);
 
-    DLOG("found output with name %s\n", new->name);
+    DLOG("found output with name %s\n", output_primary_name(new));
 
     /* Even if no CRTC is used at the moment, we store the output so that
      * we do not need to change the list ever again (we only update the
@@ -672,7 +728,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
     icookie = xcb_randr_get_crtc_info(conn, output->crtc, cts);
     if ((crtc = xcb_randr_get_crtc_info_reply(conn, icookie, NULL)) == NULL) {
         DLOG("Skipping output %s: could not get CRTC (%p)\n",
-             new->name, crtc);
+             output_primary_name(new), crtc);
         free(new);
         return;
     }
@@ -789,7 +845,7 @@ void randr_query_outputs(void) {
         if (!output->active || output->to_be_disabled)
             continue;
         DLOG("output %p / %s, position (%d, %d), checking for clones\n",
-             output, output->name, output->rect.x, output->rect.y);
+             output, output_primary_name(output), output->rect.x, output->rect.y);
 
         for (other = output;
              other != TAILQ_END(&outputs);
@@ -813,7 +869,7 @@ void randr_query_outputs(void) {
             update_if_necessary(&(other->rect.width), width);
             update_if_necessary(&(other->rect.height), height);
 
-            DLOG("disabling output %p (%s)\n", other, other->name);
+            DLOG("disabling output %p (%s)\n", other, output_primary_name(other));
             other->to_be_disabled = true;
 
             DLOG("new output mode %d x %d, other mode %d x %d\n",
@@ -828,7 +884,7 @@ void randr_query_outputs(void) {
      * LVDS1 gets disabled. */
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (output->active && output->con == NULL) {
-            DLOG("Need to initialize a Con for output %s\n", output->name);
+            DLOG("Need to initialize a Con for output %s\n", output_primary_name(output));
             output_init_con(output);
             output->changed = false;
         }
@@ -854,7 +910,7 @@ void randr_query_outputs(void) {
         Con *content = output_get_content(output->con);
         if (!TAILQ_EMPTY(&(content->nodes_head)))
             continue;
-        DLOG("Should add ws for output %s\n", output->name);
+        DLOG("Should add ws for output %s\n", output_primary_name(output));
         init_ws_for_output(output, content);
     }
 
@@ -863,7 +919,7 @@ void randr_query_outputs(void) {
         if (!output->primary || !output->con)
             continue;
 
-        DLOG("Focusing primary output %s\n", output->name);
+        DLOG("Focusing primary output %s\n", output_primary_name(output));
         con_focus(con_descend_focused(output->con));
     }
 
@@ -881,7 +937,7 @@ void randr_disable_output(Output *output) {
     assert(output->to_be_disabled);
 
     output->active = false;
-    DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
+    DLOG("Output %s disabled, re-assigning workspaces/docks\n", output_primary_name(output));
 
     Output *first = get_first_output();
 
