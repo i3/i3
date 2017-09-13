@@ -327,43 +327,22 @@ void floating_disable(Con *con, bool automatic) {
         return;
     }
 
-    const bool set_focus = (con == focused);
-
     Con *ws = con_get_workspace(con);
-    Con *parent = con->parent;
+    Con *tiling_focused = con_descend_tiling_focused(ws);
 
-    /* 1: detach from parent container */
-    con_detach(con);
-
-    /* 2: kill parent container */
-    con_detach(con->parent);
-    /* clear the pointer before calling tree_close_internal in which the memory is freed */
-    con->parent = NULL;
-    tree_close_internal(parent, DONT_KILL_WINDOW, true, false);
-
-    /* 3: re-attach to the parent of the currently focused con on the workspace
-     * this floating con was on */
-    Con *focused = con_descend_tiling_focused(ws);
-
-    /* if there is no other container on this workspace, focused will be the
-     * workspace itself */
-    if (focused->type == CT_WORKSPACE)
-        con->parent = focused;
-    else
-        con->parent = focused->parent;
-
-    /* con_fix_percent will adjust the percent value */
-    con->percent = 0.0;
+    if (tiling_focused->type == CT_WORKSPACE) {
+        Con *parent = con->parent;
+        con_detach(con);
+        con->parent = NULL;
+        tree_close_internal(parent, DONT_KILL_WINDOW, true, false);
+        con_attach(con, tiling_focused, false);
+        con->percent = 0.0;
+        con_fix_percent(con->parent);
+    } else {
+        insert_con_into(con, tiling_focused, AFTER);
+    }
 
     con->floating = FLOATING_USER_OFF;
-
-    con_attach(con, con->parent, false);
-
-    con_fix_percent(con->parent);
-
-    if (set_focus)
-        con_activate(con);
-
     floating_set_hint_atom(con, false);
     ipc_send_window_event("floating", con);
 }

@@ -9,9 +9,6 @@
  */
 #include "all.h"
 
-typedef enum { BEFORE,
-               AFTER } position_t;
-
 /*
  * Returns the lowest container in the tree that has both a and b as descendants.
  *
@@ -65,7 +62,7 @@ static bool is_focused_descendant(Con *con, Con *ancestor) {
  * after 'target'.
  *
  */
-static void insert_con_into(Con *con, Con *target, position_t position) {
+void insert_con_into(Con *con, Con *target, position_t position) {
     Con *parent = target->parent;
     /* We need to preserve the old con->parent. While it might still be used to
      * insert the entry before/after it, we call the on_remove_child callback
