@@ -164,3 +164,11 @@ void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it);
  * if the number could be parsed.
  */
 bool parse_long(const char *str, long *out, int base);
+
+/**
+ * Slurp reads path in its entirety into buf, returning the length of the file
+ * or -1 if the file could not be read. buf is set to a buffer of appropriate
+ * size, or NULL if -1 is returned.
+ *
+ */
+ssize_t slurp(const char *path, char **buf);

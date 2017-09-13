@@ -26,6 +26,12 @@ Con *con_new_skeleton(Con *parent, i3Window *window);
 Con *con_new(Con *parent, i3Window *window);
 
 /**
+ * Frees the specified container.
+ *
+ */
+void con_free(Con *con);
+
+/**
  * Sets input focus to the given container. Will be updated in X11 in the next
  * run of x_push_changes().
  *

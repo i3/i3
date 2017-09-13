@@ -131,13 +131,102 @@ print $fh <<'EOT';
 EOT
 $fh->flush;
 my $reply = cmd "append_layout $filename";
-diag('reply = ' . Dumper($reply));
+ok(!$reply->[0]->{success}, 'IPC reply did not indicate success');
 
 does_i3_live;
 
-ok(!$reply->[0]->{success}, 'IPC reply did not indicate success');
 
 close($fh);
+
+################################################################################
+# another file with a superfluous trailing comma (issue #2755)
+################################################################################
+
+subtest 'issue 2755' => sub {
+    plan tests => 4;
+    $ws = fresh_workspace;
+
+    @content = @{get_ws_content($ws)};
+    is(@content, 0, 'no nodes on the new workspace yet');
+
+    ($fh, $filename) = tempfile(UNLINK => 1);
+    print $fh <<'EOT';
+// vim:ts=4:sw=4:et
+{
+    // splith split container with 2 children
+    "border": "normal",
+    "floating": "auto_off",
+    "layout": "splith",
+    "percent": null,
+    "type": "con",
+    "nodes": [
+        {
+            "border": "normal",
+            "current_border_width": 2,
+            "floating": "auto_off",
+            "geometry": {
+               "height": 860,
+               "width": 1396,
+               "x": 1922,
+               "y": 38
+            },
+            "name": "Chromium1",
+            "percent": 0.5,
+            "swallows": [
+               {
+                  "class": "^Chromium$",
+               // "instance": "^chromium$",
+               // "title": "^Git\\ Tutorial\\ \\-\\ corp\\ \\-\\ Chromium$",
+               // "transient_for": "^$",
+               // "window_role": "^browser$"
+               }
+            ],
+            "type": "con"
+        },
+        {
+            "border": "normal",
+            "current_border_width": 2,
+            "floating": "auto_off",
+            "geometry": {
+               "height": 1040,
+               "width": 956,
+               "x": 2,
+               "y": 38
+            },
+            "name": "Chromium2",
+            "percent": 0.5,
+            "swallows": [
+               {
+                  "class": "^Chromium$",
+               // "instance": "^chromium$",
+               // "title": "^Nutanix\\ \\-\\ Prod\\ \\-\\ Sign\\ In\\ \\-\\ Chromium$",
+               // "transient_for": "^$",
+               // "window_role": "^browser$"
+               }
+            ],
+            "type": "con"
+        }
+    ]
+}
+
+EOT
+    $fh->flush;
+    $reply = cmd "append_layout $filename";
+    ok(!$reply->[0]->{success}, 'IPC reply indicated success');
+
+    does_i3_live;
+
+    # Move to a different workspace rendered the half-attached con’s con->parent
+    # invalid.
+    fresh_workspace;
+
+    cmd '[urgent=latest] focus';
+    $reply = cmd 'scratchpad show';
+
+    does_i3_live;
+
+    close($fh);
+};
 
 ################################################################################
 # wrong percent key in a child node

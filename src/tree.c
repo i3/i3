@@ -64,12 +64,19 @@ static Con *_create___i3(void) {
  *
  */
 bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
+    bool result = false;
     char *globbed = resolve_tilde(path);
 
     if (!path_exists(globbed)) {
         LOG("%s does not exist, not restoring tree\n", globbed);
-        free(globbed);
-        return false;
+        goto out;
+    }
+
+    char *buf = NULL;
+    ssize_t len;
+    if ((len = slurp(globbed, &buf)) < 0) {
+        /* slurp already logged an error. */
+        goto out;
     }
 
     /* TODO: refactor the following */
@@ -81,8 +88,7 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
         geometry->height};
     focused = croot;
 
-    tree_append_json(focused, globbed, NULL);
-    free(globbed);
+    tree_append_json(focused, buf, len, NULL);
 
     DLOG("appended tree, using new root\n");
     croot = TAILQ_FIRST(&(croot->nodes_head));
@@ -104,8 +110,12 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
     }
 
     restore_open_placeholder_windows(croot);
+    result = true;
 
-    return true;
+out:
+    free(globbed);
+    free(buf);
+    return result;
 }
 
 /*
@@ -320,22 +330,7 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
         DLOG("parent container killed\n");
     }
 
-    free(con->name);
-    FREE(con->deco_render_params);
-    TAILQ_REMOVE(&all_cons, con, all_cons);
-    while (!TAILQ_EMPTY(&(con->swallow_head))) {
-        Match *match = TAILQ_FIRST(&(con->swallow_head));
-        TAILQ_REMOVE(&(con->swallow_head), match, matches);
-        match_free(match);
-        free(match);
-    }
-    while (!TAILQ_EMPTY(&(con->marks_head))) {
-        mark_t *mark = TAILQ_FIRST(&(con->marks_head));
-        TAILQ_REMOVE(&(con->marks_head), mark, marks);
-        FREE(mark->name);
-        FREE(mark);
-    }
-    free(con);
+    con_free(con);
 
     /* in the case of floating windows, we already focused another container
      * when closing the parent, so we can exit now. */
