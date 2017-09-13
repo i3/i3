@@ -73,6 +73,30 @@ Con *con_new(Con *parent, i3Window *window) {
     return new;
 }
 
+/*
+ * Frees the specified container.
+ *
+ */
+void con_free(Con *con) {
+    free(con->name);
+    FREE(con->deco_render_params);
+    TAILQ_REMOVE(&all_cons, con, all_cons);
+    while (!TAILQ_EMPTY(&(con->swallow_head))) {
+        Match *match = TAILQ_FIRST(&(con->swallow_head));
+        TAILQ_REMOVE(&(con->swallow_head), match, matches);
+        match_free(match);
+        free(match);
+    }
+    while (!TAILQ_EMPTY(&(con->marks_head))) {
+        mark_t *mark = TAILQ_FIRST(&(con->marks_head));
+        TAILQ_REMOVE(&(con->marks_head), mark, marks);
+        FREE(mark->name);
+        FREE(mark);
+    }
+    free(con);
+    DLOG("con %p freed\n", con);
+}
+
 static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus) {
     con->parent = parent;
     Con *loop;

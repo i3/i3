@@ -18,6 +18,7 @@
 /* TODO: refactor the whole parsing thing */
 
 static char *last_key;
+static int incomplete;
 static Con *json_node;
 static Con *to_focus;
 static bool parsing_swallows;
@@ -68,6 +69,9 @@ static int json_start_map(void *ctx) {
                 json_node->name = NULL;
                 json_node->parent = parent;
             }
+	    /* json_node is incomplete and should be removed if parsing fails */
+	    incomplete++;
+	    DLOG("incomplete = %d\n", incomplete);
         }
     }
     return 1;
@@ -166,6 +170,8 @@ static int json_end_map(void *ctx) {
         LOG("Creating window\n");
         x_con_init(json_node);
         json_node = json_node->parent;
+	incomplete--;
+	DLOG("incomplete = %d\n", incomplete);
     }
 
     if (parsing_swallows && swallow_is_empty) {
@@ -634,6 +640,7 @@ void tree_append_json(Con *con, const char *filename, char **errormsg) {
     yajl_status stat;
     json_node = con;
     to_focus = NULL;
+    incomplete = 0;
     parsing_swallows = false;
     parsing_rect = false;
     parsing_deco_rect = false;
@@ -649,6 +656,12 @@ void tree_append_json(Con *con, const char *filename, char **errormsg) {
         if (errormsg != NULL)
             *errormsg = sstrdup((const char *)str);
         yajl_free_error(hand, str);
+	while (incomplete-- > 0) {
+	  Con *parent = json_node->parent;
+	  DLOG("freeing incomplete container %p\n", json_node);
+	  con_free(json_node);
+	  json_node = parent;
+	}
     }
 
     /* In case not all containers were restored, we need to fix the
