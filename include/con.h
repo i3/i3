@@ -39,6 +39,12 @@ void con_free(Con *con);
 void con_focus(Con *con);
 
 /**
+ * Variant of con_focus() that won't warp the pointer.
+ *
+ */
+void con_focus_nowarp(Con *con);
+
+/**
  * Closes the given container.
  *
  */

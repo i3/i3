@@ -130,7 +130,8 @@ typedef uint32_t i3_event_state_mask_t;
  */
 typedef enum {
     POINTER_WARPING_OUTPUT = 0,
-    POINTER_WARPING_NONE = 1
+    POINTER_WARPING_NONE = 1,
+    POINTER_WARPING_ALWAYS = 2
 } warping_t;
 
 /**
