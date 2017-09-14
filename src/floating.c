@@ -176,6 +176,33 @@ void floating_enable(Con *con, bool automatic) {
         return;
     }
 
+    Con *focus_head_placeholder = NULL;
+    bool focus_before_parent = true;
+    if (!set_focus) {
+        /* Find recursively the ancestor container which is a child of our workspace.
+         * We need to reuse its focus position later. */
+        Con *ancestor = con;
+        while (ancestor->parent->type != CT_WORKSPACE) {
+            focus_before_parent &= TAILQ_FIRST(&(ancestor->parent->focus_head)) == ancestor;
+            ancestor = ancestor->parent;
+        }
+        /* Consider the part of the focus stack of our current workspace:
+         * [ ... S_{i-1} S_{i} S_{i+1} ... ]
+         * Where S_{x} is a container tree and the container 'con' that is beeing switched to
+         * floating belongs in S_{i}. The new floating container, 'nc', will have the
+         * workspace as its parent so it needs to be placed in this stack. If C was focused
+         * we just need to call con_focus(). Otherwise, nc must be placed before or after S_{i}.
+         * We should avoid using the S_{i} container for our operations since it might get
+         * killed if it has no other children. So, the two possible positions are after S_{i-1}
+         * or before S_{i+1}.
+         */
+        if (focus_before_parent) {
+            focus_head_placeholder = TAILQ_PREV(ancestor, focus_head, focused);
+        } else {
+            focus_head_placeholder = TAILQ_NEXT(ancestor, focused);
+        }
+    }
+
     /* 1: detach the container from its parent */
     /* TODO: refactor this with tree_close_internal() */
     con_detach(con);
@@ -194,12 +221,23 @@ void floating_enable(Con *con, bool automatic) {
     /* We insert nc already, even though its rect is not yet calculated. This
      * is necessary because otherwise the workspace might be empty (and get
      * closed in tree_close_internal()) even though it’s not. */
-    if (set_focus) {
-        TAILQ_INSERT_TAIL(&(ws->floating_head), nc, floating_windows);
+    TAILQ_INSERT_HEAD(&(ws->floating_head), nc, floating_windows);
+
+    struct focus_head *fh = &(ws->focus_head);
+    if (focus_before_parent) {
+        if (focus_head_placeholder) {
+            TAILQ_INSERT_AFTER(fh, focus_head_placeholder, nc, focused);
+        } else {
+            TAILQ_INSERT_HEAD(fh, nc, focused);
+        }
     } else {
-        TAILQ_INSERT_HEAD(&(ws->floating_head), nc, floating_windows);
+        if (focus_head_placeholder) {
+            TAILQ_INSERT_BEFORE(focus_head_placeholder, nc, focused);
+        } else {
+            /* Also used for the set_focus case */
+            TAILQ_INSERT_TAIL(fh, nc, focused);
+        }
     }
-    TAILQ_INSERT_TAIL(&(ws->focus_head), nc, focused);
 
     /* check if the parent container is empty and close it if so */
     if ((con->parent->type == CT_CON || con->parent->type == CT_FLOATING_CON) &&
