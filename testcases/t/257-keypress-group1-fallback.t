@@ -89,6 +89,9 @@ is(listen_for_binding(
 sync_with_i3;
 is(scalar @i3test::XTEST::binding_events, 4, 'Received exactly 4 binding events');
 
+# Disable the grp:alt_shift_toggle option, as we use Alt+Shift in other testcases.
+system(q|setxkbmap us -option|);
+
 exit_gracefully($pid);
 
 }
