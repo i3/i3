@@ -22,6 +22,11 @@ use i3test i3_config => <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
+
+bar {
+    # Disable i3bar.
+    i3bar_command :
+}
 EOT
 
 # TODO: get rid of smartmatch in this test

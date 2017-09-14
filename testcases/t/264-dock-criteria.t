@@ -19,6 +19,11 @@
 use i3test i3_config => <<EOT;
 # i3 config file (v4)
 for_window [class="dock"] move workspace current
+
+bar {
+    # Disable i3bar, which is also a dock client.
+    i3bar_command :
+}
 EOT
 
 my $ws = fresh_workspace();
