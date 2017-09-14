@@ -100,14 +100,8 @@ my $i3_pid;
 my $i3_autostart;
 
 END {
-
-    # testcases which start i3 manually should always call exit_gracefully
-    # on their own. Let’s see, whether they really did.
-    if (! $i3_autostart) {
-        return unless $i3_pid;
-
-        $tester->ok(undef, 'testcase called exit_gracefully()');
-    }
+    # Skip the remaining cleanup for testcases which set i3_autostart => 0:
+    return if !defined($i3_pid) && !$i3_autostart;
 
     # don't trigger SIGCHLD handler
     local $SIG{CHLD};
