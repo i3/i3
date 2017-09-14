@@ -100,14 +100,8 @@ my $i3_pid;
 my $i3_autostart;
 
 END {
-
-    # testcases which start i3 manually should always call exit_gracefully
-    # on their own. Let’s see, whether they really did.
-    if (! $i3_autostart) {
-        return unless $i3_pid;
-
-        $tester->ok(undef, 'testcase called exit_gracefully()');
-    }
+    # Skip the remaining cleanup for testcases which set i3_autostart => 0:
+    return if !defined($i3_pid) && !$i3_autostart;
 
     # don't trigger SIGCHLD handler
     local $SIG{CHLD};
@@ -126,7 +120,7 @@ END {
         exit_gracefully($i3_pid, "/tmp/nested-$ENV{DISPLAY}");
 
     } else {
-        kill(9, $i3_pid)
+        kill(-9, $i3_pid)
             or $tester->BAIL_OUT("could not kill i3");
 
         waitpid $i3_pid, 0;
@@ -138,8 +132,9 @@ sub import {
     my $pkg = caller;
 
     $i3_autostart = delete($args{i3_autostart}) // 1;
+    my $i3_config = delete($args{i3_config}) // '-default';
 
-    my $cv = launch_with_config('-default', dont_block => 1)
+    my $cv = launch_with_config($i3_config, dont_block => 1)
         if $i3_autostart;
 
     my $test_more_args = '';
@@ -793,14 +788,7 @@ sub get_socket_path {
     if ($cache && defined($_cached_socket_path)) {
         return $_cached_socket_path;
     }
-
-    my $atom = $x->atom(name => 'I3_SOCKET_PATH');
-    my $cookie = $x->get_property(0, $x->get_root_window(), $atom->id, GET_PROPERTY_TYPE_ANY, 0, 256);
-    my $reply = $x->get_property_reply($cookie->{sequence});
-    my $socketpath = $reply->{value};
-    if ($socketpath eq "/tmp/nested-$ENV{DISPLAY}") {
-        $socketpath .= '-activation';
-    }
+    my $socketpath = i3test::Util::get_socket_path($x);
     $_cached_socket_path = $socketpath;
     return $socketpath;
 }

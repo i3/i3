@@ -19,15 +19,7 @@
 # Ticket: #2002
 # Bug still in: 4.11-103-gc8d51b4
 # Bug introduced with commit bf3cd41b5ddf1e757515ab5fbf811be56e5f69cc
-use i3test i3_autostart => 0;
-use i3test::XTEST;
-use ExtUtils::PkgConfig;
-
-SKIP: {
-    skip "libxcb-xkb too old (need >= 1.11)", 1 unless
-        ExtUtils::PkgConfig->atleast_version('xcb-xkb', '1.11');
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -38,8 +30,12 @@ bindsym --release Control+Print nop Control+Print
 bindsym Mod1+b nop Mod1+b
 bindsym --release Mod1+Shift+b nop Mod1+Shift+b release
 EOT
+use i3test::XTEST;
+use ExtUtils::PkgConfig;
 
-my $pid = launch_with_config($config);
+SKIP: {
+    skip "libxcb-xkb too old (need >= 1.11)", 1 unless
+        ExtUtils::PkgConfig->atleast_version('xcb-xkb', '1.11');
 
 start_binding_capture;
 
@@ -89,8 +85,6 @@ is(listen_for_binding(
 
 sync_with_i3;
 is(scalar @i3test::XTEST::binding_events, 4, 'Received exactly 4 binding events');
-
-exit_gracefully($pid);
 
 }
 

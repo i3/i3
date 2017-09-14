@@ -16,14 +16,15 @@
 #
 # Verifies that command or config criteria does not match dock clients
 # Bug still in: 4.12-38-ge690e3d
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 for_window [class="dock"] move workspace current
-EOT
 
-my $pid = launch_with_config($config);
+bar {
+    # Disable i3bar, which is also a dock client.
+    i3bar_command :
+}
+EOT
 
 my $ws = fresh_workspace();
 
@@ -67,5 +68,4 @@ is(get_dock_clients, 2, "created second docked client");
 is_num_children($ws, 0, 'no container on the current workspace');
 
 
-exit_gracefully($pid);
 done_testing;

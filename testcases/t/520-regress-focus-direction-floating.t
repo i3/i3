@@ -17,9 +17,7 @@
 # Ensure that `focus [direction]` will focus an existing floating con when no
 # tiling con exists on the output in [direction] when focusing across outputs
 # Bug still in: 4.7.2-204-g893dbae
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -31,8 +29,6 @@ mouse_warping none
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
 
-my $pid = launch_with_config($config);
-
 cmd 'workspace ws_left';
 my $win = open_window();
 
@@ -42,7 +38,5 @@ cmd 'focus left';
 
 is($x->input_focus, $win->id,
     'Focusing across outputs with `focus [direction]` should focus an existing floating con when no tiling con exists on the output in [direction].');
-
-exit_gracefully($pid);
 
 done_testing;

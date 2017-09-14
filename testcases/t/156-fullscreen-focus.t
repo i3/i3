@@ -18,22 +18,16 @@
 # the time of launching the new one. Also make sure that focusing containers
 # in other workspaces work even when there is a fullscreen container.
 #
-use i3test i3_autostart => 0;
-
-# Screen setup looks like this:
-# +----+----+
-# | S1 | S2 |
-# +----+----+
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
-
-my $pid = launch_with_config($config);
-
-my $i3 = i3(get_socket_path());
+# Screen setup looks like this:
+# +----+----+
+# | S1 | S2 |
+# +----+----+
 
 my $tmp = fresh_workspace;
 
@@ -330,7 +324,5 @@ cmd "move to workspace prev";
 verify_move(2, 'prevented move to workspace by position');
 
 # TODO: Tests for "move to output" and "move workspace to output".
-
-exit_gracefully($pid);
 
 done_testing;

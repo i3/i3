@@ -16,7 +16,14 @@
 #
 # Tests for _NET_WM_DESKTOP.
 # Ticket: #2153
-use i3test i3_autostart => 0;
+use i3test i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bar {
+    status_command i3status
+}
+EOT
 use X11::XCB qw(:all);
 
 ###############################################################################
@@ -77,19 +84,6 @@ sub open_window_with_net_wm_desktop {
 
     return $window;
 }
-
-###############################################################################
-
-my $config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-
-bar {
-    status_command i3status
-}
-EOT
-
-my $pid = launch_with_config($config);
 
 ###############################################################################
 # Upon managing a window which does not set _NET_WM_DESKTOP, the property is
@@ -295,7 +289,5 @@ is(get_net_wm_desktop($con), 0, '_NET_WM_DESKTOP is set sanity check)');
 kill_all_windows;
 
 ###############################################################################
-
-exit_gracefully($pid);
 
 done_testing;

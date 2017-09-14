@@ -11,7 +11,6 @@ BEGIN {
         IPC::Run
         ExtUtils::PkgConfig
         Inline
-        Test::More
     );
     for my $dep (@deps) {
         use_ok($dep) or BAIL_OUT(qq|The Perl module "$dep" could not be loaded. Please see http://build.i3wm.org/docs/testsuite.html#_installing_the_dependencies|);

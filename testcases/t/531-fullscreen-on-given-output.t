@@ -16,17 +16,13 @@
 #
 # Tests that fullscreen windows appear on the output indicated by
 # their geometry
-use i3test i3_autostart => 0;
-use List::Util qw(first);
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
-
-my $pid = launch_with_config($config);
+use List::Util qw(first);
 
 # Helper functions
 sub fullscreen($) {
@@ -69,7 +65,5 @@ my $node2 = find_window($tree->{nodes}, $win_on_second_output->{id});
 
 is($node1->{fullscreen_mode}, 1, "first window is fullscreen");
 is($node2->{fullscreen_mode}, 1, "second window is fullscreen");
-
-exit_gracefully($pid);
 
 done_testing;

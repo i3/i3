@@ -15,9 +15,7 @@
 #   (unless you are already familiar with Perl)
 #
 # Verifies that the IPC 'mode' event is sent when modes are changed.
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -29,8 +27,6 @@ mode "with spaces" {
     bindsym Mod1+y nop bar
 }
 EOT
-
-my $pid = launch_with_config($config);
 
 my $i3 = i3(get_socket_path(0));
 $i3->connect->recv;
@@ -51,7 +47,5 @@ my $t;
 $t = AnyEvent->timer(after => 0.5, cb => sub { $cv->send(0); });
 
 ok($cv->recv, 'Mode event received');
-
-exit_gracefully($pid);
 
 done_testing;

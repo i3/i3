@@ -16,13 +16,7 @@
 #
 # Tests if a simple 'move <direction>' command will move containers across outputs.
 #
-use i3test i3_autostart => 0;
-
-# Ensure the pointer is at (0, 0) so that we really start on the first
-# (the left) workspace.
-$x->root->warp_pointer(0, 0);
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -34,7 +28,9 @@ workspace right-bottom output fake-2
 workspace left-bottom output fake-3
 EOT
 
-my $pid = launch_with_config($config);
+# Ensure the pointer is at (0, 0) so that we really start on the first
+# (the left) workspace.
+$x->root->warp_pointer(0, 0);
 
 #####################################################################
 # Try to move a single window across outputs in each direction
@@ -100,7 +96,5 @@ cmd('focus up; move up');
 is(scalar @{get_ws_content('left-top')}, 1, 'moved some window to left-bottom workspace');
 $compare_window = shift @{get_ws_content('left-top')};
 is($social_window->name, $compare_window->{name}, 'moved correct window to left-bottom workspace');
-
-exit_gracefully($pid);
 
 done_testing;
