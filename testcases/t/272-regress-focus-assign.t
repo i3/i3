@@ -17,7 +17,11 @@
 # Regression: Checks if focus is stolen when a window is managed which is
 # assigned to an invisible workspace
 #
-use i3test i3_autostart => 0;
+use i3test i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+assign [class="special"] targetws
+EOT
 
 sub open_special {
     my %args = @_;
@@ -37,14 +41,6 @@ sub open_special {
 #####################################################################
 # start a window and see that it does not get assigned with an empty config
 #####################################################################
-
-my $config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-assign [class="special"] targetws
-EOT
-
-my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -69,8 +65,6 @@ $window = open_special(
 ok(@{get_ws_content($tmp)} == 0, 'special window not on current workspace');
 ok(@{get_ws_content('targetws')} == 1, 'special window on targetws');
 ok(get_ws($tmp)->{focused}, 'current workspace still focused');
-
-exit_gracefully($pid);
 
 $window->destroy;
 

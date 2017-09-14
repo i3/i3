@@ -18,15 +18,11 @@
 # unfocused window within a tabbed container.
 # Ticket: #1484
 # Bug still in: 4.9.1-124-g856e1f9
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 workspace_layout tabbed
 EOT
-
-my $pid = launch_with_config($config);
 
 open_window;
 open_window;
@@ -38,7 +34,5 @@ cmd 'mark foo, focus parent, focus parent';
 cmd '[con_mark=foo] floating enable, floating disable';
 
 does_i3_live;
-
-exit_gracefully($pid);
 
 done_testing;

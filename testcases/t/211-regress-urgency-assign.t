@@ -20,7 +20,12 @@
 #
 # Ticket: #1086
 # Bug still in: 4.6-62-g7098ef6
-use i3test i3_autostart => 0;
+use i3test i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+assign [class="special"] nonvisible
+EOT
 
 sub open_special {
     my %args = @_;
@@ -38,14 +43,6 @@ sub open_special {
     return $window;
 }
 
-my $config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-
-assign [class="special"] nonvisible
-EOT
-my $pid = launch_with_config($config);
-
 my $tmp = fresh_workspace;
 
 ok((scalar grep { $_ eq 'nonvisible' } @{get_workspace_names()}) == 0,
@@ -59,7 +56,5 @@ ok((scalar grep { $_ eq 'nonvisible' } @{get_workspace_names()}) > 0,
 
 my @urgent = grep { $_->{urgent} } @{get_ws_content('nonvisible')};
 isnt(@urgent, 0, 'urgent window(s) found on destination workspace');
-
-exit_gracefully($pid);
 
 done_testing;

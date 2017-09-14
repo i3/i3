@@ -19,16 +19,12 @@
 # Wrong behaviour manifested itself up to (including) commit
 # f78caf8c5815ae7a66de9e4b734546fd740cc19d
 #
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 assign [title="testcase"] targetws
 EOT
-
-my $pid = launch_with_config($config);
 
 my $i3 = i3(get_socket_path(0));
 
@@ -50,7 +46,5 @@ cmd 'focus parent';
 
 open_window(name => "testcase");
 is_num_children('targetws', 3, 'new window opened next to last one');
-
-exit_gracefully($pid);
 
 done_testing;

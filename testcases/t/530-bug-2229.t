@@ -16,9 +16,7 @@
 #
 # Ticket: #2229
 # Bug still in: 4.11-262-geb631ce
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -26,7 +24,6 @@ fake-outputs 400x400+0+0,400x400+400+0
 workspace_auto_back_and_forth no
 EOT
 
-my $pid = launch_with_config($config);
 my $i3 = i3(get_socket_path());
 
 # Set it up such that workspace 3 is on the left output and
@@ -43,8 +40,7 @@ cmd 'move workspace to output left';
 # ensure that workspace 3 has now vanished
 my $get_ws = $i3->get_workspaces->recv;
 my @ws_names = map { $_->{name} } @$get_ws;
+# TODO get rid of smartmatch
 ok(!('3' ~~ @ws_names), 'workspace 3 has been closed');
-
-exit_gracefully($pid);
 
 done_testing;

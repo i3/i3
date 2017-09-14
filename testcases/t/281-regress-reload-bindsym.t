@@ -16,9 +16,7 @@
 #
 # Test that the binding event works properly
 # Ticket: #1210
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -30,16 +28,9 @@ SKIP: {
 
     skip 'xdotool is required to test the binding event. `[apt-get install|pacman -S] xdotool`', 1 if $?;
 
-    my $pid = launch_with_config($config);
-
-    my $i3 = i3(get_socket_path());
-    $i3->connect->recv;
-
     qx(xdotool key r);
 
     does_i3_live;
-
-    exit_gracefully($pid);
 
 }
 done_testing;

@@ -17,15 +17,12 @@
 # Tests whether 'workspace next_on_output' and the like work correctly.
 #
 use List::Util qw(first);
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
-my $pid = launch_with_config($config);
 
 ################################################################################
 # Setup workspaces so that they stay open (with an empty container).
@@ -99,7 +96,5 @@ sync_with_i3;
 
 cmd 'workspace prev_on_output';
 is(focused_ws, '2', 'workspace 2 focused');
-
-exit_gracefully($pid);
 
 done_testing;

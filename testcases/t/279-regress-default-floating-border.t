@@ -18,17 +18,13 @@
 # not applied when the default tiling border is set to a pixel value.
 # Ticket: #1305
 # Bug still in: 4.8-62-g7381b50
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 new_window pixel 5
 new_float normal
 EOT
-
-my $pid = launch_with_config($config);
 
 my $ws = fresh_workspace;
 
@@ -37,7 +33,5 @@ my $float_window = open_floating_window;
 my @floating = @{get_ws($ws)->{floating_nodes}};
 
 is($floating[0]->{nodes}[0]->{border}, 'normal', 'default floating border is `normal`');
-
-exit_gracefully($pid);
 
 done_testing;

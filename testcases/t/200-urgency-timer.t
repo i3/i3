@@ -20,20 +20,13 @@
 #
 
 use List::Util qw(first);
-use i3test i3_autostart => 0;
-use Time::HiRes qw(sleep);
-
-# Ensure the pointer is at (0, 0) so that we really start on the first
-# (the left) workspace.
-$x->root->warp_pointer(0, 0);
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 force_display_urgency_hint 500ms
 EOT
-my $pid = launch_with_config($config);
+use Time::HiRes qw(sleep);
 
 #####################################################################
 # Initial setup: one window on ws1, empty ws2
@@ -144,7 +137,5 @@ sync_with_i3;
 
 sleep(0.6);
 is(count_total_urgent(get_ws($tmp3)), 0, "no more urgent windows on workspace $tmp3");
-
-exit_gracefully($pid);
 
 done_testing;

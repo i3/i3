@@ -18,20 +18,12 @@
 # E.g. when you have a container on the right output and you move it to the
 # right, it should appear on the left output.
 # Bug still in: 4.4-106-g3cd4b8c
-use i3test i3_autostart => 0;
-
-# Ensure the pointer is at (0, 0) so that we really start on the first
-# (the left) workspace.
-$x->root->warp_pointer(0, 0);
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
-
-my $pid = launch_with_config($config);
 
 my $right = fresh_workspace(output => 1);
 my $left = fresh_workspace(output => 0);
@@ -50,7 +42,5 @@ cmd 'move container to output right';
 
 is_num_children($left, 1, 'one container on left workspace');
 is_num_children($right, 0, 'no containers on right workspace');
-
-exit_gracefully($pid);
 
 done_testing;

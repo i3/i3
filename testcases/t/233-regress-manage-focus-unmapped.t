@@ -19,17 +19,13 @@
 # which can lead to complications
 # Ticket: #1283
 # Bug still in: 4.8-24-g60070de
-use i3test i3_autostart => 0;
-
-my $config = <<'EOT';
+use i3test i3_config => <<'EOT';
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 for_window [class="^special_kill$"] kill
 for_window [class="^special_scratchpad$"] move scratchpad
 EOT
-
-my $pid = launch_with_config($config);
 
 my $win = open_window;
 
@@ -52,7 +48,5 @@ sync_with_i3;
 
 is($x->input_focus, $win->{id},
     'an assignment that kills a window should not disturb focus');
-
-exit_gracefully($pid);
 
 done_testing;

@@ -17,7 +17,12 @@
 # Tests whether 'workspace next' works correctly.
 #
 use List::Util qw(first);
-use i3test i3_autostart => 0;
+use i3test i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+fake-outputs 1024x768+0+0,1024x768+1024+0
+EOT
 
 sub assert_next {
     my ($expected) = @_;
@@ -42,14 +47,6 @@ sub assert_prev {
 
     is(focused_ws, $expected, "workspace $expected focused");
 }
-
-my $config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-
-fake-outputs 1024x768+0+0,1024x768+1024+0
-EOT
-my $pid = launch_with_config($config);
 
 sync_with_i3;
 $x->root->warp_pointer(0, 0);
@@ -123,7 +120,5 @@ assert_prev('3');
 assert_prev('2');
 assert_prev('1');
 
-
-exit_gracefully($pid);
 
 done_testing;

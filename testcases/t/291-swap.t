@@ -16,9 +16,7 @@
 #
 # Tests the swap command.
 # Ticket: #917
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -26,13 +24,10 @@ for_window[class="mark_A"] mark A
 for_window[class="mark_B"] mark B
 EOT
 
-my ($pid);
 my ($ws, $ws1, $ws2, $ws3);
 my ($nodes, $expected_focus, $A, $B, $F);
 my ($result);
 my @urgent;
-
-$pid = launch_with_config($config);
 
 ###############################################################################
 # Invalid con_id should not crash i3
@@ -424,7 +419,5 @@ is(get_ws($ws2)->{urgent}, 0, 'the second workspace is not marked urgent');
 kill_all_windows;
 
 ###############################################################################
-
-exit_gracefully($pid);
 
 done_testing;

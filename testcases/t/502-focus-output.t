@@ -16,16 +16,13 @@
 #
 # Verifies the 'focus output' command works properly.
 
-use i3test i3_autostart => 0;
-use List::Util qw(first);
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
-my $pid = launch_with_config($config);
+use List::Util qw(first);
 
 my $tmp = fresh_workspace;
 my $i3 = i3(get_socket_path());
@@ -88,7 +85,5 @@ is(focused_output, 'fake-1', 'focus on second output');
 
 cmd 'focus output fake-0';
 is(focused_output, 'fake-0', 'focus on first output');
-
-exit_gracefully($pid);
 
 done_testing;
