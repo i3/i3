@@ -178,9 +178,7 @@ void floating_enable(Con *con, bool automatic) {
 
     /* 1: detach the container from its parent */
     /* TODO: refactor this with tree_close_internal() */
-    TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
-    TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-
+    con_detach(con);
     con_fix_percent(con->parent);
 
     /* 2: create a new container to render the decoration on, add
@@ -335,12 +333,10 @@ void floating_disable(Con *con, bool automatic) {
     Con *parent = con->parent;
 
     /* 1: detach from parent container */
-    TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
-    TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
+    con_detach(con);
 
     /* 2: kill parent container */
-    TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
-    TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
+    con_detach(con->parent);
     /* clear the pointer before calling tree_close_internal in which the memory is freed */
     con->parent = NULL;
     tree_close_internal(parent, DONT_KILL_WINDOW, true, false);
