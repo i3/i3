@@ -17,19 +17,14 @@
 # Tests whether the 'move workspace <ws> to [output] <output>' command works
 #
 use List::Util qw(first);
-use i3test i3_autostart => 0;
-
-# Ensure the pointer is at (0, 0) so that we really start on the first
-# (the left) workspace.
-$x->root->warp_pointer(0, 0);
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
-my $pid = launch_with_config($config);
+
+# TODO: get rid of smartmatch in this test
 
 ################################################################################
 # Setup workspaces so that they stay open (with an empty container).
@@ -181,5 +176,4 @@ ok($ws1 ~~ @$x0, 'ws1 on fake-0');
 
 ################################################################################
 
-exit_gracefully($pid);
 done_testing;

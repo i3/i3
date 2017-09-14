@@ -16,16 +16,7 @@
 #
 # Ensures that mouse bindings on the i3bar work correctly.
 # Ticket: #1695
-use i3test i3_autostart => 0;
-use i3test::XTEST;
-
-my ($cv, $timer);
-sub reset_test {
-    $cv = AE::cv;
-    $timer = AE::timer(1, 0, sub { $cv->send(0); });
-}
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 focus_follows_mouse no
@@ -41,8 +32,14 @@ bar {
     bindsym button5 focus left
 }
 EOT
+use i3test::XTEST;
 
-my $pid = launch_with_config($config);
+my ($cv, $timer);
+sub reset_test {
+    $cv = AE::cv;
+    $timer = AE::timer(1, 0, sub { $cv->send(0); });
+}
+
 my $i3 = i3(get_socket_path());
 $i3->connect()->recv;
 my $ws = fresh_workspace;
@@ -63,8 +60,32 @@ $i3->subscribe({
         },
     })->recv;
 
-my $con = $cv->recv;
-ok($con, 'i3bar appeared');
+my $con;
+
+sub i3bar_present {
+    my ($nodes) = @_;
+
+    for my $node (@{$nodes}) {
+	my $props = $node->{window_properties};
+	if (defined($props) && $props->{class} eq 'i3bar') {
+	    return 1;
+	}
+    }
+
+    return 0 if !@{$nodes};
+
+    my @children = (map { @{$_->{nodes}} } @{$nodes},
+                    map { @{$_->{'floating_nodes'}} } @{$nodes});
+
+    return i3bar_present(\@children);
+}
+
+if (i3bar_present($i3->get_tree->recv->{nodes})) {
+    ok(1, 'i3bar present');
+} else {
+    $con = $cv->recv;
+    ok($con, 'i3bar appeared');
+}
 
 my $left = open_window;
 my $right = open_window;
@@ -107,7 +128,5 @@ sync_with_i3;
 $con = $cv->recv;
 is($con->{window}, $left->{id}, 'button 5 moves focus left');
 reset_test;
-
-exit_gracefully($pid);
 
 done_testing;

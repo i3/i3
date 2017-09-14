@@ -19,7 +19,14 @@
 # Ticket: #2062
 # Bug still in: 4.11-103-gc8d51b4
 # Bug introduced with commit 0e5180cae9e9295678e3f053042b559e82cb8c98
-use i3test i3_autostart => 0;
+use i3test
+    i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bindsym Print nop Print
+bindsym Mod4+Return nop Mod4+Return
+EOT
 use i3test::XTEST;
 use ExtUtils::PkgConfig;
 
@@ -28,16 +35,6 @@ SKIP: {
         ExtUtils::PkgConfig->atleast_version('xcb-xkb', '1.11');
     skip "setxkbmap not found", 1 if
         system(q|setxkbmap -print >/dev/null|) != 0;
-
-my $config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-
-bindsym Print nop Print
-bindsym Mod4+Return nop Mod4+Return
-EOT
-
-my $pid = launch_with_config($config);
 
 start_binding_capture;
 
@@ -91,8 +88,6 @@ is(scalar @i3test::XTEST::binding_events, 4, 'Received exactly 4 binding events'
 
 # Disable the grp:alt_shift_toggle option, as we use Alt+Shift in other testcases.
 system(q|setxkbmap us -option|);
-
-exit_gracefully($pid);
 
 }
 

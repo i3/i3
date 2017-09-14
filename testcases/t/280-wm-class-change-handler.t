@@ -19,16 +19,12 @@
 # in criteria selection
 # Ticket: #1052
 # Bug still in: 4.8-73-g6bf7f8e
-use i3test i3_autostart => 0;
-use X11::XCB qw(PROP_MODE_REPLACE);
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 for_window [class="Special"] mark special_class_mark
 EOT
-
-my $pid = launch_with_config($config);
+use X11::XCB qw(PROP_MODE_REPLACE);
 
 sub change_window_class {
     my ($window, $class, $length) = @_;
@@ -72,7 +68,5 @@ $con = @{get_ws_content($ws)}[0];
 
 is($con->{window_properties}->{class}, 'a',
     'Non-null-terminated strings should be handled correctly');
-
-exit_gracefully($pid);
 
 done_testing;

@@ -18,9 +18,7 @@
 # properly on the root window. We interpret this as a list of x/y coordinate
 # pairs for the upper left corner of the respective outputs of the workspaces
 # Ticket: #1241
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -29,8 +27,6 @@ workspace 1 output fake-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
-
-my $pid = launch_with_config($config);
 
 sub get_desktop_viewport {
     # Make sure that i3 pushed its changes to X11 before querying.
@@ -89,7 +85,5 @@ cmd 'workspace 0';
 
 is_deeply(\@desktop_viewport, \@expected_viewport,
     'it should be updated when a workspace is emptied');
-
-exit_gracefully($pid);
 
 done_testing;

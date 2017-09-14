@@ -16,7 +16,19 @@
 #
 # Tests for _NET_WM_DESKTOP.
 # Ticket: #2153
-use i3test i3_autostart => 0;
+use i3test i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+workspace "0" output "fake-0"
+workspace "1" output "fake-0"
+workspace "2" output "fake-0"
+workspace "10" output "fake-1"
+workspace "11" output "fake-1"
+workspace "12" output "fake-1"
+
+fake-outputs 1024x768+0+0,1024x768+1024+0
+EOT
 use X11::XCB qw(:all);
 
 sub get_net_wm_desktop {
@@ -38,26 +50,10 @@ sub get_net_wm_desktop {
     return unpack("L", $reply->{value});
 }
 
-my $config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-
-workspace "0" output "fake-0"
-workspace "1" output "fake-0"
-workspace "2" output "fake-0"
-workspace "10" output "fake-1"
-workspace "11" output "fake-1"
-workspace "12" output "fake-1"
-
-fake-outputs 1024x768+0+0,1024x768+1024+0
-EOT
-
 ###############################################################################
 # _NET_WM_DESKTOP is updated when the window is moved to another workspace
 # on another output.
 ###############################################################################
-
-my $pid = launch_with_config($config);
 
 cmd 'workspace 0';
 open_window;
@@ -69,7 +65,5 @@ my $con = open_window;
 cmd 'move window to workspace 10';
 
 is(get_net_wm_desktop($con), 1, '_NET_WM_DESKTOP is updated when moving the window');
-
-exit_gracefully($pid);
 
 done_testing;

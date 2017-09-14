@@ -126,7 +126,7 @@ END {
         exit_gracefully($i3_pid, "/tmp/nested-$ENV{DISPLAY}");
 
     } else {
-        kill(9, $i3_pid)
+        kill(-9, $i3_pid)
             or $tester->BAIL_OUT("could not kill i3");
 
         waitpid $i3_pid, 0;
@@ -138,8 +138,9 @@ sub import {
     my $pkg = caller;
 
     $i3_autostart = delete($args{i3_autostart}) // 1;
+    my $i3_config = delete($args{i3_config}) // '-default';
 
-    my $cv = launch_with_config('-default', dont_block => 1)
+    my $cv = launch_with_config($i3_config, dont_block => 1)
         if $i3_autostart;
 
     my $test_more_args = '';

@@ -49,6 +49,11 @@ sub activate_i3 {
         die "could not fork()";
     }
     if ($pid == 0) {
+        # Start a process group so that in the parent, we can kill the entire
+        # process group and immediately kill i3bar and any other child
+        # processes.
+        setpgrp;
+
         $ENV{LISTEN_PID} = $$;
         $ENV{LISTEN_FDS} = 1;
         delete $ENV{DESKTOP_STARTUP_ID};

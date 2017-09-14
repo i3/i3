@@ -17,17 +17,12 @@
 # Verifies that scratchpad windows don’t move due to floating point caulcation
 # errors when repeatedly hiding/showing, no matter what display resolution.
 #
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 683x768+0+0,1024x768+683+0
 EOT
-my $pid = launch_with_config($config);
-
-my $i3 = i3(get_socket_path());
 
 sync_with_i3;
 $x->root->warp_pointer(0, 0);
@@ -83,7 +78,5 @@ sync_with_i3;
 
 my $third = fresh_workspace(output => 1);
 verify_scratchpad_doesnt_move($third);
-
-exit_gracefully($pid);
 
 done_testing;

@@ -17,19 +17,12 @@
 # Tests that switching workspaces via 'focus $dir' never leaves a floating
 # window focused.
 #
-use i3test i3_autostart => 0;
-
-# Ensure the pointer is at (0, 0) so that we really start on the first
-# (the left) workspace.
-$x->root->warp_pointer(0, 0);
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0,1024x768+0+768,1024x768+1024+768
 EOT
-my $pid = launch_with_config($config);
 
 my $s0_ws = fresh_workspace;
 my $first = open_window;
@@ -143,7 +136,5 @@ is($x->input_focus, $sixth->id, 'sixth window focused');
 cmd "workspace $s2_ws";
 cmd 'focus up';
 is($x->input_focus, $second->id, 'second window focused');
-
-exit_gracefully($pid);
 
 done_testing;

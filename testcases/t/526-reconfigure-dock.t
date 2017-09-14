@@ -16,9 +16,14 @@
 #
 # Test reconfiguration of dock clients.
 # Ticket: #1883
-use i3test i3_autostart => 0;
+use i3test i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
-my ($config, $pid, $window, $rect);
+fake-outputs 1024x768+0+0,1024x768+1024+0
+EOT
+
+my ($window, $rect);
 my (@docks);
 
 ###############################################################################
@@ -26,14 +31,6 @@ my (@docks);
 #    client is reconfigured to be positioned on screen B, then the client is
 #    moved to the correct position.
 ###############################################################################
-
-$config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-
-fake-outputs 1024x768+0+0,1024x768+1024+0
-EOT
-$pid = launch_with_config($config);
 
 $window = open_window({
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK')
@@ -49,8 +46,6 @@ sync_with_i3;
 is(@docks, 1, 'there is still exactly one dock');
 
 is($docks[0]->{rect}->{x}, 1024, 'dock client has moved to the other screen');
-
-exit_gracefully($pid);
 
 ###############################################################################
 

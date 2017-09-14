@@ -19,9 +19,7 @@
 # Ticket: #1603
 # Bug still in: 4.10.1-40-g0ad097e
 use List::Util qw(first);
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -34,8 +32,6 @@ workspace left-bottom output fake-3
 
 workspace_layout stacked
 EOT
-
-my $pid = launch_with_config($config);
 
 #####################################################################
 # Create two windows in the upper left workspace and move them
@@ -93,7 +89,5 @@ is_num_children('left-top', 1, 'one child on left-top');
 cmd '[class="first"] move up';
 is_num_children('left-bottom', 0, 'no children on left-bottom');
 is_num_children('left-top', 2, 'two children on left-top');
-
-exit_gracefully($pid);
 
 done_testing;

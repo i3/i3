@@ -18,7 +18,12 @@
 # to focus_on_window_activation=urgent), hence the application not clearing it.
 # Ticket: #1825
 # Bug still in: 4.10.3-253-g03799dd
-use i3test i3_autostart => 0;
+use i3test i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+focus_on_window_activation urgent
+EOT
 
 sub send_net_active_window {
     my ($id) = @_;
@@ -35,15 +40,6 @@ sub send_net_active_window {
     $x->send_event(0, $x->get_root_window(), X11::XCB::EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
 }
 
-my $config = <<'EOT';
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-
-focus_on_window_activation urgent
-EOT
-
-my $pid = launch_with_config($config);
-my $i3 = i3(get_socket_path(0));
 my $ws = fresh_workspace;
 my $first = open_window;
 my $second = open_window;
@@ -63,7 +59,5 @@ is($x->input_focus, $second->id, 'second window focused again');
 cmd '[urgent=latest] focus';
 sync_with_i3;
 is($x->input_focus, $second->id, 'second window still focused');
-
-exit_gracefully($pid);
 
 done_testing;

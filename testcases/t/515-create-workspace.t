@@ -17,9 +17,7 @@
 # Tests that new workspace names are taken from the config,
 # then from the first free number starting with 1.
 #
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -27,14 +25,11 @@ fake-outputs 1024x768+0+0,1024x768+1024+0
 
 bindsym 1 workspace 1: eggs
 EOT
-my $pid = launch_with_config($config);
 
 my $i3 = i3(get_socket_path());
 my $ws = $i3->get_workspaces->recv;
 
 is($ws->[0]->{name}, '1: eggs', 'new workspace uses config name');
 is($ws->[1]->{name}, '2', 'naming continues with next free number');
-
-exit_gracefully($pid);
 
 done_testing;

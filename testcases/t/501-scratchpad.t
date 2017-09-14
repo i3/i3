@@ -18,17 +18,12 @@
 # ticket #596, bug present until up to commit
 # 89dded044b4fffe78f9d70778748fabb7ac533e9.
 #
-use i3test i3_autostart => 0;
-
-my $config = <<EOT;
+use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
-my $pid = launch_with_config($config);
-
-my $i3 = i3(get_socket_path());
 
 ################################################################################
 # Open a workspace on the second output, put a window to scratchpad, display
@@ -112,7 +107,5 @@ $first = fresh_workspace(output => 1);
 $second = fresh_workspace(output => 0);
 
 verify_scratchpad_switch($first, $second);
-
-exit_gracefully($pid);
 
 done_testing;
