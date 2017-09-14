@@ -248,7 +248,8 @@ void tree_move(Con *con, int direction) {
                         ? AFTER
                         : BEFORE);
         insert_con_into(con, target, position);
-    } else if (con->parent->parent->type == CT_WORKSPACE &&
+    } else if (!next &&
+               con->parent->parent->type == CT_WORKSPACE &&
                con->parent->layout != L_DEFAULT &&
                con_num_children(con->parent) == 1) {
         /* Con is the lone child of a non-default layout container at the edge
