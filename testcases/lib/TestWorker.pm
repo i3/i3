@@ -47,12 +47,9 @@ sub worker {
 
         $worker->{ipc} = $ipc_child;
 
+        # Preload the i3test module: reduces user CPU from 25s to 18s
         require i3test;
-        # TODO: recycle $x
-        # unfortunately this fails currently with:
-        # Could not get reply for: xcb_intern_atom_reply at X11/XCB/Atom.pm line 22.
 
-        # $i3test::x = bless $x, 'i3test::X11';
         worker_wait($worker, $outdir);
         exit 23;
 
@@ -86,11 +83,11 @@ sub worker_wait {
 
         exit unless $file;
 
-        die "tried to launch nonexistend testfile $file: $!\n"
+        die "tried to launch nonexistent testfile $file: $!\n"
             unless -e $file;
 
         # start a new and self contained process:
-        # whatever happens in the testfile should *NOT* effect us.
+        # whatever happens in the testfile should *NOT* affect us.
 
         my $pid = fork // die "could not fork: $!";
         if ($pid == 0) {
