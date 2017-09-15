@@ -116,6 +116,7 @@ is(parser_calls($config),
 
 $config = <<'EOT';
 assign [class="^Chrome"] 4
+assign [class="^Chrome"] workspace number 3
 assign [class="^Chrome"] named workspace
 assign [class="^Chrome"] "quoted named workspace"
 assign [class="^Chrome"] → "quoted named workspace"
@@ -123,13 +124,15 @@ EOT
 
 $expected = <<'EOT';
 cfg_criteria_add(class, ^Chrome)
-cfg_assign(4)
+cfg_assign(4, 0)
 cfg_criteria_add(class, ^Chrome)
-cfg_assign(named workspace)
+cfg_assign(3, 1)
 cfg_criteria_add(class, ^Chrome)
-cfg_assign(quoted named workspace)
+cfg_assign(named workspace, 0)
 cfg_criteria_add(class, ^Chrome)
-cfg_assign(quoted named workspace)
+cfg_assign(quoted named workspace, 0)
+cfg_criteria_add(class, ^Chrome)
+cfg_assign(quoted named workspace, 0)
 EOT
 
 is(parser_calls($config),

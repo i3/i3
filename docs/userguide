@@ -766,7 +766,7 @@ considered.
 
 *Syntax*:
 ------------------------------------------------------------
-assign <criteria> [→] [workspace] <workspace>
+assign <criteria> [→] [workspace] [number] <workspace>
 ------------------------------------------------------------
 
 *Examples*:
@@ -782,6 +782,12 @@ assign [class="^URxvt$"] → 2
 
 # Assignment to a named workspace
 assign [class="^URxvt$"] → work
+
+# Assign to the workspace with number 2, regardless of name
+assign [class="^URxvt$"] → number 2
+
+# You can also specify a number + name. If the workspace with number 2 exists, assign will skip the text part.
+assign [class="^URxvt$"] → number "2: work"
 
 # Start urxvt -name irssi
 assign [class="^URxvt$" instance="^irssi$"] → 3

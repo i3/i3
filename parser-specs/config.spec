@@ -151,8 +151,14 @@ state ASSIGN_WORKSPACE:
       ->
   'workspace'
       ->
+  'number'
+      -> ASSIGN_WORKSPACE_NUMBER
   workspace = string
-      -> call cfg_assign($workspace)
+      -> call cfg_assign($workspace, 0)
+
+state ASSIGN_WORKSPACE_NUMBER:
+  number = string
+      -> call cfg_assign($number, 1)
 
 # no_focus <criteria>
 state NO_FOCUS:
