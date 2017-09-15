@@ -137,6 +137,14 @@ struct Config {
      * comes with i3. Thus, you can turn it off entirely. */
     bool disable_workspace_bar;
 
+    /** When focus wrapping is enabled (the default), attempting to
+     * move focus past the edge of the screen (in other words, in a
+     * direction in which there are no more containers to focus) will
+     * cause the focus to wrap to the opposite edge of the current
+     * container. When it is disabled, nothing happens; the current
+     * focus is preserved.  */
+    bool focus_wrapping;
+
     /** Think of the following layout: Horizontal workspace with a tabbed
      * con on the left of the screen and a terminal on the right of the
      * screen. You are in the second container in the tabbed container and

@@ -675,7 +675,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
  *
  */
 void tree_next(char way, orientation_t orientation) {
-    _tree_next(focused, way, orientation, true);
+    _tree_next(focused, way, orientation, config.focus_wrapping);
 }
 
 /*

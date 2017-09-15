@@ -470,6 +470,7 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         no_focus
         focus_follows_mouse
         mouse_warping
+        focus_wrapping
         force_focus_wrapping
         force_xinerama
         force-xinerama

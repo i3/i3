@@ -1039,12 +1039,28 @@ popup_during_fullscreen smart
 
 === Focus wrapping
 
-When in a container with several windows or child containers, the opposite
-window will be focused when trying to move the focus over the edge of a
-container (and there are no other containers in that direction) -- the focus
-wraps. If however there is another window or container in that direction, focus
-will be set on that window or container. This is the default behavior so you
-can navigate to all your windows without having to use +focus parent+.
+By default, when in a container with several windows or child containers, the
+opposite window will be focused when trying to move the focus over the edge of
+a container (and there are no other containers in that direction) -- the focus
+wraps.
+
+If desired, you can disable this behavior using the +focus_wrapping+
+configuration directive:
+
+*Syntax*:
+---------------------
+focus_wrapping yes|no
+---------------------
+
+*Example*:
+-----------------
+focus_wrapping no
+-----------------
+
+By default, focus wrapping does not occur if there is another window or
+container in the specified direction, and focus will instead be set on that
+window or container. This is the default behavior so you can navigate to all
+your windows without having to use +focus parent+.
 
 If you want the focus to *always* wrap and you are aware of using +focus
 parent+ to switch to different containers, you can use the

@@ -36,6 +36,7 @@ state INITIAL:
   'no_focus'                               -> NO_FOCUS
   'focus_follows_mouse'                    -> FOCUS_FOLLOWS_MOUSE
   'mouse_warping'                          -> MOUSE_WARPING
+  'focus_wrapping'                         -> FOCUS_WRAPPING
   'force_focus_wrapping'                   -> FORCE_FOCUS_WRAPPING
   'force_xinerama', 'force-xinerama'       -> FORCE_XINERAMA
   'disable_randr15', 'disable-randr15'     -> DISABLE_RANDR15
@@ -202,6 +203,11 @@ state FOCUS_FOLLOWS_MOUSE:
 state MOUSE_WARPING:
   value = 'none', 'output'
       -> call cfg_mouse_warping($value)
+
+# focus_wrapping
+state FOCUS_WRAPPING:
+  value = word
+      -> call cfg_focus_wrapping($value)
 
 # force_focus_wrapping
 state FORCE_FOCUS_WRAPPING:

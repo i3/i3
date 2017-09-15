@@ -264,6 +264,10 @@ CFGFUN(disable_randr15, const char *value) {
     config.disable_randr15 = eval_boolstr(value);
 }
 
+CFGFUN(focus_wrapping, const char *value) {
+    config.focus_wrapping = eval_boolstr(value);
+}
+
 CFGFUN(force_focus_wrapping, const char *value) {
     config.force_focus_wrapping = eval_boolstr(value);
 }
