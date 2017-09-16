@@ -307,7 +307,16 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates,
  * visible workspace on the given output.
  *
  */
-void con_move_to_output(Con *con, Output *output);
+void con_move_to_output(Con *con, Output *output, bool fix_coordinates);
+
+/**
+ * Moves the given container to the currently focused container on the
+ * visible workspace on the output specified by the given name.
+ * The current output for the container is used to resolve relative names
+ * such as left, right, up, down.
+ *
+ */
+bool con_move_to_output_name(Con *con, const char *name, bool fix_coordinates);
 
 /**
  * Moves the given container to the given mark.
