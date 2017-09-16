@@ -377,6 +377,20 @@ CFGFUN(color, const char *colorclass, const char *border, const char *background
 #undef APPLY_COLORS
 }
 
+CFGFUN(assign_output, const char *output) {
+    if (match_is_empty(current_match)) {
+        ELOG("Match is empty, ignoring this assignment\n");
+        return;
+    }
+
+    DLOG("New assignment, using above criteria, to output \"%s\".\n", output);
+    Assignment *assignment = scalloc(1, sizeof(Assignment));
+    match_copy(&(assignment->match), current_match);
+    assignment->type = A_TO_OUTPUT;
+    assignment->dest.output = sstrdup(output);
+    TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
+}
+
 CFGFUN(assign, const char *workspace, bool is_number) {
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this assignment\n");
