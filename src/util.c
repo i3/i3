@@ -501,7 +501,7 @@ ssize_t slurp(const char *path, char **buf) {
     fclose(f);
     if ((ssize_t)n != stbuf.st_size) {
         ELOG("File \"%s\" could not be read entirely: got %zd, want %zd\n", path, n, stbuf.st_size);
-        free(buf);
+        free(*buf);
         *buf = NULL;
         return -1;
     }
