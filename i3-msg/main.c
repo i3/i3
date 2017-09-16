@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
     else
         socket_path = NULL;
     int o, option_index = 0;
-    uint32_t message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
+    uint32_t message_type = I3_IPC_MESSAGE_TYPE_RUN_COMMAND;
     char *payload = NULL;
     bool quiet = false;
 
@@ -188,7 +188,9 @@ int main(int argc, char *argv[]) {
             socket_path = sstrdup(optarg);
         } else if (o == 't') {
             if (strcasecmp(optarg, "command") == 0) {
-                message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
+                message_type = I3_IPC_MESSAGE_TYPE_RUN_COMMAND;
+            } else if (strcasecmp(optarg, "run_command") == 0) {
+                message_type = I3_IPC_MESSAGE_TYPE_RUN_COMMAND;
             } else if (strcasecmp(optarg, "get_workspaces") == 0) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_WORKSPACES;
             } else if (strcasecmp(optarg, "get_outputs") == 0) {
@@ -207,7 +209,7 @@ int main(int argc, char *argv[]) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_CONFIG;
             } else {
                 printf("Unknown message type\n");
-                printf("Known types: command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config, get_binding_modes, get_version, get_config\n");
+                printf("Known types: run_command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config, get_binding_modes, get_version, get_config\n");
                 exit(EXIT_FAILURE);
             }
         } else if (o == 'q') {
