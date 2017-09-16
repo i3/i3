@@ -1048,8 +1048,8 @@ void randr_init(int *event_base, const bool disable_randr15) {
         xcb_randr_query_version_reply(
             conn, xcb_randr_query_version(conn, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION), &err);
     if (err != NULL) {
-        free(err);
         ELOG("Could not query RandR version: X11 error code %d\n", err->error_code);
+        free(err);
         fallback_to_root_output();
         return;
     }
