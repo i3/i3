@@ -338,6 +338,16 @@ urgent (bool)::
 	Whether this container (window or workspace) has the urgency hint set.
 focused (bool)::
 	Whether this container is currently focused.
+focus (array of integer)::
+	List of child node IDs (see +nodes+, +floating_nodes+ and +id+) in focus
+	order. Traversing the tree by following the first entry in this array
+	will result in eventually reaching the one node with +focused+ set to
+	true.
+nodes (array of node)::
+	The tiling (i.e. non-floating) child containers of this node.
+floating_nodes (array of node)::
+	The floating child containers of this node. Only non-empty on nodes with
+	type +workspace+.
 
 Please note that in the following example, I have left out some keys/values
 which are not relevant for the type of the node. Otherwise, the example would
