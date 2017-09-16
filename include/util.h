@@ -57,6 +57,13 @@
 
 #define CALL(obj, member, ...) obj->member(obj, ##__VA_ARGS__)
 
+#define SWAP(first, second, type) \
+    do {                          \
+        type tmp_SWAP = first;    \
+        first = second;           \
+        second = tmp_SWAP;        \
+    } while (0)
+
 int min(int a, int b);
 int max(int a, int b);
 bool rect_contains(Rect rect, uint32_t x, uint32_t y);
