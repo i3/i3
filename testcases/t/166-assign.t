@@ -242,7 +242,7 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 my @docked = get_dock_clients;
-is(@docked, 0, 'one dock client yet');
+is(@docked, 0, 'no dock client yet');
 
 $window = open_special(
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
