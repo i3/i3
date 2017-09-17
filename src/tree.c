@@ -66,13 +66,13 @@ static Con *_create___i3(void) {
 bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
     bool result = false;
     char *globbed = resolve_tilde(path);
+    char *buf = NULL;
 
     if (!path_exists(globbed)) {
         LOG("%s does not exist, not restoring tree\n", globbed);
         goto out;
     }
 
-    char *buf = NULL;
     ssize_t len;
     if ((len = slurp(globbed, &buf)) < 0) {
         /* slurp already logged an error. */
