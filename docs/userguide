@@ -2238,7 +2238,6 @@ bindsym $mod+x move container to output VGA1
 bindsym $mod+x move container to output primary
 --------------------------------------------------------
 
--------------------------------
 Note that you might not have a primary output configured yet. To do so, run:
 -------------------------
 xrandr --output <output> --primary
