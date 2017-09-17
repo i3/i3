@@ -21,12 +21,12 @@ use i3test i3_autostart => 0;
 sub open_special {
     my %args = @_;
     $args{name} //= 'special window';
+    $args{wm_class} //= 'special';
 
     # We use dont_map because i3 will not map the window on the current
     # workspace. Thus, open_window would time out in wait_for_map (2 seconds).
     my $window = open_window(
         %args,
-        wm_class => 'special',
         dont_map => 1,
     );
     $window->map;
@@ -50,8 +50,7 @@ sub test_workspace_assignment {
     # We use sync_with_i3 instead of wait_for_map here because i3 will not actually
     # map the window -- it will be assigned to a different workspace and will only
     # be mapped once you switch to that workspace
-    my $window = open_special(dont_map => 1);
-    $window->map;
+    my $window = open_special;
     sync_with_i3;
 
     ok(@{get_ws_content($tmp)} == 0, 'still no containers');
