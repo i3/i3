@@ -88,6 +88,7 @@ use base 'Exporter';
 
 our @EXPORT = qw(i3);
 
+use constant TYPE_RUN_COMMAND => 0;
 use constant TYPE_COMMAND => 0;
 use constant TYPE_GET_WORKSPACES => 1;
 use constant TYPE_SUBSCRIBE => 2;
@@ -100,7 +101,7 @@ use constant TYPE_GET_BINDING_MODES => 8;
 use constant TYPE_GET_CONFIG => 9;
 
 our %EXPORT_TAGS = ( 'all' => [
-    qw(i3 TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS
+    qw(i3 TYPE_RUN_COMMAND TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS
        TYPE_GET_TREE TYPE_GET_MARKS TYPE_GET_BAR_CONFIG TYPE_GET_VERSION
        TYPE_GET_BINDING_MODES TYPE_GET_CONFIG)
 ] );
@@ -322,7 +323,7 @@ Sends a message of the specified C<type> to i3, possibly containing the data
 structure C<content> (or C<content>, encoded as utf8, if C<content> is a
 scalar), if specified.
 
-    my $reply = $i3->message(TYPE_COMMAND, "reload")->recv;
+    my $reply = $i3->message(TYPE_RUN_COMMAND, "reload")->recv;
     if ($reply->{success}) {
         say "Configuration successfully reloaded";
     }
@@ -532,7 +533,7 @@ sub command {
 
     $self->_ensure_connection;
 
-    $self->message(TYPE_COMMAND, $content)
+    $self->message(TYPE_RUN_COMMAND, $content)
 }
 
 =head1 AUTHOR

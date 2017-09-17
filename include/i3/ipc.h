@@ -27,8 +27,11 @@ typedef struct i3_ipc_header {
 /** Never change this, only on major IPC breakage (don’t do that) */
 #define I3_IPC_MAGIC "i3-ipc"
 
-/** The payload of the message will be interpreted as a command */
+/** Deprecated: use I3_IPC_MESSAGE_TYPE_RUN_COMMAND */
 #define I3_IPC_MESSAGE_TYPE_COMMAND 0
+
+/** The payload of the message will be interpreted as a command */
+#define I3_IPC_MESSAGE_TYPE_RUN_COMMAND 0
 
 /** Requests the current workspaces from i3 */
 #define I3_IPC_MESSAGE_TYPE_GET_WORKSPACES 1

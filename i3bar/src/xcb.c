@@ -522,7 +522,7 @@ void handle_button(xcb_button_press_event_t *event) {
         if (binding->input_code != event->detail)
             continue;
 
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, binding->command);
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_RUN_COMMAND, binding->command);
         return;
     }
 
@@ -603,7 +603,7 @@ void handle_button(xcb_button_press_event_t *event) {
         buffer[outpos] = utf8_name[inpos];
     }
     buffer[outpos] = '"';
-    i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, buffer);
+    i3_send_msg(I3_IPC_MESSAGE_TYPE_RUN_COMMAND, buffer);
     free(buffer);
 }
 
