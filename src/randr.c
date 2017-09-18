@@ -380,6 +380,10 @@ void output_init_con(Output *output) {
     FREE(name);
     DLOG("attaching\n");
     con_attach(bottomdock, con, false);
+
+    /* Change focus to the content container */
+    TAILQ_REMOVE(&(con->focus_head), content, focused);
+    TAILQ_INSERT_HEAD(&(con->focus_head), content, focused);
 }
 
 /*
