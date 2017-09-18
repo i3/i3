@@ -883,3 +883,63 @@ Rust::
 	* https://github.com/tmerr/i3ipc-rs
 OCaml::
 	* https://github.com/Armael/ocaml-i3ipc
+
+== Appendix A: Detecting byte order in memory-safe languages
+
+Some programming languages such as Go don’t offer a way to serialize data in the
+native byte order of the machine they’re running on without resorting to tricks
+involving the +unsafe+ package.
+
+The following technique can be used (and will not be broken by changes to i3) to
+detect the byte order i3 is using:
+
+1. The byte order dependent fields of an IPC message are message type and
+   payload length.
+
+   * The message type +RUN_COMMAND+ (0) is the same in big and little endian, so
+     we can use it in either byte order to elicit a reply from i3.
+
+   * The payload length 65536 + 256 (+0x00 01 01 00+) is the same in big and
+     little endian, and also small enough to not worry about memory allocations
+     of that size. We must use payloads of length 65536 + 256 in every message
+     we send, so that i3 will be able to read the entire message regardless of
+     the byte order it uses.
+
+2. Send a big endian encoded message of type +SUBSCRIBE+ (2) with payload `[]`
+   followed by 65536 + 256 - 2 +SPACE+ (ASCII 0x20) bytes.
+
+   * If i3 is running in big endian, this message is treated as a noop,
+     resulting in a +SUBSCRIBE+ reply with payload `{"success":true}`
+     footnote:[A small payload is important: that way, we circumvent dealing
+     with UNIX domain socket buffer sizes, whose size depends on the
+     implementation/operating system. Exhausting such a buffer results in an i3
+     deadlock unless you concurrently read and write, which — depending on the
+     programming language — makes the technique much more complicated.].
+
+   * If i3 is running in little endian, this message is read in its entirety due
+     to the byte order independent payload length, then
+     https://github.com/i3/i3/blob/d726d09d496577d1c337a4b97486f2c9fbc914f1/src/ipc.c#L1188[silently
+     discarded] due to the unknown message type.
+
+3. Send a byte order independent message, i.e. type +RUN_COMMAND+ (0) with
+   payload +nop byte order detection. padding:+, padded to 65536 + 256 bytes
+   with +a+ (ASCII 0x61) bytes. i3 will reply to this message with a reply of
+   type +COMMAND+ (0).
+
+   * The human-readable prefix is in there to not confuse readers of the i3 log.
+
+   * This messages serves as a synchronization primitive so that we know whether
+     i3 discarded the +SUBSCRIBE+ message or didn’t answer it yet.
+
+4. Receive a message header from i3, decoding the message type as big endian.
+
+   * If the message’s reply type is +COMMAND+ (0), i3 is running in little
+     endian (because the +SUBSCRIBE+ message was discarded). Decode the message
+     payload length as little endian, receive the message payload.
+
+   * If the message’s reply type is anything else, i3 is running in big endian
+     (because our big endian encoded +SUBSCRIBE+ message was answered). Decode
+     the message payload length in big endian, receive the message
+     payload. Then, receive the pending +COMMAND+ message reply in big endian.
+
+5. From here on out, send/receive all messages using the detected byte order.
