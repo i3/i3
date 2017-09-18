@@ -9,3 +9,5 @@ Build.bat
 \.tar\.gz$
 ^pod2htm(.*).tmp$
 ^AnyEvent-I3-
+^MYMETA.*
+^MANIFEST\.bak
