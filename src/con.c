@@ -1841,7 +1841,9 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
             }
         }
 
-        con_set_layout(con, new_layout);
+        if (new_layout != L_DEFAULT) {
+            con_set_layout(con, new_layout);
+        }
     } else if (strcasecmp(toggle_mode, "all") == 0 || strcasecmp(toggle_mode, "default") == 0) {
         if (parent->layout == L_STACKED)
             con_set_layout(con, L_TABBED);
