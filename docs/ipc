@@ -322,7 +322,10 @@ window (integer)::
 	containers. This ID corresponds to what xwininfo(1) and other
 	X11-related tools display (usually in hex).
 urgent (bool)::
-	Whether this container (window or workspace) has the urgency hint set.
+	Whether this container (window, split container, floating container or
+	workspace) has the urgency hint set, directly or indirectly. All parent
+	containers up until the workspace container will be marked urgent if they
+	have at least one urgent child.
 focused (bool)::
 	Whether this container is currently focused.
 focus (array of integer)::
