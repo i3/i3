@@ -226,6 +226,7 @@ $expected_focus = get_focused($ws1);
 $ws2 = fresh_workspace;
 $B = open_window(wm_class => 'mark_B');
 $B->fullscreen(1);
+sync_with_i3;
 
 cmd '[con_mark=B] swap container with mark A';
 
@@ -263,6 +264,7 @@ $expected_focus = get_focused($ws1);
 $ws2 = fresh_workspace;
 $B = open_window(wm_class => 'mark_B');
 $B->fullscreen(1);
+sync_with_i3;
 
 cmd '[con_mark=B] swap container with mark A';
 
