@@ -33,10 +33,10 @@ static Output *get_screen_at(unsigned int x, unsigned int y) {
  *
  */
 void fake_outputs_init(const char *output_spec) {
-    char useless_buffer[1024];
     const char *walk = output_spec;
     unsigned int x, y, width, height;
-    while (sscanf(walk, "%ux%u+%u+%u", &width, &height, &x, &y) == 4) {
+    int chars_consumed;
+    while (sscanf(walk, "%ux%u+%u+%u%n", &width, &height, &x, &y, &chars_consumed) == 4) {
         DLOG("Parsed output as width = %u, height = %u at (%u, %u)\n",
              width, height, x, y);
         Output *new_output = get_screen_at(x, y);
@@ -68,8 +68,7 @@ void fake_outputs_init(const char *output_spec) {
             num_screens++;
         }
 
-        /* Figure out how long the input was to skip it */
-        walk += sprintf(useless_buffer, "%ux%u+%u+%u", width, height, x, y) + 1;
+        walk += chars_consumed + 1;
     }
 
     if (num_screens == 0) {
