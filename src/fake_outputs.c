@@ -68,7 +68,9 @@ void fake_outputs_init(const char *output_spec) {
             num_screens++;
         }
 
-        walk += chars_consumed + 1;
+        walk += chars_consumed;
+        if (*walk == ',')
+            walk++;
     }
 
     if (num_screens == 0) {
