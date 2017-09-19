@@ -5,6 +5,7 @@ use base 'Test::Builder::Module';
 
 our @EXPORT = qw(
     is_num_children
+    is_num_fullscreen
     cmp_float
     does_i3_live
 );
@@ -57,6 +58,25 @@ sub is_num_children {
     my $got_num_children = scalar @{$con->{nodes}};
 
     $tb->is_num($got_num_children, $num_children, $name);
+}
+
+=head2 is_num_fullscreen($workspace, $expected, $test_name)
+
+Gets the number of fullscreen containers on the given workspace and verifies that
+they match the expected amount.
+
+  is_num_fullscreen('1', 0, 'no fullscreen containers on workspace 1');
+
+=cut
+sub is_num_fullscreen {
+    my ($workspace, $num_fullscreen, $name) = @_;
+    my $workspace_content = i3test::get_ws($workspace);
+    my $tb = $CLASS->builder;
+
+    my $nodes = scalar grep { $_->{fullscreen_mode} != 0 } @{$workspace_content->{nodes}->[0]->{nodes}};
+    my $cons = scalar grep { $_->{fullscreen_mode} != 0 } @{$workspace_content->{nodes}};
+    my $floating = scalar grep { $_->{fullscreen_mode} != 0 } @{$workspace_content->{floating_nodes}->[0]->{nodes}};
+    $tb->is_num($nodes + $cons + $floating, $num_fullscreen, $name);
 }
 
 =head2 cmp_float($a, $b)

@@ -30,12 +30,6 @@ my ($result);
 my @fullscreen_permutations = ([], ["A"], ["B"], ["A", "B"]);
 my @urgent;
 
-sub fullscreen_windows {
-    my $ws = shift if @_;
-
-    scalar grep { $_->{fullscreen_mode} != 0 } @{get_ws_content($ws)}
-}
-
 ###############################################################################
 # Invalid con_id should not crash i3
 # See issue #2895.
@@ -191,14 +185,14 @@ for my $fullscreen (@fullscreen_permutations){
     $nodes = get_ws_content($ws1);
     $node = $nodes->[0];
     is($node->{window}, $B->{id}, 'B is on ws1:left');
-    is(fullscreen_windows($ws1), $A_fullscreen, 'amount of fullscreen windows in ws1');
+    is_num_fullscreen($ws1, $A_fullscreen, 'amount of fullscreen windows in ws1');
     is($node->{fullscreen_mode}, $A_fullscreen, 'B got A\'s fullscreen mode');
 
     $nodes = get_ws_content($ws2);
     $node = $nodes->[1];
     is($node->{window}, $A->{id}, 'A is on ws2:right');
     is(get_focused($ws2), $expected_focus, 'A is focused');
-    is(fullscreen_windows($ws2), $B_fullscreen, 'amount of fullscreen windows in ws2');
+    is_num_fullscreen($ws2, $B_fullscreen, 'amount of fullscreen windows in ws2');
     is($node->{fullscreen_mode}, $B_fullscreen, 'A got B\'s fullscreen mode');
 
     kill_all_windows;
@@ -232,7 +226,7 @@ cmd '[con_mark=B] swap container with mark A';
 
 $nodes = get_ws_content($ws1);
 is($nodes->[0]->{window}, $B->{id}, 'B is on ws1:left');
-is(fullscreen_windows($ws1), 1, 'F still fullscreen in ws1');
+is_num_fullscreen($ws1, 1, 'F still fullscreen in ws1');
 is(get_focused($ws1), $expected_focus, 'F is still focused');
 
 $nodes = get_ws_content($ws2);
@@ -258,7 +252,6 @@ cmd "split v";
 open_window;
 cmd "focus parent";
 cmd "fullscreen enable";
-$F = fullscreen_windows($ws1);
 $expected_focus = get_focused($ws1);
 
 $ws2 = fresh_workspace;
@@ -274,11 +267,11 @@ does_i3_live;
 $nodes = get_ws_content($ws1);
 is($nodes->[1]->{nodes}->[0]->{window}, $B->{id}, 'B is on top right in ws1');
 is(get_focused($ws1), $expected_focus, 'The container of the stacked windows remains focused in ws1');
-is(fullscreen_windows($ws1), $F, 'Same amount of fullscreen windows in ws1');
+is_num_fullscreen($ws1, 1, 'Same amount of fullscreen windows in ws1');
 
 $nodes = get_ws_content($ws2);
 is($nodes->[0]->{window}, $A->{id}, 'A is on ws2');
-is(fullscreen_windows($ws2), 1, 'A is in fullscreen mode');
+is_num_fullscreen($ws2, 1, 'A is in fullscreen mode');
 
 ###############################################################################
 # Swap two non-focused containers within the same workspace.
@@ -351,13 +344,13 @@ for my $fullscreen (@fullscreen_permutations){
     $nodes = get_ws_content($ws1);
     $node = $nodes->[0];
     is($node->{window}, $B->{id}, 'B is on the first workspace');
-    is(fullscreen_windows($ws1), $A_fullscreen, 'amount of fullscreen windows in ws1');
+    is_num_fullscreen($ws1, $A_fullscreen, 'amount of fullscreen windows in ws1');
     is($node->{fullscreen_mode}, $A_fullscreen, 'B got A\'s fullscreen mode');
 
     $nodes = get_ws_content($ws2);
     $node = $nodes->[0];
     is($node->{window}, $A->{id}, 'A is on the second workspace');
-    is(fullscreen_windows($ws2), $B_fullscreen, 'amount of fullscreen windows in ws2');
+    is_num_fullscreen($ws2, $B_fullscreen, 'amount of fullscreen windows in ws2');
     is($node->{fullscreen_mode}, $B_fullscreen, 'A got B\'s fullscreen mode');
 
     is(get_focused($ws3), $expected_focus, 'F is still focused');
