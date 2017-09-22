@@ -166,6 +166,13 @@ Con *con_by_window_id(xcb_window_t window);
 Con *con_by_con_id(long target);
 
 /**
+ * Returns true if the given container (still) exists.
+ * This can be used, e.g., to make sure a container hasn't been closed in the meantime.
+ *
+ */
+bool con_exists(Con *con);
+
+/**
  * Returns the container with the given frame ID or NULL if no such container
  * exists.
  *
