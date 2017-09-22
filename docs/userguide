@@ -760,6 +760,10 @@ title change. As i3 will get the title as soon as the application maps the
 window (mapping means actually displaying it on the screen), you’d need to have
 to match on 'Firefox' in this case.
 
+You can also assign a window to show up on a specific output. You can use RandR
+names such as +VGA1+ or names relative to the output with the currently focused
+workspace such as +left+ and +down+.
+
 Assignments are processed by i3 in the order in which they appear in the config
 file. The first one which matches the window wins and later assignments are not
 considered.
@@ -767,6 +771,7 @@ considered.
 *Syntax*:
 ------------------------------------------------------------
 assign <criteria> [→] [workspace] [number] <workspace>
+assign <criteria> [→] output left|right|up|down|primary|<output>
 ------------------------------------------------------------
 
 *Examples*:
@@ -791,9 +796,20 @@ assign [class="^URxvt$"] → number "2: work"
 
 # Start urxvt -name irssi
 assign [class="^URxvt$" instance="^irssi$"] → 3
+
+# Assign urxvt to the output right of the current one
+assign [class="^URxvt$"] → output right
+
+# Assign urxvt to the primary output
+assign [class="^URxvt$"] → output primary
 ----------------------
 
-Note that the arrow is not required, it just looks good :-). If you decide to
+Note that you might not have a primary output configured yet. To do so, run:
+-------------------------
+xrandr --output <output> --primary
+-------------------------
+
+Also, the arrow is not required, it just looks good :-). If you decide to
 use it, it has to be a UTF-8 encoded arrow, not `->` or something like that.
 
 To get the class and instance, you can use +xprop+. After clicking on the
@@ -2238,7 +2254,6 @@ bindsym $mod+x move container to output VGA1
 bindsym $mod+x move container to output primary
 --------------------------------------------------------
 
--------------------------------
 Note that you might not have a primary output configured yet. To do so, run:
 -------------------------
 xrandr --output <output> --primary

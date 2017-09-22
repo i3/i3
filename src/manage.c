@@ -322,6 +322,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             } else
                 nc = tree_open_con(NULL, cwindow);
         }
+
+        if ((assignment = assignment_for(cwindow, A_TO_OUTPUT))) {
+            con_move_to_output_name(nc, assignment->dest.output, true);
+        }
     } else {
         /* M_BELOW inserts the new window as a child of the one which was
          * matched (e.g. dock areas) */
@@ -384,7 +388,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
              * needed e.g. for LibreOffice Impress multi-monitor
              * presentations to work out of the box. */
             if (output != NULL)
-                con_move_to_output(nc, output);
+                con_move_to_output(nc, output, false);
             con_toggle_fullscreen(nc, CF_OUTPUT);
         }
         fs = NULL;

@@ -1044,25 +1044,7 @@ void cmd_move_con_to_output(I3_CMD, const char *name) {
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
 
-        Output *current_output = get_output_for_con(current->con);
-        assert(current_output != NULL);
-
-        Output *output = get_output_from_string(current_output, name);
-        if (output == NULL) {
-            ELOG("Could not find output \"%s\", skipping.\n", name);
-            had_error = true;
-            continue;
-        }
-
-        Con *ws = NULL;
-        GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-        if (ws == NULL) {
-            ELOG("Could not find a visible workspace on output %p.\n", output);
-            had_error = true;
-            continue;
-        }
-
-        con_move_to_workspace(current->con, ws, true, false, false);
+        had_error |= !con_move_to_output_name(current->con, name, true);
     }
 
     cmd_output->needs_tree_render = true;

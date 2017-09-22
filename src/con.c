@@ -1284,12 +1284,33 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
  * visible workspace on the given output.
  *
  */
-void con_move_to_output(Con *con, Output *output) {
+void con_move_to_output(Con *con, Output *output, bool fix_coordinates) {
     Con *ws = NULL;
     GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
     assert(ws != NULL);
     DLOG("Moving con %p to output %s\n", con, output_primary_name(output));
-    con_move_to_workspace(con, ws, false, false, false);
+    con_move_to_workspace(con, ws, fix_coordinates, false, false);
+}
+
+/*
+ * Moves the given container to the currently focused container on the
+ * visible workspace on the output specified by the given name.
+ * The current output for the container is used to resolve relative names
+ * such as left, right, up, down.
+ *
+ */
+bool con_move_to_output_name(Con *con, const char *name, bool fix_coordinates) {
+    Output *current_output = get_output_for_con(con);
+    assert(current_output != NULL);
+
+    Output *output = get_output_from_string(current_output, name);
+    if (output == NULL) {
+        ELOG("Could not find output \"%s\"\n", name);
+        return false;
+    }
+
+    con_move_to_output(con, output, fix_coordinates);
+    return true;
 }
 
 /*
