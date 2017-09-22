@@ -227,7 +227,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     if (config.workspace_urgency_timer == 0)
         config.workspace_urgency_timer = 0.5;
 
-    config.focus_wrapping = true;
+    config.focus_wrapping = FOCUS_WRAPPING_ON;
 
     parse_configuration(override_configpath, true);
 

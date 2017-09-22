@@ -206,7 +206,7 @@ state MOUSE_WARPING:
 
 # focus_wrapping
 state FOCUS_WRAPPING:
-  value = word
+  value = '1', 'yes', 'true', 'on', 'enable', 'active', '0', 'no', 'false', 'off', 'disable', 'inactive', 'force'
       -> call cfg_focus_wrapping($value)
 
 # force_focus_wrapping

@@ -265,11 +265,26 @@ CFGFUN(disable_randr15, const char *value) {
 }
 
 CFGFUN(focus_wrapping, const char *value) {
-    config.focus_wrapping = eval_boolstr(value);
+    if (strcmp(value, "force") == 0) {
+        config.focus_wrapping = FOCUS_WRAPPING_FORCE;
+    } else if (eval_boolstr(value)) {
+        config.focus_wrapping = FOCUS_WRAPPING_ON;
+    } else {
+        config.focus_wrapping = FOCUS_WRAPPING_OFF;
+    }
 }
 
 CFGFUN(force_focus_wrapping, const char *value) {
-    config.force_focus_wrapping = eval_boolstr(value);
+    /* Legacy syntax. */
+    if (eval_boolstr(value)) {
+        config.focus_wrapping = FOCUS_WRAPPING_FORCE;
+    } else {
+        /* For "force_focus_wrapping off", don't enable or disable
+         * focus wrapping, just ensure it's not forced. */
+        if (config.focus_wrapping == FOCUS_WRAPPING_FORCE) {
+            config.focus_wrapping = FOCUS_WRAPPING_ON;
+        }
+    }
 }
 
 CFGFUN(workspace_back_and_forth, const char *value) {

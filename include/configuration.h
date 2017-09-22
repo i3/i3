@@ -142,18 +142,19 @@ struct Config {
      * direction in which there are no more containers to focus) will
      * cause the focus to wrap to the opposite edge of the current
      * container. When it is disabled, nothing happens; the current
-     * focus is preserved.  */
-    bool focus_wrapping;
-
-    /** Think of the following layout: Horizontal workspace with a tabbed
-     * con on the left of the screen and a terminal on the right of the
-     * screen. You are in the second container in the tabbed container and
-     * focus to the right. By default, i3 will set focus to the terminal on
-     * the right. If you are in the first container in the tabbed container
-     * however, focusing to the left will wrap. This option forces i3 to
-     * always wrap, which will result in you having to use "focus parent"
-     * more often. */
-    bool force_focus_wrapping;
+     * focus is preserved.
+     *
+     * Additionally, focus wrapping may be forced. Think of the
+     * following layout: Horizontal workspace with a tabbed con on the
+     * left of the screen and a terminal on the right of the
+     * screen. You are in the second container in the tabbed container
+     * and focus to the right. By default, i3 will set focus to the
+     * terminal on the right. If you are in the first container in the
+     * tabbed container however, focusing to the left will
+     * wrap. Setting focus_wrapping to FOCUS_WRAPPING_FORCE forces i3
+     * to always wrap, which will result in you having to use "focus
+     * parent" more often. */
+    focus_wrapping_t focus_wrapping;
 
     /** By default, use the RandR API for multi-monitor setups.
      * Unfortunately, the nVidia binary graphics driver doesn't support
