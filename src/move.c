@@ -374,11 +374,6 @@ void tree_move(Con *con, int direction) {
     }
 
 end:
-    /* We need to call con_focus() to fix the focus stack "above" the container
-     * we just inserted the focused container into (otherwise, the parent
-     * container(s) would still point to the old container(s)). */
-    con_focus(con);
-
     /* force re-painting the indicators */
     FREE(con->deco_render_params);
 

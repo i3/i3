@@ -106,4 +106,20 @@ $windows[0] = open_window;
 cmd 'move left';
 confirm_focus('split-v + move');
 
+######################################################################
+# Test that moving an unfocused container maintains the correct focus
+# order.
+# Layout: H [ A V1 [ B C D ] ]
+######################################################################
+
+fresh_workspace;
+$windows[3] = open_window;
+$windows[2] = open_window;
+cmd 'split v';
+$windows[1] = open_window;
+$windows[0] = open_window;
+
+cmd '[id=' . $windows[3]->id . '] move right';
+confirm_focus('split-v + unfocused move');
+
 done_testing;
