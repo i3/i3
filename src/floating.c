@@ -531,6 +531,11 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
     /* Drag the window */
     drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, XCURSOR_CURSOR_MOVE, drag_window_callback, event);
 
+    if (!con_exists(con)) {
+        DLOG("The container has been closed in the meantime.\n");
+        return;
+    }
+
     /* If the user cancelled, undo the changes. */
     if (drag_result == DRAG_REVERT)
         floating_reposition(con, initial_rect);
@@ -642,6 +647,11 @@ void floating_resize_window(Con *con, const bool proportional,
 
     drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, cursor, resize_window_callback, &params);
 
+    if (!con_exists(con)) {
+        DLOG("The container has been closed in the meantime.\n");
+        return;
+    }
+
     /* If the user cancels, undo the resize */
     if (drag_result == DRAG_REVERT)
         floating_reposition(con, initial_rect);
@@ -739,12 +749,17 @@ static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
     if (last_motion_notify == NULL)
         return;
 
-    dragloop->callback(
-        dragloop->con,
-        &(dragloop->old_rect),
-        last_motion_notify->root_x,
-        last_motion_notify->root_y,
-        dragloop->extra);
+    /* Ensure that we are either dragging the resize handle (con is NULL) or that the
+     * container still exists. The latter might not be true, e.g., if the window closed
+     * for any reason while the user was dragging it. */
+    if (!dragloop->con || con_exists(dragloop->con)) {
+        dragloop->callback(
+            dragloop->con,
+            &(dragloop->old_rect),
+            last_motion_notify->root_x,
+            last_motion_notify->root_y,
+            dragloop->extra);
+    }
     free(last_motion_notify);
 }
 
