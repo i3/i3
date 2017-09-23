@@ -1951,6 +1951,9 @@ bindsym $mod+t floating toggle
 To change focus, you can use the +focus+ command. The following options are
 available:
 
+<criteria>::
+    Sets focus to the container that matches the specified criteria.
+    See <<command_criteria>>.
 left|right|up|down::
         Sets focus to the nearest container in the given direction.
 parent::
@@ -1970,6 +1973,7 @@ output::
 
 *Syntax*:
 ----------------------------------------------
+<criteria> focus
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
 focus output left|right|up|down|primary|<output>
@@ -1977,6 +1981,9 @@ focus output left|right|up|down|primary|<output>
 
 *Examples*:
 -------------------------------------------------
+# Focus firefox
+bindsym $mod+F1 [class="Firefox"] focus
+
 # Focus container on the left, bottom, top, right
 bindsym $mod+j focus left
 bindsym $mod+k focus down
