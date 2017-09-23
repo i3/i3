@@ -262,8 +262,6 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
      * We will skip handling events on floating cons in fullscreen mode */
     Con *fs = (ws ? con_get_fullscreen_con(ws, CF_OUTPUT) : NULL);
     if (floatingcon != NULL && fs != con) {
-        floating_raise_con(floatingcon);
-
         /* 4: floating_modifier plus left mouse button drags */
         if (mod_pressed && event->detail == XCB_BUTTON_CLICK_LEFT) {
             floating_drag_window(floatingcon, event);

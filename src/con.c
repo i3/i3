@@ -243,6 +243,13 @@ void con_focus(Con *con) {
         workspace_update_urgent_flag(con_get_workspace(con));
         ipc_send_window_event("urgent", con);
     }
+
+    /* Focusing a container with a floating parent should raise it to the top. Since
+     * con_focus is called recursively for each parent we don't need to use
+     * con_inside_floating(). */
+    if (con->type == CT_FLOATING_CON) {
+        floating_raise_con(con);
+    }
 }
 
 /*

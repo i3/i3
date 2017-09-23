@@ -1221,7 +1221,9 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
         return;
     }
 
-    if (focused_id == event->event) {
+    /* Floating windows should be refocused to ensure that they are on top of
+     * other windows. */
+    if (focused_id == event->event && !con_inside_floating(con)) {
         DLOG("focus matches the currently focused window, not doing anything\n");
         return;
     }
@@ -1232,7 +1234,7 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
         return;
     }
 
-    DLOG("focus is different, updating decorations\n");
+    DLOG("focus is different / refocusing floating window: updating decorations\n");
 
     /* Get the currently focused workspace to check if the focus change also
      * involves changing workspaces. If so, we need to call workspace_show() to
@@ -1244,7 +1246,7 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
     con_focus(con);
     /* We update focused_id because we don’t need to set focus again */
     focused_id = event->event;
-    x_push_changes(croot);
+    tree_render();
     return;
 }
 
