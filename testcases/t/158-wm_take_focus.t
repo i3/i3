@@ -2,13 +2,13 @@
 # vim:ts=4:sw=4:expandtab
 #
 # Please read the following documents before working on tests:
-# • http://build.i3wm.org/docs/testsuite.html
+# • https://build.i3wm.org/docs/testsuite.html
 #   (or docs/testsuite)
 #
-# • http://build.i3wm.org/docs/lib-i3test.html
+# • https://build.i3wm.org/docs/lib-i3test.html
 #   (alternatively: perldoc ./testcases/lib/i3test.pm)
 #
-# • http://build.i3wm.org/docs/ipc.html
+# • https://build.i3wm.org/docs/ipc.html
 #   (or docs/ipc)
 #
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
@@ -17,7 +17,7 @@
 # Tests if the WM_TAKE_FOCUS protocol is correctly handled by i3
 #
 # For more information on the protocol and input handling, see:
-# http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.7
+# https://tronche.com/gui/x/icccm/sec-4.html#s-4.1.7
 #
 use i3test;
 
@@ -63,7 +63,7 @@ subtest 'Window without WM_TAKE_FOCUS', sub {
     done_testing;
 };
 
-# http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.7
+# https://tronche.com/gui/x/icccm/sec-4.html#s-4.1.7
 # > Clients using the Globally Active model can only use a SetInputFocus request
 # > to acquire the input focus when they do not already have it on receipt of one
 # > of the following events:
