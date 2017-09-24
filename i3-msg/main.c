@@ -207,9 +207,11 @@ int main(int argc, char *argv[]) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_VERSION;
             } else if (strcasecmp(optarg, "get_config") == 0) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_CONFIG;
+            } else if (strcasecmp(optarg, "send_tick") == 0) {
+                message_type = I3_IPC_MESSAGE_TYPE_SEND_TICK;
             } else {
                 printf("Unknown message type\n");
-                printf("Known types: run_command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config, get_binding_modes, get_version, get_config\n");
+                printf("Known types: run_command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config, get_binding_modes, get_version, get_config, send_tick\n");
                 exit(EXIT_FAILURE);
             }
         } else if (o == 'q') {

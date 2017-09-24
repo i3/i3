@@ -20,8 +20,6 @@ our @EXPORT = qw(
     xtest_key_release
     xtest_button_press
     xtest_button_release
-    listen_for_binding
-    start_binding_capture
     binding_events
 );
 
@@ -255,86 +253,6 @@ sub import {
 =head1 EXPORT
 
 =cut
-
-my $i3;
-our @binding_events;
-
-=head2 start_binding_capture()
-
-Captures all binding events sent by i3 in the C<@binding_events> symbol, so
-that you can verify the correct number of binding events was generated.
-
-  my $pid = launch_with_config($config);
-  start_binding_capture;
-  # …
-  sync_with_i3;
-  is(scalar @i3test::XTEST::binding_events, 2, 'Received exactly 2 binding events');
-
-=cut
-
-sub start_binding_capture {
-    # Store a copy of each binding event so that we can count the expected
-    # events in test cases.
-    $i3 = i3(get_socket_path());
-    $i3->connect()->recv;
-    $i3->subscribe({
-        binding => sub {
-            my ($event) = @_;
-            @binding_events = (@binding_events, $event);
-        },
-    })->recv;
-}
-
-=head2 listen_for_binding($cb)
-
-Helper function to evaluate whether sending KeyPress/KeyRelease events via
-XTEST triggers an i3 key binding or not (with a timeout of 0.5s). Expects key
-bindings to be configured in the form “bindsym <binding> nop <binding>”, e.g.
-“bindsym Mod4+Return nop Mod4+Return”.
-
-  is(listen_for_binding(
-      sub {
-          xtest_key_press(133); # Super_L
-          xtest_key_press(36); # Return
-          xtest_key_release(36); # Return
-          xtest_key_release(133); # Super_L
-      },
-      ),
-     'Mod4+Return',
-     'triggered the "Mod4+Return" keybinding');
-
-=cut
-
-sub listen_for_binding {
-    my ($cb) = @_;
-    my $triggered = AnyEvent->condvar;
-    my $i3 = i3(get_socket_path());
-    $i3->connect()->recv;
-    $i3->subscribe({
-        binding => sub {
-            my ($event) = @_;
-            return unless $event->{change} eq 'run';
-            # We look at the command (which is “nop <binding>”) because that is
-            # easier than re-assembling the string representation of
-            # $event->{binding}.
-            $triggered->send($event->{binding}->{command});
-        },
-    })->recv;
-
-    my $t;
-    $t = AnyEvent->timer(
-        after => 0.5,
-        cb => sub {
-            $triggered->send('timeout');
-        }
-    );
-
-    $cb->();
-
-    my $recv = $triggered->recv;
-    $recv =~ s/^nop //g;
-    return $recv;
-}
 
 =head2 set_xkb_group($group)
 

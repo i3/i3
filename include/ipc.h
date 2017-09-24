@@ -31,6 +31,10 @@ typedef struct ipc_client {
     int num_events;
     char **events;
 
+    /* For clients which subscribe to the tick event: whether the first tick
+     * event has been sent by i3. */
+    bool first_tick_sent;
+
     TAILQ_ENTRY(ipc_client)
     clients;
 } ipc_client;

@@ -99,11 +99,12 @@ use constant TYPE_GET_BAR_CONFIG => 6;
 use constant TYPE_GET_VERSION => 7;
 use constant TYPE_GET_BINDING_MODES => 8;
 use constant TYPE_GET_CONFIG => 9;
+use constant TYPE_SEND_TICK => 10;
 
 our %EXPORT_TAGS = ( 'all' => [
     qw(i3 TYPE_RUN_COMMAND TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS
        TYPE_GET_TREE TYPE_GET_MARKS TYPE_GET_BAR_CONFIG TYPE_GET_VERSION
-       TYPE_GET_BINDING_MODES TYPE_GET_CONFIG)
+       TYPE_GET_BINDING_MODES TYPE_GET_CONFIG TYPE_SEND_TICK)
 ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
@@ -120,6 +121,7 @@ my %events = (
     barconfig_update => ($event_mask | 4),
     binding => ($event_mask | 5),
     shutdown => ($event_mask | 6),
+    tick => ($event_mask | 7),
     _error => 0xFFFFFFFF,
 );
 
@@ -519,6 +521,18 @@ sub get_config {
     $self->message(TYPE_GET_CONFIG);
 }
 
+=head2 send_tick
+
+Sends a tick event. Requires i3 >= 4.15
+
+=cut
+sub send_tick {
+    my ($self, $payload) = @_;
+
+    $self->_ensure_connection;
+
+    $self->message(TYPE_SEND_TICK, $payload);
+}
 
 =head2 command($content)
 

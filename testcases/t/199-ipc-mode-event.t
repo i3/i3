@@ -28,24 +28,11 @@ mode "with spaces" {
 }
 EOT
 
-my $i3 = i3(get_socket_path(0));
-$i3->connect->recv;
+my @events = events_for(
+    sub { cmd 'mode "m1"' },
+    'mode');
 
-my $cv = AnyEvent->condvar;
-
-$i3->subscribe({
-    mode => sub {
-        my ($event) = @_;
-        $cv->send($event->{change} eq 'm1');
-    }
-})->recv;
-
-cmd 'mode "m1"';
-
-# Timeout after 0.5s
-my $t;
-$t = AnyEvent->timer(after => 0.5, cb => sub { $cv->send(0); });
-
-ok($cv->recv, 'Mode event received');
+my @changes = map { $_->{change} } @events;
+is_deeply(\@changes, [ 'm1' ], 'Mode event received');
 
 done_testing;

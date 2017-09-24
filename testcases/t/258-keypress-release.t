@@ -37,8 +37,6 @@ SKIP: {
     skip "libxcb-xkb too old (need >= 1.11)", 1 unless
         ExtUtils::PkgConfig->atleast_version('xcb-xkb', '1.11');
 
-start_binding_capture;
-
 is(listen_for_binding(
     sub {
         xtest_key_press(107); # Print
@@ -86,9 +84,6 @@ is(listen_for_binding(
     ),
     'Mod1+Shift+b release',
     'triggered the "Mod1+Shift+b" release keybinding');
-
-sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 4, 'Received exactly 4 binding events');
 
 }
 

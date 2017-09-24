@@ -51,8 +51,6 @@ EOT
 
 my $pid = launch_with_config($config);
 
-start_binding_capture;
-
 is(listen_for_binding(
     sub {
         xtest_key_press(87); # KP_End
@@ -213,9 +211,6 @@ is(listen_for_binding(
    's',
    'triggered the "s" keybinding with Num_Lock');
 
-sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 12, 'Received exactly 12 binding events');
-
 exit_gracefully($pid);
 
 ################################################################################
@@ -233,8 +228,6 @@ bindcode --release 133 nop Super_L
 EOT
 
 $pid = launch_with_config($config);
-
-start_binding_capture;
 
 is(listen_for_binding(
     sub {
@@ -288,9 +281,6 @@ is(listen_for_binding(
    'Return',
    'triggered the "Return" keybinding with Num_Lock');
 
-sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 16, 'Received exactly 16 binding events');
-
 exit_gracefully($pid);
 
 ################################################################################
@@ -306,8 +296,6 @@ bindcode 88 nop KP_Down
 EOT
 
 $pid = launch_with_config($config);
-
-start_binding_capture;
 
 is(listen_for_binding(
     sub {
@@ -329,7 +317,7 @@ is(listen_for_binding(
    'KP_Down',
    'triggered the "KP_Down" keybinding');
 
-is(listen_for_binding(
+my @unexpected = events_for(
     sub {
         xtest_key_press(77); # enable Num_Lock
         xtest_key_release(77); # enable Num_Lock
@@ -339,11 +327,10 @@ is(listen_for_binding(
         xtest_key_release(77); # disable Num_Lock
         xtest_sync_with_i3;
     },
-    ),
-   'timeout',
-   'Did not trigger the KP_End keybinding with KP_1');
+    'binding');
+is(scalar @unexpected, 0, 'Did not trigger the KP_End keybinding with KP_1');
 
-is(listen_for_binding(
+my @unexpected2 = events_for(
     sub {
         xtest_key_press(77); # enable Num_Lock
         xtest_key_release(77); # enable Num_Lock
@@ -353,14 +340,11 @@ is(listen_for_binding(
         xtest_key_release(77); # disable Num_Lock
         xtest_sync_with_i3;
     },
-    ),
-   'timeout',
-   'Did not trigger the KP_Down keybinding with KP_2');
+    'binding');
+
+is(scalar @unexpected2, 0, 'Did not trigger the KP_Down keybinding with KP_2');
 
 # TODO: This test does not verify that i3 does _NOT_ grab keycode 87 with Mod2.
-
-sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 18, 'Received exactly 18 binding events');
 
 exit_gracefully($pid);
 
@@ -378,8 +362,6 @@ EOT
 $pid = launch_with_config($config);
 
 my $win = open_window;
-
-start_binding_capture;
 
 is(listen_for_binding(
     sub {

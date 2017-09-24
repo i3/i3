@@ -34,17 +34,12 @@ bar {
 EOT
 use i3test::XTEST;
 
-my ($cv, $timer);
-sub reset_test {
-    $cv = AE::cv;
-    $timer = AE::timer(1, 0, sub { $cv->send(0); });
-}
-
 my $i3 = i3(get_socket_path());
 $i3->connect()->recv;
 my $ws = fresh_workspace;
 
-reset_test;
+my $cv = AnyEvent->condvar;
+my $timer = AnyEvent->timer(1, 0, sub { $cv->send(0) });
 $i3->subscribe({
         window => sub {
             my ($event) = @_;
@@ -59,8 +54,6 @@ $i3->subscribe({
             }
         },
     })->recv;
-
-my $con;
 
 sub i3bar_present {
     my ($nodes) = @_;
@@ -83,50 +76,68 @@ sub i3bar_present {
 if (i3bar_present($i3->get_tree->recv->{nodes})) {
     ok(1, 'i3bar present');
 } else {
-    $con = $cv->recv;
+    my $con = $cv->recv;
     ok($con, 'i3bar appeared');
 }
 
 my $left = open_window;
 my $right = open_window;
 sync_with_i3;
-$con = $cv->recv;
+my $con = $cv->recv;
 is($con->{window}, $right->{id}, 'focus is initially on the right container');
-reset_test;
 
-xtest_button_press(1, 3, 3);
-xtest_button_release(1, 3, 3);
-sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $left->{id}, 'button 1 moves focus left');
-reset_test;
+sub focus_subtest {
+    my ($subscribecb, $want, $msg) = @_;
+    my @events = events_for(
+	$subscribecb,
+	'window');
+    my @focus = map { $_->{container}->{window} } grep { $_->{change} eq 'focus' } @events;
+    is_deeply(\@focus, $want, $msg);
+}
 
-xtest_button_press(2, 3, 3);
-xtest_button_release(2, 3, 3);
-sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $right->{id}, 'button 2 moves focus right');
-reset_test;
+subtest 'button 1 moves focus left', \&focus_subtest,
+    sub {
+	xtest_button_press(1, 3, 3);
+	xtest_button_release(1, 3, 3);
+	xtest_sync_with_i3;
+    },
+    [ $left->{id} ],
+    'button 1 moves focus left';
 
-xtest_button_press(3, 3, 3);
-xtest_button_release(3, 3, 3);
-sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $left->{id}, 'button 3 moves focus left');
-reset_test;
+subtest 'button 2 moves focus right', \&focus_subtest,
+    sub {
+	xtest_button_press(2, 3, 3);
+	xtest_button_release(2, 3, 3);
+	xtest_sync_with_i3;
+    },
+    [ $right->{id} ],
+    'button 2 moves focus right';
 
-xtest_button_press(4, 3, 3);
-xtest_button_release(4, 3, 3);
-sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $right->{id}, 'button 4 moves focus right');
-reset_test;
+subtest 'button 3 moves focus left', \&focus_subtest,
+    sub {
+	xtest_button_press(3, 3, 3);
+	xtest_button_release(3, 3, 3);
+	xtest_sync_with_i3;
+    },
+    [ $left->{id} ],
+    'button 3 moves focus left';
 
-xtest_button_press(5, 3, 3);
-xtest_button_release(5, 3, 3);
-sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $left->{id}, 'button 5 moves focus left');
-reset_test;
+subtest 'button 4 moves focus right', \&focus_subtest,
+    sub {
+	xtest_button_press(4, 3, 3);
+	xtest_button_release(4, 3, 3);
+	xtest_sync_with_i3;
+    },
+    [ $right->{id} ],
+    'button 4 moves focus right';
+
+subtest 'button 5 moves focus left', \&focus_subtest,
+    sub {
+	xtest_button_press(5, 3, 3);
+	xtest_button_release(5, 3, 3);
+	xtest_sync_with_i3;
+    },
+    [ $left->{id} ],
+    'button 5 moves focus left';
 
 done_testing;
