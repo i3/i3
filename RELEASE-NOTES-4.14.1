@@ -1,0 +1,61 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.14.1 │
+ └──────────────────────────────┘
+
+This is i3 v4.14.1. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+This is a bugfix release for v4.14.
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.14.1      │
+ └────────────────────────────┘
+
+  • docs/hacking-howto: promote contributing-related sections
+  • docs/ipc: tree reply: document focus, nodes and floating_nodes
+  • docs/ipc: urgent: complete the list of container types
+  • docs/ipc: document how to detect i3’s byte order in memory-safe languages
+  • docs/ipc: document the (existing since v4.14) GET_CONFIG request
+  • docs/userguide: document that i3 can accept RandR output names
+  • include AnyEvent-I3 in dist tarballs
+  • append_layout: validate JSON before loading
+  • move: fix erratic behavior with single container child jumping outputs
+  • ipc: rename COMMAND to RUN_COMMAND for consistency
+  • replace http:// with https:// where applicable
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • fix various memory errors
+  • fix output and tray_output related issues with RandR 1.5
+  • avoid use of uninitialized in init_dpi_end
+  • properly initialize sigaction struct
+  • swap: invert condition to log debug message in correct situation
+  • swap: fix crash on invalid container id
+  • fix a crash when restarting with marks
+  • i3bar: fix a memory leak
+  • test workers: re-seed random number generator after fork
+  • tests: run environment-modifying 533-randr15.t at the very end
+  • tests: unflake t/257-keypress-group1-fallback.t
+  • tests: unflake t/263-edge-borders.t
+  • tests: unflake tests by not starting i3bar
+  • fix a crash with configfiles which do not end in a newline.
+  • append_layout: free incomplete containers when JSON parsing fails
+  • layout toggle: fix crash with invalid parameters
+  • outputs: avert crash by fixing focus when creating output containers
+  • correctly raise floating videos to the top when switching between windows
+    programmatically
+  • fix crash when a floating window is tiled while being resized via mouse
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  hwangcc23, Ingo Bürk, Kent Fredric, Martin T. H. Sandsmark, Orestis Floros,
+  Theo Buehler, Vladimir Panteleev 
+
+-- Michael Stapelberg, 2017-09-24
