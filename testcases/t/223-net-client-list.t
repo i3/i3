@@ -2,13 +2,13 @@
 # vim:ts=4:sw=4:expandtab
 #
 # Please read the following documents before working on tests:
-# • http://build.i3wm.org/docs/testsuite.html
+# • https://build.i3wm.org/docs/testsuite.html
 #   (or docs/testsuite)
 #
-# • http://build.i3wm.org/docs/lib-i3test.html
+# • https://build.i3wm.org/docs/lib-i3test.html
 #   (alternatively: perldoc ./testcases/lib/i3test.pm)
 #
-# • http://build.i3wm.org/docs/ipc.html
+# • https://build.i3wm.org/docs/ipc.html
 #   (or docs/ipc)
 #
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
@@ -18,7 +18,7 @@
 # are mapped and unmapped.
 #
 # Information on this property can be found here:
-# http://standards.freedesktop.org/wm-spec/latest/ar01s03.html
+# https://standards.freedesktop.org/wm-spec/latest/ar01s03.html
 #
 # > These arrays contain all X Windows managed by the Window Manager.
 # > _NET_CLIENT_LIST has initial mapping order, starting with the oldest window.
