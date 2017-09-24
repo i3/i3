@@ -23,10 +23,10 @@ perldoc command.
 You can also look for information at:
 
     RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=AnyEvent-I3
+        https://rt.cpan.org/NoAuth/Bugs.html?Dist=AnyEvent-I3
 
     The i3 window manager website
-        http://i3.zekjur.net/
+        https://i3wm.org
 
 
 LICENSE AND COPYRIGHT
@@ -37,4 +37,4 @@ This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
 by the Free Software Foundation; or the Artistic License.
 
-See http://dev.perl.org/licenses/ for more information.
+See https://dev.perl.org/licenses/ for more information.

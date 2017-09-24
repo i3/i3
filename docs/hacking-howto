@@ -52,8 +52,8 @@ Here’s a memory refresher:
 == Using git / sending patches
 
 For a short introduction into using git, see
-http://web.archive.org/web/20121024222556/http://www.spheredev.org/wiki/Git_for_the_lazy
-or, for more documentation, see http://git-scm.com/documentation
+https://web.archive.org/web/20121024222556/http://www.spheredev.org/wiki/Git_for_the_lazy
+or, for more documentation, see https://git-scm.com/documentation
 
 Please talk to us before working on new features to see whether they will be
 accepted. A good way for this is to open an issue and asking for opinions on it.
@@ -156,7 +156,7 @@ workspace, the split container we are talking about is the workspace.
 
 To get an impression of how different layouts are represented, just play around
 and look at the data structures -- they are exposed as a JSON hash. See
-http://i3wm.org/docs/ipc.html#_tree_reply for documentation on that and an
+https://i3wm.org/docs/ipc.html#_tree_reply for documentation on that and an
 example.
 
 == Files

@@ -5,7 +5,7 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * For more information on RandR, please see the X.org RandR specification at
- * http://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
+ * https://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
  * (take your time to read it completely, it answers all questions).
  *
  */

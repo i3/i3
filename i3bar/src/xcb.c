@@ -859,7 +859,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
  * client to finish the protocol. After this event is received, there is no
  * further interaction with the tray client.
  *
- * See: http://standards.freedesktop.org/xembed-spec/xembed-spec-latest.html
+ * See: https://standards.freedesktop.org/xembed-spec/xembed-spec-latest.html
  *
  */
 static void handle_destroy_notify(xcb_destroy_notify_event_t *event) {

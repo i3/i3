@@ -41,10 +41,10 @@ Apart from this document, you should also have a look at:
    http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 2. The latest Perl documentation of the "i3test" (general testcase setup) and
    "i3test::Test" (additional test instructions) modules:
-   http://build.i3wm.org/docs/lib-i3test.html respectively
-   http://build.i3wm.org/docs/lib-i3test-test.html
+   https://build.i3wm.org/docs/lib-i3test.html respectively
+   https://build.i3wm.org/docs/lib-i3test-test.html
 3. The latest documentation on i3’s IPC interface:
-   http://build.i3wm.org/docs/ipc.html
+   https://build.i3wm.org/docs/ipc.html
 
 == Implementation
 
@@ -99,7 +99,7 @@ $ sudo cpan .
 --------------------------------------------------------------------------------
 
 In case you don’t have root permissions, you can also install into your home
-directory, see http://michael.stapelberg.de/cpan/
+directory, see https://michael.stapelberg.de/cpan/
 
 === Mechanisms
 
@@ -240,7 +240,7 @@ interface which i3 provides. It is used for the startup process of i3, for
 terminating it cleanly and (most importantly) for modifying and getting the
 current state (layout tree).
 
-See [http://i3wm.org/docs/ipc.html] for documentation on the IPC interface.
+See [https://i3wm.org/docs/ipc.html] for documentation on the IPC interface.
 
 ==== X11::XCB
 

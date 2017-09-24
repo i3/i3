@@ -103,7 +103,7 @@ void restore_connect(void) {
 
         /* xcb_disconnect leaks memory in libxcb versions earlier than 1.11,
          * but it’s the right function to call. See
-         * http://cgit.freedesktop.org/xcb/libxcb/commit/src/xcb_conn.c?id=4dcbfd77b
+         * https://cgit.freedesktop.org/xcb/libxcb/commit/src/xcb_conn.c?id=4dcbfd77b
          */
         xcb_disconnect(restore_conn);
         free(xcb_watcher);

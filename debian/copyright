@@ -1,4 +1,4 @@
-Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: i3
 Upstream-Contact: Michael Stapelberg <michael@i3wm.org>
 Source: https://i3wm.org/
