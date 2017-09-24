@@ -1,7 +1,7 @@
 IPC interface (interprocess communication)
 ==========================================
 Michael Stapelberg <michael@i3wm.org>
-October 2014
+September 2017
 
 This document describes how to interface with i3 from a separate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
@@ -63,6 +63,7 @@ to do that).
 | 6 | +GET_BAR_CONFIG+ | <<_bar_config_reply,BAR_CONFIG>> | Gets the specified bar configuration or the names of all bar configurations if payload is empty.
 | 7 | +GET_VERSION+ | <<_version_reply,VERSION>> | Gets the i3 version.
 | 8 | +GET_BINDING_MODES+ | <<_binding_modes_reply,BINDING_MODES>> | Gets the names of all currently configured binding modes.
+| 9 | +GET_CONFIG+ | <<_config_reply,CONFIG>> | Returns the last loaded i3 config.
 |======================================================
 
 So, a typical message could look like this:
@@ -123,6 +124,8 @@ VERSION (7)::
 	Reply to the GET_VERSION message.
 BINDING_MODES (8)::
         Reply to the GET_BINDING_MODES message.
+GET_CONFIG (9)::
+	Reply to the GET_CONFIG message.
 
 [[_command_reply]]
 === COMMAND reply
@@ -622,6 +625,18 @@ The reply consists of an array of all currently configured binding modes.
 ---------------------
 ["default", "resize"]
 ---------------------
+
+[[_config_reply]]
+=== CONFIG reply
+
+The config reply is a map which currently only contains the "config" member,
+which is a string containing the config file as loaded by i3 most recently.
+
+*Example:*
+-------------------
+{ "config": "font pango:monospace 8\nbindsym Mod4+q exit\n" }
+-------------------
+
 
 == Events
 
