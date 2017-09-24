@@ -2,20 +2,20 @@
 # vim:ts=4:sw=4:expandtab
 #
 # Please read the following documents before working on tests:
-# • http://build.i3wm.org/docs/testsuite.html
+# • https://build.i3wm.org/docs/testsuite.html
 #   (or docs/testsuite)
 #
-# • http://build.i3wm.org/docs/lib-i3test.html
+# • https://build.i3wm.org/docs/lib-i3test.html
 #   (alternatively: perldoc ./testcases/lib/i3test.pm)
 #
-# • http://build.i3wm.org/docs/ipc.html
+# • https://build.i3wm.org/docs/ipc.html
 #   (or docs/ipc)
 #
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
 # Test _NET_CLOSE_WINDOW requests to close a window.
-# See http://standards.freedesktop.org/wm-spec/wm-spec-latest.html#idm140200472668896
+# See https://standards.freedesktop.org/wm-spec/wm-spec-latest.html#idm140200472668896
 # Ticket: #1396
 # Bug still in: 4.8-116-gbb1f857
 use i3test;

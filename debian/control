@@ -27,7 +27,7 @@ Build-Depends: debhelper (>= 9),
                libpango1.0-dev,
                libpod-simple-perl
 Standards-Version: 3.9.8
-Homepage: http://i3wm.org/
+Homepage: https://i3wm.org/
 
 Package: i3
 Architecture: any

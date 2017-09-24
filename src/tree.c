@@ -266,7 +266,7 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
              * will be mapped when i3 closes its connection (e.g. when
              * restarting). This is not what we want, since some apps keep
              * unmapped windows around and don’t expect them to suddenly be
-             * mapped. See http://bugs.i3wm.org/1617 */
+             * mapped. See https://bugs.i3wm.org/1617 */
             xcb_change_save_set(conn, XCB_SET_MODE_DELETE, con->window->id);
 
             /* Ignore X11 errors for the ReparentWindow request.

@@ -32,8 +32,8 @@ if you can.
 
 4.7-85-g9c15b95 (development version)::
 Your version is 85 commits newer than 4.7, and the git revision of your
-version is +9c15b95+. Go to http://code.i3wm.org/i3/commit/?h=next and see if
-the line "commit" starts with the same revision. If so, you are using the
+version is +9c15b95+. Go to https://github.com/i3/i3/commits/next and see if
+the most recent commit starts with the same revision. If so, you are using the
 latest version.
 
 Development versions of i3 have logging enabled by default and are compiled
@@ -109,9 +109,9 @@ No matter whether i3 misbehaved in some way without crashing or whether it just
 crashed, the logfile provides all information necessary to debug the problem.
 
 To upload a compressed version of the logfile (for a bugreport), use:
-------------------------------------------------------------------------------
-DISPLAY=:0 i3-dump-log | bzip2 -c | curl --data-binary @- http://logs.i3wm.org
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+DISPLAY=:0 i3-dump-log | bzip2 -c | curl --data-binary @- https://logs.i3wm.org
+-------------------------------------------------------------------------------
 
 This command does not depend on i3 (it also works while i3 displays
 the crash dialog), but it requires a working X11 connection.
@@ -154,9 +154,9 @@ you found the section which clearly highlights the problem, additional
 information might be necessary to completely diagnose the problem.
 
 When debugging with us in IRC, be prepared to use a so called nopaste service
-such as http://nopaste.info or http://pastebin.com because pasting large
-amounts of text in IRC sometimes leads to incomplete lines (servers have line
-length limitations) or flood kicks.
+such as https://pastebin.com because pasting large amounts of text in IRC
+sometimes leads to incomplete lines (servers have line length limitations) or
+flood kicks.
 
 == Debugging i3bar
 

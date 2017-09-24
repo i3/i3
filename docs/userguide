@@ -824,7 +824,7 @@ The first part of the WM_CLASS is the instance ("irssi" in this example), the
 second part is the class ("URxvt" in this example).
 
 Should you have any problems with assignments, make sure to check the i3
-logfile first (see http://i3wm.org/docs/debugging.html). It includes more
+logfile first (see https://i3wm.org/docs/debugging.html). It includes more
 details about the matching process and the window’s actual class, instance and
 title when starting up.
 
@@ -1078,7 +1078,7 @@ force_focus_wrapping yes
 
 === Forcing Xinerama
 
-As explained in-depth in <http://i3wm.org/docs/multi-monitor.html>, some X11
+As explained in-depth in <https://i3wm.org/docs/multi-monitor.html>, some X11
 video drivers (especially the nVidia binary driver) only provide support for
 Xinerama instead of RandR. In such a situation, i3 must be told to use the
 inferior Xinerama API explicitly and therefore don’t provide support for
@@ -2469,7 +2469,7 @@ bindsym $mod+u border none
 [[shmlog]]
 === Enabling shared memory logging
 
-As described in http://i3wm.org/docs/debugging.html, i3 can log to a shared
+As described in https://i3wm.org/docs/debugging.html, i3 can log to a shared
 memory buffer, which you can dump using +i3-dump-log+. The +shmlog+ command
 allows you to enable or disable the shared memory logging at runtime.
 

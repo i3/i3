@@ -341,7 +341,7 @@ which is why this is not integrated into this manpage), the debugging guide,
 and the "how to hack" guide. If you are building from source, run:
  +make -C docs+
 
-You can also access these documents online at http://i3wm.org/
+You can also access these documents online at https://i3wm.org/
 
 i3-input(1), i3-msg(1), i3bar(1), i3-nagbar(1), i3-config-wizard(1),
 i3-migrate-config-to-v4(1)

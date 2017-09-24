@@ -2,13 +2,13 @@
 # vim:ts=4:sw=4:expandtab
 #
 # Please read the following documents before working on tests:
-# • http://build.i3wm.org/docs/testsuite.html
+# • https://build.i3wm.org/docs/testsuite.html
 #   (or docs/testsuite)
 #
-# • http://build.i3wm.org/docs/lib-i3test.html
+# • https://build.i3wm.org/docs/lib-i3test.html
 #   (alternatively: perldoc ./testcases/lib/i3test.pm)
 #
-# • http://build.i3wm.org/docs/ipc.html
+# • https://build.i3wm.org/docs/ipc.html
 #   (or docs/ipc)
 #
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
@@ -56,7 +56,7 @@ sub open_with_state {
 
 sub open_with_fixed_size {
     # The type of the WM_NORMAL_HINTS property is WM_SIZE_HINTS
-    # http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.2.3
+    # https://tronche.com/gui/x/icccm/sec-4.html#s-4.1.2.3
     my $XCB_ICCCM_SIZE_HINT_P_MIN_SIZE = 0x32;
     my $XCB_ICCCM_SIZE_HINT_P_MAX_SIZE = 0x16;
 

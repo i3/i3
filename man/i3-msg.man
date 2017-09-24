@@ -48,7 +48,7 @@ workspaces.
 get_outputs::
 Gets the current outputs. The reply will be a JSON-encoded list of outputs (see
 the reply section of docs/ipc, e.g. at
-http://i3wm.org/docs/ipc.html#_receiving_replies_from_i3).
+https://i3wm.org/docs/ipc.html#_receiving_replies_from_i3).
 
 get_tree::
 Gets the layout tree. i3 uses a tree as data structure which includes every

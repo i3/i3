@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
             if (!is_debug_build()) {
                 fprintf(stderr, "You seem to be using a release version of i3:\n  %s\n\n", I3_VERSION);
                 fprintf(stderr, "Release versions do not use SHM logging by default,\ntherefore i3-dump-log does not work.\n\n");
-                fprintf(stderr, "Please follow this guide instead:\nhttp://i3wm.org/docs/debugging-release-version.html\n");
+                fprintf(stderr, "Please follow this guide instead:\nhttps://i3wm.org/docs/debugging-release-version.html\n");
                 exit(1);
             }
         }

@@ -17,7 +17,7 @@ my $tests_total;
 
 sub noninteractive {
     # CONTINUOUS_INTEGRATION gets set when running under Travis, see
-    # http://docs.travis-ci.com/user/ci-environment/ and
+    # https://docs.travis-ci.com/user/ci-environment/ and
     # https://github.com/travis-ci/travis-ci/issues/1337
     return (! -t STDOUT) || (
         defined($ENV{CONTINUOUS_INTEGRATION}) &&
