@@ -560,21 +560,10 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         if (!workspace)
             return false;
 
-        workspace_show(workspace);
-
-        /* If a workspace has an active fullscreen container, one of its
-         * children should always be focused. The above workspace_show()
-         * should be adequate for that, so return. */
-        if (con_get_fullscreen_con(workspace, CF_OUTPUT))
-            return true;
-
-        Con *focus = con_descend_direction(workspace, direction);
-
-        /* special case: if there was no tiling con to focus and the workspace
-         * has a floating con in the focus stack, focus the top of the focus
-         * stack (which may be floating) */
-        if (focus == workspace)
+        Con *focus = con_descend_tiling_focused(workspace);
+        if (focus == workspace) {
             focus = con_descend_focused(workspace);
+        }
 
         if (focus) {
             con_focus(focus);
