@@ -31,7 +31,7 @@ $parser->html_header_before_title(
 <meta charset="utf-8">
 <meta name="generator" content="Pod::Simple::HTML">
 <meta name="description" content="i3 Perl documentation">
-<link rel="stylesheet" href="http://i3wm.org/css/style.css" type="text/css" />
+<link rel="stylesheet" href="https://i3wm.org/css/style.css" type="text/css" />
 <style type="text/css">
 .pod pre {
     background: #333;
@@ -75,9 +75,9 @@ $parser->html_header_after_title(
 			<ul id="nav">
 				<li><a style="border-bottom: 2px solid #fff" href="/docs">Docs</a></li>
 				<li><a href="/screenshots">Screens</a></li>
-				<li><a href="http://faq.i3wm.org/">FAQ</a></li>
+				<li><a href="https://www.reddit.com/r/i3wm/">FAQ</a></li>
 				<li><a href="/contact">Contact</a></li>
-				<li><a href="http://bugs.i3wm.org/">Bugs</a></li>
+				<li><a href="https://bugs.i3wm.org/">Bugs</a></li>
 			</ul>
 	<br style="clear: both">
 <div id="content" class="pod">

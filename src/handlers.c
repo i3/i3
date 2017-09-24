@@ -847,7 +847,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         /* This request is used by pagers and bars to change the current
          * desktop likely as a result of some user action. We interpret this as
          * a request to focus the given workspace. See
-         * http://standards.freedesktop.org/wm-spec/latest/ar01s03.html#idm140251368135008
+         * https://standards.freedesktop.org/wm-spec/latest/ar01s03.html#idm140251368135008
          * */
         DLOG("Request to change current desktop to index %d\n", event->data.data32[0]);
         Con *ws = ewmh_get_workspace_by_index(event->data.data32[0]);
@@ -895,7 +895,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         /*
          * Pagers wanting to close a window MUST send a _NET_CLOSE_WINDOW
          * client message request to the root window.
-         * http://standards.freedesktop.org/wm-spec/wm-spec-latest.html#idm140200472668896
+         * https://standards.freedesktop.org/wm-spec/wm-spec-latest.html#idm140200472668896
          */
         Con *con = con_by_window_id(event->window);
         if (con) {

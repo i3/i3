@@ -23,7 +23,7 @@ my %meta = (
             web => 'https://github.com/i3/i3/issues',
         },
         homepage => 'https://i3wm.org/',
-        license  => ['http://dev.perl.org/licenses'],
+        license  => ['https://dev.perl.org/licenses'],
     },
 );
 

@@ -52,7 +52,7 @@ it will be placed in the corresponding placeholder window. We say it gets
 
 Note: Swallowing windows into unsatisfied placeholder windows takes precedence
 over
-link:http://i3wm.org/docs/userguide.html#_automatically_putting_clients_on_specific_workspaces[assignment
+link:https://i3wm.org/docs/userguide.html#_automatically_putting_clients_on_specific_workspaces[assignment
 rules]. For example, if you assign all Emacs windows to workspace 1 in your i3
 configuration file, but there is a placeholder window on workspace 2 which
 matches Emacs as well, your newly started Emacs window will end up in the
@@ -164,7 +164,7 @@ a Chrome window:
 image:layout-saving-1.png["Restored layout",width=400,link="layout-saving-1.png"]
 
 The structure of this JSON file looks a lot like the +TREE+ reply, see
-http://build.i3wm.org/docs/ipc.html#_tree_reply for documentation on that. Some
+https://build.i3wm.org/docs/ipc.html#_tree_reply for documentation on that. Some
 properties are excluded because they are not relevant when restoring a layout.
 
 Most importantly, look at the "swallows" section of each window. This is where
@@ -229,8 +229,8 @@ Both deviations from the JSON standard are to make manual editing by humans
 easier. In case you are writing a more elaborate tool for manipulating these
 layouts, you can either use a JSON parser that supports these deviations (for
 example libyajl), transform the layout file to a JSON-conforming file, or
-link:http://cr.i3wm.org/[submit a patch] to make +i3-save-tree(1)+ optionally
-output standard-conforming JSON.
+link:https://github.com/i3/i3/blob/next/.github/CONTRIBUTING.md[submit a patch]
+to make +i3-save-tree(1)+ optionally output standard-conforming JSON.
 
 == Troubleshooting
 

@@ -48,7 +48,7 @@ will be adjusted properly.
 
 +i3-wsbar+ used to be the reference implementation before we had +i3bar+.
 Nowadays, it is not shipped with release tarballs, but you can still get it at
-http://code.stapelberg.de/git/i3/tree/contrib/i3-wsbar
+https://github.com/i3/i3/blob/next/contrib/i3-wsbar
 
 === The big picture
 

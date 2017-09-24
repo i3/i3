@@ -544,7 +544,7 @@ Michael Stapelberg, C<< <michael at i3wm.org> >>
 
 Please report any bugs or feature requests to C<bug-anyevent-i3 at
 rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=AnyEvent-I3>.  I will be
+L<https://rt.cpan.org/NoAuth/ReportBug.html?Queue=AnyEvent-I3>.  I will be
 notified, and then you'll automatically be notified of progress on your bug as
 I make changes.
 
@@ -560,11 +560,11 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=AnyEvent-I3>
+L<https://rt.cpan.org/NoAuth/Bugs.html?Dist=AnyEvent-I3>
 
 =item * The i3 window manager website
 
-L<http://i3wm.org>
+L<https://i3wm.org>
 
 =back
 
@@ -580,7 +580,7 @@ This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
 by the Free Software Foundation; or the Artistic License.
 
-See http://dev.perl.org/licenses/ for more information.
+See https://dev.perl.org/licenses/ for more information.
 
 
 =cut

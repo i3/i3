@@ -222,9 +222,9 @@ void ewmh_update_visible_name(xcb_window_t window, const char *name) {
 /*
  * i3 currently does not support _NET_WORKAREA, because it does not correspond
  * to i3’s concept of workspaces. See also:
- * http://bugs.i3wm.org/539
- * http://bugs.i3wm.org/301
- * http://bugs.i3wm.org/1038
+ * https://bugs.i3wm.org/539
+ * https://bugs.i3wm.org/301
+ * https://bugs.i3wm.org/1038
  *
  * We need to actively delete this property because some display managers (e.g.
  * LightDM) set it.

@@ -77,7 +77,7 @@ i3test automatically "use"s C<Test::More>, C<Data::Dumper>, C<AnyEvent::I3>,
 C<Time::HiRes>’s C<sleep> and C<i3test::Test> so that all of them are available
 to you in your testcase.
 
-See also C<i3test::Test> (L<http://build.i3wm.org/docs/lib-i3test-test.html>)
+See also C<i3test::Test> (L<https://build.i3wm.org/docs/lib-i3test-test.html>)
 which provides additional test instructions (like C<ok> or C<is>).
 
 =cut
@@ -659,7 +659,7 @@ processes, only after all other events are done.
 This can be used to ensure the results of a cmd 'focus left' are pushed to
 X11 and that C<< $x->input_focus >> returns the correct value afterwards.
 
-See also L<http://build.i3wm.org/docs/testsuite.html> for a longer explanation.
+See also L<https://build.i3wm.org/docs/testsuite.html> for a longer explanation.
 
   my $window = open_window;
   $window->add_hint('urgency');

@@ -98,7 +98,7 @@ static int sighandler_backtrace(void) {
 
         /* We provide pipe file descriptors for stdin/stdout because gdb < 7.5
          * crashes otherwise, see
-         * http://sourceware.org/bugzilla/show_bug.cgi?id=14114 */
+         * https://sourceware.org/bugzilla/show_bug.cgi?id=14114 */
         dup2(stdin_pipe[0], STDIN_FILENO);
         dup2(stdout_pipe[1], STDOUT_FILENO);
 

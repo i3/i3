@@ -127,7 +127,7 @@ void x_con_init(Con *con) {
     /* We explicitly set a background color and border color (even though we
      * don’t even have a border) because the X11 server requires us to when
      * using 32 bit color depths, see
-     * http://stackoverflow.com/questions/3645632 */
+     * https://stackoverflow.com/questions/3645632 */
     mask |= XCB_CW_BACK_PIXEL;
     values[0] = root_screen->black_pixel;
 

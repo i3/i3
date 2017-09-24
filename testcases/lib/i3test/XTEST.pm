@@ -97,7 +97,7 @@ bool inlinec_connect() {
 bool set_xkb_group(int group) {
     xcb_generic_error_t *err = NULL;
     // Needs libxcb ≥ 1.11 so that we have the following bug fix:
-    // http://cgit.freedesktop.org/xcb/proto/commit/src/xkb.xml?id=8d7ee5b6ba4cf343f7df70372a3e1f85b82aeed7
+    // https://cgit.freedesktop.org/xcb/proto/commit/src/xkb.xml?id=8d7ee5b6ba4cf343f7df70372a3e1f85b82aeed7
     xcb_void_cookie_t cookie = xcb_xkb_latch_lock_state_checked(
         conn,
         XCB_XKB_ID_USE_CORE_KBD, /* deviceSpec */

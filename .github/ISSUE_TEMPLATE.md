@@ -2,7 +2,7 @@ Output of `i3 --moreversion 2>&- || i3 --version`:
 
 _REPLACE: i3 version output_
 
-URL to a logfile as per http://i3wm.org/docs/debugging.html:
+URL to a logfile as per https://i3wm.org/docs/debugging.html:
 
 _REPLACE: URL to logfile_
 

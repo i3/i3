@@ -57,7 +57,7 @@ sub wait_for_x {
 =head2 start_xserver($parallel)
 
 Starts C<$parallel> (or number of cores * 2 if undef) Xephyr processes (see
-http://www.freedesktop.org/wiki/Software/Xephyr/) and returns two arrayrefs: a
+https://www.freedesktop.org/wiki/Software/Xephyr/) and returns two arrayrefs: a
 list of X11 display numbers to the Xephyr processes and a list of PIDs of the
 processes.
 

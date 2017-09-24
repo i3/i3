@@ -321,7 +321,7 @@ Binding *get_binding_from_xcb_event(xcb_generic_event_t *event) {
      * XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE and
      * XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED. See also doc/kbproto
      * section 2.2.2:
-     * http://www.x.org/releases/X11R7.7/doc/kbproto/xkbproto.html#Computing_A_State_Field_from_an_XKB_State */
+     * https://www.x.org/releases/X11R7.7/doc/kbproto/xkbproto.html#Computing_A_State_Field_from_an_XKB_State */
     switch ((event_state & 0x6000) >> 13) {
         case XCB_XKB_GROUP_1:
             state_filtered |= (I3_XKB_GROUP_MASK_1 << 16);
