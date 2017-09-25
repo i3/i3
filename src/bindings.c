@@ -910,7 +910,6 @@ static int fill_rmlvo_from_root(struct xkb_rule_names *xkb_names) {
     int remaining = xcb_get_property_value_length(prop_reply);
     for (int i = 0; i < 5 && remaining > 0; i++) {
         const int len = strnlen(walk, remaining);
-        remaining -= len;
         switch (i) {
             case 0:
                 sasprintf((char **)&(xkb_names->rules), "%.*s", len, walk);
@@ -930,6 +929,7 @@ static int fill_rmlvo_from_root(struct xkb_rule_names *xkb_names) {
         }
         DLOG("component %d of _XKB_RULES_NAMES is \"%.*s\"\n", i, len, walk);
         walk += (len + 1);
+        remaining -= (len + 1);
     }
 
     free(atom_reply);
