@@ -105,18 +105,14 @@ cmd 'split v';
 cmd 'layout stacked';
 $second = open_window({ background_color => '#00ff00' });   # window 6
 $third = open_window({ background_color => '#0000ff' }); # window 7
-
 is($x->input_focus, $third->id, 'last container focused');
 
-cmd 'floating enable';
-
 cmd '[id="' . $second->id . '"] focus';
-
-is($x->input_focus, $second->id, 'second con focused');
-
 cmd 'floating enable';
+cmd '[id="' . $third->id . '"] floating enable';
 
 sync_with_i3;
+is($x->input_focus, $second->id, 'second con focused');
 
 # now kill the second one. focus should fall back to the third one, which is
 # also floating

@@ -176,4 +176,35 @@ cmd '[id=' . $windows[2]->id . '] move to workspace ' . $ws;
 cmd '[id=' . $windows[1]->id . '] move to workspace ' . $ws;
 confirm_focus('\'move to workspace\' focus order when moving containers from other workspace');
 
+######################################################################
+# Test focus order with floating and tiling windows.
+# See issue: 1975
+######################################################################
+
+fresh_workspace;
+$windows[2] = open_window;
+$windows[0] = open_window;
+$windows[3] = open_floating_window;
+$windows[1] = open_floating_window;
+focus_windows;
+
+confirm_focus('mix of floating and tiling windows');
+
+######################################################################
+# Same but an unfocused tiling window is killed first.
+######################################################################
+
+fresh_workspace;
+$windows[2] = open_window;
+$windows[0] = open_window;
+$windows[3] = open_floating_window;
+$windows[1] = open_floating_window;
+focus_windows;
+
+cmd '[id=' . $windows[1]->id . '] focus';
+cmd '[id=' . $windows[0]->id . '] kill';
+
+kill_and_confirm_focus($windows[2]->id, 'window 2 focused after tiling killed');
+kill_and_confirm_focus($windows[3]->id, 'window 3 focused after tiling killed');
+
 done_testing;
