@@ -23,6 +23,7 @@
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <libgen.h>
 
 static void uds_connection_cb(EV_P_ ev_io *w, int revents);
