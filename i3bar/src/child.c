@@ -106,7 +106,7 @@ __attribute__((format(printf, 1, 2))) static void set_statusline_error(const cha
     va_list args;
     va_start(args, format);
     if (vasprintf(&message, format, args) == -1) {
-        return;
+        goto finish;
     }
 
     struct status_block *err_block = scalloc(1, sizeof(struct status_block));
@@ -124,6 +124,7 @@ __attribute__((format(printf, 1, 2))) static void set_statusline_error(const cha
     TAILQ_INSERT_HEAD(&statusline_head, err_block, blocks);
     TAILQ_INSERT_TAIL(&statusline_head, message_block, blocks);
 
+finish:
     FREE(message);
     va_end(args);
 }
