@@ -192,6 +192,7 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 
     if (!strcmp(cur_key, "font")) {
         DLOG("font = %.*s\n", len, val);
+        FREE(config.fontname);
         sasprintf(&config.fontname, "%.*s", len, val);
         return 1;
     }
