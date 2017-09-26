@@ -34,6 +34,12 @@ void parse_outputs_json(char* json);
 void init_outputs(void);
 
 /*
+ * free() all outputs data structures.
+ *
+ */
+void free_outputs(void);
+
+/*
  * Returns the output with the given name
  *
  */
