@@ -14,6 +14,7 @@ use warnings;
 use AnyEvent;
 use AnyEvent::I3;
 use v5.10;
+use utf8;
 
 my %layouts = (
     '4' => 'tabbed',
