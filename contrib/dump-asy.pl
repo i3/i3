@@ -13,6 +13,7 @@ use warnings;
 use Data::Dumper;
 use AnyEvent::I3;
 use File::Temp;
+use File::Basename;
 use v5.10;
 
 my $i3 = i3();
@@ -75,4 +76,5 @@ say $tmp "draw(n" . $root->{id} . ", (0, 0));";
 close($tmp);
 my $rep = "$tmp";
 $rep =~ s/asy$/eps/;
-system("cd /tmp && asy $tmp && gv --scale=-1000 --noresize --widgetless $rep && rm $rep");
+my $tmp_dir = dirname($rep);
+system("cd $tmp_dir && asy $tmp && gv --scale=-1000 --noresize --widgetless $rep && rm $rep");
