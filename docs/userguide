@@ -1055,26 +1055,39 @@ popup_during_fullscreen smart
 
 === Focus wrapping
 
-When being in a tabbed or stacked container, the first container will be
-focused when you use +focus down+ on the last container -- the focus wraps. If
-however there is another stacked/tabbed container in that direction, focus will
-be set on that container. This is the default behavior so you can navigate to
-all your windows without having to use +focus parent+.
+By default, when in a container with several windows or child containers, the
+opposite window will be focused when trying to move the focus over the edge of
+a container (and there are no other containers in that direction) -- the focus
+wraps.
+
+If desired, you can disable this behavior by setting the +focus_wrapping+
+configuration directive to the value +no+.
+
+When enabled, focus wrapping does not occur by default if there is another
+window or container in the specified direction, and focus will instead be set
+on that window or container. This is the default behavior so you can navigate
+to all your windows without having to use +focus parent+.
 
 If you want the focus to *always* wrap and you are aware of using +focus
-parent+ to switch to different containers, you can use the
-+force_focus_wrapping+ configuration directive. After enabling it, the focus
-will always wrap.
+parent+ to switch to different containers, you can instead set +focus_wrapping+
+to the value +force+.
 
 *Syntax*:
 ---------------------------
-force_focus_wrapping yes|no
+focus_wrapping yes|no|force
+
+# Legacy syntax, equivalent to "focus_wrapping force"
+force_focus_wrapping yes
 ---------------------------
 
-*Example*:
-------------------------
-force_focus_wrapping yes
-------------------------
+*Examples*:
+-----------------
+# Disable focus wrapping
+focus_wrapping no
+
+# Force focus wrapping
+focus_wrapping force
+-----------------
 
 === Forcing Xinerama
 

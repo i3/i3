@@ -49,6 +49,7 @@ CFGFUN(workspace_layout, const char *layout);
 CFGFUN(workspace_back_and_forth, const char *value);
 CFGFUN(focus_follows_mouse, const char *value);
 CFGFUN(mouse_warping, const char *value);
+CFGFUN(focus_wrapping, const char *value);
 CFGFUN(force_focus_wrapping, const char *value);
 CFGFUN(force_xinerama, const char *value);
 CFGFUN(disable_randr15, const char *value);
