@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <err.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <math.h>
 #include <limits.h>
 
