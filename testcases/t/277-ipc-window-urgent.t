@@ -19,50 +19,37 @@
 #
 use i3test;
 
-my $config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-
-force_display_urgency_hint 0ms
-EOT
-
-my $i3 = i3(get_socket_path());
-$i3->connect()->recv;
-
-my $cv;
-$i3->subscribe({
-    window => sub {
-        my ($event) = @_;
-        $cv->send($event) if $event->{change} eq 'urgent';
-    }
-})->recv;
-
-my $t;
-$t = AnyEvent->timer(
-    after => 0.5,
-    cb => sub {
-        $cv->send(0);
-    }
-);
-
-$cv = AnyEvent->condvar;
 fresh_workspace;
 my $win = open_window;
 my $dummy_win = open_window;
 
-$win->add_hint('urgency');
-my $event = $cv->recv;
+sub urgency_subtest {
+    my ($subscribecb, $win, $want) = @_;
 
-isnt($event, 0, 'an urgent con should emit the window::urgent event');
-is($event->{container}->{window}, $win->{id}, 'the event should contain information about the window');
-is($event->{container}->{urgent}, 1, 'the container should be urgent');
+    my @events = events_for(
+	$subscribecb,
+	'window');
 
-$cv = AnyEvent->condvar;
-$win->delete_hint('urgency');
-$event = $cv->recv;
+    my @urgent = grep { $_->{change} eq 'urgent' } @events;
+    is(scalar @urgent, 1, 'Received 1 window::urgent event');
+    is($urgent[0]->{container}->{window}, $win->{id}, "window id matches");
+    is($urgent[0]->{container}->{urgent}, $want, "urgent is $want");
+}
 
-isnt($event, 0, 'an urgent con should emit the window::urgent event');
-is($event->{container}->{window}, $win->{id}, 'the event should contain information about the window');
-is($event->{container}->{urgent}, 0, 'the container should not be urgent');
+subtest "urgency set", \&urgency_subtest,
+    sub {
+	$win->add_hint('urgency');
+	sync_with_i3;
+    },
+    $win,
+    1;
+
+subtest "urgency unset", \&urgency_subtest,
+    sub {
+	$win->delete_hint('urgency');
+	sync_with_i3;
+    },
+    $win,
+    0;
 
 done_testing;

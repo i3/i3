@@ -14,13 +14,13 @@ use ExtUtils::PkgConfig;
 use Exporter ();
 our @EXPORT = qw(
     inlinec_connect
+    xtest_sync_with
+    xtest_sync_with_i3
     set_xkb_group
     xtest_key_press
     xtest_key_release
     xtest_button_press
     xtest_button_release
-    listen_for_binding
-    start_binding_capture
     binding_events
 );
 
@@ -38,7 +38,7 @@ i3test::XTEST - Inline::C wrappers for xcb-xtest and xcb-xkb
 # ineffective.
 my %sn_config;
 BEGIN {
-    %sn_config = ExtUtils::PkgConfig->find('xcb-xkb xcb-xtest');
+    %sn_config = ExtUtils::PkgConfig->find('xcb-xkb xcb-xtest xcb-util');
 }
 
 use Inline C => Config => LIBS => $sn_config{libs}, CCFLAGS => $sn_config{cflags};
@@ -53,8 +53,12 @@ use Inline C => <<'END_OF_C_CODE';
 #include <xcb/xcb.h>
 #include <xcb/xkb.h>
 #include <xcb/xtest.h>
+#include <xcb/xcb_aux.h>
 
 static xcb_connection_t *conn = NULL;
+static xcb_window_t sync_window;
+static xcb_window_t root_window;
+static xcb_atom_t i3_sync_atom;
 
 bool inlinec_connect() {
     int screen;
@@ -89,7 +93,92 @@ bool inlinec_connect() {
     }
     free(usereply);
 
+    xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, xcb_intern_atom(conn, 0, strlen("I3_SYNC"), "I3_SYNC"), NULL);
+    i3_sync_atom = reply->atom;
+    free(reply);
+
+    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screen);
+    root_window = root_screen->root;
+    sync_window = xcb_generate_id(conn);
+    xcb_create_window(conn,
+                      XCB_COPY_FROM_PARENT,           // depth
+                      sync_window,                    // window
+                      root_window,                    // parent
+                      -15,                            // x
+                      -15,                            // y
+                      1,                              // width
+                      1,                              // height
+                      0,                              // border_width
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT,  // class
+                      XCB_COPY_FROM_PARENT,           // visual
+                      XCB_CW_OVERRIDE_REDIRECT,       // value_mask
+                      (uint32_t[]){
+                          1,  // override_redirect
+                      });     // value_list
+
     return true;
+}
+
+void xtest_sync_with(int window) {
+    xcb_client_message_event_t ev;
+    memset(&ev, '\0', sizeof(xcb_client_message_event_t));
+
+    const int nonce = rand() % 255;
+
+    ev.response_type = XCB_CLIENT_MESSAGE;
+    ev.window = sync_window;
+    ev.type = i3_sync_atom;
+    ev.format = 32;
+    ev.data.data32[0] = sync_window;
+    ev.data.data32[1] = nonce;
+
+    xcb_send_event(conn, false, (xcb_window_t)window, XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT, (char *)&ev);
+    xcb_flush(conn);
+
+    xcb_generic_event_t *event = NULL;
+    while (1) {
+        free(event);
+        if ((event = xcb_wait_for_event(conn)) == NULL) {
+            break;
+        }
+        if (event->response_type == 0) {
+            fprintf(stderr, "X11 Error received! sequence %x\n", event->sequence);
+            continue;
+        }
+
+        /* Strip off the highest bit (set if the event is generated) */
+        const int type = (event->response_type & 0x7F);
+        switch (type) {
+            case XCB_CLIENT_MESSAGE: {
+                xcb_client_message_event_t *ev = (xcb_client_message_event_t *)event;
+                {
+                    const uint32_t got = ev->data.data32[0];
+                    const uint32_t want = sync_window;
+                    if (got != want) {
+                        fprintf(stderr, "Ignoring ClientMessage: unknown window: got %d, want %d\n", got, want);
+                        continue;
+                    }
+                }
+                {
+                    const uint32_t got = ev->data.data32[1];
+                    const uint32_t want = nonce;
+                    if (got != want) {
+                        fprintf(stderr, "Ignoring ClientMessage: unknown nonce: got %d, want %d\n", got, want);
+                        continue;
+                    }
+                }
+                return;
+            }
+            default:
+                fprintf(stderr, "Unexpected X11 event of type %d received (XCB_CLIENT_MESSAGE = %d)\n", type, XCB_CLIENT_MESSAGE);
+                break;
+        }
+    }
+    free(event);
+}
+
+void xtest_sync_with_i3() {
+    xtest_sync_with((int)root_window);
 }
 
 // NOTE: while |group| should be a uint8_t, Inline::C will not define the
@@ -170,86 +259,6 @@ sub import {
 
 =cut
 
-my $i3;
-our @binding_events;
-
-=head2 start_binding_capture()
-
-Captures all binding events sent by i3 in the C<@binding_events> symbol, so
-that you can verify the correct number of binding events was generated.
-
-  my $pid = launch_with_config($config);
-  start_binding_capture;
-  # …
-  sync_with_i3;
-  is(scalar @i3test::XTEST::binding_events, 2, 'Received exactly 2 binding events');
-
-=cut
-
-sub start_binding_capture {
-    # Store a copy of each binding event so that we can count the expected
-    # events in test cases.
-    $i3 = i3(get_socket_path());
-    $i3->connect()->recv;
-    $i3->subscribe({
-        binding => sub {
-            my ($event) = @_;
-            @binding_events = (@binding_events, $event);
-        },
-    })->recv;
-}
-
-=head2 listen_for_binding($cb)
-
-Helper function to evaluate whether sending KeyPress/KeyRelease events via
-XTEST triggers an i3 key binding or not (with a timeout of 0.5s). Expects key
-bindings to be configured in the form “bindsym <binding> nop <binding>”, e.g.
-“bindsym Mod4+Return nop Mod4+Return”.
-
-  is(listen_for_binding(
-      sub {
-          xtest_key_press(133); # Super_L
-          xtest_key_press(36); # Return
-          xtest_key_release(36); # Return
-          xtest_key_release(133); # Super_L
-      },
-      ),
-     'Mod4+Return',
-     'triggered the "Mod4+Return" keybinding');
-
-=cut
-
-sub listen_for_binding {
-    my ($cb) = @_;
-    my $triggered = AnyEvent->condvar;
-    my $i3 = i3(get_socket_path());
-    $i3->connect()->recv;
-    $i3->subscribe({
-        binding => sub {
-            my ($event) = @_;
-            return unless $event->{change} eq 'run';
-            # We look at the command (which is “nop <binding>”) because that is
-            # easier than re-assembling the string representation of
-            # $event->{binding}.
-            $triggered->send($event->{binding}->{command});
-        },
-    })->recv;
-
-    my $t;
-    $t = AnyEvent->timer(
-        after => 0.5,
-        cb => sub {
-            $triggered->send('timeout');
-        }
-    );
-
-    $cb->();
-
-    my $recv = $triggered->recv;
-    $recv =~ s/^nop //g;
-    return $recv;
-}
-
 =head2 set_xkb_group($group)
 
 Changes the current XKB group from the default of 1 to C<$group>, which must be
@@ -282,6 +291,15 @@ Returns false when there was an X11 error, true otherwise.
 Sends a ButtonRelease event via XTEST, with the specified C<$button>.
 
 Returns false when there was an X11 error, true otherwise.
+
+=head2 xtest_sync_with($window)
+
+Ensures the specified window has processed all X11 events which were triggered
+by this module, provided the window response to the i3 sync protocol.
+
+=head2 xtest_sync_with_i3()
+
+Ensures i3 has processed all X11 events which were triggered by this module.
 
 =head1 AUTHOR
 

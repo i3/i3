@@ -36,14 +36,13 @@ SKIP: {
     skip "setxkbmap not found", 1 if
         system(q|setxkbmap -print >/dev/null|) != 0;
 
-start_binding_capture;
-
 system(q|setxkbmap us,ru -option grp:alt_shift_toggle|);
 
 is(listen_for_binding(
     sub {
         xtest_key_press(107);
         xtest_key_release(107);
+        xtest_sync_with_i3;
     },
     ),
    'Print',
@@ -55,6 +54,7 @@ is(listen_for_binding(
         xtest_key_press(36); # Return
         xtest_key_release(36); # Return
         xtest_key_release(133); # Super_L
+        xtest_sync_with_i3;
     },
     ),
    'Mod4+Return',
@@ -67,6 +67,7 @@ is(listen_for_binding(
     sub {
         xtest_key_press(107);
         xtest_key_release(107);
+        xtest_sync_with_i3;
     },
     ),
    'Print',
@@ -78,13 +79,11 @@ is(listen_for_binding(
         xtest_key_press(36); # Return
         xtest_key_release(36); # Return
         xtest_key_release(133); # Super_L
+        xtest_sync_with_i3;
     },
     ),
    'Mod4+Return',
    'triggered the "Mod4+Return" keybinding');
-
-sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 4, 'Received exactly 4 binding events');
 
 # Disable the grp:alt_shift_toggle option, as we use Alt+Shift in other testcases.
 system(q|setxkbmap us -option|);

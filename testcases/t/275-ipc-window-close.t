@@ -19,34 +19,17 @@
 # Bug still in: 4.8-7-gf4a8253
 use i3test;
 
-my $i3 = i3(get_socket_path());
-$i3->connect()->recv;
-
-my $cv;
-my $t;
-
-sub reset_test {
-    $cv = AE::cv;
-    $t = AE::timer(0.5, 0, sub { $cv->send(0); });
-}
-
-reset_test;
-
-$i3->subscribe({
-        window => sub {
-            my ($e) = @_;
-            if ($e->{change} eq 'close') {
-                $cv->send($e->{container});
-            }
-        },
-    })->recv;
-
 my $window = open_window;
 
-cmd 'kill';
-my $con = $cv->recv;
+my @events = events_for(
+    sub {
+	$window->unmap;
+	sync_with_i3;
+    },
+    'window');
 
-ok($con, 'closing a window should send the window::close event');
-is($con->{window}, $window->{id}, 'the event should contain information about the window');
+my @close = grep { $_->{change} eq 'close' } @events;
+is(scalar @close, 1, 'Received 1 window::close event');
+is($close[0]->{container}->{window}, $window->{id}, 'the event should contain information about the window');
 
 done_testing;

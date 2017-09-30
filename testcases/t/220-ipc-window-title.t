@@ -16,42 +16,17 @@
 
 use i3test;
 
-SKIP: {
-
-    skip "AnyEvent::I3 too old (need >= 0.15)", 1 if $AnyEvent::I3::VERSION < 0.15;
-
-my $i3 = i3(get_socket_path());
-$i3->connect()->recv;
-
-################################
-# Window title event
-################################
-
 my $window = open_window(name => 'Window 0');
 
-my $title = AnyEvent->condvar;
+my @events = events_for(
+    sub {
+	$window->name('New Window Title');
+	sync_with_i3;
+    },
+    'window');
 
-$i3->subscribe({
-    window => sub {
-        my ($event) = @_;
-        $title->send($event);
-    }
-})->recv;
-
-$window->name('New Window Title');
-
-my $t;
-$t = AnyEvent->timer(
-    after => 0.5,
-    cb => sub {
-        $title->send(0);
-    }
-);
-
-my $event = $title->recv;
-is($event->{change}, 'title', 'Window title change event received');
-is($event->{container}->{name}, 'New Window Title', 'Window title changed');
-
-}
+is(scalar @events, 1, 'Received 1 event');
+is($events[0]->{change}, 'title', 'Window title change event received');
+is($events[0]->{container}->{name}, 'New Window Title', 'Window title changed');
 
 done_testing;

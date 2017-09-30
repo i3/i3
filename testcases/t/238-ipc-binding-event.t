@@ -35,51 +35,38 @@ SKIP: {
 
     skip 'xdotool is required to test the binding event. `[apt-get install|pacman -S] xdotool`', 1 if $?;
 
-    skip "AnyEvent::I3 too old (need >= 0.16)", 1 if $AnyEvent::I3::VERSION < 0.16;
-
     my $pid = launch_with_config($config);
 
-    my $i3 = i3(get_socket_path());
-    $i3->connect->recv;
+    my $cv = AnyEvent->condvar;
 
-    my $cv = AE::cv;
-    my $timer = AE::timer 0.5, 0, sub { $cv->send(0); };
+    my @events = events_for(
+	sub {
+	    # TODO: this is still flaky: we need to synchronize every X11
+	    # connection with i3. Move to XTEST and synchronize that connection.
+	    qx(xdotool key $binding_symbol);
+	},
+	'binding');
 
-    $i3->subscribe({
-            binding => sub {
-                $cv->send(shift);
-            }
-        })->recv;
+    is(scalar @events, 1, 'Received 1 event');
 
-    qx(xdotool key $binding_symbol);
-
-    my $e = $cv->recv;
-
-    does_i3_live;
-
-    diag "Event:\n", Dumper($e);
-
-    ok($e,
-        'the binding event should emit when user input triggers an i3 binding event');
-
-    is($e->{change}, 'run',
+    is($events[0]->{change}, 'run',
         'the `change` field should indicate this binding has run');
 
-    ok($e->{binding},
+    ok($events[0]->{binding},
         'the `binding` field should be a hash that contains information about the binding');
 
-    is($e->{binding}->{input_type}, 'keyboard',
+    is($events[0]->{binding}->{input_type}, 'keyboard',
         'the input_type field should be the input type of the binding (keyboard or mouse)');
 
     note 'the `mods` field should contain the symbols for the modifiers of the binding';
     foreach (@mods) {
-        ok(grep(/$_/i, @{$e->{binding}->{mods}}), "`mods` contains the modifier $_");
+        ok(grep(/$_/i, @{$events[0]->{binding}->{mods}}), "`mods` contains the modifier $_");
     }
 
-    is($e->{binding}->{command}, $command,
+    is($events[0]->{binding}->{command}, $command,
         'the `command` field should contain the command the binding ran');
 
-    is($e->{binding}->{input_code}, 0,
+    is($events[0]->{binding}->{input_code}, 0,
         'the input_code should be the specified code if the key was bound with bindcode, and otherwise zero');
 
     exit_gracefully($pid);

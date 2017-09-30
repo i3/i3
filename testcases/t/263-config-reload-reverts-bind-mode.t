@@ -28,23 +28,11 @@ EOT
 
 cmd 'mode othermode';
 
-my $i3 = i3(get_socket_path(0));
-$i3->connect->recv;
+my @events = events_for(
+    sub { cmd 'reload' },
+    'mode');
 
-my $cv = AnyEvent->condvar;
-$i3->subscribe({
-    mode => sub {
-        my ($event) = @_;
-        $cv->send($event->{change} eq 'default');
-    }
-})->recv;
-
-cmd 'reload';
-
-# Timeout after 0.5s
-my $t;
-$t = AnyEvent->timer(after => 0.5, cb => sub { $cv->send(0); });
-
-ok($cv->recv, 'Mode event received');
+is(scalar @events, 1, 'Received 1 event');
+is($events[0]->{change}, 'default', 'change is "default"');
 
 done_testing;

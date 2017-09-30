@@ -60,6 +60,9 @@ typedef struct i3_ipc_header {
 /** Request the raw last loaded i3 config. */
 #define I3_IPC_MESSAGE_TYPE_GET_CONFIG 9
 
+/** Send a tick event to all subscribers. */
+#define I3_IPC_MESSAGE_TYPE_SEND_TICK 10
+
 /*
  * Messages from i3 to clients
  *
@@ -74,6 +77,7 @@ typedef struct i3_ipc_header {
 #define I3_IPC_REPLY_TYPE_VERSION 7
 #define I3_IPC_REPLY_TYPE_BINDING_MODES 8
 #define I3_IPC_REPLY_TYPE_CONFIG 9
+#define I3_IPC_REPLY_TYPE_TICK 10
 
 /*
  * Events from i3 to clients. Events have the first bit set high.
@@ -101,3 +105,6 @@ typedef struct i3_ipc_header {
 
 /** The shutdown event will be triggered when the ipc shuts down */
 #define I3_IPC_EVENT_SHUTDOWN (I3_IPC_EVENT_MASK | 6)
+
+/** The tick event will be sent upon a tick IPC message */
+#define I3_IPC_EVENT_TICK (I3_IPC_EVENT_MASK | 7)
