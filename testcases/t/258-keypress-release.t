@@ -43,6 +43,7 @@ is(listen_for_binding(
     sub {
         xtest_key_press(107); # Print
         xtest_key_release(107); # Print
+        xtest_sync_with_i3;
     },
     ),
     'Print',
@@ -54,6 +55,7 @@ is(listen_for_binding(
         xtest_key_press(107); # Print
         xtest_key_release(107); # Print
         xtest_key_release(37); # Control_L
+        xtest_sync_with_i3;
     },
     ),
     'Control+Print',
@@ -65,6 +67,7 @@ is(listen_for_binding(
         xtest_key_press(56); # b
         xtest_key_release(56); # b
         xtest_key_release(64); # Alt_L
+        xtest_sync_with_i3;
     },
     ),
     'Mod1+b',
@@ -78,6 +81,7 @@ is(listen_for_binding(
         xtest_key_release(56); # b
         xtest_key_release(50); # Shift_L
         xtest_key_release(64); # Alt_L
+        xtest_sync_with_i3;
     },
     ),
     'Mod1+Shift+b release',

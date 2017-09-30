@@ -57,6 +57,7 @@ is(listen_for_binding(
     sub {
         xtest_key_press(87); # KP_End
         xtest_key_release(87); # KP_End
+        xtest_sync_with_i3;
     },
     ),
    'KP_End',
@@ -70,6 +71,7 @@ is(listen_for_binding(
         xtest_key_release(87); # KP_1
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    'KP_1',
@@ -81,6 +83,7 @@ is(listen_for_binding(
         xtest_key_press(38); # a
         xtest_key_release(38); # a
         xtest_key_release(133); # Super_L
+        xtest_sync_with_i3;
     },
     ),
    'a',
@@ -96,6 +99,7 @@ is(listen_for_binding(
         xtest_key_release(133); # Super_L
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    'a',
@@ -105,6 +109,7 @@ is(listen_for_binding(
     sub {
         xtest_key_press(9); # Escape
         xtest_key_release(9); # Escape
+        xtest_sync_with_i3;
     },
     ),
    'Escape',
@@ -118,6 +123,7 @@ is(listen_for_binding(
         xtest_key_release(9); # Escape
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    'Escape',
@@ -129,6 +135,7 @@ is(listen_for_binding(
         xtest_key_press(9); # Escape
         xtest_key_release(9); # Escape
         xtest_key_release(50); # Shift_L
+        xtest_sync_with_i3;
     },
     ),
    'Shift+Escape',
@@ -144,6 +151,7 @@ is(listen_for_binding(
         xtest_key_release(50); # Shift_L
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    'Shift+Escape',
@@ -157,6 +165,7 @@ is(listen_for_binding(
         xtest_key_release(24); # q
         xtest_key_release(64); # Alt_L
         xtest_key_release(50); # Shift_L
+        xtest_sync_with_i3;
     },
     ),
    'Mod1+Shift+q',
@@ -174,6 +183,7 @@ is(listen_for_binding(
         xtest_key_release(50); # Shift_L
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    'Mod1+Shift+q',
@@ -183,6 +193,7 @@ is(listen_for_binding(
     sub {
         xtest_key_press(39); # s
         xtest_key_release(39); # s
+        xtest_sync_with_i3;
     },
     ),
    's',
@@ -196,6 +207,7 @@ is(listen_for_binding(
         xtest_key_release(39); # s
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    's',
@@ -228,6 +240,7 @@ is(listen_for_binding(
     sub {
         xtest_key_press(133); # Super_L
         xtest_key_release(133); # Super_L
+        xtest_sync_with_i3;
     },
     ),
    'Super_L',
@@ -241,6 +254,7 @@ is(listen_for_binding(
         xtest_key_release(133); # Super_L
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    'Super_L',
@@ -252,6 +266,7 @@ is(listen_for_binding(
         xtest_key_press(36); # Return
         xtest_key_release(36); # Return
         xtest_key_release(133); # Super_L
+        xtest_sync_with_i3;
     },
     ),
    'Return',
@@ -267,6 +282,7 @@ is(listen_for_binding(
         xtest_key_release(133); # Super_L
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    'Return',
@@ -297,6 +313,7 @@ is(listen_for_binding(
     sub {
         xtest_key_press(87); # KP_End
         xtest_key_release(87); # KP_End
+        xtest_sync_with_i3;
     },
     ),
    'KP_End',
@@ -306,6 +323,7 @@ is(listen_for_binding(
     sub {
         xtest_key_press(88); # KP_Down
         xtest_key_release(88); # KP_Down
+        xtest_sync_with_i3;
     },
     ),
    'KP_Down',
@@ -319,6 +337,7 @@ is(listen_for_binding(
         xtest_key_release(87); # KP_1
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    'timeout',
@@ -332,6 +351,7 @@ is(listen_for_binding(
         xtest_key_release(88); # KP_2
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    'timeout',
@@ -369,6 +389,7 @@ is(listen_for_binding(
         xtest_button_release(4, 50, 50);
         xtest_key_press(77); # disable Num_Lock
         xtest_key_release(77); # disable Num_Lock
+        xtest_sync_with_i3;
     },
     ),
    'button4',
@@ -376,8 +397,9 @@ is(listen_for_binding(
 
 is(listen_for_binding(
     sub {
-	xtest_button_press(4, 50, 50);
-	xtest_button_release(4, 50, 50);
+        xtest_button_press(4, 50, 50);
+        xtest_button_release(4, 50, 50);
+        xtest_sync_with_i3;
     },
     ),
    'button4',

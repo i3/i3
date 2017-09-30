@@ -44,6 +44,7 @@ is(listen_for_binding(
     sub {
         xtest_key_press(107);
         xtest_key_release(107);
+        xtest_sync_with_i3;
     },
     ),
    'Print',
@@ -55,6 +56,7 @@ is(listen_for_binding(
         xtest_key_press(36); # Return
         xtest_key_release(36); # Return
         xtest_key_release(133); # Super_L
+        xtest_sync_with_i3;
     },
     ),
    'Mod4+Return',
@@ -67,6 +69,7 @@ is(listen_for_binding(
     sub {
         xtest_key_press(107);
         xtest_key_release(107);
+        xtest_sync_with_i3;
     },
     ),
    'Print',
@@ -78,6 +81,7 @@ is(listen_for_binding(
         xtest_key_press(36); # Return
         xtest_key_release(36); # Return
         xtest_key_release(133); # Super_L
+        xtest_sync_with_i3;
     },
     ),
    'Mod4+Return',
