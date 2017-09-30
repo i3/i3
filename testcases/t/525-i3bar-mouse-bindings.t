@@ -61,7 +61,7 @@ sub i3bar_present {
     for my $node (@{$nodes}) {
 	my $props = $node->{window_properties};
 	if (defined($props) && $props->{class} eq 'i3bar') {
-	    return 1;
+	    return $node->{window};
 	}
     }
 
@@ -73,12 +73,16 @@ sub i3bar_present {
     return i3bar_present(\@children);
 }
 
-if (i3bar_present($i3->get_tree->recv->{nodes})) {
+my $i3bar_window = i3bar_present($i3->get_tree->recv->{nodes});
+if ($i3bar_window) {
     ok(1, 'i3bar present');
 } else {
     my $con = $cv->recv;
     ok($con, 'i3bar appeared');
+    $i3bar_window = $con->{window};
 }
+
+diag('i3bar window = ' . $i3bar_window);
 
 my $left = open_window;
 my $right = open_window;
@@ -99,7 +103,7 @@ subtest 'button 1 moves focus left', \&focus_subtest,
     sub {
 	xtest_button_press(1, 3, 3);
 	xtest_button_release(1, 3, 3);
-	xtest_sync_with_i3;
+	xtest_sync_with($i3bar_window);
     },
     [ $left->{id} ],
     'button 1 moves focus left';
@@ -108,7 +112,7 @@ subtest 'button 2 moves focus right', \&focus_subtest,
     sub {
 	xtest_button_press(2, 3, 3);
 	xtest_button_release(2, 3, 3);
-	xtest_sync_with_i3;
+	xtest_sync_with($i3bar_window);
     },
     [ $right->{id} ],
     'button 2 moves focus right';
@@ -117,7 +121,7 @@ subtest 'button 3 moves focus left', \&focus_subtest,
     sub {
 	xtest_button_press(3, 3, 3);
 	xtest_button_release(3, 3, 3);
-	xtest_sync_with_i3;
+	xtest_sync_with($i3bar_window);
     },
     [ $left->{id} ],
     'button 3 moves focus left';
@@ -126,7 +130,7 @@ subtest 'button 4 moves focus right', \&focus_subtest,
     sub {
 	xtest_button_press(4, 3, 3);
 	xtest_button_release(4, 3, 3);
-	xtest_sync_with_i3;
+	xtest_sync_with($i3bar_window);
     },
     [ $right->{id} ],
     'button 4 moves focus right';
@@ -135,7 +139,7 @@ subtest 'button 5 moves focus left', \&focus_subtest,
     sub {
 	xtest_button_press(5, 3, 3);
 	xtest_button_release(5, 3, 3);
-	xtest_sync_with_i3;
+	xtest_sync_with($i3bar_window);
     },
     [ $left->{id} ],
     'button 5 moves focus left';

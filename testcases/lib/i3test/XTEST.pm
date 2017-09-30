@@ -14,6 +14,7 @@ use ExtUtils::PkgConfig;
 use Exporter ();
 our @EXPORT = qw(
     inlinec_connect
+    xtest_sync_with
     xtest_sync_with_i3
     set_xkb_group
     xtest_key_press
@@ -118,7 +119,7 @@ bool inlinec_connect() {
     return true;
 }
 
-void xtest_sync_with_i3() {
+void xtest_sync_with(int window) {
     xcb_client_message_event_t ev;
     memset(&ev, '\0', sizeof(xcb_client_message_event_t));
 
@@ -131,7 +132,7 @@ void xtest_sync_with_i3() {
     ev.data.data32[0] = sync_window;
     ev.data.data32[1] = nonce;
 
-    xcb_send_event(conn, false, root_window, XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT, (char *)&ev);
+    xcb_send_event(conn, false, (xcb_window_t)window, XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT, (char *)&ev);
     xcb_flush(conn);
 
     xcb_generic_event_t *event = NULL;
@@ -174,6 +175,10 @@ void xtest_sync_with_i3() {
         }
     }
     free(event);
+}
+
+void xtest_sync_with_i3() {
+    xtest_sync_with((int)root_window);
 }
 
 // NOTE: while |group| should be a uint8_t, Inline::C will not define the
@@ -286,6 +291,11 @@ Returns false when there was an X11 error, true otherwise.
 Sends a ButtonRelease event via XTEST, with the specified C<$button>.
 
 Returns false when there was an X11 error, true otherwise.
+
+=head2 xtest_sync_with($window)
+
+Ensures the specified window has processed all X11 events which were triggered
+by this module, provided the window response to the i3 sync protocol.
 
 =head2 xtest_sync_with_i3()
 
