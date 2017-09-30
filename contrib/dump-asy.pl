@@ -39,7 +39,7 @@ sub dump_node {
     $na =~ s/~/\\textasciitilde{}/g;
     my $type = 'leaf';
     if (!defined($n->{window})) {
-        $type = $n->{orientation} . '-split';
+        $type = $n->{layout};
     }
     my $name = qq|``$na'' ($type)|;
 
