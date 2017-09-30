@@ -764,6 +764,7 @@ static char *migrate_config(char *input, off_t size) {
     wait(&status);
     if (!WIFEXITED(status)) {
         fprintf(stderr, "Child did not terminate normally, using old config file (will lead to broken behaviour)\n");
+        FREE(converted);
         return NULL;
     }
 
@@ -778,6 +779,7 @@ static char *migrate_config(char *input, off_t size) {
             fprintf(stderr, "# i3 config file (v4)\n");
             /* TODO: nag the user with a message to include a hint for i3 in their config file */
         }
+        FREE(converted);
         return NULL;
     }
 
