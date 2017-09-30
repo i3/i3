@@ -709,14 +709,18 @@ void tree_flatten(Con *con) {
 
     DLOG("child = %p, con = %p, parent = %p\n", child, con, parent);
 
+    if ((parent->layout == con->layout) &&
+        (con->layout == L_STACKED || con->layout == L_TABBED)) {
+        child = con;
+    }
     /* The child must have a different orientation than the con but the same as
      * the con’s parent to be redundant */
-    if (!con_is_split(con) ||
-        !con_is_split(child) ||
-        (con->layout != L_SPLITH && con->layout != L_SPLITV) ||
-        (child->layout != L_SPLITH && child->layout != L_SPLITV) ||
-        con_orientation(con) == con_orientation(child) ||
-        con_orientation(child) != con_orientation(parent))
+    else if (!con_is_split(con) ||
+             !con_is_split(child) ||
+             (con->layout != L_SPLITH && con->layout != L_SPLITV) ||
+             (child->layout != L_SPLITH && child->layout != L_SPLITV) ||
+             con_orientation(con) == con_orientation(child) ||
+             con_orientation(child) != con_orientation(parent))
         goto recurse;
 
     DLOG("Alright, I have to flatten this situation now. Stay calm.\n");
