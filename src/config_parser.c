@@ -902,7 +902,9 @@ bool parse_file(const char *f, bool use_nagbar) {
 
     FREE(current_config);
     current_config = scalloc(stbuf.st_size + 1, 1);
-    fread(current_config, 1, stbuf.st_size, fstr);
+    if ((ssize_t)fread(current_config, 1, stbuf.st_size, fstr) != stbuf.st_size) {
+        die("Could not fread: %s\n", strerror(errno));
+    }
     rewind(fstr);
 
     bool invalid_sets = false;
