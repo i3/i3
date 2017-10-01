@@ -42,8 +42,8 @@ get_socket_path(0);
 my $i3 = i3(get_socket_path());
 $i3->connect->recv;
 
-my $cv = AE::cv;
-my $timer = AE::timer 0.5, 0, sub { $cv->send(0); };
+my $cv = AnyEvent->condvar;
+my $timer = AnyEvent->timer(after => 0.5, interval => 0, cb => sub { $cv->send(0); });
 
 my $last_config = $i3->get_config()->recv;
 chomp($last_config->{config});
