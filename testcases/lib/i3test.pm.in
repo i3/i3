@@ -193,29 +193,11 @@ received, etc.
 sub wait_for_event {
     my ($timeout, $cb) = @_;
 
-    my $cv = AE::cv;
-
     $x->flush;
 
-    # unfortunately, there is no constant for this
-    my $ae_read = 0;
-
-    my $guard = AE::io $x->get_file_descriptor, $ae_read, sub {
-        while (defined(my $event = $x->poll_for_event)) {
-            if ($cb->($event)) {
-                $cv->send(1);
-                last;
-            }
-        }
-    };
-
-    # Trigger timeout after $timeout seconds (can be fractional)
-    my $t = AE::timer $timeout, 0, sub { warn "timeout ($timeout secs)"; $cv->send(0) };
-
-    my $result = $cv->recv;
-    undef $t;
-    undef $guard;
-    return $result;
+    while (defined(my $event = $x->wait_for_event)) {
+	return 1 if $cb->($event);
+    }
 }
 
 =head2 wait_for_map($window)
