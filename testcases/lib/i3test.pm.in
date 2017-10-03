@@ -133,6 +133,22 @@ sub import {
     my ($class, %args) = @_;
     my $pkg = caller;
 
+    $x ||= i3test::X11->new;
+    # set the pointer to a predictable position in case a previous test has
+    # disturbed it
+    $x->warp_pointer(
+	0, # src_window (None)
+	$x->get_root_window(), # dst_window (None)
+	0, # src_x
+	0, # src_y
+	0, # src_width
+	0, # src_height
+	0, # dst_x
+	0); # dst_y
+    # Synchronize with X11 to ensure the pointer has been warped before i3
+    # starts up.
+    $x->get_input_focus_reply($x->get_input_focus()->{sequence});
+
     $i3_autostart = delete($args{i3_autostart}) // 1;
     my $i3_config = delete($args{i3_config}) // '-default';
 
@@ -155,10 +171,6 @@ __
     strict->import;
     warnings->import;
 
-    $x ||= i3test::X11->new;
-    # set the pointer to a predictable position in case a previous test has
-    # disturbed it
-    $x->root->warp_pointer(0, 0);
     $cv->recv if $i3_autostart;
 
     @_ = ($class);
