@@ -87,8 +87,6 @@ diag('i3bar window = ' . $i3bar_window);
 my $left = open_window;
 my $right = open_window;
 sync_with_i3;
-my $con = $cv->recv;
-is($con->{window}, $right->{id}, 'focus is initially on the right container');
 
 sub focus_subtest {
     my ($subscribecb, $want, $msg) = @_;
