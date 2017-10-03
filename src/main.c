@@ -35,9 +35,9 @@ struct rlimit original_rlimit_core;
 /** The number of file descriptors passed via socket activation. */
 int listen_fds;
 
-/* We keep the xcb_check watcher around to be able to enable and disable it
+/* We keep the xcb_prepare watcher around to be able to enable and disable it
  * temporarily for drag_pointer(). */
-static struct ev_check *xcb_check;
+static struct ev_prepare *xcb_prepare;
 
 extern Con *focused;
 
@@ -95,28 +95,23 @@ bool xkb_supported = true;
 bool force_xinerama = false;
 
 /*
- * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
+ * This callback is only a dummy, see xcb_prepare_cb.
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
  *
  */
 static void xcb_got_event(EV_P_ struct ev_io *w, int revents) {
-    /* empty, because xcb_prepare_cb and xcb_check_cb are used */
+    /* empty, because xcb_prepare_cb are used */
 }
 
 /*
- * Flush before blocking (and waiting for new events)
+ * Called just before the event loop sleeps. Ensures xcb’s incoming and outgoing
+ * queues are empty so that any activity will trigger another event loop
+ * iteration, and hence another xcb_prepare_cb invocation.
  *
  */
 static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
-    xcb_flush(conn);
-}
-
-/*
- * Instead of polling the X connection socket we leave this to
- * xcb_poll_for_event() which knows better than we can ever know.
- *
- */
-static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
+    /* Process all queued (and possibly new) events before the event loop
+       sleeps. */
     xcb_generic_event_t *event;
 
     while ((event = xcb_poll_for_event(conn)) != NULL) {
@@ -139,6 +134,9 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
 
         free(event);
     }
+
+    /* Flush all queued events to X11. */
+    xcb_flush(conn);
 }
 
 /*
@@ -150,12 +148,12 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
 void main_set_x11_cb(bool enable) {
     DLOG("Setting main X11 callback to enabled=%d\n", enable);
     if (enable) {
-        ev_check_start(main_loop, xcb_check);
+        ev_prepare_start(main_loop, xcb_prepare);
         /* Trigger the watcher explicitly to handle all remaining X11 events.
          * drag_pointer()’s event handler exits in the middle of the loop. */
-        ev_feed_event(main_loop, xcb_check, 0);
+        ev_feed_event(main_loop, xcb_prepare, 0);
     } else {
-        ev_check_stop(main_loop, xcb_check);
+        ev_prepare_stop(main_loop, xcb_prepare);
     }
 }
 
@@ -781,14 +779,10 @@ int main(int argc, char *argv[]) {
     ewmh_update_desktop_viewport();
 
     struct ev_io *xcb_watcher = scalloc(1, sizeof(struct ev_io));
-    xcb_check = scalloc(1, sizeof(struct ev_check));
-    struct ev_prepare *xcb_prepare = scalloc(1, sizeof(struct ev_prepare));
+    xcb_prepare = scalloc(1, sizeof(struct ev_prepare));
 
     ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);
-
-    ev_check_init(xcb_check, xcb_check_cb);
-    ev_check_start(main_loop, xcb_check);
 
     ev_prepare_init(xcb_prepare, xcb_prepare_cb);
     ev_prepare_start(main_loop, xcb_prepare);
