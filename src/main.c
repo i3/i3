@@ -92,6 +92,8 @@ struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignment
 bool xcursor_supported = true;
 bool xkb_supported = true;
 
+bool force_xinerama = false;
+
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
@@ -197,7 +199,6 @@ int main(int argc, char *argv[]) {
     bool autostart = true;
     char *layout_path = NULL;
     bool delete_layout_path = false;
-    bool force_xinerama = false;
     bool disable_randr15 = false;
     char *fake_outputs = NULL;
     bool disable_signalhandler = false;
@@ -550,6 +551,10 @@ int main(int argc, char *argv[]) {
             config.ipc_socket_path = sstrdup(config.ipc_socket_path);
     }
 
+    if (config.force_xinerama) {
+        force_xinerama = true;
+    }
+
     xcb_void_cookie_t cookie;
     cookie = xcb_change_window_attributes_checked(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){ROOT_EVENT_MASK});
     xcb_generic_error_t *error = xcb_request_check(conn, cookie);
@@ -668,7 +673,7 @@ int main(int argc, char *argv[]) {
         fake_outputs_init(fake_outputs);
         FREE(fake_outputs);
         config.fake_outputs = NULL;
-    } else if (force_xinerama || config.force_xinerama) {
+    } else if (force_xinerama) {
         /* Force Xinerama (for drivers which don't support RandR yet, esp. the
          * nVidia binary graphics driver), when specified either in the config
          * file or on command-line */

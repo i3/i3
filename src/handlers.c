@@ -1264,6 +1264,9 @@ static void handle_configure_notify(xcb_configure_notify_event_t *event) {
     }
     DLOG("ConfigureNotify for root window 0x%08x\n", event->event);
 
+    if (force_xinerama) {
+        return;
+    }
     randr_query_outputs();
 }
 
