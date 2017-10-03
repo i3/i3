@@ -44,11 +44,11 @@ sub focus_subtest {
     is($events[0]->{container}->{name}, $name, "$name focused");
 }
 
-subtest 'focus left (1)', \&focus_subtest, 'focus left', 'Window 1';
-subtest 'focus left (2)', \&focus_subtest, 'focus left', 'Window 0';
-subtest 'focus right (1)', \&focus_subtest, 'focus right', 'Window 1';
-subtest 'focus right (2)', \&focus_subtest, 'focus right', 'Window 2';
-subtest 'focus right (3)', \&focus_subtest, 'focus right', 'Window 0';
-subtest 'focus left', \&focus_subtest, 'focus left', 'Window 2';
+subtest 'focus left (1)', \&focus_subtest, 'focus left', $win1->name;
+subtest 'focus left (2)', \&focus_subtest, 'focus left', $win0->name;
+subtest 'focus right (1)', \&focus_subtest, 'focus right', $win1->name;
+subtest 'focus right (2)', \&focus_subtest, 'focus right', $win2->name;
+subtest 'focus right (3)', \&focus_subtest, 'focus right', $win0->name;
+subtest 'focus left', \&focus_subtest, 'focus left', $win2->name;
 
 done_testing;
