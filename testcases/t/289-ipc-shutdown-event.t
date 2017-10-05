@@ -30,7 +30,7 @@ my $i3 = i3(get_socket_path());
 $i3->connect->recv;
 
 my $cv = AnyEvent->condvar;
-my $timer = AE::timer 0.5, 0, sub { $cv->send(0); };
+my $timer = AnyEvent->timer(after => 0.5, interval => 0, cb => sub { $cv->send(0); });
 
 $i3->subscribe({
         shutdown => sub {
@@ -51,7 +51,7 @@ $i3 = i3(get_socket_path());
 $i3->connect->recv;
 
 $cv = AnyEvent->condvar;
-$timer = AE::timer 0.5, 0, sub { $cv->send(0); };
+$timer = AnyEvent->timer(after => 0.5, interval => 0, cb => sub { $cv->send(0); });
 
 $i3->subscribe({
         shutdown => sub {

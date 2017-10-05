@@ -39,7 +39,7 @@ $i3->connect()->recv;
 my $ws = fresh_workspace;
 
 my $cv = AnyEvent->condvar;
-my $timer = AnyEvent->timer(1, 0, sub { $cv->send(0) });
+my $timer = AnyEvent->timer(after => 1, interval => 0, cb => sub { $cv->send(0) });
 $i3->subscribe({
         window => sub {
             my ($event) = @_;
