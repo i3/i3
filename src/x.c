@@ -113,7 +113,7 @@ void x_con_init(Con *con) {
 
     xcb_visualid_t visual = get_visualid_by_depth(con->depth);
     xcb_colormap_t win_colormap;
-    if (con->depth != root_depth) {
+    if (visual != root_screen->root_visual) {
         /* We need to create a custom colormap. */
         win_colormap = xcb_generate_id(conn);
         xcb_create_colormap(conn, XCB_COLORMAP_ALLOC_NONE, win_colormap, root, visual);
