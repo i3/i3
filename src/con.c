@@ -1848,6 +1848,10 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
                  * change to the opposite split layout. */
                 if (parent->layout != L_SPLITH && parent->layout != L_SPLITV) {
                     layout = parent->last_split_layout;
+                    /* In case last_split_layout was not initialized… */
+                    if (layout == L_DEFAULT) {
+                        layout = L_SPLITH;
+                    }
                 } else {
                     layout = (parent->layout == L_SPLITH) ? L_SPLITV : L_SPLITH;
                 }
