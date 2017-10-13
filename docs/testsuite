@@ -113,10 +113,8 @@ containing the appropriate i3 logfile for each testcase. The latest folder can
 always be found under the symlink +latest/+. Unless told differently, it will
 run the tests on a separate X server instance (using Xephyr).
 
-Xephyr will open a window where you can inspect the running test. You can run
-the tests without an X session with Xvfb, such as with +xvfb-run
-./complete-run+. This will also speed up the tests significantly especially on
-machines without a powerful video card.
+Xephyr will open a window where you can inspect the running test. By default,
+tests are run under Xvfb.
 
 .Example invocation of +complete-run.pl+
 ---------------------------------------
