@@ -35,7 +35,8 @@ above, just decline i3-config-wizard’s offer and base your config on
 
 Throughout this guide, the keyword +$mod+ will be used to refer to the
 configured modifier. This is the Alt key (+Mod1+) by default, with the Windows
-key (+Mod4+) being a popular alternative.
+key (+Mod4+) being a popular alternative that largely prevents conflicts with
+application-defined shortcuts.
 
 === Opening terminals and moving around
 
