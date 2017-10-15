@@ -375,7 +375,74 @@ ok(@content == 2, 'two containers opened');
 isnt($content[0]->{layout}, 'tabbed', 'layout not tabbed');
 isnt($content[1]->{layout}, 'tabbed', 'layout not tabbed');
 
+exit_gracefully($pid);
+
+#####################################################################
+# 16: Check that the command 'layout toggle split' works regardless
+# of what layout we're using.
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+workspace_layout default
+EOT
+
+$pid = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+my @layouts = ('splith', 'splitv', 'tabbed', 'stacked');
+my $first_layout;
+
+foreach $first_layout (@layouts) {
+    cmd 'layout ' . $first_layout;
+    $first = open_window;
+    $second = open_window;
+    cmd 'layout toggle split';
+    @content = @{get_ws_content($tmp)};
+    if ($first_layout eq 'splith') {
+        is($content[0]->{layout}, 'splitv', 'layout toggles to splitv');
+    } else {
+        is($content[0]->{layout}, 'splith', 'layout toggles to splith');
+    }
+
+    cmd '[id="' . $first->id . '"] kill';
+    cmd '[id="' . $second->id . '"] kill';
+    sync_with_i3;
+}
 
 exit_gracefully($pid);
+
+#####################################################################
+# 17: Check about setting a new layout.
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+workspace_layout default
+EOT
+
+$pid = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+my $second_layout;
+
+foreach $first_layout (@layouts) {
+    foreach $second_layout (@layouts) {
+        cmd 'layout ' . $first_layout;
+        $first = open_window;
+        $second = open_window;
+        cmd 'layout ' . $second_layout;
+        @content = @{get_ws_content($tmp)};
+        is($content[0]->{layout}, $second_layout, 'layout changes to ' . $second_layout);
+
+        cmd '[id="' . $first->id . '"] kill';
+        cmd '[id="' . $second->id . '"] kill';
+        sync_with_i3;
+    }
+}
 
 done_testing;
