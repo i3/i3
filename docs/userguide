@@ -11,7 +11,7 @@ mailing list.
 == Default keybindings
 
 For the "too long; didn’t read" people, here is an overview of the default
-keybindings (click to see the full size image):
+keybindings (click to see the full-size image):
 
 *Keys to use with $mod (Alt):*
 
@@ -197,7 +197,7 @@ out to be complicated to use (snapping), understand and implement.
 
 === The tree consists of Containers
 
-The building blocks of our tree are so called +Containers+. A +Container+ can
+The building blocks of our tree are so-called +Containers+. A +Container+ can
 host a window (meaning an X11 window, one that you can actually see and use,
 like a browser). Alternatively, it could contain one or more +Containers+. A
 simple example is the workspace: When you start i3 with a single monitor, a
@@ -510,7 +510,7 @@ mode "$mode_launcher" {
 === The floating modifier
 
 To move floating windows with your mouse, you can either grab their titlebar
-or configure the so called floating modifier which you can then press and
+or configure the so-called floating modifier which you can then press and
 click anywhere in the window itself to move it. The most common setup is to
 use the same key you use for managing windows (Mod1 for example). Then
 you can press Mod1, click into a window using your left mouse button, and drag
