@@ -676,13 +676,13 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
 }
 
 /*
- * Implementation of 'resize set <px> [px] <px> [px]'.
+ * Implementation of 'resize set <width> [px | ppt] <height> [px | ppt]'.
  *
  */
-void cmd_resize_set(I3_CMD, long cwidth, long cheight) {
-    DLOG("resizing to %ldx%ld px\n", cwidth, cheight);
+void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, const char *mode_height) {
+    DLOG("resizing to %ld %s x %ld %s\n", cwidth, mode_width, cheight, mode_height);
     if (cwidth <= 0 || cheight <= 0) {
-        ELOG("Resize failed: dimensions cannot be negative (was %ldx%ld)\n", cwidth, cheight);
+        ELOG("Resize failed: dimensions cannot be negative (was %ld %s x %ld %s)\n", cwidth, mode_width, cheight, mode_height);
         return;
     }
 
@@ -692,6 +692,13 @@ void cmd_resize_set(I3_CMD, long cwidth, long cheight) {
     TAILQ_FOREACH(current, &owindows, owindows) {
         Con *floating_con;
         if ((floating_con = con_inside_floating(current->con))) {
+            Con *output = con_get_output(floating_con);
+            if (mode_width && strcmp(mode_width, "ppt") == 0) {
+                cwidth = output->rect.width * ((double)cwidth / 100.0);
+            }
+            if (mode_height && strcmp(mode_height, "ppt") == 0) {
+                cheight = output->rect.height * ((double)cheight / 100.0);
+            }
             floating_resize(floating_con, cwidth, cheight);
         } else {
             ELOG("Resize failed: %p not a floating container\n", current->con);

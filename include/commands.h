@@ -66,7 +66,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *no_
  * Implementation of 'resize set <px> [px] <px> [px]'.
  *
  */
-void cmd_resize_set(I3_CMD, long cwidth, long cheight);
+void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, const char *mode_height);
 
 /**
  * Implementation of 'resize grow|shrink <direction> [<px> px] [or <ppt> ppt]'.
