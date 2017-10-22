@@ -774,6 +774,8 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 scratchpad_show(con);
             } else {
                 workspace_show(ws);
+                /* Re-set focus, even if unchanged from i3’s perspective. */
+                focused_id = XCB_NONE;
                 con_focus(con);
             }
         } else {
