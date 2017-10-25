@@ -74,3 +74,4 @@ extern bool xcursor_supported, xkb_supported;
 extern xcb_window_t root;
 extern struct ev_loop *main_loop;
 extern bool only_check_config;
+extern bool force_xinerama;

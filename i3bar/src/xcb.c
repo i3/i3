@@ -83,7 +83,6 @@ int mod_pressed = 0;
 
 /* Event watchers, to interact with the user */
 ev_prepare *xcb_prep;
-ev_check *xcb_chk;
 ev_io *xcb_io;
 ev_io *xkb_io;
 
@@ -1075,21 +1074,11 @@ static void handle_resize_request(xcb_resize_request_event_t *event) {
 }
 
 /*
- * This function is called immediately before the main loop locks. We flush xcb
- * then (and only then)
+ * This function is called immediately before the main loop locks. We check for
+ * events from X11, handle them, then flush our outgoing queue.
  *
  */
 void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revents) {
-    xcb_flush(xcb_connection);
-}
-
-/*
- * This function is called immediately after the main loop locks, so when one
- * of the watchers registered an event.
- * We check whether an X-Event arrived and handle it.
- *
- */
-void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
     xcb_generic_event_t *event;
 
     if (xcb_connection_has_error(xcb_connection)) {
@@ -1210,6 +1199,8 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
         }
         free(event);
     }
+
+    xcb_flush(xcb_connection);
 }
 
 /*
@@ -1267,21 +1258,12 @@ char *init_xcb_early() {
     /* The various watchers to communicate with xcb */
     xcb_io = smalloc(sizeof(ev_io));
     xcb_prep = smalloc(sizeof(ev_prepare));
-    xcb_chk = smalloc(sizeof(ev_check));
 
     ev_io_init(xcb_io, &xcb_io_cb, xcb_get_file_descriptor(xcb_connection), EV_READ);
     ev_prepare_init(xcb_prep, &xcb_prep_cb);
-    ev_check_init(xcb_chk, &xcb_chk_cb);
-
-    /* Within an event loop iteration, run the xcb_chk watcher last: other
-     * watchers might call xcb_flush(), which, unexpectedly, can also read
-     * events into the queue (see _xcb_conn_wait). Hence, we need to drain xcb’s
-     * queue last, otherwise we risk dead-locking. */
-    ev_set_priority(xcb_chk, EV_MINPRI);
 
     ev_io_start(main_loop, xcb_io);
     ev_prepare_start(main_loop, xcb_prep);
-    ev_check_start(main_loop, xcb_chk);
 
     /* Now we get the atoms and save them in a nice data structure */
     get_atoms();
@@ -1535,11 +1517,9 @@ void clean_xcb(void) {
     xcb_aux_sync(xcb_connection);
     xcb_disconnect(xcb_connection);
 
-    ev_check_stop(main_loop, xcb_chk);
     ev_prepare_stop(main_loop, xcb_prep);
     ev_io_stop(main_loop, xcb_io);
 
-    FREE(xcb_chk);
     FREE(xcb_prep);
     FREE(xcb_io);
 }

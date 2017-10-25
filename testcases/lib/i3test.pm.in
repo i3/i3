@@ -133,6 +133,22 @@ sub import {
     my ($class, %args) = @_;
     my $pkg = caller;
 
+    $x ||= i3test::X11->new;
+    # set the pointer to a predictable position in case a previous test has
+    # disturbed it
+    $x->warp_pointer(
+	0, # src_window (None)
+	$x->get_root_window(), # dst_window (None)
+	0, # src_x
+	0, # src_y
+	0, # src_width
+	0, # src_height
+	0, # dst_x
+	0); # dst_y
+    # Synchronize with X11 to ensure the pointer has been warped before i3
+    # starts up.
+    $x->get_input_focus_reply($x->get_input_focus()->{sequence});
+
     $i3_autostart = delete($args{i3_autostart}) // 1;
     my $i3_config = delete($args{i3_config}) // '-default';
 
@@ -155,10 +171,6 @@ __
     strict->import;
     warnings->import;
 
-    $x ||= i3test::X11->new;
-    # set the pointer to a predictable position in case a previous test has
-    # disturbed it
-    $x->root->warp_pointer(0, 0);
     $cv->recv if $i3_autostart;
 
     @_ = ($class);
@@ -181,29 +193,11 @@ received, etc.
 sub wait_for_event {
     my ($timeout, $cb) = @_;
 
-    my $cv = AE::cv;
-
     $x->flush;
 
-    # unfortunately, there is no constant for this
-    my $ae_read = 0;
-
-    my $guard = AE::io $x->get_file_descriptor, $ae_read, sub {
-        while (defined(my $event = $x->poll_for_event)) {
-            if ($cb->($event)) {
-                $cv->send(1);
-                last;
-            }
-        }
-    };
-
-    # Trigger timeout after $timeout seconds (can be fractional)
-    my $t = AE::timer $timeout, 0, sub { warn "timeout ($timeout secs)"; $cv->send(0) };
-
-    my $result = $cv->recv;
-    undef $t;
-    undef $guard;
-    return $result;
+    while (defined(my $event = $x->wait_for_event)) {
+	return 1 if $cb->($event);
+    }
 }
 
 =head2 wait_for_map($window)
@@ -350,6 +344,12 @@ sub open_window {
 
     $window->map;
     wait_for_map($window);
+
+    # MapWindow is sent before i3 even starts rendering: the window is placed at
+    # temporary off-screen coordinates first, and x_push_changes() sends further
+    # X11 requests to set focus etc. Hence, we sync with i3 before continuing.
+    sync_with_i3();
+
     return $window;
 }
 
@@ -688,6 +688,7 @@ sub sync_with_i3 {
         $_sync_window = open_window(
             rect => [ -15, -15, 10, 10 ],
             override_redirect => 1,
+            dont_map => 1,
         );
     }
 
