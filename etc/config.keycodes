@@ -144,6 +144,7 @@ mode "resize" {
         # back to normal: Enter or Escape
         bindcode 36 mode "default"
         bindcode 9 mode "default"
+        bindcode $mod+27 mode "default"
 }
 
 bindcode $mod+27 mode "resize"
