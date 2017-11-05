@@ -1813,6 +1813,7 @@ void con_set_layout(Con *con, layout_t layout) {
         con->layout = layout;
     }
     con_force_split_parents_redraw(con);
+    tree_flatten(con->parent);
 }
 
 /*
