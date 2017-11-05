@@ -258,14 +258,16 @@ state RESIZE_SET:
       -> RESIZE_WIDTH
 
 state RESIZE_WIDTH:
-  'px'
+  mode_width = 'px', 'ppt'
       ->
   height = number
       -> RESIZE_HEIGHT
 
 state RESIZE_HEIGHT:
-  'px', end
-      -> call cmd_resize_set(&width, &height)
+  mode_height = 'px', 'ppt'
+      ->
+  end
+      -> call cmd_resize_set(&width, $mode_width, &height, $mode_height)
 
 # rename workspace <name> to <name>
 # rename workspace to <name>
