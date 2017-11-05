@@ -29,7 +29,10 @@ AS_VAR_IF([_cv_gnu_make_command], [""], [AC_MSG_ERROR([the i3 Makefile.am requir
 
 AX_EXTEND_SRCDIR
 
-AS_IF([test -d ${srcdir}/.git],
+AC_CHECK_PROG([git],[git],[yes],[no])
+AM_CONDITIONAL([FOUND_GIT], [test "x$git" = xyes && test -d ${srcdir}/.git])
+
+AS_IF([FOUND_GIT],
       [
         VERSION="$(git -C ${srcdir} describe --tags --abbrev=0)"
         I3_VERSION="$(git -C ${srcdir} describe --tags --always) ($(git -C ${srcdir} log --pretty=format:%cd --date=short -n1), branch \\\"$(git -C ${srcdir} describe --tags --always --all | sed s:heads/::)\\\")"
