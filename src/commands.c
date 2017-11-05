@@ -659,7 +659,7 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
  */
 void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, const char *mode_height) {
     DLOG("resizing to %ld %s x %ld %s\n", cwidth, mode_width, cheight, mode_height);
-    if (cwidth <= 0 || cheight <= 0) {
+    if (cwidth < 0 || cheight < 0) {
         ELOG("Resize failed: dimensions cannot be negative (was %ld %s x %ld %s)\n", cwidth, mode_width, cheight, mode_height);
         return;
     }
@@ -667,25 +667,84 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
     HANDLE_EMPTY_MATCH;
 
     owindow *current;
+    bool success = true;
     TAILQ_FOREACH(current, &owindows, owindows) {
         Con *floating_con;
         if ((floating_con = con_inside_floating(current->con))) {
             Con *output = con_get_output(floating_con);
-            if (mode_width && strcmp(mode_width, "ppt") == 0) {
+            if (cwidth == 0) {
+                cwidth = output->rect.width;
+            } else if (mode_width && strcmp(mode_width, "ppt") == 0) {
                 cwidth = output->rect.width * ((double)cwidth / 100.0);
             }
-            if (mode_height && strcmp(mode_height, "ppt") == 0) {
+            if (cheight == 0) {
+                cheight = output->rect.height;
+            } else if (mode_height && strcmp(mode_height, "ppt") == 0) {
                 cheight = output->rect.height * ((double)cheight / 100.0);
             }
             floating_resize(floating_con, cwidth, cheight);
         } else {
-            ELOG("Resize failed: %p not a floating container\n", current->con);
+            if (current->con->window && current->con->window->dock) {
+                DLOG("This is a dock window. Not resizing (con = %p)\n)", current->con);
+                continue;
+            }
+
+            if (cwidth > 0 && mode_width && strcmp(mode_width, "ppt") == 0) {
+                /* get the appropriate current container (skip stacked/tabbed cons) */
+                Con *target = current->con;
+                Con *dummy;
+                resize_find_tiling_participants(&target, &dummy, D_LEFT, true);
+
+                /* Calculate new size for the target container */
+                double current_percent = target->percent;
+                char *action_string;
+                long adjustment;
+
+                if (current_percent > cwidth) {
+                    action_string = "shrink";
+                    adjustment = (int)(current_percent * 100) - cwidth;
+                } else {
+                    action_string = "grow";
+                    adjustment = cwidth - (int)(current_percent * 100);
+                }
+
+                /* perform resizing and report failure if not possible */
+                if (!cmd_resize_tiling_width_height(current_match, cmd_output,
+                                                    target, action_string, "width", adjustment)) {
+                    success = false;
+                }
+            }
+
+            if (cheight > 0 && mode_width && strcmp(mode_width, "ppt") == 0) {
+                /* get the appropriate current container (skip stacked/tabbed cons) */
+                Con *target = current->con;
+                Con *dummy;
+                resize_find_tiling_participants(&target, &dummy, D_DOWN, true);
+
+                /* Calculate new size for the target container */
+                double current_percent = target->percent;
+                char *action_string;
+                long adjustment;
+
+                if (current_percent > cheight) {
+                    action_string = "shrink";
+                    adjustment = (int)(current_percent * 100) - cheight;
+                } else {
+                    action_string = "grow";
+                    adjustment = cheight - (int)(current_percent * 100);
+                }
+
+                /* perform resizing and report failure if not possible */
+                if (!cmd_resize_tiling_width_height(current_match, cmd_output,
+                                                    target, action_string, "height", adjustment)) {
+                    success = false;
+                }
+            }
         }
     }
 
     cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    ysuccess(success);
 }
 
 /*
