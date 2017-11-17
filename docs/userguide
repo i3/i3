@@ -2398,10 +2398,10 @@ TODO: make i3-input replace %s
 *Examples*:
 ---------------------------------------
 # Read 1 character and mark the current window with this character
-bindsym $mod+m exec i3-input -p 'mark ' -l 1 -P 'Mark: '
+bindsym $mod+m exec i3-input -F 'mark %s' -l 1 -P 'Mark: '
 
 # Read 1 character and go to the window with the character
-bindsym $mod+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
+bindsym $mod+g exec i3-input -F '[con_mark="%s"] focus' -l 1 -P 'Goto: '
 ---------------------------------------
 
 Alternatively, if you do not want to mess with +i3-input+, you could create
