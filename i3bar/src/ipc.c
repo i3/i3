@@ -216,7 +216,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     int fd = watcher->fd;
 
     /* First we only read the header, because we know its length */
-    uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t) * 2;
+    uint32_t header_len = sizeof(I3_IPC_MAGIC) - 1 + sizeof(uint32_t) * 2;
     char *header = smalloc(header_len);
 
     /* We first parse the fixed-length IPC header, to know, how much data
@@ -241,15 +241,15 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
         rec += n;
     }
 
-    if (strncmp(header, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC))) {
+    if (strncmp(header, I3_IPC_MAGIC, sizeof(I3_IPC_MAGIC) - 1)) {
         ELOG("Wrong magic code: %.*s\n Expected: %s\n",
-             (int)strlen(I3_IPC_MAGIC),
+             (int)sizeof(I3_IPC_MAGIC) - 1,
              header,
              I3_IPC_MAGIC);
         exit(EXIT_FAILURE);
     }
 
-    char *walk = header + strlen(I3_IPC_MAGIC);
+    char *walk = header + sizeof(I3_IPC_MAGIC) - 1;
     uint32_t size;
     memcpy(&size, (uint32_t *)walk, sizeof(uint32_t));
     walk += sizeof(uint32_t);
@@ -300,15 +300,15 @@ int i3_send_msg(uint32_t type, const char *payload) {
     }
 
     /* We are a wellbehaved client and send a proper header first */
-    uint32_t to_write = strlen(I3_IPC_MAGIC) + sizeof(uint32_t) * 2 + len;
+    uint32_t to_write = sizeof(I3_IPC_MAGIC) - 1 + sizeof(uint32_t) * 2 + len;
     /* TODO: I'm not entirely sure if this buffer really has to contain more
      * than the pure header (why not just write() the payload from *payload?),
      * but we leave it for now */
     char *buffer = smalloc(to_write);
     char *walk = buffer;
 
-    strncpy(buffer, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC));
-    walk += strlen(I3_IPC_MAGIC);
+    strncpy(buffer, I3_IPC_MAGIC, sizeof(I3_IPC_MAGIC) - 1);
+    walk += sizeof(I3_IPC_MAGIC) - 1;
     memcpy(walk, &len, sizeof(uint32_t));
     walk += sizeof(uint32_t);
     memcpy(walk, &type, sizeof(uint32_t));
