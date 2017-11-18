@@ -218,13 +218,19 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "markup") == 0) {
-        ctx->block.pango_markup = (len == strlen("pango") && !strncasecmp((const char *)val, "pango", strlen("pango")));
+        const char pango[] = "pango";
+        const size_t pango_len = sizeof(pango) - 1;
+        ctx->block.pango_markup = (len == pango_len && !strncasecmp((const char *)val, pango, pango_len));
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "align") == 0) {
-        if (len == strlen("center") && !strncmp((const char *)val, "center", strlen("center"))) {
+        const char center[] = "center";
+        const char right[] = "right";
+        const size_t center_len = sizeof(center) - 1;
+        const size_t right_len = sizeof(right) - 1;
+        if (len == center_len && !strncmp((const char *)val, center, center_len)) {
             ctx->block.align = ALIGN_CENTER;
-        } else if (len == strlen("right") && !strncmp((const char *)val, "right", strlen("right"))) {
+        } else if (len == right_len && !strncmp((const char *)val, right, right_len)) {
             ctx->block.align = ALIGN_RIGHT;
         } else {
             ctx->block.align = ALIGN_LEFT;

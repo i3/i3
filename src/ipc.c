@@ -1092,14 +1092,14 @@ IPC_HANDLER(subscribe) {
         ELOG("YAJL parse error: %s\n", err);
         yajl_free_error(p, err);
 
-        const char *reply = "{\"success\":false}";
-        ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
+        const char reply[] = "{\"success\":false}";
+        ipc_send_message(fd, sizeof(reply) - 1, I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
         yajl_free(p);
         return;
     }
     yajl_free(p);
-    const char *reply = "{\"success\":true}";
-    ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
+    const char reply[] = "{\"success\":true}";
+    ipc_send_message(fd, sizeof(reply) - 1, I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
 
     if (client->first_tick_sent) {
         return;

@@ -15,6 +15,7 @@
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_cursor.h>
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -1227,7 +1228,7 @@ char *init_xcb_early() {
     DLOG("Connected to xcb\n");
 
 /* We have to request the atoms we need */
-#define ATOM_DO(name) atom_cookies[name] = xcb_intern_atom(xcb_connection, 0, strlen(#name), #name);
+#define ATOM_DO(name) atom_cookies[name] = xcb_intern_atom(xcb_connection, 0, sizeof(#name) - 1, #name);
 #include "xcb_atoms.def"
 
     root_screen = xcb_aux_get_screen(xcb_connection, screen);
@@ -1372,11 +1373,16 @@ static void send_tray_clientmessage(void) {
 void init_tray(void) {
     DLOG("Initializing system tray functionality\n");
     /* request the tray manager atom for the X11 display we are running on */
-    char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
-    snprintf(atomname, strlen("_NET_SYSTEM_TRAY_S") + 11, "_NET_SYSTEM_TRAY_S%d", screen);
+    const char atomSystray[] = "_NET_SYSTEM_TRAY_S";
+    char atomname[sizeof(atomSystray) + 10];
+    int printed;
+
+    printed = snprintf(atomname, sizeof(atomname), "_NET_SYSTEM_TRAY_S%d", screen);
+    assert(printed < sizeof(atomname));
+
     xcb_intern_atom_cookie_t tray_cookie;
     if (tray_reply == NULL)
-        tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
+        tray_cookie = xcb_intern_atom(xcb_connection, 0, printed, atomname);
 
     /* tray support: we need a window to own the selection */
     selwin = xcb_generate_id(xcb_connection);
@@ -1733,11 +1739,13 @@ void reconfig_windows(bool redraw_bars) {
                                                XCB_ATOM_WM_CLASS,
                                                XCB_ATOM_STRING,
                                                8,
-                                               (strlen("i3bar") + 1) * 2,
+                                               sizeof("i3bar") * 2,
                                                "i3bar\0i3bar\0");
 
             char *name;
-            sasprintf(&name, "i3bar for output %s", walk->name);
+            int printed;
+
+            printed = sasprintf(&name, "i3bar for output %s", walk->name);
             xcb_void_cookie_t name_cookie;
             name_cookie = xcb_change_property(xcb_connection,
                                               XCB_PROP_MODE_REPLACE,
@@ -1745,7 +1753,7 @@ void reconfig_windows(bool redraw_bars) {
                                               XCB_ATOM_WM_NAME,
                                               XCB_ATOM_STRING,
                                               8,
-                                              strlen(name),
+                                              printed,
                                               name);
             free(name);
 
