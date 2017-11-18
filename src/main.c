@@ -921,7 +921,7 @@ int main(int argc, char *argv[]) {
         free(command);
     }
 
-    /* Make sure to destroy the event loop to invoke the cleeanup callbacks
+    /* Make sure to destroy the event loop to invoke the cleanup callbacks
      * when calling exit() */
     atexit(i3_exit);
 
