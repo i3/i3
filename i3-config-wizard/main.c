@@ -58,12 +58,10 @@
 #error "SYSCONFDIR not defined"
 #endif
 
-#define FREE(pointer)          \
-    do {                       \
-        if (pointer != NULL) { \
-            free(pointer);     \
-            pointer = NULL;    \
-        }                      \
+#define FREE(pointer)   \
+    do {                \
+        free(pointer);  \
+        pointer = NULL; \
     } while (0)
 
 #include "xcb.h"
