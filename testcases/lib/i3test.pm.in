@@ -152,7 +152,8 @@ sub import {
     $i3_autostart = delete($args{i3_autostart}) // 1;
     my $i3_config = delete($args{i3_config}) // '-default';
 
-    my $cv = launch_with_config($i3_config, dont_block => 1)
+    my $cv;
+    ($i3_pid, $cv) = launch_with_config($i3_config, dont_block => 1)
         if $i3_autostart;
 
     my $test_more_args = '';
@@ -767,7 +768,6 @@ sub exit_gracefully {
     }
 
     waitpid $pid, 0;
-    undef $i3_pid;
 }
 
 =head2 get_socket_path([ $cache ])
@@ -841,7 +841,7 @@ sub launch_with_config {
     close($fh);
 
     my $cv = AnyEvent->condvar;
-    $i3_pid = activate_i3(
+    my $pid = activate_i3(
         unix_socket_path => "$tmp_socket_path-activation",
         display => $ENV{DISPLAY},
         configfile => $tmpfile,
@@ -862,10 +862,7 @@ sub launch_with_config {
     # there's nothing else we need to do.
     if ($args{validate_config}) {
         $cv->recv;
-        waitpid $i3_pid, 0;
-
-        # We need this since exit_gracefully will not be called in this case.
-        undef $i3_pid;
+        waitpid $pid, 0;
 
         return ${^CHILD_ERROR_NATIVE};
     }
@@ -874,12 +871,12 @@ sub launch_with_config {
     # as soon as i3 has started
     $cv->cb(sub { get_socket_path(0) });
 
-    return $cv if $args{dont_block};
+    return $pid, $cv if $args{dont_block};
 
     # blockingly wait until i3 is ready
     $cv->recv;
 
-    return $i3_pid;
+    return $pid;
 }
 
 =head2 get_i3_log

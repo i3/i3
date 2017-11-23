@@ -174,19 +174,32 @@ static void i3_exit(void) {
         fflush(stderr);
         shm_unlink(shmlogname);
     }
+    unlink(config.ipc_socket_path);
+}
+
+/*
+ * (One-shot) Handler for all signals with default action "Core", see signal(7)
+ *
+ * Unlinks the SHM log and re-raises the signal.
+ *
+ */
+static void handle_core_signal(int sig, siginfo_t *info, void *data) {
+    if (*shmlogname != '\0') {
+        shm_unlink(shmlogname);
+    }
+    raise(sig);
 }
 
 /*
  * (One-shot) Handler for all signals with default action "Term", see signal(7)
  *
- * Unlinks the SHM log and re-raises the signal.
+ * Exits the program gracefully.
  *
  */
-static void handle_signal(int sig, siginfo_t *info, void *data) {
-    if (*shmlogname != '\0') {
-        shm_unlink(shmlogname);
-    }
-    raise(sig);
+static void handle_term_signal(int sig, siginfo_t *info, void *data) {
+    /* We exit gracefully here in the sense that cleanup handlers
+     * installed via atexit are invoked. */
+    exit(-sig);
 }
 
 int main(int argc, char *argv[]) {
@@ -855,13 +868,13 @@ int main(int argc, char *argv[]) {
 
     struct sigaction action;
 
-    action.sa_sigaction = handle_signal;
     action.sa_flags = SA_NODEFER | SA_RESETHAND | SA_SIGINFO;
     sigemptyset(&action.sa_mask);
 
     if (!disable_signalhandler)
         setup_signal_handler();
     else {
+        action.sa_sigaction = handle_core_signal;
         /* Catch all signals with default action "Core", see signal(7) */
         if (sigaction(SIGQUIT, &action, NULL) == -1 ||
             sigaction(SIGILL, &action, NULL) == -1 ||
@@ -871,10 +884,12 @@ int main(int argc, char *argv[]) {
             ELOG("Could not setup signal handler.\n");
     }
 
+    action.sa_sigaction = handle_term_signal;
     /* Catch all signals with default action "Term", see signal(7) */
     if (sigaction(SIGHUP, &action, NULL) == -1 ||
         sigaction(SIGINT, &action, NULL) == -1 ||
         sigaction(SIGALRM, &action, NULL) == -1 ||
+        sigaction(SIGTERM, &action, NULL) == -1 ||
         sigaction(SIGUSR1, &action, NULL) == -1 ||
         sigaction(SIGUSR2, &action, NULL) == -1)
         ELOG("Could not setup signal handler.\n");
