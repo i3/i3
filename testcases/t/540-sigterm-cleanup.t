@@ -18,7 +18,6 @@
 # shutting down i3 via SIGTERM.
 # Ticket: #3049
 use i3test i3_autostart => 0;
-use File::Temp qw(tempfile tempdir);
 
 my $config = <<EOT;
 # i3 config file (v4)
@@ -29,8 +28,7 @@ my $pid = launch_with_config($config, dont_add_socket_path => 1);
 my $socket = get_socket_path();
 ok(-S $socket, "socket $socket exists");
 
-kill('TERM', $pid);
-waitpid $pid, 0;
+exit_forcefully($pid, 'TERM');
 
 ok(!-e $socket, "socket $socket no longer exists");
 

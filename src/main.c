@@ -38,6 +38,9 @@ int listen_fds;
 /* We keep the xcb_prepare watcher around to be able to enable and disable it
  * temporarily for drag_pointer(). */
 static struct ev_prepare *xcb_prepare;
+static struct ev_signal signal_watchers[6];
+
+#define NUM_WATCHERS (sizeof(signal_watchers) / sizeof(signal_watchers[0]))
 
 extern Con *focused;
 
@@ -174,6 +177,7 @@ static void i3_exit(void) {
         fflush(stderr);
         shm_unlink(shmlogname);
     }
+    ipc_shutdown(SHUTDOWN_REASON_EXIT);
     unlink(config.ipc_socket_path);
 }
 
@@ -196,10 +200,35 @@ static void handle_core_signal(int sig, siginfo_t *info, void *data) {
  * Exits the program gracefully.
  *
  */
-static void handle_term_signal(int sig, siginfo_t *info, void *data) {
+static void handle_term_signal(struct ev_loop *loop, ev_signal *signal, int revents) {
     /* We exit gracefully here in the sense that cleanup handlers
      * installed via atexit are invoked. */
-    exit(-sig);
+    exit(128 + signal->signum);
+}
+
+/*
+ * Set up handlers for all signals with default action "Term", see signal(7)
+ *
+ */
+static void setup_term_handlers(void) {
+    /* We have to rely on libev functionality here and should not use
+     * sigaction handlers because we need to invoke the exit handlers
+     * and cannot do so from an asynchronous signal handling context as
+     * not all code triggered during exit is signal safe (and exiting
+     * the main loop from said handler is not easily possible). libev's
+     * signal handlers does not impose such a constraint on us. */
+    ev_signal_init(&signal_watchers[0], handle_term_signal, SIGHUP);
+    ev_signal_init(&signal_watchers[1], handle_term_signal, SIGINT);
+    ev_signal_init(&signal_watchers[2], handle_term_signal, SIGALRM);
+    ev_signal_init(&signal_watchers[3], handle_term_signal, SIGTERM);
+    ev_signal_init(&signal_watchers[4], handle_term_signal, SIGUSR1);
+    ev_signal_init(&signal_watchers[5], handle_term_signal, SIGUSR1);
+    for (size_t i = 0; i < NUM_WATCHERS; i++) {
+        ev_signal_start(main_loop, &signal_watchers[i]);
+        /* None of the signal handlers should hold a reference to the
+         * main loop. */
+        ev_unref(main_loop);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -866,15 +895,15 @@ int main(int argc, char *argv[]) {
         err(EXIT_FAILURE, "pledge");
 #endif
 
-    struct sigaction action;
-
-    action.sa_flags = SA_NODEFER | SA_RESETHAND | SA_SIGINFO;
-    sigemptyset(&action.sa_mask);
-
     if (!disable_signalhandler)
         setup_signal_handler();
     else {
+        struct sigaction action;
+
         action.sa_sigaction = handle_core_signal;
+        action.sa_flags = SA_NODEFER | SA_RESETHAND | SA_SIGINFO;
+        sigemptyset(&action.sa_mask);
+
         /* Catch all signals with default action "Core", see signal(7) */
         if (sigaction(SIGQUIT, &action, NULL) == -1 ||
             sigaction(SIGILL, &action, NULL) == -1 ||
@@ -884,16 +913,7 @@ int main(int argc, char *argv[]) {
             ELOG("Could not setup signal handler.\n");
     }
 
-    action.sa_sigaction = handle_term_signal;
-    /* Catch all signals with default action "Term", see signal(7) */
-    if (sigaction(SIGHUP, &action, NULL) == -1 ||
-        sigaction(SIGINT, &action, NULL) == -1 ||
-        sigaction(SIGALRM, &action, NULL) == -1 ||
-        sigaction(SIGTERM, &action, NULL) == -1 ||
-        sigaction(SIGUSR1, &action, NULL) == -1 ||
-        sigaction(SIGUSR2, &action, NULL) == -1)
-        ELOG("Could not setup signal handler.\n");
-
+    setup_term_handlers();
     /* Ignore SIGPIPE to survive errors when an IPC client disconnects
      * while we are sending them a message */
     signal(SIGPIPE, SIG_IGN);

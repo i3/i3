@@ -12,6 +12,7 @@ use AnyEvent::I3;
 use List::Util qw(first);
 use Time::HiRes qw(sleep);
 use Cwd qw(abs_path);
+use POSIX ':sys_wait_h';
 use Scalar::Util qw(blessed);
 use SocketActivation;
 use i3test::Util qw(slurp);
@@ -37,6 +38,7 @@ our @EXPORT = qw(
     cmd
     sync_with_i3
     exit_gracefully
+    exit_forcefully
     workspace_exists
     focused_ws
     get_socket_path
@@ -123,7 +125,7 @@ END {
 
     } else {
         kill(-9, $i3_pid)
-            or $tester->BAIL_OUT("could not kill i3");
+            or $tester->BAIL_OUT("could not kill i3: $!");
 
         waitpid $i3_pid, 0;
     }
@@ -152,8 +154,7 @@ sub import {
     $i3_autostart = delete($args{i3_autostart}) // 1;
     my $i3_config = delete($args{i3_config}) // '-default';
 
-    my $cv;
-    ($i3_pid, $cv) = launch_with_config($i3_config, dont_block => 1)
+    my $cv = launch_with_config($i3_config, dont_block => 1)
         if $i3_autostart;
 
     my $test_more_args = '';
@@ -760,7 +761,7 @@ sub exit_gracefully {
 
     if (!$exited) {
         kill(9, $pid)
-            or $tester->BAIL_OUT("could not kill i3");
+            or $tester->BAIL_OUT("could not kill i3: $!");
     }
 
     if ($socketpath =~ m,^/tmp/i3-test-socket-,) {
@@ -768,6 +769,48 @@ sub exit_gracefully {
     }
 
     waitpid $pid, 0;
+    undef $i3_pid;
+}
+
+=head2 exit_forcefully($pid, [ $signal ])
+
+Tries to exit i3 forcefully by sending a signal (defaults to SIGTERM).
+
+You only need to use this function if you want to test signal handling
+(in which case you must have launched i3 on your own with
+C<launch_with_config>).
+
+  use i3test i3_autostart => 0;
+  my $pid = launch_with_config($config);
+  # …
+  exit_forcefully($pid);
+
+=cut
+sub exit_forcefully {
+    my ($pid, $signal) = @_;
+    $signal ||= 'TERM';
+
+    # Send the given signal to the i3 instance and wait for up to 10s
+    # for it to terminate.
+    kill($signal, $pid)
+        or $tester->BAIL_OUT("could not kill i3: $!");
+    my $status;
+    my $timeout = 10;
+    do {
+        $status = waitpid $pid, WNOHANG;
+
+        if ($status <= 0) {
+            sleep(1);
+            $timeout--;
+        }
+    } while ($status <= 0 && $timeout > 0);
+
+    if ($status <= 0) {
+        kill('KILL', $pid)
+            or $tester->BAIL_OUT("could not kill i3: $!");
+        waitpid $pid, 0;
+    }
+    undef $i3_pid;
 }
 
 =head2 get_socket_path([ $cache ])
@@ -841,7 +884,7 @@ sub launch_with_config {
     close($fh);
 
     my $cv = AnyEvent->condvar;
-    my $pid = activate_i3(
+    $i3_pid = activate_i3(
         unix_socket_path => "$tmp_socket_path-activation",
         display => $ENV{DISPLAY},
         configfile => $tmpfile,
@@ -862,7 +905,10 @@ sub launch_with_config {
     # there's nothing else we need to do.
     if ($args{validate_config}) {
         $cv->recv;
-        waitpid $pid, 0;
+        waitpid $i3_pid, 0;
+
+        # We need this since exit_gracefully will not be called in this case.
+        undef $i3_pid;
 
         return ${^CHILD_ERROR_NATIVE};
     }
@@ -871,12 +917,12 @@ sub launch_with_config {
     # as soon as i3 has started
     $cv->cb(sub { get_socket_path(0) });
 
-    return $pid, $cv if $args{dont_block};
+    return $cv if $args{dont_block};
 
     # blockingly wait until i3 is ready
     $cv->recv;
 
-    return $pid;
+    return $i3_pid;
 }
 
 =head2 get_i3_log
