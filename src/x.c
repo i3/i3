@@ -1227,9 +1227,13 @@ void x_set_name(Con *con, const char *name) {
  *
  */
 void update_shmlog_atom() {
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
-                        A_I3_SHMLOG_PATH, A_UTF8_STRING, 8,
-                        strlen(shmlogname), shmlogname);
+    if (*shmlogname == '\0') {
+        xcb_delete_property(conn, root, A_I3_SHMLOG_PATH);
+    } else {
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
+                            A_I3_SHMLOG_PATH, A_UTF8_STRING, 8,
+                            strlen(shmlogname), shmlogname);
+    }
 }
 
 /*
