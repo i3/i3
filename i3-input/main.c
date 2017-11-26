@@ -41,7 +41,6 @@
  * the command will be sent to i3 */
 static char *format;
 
-static char *socket_path;
 static int sockfd;
 static xcb_key_symbols_t *symbols;
 static bool modeswitch_active = false;
@@ -374,7 +373,7 @@ free_resources:
 
 int main(int argc, char *argv[]) {
     format = sstrdup("%s");
-    socket_path = getenv("I3SOCK");
+    char *socket_path = NULL;
     char *pattern = sstrdup("pango:monospace 8");
     int o, option_index = 0;
 
@@ -437,12 +436,6 @@ int main(int argc, char *argv[]) {
     conn = xcb_connect(NULL, &screen);
     if (!conn || xcb_connection_has_error(conn))
         die("Cannot open display\n");
-
-    if (socket_path == NULL)
-        socket_path = root_atom_contents("I3_SOCKET_PATH", conn, screen);
-
-    if (socket_path == NULL)
-        socket_path = "/tmp/i3-ipc.sock";
 
     sockfd = ipc_connect(socket_path);
 

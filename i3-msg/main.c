@@ -38,8 +38,6 @@
 
 #include <i3/ipc.h>
 
-static char *socket_path;
-
 /*
  * Having verboselog() and errorlog() is necessary when using libi3.
  *
@@ -161,11 +159,7 @@ int main(int argc, char *argv[]) {
     if (pledge("stdio rpath unix", NULL) == -1)
         err(EXIT_FAILURE, "pledge");
 #endif
-    char *env_socket_path = getenv("I3SOCK");
-    if (env_socket_path)
-        socket_path = sstrdup(env_socket_path);
-    else
-        socket_path = NULL;
+    char *socket_path = NULL;
     int o, option_index = 0;
     uint32_t message_type = I3_IPC_MESSAGE_TYPE_RUN_COMMAND;
     char *payload = NULL;
@@ -183,8 +177,7 @@ int main(int argc, char *argv[]) {
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         if (o == 's') {
-            if (socket_path != NULL)
-                free(socket_path);
+            free(socket_path);
             socket_path = sstrdup(optarg);
         } else if (o == 't') {
             if (strcasecmp(optarg, "command") == 0) {
@@ -228,13 +221,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (socket_path == NULL)
-        socket_path = root_atom_contents("I3_SOCKET_PATH", NULL, 0);
-
-    /* Fall back to the default socket path */
-    if (socket_path == NULL)
-        socket_path = sstrdup("/tmp/i3-ipc.sock");
-
     /* Use all arguments, separated by whitespace, as payload.
      * This way, you don’t have to do i3-msg 'mark foo', you can use
      * i3-msg mark foo */
@@ -253,17 +239,7 @@ int main(int argc, char *argv[]) {
     if (!payload)
         payload = sstrdup("");
 
-    int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
-    if (sockfd == -1)
-        err(EXIT_FAILURE, "Could not create socket");
-
-    struct sockaddr_un addr;
-    memset(&addr, 0, sizeof(struct sockaddr_un));
-    addr.sun_family = AF_LOCAL;
-    strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
-    if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0)
-        err(EXIT_FAILURE, "Could not connect to i3 on socket \"%s\"", socket_path);
-
+    int sockfd = ipc_connect(socket_path);
     if (ipc_send_message(sockfd, strlen(payload), message_type, (uint8_t *)payload) == -1)
         err(EXIT_FAILURE, "IPC: write()");
     free(payload);
