@@ -54,7 +54,7 @@ like($stderr, qr#^$#, 'stderr empty');
 # 3: change size of the shared memory log buffer and verify old content is gone
 ################################################################################
 
-cmd 'shmlog ' . (23 * 1024 * 1024);
+cmd 'shmlog ' . (1 * 1024 * 1024);
 
 run [ 'i3-dump-log' ],
     '>', \$stdout,
