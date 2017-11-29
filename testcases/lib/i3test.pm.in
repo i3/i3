@@ -12,6 +12,7 @@ use AnyEvent::I3;
 use List::Util qw(first);
 use Time::HiRes qw(sleep);
 use Cwd qw(abs_path);
+use POSIX ':sys_wait_h';
 use Scalar::Util qw(blessed);
 use SocketActivation;
 use i3test::Util qw(slurp);
@@ -37,6 +38,7 @@ our @EXPORT = qw(
     cmd
     sync_with_i3
     exit_gracefully
+    exit_forcefully
     workspace_exists
     focused_ws
     get_socket_path
@@ -123,7 +125,7 @@ END {
 
     } else {
         kill(-9, $i3_pid)
-            or $tester->BAIL_OUT("could not kill i3");
+            or $tester->BAIL_OUT("could not kill i3: $!");
 
         waitpid $i3_pid, 0;
     }
@@ -759,7 +761,7 @@ sub exit_gracefully {
 
     if (!$exited) {
         kill(9, $pid)
-            or $tester->BAIL_OUT("could not kill i3");
+            or $tester->BAIL_OUT("could not kill i3: $!");
     }
 
     if ($socketpath =~ m,^/tmp/i3-test-socket-,) {
@@ -767,6 +769,47 @@ sub exit_gracefully {
     }
 
     waitpid $pid, 0;
+    undef $i3_pid;
+}
+
+=head2 exit_forcefully($pid, [ $signal ])
+
+Tries to exit i3 forcefully by sending a signal (defaults to SIGTERM).
+
+You only need to use this function if you want to test signal handling
+(in which case you must have launched i3 on your own with
+C<launch_with_config>).
+
+  use i3test i3_autostart => 0;
+  my $pid = launch_with_config($config);
+  # …
+  exit_forcefully($pid);
+
+=cut
+sub exit_forcefully {
+    my ($pid, $signal) = @_;
+    $signal ||= 'TERM';
+
+    # Send the given signal to the i3 instance and wait for up to 10s
+    # for it to terminate.
+    kill($signal, $pid)
+        or $tester->BAIL_OUT("could not kill i3: $!");
+    my $status;
+    my $timeout = 10;
+    do {
+        $status = waitpid $pid, WNOHANG;
+
+        if ($status <= 0) {
+            sleep(1);
+            $timeout--;
+        }
+    } while ($status <= 0 && $timeout > 0);
+
+    if ($status <= 0) {
+        kill('KILL', $pid)
+            or $tester->BAIL_OUT("could not kill i3: $!");
+        waitpid $pid, 0;
+    }
     undef $i3_pid;
 }
 
