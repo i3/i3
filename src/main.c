@@ -38,9 +38,6 @@ int listen_fds;
 /* We keep the xcb_prepare watcher around to be able to enable and disable it
  * temporarily for drag_pointer(). */
 static struct ev_prepare *xcb_prepare;
-static struct ev_signal signal_watchers[6];
-
-#define NUM_WATCHERS (sizeof(signal_watchers) / sizeof(signal_watchers[0]))
 
 extern Con *focused;
 
@@ -211,6 +208,9 @@ static void handle_term_signal(struct ev_loop *loop, ev_signal *signal, int reve
  *
  */
 static void setup_term_handlers(void) {
+    static struct ev_signal signal_watchers[6];
+    size_t num_watchers = sizeof(signal_watchers) / sizeof(signal_watchers[0]);
+
     /* We have to rely on libev functionality here and should not use
      * sigaction handlers because we need to invoke the exit handlers
      * and cannot do so from an asynchronous signal handling context as
@@ -223,10 +223,11 @@ static void setup_term_handlers(void) {
     ev_signal_init(&signal_watchers[3], handle_term_signal, SIGTERM);
     ev_signal_init(&signal_watchers[4], handle_term_signal, SIGUSR1);
     ev_signal_init(&signal_watchers[5], handle_term_signal, SIGUSR1);
-    for (size_t i = 0; i < NUM_WATCHERS; i++) {
+    for (size_t i = 0; i < num_watchers; i++) {
         ev_signal_start(main_loop, &signal_watchers[i]);
-        /* None of the signal handlers should hold a reference to the
-         * main loop. */
+        /* The signal handlers should not block ev_run from returning
+         * and so none of the signal handlers should hold a reference to
+         * the main loop. */
         ev_unref(main_loop);
     }
 }
