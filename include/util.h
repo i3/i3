@@ -47,12 +47,10 @@
         break;                            \
     }
 
-#define FREE(pointer)          \
-    do {                       \
-        if (pointer != NULL) { \
-            free(pointer);     \
-            pointer = NULL;    \
-        }                      \
+#define FREE(pointer)   \
+    do {                \
+        free(pointer);  \
+        pointer = NULL; \
     } while (0)
 
 #define CALL(obj, member, ...) obj->member(obj, ##__VA_ARGS__)
