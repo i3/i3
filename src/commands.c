@@ -1121,6 +1121,10 @@ void cmd_move_workspace_to_output(I3_CMD, const char *name) {
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
         Con *ws = con_get_workspace(current->con);
+        if (con_is_internal(ws)) {
+            continue;
+        }
+
         bool success = workspace_move_to_output(ws, name);
         if (!success) {
             ELOG("Failed to move workspace to output.\n");
