@@ -1499,16 +1499,7 @@ void init_tray_colors(void) {
  *
  */
 void clean_xcb(void) {
-    i3_output *o_walk;
-    free_workspaces();
-    SLIST_FOREACH(o_walk, outputs, slist) {
-        destroy_window(o_walk);
-        FREE(o_walk->trayclients);
-        FREE(o_walk->workspaces);
-        FREE(o_walk->name);
-    }
-    FREE_SLIST(outputs, i3_output);
-    FREE(outputs);
+    free_outputs();
 
     free_font();
 
