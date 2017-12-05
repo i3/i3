@@ -67,7 +67,7 @@ my $result = GetOptions(
     "valgrind" => \$options{valgrind},
     "strace" => \$options{strace},
     "xtrace" => \$options{xtrace},
-    "xvfb" => \$options{xvfb},
+    "xvfb!" => \$options{xvfb},
     "display=s" => \@displays,
     "parallel=i" => \$parallel,
     "help|?" => \$help,
@@ -484,6 +484,12 @@ C<latest/strace-for-$test.log>.
 
 Runs i3 under xtrace to trace X11 requests/replies. The output will be
 available in C<latest/xtrace-for-$test.log>.
+
+=item B<--xvfb>
+
+=item B<--no-xvfb>
+
+Enable or disable running tests under Xvfb. Enabled by default.
 
 =item B<--coverage-testing>
 
