@@ -318,7 +318,7 @@ void floating_enable(Con *con, bool automatic) {
     render_con(con, false);
 
     if (set_focus)
-        con_focus(con);
+        con_activate(con);
 
     /* Check if we need to re-assign it to a different workspace because of its
      * coordinates and exit if that was done successfully. */
@@ -382,7 +382,7 @@ void floating_disable(Con *con, bool automatic) {
     con_fix_percent(con->parent);
 
     if (set_focus)
-        con_focus(con);
+        con_activate(con);
 
     floating_set_hint_atom(con, false);
     ipc_send_window_event("floating", con);
@@ -450,7 +450,7 @@ bool floating_maybe_reassign_ws(Con *con) {
     DLOG("Moving con %p / %s to workspace %p / %s\n", con, con->name, ws, ws->name);
     con_move_to_workspace(con, ws, false, true, false);
     workspace_show(ws);
-    con_focus(con_descend_focused(con));
+    con_activate(con_descend_focused(con));
     return true;
 }
 

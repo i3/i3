@@ -39,6 +39,12 @@ void con_free(Con *con);
 void con_focus(Con *con);
 
 /**
+ * Sets input focus to the given container and raises it to the top.
+ *
+ */
+void con_activate(Con *con);
+
+/**
  * Closes the given container.
  *
  */

@@ -344,12 +344,12 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
             DLOG("focusing %p / %s\n", next, next->name);
             if (next->type == CT_DOCKAREA) {
                 /* Instead of focusing the dockarea, we need to restore focus to the workspace */
-                con_focus(con_descend_focused(output_get_content(next->parent)));
+                con_activate(con_descend_focused(output_get_content(next->parent)));
             } else {
                 if (!force_set_focus && con != focused)
                     DLOG("not changing focus, the container was not focused before\n");
                 else
-                    con_focus(next);
+                    con_activate(next);
             }
         } else {
             DLOG("not focusing because we're not killing anybody\n");
@@ -433,7 +433,7 @@ bool level_up(void) {
     /* Skip over floating containers and go directly to the grandparent
      * (which should always be a workspace) */
     if (focused->parent->type == CT_FLOATING_CON) {
-        con_focus(focused->parent->parent);
+        con_activate(focused->parent->parent);
         return true;
     }
 
@@ -444,7 +444,7 @@ bool level_up(void) {
         ELOG("'focus parent': Focus is already on the workspace, cannot go higher than that.\n");
         return false;
     }
-    con_focus(focused->parent);
+    con_activate(focused->parent);
     return true;
 }
 
@@ -469,7 +469,7 @@ bool level_down(void) {
             next = TAILQ_FIRST(&(next->focus_head));
     }
 
-    con_focus(next);
+    con_activate(next);
     return true;
 }
 
@@ -566,7 +566,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         }
 
         workspace_show(workspace);
-        con_focus(focus);
+        con_activate(focus);
         x_set_warp_to(&(focus->rect));
         return true;
     }
@@ -604,7 +604,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
             TAILQ_INSERT_HEAD(&(parent->floating_head), last, floating_windows);
         }
 
-        con_focus(con_descend_focused(next));
+        con_activate(con_descend_focused(next));
         return true;
     }
 
@@ -653,7 +653,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
     /* 3: focus choice comes in here. at the moment we will go down
      * until we find a window */
     /* TODO: check for window, atm we only go down as far as possible */
-    con_focus(con_descend_focused(next));
+    con_activate(con_descend_focused(next));
     return true;
 }
 

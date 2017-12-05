@@ -243,13 +243,27 @@ void con_focus(Con *con) {
         workspace_update_urgent_flag(con_get_workspace(con));
         ipc_send_window_event("urgent", con);
     }
+}
 
-    /* Focusing a container with a floating parent should raise it to the top. Since
-     * con_focus is called recursively for each parent we don't need to use
-     * con_inside_floating(). */
-    if (con->type == CT_FLOATING_CON) {
-        floating_raise_con(con);
+/*
+ * Raise container to the top if it is floating or inside some floating
+ * container.
+ *
+ */
+static void con_raise(Con *con) {
+    Con *floating = con_inside_floating(con);
+    if (floating) {
+        floating_raise_con(floating);
     }
+}
+
+/*
+ * Sets input focus to the given container and raises it to the top.
+ *
+ */
+void con_activate(Con *con) {
+    con_focus(con);
+    con_raise(con);
 }
 
 /*
@@ -994,9 +1008,9 @@ void con_enable_fullscreen(Con *con, fullscreen_mode_t fullscreen_mode) {
     Con *old_focused = focused;
     if (fullscreen_mode == CF_GLOBAL && cur_ws != con_ws)
         workspace_show(con_ws);
-    con_focus(con);
+    con_activate(con);
     if (fullscreen_mode != CF_GLOBAL && cur_ws != con_ws)
-        con_focus(old_focused);
+        con_activate(old_focused);
 
     con_set_fullscreen_mode(con, fullscreen_mode);
 }
@@ -1148,11 +1162,11 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
          * new workspace is hidden and it's necessary to immediately switch
          * back to the originally-focused workspace. */
         Con *old_focus = TAILQ_FIRST(&(output_get_content(dest_output)->focus_head));
-        con_focus(con_descend_focused(con));
+        con_activate(con_descend_focused(con));
 
         /* Restore focus if the output's focused workspace has changed. */
         if (con_get_workspace(focused) != old_focus)
-            con_focus(old_focus);
+            con_activate(old_focus);
     }
 
     /* 7: when moving to another workspace, we leave the focus on the current
@@ -1172,7 +1186,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
     /* Set focus only if con was on current workspace before moving.
      * Otherwise we would give focus to some window on different workspace. */
     if (!ignore_focus && source_ws == current_ws)
-        con_focus(con_descend_focused(focus_next));
+        con_activate(con_descend_focused(focus_next));
 
     /* 8. If anything within the container is associated with a startup sequence,
      * delete it so child windows won't be created on the old workspace. */
@@ -1791,7 +1805,7 @@ void con_set_layout(Con *con, layout_t layout) {
             con_attach(new, con, false);
 
             if (old_focused)
-                con_focus(old_focused);
+                con_activate(old_focused);
 
             tree_flatten(croot);
         }
@@ -2358,7 +2372,7 @@ bool con_swap(Con *first, Con *second) {
      * We don't need to check this for the second container because we've only
      * moved the first one at this point.*/
     if (first_ws != second_ws && focused_within_first) {
-        con_focus(con_descend_focused(current_ws));
+        con_activate(con_descend_focused(current_ws));
     }
 
     /* Move second to where first has been originally. */
@@ -2401,15 +2415,15 @@ bool con_swap(Con *first, Con *second) {
      */
     if (focused_within_first) {
         if (first_ws == second_ws) {
-            con_focus(old_focus);
+            con_activate(old_focus);
         } else {
-            con_focus(con_descend_focused(second));
+            con_activate(con_descend_focused(second));
         }
     } else if (focused_within_second) {
         if (first_ws == second_ws) {
-            con_focus(old_focus);
+            con_activate(old_focus);
         } else {
-            con_focus(con_descend_focused(first));
+            con_activate(con_descend_focused(first));
         }
     }
 

@@ -654,6 +654,6 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
     yajl_free(hand);
 
     if (to_focus) {
-        con_focus(to_focus);
+        con_activate(to_focus);
     }
 }

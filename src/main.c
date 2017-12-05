@@ -766,7 +766,7 @@ int main(int argc, char *argv[]) {
             output = get_first_output();
         }
 
-        con_focus(con_descend_focused(output_get_content(output->con)));
+        con_activate(con_descend_focused(output_get_content(output->con)));
         free(pointerreply);
     }
 
