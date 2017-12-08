@@ -30,6 +30,9 @@ bar {
     bindsym button3 focus left
     bindsym button4 focus right
     bindsym button5 focus left
+    bindsym --release button6 focus right
+    bindsym button7 focus left
+    bindsym button7 --release focus right
 }
 EOT
 use i3test::XTEST;
@@ -141,5 +144,44 @@ subtest 'button 5 moves focus left', \&focus_subtest,
     },
     [ $left->{id} ],
     'button 5 moves focus left';
+
+# Test --release flag with bar bindsym.
+# See issue: #3068.
+
+my $old_focus = get_focused($ws);
+subtest 'button 6 does not move focus while pressed', \&focus_subtest,
+    sub {
+        xtest_button_press(6, 3, 3);
+        xtest_sync_with($i3bar_window);
+    },
+    [],
+    'button 6 does not move focus while pressed';
+is(get_focused($ws), $old_focus, 'focus unchanged');
+
+subtest 'button 6 release moves focus right', \&focus_subtest,
+    sub {
+        xtest_button_release(6, 3, 3);
+        xtest_sync_with($i3bar_window);
+    },
+    [ $right->{id} ],
+    'button 6 release moves focus right';
+
+# Test same bindsym button with and without --release.
+
+subtest 'button 7 press moves focus left', \&focus_subtest,
+    sub {
+        xtest_button_press(7, 3, 3);
+        xtest_sync_with($i3bar_window);
+    },
+    [ $left->{id} ],
+    'button 7 press moves focus left';
+
+subtest 'button 7 release moves focus right', \&focus_subtest,
+    sub {
+        xtest_button_release(7, 3, 3);
+        xtest_sync_with($i3bar_window);
+    },
+    [ $right->{id} ],
+    'button 7 release moves focus right';
 
 done_testing;

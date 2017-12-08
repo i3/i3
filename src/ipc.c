@@ -572,6 +572,8 @@ static void dump_bar_bindings(yajl_gen gen, Barconfig *config) {
         y(integer, current->input_code);
         ystr("command");
         ystr(current->command);
+        ystr("release");
+        y(bool, current->release == B_UPON_KEYRELEASE);
 
         y(map_close);
     }

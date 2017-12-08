@@ -384,6 +384,9 @@ struct Barbinding {
     /** The command which is to be executed for this button. */
     char *command;
 
+    /** If true, the command will be executed after the button is released. */
+    bool release;
+
     TAILQ_ENTRY(Barbinding)
     bindings;
 };

@@ -439,6 +439,18 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     xcb_flush(xcb_connection);
 }
 
+static bool execute_custom_command(xcb_keycode_t input_code, bool event_is_release) {
+    binding_t *binding;
+    TAILQ_FOREACH(binding, &(config.bindings), bindings) {
+        if ((binding->input_code != input_code) || (binding->release != event_is_release))
+            continue;
+
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_RUN_COMMAND, binding->command);
+        return true;
+    }
+    return false;
+}
+
 /*
  * Handle a button press event (i.e. a mouse click on one of our bars).
  * We determine, whether the click occurred on a workspace button or if the scroll-
@@ -460,10 +472,16 @@ void handle_button(xcb_button_press_event_t *event) {
         return;
     }
 
-    int32_t x = event->event_x >= 0 ? event->event_x : 0;
-
     DLOG("Got button %d\n", event->detail);
 
+    /* During button release events, only check for custom commands. */
+    const bool event_is_release = (event->response_type & ~0x80) == XCB_BUTTON_RELEASE;
+    if (event_is_release) {
+        execute_custom_command(event->detail, event_is_release);
+        return;
+    }
+
+    int32_t x = event->event_x >= 0 ? event->event_x : 0;
     int workspace_width = 0;
     i3_ws *cur_ws = NULL, *clicked_ws = NULL, *ws_walk;
 
@@ -516,12 +534,7 @@ void handle_button(xcb_button_press_event_t *event) {
 
     /* If a custom command was specified for this mouse button, it overrides
      * the default behavior. */
-    binding_t *binding;
-    TAILQ_FOREACH(binding, &(config.bindings), bindings) {
-        if (binding->input_code != event->detail)
-            continue;
-
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_RUN_COMMAND, binding->command);
+    if (execute_custom_command(event->detail, event_is_release)) {
         return;
     }
 
@@ -1164,6 +1177,7 @@ void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revents) {
                 }
 
                 break;
+            case XCB_BUTTON_RELEASE:
             case XCB_BUTTON_PRESS:
                 /* Button press events are mouse buttons clicked on one of our bars */
                 handle_button((xcb_button_press_event_t *)event);
@@ -1678,7 +1692,8 @@ void reconfig_windows(bool redraw_bars) {
              * */
             values[3] = XCB_EVENT_MASK_EXPOSURE |
                         XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
-                        XCB_EVENT_MASK_BUTTON_PRESS;
+                        XCB_EVENT_MASK_BUTTON_PRESS |
+                        XCB_EVENT_MASK_BUTTON_RELEASE;
             if (config.hide_on_modifier == M_DOCK) {
                 /* If the bar is normally visible, catch visibility change events to suspend
                  * the status process when the bar is obscured by full-screened windows.  */

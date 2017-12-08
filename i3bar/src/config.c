@@ -264,6 +264,21 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
  *
  */
 static int config_boolean_cb(void *params_, int val) {
+    if (parsing_bindings) {
+        if (strcmp(cur_key, "release") == 0) {
+            binding_t *binding = TAILQ_LAST(&(config.bindings), bindings_head);
+            if (binding == NULL) {
+                ELOG("There is no binding to put the current command onto. This is a bug in i3.\n");
+                return 0;
+            }
+
+            binding->release = val;
+            return 1;
+        }
+
+        ELOG("Unknown key \"%s\" while parsing bar bindings.\n", cur_key);
+    }
+
     if (!strcmp(cur_key, "binding_mode_indicator")) {
         DLOG("binding_mode_indicator = %d\n", val);
         config.disable_binding_mode_indicator = !val;

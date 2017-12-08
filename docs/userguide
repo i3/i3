@@ -1377,7 +1377,7 @@ and will be removed in a future release. We strongly recommend using the more ge
 
 *Syntax*:
 ----------------------------
-bindsym button<n> <command>
+bindsym [--release] button<n> <command>
 ----------------------------
 
 *Example*:
@@ -1385,6 +1385,8 @@ bindsym button<n> <command>
 bar {
     # disable clicking on workspace buttons
     bindsym button1 nop
+    # Take a screenshot by right clicking on the bar
+    bindsym --release button3 exec --no-startup-id import /tmp/latest-screenshot.png
     # execute custom script when scrolling downwards
     bindsym button5 exec ~/.i3/scripts/custom_wheel_down
 }

@@ -501,12 +501,16 @@ state BAR_WHEEL_DOWN_CMD:
       -> call cfg_bar_wheel_down_cmd($command); BAR
 
 state BAR_BINDSYM:
+  release = '--release'
+      ->
   button = word
       -> BAR_BINDSYM_COMMAND
 
 state BAR_BINDSYM_COMMAND:
+  release = '--release'
+      ->
   command = string
-      -> call cfg_bar_bindsym($button, $command); BAR
+      -> call cfg_bar_bindsym($button, $release, $command); BAR
 
 state BAR_POSITION:
   position = 'top', 'bottom'
