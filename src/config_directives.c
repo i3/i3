@@ -502,7 +502,7 @@ CFGFUN(bar_modifier, const char *modifier) {
         current_bar->modifier = M_NONE;
 }
 
-static void bar_configure_binding(const char *button, const char *command) {
+static void bar_configure_binding(const char *button, const char *release, const char *command) {
     if (strncasecmp(button, "button", strlen("button")) != 0) {
         ELOG("Bindings for a bar can only be mouse bindings, not \"%s\", ignoring.\n", button);
         return;
@@ -513,16 +513,18 @@ static void bar_configure_binding(const char *button, const char *command) {
         ELOG("Button \"%s\" does not seem to be in format 'buttonX'.\n", button);
         return;
     }
+    const bool release_bool = release != NULL;
 
     struct Barbinding *current;
     TAILQ_FOREACH(current, &(current_bar->bar_bindings), bindings) {
-        if (current->input_code == input_code) {
+        if (current->input_code == input_code && current->release == release_bool) {
             ELOG("command for button %s was already specified, ignoring.\n", button);
             return;
         }
     }
 
     struct Barbinding *new_binding = scalloc(1, sizeof(struct Barbinding));
+    new_binding->release = release_bool;
     new_binding->input_code = input_code;
     new_binding->command = sstrdup(command);
     TAILQ_INSERT_TAIL(&(current_bar->bar_bindings), new_binding, bindings);
@@ -530,16 +532,16 @@ static void bar_configure_binding(const char *button, const char *command) {
 
 CFGFUN(bar_wheel_up_cmd, const char *command) {
     ELOG("'wheel_up_cmd' is deprecated. Please us 'bindsym button4 %s' instead.\n", command);
-    bar_configure_binding("button4", command);
+    bar_configure_binding("button4", NULL, command);
 }
 
 CFGFUN(bar_wheel_down_cmd, const char *command) {
     ELOG("'wheel_down_cmd' is deprecated. Please us 'bindsym button5 %s' instead.\n", command);
-    bar_configure_binding("button5", command);
+    bar_configure_binding("button5", NULL, command);
 }
 
-CFGFUN(bar_bindsym, const char *button, const char *command) {
-    bar_configure_binding(button, command);
+CFGFUN(bar_bindsym, const char *button, const char *release, const char *command) {
+    bar_configure_binding(button, release, command);
 }
 
 CFGFUN(bar_position, const char *position) {
