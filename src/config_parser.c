@@ -743,7 +743,7 @@ static char *migrate_config(char *input, off_t size) {
 
     /* read the script’s output */
     int conv_size = 65535;
-    char *converted = smalloc(conv_size);
+    char *converted = scalloc(conv_size, 1);
     int read_bytes = 0, ret;
     do {
         if (read_bytes == conv_size) {
