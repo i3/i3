@@ -43,12 +43,13 @@ void init_dpi(void) {
     }
 
     char *endptr;
-    dpi = strtol(resource, &endptr, 10);
-    if (dpi == LONG_MAX || dpi == LONG_MIN || dpi < 0 || *endptr != '\0' || endptr == resource) {
+    double in_dpi = strtod(resource, &endptr);
+    if (in_dpi == HUGE_VAL || dpi < 0 || *endptr != '\0' || endptr == resource) {
         ELOG("Xft.dpi = %s is an invalid number and couldn't be parsed.\n", resource);
         dpi = 0;
         goto init_dpi_end;
     }
+    dpi = (long)round(in_dpi);
 
     DLOG("Found Xft.dpi = %ld.\n", dpi);
 
