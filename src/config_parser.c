@@ -1065,7 +1065,7 @@ bool parse_file(const char *f, bool use_nagbar) {
     int version = detect_version(buf);
     if (version == 3) {
         /* We need to convert this v3 configuration */
-        char *converted = migrate_config(new, stbuf.st_size);
+        char *converted = migrate_config(new, strlen(new));
         if (converted != NULL) {
             ELOG("\n");
             ELOG("****************************************************************\n");
