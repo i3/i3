@@ -565,10 +565,9 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
             focus = con_descend_focused(workspace);
         }
 
-        if (focus) {
-            con_focus(focus);
-            x_set_warp_to(&(focus->rect));
-        }
+        workspace_show(workspace);
+        con_focus(focus);
+        x_set_warp_to(&(focus->rect));
         return true;
     }
 
