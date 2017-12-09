@@ -479,7 +479,7 @@ static void _workspace_show(Con *workspace) {
     ewmh_update_current_desktop();
 
     /* Push any sticky windows to the now visible workspace. */
-    output_push_sticky_windows(old_focus);
+    output_push_sticky_windows(focused);
 }
 
 /*
