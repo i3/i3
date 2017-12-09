@@ -459,6 +459,11 @@ static void _workspace_show(Con *workspace) {
 
             y(free);
 
+            /* Avoid calling output_push_sticky_windows later with a freed container. */
+            if (old == old_focus) {
+                old_focus = NULL;
+            }
+
             ewmh_update_number_of_desktops();
             ewmh_update_desktop_names();
             ewmh_update_desktop_viewport();
