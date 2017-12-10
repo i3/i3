@@ -110,6 +110,11 @@ yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old)
 void ipc_send_workspace_event(const char *change, Con *current, Con *old);
 
 /**
+ * Like ipc_send_workspace_event but from an existing yajl generator.
+ */
+void ipc_send_workspace_event_from_gen(yajl_gen gen);
+
+/**
  * For the window events we send, along the usual "change" field,
  * also the window container, in "container".
  */

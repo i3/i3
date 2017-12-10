@@ -1375,10 +1375,16 @@ yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old)
 void ipc_send_workspace_event(const char *change, Con *current, Con *old) {
     yajl_gen gen = ipc_marshal_workspace_event(change, current, old);
 
+    ipc_send_workspace_event_from_gen(gen);
+}
+
+/*
+ * Like ipc_send_workspace_event but from an existing yajl generator.
+ */
+void ipc_send_workspace_event_from_gen(yajl_gen gen) {
     const unsigned char *payload;
     ylength length;
     y(get_buf, &payload, &length);
-
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
 
     y(free);
