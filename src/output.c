@@ -99,7 +99,8 @@ void output_push_sticky_windows(Con *to_focus) {
                     continue;
 
                 if (con_is_sticky(current)) {
-                    con_move_to_workspace(current, visible_ws, true, false, current != to_focus->parent);
+                    bool ignore_focus = (to_focus == NULL) || (current != to_focus->parent);
+                    con_move_to_workspace(current, visible_ws, true, false, ignore_focus);
                 }
             }
         }
