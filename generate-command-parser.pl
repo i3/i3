@@ -224,7 +224,7 @@ for my $state (@keys) {
             $next_state = '__CALL';
         }
         my $identifier = $token->{identifier};
-        say $tokfh qq|    { "$token_name", "$identifier", $next_state, { $call_identifier } }, |;
+        say $tokfh qq|    { "$token_name", "$identifier", $next_state, { $call_identifier } },|;
     }
     say $tokfh '};';
 }
