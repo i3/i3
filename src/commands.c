@@ -403,7 +403,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *_no
 
     LOG("should move window to workspace %s\n", which);
     /* get the workspace */
-    Con *output, *workspace = NULL;
+    Con *output, *ws = NULL;
 
     long parsed_num = ws_name_to_number(which);
 
@@ -414,19 +414,19 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *_no
     }
 
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-    GREP_FIRST(workspace, output_get_content(output),
+    GREP_FIRST(ws, output_get_content(output),
                child->num == parsed_num);
 
-    if (!workspace) {
-        workspace = workspace_get(which, NULL);
+    if (!ws) {
+        ws = workspace_get(which, NULL);
     }
 
     if (!no_auto_back_and_forth)
-        workspace = maybe_auto_back_and_forth_workspace(workspace);
+        ws = maybe_auto_back_and_forth_workspace(ws);
 
     HANDLE_EMPTY_MATCH;
 
-    move_matches_to_workspace(workspace);
+    move_matches_to_workspace(ws);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
