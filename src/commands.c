@@ -269,14 +269,20 @@ void cmd_criteria_add(I3_CMD, const char *ctype, const char *cvalue) {
     match_parse_property(current_match, ctype, cvalue);
 }
 
+static void move_matches_to_workspace(Con *ws) {
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        DLOG("matching: %p / %s\n", current->con, current->con->name);
+        con_move_to_workspace(current->con, ws, true, false, false);
+    }
+}
+
 /*
  * Implementation of 'move [window|container] [to] workspace
  * next|prev|next_on_output|prev_on_output|current'.
  *
  */
 void cmd_move_con_to_workspace(I3_CMD, const char *which) {
-    owindow *current;
-
     DLOG("which=%s\n", which);
 
     /* We have nothing to move:
@@ -309,10 +315,7 @@ void cmd_move_con_to_workspace(I3_CMD, const char *which) {
         return;
     }
 
-    TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false, false);
-    }
+    move_matches_to_workspace(ws);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -324,11 +327,7 @@ void cmd_move_con_to_workspace(I3_CMD, const char *which) {
  *
  */
 void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
-    owindow *current;
-    Con *ws;
-
-    ws = workspace_back_and_forth_get();
-
+    Con *ws = workspace_back_and_forth_get();
     if (ws == NULL) {
         yerror("No workspace was previously active.");
         return;
@@ -336,10 +335,7 @@ void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
 
     HANDLE_EMPTY_MATCH;
 
-    TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false, false);
-    }
+    move_matches_to_workspace(ws);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -358,7 +354,6 @@ void cmd_move_con_to_workspace_name(I3_CMD, const char *name, const char *_no_au
     }
 
     const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
-    owindow *current;
 
     /* We have nothing to move:
      *  when criteria was specified but didn't match any window or
@@ -382,10 +377,7 @@ void cmd_move_con_to_workspace_name(I3_CMD, const char *name, const char *_no_au
 
     HANDLE_EMPTY_MATCH;
 
-    TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false, false);
-    }
+    move_matches_to_workspace(ws);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -398,7 +390,6 @@ void cmd_move_con_to_workspace_name(I3_CMD, const char *name, const char *_no_au
  */
 void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_and_forth) {
     const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
-    owindow *current;
 
     /* We have nothing to move:
      *  when criteria was specified but didn't match any window or
@@ -435,10 +426,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *_no
 
     HANDLE_EMPTY_MATCH;
 
-    TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, workspace, true, false, false);
-    }
+    move_matches_to_workspace(workspace);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
