@@ -119,6 +119,7 @@ is($x->input_focus, $eighth->id, 'eighth window focused');
 cmd 'focus parent';
 cmd 'focus parent';
 cmd 'split v';
+cmd '[id=' . $sixth->id . '] focus';
 reset_focus $s3_ws;
 
 cmd "workspace $s1_ws";

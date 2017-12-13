@@ -1837,17 +1837,9 @@ void con_set_layout(Con *con, layout_t layout) {
             new->layout = layout;
             new->last_split_layout = con->last_split_layout;
 
-            /* Save the container that was focused before we move containers
-             * around, but only if the container is visible (otherwise focus
-             * will be restored properly automatically when switching). */
-            Con *old_focused = TAILQ_FIRST(&(con->focus_head));
-            if (old_focused == TAILQ_END(&(con->focus_head)))
-                old_focused = NULL;
-            if (old_focused != NULL &&
-                !workspace_is_visible(con_get_workspace(old_focused)))
-                old_focused = NULL;
-
             /* 3: move the existing cons of this workspace below the new con */
+            Con **focus_order = get_focus_order(con);
+
             DLOG("Moving cons\n");
             Con *child;
             while (!TAILQ_EMPTY(&(con->nodes_head))) {
@@ -1856,12 +1848,12 @@ void con_set_layout(Con *con, layout_t layout) {
                 con_attach(child, new, true);
             }
 
+            set_focus_order(new, focus_order);
+            free(focus_order);
+
             /* 4: attach the new split container to the workspace */
             DLOG("Attaching new split to ws\n");
             con_attach(new, con, false);
-
-            if (old_focused)
-                con_activate(old_focused);
 
             tree_flatten(croot);
         }
