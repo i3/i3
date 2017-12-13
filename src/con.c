@@ -809,6 +809,62 @@ Con *con_for_window(Con *con, i3Window *window, Match **store_match) {
     return NULL;
 }
 
+static int num_focus_heads(Con *con) {
+    int focus_heads = 0;
+
+    Con *current;
+    TAILQ_FOREACH(current, &(con->focus_head), focused) {
+        focus_heads++;
+    }
+
+    return focus_heads;
+}
+
+/*
+ * Iterate over the container's focus stack and return an array with the
+ * containers inside it, ordered from higher focus order to lowest.
+ *
+ */
+Con **get_focus_order(Con *con) {
+    const int focus_heads = num_focus_heads(con);
+    Con **focus_order = smalloc(focus_heads * sizeof(Con *));
+    Con *current;
+    int idx = 0;
+    TAILQ_FOREACH(current, &(con->focus_head), focused) {
+        assert(idx < focus_heads);
+        focus_order[idx++] = current;
+    }
+
+    return focus_order;
+}
+
+/*
+ * Clear the container's focus stack and re-add it using the provided container
+ * array. The function doesn't check if the provided array contains the same
+ * containers with the previous focus stack but will not add floating containers
+ * in the new focus stack if container is not a workspace.
+ *
+ */
+void set_focus_order(Con *con, Con **focus_order) {
+    int focus_heads = 0;
+    while (!TAILQ_EMPTY(&(con->focus_head))) {
+        Con *current = TAILQ_FIRST(&(con->focus_head));
+
+        TAILQ_REMOVE(&(con->focus_head), current, focused);
+        focus_heads++;
+    }
+
+    for (int idx = 0; idx < focus_heads; idx++) {
+        /* Useful when encapsulating a workspace. */
+        if (con->type != CT_WORKSPACE && con_inside_floating(focus_order[idx])) {
+            focus_heads++;
+            continue;
+        }
+
+        TAILQ_INSERT_TAIL(&(con->focus_head), focus_order[idx], focused);
+    }
+}
+
 /*
  * Returns the number of children of this container.
  *
