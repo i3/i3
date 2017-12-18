@@ -1251,34 +1251,54 @@ void cmd_focus_direction(I3_CMD, const char *direction) {
 }
 
 /*
+ * Focus a container and disable any other fullscreen container not permitting the focus.
+ *
+ */
+static void cmd_focus_force_focus(Con *con) {
+    /* Disable fullscreen container in workspace with container to be focused. */
+    Con *ws = con_get_workspace(con);
+    Con *fullscreen_on_ws = (focused && focused->fullscreen_mode == CF_GLOBAL) ? focused : con_get_fullscreen_con(ws, CF_OUTPUT);
+    if (fullscreen_on_ws && fullscreen_on_ws != con && !con_has_parent(con, fullscreen_on_ws)) {
+        con_disable_fullscreen(fullscreen_on_ws);
+    }
+    con_focus(con);
+}
+
+/*
  * Implementation of 'focus tiling|floating|mode_toggle'.
  *
  */
 void cmd_focus_window_mode(I3_CMD, const char *window_mode) {
     DLOG("window_mode = %s\n", window_mode);
 
-    Con *ws = con_get_workspace(focused);
-    if (ws != NULL) {
-        if (strcmp(window_mode, "mode_toggle") == 0) {
-            if (con_inside_floating(focused))
-                window_mode = "tiling";
-            else
-                window_mode = "floating";
-        }
-        Con *current;
-        TAILQ_FOREACH(current, &(ws->focus_head), focused) {
-            if ((strcmp(window_mode, "floating") == 0 && current->type != CT_FLOATING_CON) ||
-                (strcmp(window_mode, "tiling") == 0 && current->type == CT_FLOATING_CON))
-                continue;
-
-            con_focus(con_descend_focused(current));
-            break;
-        }
+    bool to_floating = false;
+    if (strcmp(window_mode, "mode_toggle") == 0) {
+        to_floating = !con_inside_floating(focused);
+    } else if (strcmp(window_mode, "floating") == 0) {
+        to_floating = true;
+    } else if (strcmp(window_mode, "tiling") == 0) {
+        to_floating = false;
     }
 
-    cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    Con *ws = con_get_workspace(focused);
+    Con *current;
+    bool success = false;
+    TAILQ_FOREACH(current, &(ws->focus_head), focused) {
+        if ((to_floating && current->type != CT_FLOATING_CON) ||
+            (!to_floating && current->type == CT_FLOATING_CON))
+            continue;
+
+        cmd_focus_force_focus(con_descend_focused(current));
+        success = true;
+        break;
+    }
+
+    if (success) {
+        cmd_output->needs_tree_render = true;
+        ysuccess(true);
+    } else {
+        yerror("Failed to find a %s container in workspace.", to_floating ? "floating" : "tiling");
+    }
 }
 
 /*
@@ -1335,13 +1355,6 @@ void cmd_focus(I3_CMD) {
         if (!ws)
             continue;
 
-        /* Check the fullscreen focus constraints. */
-        if (!con_fullscreen_permits_focusing(current->con)) {
-            LOG("Cannot change focus while in fullscreen mode (fullscreen rules).\n");
-            ysuccess(false);
-            return;
-        }
-
         /* In case this is a scratchpad window, call scratchpad_show(). */
         if (ws == __i3_scratch) {
             scratchpad_show(current->con);
@@ -1365,7 +1378,7 @@ void cmd_focus(I3_CMD) {
          * So we focus 'current' to make it the currently focused window of
          * the target workspace, then revert focus. */
         Con *currently_focused = focused;
-        con_focus(current->con);
+        cmd_focus_force_focus(current->con);
         con_focus(currently_focused);
 
         /* Now switch to the workspace, then focus */

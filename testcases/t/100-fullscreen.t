@@ -21,13 +21,6 @@ my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
 
-sub fullscreen_windows {
-    my $ws = $tmp;
-    $ws = shift if @_;
-
-    scalar grep { $_->{fullscreen_mode} != 0 } @{get_ws_content($ws)}
-}
-
 # get the output of this workspace
 my $tree = $i3->get_tree->recv;
 my @outputs = @{$tree->{nodes}};
@@ -143,11 +136,11 @@ ok(!eq_hash($new_rect, $original_rect), "Window got repositioned");
 $swindow->fullscreen(1);
 sync_with_i3;
 
-is(fullscreen_windows(), 1, 'amount of fullscreen windows');
+is_num_fullscreen($tmp, 1, 'amount of fullscreen windows');
 
 $window->fullscreen(0);
 sync_with_i3;
-is(fullscreen_windows(), 1, 'amount of fullscreen windows');
+is_num_fullscreen($tmp, 1, 'amount of fullscreen windows');
 
 ok($swindow->mapped, 'window mapped after other fullscreen ended');
 
@@ -160,15 +153,15 @@ ok($swindow->mapped, 'window mapped after other fullscreen ended');
 $swindow->fullscreen(0);
 sync_with_i3;
 
-is(fullscreen_windows(), 0, 'amount of fullscreen windows after disabling');
+is_num_fullscreen($tmp, 0, 'amount of fullscreen windows after disabling');
 
 cmd 'fullscreen';
 
-is(fullscreen_windows(), 1, 'amount of fullscreen windows after fullscreen command');
+is_num_fullscreen($tmp, 1, 'amount of fullscreen windows after fullscreen command');
 
 cmd 'fullscreen';
 
-is(fullscreen_windows(), 0, 'amount of fullscreen windows after fullscreen command');
+is_num_fullscreen($tmp, 0, 'amount of fullscreen windows after fullscreen command');
 
 # clean up the workspace so that it will be cleaned when switching away
 cmd 'kill' for (@{get_ws_content($tmp)});
@@ -221,18 +214,18 @@ $swindow = open_window;
 
 cmd 'fullscreen';
 
-is(fullscreen_windows($tmp2), 1, 'one fullscreen window on second ws');
+is_num_fullscreen($tmp2, 1, 'one fullscreen window on second ws');
 
 cmd "move workspace $tmp";
 
-is(fullscreen_windows($tmp2), 0, 'no fullscreen windows on second ws');
-is(fullscreen_windows($tmp), 1, 'one fullscreen window on first ws');
+is_num_fullscreen($tmp2, 0, 'no fullscreen windows on second ws');
+is_num_fullscreen($tmp, 1, 'one fullscreen window on first ws');
 
 $swindow->fullscreen(0);
 sync_with_i3;
 
 # Verify that $swindow was the one that initially remained fullscreen.
-is(fullscreen_windows($tmp), 0, 'no fullscreen windows on first ws');
+is_num_fullscreen($tmp, 0, 'no fullscreen windows on first ws');
 
 ################################################################################
 # Verify that opening a window with _NET_WM_STATE_FULLSCREEN unfullscreens any
@@ -245,14 +238,14 @@ $window = open_window();
 
 cmd "fullscreen";
 
-is(fullscreen_windows($tmp), 1, 'one fullscreen window on ws');
+is_num_fullscreen($tmp, 1, 'one fullscreen window on ws');
 is($x->input_focus, $window->id, 'fullscreen window focused');
 
 $swindow = open_window({
     fullscreen => 1
 });
 
-is(fullscreen_windows($tmp), 1, 'one fullscreen window on ws');
+is_num_fullscreen($tmp, 1, 'one fullscreen window on ws');
 is($x->input_focus, $swindow->id, 'fullscreen window focused');
 
 ################################################################################
@@ -263,19 +256,19 @@ $tmp = fresh_workspace;
 
 $window = open_window;
 is($x->input_focus, $window->id, 'window focused');
-is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+is_num_fullscreen($tmp, 0, 'no fullscreen window on workspace');
 
 cmd 'fullscreen enable';
 is($x->input_focus, $window->id, 'window still focused');
-is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+is_num_fullscreen($tmp, 1, 'one fullscreen window on workspace');
 
 cmd 'fullscreen enable';
 is($x->input_focus, $window->id, 'window still focused');
-is(fullscreen_windows($tmp), 1, 'still one fullscreen window on workspace');
+is_num_fullscreen($tmp, 1, 'still one fullscreen window on workspace');
 
 $window->fullscreen(0);
 sync_with_i3;
-is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+is_num_fullscreen($tmp, 0, 'no fullscreen window on workspace');
 
 ################################################################################
 # Verify that command ‘fullscreen enable global’ works and is idempotent.
@@ -285,19 +278,19 @@ $tmp = fresh_workspace;
 
 $window = open_window;
 is($x->input_focus, $window->id, 'window focused');
-is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+is_num_fullscreen($tmp, 0, 'no fullscreen window on workspace');
 
 cmd 'fullscreen enable global';
 is($x->input_focus, $window->id, 'window still focused');
-is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+is_num_fullscreen($tmp, 1, 'one fullscreen window on workspace');
 
 cmd 'fullscreen enable global';
 is($x->input_focus, $window->id, 'window still focused');
-is(fullscreen_windows($tmp), 1, 'still one fullscreen window on workspace');
+is_num_fullscreen($tmp, 1, 'still one fullscreen window on workspace');
 
 $window->fullscreen(0);
 sync_with_i3;
-is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+is_num_fullscreen($tmp, 0, 'no fullscreen window on workspace');
 
 ################################################################################
 # Verify that command ‘fullscreen disable’ works and is idempotent.
@@ -307,19 +300,19 @@ $tmp = fresh_workspace;
 
 $window = open_window;
 is($x->input_focus, $window->id, 'window focused');
-is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+is_num_fullscreen($tmp, 0, 'no fullscreen window on workspace');
 
 $window->fullscreen(1);
 sync_with_i3;
-is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+is_num_fullscreen($tmp, 1, 'one fullscreen window on workspace');
 
 cmd 'fullscreen disable';
 is($x->input_focus, $window->id, 'window still focused');
-is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+is_num_fullscreen($tmp, 0, 'no fullscreen window on workspace');
 
 cmd 'fullscreen disable';
 is($x->input_focus, $window->id, 'window still focused');
-is(fullscreen_windows($tmp), 0, 'still no fullscreen window on workspace');
+is_num_fullscreen($tmp, 0, 'still no fullscreen window on workspace');
 
 ################################################################################
 # Verify that command ‘fullscreen toggle’ works.
@@ -328,15 +321,15 @@ is(fullscreen_windows($tmp), 0, 'still no fullscreen window on workspace');
 $tmp = fresh_workspace;
 
 $window = open_window;
-is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+is_num_fullscreen($tmp, 0, 'no fullscreen window on workspace');
 
 cmd 'fullscreen toggle';
 is($x->input_focus, $window->id, 'window still focused');
-is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+is_num_fullscreen($tmp, 1, 'one fullscreen window on workspace');
 
 cmd 'fullscreen toggle';
 is($x->input_focus, $window->id, 'window still focused');
-is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+is_num_fullscreen($tmp, 0, 'no fullscreen window on workspace');
 
 ################################################################################
 # Verify that a window’s fullscreen is disabled when another one is enabled
@@ -349,15 +342,15 @@ $window = open_window;
 $other = open_window;
 
 is($x->input_focus, $other->id, 'other window focused');
-is(fullscreen_windows($tmp), 0, 'no fullscreen window on workspace');
+is_num_fullscreen($tmp, 0, 'no fullscreen window on workspace');
 
 cmd 'fullscreen enable';
 is($x->input_focus, $other->id, 'other window focused');
-is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+is_num_fullscreen($tmp, 1, 'one fullscreen window on workspace');
 
 cmd '[id="' . $window->id . '"] fullscreen enable';
 is($x->input_focus, $window->id, 'window focused');
-is(fullscreen_windows($tmp), 1, 'one fullscreen window on workspace');
+is_num_fullscreen($tmp, 1, 'one fullscreen window on workspace');
 
 ################################################################################
 # Verify that when a global fullscreen is enabled the window is focused and
