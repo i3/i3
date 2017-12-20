@@ -236,6 +236,11 @@ x, y::
 	X11 root window coordinates where the click occurred
 button::
 	X11 button ID (for example 1 to 3 for left/middle/right mouse button)
+relative_x, relative_y::
+    Coordinates where the click occurred, with respect to the top left corner
+    of the block
+width, height::
+    Width and height (in px) of the block
 
 *Example*:
 ------------------------------------------
@@ -244,6 +249,10 @@ button::
  "instance": "eth0",
  "button": 1,
  "x": 1320,
- "y": 1400
+ "y": 1400,
+ "relative_x": 12,
+ "relative_y": 8,
+ "width": 50,
+ "height": 22
 }
 ------------------------------------------

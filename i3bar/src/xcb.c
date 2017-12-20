@@ -523,7 +523,8 @@ void handle_button(xcb_button_press_event_t *event) {
                 block_x += render->width + render->x_offset + render->x_append + get_sep_offset(block) + sep_offset_remainder;
 
                 if (statusline_x <= block_x && statusline_x >= last_block_x) {
-                    send_block_clicked(event->detail, block->name, block->instance, event->root_x, event->root_y);
+                    send_block_clicked(event->detail, block->name, block->instance,
+                                       event->root_x, event->root_y, statusline_x - last_block_x, event->event_y, block_x - last_block_x, bar_height);
                     return;
                 }
 
