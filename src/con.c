@@ -1934,13 +1934,7 @@ static void con_on_remove_child(Con *con) {
             LOG("Closing old workspace (%p / %s), it is empty\n", con, con->name);
             yajl_gen gen = ipc_marshal_workspace_event("empty", con, NULL);
             tree_close_internal(con, DONT_KILL_WINDOW, false, false);
-
-            const unsigned char *payload;
-            ylength length;
-            y(get_buf, &payload, &length);
-            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
-
-            y(free);
+            ipc_send_workspace_event_from_gen(gen);
         }
         return;
     }

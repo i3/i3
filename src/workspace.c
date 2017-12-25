@@ -451,13 +451,7 @@ static void _workspace_show(Con *workspace) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
             yajl_gen gen = ipc_marshal_workspace_event("empty", old, NULL);
             tree_close_internal(old, DONT_KILL_WINDOW, false, false);
-
-            const unsigned char *payload;
-            ylength length;
-            y(get_buf, &payload, &length);
-            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
-
-            y(free);
+            ipc_send_workspace_event_from_gen(gen);
 
             /* Avoid calling output_push_sticky_windows later with a freed container. */
             if (old == old_focus) {
