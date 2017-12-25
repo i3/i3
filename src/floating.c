@@ -747,8 +747,10 @@ static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
         if (last_motion_notify != (xcb_motion_notify_event_t *)event)
             free(event);
 
-        if (dragloop->result != DRAGGING)
+        if (dragloop->result != DRAGGING) {
+            free(last_motion_notify);
             return;
+        }
     }
 
     if (last_motion_notify == NULL)
