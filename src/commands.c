@@ -79,14 +79,6 @@
     } while (0)
 
 /*
- * Returns true if a is definitely greater than b (using the given epsilon)
- *
- */
-static bool definitelyGreaterThan(float a, float b, float epsilon) {
-    return (a - b) > ((fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
-}
-
-/*
  * Checks whether we switched to a new workspace and returns false in that case,
  * signaling that further workspace switching should be done by the calling function
  * If not, calls workspace_back_and_forth() if workspace_auto_back_and_forth is set
@@ -525,8 +517,8 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     LOG("default percentage = %f\n", percentage);
 
     /* resize */
-    LOG("second->percent = %f\n", second->percent);
     LOG("first->percent before = %f\n", first->percent);
+    LOG("second->percent before = %f\n", second->percent);
     if (first->percent == 0.0)
         first->percent = percentage;
     if (second->percent == 0.0)
@@ -535,12 +527,10 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     double new_second_percent = second->percent - ((double)ppt / 100.0);
     LOG("new_first_percent = %f\n", new_first_percent);
     LOG("new_second_percent = %f\n", new_second_percent);
-    /* Ensure that the new percentages are positive and greater than
-     * 0.05 to have a reasonable minimum size. */
-    if (definitelyGreaterThan(new_first_percent, 0.05, DBL_EPSILON) &&
-        definitelyGreaterThan(new_second_percent, 0.05, DBL_EPSILON)) {
-        first->percent += ((double)ppt / 100.0);
-        second->percent -= ((double)ppt / 100.0);
+    /* Ensure that the new percentages are positive. */
+    if (new_first_percent > 0.0 && new_second_percent > 0.0) {
+        first->percent = new_first_percent;
+        second->percent = new_second_percent;
         LOG("first->percent after = %f\n", first->percent);
         LOG("second->percent after = %f\n", second->percent);
     } else {
@@ -602,24 +592,23 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
     double subtract_percent = ((double)ppt / 100.0) / (children - 1);
     LOG("new_current_percent = %f\n", new_current_percent);
     LOG("subtract_percent = %f\n", subtract_percent);
-    /* Ensure that the new percentages are positive and greater than
-     * 0.05 to have a reasonable minimum size. */
+    /* Ensure that the new percentages are positive. */
     TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
         if (child == current)
             continue;
-        if (!definitelyGreaterThan(child->percent - subtract_percent, 0.05, DBL_EPSILON)) {
+        if (child->percent - subtract_percent <= 0.0) {
             LOG("Not resizing, already at minimum size (child %p would end up with a size of %.f\n", child, child->percent - subtract_percent);
             ysuccess(false);
             return false;
         }
     }
-    if (!definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON)) {
+    if (new_current_percent <= 0.0) {
         LOG("Not resizing, already at minimum size\n");
         ysuccess(false);
         return false;
     }
 
-    current->percent += ((double)ppt / 100.0);
+    current->percent = new_current_percent;
     LOG("current->percent after = %f\n", current->percent);
 
     TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
