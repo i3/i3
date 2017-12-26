@@ -24,7 +24,7 @@ use i3test;
 sub send_net_active_window {
     my ($id, $source) = @_;
 
-    $source = ($source eq 'pager' ? 2 : 0);
+    $source = (((defined $source) && ($source eq 'pager')) ? 2 : 0);
 
     my $msg = pack "CCSLLLLLLL",
         X11::XCB::CLIENT_MESSAGE, # response_type
