@@ -91,17 +91,8 @@ bindcode $mod+38 focus parent
 # focus the child container
 #bindsym $mod+d focus child
 
-# Define workspaces along with their labels
-#
-# Customize your workspace labels here.
-# Example:
-#
-# set $ws1 "Terminals" 
-#
-# or
-#
-# set $ws1 "1: Terminals"
-#
+# Define names for default workspaces for which we configure key bindings later on.
+# We use variables to avoid repeating the names in multiple places.
 set $ws1 "1"
 set $ws2 "2"
 set $ws3 "3"
