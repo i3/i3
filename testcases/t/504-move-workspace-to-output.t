@@ -187,10 +187,10 @@ ok($ws1 ~~ @$x0, 'ws1 on fake-0');
 my $__i3_scratch = get_ws('__i3_scratch');
 is(scalar @{$__i3_scratch->{floating_nodes}}, 0, 'scratchpad is empty');
 
-my $ws0 = fresh_workspace(output => 0);
+$ws0 = fresh_workspace(output => 0);
 open_window(wm_class => 'a');
 
-my $ws1 = fresh_workspace(output => 1);
+$ws1 = fresh_workspace(output => 1);
 open_window(wm_class => 'b');
 my $scratchpad_window = open_window(wm_class => 'c');
 cmd 'move to scratchpad';

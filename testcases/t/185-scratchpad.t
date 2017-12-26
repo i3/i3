@@ -429,7 +429,7 @@ does_i3_live;
 ################################################################################
 
 clear_scratchpad;
-my $ws = fresh_workspace;
+$ws = fresh_workspace;
 
 open_window;
 my $scratch = get_focused($ws);

@@ -137,7 +137,7 @@ is($x->input_focus, $win3->id, 'window 3 still focused');
 # is received.
 ################################################################################
 
-my $scratch = open_window;
+$scratch = open_window;
 
 is($x->input_focus, $scratch->id, 'to-scratchpad window has focus');
 

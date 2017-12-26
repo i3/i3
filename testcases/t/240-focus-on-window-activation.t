@@ -111,7 +111,7 @@ EOT
 
 $pid = launch_with_config($config);
 
-my $ws = fresh_workspace;
+$ws = fresh_workspace;
 $first = open_window;
 $second = open_window;
 
@@ -165,7 +165,7 @@ EOT
 
 $pid = launch_with_config($config);
 
-my $ws = fresh_workspace;
+$ws = fresh_workspace;
 $first = open_window;
 $second = open_window;
 
