@@ -177,7 +177,8 @@ separator_block_width::
 markup::
 	A string that indicates how the text of the block should be parsed. Set to
 	+"pango"+ to use https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup].
-	Set to +"none"+ to not use any markup (default).
+	Set to +"none"+ to not use any markup (default). Pango markup only works
+	if you use a pango font.
 
 If you want to put in your own entries into a block, prefix the key with an
 underscore (_). i3bar will ignore all keys it doesn’t understand, and prefixing
