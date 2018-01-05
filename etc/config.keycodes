@@ -154,7 +154,7 @@ mode "resize" {
         bindcode 111 resize shrink height 10 px or 10 ppt
         bindcode 114 resize grow width 10 px or 10 ppt
 
-        # back to normal: Enter or Escape
+        # back to normal: Enter or Escape or $mod+r
         bindcode 36 mode "default"
         bindcode 9 mode "default"
         bindcode $mod+27 mode "default"
