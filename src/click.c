@@ -49,7 +49,7 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
             break;
     }
 
-    bool res = resize_find_tiling_participants(&first, &second, search_direction);
+    bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
     if (!res) {
         LOG("No second container in this direction found.\n");
         return false;

@@ -47,7 +47,7 @@ DRAGGING_CB(resize_callback) {
     xcb_flush(conn);
 }
 
-bool resize_find_tiling_participants(Con **current, Con **other, direction_t direction) {
+bool resize_find_tiling_participants(Con **current, Con **other, direction_t direction, bool both_sides) {
     DLOG("Find two participants for resizing container=%p in direction=%i\n", other, direction);
     Con *first = *current;
     Con *second = NULL;
@@ -74,8 +74,14 @@ bool resize_find_tiling_participants(Con **current, Con **other, direction_t dir
         /* get the counterpart for this resizement */
         if (dir_backwards) {
             second = TAILQ_PREV(first, nodes_head, nodes);
+            if (second == NULL && both_sides == true) {
+                second = TAILQ_NEXT(first, nodes);
+            }
         } else {
             second = TAILQ_NEXT(first, nodes);
+            if (second == NULL && both_sides == true) {
+                second = TAILQ_PREV(first, nodes_head, nodes);
+            }
         }
 
         if (second == NULL) {
