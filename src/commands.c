@@ -745,6 +745,7 @@ void cmd_nop(I3_CMD, const char *comment) {
     LOG("-------------------------------------------------\n");
     LOG("  NOP: %s\n", comment);
     LOG("-------------------------------------------------\n");
+    ysuccess(true);
 }
 
 /*
