@@ -511,7 +511,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     else
         search_direction = D_DOWN;
 
-    bool res = resize_find_tiling_participants(&first, &second, search_direction);
+    bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
     if (!res) {
         LOG("No second container in this direction found.\n");
         ysuccess(false);
@@ -552,43 +552,21 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
 
 static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way, const char *direction, int ppt) {
     LOG("width/height resize\n");
+
     /* get the appropriate current container (skip stacked/tabbed cons) */
-    while (current->parent->layout == L_STACKED ||
-           current->parent->layout == L_TABBED)
-        current = current->parent;
-
-    /* Then further go up until we find one with the matching orientation. */
-    orientation_t search_orientation =
-        (strcmp(direction, "width") == 0 ? HORIZ : VERT);
-
-    while (current->type != CT_WORKSPACE &&
-           current->type != CT_FLOATING_CON &&
-           (con_orientation(current->parent) != search_orientation || con_num_children(current->parent) == 1))
-        current = current->parent;
+    Con *dummy = NULL;
+    direction_t search_direction = (strcmp(direction, "width") == 0 ? D_LEFT : D_DOWN);
+    bool search_result = resize_find_tiling_participants(&current, &dummy, search_direction, true);
+    if (search_result == false) {
+        ysuccess(false);
+        return false;
+    }
 
     /* get the default percentage */
     int children = con_num_children(current->parent);
     LOG("ins. %d children\n", children);
     double percentage = 1.0 / children;
     LOG("default percentage = %f\n", percentage);
-
-    orientation_t orientation = con_orientation(current->parent);
-
-    if ((orientation == HORIZ &&
-         strcmp(direction, "height") == 0) ||
-        (orientation == VERT &&
-         strcmp(direction, "width") == 0)) {
-        LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
-            (orientation == HORIZ ? "horizontal" : "vertical"));
-        ysuccess(false);
-        return false;
-    }
-
-    if (children == 1) {
-        LOG("This is the only container, cannot resize.\n");
-        ysuccess(false);
-        return false;
-    }
 
     /* Ensure all the other children have a percentage set. */
     Con *child;
