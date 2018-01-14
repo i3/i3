@@ -646,7 +646,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * proper window event sequence. */
     if (set_focus && nc->mapped) {
         DLOG("Now setting focus.\n");
-        con_focus(nc);
+        con_activate(nc);
     }
 
     tree_render();

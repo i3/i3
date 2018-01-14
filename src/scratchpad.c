@@ -123,7 +123,7 @@ void scratchpad_show(Con *con) {
             /* use con_descend_tiling_focused to get the last focused
                  * window inside this scratch container in order to
                  * keep the focus the same within this container */
-            con_focus(con_descend_tiling_focused(walk_con));
+            con_activate(con_descend_tiling_focused(walk_con));
             return;
         }
     }
@@ -205,7 +205,7 @@ void scratchpad_show(Con *con) {
         workspace_show(active);
     }
 
-    con_focus(con_descend_focused(con));
+    con_activate(con_descend_focused(con));
 }
 
 /*

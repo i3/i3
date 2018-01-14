@@ -118,7 +118,7 @@ static void move_to_output_directed(Con *con, direction_t direction) {
     attach_to_workspace(con, ws, direction);
 
     /* fix the focus stack */
-    con_focus(con);
+    con_activate(con);
 
     /* force re-painting the indicators */
     FREE(con->deco_render_params);

@@ -433,7 +433,7 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
         if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
             DLOG("Focusing con = %p\n", con);
             workspace_show(ws);
-            con_focus(con);
+            con_activate(con);
             tree_render();
         } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(ws))) {
             DLOG("Marking con = %p urgent\n", con);
@@ -776,7 +776,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 workspace_show(ws);
                 /* Re-set focus, even if unchanged from i3’s perspective. */
                 focused_id = XCB_NONE;
-                con_focus(con);
+                con_activate(con);
             }
         } else {
             /* Request is from an application. */
@@ -788,7 +788,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
                 DLOG("Focusing con = %p\n", con);
                 workspace_show(ws);
-                con_focus(con);
+                con_activate(con);
             } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(ws))) {
                 DLOG("Marking con = %p urgent\n", con);
                 con_set_urgency(con, true);
@@ -1245,7 +1245,7 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
     if (ws != con_get_workspace(focused))
         workspace_show(ws);
 
-    con_focus(con);
+    con_activate(con);
     /* We update focused_id because we don’t need to set focus again */
     focused_id = event->event;
     tree_render();

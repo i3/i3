@@ -1299,7 +1299,7 @@ static void cmd_focus_force_focus(Con *con) {
     if (fullscreen_on_ws && fullscreen_on_ws != con && !con_has_parent(con, fullscreen_on_ws)) {
         con_disable_fullscreen(fullscreen_on_ws);
     }
-    con_focus(con);
+    con_activate(con);
 }
 
 /*
@@ -1417,12 +1417,12 @@ void cmd_focus(I3_CMD) {
          * the target workspace, then revert focus. */
         Con *currently_focused = focused;
         cmd_focus_force_focus(current->con);
-        con_focus(currently_focused);
+        con_activate(currently_focused);
 
         /* Now switch to the workspace, then focus */
         workspace_show(ws);
         LOG("focusing %p / %s\n", current->con, current->con->name);
-        con_focus(current->con);
+        con_activate(current->con);
         count++;
     }
 
@@ -1534,7 +1534,7 @@ void cmd_move_direction(I3_CMD, const char *direction, long move_px) {
 
     /* the move command should not disturb focus */
     if (focused != initially_focused)
-        con_focus(initially_focused);
+        con_activate(initially_focused);
 
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
@@ -1659,7 +1659,7 @@ void cmd_open(I3_CMD) {
     LOG("opening new container\n");
     Con *con = tree_open_con(NULL, NULL);
     con->layout = L_SPLITH;
-    con_focus(con);
+    con_activate(con);
 
     y(map_open);
     ystr("success");
@@ -2048,7 +2048,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
     }
 
     /* Restore the previous focus since con_attach messes with the focus. */
-    con_focus(previously_focused);
+    con_activate(previously_focused);
 
     cmd_output->needs_tree_render = true;
     ysuccess(true);
