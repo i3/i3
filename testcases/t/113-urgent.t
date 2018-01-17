@@ -304,7 +304,7 @@ for ($type = 1; $type <= 2; $type++) {
     cmd 'move right';
     cmd '[id="' . $w3->id . '"] focus';
     sync_with_i3;
-    my $ws = get_ws($tmp);
+    $ws = get_ws($tmp);
     ok(!$ws->{urgent}, 'urgent flag not set on workspace');
 
 ##############################################################################

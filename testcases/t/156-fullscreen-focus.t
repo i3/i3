@@ -340,8 +340,8 @@ is_num_fullscreen($tmp, 0, 'no fullscreen windows');
 kill_all_windows;
 
 $tmp = fresh_workspace;
-my $first = open_floating_window;
-my $second = open_window;
+$first = open_floating_window;
+$second = open_window;
 cmd 'fullscreen';
 is($x->input_focus, $second->id, 'fullscreen window focused');
 is_num_fullscreen($tmp, 1, '1 fullscreen window');
@@ -356,8 +356,8 @@ is_num_fullscreen($tmp, 0, 'no fullscreen windows');
 kill_all_windows;
 
 $tmp = fresh_workspace;
-my $first = open_window;
-my $second = open_floating_window;
+$first = open_window;
+$second = open_floating_window;
 cmd 'fullscreen';
 is($x->input_focus, $second->id, 'fullscreen window focused');
 is_num_fullscreen($tmp, 1, '1 fullscreen window');
@@ -376,10 +376,10 @@ is_num_fullscreen($tmp, 0, 'no fullscreen windows');
 kill_all_windows;
 
 $tmp = fresh_workspace;
-my $first = open_window;
+$first = open_window;
 
 $tmp2 = fresh_workspace;
-my $second = open_window;
+$second = open_window;
 cmd 'fullscreen';
 is($x->input_focus, $second->id, 'fullscreen window focused');
 is_num_fullscreen($tmp2, 1, '1 fullscreen window');

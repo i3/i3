@@ -79,8 +79,8 @@ cmp_ok($content[0]->{rect}->{height}, '==', $expected_height, "height changed to
 ################################################################################
 
 cmd 'resize set 44 ppt 111 px';
-my $expected_width = int(0.44 * 1333);
-my $expected_height = 111;
+$expected_width = int(0.44 * 1333);
+$expected_height = 111;
 
 @content = @{get_ws($tmp)->{floating_nodes}};
 cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x untouched');
@@ -89,8 +89,8 @@ cmp_ok($content[0]->{rect}->{width}, '==', $expected_width, "width changed to $e
 cmp_ok($content[0]->{rect}->{height}, '==', $expected_height, "height changed to $expected_height px");
 
 cmd 'resize set 222 px 100 ppt';
-my $expected_width = 222;
-my $expected_height = 999;
+$expected_width = 222;
+$expected_height = 999;
 
 @content = @{get_ws($tmp)->{floating_nodes}};
 cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x untouched');
