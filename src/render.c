@@ -17,7 +17,9 @@ static void render_output(Con *con);
 static void render_con_split(Con *con, Con *child, render_params *p, int i);
 static void render_con_stacked(Con *con, Con *child, render_params *p, int i);
 static void render_con_tabbed(Con *con, Con *child, render_params *p, int i);
-static void render_con_dockarea(Con *con, Con *child, render_params *p);
+static void render_con_vdockarea(Con *con, Con *child, render_params *p);
+static void render_con_hdockarea(Con *con, Con *child, render_params *p);
+
 
 /*
  * Returns the height for the decorations
@@ -146,8 +148,10 @@ void render_con(Con *con, bool render_fullscreen) {
                 render_con_stacked(con, child, &params, i);
             } else if (con->layout == L_TABBED) {
                 render_con_tabbed(con, child, &params, i);
-            } else if (con->layout == L_DOCKAREA) {
-                render_con_dockarea(con, child, &params);
+            } else if (con->layout == L_HDOCKAREA ) {
+                render_con_hdockarea(con, child, &params);
+            } else if (con->layout == L_VDOCKAREA ) {
+                render_con_vdockarea(con, child, &params);
             }
 
             DLOG("child at (%d, %d) with (%d x %d)\n",
@@ -298,6 +302,7 @@ static void render_output(Con *con) {
     int x = con->rect.x;
     int y = con->rect.y;
     int height = con->rect.height;
+    int width = con->rect.width;
 
     /* Find the content container and ensure that there is exactly one. Also
      * check for any non-CT_DOCKAREA clients. */
@@ -309,7 +314,7 @@ static void render_output(Con *con) {
                 assert(false);
             }
             content = child;
-        } else if (child->type != CT_DOCKAREA) {
+        } else if (child->type != CT_HDOCKAREA && child->type != CT_VDOCKAREA) {
             DLOG("Child %p of type %d is inside the OUTPUT con\n", child, child->type);
             assert(false);
         }
@@ -338,41 +343,100 @@ static void render_output(Con *con) {
 
     /* First pass: determine the height of all CT_DOCKAREAs (the sum of their
      * children) and figure out how many pixels we have left for the rest */
+    Con *left_dock = 0;
+    Con *right_dock= 0;
+    Con *bottom_dock = 0;
+    Con *top_dock = 0;
+    
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-        if (child->type != CT_DOCKAREA)
-            continue;
+        if (child->type == CT_HDOCKAREA) {
+            
+            child->rect.height = 0;
+            TAILQ_FOREACH(dockchild, &(child->nodes_head), nodes){
+                child->rect.height += dockchild->geometry.height;
+            }
+            if(strcmp(child->name, "bottomdock") == 0) {
+                bottom_dock = child;
+            }
+            if(strcmp(child->name, "topdock") == 0) {
+                y += child->rect.height;
+                top_dock = child;
+            }
+                        
+            height -= child->rect.height;
+            
+        } else if(child->type == CT_VDOCKAREA) {
+            child->rect.width = 0;
+            
+            TAILQ_FOREACH(dockchild, &(child->nodes_head), nodes){
+                child->rect.width += dockchild->geometry.width;
+            }
+            
+            if(strcmp(child->name, "leftdock") == 0) {
+                left_dock = child;
+                x += child->rect.width;
+            }
+            if(strcmp(child->name, "rightdock") == 0) {
+                right_dock = child;
+            }
 
-        child->rect.height = 0;
-        TAILQ_FOREACH(dockchild, &(child->nodes_head), nodes)
-        child->rect.height += dockchild->geometry.height;
-
-        height -= child->rect.height;
+            width -= child->rect.width;
+            
+        }
     }
+
+    
+    if(bottom_dock) {
+        bottom_dock->rect.x = 0;
+        bottom_dock->rect.y = con->rect.height - bottom_dock->rect.height;
+        bottom_dock->rect.width = con->rect.width;
+        
+        x_raise_con(bottom_dock);
+        render_con(bottom_dock, false);
+    }
+    
+    if(top_dock) {
+        top_dock->rect.x = 0;
+        top_dock->rect.y = 0;
+        top_dock->rect.width = con->rect.width;
+        
+        x_raise_con(top_dock);
+        render_con(top_dock, false);
+    }
+    
+    if(left_dock) {
+        left_dock->rect.x = 0;
+        left_dock->rect.y = 0;
+        left_dock->rect.height= con->rect.height;
+        
+        x_raise_con(left_dock);
+        render_con(left_dock, false);
+    }
+    
+    if(right_dock) {
+        right_dock->rect.x = con->rect.width - right_dock->rect.width;
+        right_dock->rect.y = 0;
+        right_dock->rect.height= con->rect.height;
+        
+        x_raise_con(right_dock);
+        render_con(right_dock, false);
+    }
+
+    if(content) {
+        content->rect.x = x;
+        content->rect.y = y;
+        content->rect.width = width;
+        content->rect.height = height;
+        
+        x_raise_con(content);
+        render_con(content, false);
+    }
+    
 
     /* Second pass: Set the widths/heights */
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-        if (child->type == CT_CON) {
-            child->rect.x = x;
-            child->rect.y = y;
-            child->rect.width = con->rect.width;
-            child->rect.height = height;
-        }
-
-        child->rect.x = x;
-        child->rect.y = y;
-        child->rect.width = con->rect.width;
-
-        child->deco_rect.x = 0;
-        child->deco_rect.y = 0;
-        child->deco_rect.width = 0;
-        child->deco_rect.height = 0;
-
-        y += child->rect.height;
-
-        DLOG("child at (%d, %d) with (%d x %d)\n",
-             child->rect.x, child->rect.y, child->rect.width, child->rect.height);
-        x_raise_con(child);
-        render_con(child, false);
+        DLOG("child at %s (%d, %d) with (%d x %d)\n",
+             child->name, child->rect.x, child->rect.y, child->rect.width, child->rect.height);
     }
 }
 
@@ -460,9 +524,9 @@ static void render_con_tabbed(Con *con, Con *child, render_params *p, int i) {
     }
 }
 
-static void render_con_dockarea(Con *con, Con *child, render_params *p) {
-    assert(con->layout == L_DOCKAREA);
-
+static void render_con_hdockarea(Con *con, Con *child, render_params *p) {
+    assert(con->layout == L_HDOCKAREA );
+    
     child->rect.x = p->x;
     child->rect.y = p->y;
     child->rect.width = p->rect.width;
@@ -472,5 +536,18 @@ static void render_con_dockarea(Con *con, Con *child, render_params *p) {
     child->deco_rect.y = 0;
     child->deco_rect.width = 0;
     child->deco_rect.height = 0;
-    p->y += child->rect.height;
+}
+
+static void render_con_vdockarea(Con *con, Con *child, render_params *p) {
+    assert(con->layout == L_VDOCKAREA );
+
+    child->rect.x = p->x;
+    child->rect.y = p->y;
+    child->rect.width = child->geometry.width;
+    child->rect.height = p->rect.height;
+
+    child->deco_rect.x = 0;
+    child->deco_rect.y = 0;
+    child->deco_rect.width = 0;
+    child->deco_rect.height = 0;
 }

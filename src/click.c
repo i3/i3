@@ -175,7 +175,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     DLOG("type = %d, name = %s\n", con->type, con->name);
 
     /* don’t handle dockarea cons, they must not be focused */
-    if (con->parent->type == CT_DOCKAREA)
+    if (con->parent->type == CT_HDOCKAREA || con->parent->type == CT_VDOCKAREA )
         goto done;
 
     const bool is_left_or_right_click = (event->detail == XCB_BUTTON_CLICK_LEFT ||

@@ -22,7 +22,7 @@ static void con_on_remove_child(Con *con);
 void con_force_split_parents_redraw(Con *con) {
     Con *parent = con;
 
-    while (parent != NULL && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
+    while (parent != NULL && parent->type != CT_WORKSPACE && parent->type != CT_HDOCKAREA && parent->type != CT_VDOCKAREA ) {
         if (!con_is_leaf(parent)) {
             FREE(parent->deco_render_params);
         }
@@ -329,7 +329,8 @@ bool con_is_split(Con *con) {
         return false;
 
     switch (con->layout) {
-        case L_DOCKAREA:
+        case L_HDOCKAREA:
+        case L_VDOCKAREA:
         case L_OUTPUT:
             return false;
 
@@ -535,7 +536,10 @@ bool con_is_docked(Con *con) {
     if (con->parent == NULL)
         return false;
 
-    if (con->parent->type == CT_DOCKAREA)
+    if (con->parent->type == CT_HDOCKAREA )
+        return true;
+    
+    if (con->parent->type == CT_VDOCKAREA )
         return true;
 
     return con_is_docked(con->parent);
@@ -1366,11 +1370,14 @@ orientation_t con_orientation(Con *con) {
             assert(false);
             return HORIZ;
 
-        case L_DOCKAREA:
+        case L_HDOCKAREA:
         case L_OUTPUT:
             DLOG("con_orientation() called on dockarea/output (%d) container %p\n", con->layout, con);
             assert(false);
-            return HORIZ;
+            return VERT;
+            
+        case L_VDOCKAREA:
+            return VERT;
 
         default:
             DLOG("con_orientation() ran into default\n");
@@ -1420,7 +1427,7 @@ Con *con_next_focused(Con *con) {
     }
 
     /* dock clients cannot be focused, so we focus the workspace instead */
-    if (con->parent->type == CT_DOCKAREA) {
+    if (con->parent->type == CT_HDOCKAREA || con->parent->type == CT_VDOCKAREA ) {
         DLOG("selecting workspace for dock client\n");
         return con_descend_focused(output_get_content(con->parent->parent));
     }
@@ -1690,7 +1697,7 @@ int con_border_style(Con *con) {
     if (con->parent->layout == L_TABBED && con->border_style != BS_NORMAL)
         return (con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL);
 
-    if (con->parent->type == CT_DOCKAREA)
+    if (con->parent->type == CT_HDOCKAREA || con->parent->type == CT_VDOCKAREA)
         return BS_NONE;
 
     return con->border_style;
@@ -1936,7 +1943,8 @@ static void con_on_remove_child(Con *con) {
      * not be closed when the last child was removed */
     if (con->type == CT_OUTPUT ||
         con->type == CT_ROOT ||
-        con->type == CT_DOCKAREA ||
+        con->type == CT_HDOCKAREA ||
+        con->type == CT_VDOCKAREA ||
         (con->parent != NULL && con->parent->type == CT_OUTPUT)) {
         DLOG("not handling, type = %d, name = %s\n", con->type, con->name);
         return;
@@ -2124,7 +2132,7 @@ void con_update_parents_urgency(Con *con) {
         return;
 
     bool new_urgency_value = con->urgent;
-    while (parent && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
+    while (parent && parent->type != CT_WORKSPACE && parent->type != CT_HDOCKAREA && parent->type != CT_VDOCKAREA ) {
         if (new_urgency_value) {
             parent->urgent = true;
         } else {
