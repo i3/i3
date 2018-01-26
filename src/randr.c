@@ -284,6 +284,34 @@ Output *create_root_output(xcb_connection_t *conn) {
 }
 
 /*
+ * Create new dockarea with specified parameters
+ */
+Con *create_dockarea(Con *con, const char *dock_name, int type, int layout, int dock_type) {
+    DLOG("Changing layout, adding %s dockarea\n", dock_name);
+    Con *dockarea = con_new(NULL, NULL);
+    dockarea->is_docked = true;
+    dockarea->type = type;
+    dockarea->layout = layout;
+    /* this container swallows dock clients */
+    Match *match = scalloc(1, sizeof(Match));
+    match_init(match);
+    match->dock = dock_type;
+    match->insert_where = M_BELOW;
+    TAILQ_INSERT_TAIL(&(dockarea->swallow_head), match, matches);
+
+    FREE(dockarea->name);
+    dockarea->name = sstrdup(dock_name);
+
+    char *name;
+    sasprintf(&name, "[i3 con] %s dockarea %s", dock_name, con->name);
+    x_set_name(dockarea, name);
+    FREE(name);
+    DLOG("attaching\n");
+
+    return dockarea;
+}
+
+/*
  * Initializes a CT_OUTPUT Con (searches existing ones from inplace restart
  * before) to use for the given Output.
  *
@@ -316,7 +344,6 @@ void output_init_con(Output *output) {
     }
     con->rect = output->rect;
     output->con = con;
-    
 
     char *name;
     sasprintf(&name, "[i3 con] output %s", con->name);
@@ -327,72 +354,20 @@ void output_init_con(Output *output) {
         DLOG("Not adding workspace, this was a reused con\n");
         return;
     }
-    {
-        DLOG("Changing layout, adding top dockarea\n");
-        Con *topdock = con_new(NULL, NULL);
-        topdock->type = CT_HDOCKAREA;
-        topdock->layout = L_HDOCKAREA;
-        /* this container swallows dock clients */
-        Match *match = scalloc(1, sizeof(Match));
-        match_init(match);
-        match->dock = M_DOCK_TOP;
-        match->insert_where = M_BELOW;
-        TAILQ_INSERT_TAIL(&(topdock->swallow_head), match, matches);
 
-        FREE(topdock->name);
-        topdock->name = sstrdup("topdock");
+    Con *dock;
 
-        sasprintf(&name, "[i3 con] top dockarea %s", con->name);
-        x_set_name(topdock, name);
-        FREE(name);
-        DLOG("attaching\n");
-        con_attach(topdock, con, false);
-    }
-    
-    {
-        DLOG("Changing layout, adding right dockarea\n");
-        Con *rightdock = con_new(NULL, NULL);
-        rightdock->type = CT_VDOCKAREA;
-        rightdock->layout = L_VDOCKAREA;
-        /* this container swallows dock clients */
-        Match *match = scalloc(1, sizeof(Match));
-        match_init(match);
-        match->dock = M_DOCK_RIGHT;
-        match->insert_where = M_BELOW;
-        TAILQ_INSERT_TAIL(&(rightdock->swallow_head), match, matches);
+    dock = create_dockarea(con, "leftdock", CT_VDOCKAREA, L_VDOCKAREA, M_DOCK_LEFT);
+    con_attach(dock, con, false);
 
-        FREE(rightdock->name);
-        rightdock->name = sstrdup("rightdock");
+    dock = create_dockarea(con, "topdock", CT_HDOCKAREA, L_HDOCKAREA, M_DOCK_TOP);
+    con_attach(dock, con, false);
 
-        sasprintf(&name, "[i3 con] right dockarea %s", con->name);
-        x_set_name(rightdock, name);
-        FREE(name);
-        DLOG("attaching\n");
-        con_attach(rightdock, con, false);
-    }
-    
-    {
-        DLOG("Changing layout, adding left dockarea\n");
-        Con *leftdock = con_new(NULL, NULL);
-        leftdock->type = CT_VDOCKAREA;
-        leftdock->layout = L_VDOCKAREA;
-        /* this container swallows dock clients */
-        Match *match = scalloc(1, sizeof(Match));
-        match_init(match);
-        match->dock = M_DOCK_LEFT;
-        match->insert_where = M_BELOW;
-        TAILQ_INSERT_TAIL(&(leftdock->swallow_head), match, matches);
+    dock = create_dockarea(con, "rightdock", CT_VDOCKAREA, L_VDOCKAREA, M_DOCK_RIGHT);
+    con_attach(dock, con, false);
 
-        FREE(leftdock->name);
-        leftdock->name = sstrdup("leftdock");
-
-        sasprintf(&name, "[i3 con] left dockarea %s", con->name);
-        x_set_name(leftdock, name);
-        FREE(name);
-        DLOG("attaching\n");
-        con_attach(leftdock, con, false);
-    }
-    /* content container */
+    dock = create_dockarea(con, "bottomdock", CT_HDOCKAREA, L_HDOCKAREA, M_DOCK_BOTTOM);
+    con_attach(dock, con, false);
 
     DLOG("adding main content container\n");
     Con *content = con_new(NULL, NULL);
@@ -405,28 +380,7 @@ void output_init_con(Output *output) {
     x_set_name(content, name);
     FREE(name);
     con_attach(content, con, false);
-    
-    {
-        /* bottom dock container */
-        Con *bottomdock = con_new(NULL, NULL);
-        bottomdock->type = CT_HDOCKAREA;
-        bottomdock->layout = L_HDOCKAREA;
-        /* this container swallows dock clients */
-        Match *match = scalloc(1, sizeof(Match));
-        match_init(match);
-        match->dock = M_DOCK_BOTTOM;
-        match->insert_where = M_BELOW;
-        TAILQ_INSERT_TAIL(&(bottomdock->swallow_head), match, matches);
 
-        FREE(bottomdock->name);
-        bottomdock->name = sstrdup("bottomdock");
-
-        sasprintf(&name, "[i3 con] bottom dockarea %s", con->name);
-        x_set_name(bottomdock, name);
-        FREE(name);
-        DLOG("attaching\n");
-        con_attach(bottomdock, con, false);
-    }
     /* Change focus to the content container */
     TAILQ_REMOVE(&(con->focus_head), content, focused);
     TAILQ_INSERT_HEAD(&(con->focus_head), content, focused);
@@ -1040,7 +994,7 @@ void randr_disable_output(Output *output) {
         /* 3: move the dock clients to the first output */
         Con *child;
         TAILQ_FOREACH(child, &(output->con->nodes_head), nodes) {
-            if (child->type != CT_HDOCKAREA || child->type != CT_VDOCKAREA )
+            if (!child->is_docked)
                 continue;
             DLOG("Handling dock con %p\n", child);
             Con *dock;

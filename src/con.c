@@ -22,7 +22,7 @@ static void con_on_remove_child(Con *con);
 void con_force_split_parents_redraw(Con *con) {
     Con *parent = con;
 
-    while (parent != NULL && parent->type != CT_WORKSPACE && parent->type != CT_HDOCKAREA && parent->type != CT_VDOCKAREA ) {
+    while (parent != NULL && parent->type != CT_WORKSPACE && parent->type != CT_HDOCKAREA && parent->type != CT_VDOCKAREA) {
         if (!con_is_leaf(parent)) {
             FREE(parent->deco_render_params);
         }
@@ -50,6 +50,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     } else {
         new->depth = root_depth;
     }
+    new->is_docked = false;
     DLOG("opening window\n");
 
     TAILQ_INIT(&(new->floating_head));
@@ -536,10 +537,7 @@ bool con_is_docked(Con *con) {
     if (con->parent == NULL)
         return false;
 
-    if (con->parent->type == CT_HDOCKAREA )
-        return true;
-    
-    if (con->parent->type == CT_VDOCKAREA )
+    if (con->parent->is_docked)
         return true;
 
     return con_is_docked(con->parent);
@@ -1375,7 +1373,7 @@ orientation_t con_orientation(Con *con) {
             DLOG("con_orientation() called on dockarea/output (%d) container %p\n", con->layout, con);
             assert(false);
             return VERT;
-            
+
         case L_VDOCKAREA:
             return VERT;
 
@@ -1427,7 +1425,7 @@ Con *con_next_focused(Con *con) {
     }
 
     /* dock clients cannot be focused, so we focus the workspace instead */
-    if (con->parent->type == CT_HDOCKAREA || con->parent->type == CT_VDOCKAREA ) {
+    if (con->parent->is_docked) {
         DLOG("selecting workspace for dock client\n");
         return con_descend_focused(output_get_content(con->parent->parent));
     }
@@ -1697,7 +1695,7 @@ int con_border_style(Con *con) {
     if (con->parent->layout == L_TABBED && con->border_style != BS_NORMAL)
         return (con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL);
 
-    if (con->parent->type == CT_HDOCKAREA || con->parent->type == CT_VDOCKAREA)
+    if (con->parent->is_docked)
         return BS_NONE;
 
     return con->border_style;
@@ -1943,8 +1941,7 @@ static void con_on_remove_child(Con *con) {
      * not be closed when the last child was removed */
     if (con->type == CT_OUTPUT ||
         con->type == CT_ROOT ||
-        con->type == CT_HDOCKAREA ||
-        con->type == CT_VDOCKAREA ||
+        con->is_docked ||
         (con->parent != NULL && con->parent->type == CT_OUTPUT)) {
         DLOG("not handling, type = %d, name = %s\n", con->type, con->name);
         return;
@@ -2132,7 +2129,7 @@ void con_update_parents_urgency(Con *con) {
         return;
 
     bool new_urgency_value = con->urgent;
-    while (parent && parent->type != CT_WORKSPACE && parent->type != CT_HDOCKAREA && parent->type != CT_VDOCKAREA ) {
+    while (parent && parent->type != CT_WORKSPACE && !parent->is_docked) {
         if (new_urgency_value) {
             parent->urgent = true;
         } else {

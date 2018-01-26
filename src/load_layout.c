@@ -340,7 +340,7 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
                 json_node->type = CT_FLOATING_CON;
             else if (strcasecmp(buf, "workspace") == 0)
                 json_node->type = CT_WORKSPACE;
-            else if (strcasecmp(buf, "hdockarea") == 0)
+            else if (strcasecmp(buf, "dockarea") == 0)
                 json_node->type = CT_HDOCKAREA;
             else if (strcasecmp(buf, "vdockarea") == 0)
                 json_node->type = CT_VDOCKAREA;

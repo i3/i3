@@ -266,7 +266,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
             ystr("workspace");
             break;
         case CT_HDOCKAREA:
-            ystr("hdockarea");
+            ystr("dockarea");
             break;
         case CT_VDOCKAREA:
             ystr("vdockarea");
@@ -467,7 +467,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("nodes");
     y(array_open);
     Con *node;
-    if (con->type != CT_HDOCKAREA || con->type != CT_VDOCKAREA || !inplace_restart) {
+    if (!con->is_docked || !inplace_restart) {
         TAILQ_FOREACH(node, &(con->nodes_head), nodes) {
             dump_node(gen, node, inplace_restart);
         }
