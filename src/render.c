@@ -313,7 +313,7 @@ static void render_output(Con *con) {
                 assert(false);
             }
             content = child;
-        } else if (!child->is_docked) {
+        } else if (!child->is_docked ) {
             DLOG("Child %p of type %d is inside the OUTPUT con\n", child, child->type);
             assert(false);
         }
@@ -342,10 +342,10 @@ static void render_output(Con *con) {
 
     /* First pass: determine the height of all CT_DOCKAREAs (the sum of their
      * children) and figure out how many pixels we have left for the rest */
-    Con *left_dock = 0;
-    Con *right_dock = 0;
-    Con *bottom_dock = 0;
-    Con *top_dock = 0;
+    Con *left_dock = NULL;
+    Con *right_dock = NULL;
+    Con *bottom_dock = NULL;
+    Con *top_dock = NULL;
 
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
         if (child->type == CT_HDOCKAREA) {

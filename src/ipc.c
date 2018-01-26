@@ -349,7 +349,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
             ystr("tabbed");
             break;
         case L_HDOCKAREA:
-            ystr("hdockarea");
+            ystr("dockarea");
             break;
         case L_VDOCKAREA:
             ystr("vdockarea");
