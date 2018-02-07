@@ -471,7 +471,7 @@ static void cmd_resize_floating(I3_CMD, const char *way, const char *direction, 
         floating_con->scratchpad_state = SCRATCHPAD_CHANGED;
 }
 
-static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, const char *direction, int px) {
+static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, const char *direction, int px, int ppt) {
     LOG("tiling resize\n");
     Con *second = NULL;
     Con *first = current;
@@ -484,7 +484,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
 
     bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
     if (!res) {
-        LOG("No second container in this direction found.\n");
+        LOG("No second container found in this direction.\n");
         ysuccess(false);
         return false;
     }
@@ -505,10 +505,19 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
             break;
     }
 
-    double relative_percent = (first_size + px) / total_size;
-    if (relative_percent < 0.0 || relative_percent > 1.0) {
+    double relative_percent;
+    if (ppt != 0) {
+        // resize based on the ppet
+        relative_percent = first_size / total_size + ppt;
+    } else  {
+        // resize based on the px
+        relative_percent = (first_size + px) / total_size;
+    }
+
+    if (relative_percent <= 0.0 || relative_percent >= 1.0) {
         LOG("Not resizing, already at minimum size\n");
-        return true;
+        ysuccess(false);
+        return false;
     }
 
     first->percent = total_percent * relative_percent;
@@ -609,7 +618,7 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
             } else {
                 if (!cmd_resize_tiling_direction(current_match, cmd_output,
                                                  current->con, way, direction,
-                                                 resize_px))
+                                                 resize_px, resize_ppt))
                     return;
             }
         }
