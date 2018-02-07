@@ -320,7 +320,7 @@ i3-wm (4.0.2-1) unstable; urgency=low
   * Bugfix: Use correct format string in load_layout (fixes crash in restart)
   * Bugfix: Fix border rendering (border lines were "cutting" through)
   * Bugfix: Raise floating windows immediately when dragging/resizing
-  * Bugfix: Make focus switching work accross outputs again
+  * Bugfix: Make focus switching work across outputs again
   * Bugfix: migration-script: handle resize top/bottom correctly
   * Bugfix: Fix focus issue when moving containers to workspaces
   * Bugfix: Warp cursor when changing outputs again
