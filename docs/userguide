@@ -586,23 +586,26 @@ workspace_layout default|stacking|tabbed
 workspace_layout tabbed
 ---------------------
 
-=== Border style for new windows
+=== Default border style for new windows
 
 This option determines which border style new windows will have. The default is
-+normal+. Note that new_float applies only to windows which are starting out as
++normal+. Note that default_floating_border applies only to windows which are starting out as
 floating windows, e.g., dialog windows, but not windows that are floated later on.
 
 *Syntax*:
 ---------------------------------------------
-new_window normal|none|pixel
-new_window normal|pixel <px>
-new_float normal|none|pixel
-new_float normal|pixel <px>
+default_border normal|none|pixel
+default_border normal|pixel <px>
+default_floating_border normal|none|pixel
+default_floating_border normal|pixel <px>
 ---------------------------------------------
+
+Please note that +new_window+ and +new_float+ have been deprecated in favor of the above options
+and will be removed in a future release. We strongly recommend using the new options instead.
 
 *Example*:
 ---------------------
-new_window pixel
+default_border pixel
 ---------------------
 
 The "normal" and "pixel" border styles support an optional border width in
@@ -610,11 +613,11 @@ pixels:
 
 *Example*:
 ---------------------
-# The same as new_window none
-new_window pixel 0
+# The same as default_border none
+default_border pixel 0
 
 # A 3 px border
-new_window pixel 3
+default_border pixel 3
 ---------------------
 
 

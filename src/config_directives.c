@@ -197,7 +197,7 @@ CFGFUN(workspace_layout, const char *layout) {
         config.default_layout = L_TABBED;
 }
 
-CFGFUN(new_window, const char *windowtype, const char *border, const long width) {
+CFGFUN(default_border, const char *windowtype, const char *border, const long width) {
     int border_style;
     int border_width;
 
@@ -215,7 +215,8 @@ CFGFUN(new_window, const char *windowtype, const char *border, const long width)
         border_width = width;
     }
 
-    if (strcmp(windowtype, "new_window") == 0) {
+    if ((strcmp(windowtype, "default_border") == 0) ||
+        (strcmp(windowtype, "new_window") == 0)) {
         DLOG("default tiled border style = %d and border width = %d (%d physical px)\n",
              border_style, border_width, logical_px(border_width));
         config.default_border = border_style;
