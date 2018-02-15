@@ -330,6 +330,13 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
         DLOG("parent container killed\n");
     }
 
+    if (ws == con) {
+        DLOG("Closing a workspace container, updating EWMH atoms\n");
+        ewmh_update_number_of_desktops();
+        ewmh_update_desktop_names();
+        ewmh_update_wm_desktop();
+    }
+
     con_free(con);
 
     /* in the case of floating windows, we already focused another container
