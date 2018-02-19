@@ -30,6 +30,7 @@ It tries to start one of the following (in that order):
 * jed
 * gedit
 * mcedit
+* gvim
 
 Please don’t complain about the order: If the user has any preference, they will
 have $VISUAL or $EDITOR set.
