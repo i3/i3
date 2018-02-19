@@ -29,7 +29,8 @@ state INITIAL:
   'floating_modifier'                      -> FLOATING_MODIFIER
   'default_orientation'                    -> DEFAULT_ORIENTATION
   'workspace_layout'                       -> WORKSPACE_LAYOUT
-  windowtype = 'new_window', 'new_float'   -> NEW_WINDOW
+  windowtype = 'default_border', 'new_window', 'default_floating_border', 'new_float'
+      -> DEFAULT_BORDER
   'hide_edge_borders'                      -> HIDE_EDGE_BORDERS
   'for_window'                             -> FOR_WINDOW
   'assign'                                 -> ASSIGN
@@ -105,25 +106,25 @@ state WORKSPACE_LAYOUT:
   layout = 'default', 'stacking', 'stacked', 'tabbed'
       -> call cfg_workspace_layout($layout)
 
-# new_window <normal|1pixel|none>
-# new_float <normal|1pixel|none>
-state NEW_WINDOW:
+# <default_border|new_window> <normal|1pixel|none>
+# <default_floating_border|new_float> <normal|1pixel|none>
+state DEFAULT_BORDER:
   border = 'normal', 'pixel'
-      -> NEW_WINDOW_PIXELS
+      -> DEFAULT_BORDER_PIXELS
   border = '1pixel', 'none'
-      -> call cfg_new_window($windowtype, $border, -1)
+      -> call cfg_default_border($windowtype, $border, -1)
 
-state NEW_WINDOW_PIXELS:
+state DEFAULT_BORDER_PIXELS:
   end
-      -> call cfg_new_window($windowtype, $border, 2)
+      -> call cfg_default_border($windowtype, $border, 2)
   width = number
-      -> NEW_WINDOW_PIXELS_PX
+      -> DEFAULT_BORDER_PIXELS_PX
 
-state NEW_WINDOW_PIXELS_PX:
+state DEFAULT_BORDER_PIXELS_PX:
   'px'
       ->
   end
-      -> call cfg_new_window($windowtype, $border, &width)
+      -> call cfg_default_border($windowtype, $border, &width)
 
 # hide_edge_borders <none|vertical|horizontal|both|smart>
 # also hide_edge_borders <bool> for compatibility

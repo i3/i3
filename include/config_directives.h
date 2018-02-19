@@ -67,7 +67,7 @@ CFGFUN(popup_during_fullscreen, const char *value);
 CFGFUN(color, const char *colorclass, const char *border, const char *background, const char *text, const char *indicator, const char *child_border);
 CFGFUN(color_single, const char *colorclass, const char *color);
 CFGFUN(floating_modifier, const char *modifiers);
-CFGFUN(new_window, const char *windowtype, const char *border, const long width);
+CFGFUN(default_border, const char *windowtype, const char *border, const long width);
 CFGFUN(workspace, const char *workspace, const char *output);
 CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command);
 
