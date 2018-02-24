@@ -17,5 +17,9 @@ override_dh_auto_configure:
 	# The default is /usr/share/doc/i3
 	dh_auto_configure -- --docdir=/usr/share/doc/i3-wm
 
+override_dh_builddeb:
+	# bintray does not support xz currently.
+	dh_builddeb -- -Zgzip
+
 %:
 	dh $@ --parallel --builddirectory=build --with=autoreconf
