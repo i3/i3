@@ -78,6 +78,11 @@ EXTRA_DIST = \
 	AnyEvent-I3/t/manifest.t \
 	AnyEvent-I3/t/pod-coverage.t \
 	AnyEvent-I3/t/pod.t \
+	contrib/dump-asy.pl \
+	contrib/gtk-tree-watch.pl \
+	contrib/i3-wsbar \
+	contrib/per-workspace-layout.pl \
+	contrib/trivial-bar-script.sh \
 	docs/asciidoc-git.conf \
 	docs/bigpicture.png \
 	docs/i3-pod2html \
