@@ -412,7 +412,7 @@ static void _workspace_show(Con *workspace) {
     if (next->urgent && (int)(config.workspace_urgency_timer * 1000) > 0) {
         /* focus for now… */
         next->urgent = false;
-        con_activate(next);
+        con_focus(next);
 
         /* … but immediately reset urgency flags; they will be set to false by
          * the timer callback in case the container is focused at the time of
@@ -435,7 +435,7 @@ static void _workspace_show(Con *workspace) {
             ev_timer_again(main_loop, focused->urgency_timer);
         }
     } else
-        con_activate(next);
+        con_focus(next);
 
     ipc_send_workspace_event("focus", workspace, current);
 
