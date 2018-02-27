@@ -809,6 +809,62 @@ Con *con_for_window(Con *con, i3Window *window, Match **store_match) {
     return NULL;
 }
 
+static int num_focus_heads(Con *con) {
+    int focus_heads = 0;
+
+    Con *current;
+    TAILQ_FOREACH(current, &(con->focus_head), focused) {
+        focus_heads++;
+    }
+
+    return focus_heads;
+}
+
+/*
+ * Iterate over the container's focus stack and return an array with the
+ * containers inside it, ordered from higher focus order to lowest.
+ *
+ */
+Con **get_focus_order(Con *con) {
+    const int focus_heads = num_focus_heads(con);
+    Con **focus_order = smalloc(focus_heads * sizeof(Con *));
+    Con *current;
+    int idx = 0;
+    TAILQ_FOREACH(current, &(con->focus_head), focused) {
+        assert(idx < focus_heads);
+        focus_order[idx++] = current;
+    }
+
+    return focus_order;
+}
+
+/*
+ * Clear the container's focus stack and re-add it using the provided container
+ * array. The function doesn't check if the provided array contains the same
+ * containers with the previous focus stack but will not add floating containers
+ * in the new focus stack if container is not a workspace.
+ *
+ */
+void set_focus_order(Con *con, Con **focus_order) {
+    int focus_heads = 0;
+    while (!TAILQ_EMPTY(&(con->focus_head))) {
+        Con *current = TAILQ_FIRST(&(con->focus_head));
+
+        TAILQ_REMOVE(&(con->focus_head), current, focused);
+        focus_heads++;
+    }
+
+    for (int idx = 0; idx < focus_heads; idx++) {
+        /* Useful when encapsulating a workspace. */
+        if (con->type != CT_WORKSPACE && con_inside_floating(focus_order[idx])) {
+            focus_heads++;
+            continue;
+        }
+
+        TAILQ_INSERT_TAIL(&(con->focus_head), focus_order[idx], focused);
+    }
+}
+
 /*
  * Returns the number of children of this container.
  *
@@ -1781,17 +1837,9 @@ void con_set_layout(Con *con, layout_t layout) {
             new->layout = layout;
             new->last_split_layout = con->last_split_layout;
 
-            /* Save the container that was focused before we move containers
-             * around, but only if the container is visible (otherwise focus
-             * will be restored properly automatically when switching). */
-            Con *old_focused = TAILQ_FIRST(&(con->focus_head));
-            if (old_focused == TAILQ_END(&(con->focus_head)))
-                old_focused = NULL;
-            if (old_focused != NULL &&
-                !workspace_is_visible(con_get_workspace(old_focused)))
-                old_focused = NULL;
-
             /* 3: move the existing cons of this workspace below the new con */
+            Con **focus_order = get_focus_order(con);
+
             DLOG("Moving cons\n");
             Con *child;
             while (!TAILQ_EMPTY(&(con->nodes_head))) {
@@ -1800,12 +1848,12 @@ void con_set_layout(Con *con, layout_t layout) {
                 con_attach(child, new, true);
             }
 
+            set_focus_order(new, focus_order);
+            free(focus_order);
+
             /* 4: attach the new split container to the workspace */
             DLOG("Attaching new split to ws\n");
             con_attach(new, con, false);
-
-            if (old_focused)
-                con_activate(old_focused);
 
             tree_flatten(croot);
         }
