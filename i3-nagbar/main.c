@@ -575,7 +575,9 @@ int main(int argc, char *argv[]) {
 
             case XCB_CONFIGURE_NOTIFY: {
                 xcb_configure_notify_event_t *configure_notify = (xcb_configure_notify_event_t *)event;
-                draw_util_surface_set_size(&bar, configure_notify->width, configure_notify->height);
+                if (configure_notify->width > 0 && configure_notify->height > 0) {
+                    draw_util_surface_set_size(&bar, configure_notify->width, configure_notify->height);
+                }
                 break;
             }
         }
