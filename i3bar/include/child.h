@@ -31,7 +31,7 @@ typedef struct {
      */
     int stop_signal;
     /**
-     * The signal requested by the client to inform it of theun hidden state of i3bar
+     * The signal requested by the client to inform it of the unhidden state of i3bar
      */
     int cont_signal;
 
