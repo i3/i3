@@ -1207,6 +1207,14 @@ static bool handle_clientleader_change(void *data, xcb_connection_t *conn, uint8
  */
 static void handle_focus_in(xcb_focus_in_event_t *event) {
     DLOG("focus change in, for window 0x%08x\n", event->event);
+
+    if (event->event == root) {
+        DLOG("Received focus in for root window, refocusing the focused window.\n");
+        con_focus(focused);
+        focused_id = XCB_NONE;
+        x_push_changes(croot);
+    }
+
     Con *con;
     if ((con = con_by_window_id(event->event)) == NULL || con->window == NULL)
         return;
