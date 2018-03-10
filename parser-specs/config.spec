@@ -455,6 +455,7 @@ state BAR:
   'binding_mode_indicator' -> BAR_BINDING_MODE_INDICATOR
   'workspace_buttons'      -> BAR_WORKSPACE_BUTTONS
   'strip_workspace_numbers' -> BAR_STRIP_WORKSPACE_NUMBERS
+  'strip_workspace_name' -> BAR_STRIP_WORKSPACE_NAME
   'verbose'                -> BAR_VERBOSE
   'colors'                 -> BAR_COLORS_BRACE
   '}'
@@ -554,6 +555,10 @@ state BAR_WORKSPACE_BUTTONS:
 state BAR_STRIP_WORKSPACE_NUMBERS:
   value = word
       -> call cfg_bar_strip_workspace_numbers($value); BAR
+
+state BAR_STRIP_WORKSPACE_NAME:
+  value = word
+      -> call cfg_bar_strip_workspace_name($value); BAR
 
 state BAR_VERBOSE:
   value = word

@@ -1594,7 +1594,7 @@ bar {
 }
 ------------------------
 
-=== Strip workspace numbers
+=== Strip workspace numbers/name
 
 Specifies whether workspace numbers should be displayed within the workspace
 buttons. This is useful if you want to have a named workspace that stays in
@@ -1605,11 +1605,15 @@ the form "[n]:[NAME]" will display only the name. You could use this, for
 instance, to display Roman numerals rather than digits by naming your
 workspaces to "1:I", "2:II", "3:III", "4:IV", ...
 
+When +strip_workspace_name+ is set to +yes+, any workspace that has a name of
+the form "[n]:[NAME]" will display only the number.
+
 The default is to display the full name within the workspace button.
 
 *Syntax*:
 ------------------------------
 strip_workspace_numbers yes|no
+strip_workspace_name yes|no
 ------------------------------
 
 *Example*:
