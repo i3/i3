@@ -743,7 +743,7 @@ static char *migrate_config(char *input, off_t size) {
 
     /* read the script’s output */
     int conv_size = 65535;
-    char *converted = smalloc(conv_size);
+    char *converted = scalloc(conv_size, 1);
     int read_bytes = 0, ret;
     do {
         if (read_bytes == conv_size) {
@@ -764,6 +764,7 @@ static char *migrate_config(char *input, off_t size) {
     wait(&status);
     if (!WIFEXITED(status)) {
         fprintf(stderr, "Child did not terminate normally, using old config file (will lead to broken behaviour)\n");
+        FREE(converted);
         return NULL;
     }
 
@@ -778,6 +779,7 @@ static char *migrate_config(char *input, off_t size) {
             fprintf(stderr, "# i3 config file (v4)\n");
             /* TODO: nag the user with a message to include a hint for i3 in their config file */
         }
+        FREE(converted);
         return NULL;
     }
 
@@ -900,7 +902,9 @@ bool parse_file(const char *f, bool use_nagbar) {
 
     FREE(current_config);
     current_config = scalloc(stbuf.st_size + 1, 1);
-    fread(current_config, 1, stbuf.st_size, fstr);
+    if ((ssize_t)fread(current_config, 1, stbuf.st_size, fstr) != stbuf.st_size) {
+        die("Could not fread: %s\n", strerror(errno));
+    }
     rewind(fstr);
 
     bool invalid_sets = false;
@@ -1061,7 +1065,7 @@ bool parse_file(const char *f, bool use_nagbar) {
     int version = detect_version(buf);
     if (version == 3) {
         /* We need to convert this v3 configuration */
-        char *converted = migrate_config(new, stbuf.st_size);
+        char *converted = migrate_config(new, strlen(new));
         if (converted != NULL) {
             ELOG("\n");
             ELOG("****************************************************************\n");

@@ -330,6 +330,13 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
         DLOG("parent container killed\n");
     }
 
+    if (ws == con) {
+        DLOG("Closing a workspace container, updating EWMH atoms\n");
+        ewmh_update_number_of_desktops();
+        ewmh_update_desktop_names();
+        ewmh_update_wm_desktop();
+    }
+
     con_free(con);
 
     /* in the case of floating windows, we already focused another container
@@ -344,12 +351,12 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
             DLOG("focusing %p / %s\n", next, next->name);
             if (next->type == CT_DOCKAREA) {
                 /* Instead of focusing the dockarea, we need to restore focus to the workspace */
-                con_focus(con_descend_focused(output_get_content(next->parent)));
+                con_activate(con_descend_focused(output_get_content(next->parent)));
             } else {
                 if (!force_set_focus && con != focused)
                     DLOG("not changing focus, the container was not focused before\n");
                 else
-                    con_focus(next);
+                    con_activate(next);
             }
         } else {
             DLOG("not focusing because we're not killing anybody\n");
@@ -433,7 +440,7 @@ bool level_up(void) {
     /* Skip over floating containers and go directly to the grandparent
      * (which should always be a workspace) */
     if (focused->parent->type == CT_FLOATING_CON) {
-        con_focus(focused->parent->parent);
+        con_activate(focused->parent->parent);
         return true;
     }
 
@@ -444,7 +451,7 @@ bool level_up(void) {
         ELOG("'focus parent': Focus is already on the workspace, cannot go higher than that.\n");
         return false;
     }
-    con_focus(focused->parent);
+    con_activate(focused->parent);
     return true;
 }
 
@@ -469,7 +476,7 @@ bool level_down(void) {
             next = TAILQ_FIRST(&(next->focus_head));
     }
 
-    con_focus(next);
+    con_activate(next);
     return true;
 }
 
@@ -560,26 +567,14 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         if (!workspace)
             return false;
 
-        workspace_show(workspace);
-
-        /* If a workspace has an active fullscreen container, one of its
-         * children should always be focused. The above workspace_show()
-         * should be adequate for that, so return. */
-        if (con_get_fullscreen_con(workspace, CF_OUTPUT))
-            return true;
-
-        Con *focus = con_descend_direction(workspace, direction);
-
-        /* special case: if there was no tiling con to focus and the workspace
-         * has a floating con in the focus stack, focus the top of the focus
-         * stack (which may be floating) */
-        if (focus == workspace)
+        Con *focus = con_descend_tiling_focused(workspace);
+        if (focus == workspace) {
             focus = con_descend_focused(workspace);
-
-        if (focus) {
-            con_focus(focus);
-            x_set_warp_to(&(focus->rect));
         }
+
+        workspace_show(workspace);
+        con_activate(focus);
+        x_set_warp_to(&(focus->rect));
         return true;
     }
 
@@ -616,7 +611,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
             TAILQ_INSERT_HEAD(&(parent->floating_head), last, floating_windows);
         }
 
-        con_focus(con_descend_focused(next));
+        con_activate(con_descend_focused(next));
         return true;
     }
 
@@ -641,7 +636,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         next = TAILQ_PREV(current, nodes_head, nodes);
 
     if (!next) {
-        if (!config.force_focus_wrapping) {
+        if (config.focus_wrapping != FOCUS_WRAPPING_FORCE) {
             /* If there is no next/previous container, we check if we can focus one
              * when going higher (without wrapping, though). If so, we are done, if
              * not, we wrap */
@@ -665,7 +660,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
     /* 3: focus choice comes in here. at the moment we will go down
      * until we find a window */
     /* TODO: check for window, atm we only go down as far as possible */
-    con_focus(con_descend_focused(next));
+    con_activate(con_descend_focused(next));
     return true;
 }
 
@@ -675,7 +670,8 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
  *
  */
 void tree_next(char way, orientation_t orientation) {
-    _tree_next(focused, way, orientation, true);
+    _tree_next(focused, way, orientation,
+               config.focus_wrapping != FOCUS_WRAPPING_OFF);
 }
 
 /*

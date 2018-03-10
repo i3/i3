@@ -19,43 +19,22 @@
 # Bug still in: 4.8-7-gf4a8253
 use i3test;
 
-my $i3 = i3(get_socket_path());
-$i3->connect()->recv;
-
-my $cv;
-my $t;
-
-sub reset_test {
-    $cv = AE::cv;
-    $t = AE::timer(0.5, 0, sub { $cv->send(0); });
-}
-
-reset_test;
-
-$i3->subscribe({
-        window => sub {
-            my ($e) = @_;
-            if ($e->{change} eq 'move') {
-                $cv->send($e->{container});
-            }
-        },
-    })->recv;
-
 my $dummy_window = open_window;
 my $window = open_window;
 
-cmd 'move right';
-my $con = $cv->recv;
+sub move_subtest {
+    my ($cmd) = @_;
+    my $cv = AnyEvent->condvar;
+    my @events = events_for(
+	sub { cmd $cmd },
+	'window');
 
-ok($con, 'moving a window should emit the window::move event');
-is($con->{window}, $window->{id}, 'the event should contain info about the window');
+    my @move = grep { $_->{change} eq 'move' } @events;
+    is(scalar @move, 1, 'Received 1 window::move event');
+    is($move[0]->{container}->{window}, $window->{id}, 'window id matches');
+}
 
-reset_test;
-
-cmd 'move to workspace ws_new';
-$con = $cv->recv;
-
-ok($con, 'moving a window to a different workspace should emit the window::move event');
-is($con->{window}, $window->{id}, 'the event should contain info about the window');
+subtest 'move right', \&move_subtest, 'move right';
+subtest 'move to workspace', \&move_subtest, 'move to workspace ws_new';
 
 done_testing;

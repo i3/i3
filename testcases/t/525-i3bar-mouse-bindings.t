@@ -30,21 +30,19 @@ bar {
     bindsym button3 focus left
     bindsym button4 focus right
     bindsym button5 focus left
+    bindsym --release button6 focus right
+    bindsym button7 focus left
+    bindsym button7 --release focus right
 }
 EOT
 use i3test::XTEST;
-
-my ($cv, $timer);
-sub reset_test {
-    $cv = AE::cv;
-    $timer = AE::timer(1, 0, sub { $cv->send(0); });
-}
 
 my $i3 = i3(get_socket_path());
 $i3->connect()->recv;
 my $ws = fresh_workspace;
 
-reset_test;
+my $cv = AnyEvent->condvar;
+my $timer = AnyEvent->timer(after => 1, interval => 0, cb => sub { $cv->send(0) });
 $i3->subscribe({
         window => sub {
             my ($event) = @_;
@@ -60,15 +58,13 @@ $i3->subscribe({
         },
     })->recv;
 
-my $con;
-
 sub i3bar_present {
     my ($nodes) = @_;
 
     for my $node (@{$nodes}) {
 	my $props = $node->{window_properties};
 	if (defined($props) && $props->{class} eq 'i3bar') {
-	    return 1;
+	    return $node->{window};
 	}
     }
 
@@ -80,53 +76,112 @@ sub i3bar_present {
     return i3bar_present(\@children);
 }
 
-if (i3bar_present($i3->get_tree->recv->{nodes})) {
+my $i3bar_window = i3bar_present($i3->get_tree->recv->{nodes});
+if ($i3bar_window) {
     ok(1, 'i3bar present');
 } else {
-    $con = $cv->recv;
+    my $con = $cv->recv;
     ok($con, 'i3bar appeared');
+    $i3bar_window = $con->{window};
 }
+
+diag('i3bar window = ' . $i3bar_window);
 
 my $left = open_window;
 my $right = open_window;
 sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $right->{id}, 'focus is initially on the right container');
-reset_test;
 
-xtest_button_press(1, 3, 3);
-xtest_button_release(1, 3, 3);
-sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $left->{id}, 'button 1 moves focus left');
-reset_test;
+sub focus_subtest {
+    my ($subscribecb, $want, $msg) = @_;
+    my @events = events_for(
+	$subscribecb,
+	'window');
+    my @focus = map { $_->{container}->{window} } grep { $_->{change} eq 'focus' } @events;
+    is_deeply(\@focus, $want, $msg);
+}
 
-xtest_button_press(2, 3, 3);
-xtest_button_release(2, 3, 3);
-sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $right->{id}, 'button 2 moves focus right');
-reset_test;
+subtest 'button 1 moves focus left', \&focus_subtest,
+    sub {
+	xtest_button_press(1, 3, 3);
+	xtest_button_release(1, 3, 3);
+	xtest_sync_with($i3bar_window);
+    },
+    [ $left->{id} ],
+    'button 1 moves focus left';
 
-xtest_button_press(3, 3, 3);
-xtest_button_release(3, 3, 3);
-sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $left->{id}, 'button 3 moves focus left');
-reset_test;
+subtest 'button 2 moves focus right', \&focus_subtest,
+    sub {
+	xtest_button_press(2, 3, 3);
+	xtest_button_release(2, 3, 3);
+	xtest_sync_with($i3bar_window);
+    },
+    [ $right->{id} ],
+    'button 2 moves focus right';
 
-xtest_button_press(4, 3, 3);
-xtest_button_release(4, 3, 3);
-sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $right->{id}, 'button 4 moves focus right');
-reset_test;
+subtest 'button 3 moves focus left', \&focus_subtest,
+    sub {
+	xtest_button_press(3, 3, 3);
+	xtest_button_release(3, 3, 3);
+	xtest_sync_with($i3bar_window);
+    },
+    [ $left->{id} ],
+    'button 3 moves focus left';
 
-xtest_button_press(5, 3, 3);
-xtest_button_release(5, 3, 3);
-sync_with_i3;
-$con = $cv->recv;
-is($con->{window}, $left->{id}, 'button 5 moves focus left');
-reset_test;
+subtest 'button 4 moves focus right', \&focus_subtest,
+    sub {
+	xtest_button_press(4, 3, 3);
+	xtest_button_release(4, 3, 3);
+	xtest_sync_with($i3bar_window);
+    },
+    [ $right->{id} ],
+    'button 4 moves focus right';
+
+subtest 'button 5 moves focus left', \&focus_subtest,
+    sub {
+	xtest_button_press(5, 3, 3);
+	xtest_button_release(5, 3, 3);
+	xtest_sync_with($i3bar_window);
+    },
+    [ $left->{id} ],
+    'button 5 moves focus left';
+
+# Test --release flag with bar bindsym.
+# See issue: #3068.
+
+my $old_focus = get_focused($ws);
+subtest 'button 6 does not move focus while pressed', \&focus_subtest,
+    sub {
+        xtest_button_press(6, 3, 3);
+        xtest_sync_with($i3bar_window);
+    },
+    [],
+    'button 6 does not move focus while pressed';
+is(get_focused($ws), $old_focus, 'focus unchanged');
+
+subtest 'button 6 release moves focus right', \&focus_subtest,
+    sub {
+        xtest_button_release(6, 3, 3);
+        xtest_sync_with($i3bar_window);
+    },
+    [ $right->{id} ],
+    'button 6 release moves focus right';
+
+# Test same bindsym button with and without --release.
+
+subtest 'button 7 press moves focus left', \&focus_subtest,
+    sub {
+        xtest_button_press(7, 3, 3);
+        xtest_sync_with($i3bar_window);
+    },
+    [ $left->{id} ],
+    'button 7 press moves focus left';
+
+subtest 'button 7 release moves focus right', \&focus_subtest,
+    sub {
+        xtest_button_release(7, 3, 3);
+        xtest_sync_with($i3bar_window);
+    },
+    [ $right->{id} ],
+    'button 7 release moves focus right';
 
 done_testing;

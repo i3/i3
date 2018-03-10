@@ -44,6 +44,9 @@ It tries to start one of the following (in that order):
 * tilix
 * terminix
 * konsole
+* kitty
+* guake
+* tilda
 
 Please don’t complain about the order: If the user has any preference, they will
 have $TERMINAL set or modified their i3 configuration file.

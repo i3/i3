@@ -496,7 +496,7 @@ void init_ws_for_output(Output *output, Con *content) {
     Con *ws = create_workspace_on_output(output, content);
 
     /* TODO: Set focus in main.c */
-    con_focus(ws);
+    con_activate(ws);
 }
 
 /*
@@ -924,7 +924,7 @@ void randr_query_outputs(void) {
             continue;
 
         DLOG("Focusing primary output %s\n", output_primary_name(output));
-        con_focus(con_descend_focused(output->con));
+        con_activate(con_descend_focused(output->con));
     }
 
     /* render_layout flushes */
@@ -987,7 +987,7 @@ void randr_disable_output(Output *output) {
 
         if (next) {
             DLOG("now focusing next = %p\n", next);
-            con_focus(next);
+            con_activate(next);
             workspace_show(con_get_workspace(next));
         }
 

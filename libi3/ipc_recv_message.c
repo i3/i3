@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include <i3/ipc.h>
 
@@ -41,14 +42,21 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
         if (n == -1)
             return -1;
         if (n == 0) {
-            return -2;
+            if (read_bytes == 0) {
+                return -2;
+            } else {
+                ELOG("IPC: unexpected EOF while reading header, got %" PRIu32 " bytes, want %" PRIu32 " bytes\n",
+                     read_bytes, to_read);
+                return -3;
+            }
         }
 
         read_bytes += n;
     }
 
     if (memcmp(walk, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC)) != 0) {
-        ELOG("IPC: invalid magic in reply\n");
+        ELOG("IPC: invalid magic in header, got \"%.*s\", want \"%s\"\n",
+             (int)strlen(I3_IPC_MAGIC), walk, I3_IPC_MAGIC);
         return -3;
     }
 
@@ -61,12 +69,17 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
     *reply = smalloc(*reply_length);
 
     read_bytes = 0;
-    int n;
     while (read_bytes < *reply_length) {
-        if ((n = read(sockfd, *reply + read_bytes, *reply_length - read_bytes)) == -1) {
+        const int n = read(sockfd, *reply + read_bytes, *reply_length - read_bytes);
+        if (n == -1) {
             if (errno == EINTR || errno == EAGAIN)
                 continue;
             return -1;
+        }
+        if (n == 0) {
+            ELOG("IPC: unexpected EOF while reading payload, got %" PRIu32 " bytes, want %" PRIu32 " bytes\n",
+                 read_bytes, *reply_length);
+            return -3;
         }
 
         read_bytes += n;

@@ -1,7 +1,6 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael@i3wm.org>
-March 2013
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please check https://www.reddit.com/r/i3wm/
@@ -11,7 +10,7 @@ mailing list.
 == Default keybindings
 
 For the "too long; didn’t read" people, here is an overview of the default
-keybindings (click to see the full size image):
+keybindings (click to see the full-size image):
 
 *Keys to use with $mod (Alt):*
 
@@ -35,7 +34,8 @@ above, just decline i3-config-wizard’s offer and base your config on
 
 Throughout this guide, the keyword +$mod+ will be used to refer to the
 configured modifier. This is the Alt key (+Mod1+) by default, with the Windows
-key (+Mod4+) being a popular alternative.
+key (+Mod4+) being a popular alternative that largely prevents conflicts with
+application-defined shortcuts.
 
 === Opening terminals and moving around
 
@@ -196,7 +196,7 @@ out to be complicated to use (snapping), understand and implement.
 
 === The tree consists of Containers
 
-The building blocks of our tree are so called +Containers+. A +Container+ can
+The building blocks of our tree are so-called +Containers+. A +Container+ can
 host a window (meaning an X11 window, one that you can actually see and use,
 like a browser). Alternatively, it could contain one or more +Containers+. A
 simple example is the workspace: When you start i3 with a single monitor, a
@@ -509,7 +509,7 @@ mode "$mode_launcher" {
 === The floating modifier
 
 To move floating windows with your mouse, you can either grab their titlebar
-or configure the so called floating modifier which you can then press and
+or configure the so-called floating modifier which you can then press and
 click anywhere in the window itself to move it. The most common setup is to
 use the same key you use for managing windows (Mod1 for example). Then
 you can press Mod1, click into a window using your left mouse button, and drag
@@ -585,23 +585,26 @@ workspace_layout default|stacking|tabbed
 workspace_layout tabbed
 ---------------------
 
-=== Border style for new windows
+=== Default border style for new windows
 
 This option determines which border style new windows will have. The default is
-+normal+. Note that new_float applies only to windows which are starting out as
++normal+. Note that default_floating_border applies only to windows which are starting out as
 floating windows, e.g., dialog windows, but not windows that are floated later on.
 
 *Syntax*:
 ---------------------------------------------
-new_window normal|none|pixel
-new_window normal|pixel <px>
-new_float normal|none|pixel
-new_float normal|pixel <px>
+default_border normal|none|pixel
+default_border normal|pixel <px>
+default_floating_border normal|none|pixel
+default_floating_border normal|pixel <px>
 ---------------------------------------------
+
+Please note that +new_window+ and +new_float+ have been deprecated in favor of the above options
+and will be removed in a future release. We strongly recommend using the new options instead.
 
 *Example*:
 ---------------------
-new_window pixel
+default_border pixel
 ---------------------
 
 The "normal" and "pixel" border styles support an optional border width in
@@ -609,11 +612,11 @@ pixels:
 
 *Example*:
 ---------------------
-# The same as new_window none
-new_window pixel 0
+# The same as default_border none
+default_border pixel 0
 
 # A 3 px border
-new_window pixel 3
+default_border pixel 3
 ---------------------
 
 
@@ -760,13 +763,18 @@ title change. As i3 will get the title as soon as the application maps the
 window (mapping means actually displaying it on the screen), you’d need to have
 to match on 'Firefox' in this case.
 
+You can also assign a window to show up on a specific output. You can use RandR
+names such as +VGA1+ or names relative to the output with the currently focused
+workspace such as +left+ and +down+.
+
 Assignments are processed by i3 in the order in which they appear in the config
 file. The first one which matches the window wins and later assignments are not
 considered.
 
 *Syntax*:
 ------------------------------------------------------------
-assign <criteria> [→] [workspace] <workspace>
+assign <criteria> [→] [workspace] [number] <workspace>
+assign <criteria> [→] output left|right|up|down|primary|<output>
 ------------------------------------------------------------
 
 *Examples*:
@@ -783,11 +791,28 @@ assign [class="^URxvt$"] → 2
 # Assignment to a named workspace
 assign [class="^URxvt$"] → work
 
+# Assign to the workspace with number 2, regardless of name
+assign [class="^URxvt$"] → number 2
+
+# You can also specify a number + name. If the workspace with number 2 exists, assign will skip the text part.
+assign [class="^URxvt$"] → number "2: work"
+
 # Start urxvt -name irssi
 assign [class="^URxvt$" instance="^irssi$"] → 3
+
+# Assign urxvt to the output right of the current one
+assign [class="^URxvt$"] → output right
+
+# Assign urxvt to the primary output
+assign [class="^URxvt$"] → output primary
 ----------------------
 
-Note that the arrow is not required, it just looks good :-). If you decide to
+Note that you might not have a primary output configured yet. To do so, run:
+-------------------------
+xrandr --output <output> --primary
+-------------------------
+
+Also, the arrow is not required, it just looks good :-). If you decide to
 use it, it has to be a UTF-8 encoded arrow, not `->` or something like that.
 
 To get the class and instance, you can use +xprop+. After clicking on the
@@ -1033,26 +1058,39 @@ popup_during_fullscreen smart
 
 === Focus wrapping
 
-When being in a tabbed or stacked container, the first container will be
-focused when you use +focus down+ on the last container -- the focus wraps. If
-however there is another stacked/tabbed container in that direction, focus will
-be set on that container. This is the default behavior so you can navigate to
-all your windows without having to use +focus parent+.
+By default, when in a container with several windows or child containers, the
+opposite window will be focused when trying to move the focus over the edge of
+a container (and there are no other containers in that direction) -- the focus
+wraps.
+
+If desired, you can disable this behavior by setting the +focus_wrapping+
+configuration directive to the value +no+.
+
+When enabled, focus wrapping does not occur by default if there is another
+window or container in the specified direction, and focus will instead be set
+on that window or container. This is the default behavior so you can navigate
+to all your windows without having to use +focus parent+.
 
 If you want the focus to *always* wrap and you are aware of using +focus
-parent+ to switch to different containers, you can use the
-+force_focus_wrapping+ configuration directive. After enabling it, the focus
-will always wrap.
+parent+ to switch to different containers, you can instead set +focus_wrapping+
+to the value +force+.
 
 *Syntax*:
 ---------------------------
-force_focus_wrapping yes|no
+focus_wrapping yes|no|force
+
+# Legacy syntax, equivalent to "focus_wrapping force"
+force_focus_wrapping yes
 ---------------------------
 
-*Example*:
-------------------------
-force_focus_wrapping yes
-------------------------
+*Examples*:
+-----------------
+# Disable focus wrapping
+focus_wrapping no
+
+# Force focus wrapping
+focus_wrapping force
+-----------------
 
 === Forcing Xinerama
 
@@ -1341,7 +1379,7 @@ and will be removed in a future release. We strongly recommend using the more ge
 
 *Syntax*:
 ----------------------------
-bindsym button<n> <command>
+bindsym [--release] button<n> <command>
 ----------------------------
 
 *Example*:
@@ -1349,6 +1387,8 @@ bindsym button<n> <command>
 bar {
     # disable clicking on workspace buttons
     bindsym button1 nop
+    # Take a screenshot by right clicking on the bar
+    bindsym --release button3 exec --no-startup-id import /tmp/latest-screenshot.png
     # execute custom script when scrolling downwards
     bindsym button5 exec ~/.i3/scripts/custom_wheel_down
 }
@@ -1913,6 +1953,9 @@ bindsym $mod+t floating toggle
 To change focus, you can use the +focus+ command. The following options are
 available:
 
+<criteria>::
+    Sets focus to the container that matches the specified criteria.
+    See <<command_criteria>>.
 left|right|up|down::
         Sets focus to the nearest container in the given direction.
 parent::
@@ -1932,6 +1975,7 @@ output::
 
 *Syntax*:
 ----------------------------------------------
+<criteria> focus
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
 focus output left|right|up|down|primary|<output>
@@ -1939,6 +1983,9 @@ focus output left|right|up|down|primary|<output>
 
 *Examples*:
 -------------------------------------------------
+# Focus firefox
+bindsym $mod+F1 [class="Firefox"] focus
+
 # Focus container on the left, bottom, top, right
 bindsym $mod+j focus left
 bindsym $mod+k focus down
@@ -2232,7 +2279,6 @@ bindsym $mod+x move container to output VGA1
 bindsym $mod+x move container to output primary
 --------------------------------------------------------
 
--------------------------------
 Note that you might not have a primary output configured yet. To do so, run:
 -------------------------
 xrandr --output <output> --primary
@@ -2267,7 +2313,7 @@ If you want to resize containers/windows using your keyboard, you can use the
 *Syntax*:
 -------------------------------------------------------
 resize grow|shrink <direction> [<px> px [or <ppt> ppt]]
-resize set <width> [px] <height> [px]
+resize set <width> [px | ppt] <height> [px | ppt]
 -------------------------------------------------------
 
 Direction can either be one of +up+, +down+, +left+ or +right+. Or you can be
@@ -2276,8 +2322,11 @@ space from all the other containers. The optional pixel argument specifies by
 how many pixels a *floating container* should be grown or shrunk (the default
 is 10 pixels). The ppt argument means percentage points and specifies by how
 many percentage points a *tiling container* should be grown or shrunk (the
-default is 10 percentage points). Note that +resize set+ will only work for
-floating containers.
+default is 10 percentage points).
+
+Notes about +resize set+: a value of 0 for <width> or <height> means "do
+not resize in this direction", and resizing a tiling container by +px+ is not
+implemented.
 
 It is recommended to define bindings for resizing in a dedicated binding mode.
 See <<binding_modes>> and the example in the i3
@@ -2363,10 +2412,10 @@ TODO: make i3-input replace %s
 *Examples*:
 ---------------------------------------
 # Read 1 character and mark the current window with this character
-bindsym $mod+m exec i3-input -p 'mark ' -l 1 -P 'Mark: '
+bindsym $mod+m exec i3-input -F 'mark %s' -l 1 -P 'Mark: '
 
 # Read 1 character and go to the window with the character
-bindsym $mod+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
+bindsym $mod+g exec i3-input -F '[con_mark="%s"] focus' -l 1 -P 'Goto: '
 ---------------------------------------
 
 Alternatively, if you do not want to mess with +i3-input+, you could create

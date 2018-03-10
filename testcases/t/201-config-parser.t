@@ -116,6 +116,7 @@ is(parser_calls($config),
 
 $config = <<'EOT';
 assign [class="^Chrome"] 4
+assign [class="^Chrome"] workspace number 3
 assign [class="^Chrome"] named workspace
 assign [class="^Chrome"] "quoted named workspace"
 assign [class="^Chrome"] → "quoted named workspace"
@@ -123,13 +124,15 @@ EOT
 
 $expected = <<'EOT';
 cfg_criteria_add(class, ^Chrome)
-cfg_assign(4)
+cfg_assign(4, 0)
 cfg_criteria_add(class, ^Chrome)
-cfg_assign(named workspace)
+cfg_assign(3, 1)
 cfg_criteria_add(class, ^Chrome)
-cfg_assign(quoted named workspace)
+cfg_assign(named workspace, 0)
 cfg_criteria_add(class, ^Chrome)
-cfg_assign(quoted named workspace)
+cfg_assign(quoted named workspace, 0)
+cfg_criteria_add(class, ^Chrome)
+cfg_assign(quoted named workspace, 0)
 EOT
 
 is(parser_calls($config),
@@ -142,7 +145,7 @@ is(parser_calls($config),
 
 $config = <<'EOT';
 floating_minimum_size 80x55
-floating_minimum_size 80    x  55  
+floating_minimum_size 80    x  55
 floating_maximum_size 73 x 10
 EOT
 
@@ -242,8 +245,8 @@ is(parser_calls($config),
 ################################################################################
 
 $config = <<'EOT';
-workspace "3" output DP-1 
-workspace "3" output     	VGA-1	
+workspace "3" output DP-1
+workspace "3" output     	VGA-1
 EOT
 
 $expected = <<'EOT';
@@ -263,19 +266,33 @@ $config = <<'EOT';
 new_window 1pixel
 new_window normal
 new_window none
+default_border 1pixel
+default_border normal
+default_border none
 new_float 1pixel
 new_float normal
 new_float none
+default_floating_border 1pixel
+default_floating_border normal
+default_floating_border none
 EOT
 
 $expected = <<'EOT';
-cfg_new_window(new_window, 1pixel, -1)
-cfg_new_window(new_window, normal, 2)
-cfg_new_window(new_window, none, -1)
-cfg_new_window(new_float, 1pixel, -1)
-cfg_new_window(new_float, normal, 2)
-cfg_new_window(new_float, none, -1)
+cfg_default_border(new_window, 1pixel, -1)
+cfg_default_border(new_window, normal, 2)
+cfg_default_border(new_window, none, -1)
+cfg_default_border(default_border, 1pixel, -1)
+cfg_default_border(default_border, normal, 2)
+cfg_default_border(default_border, none, -1)
+cfg_default_border(new_float, 1pixel, -1)
+cfg_default_border(new_float, normal, 2)
+cfg_default_border(new_float, none, -1)
+cfg_default_border(default_floating_border, 1pixel, -1)
+cfg_default_border(default_floating_border, normal, 2)
+cfg_default_border(default_floating_border, none, -1)
 EOT
+
+# TODO: are there no tests for "border pixel 1" etc?
 
 is(parser_calls($config),
    $expected,
@@ -459,7 +476,9 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         floating_modifier
         default_orientation
         workspace_layout
+        default_border
         new_window
+        default_floating_border
         new_float
         hide_edge_borders
         for_window
@@ -467,6 +486,7 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         no_focus
         focus_follows_mouse
         mouse_warping
+        focus_wrapping
         force_focus_wrapping
         force_xinerama
         force-xinerama

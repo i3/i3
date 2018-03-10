@@ -318,7 +318,7 @@ void floating_enable(Con *con, bool automatic) {
     render_con(con, false);
 
     if (set_focus)
-        con_focus(con);
+        con_activate(con);
 
     /* Check if we need to re-assign it to a different workspace because of its
      * coordinates and exit if that was done successfully. */
@@ -382,7 +382,7 @@ void floating_disable(Con *con, bool automatic) {
     con_fix_percent(con->parent);
 
     if (set_focus)
-        con_focus(con);
+        con_activate(con);
 
     floating_set_hint_atom(con, false);
     ipc_send_window_event("floating", con);
@@ -449,7 +449,8 @@ bool floating_maybe_reassign_ws(Con *con) {
     Con *ws = TAILQ_FIRST(&(content->focus_head));
     DLOG("Moving con %p / %s to workspace %p / %s\n", con, con->name, ws, ws->name);
     con_move_to_workspace(con, ws, false, true, false);
-    con_focus(con_descend_focused(con));
+    workspace_show(ws);
+    con_activate(con_descend_focused(con));
     return true;
 }
 
@@ -667,7 +668,7 @@ void floating_resize_window(Con *con, const bool proportional,
 
 /* Custom data structure used to track dragging-related events. */
 struct drag_x11_cb {
-    ev_check check;
+    ev_prepare prepare;
 
     /* Whether this modal event loop should be exited and with which result. */
     drag_result_t result;
@@ -686,7 +687,7 @@ struct drag_x11_cb {
     const void *extra;
 };
 
-static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
+static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
     struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w->data;
     xcb_motion_notify_event_t *last_motion_notify = NULL;
     xcb_generic_event_t *event;
@@ -746,8 +747,10 @@ static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
         if (last_motion_notify != (xcb_motion_notify_event_t *)event)
             free(event);
 
-        if (dragloop->result != DRAGGING)
+        if (dragloop->result != DRAGGING) {
+            free(last_motion_notify);
             return;
+        }
     }
 
     if (last_motion_notify == NULL)
@@ -765,6 +768,8 @@ static void xcb_drag_check_cb(EV_P_ ev_check *w, int revents) {
             dragloop->extra);
     }
     free(last_motion_notify);
+
+    xcb_flush(conn);
 }
 
 /*
@@ -831,18 +836,18 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
         .callback = callback,
         .extra = extra,
     };
-    ev_check *check = &loop.check;
+    ev_prepare *prepare = &loop.prepare;
     if (con)
         loop.old_rect = con->rect;
-    ev_check_init(check, xcb_drag_check_cb);
-    check->data = &loop;
+    ev_prepare_init(prepare, xcb_drag_prepare_cb);
+    prepare->data = &loop;
     main_set_x11_cb(false);
-    ev_check_start(main_loop, check);
+    ev_prepare_start(main_loop, prepare);
 
     while (loop.result == DRAGGING)
         ev_run(main_loop, EVRUN_ONCE);
 
-    ev_check_stop(main_loop, check);
+    ev_prepare_stop(main_loop, prepare);
     main_set_x11_cb(true);
 
     xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME);

@@ -29,13 +29,15 @@ state INITIAL:
   'floating_modifier'                      -> FLOATING_MODIFIER
   'default_orientation'                    -> DEFAULT_ORIENTATION
   'workspace_layout'                       -> WORKSPACE_LAYOUT
-  windowtype = 'new_window', 'new_float'   -> NEW_WINDOW
+  windowtype = 'default_border', 'new_window', 'default_floating_border', 'new_float'
+      -> DEFAULT_BORDER
   'hide_edge_borders'                      -> HIDE_EDGE_BORDERS
   'for_window'                             -> FOR_WINDOW
   'assign'                                 -> ASSIGN
   'no_focus'                               -> NO_FOCUS
   'focus_follows_mouse'                    -> FOCUS_FOLLOWS_MOUSE
   'mouse_warping'                          -> MOUSE_WARPING
+  'focus_wrapping'                         -> FOCUS_WRAPPING
   'force_focus_wrapping'                   -> FORCE_FOCUS_WRAPPING
   'force_xinerama', 'force-xinerama'       -> FORCE_XINERAMA
   'disable_randr15', 'disable-randr15'     -> DISABLE_RANDR15
@@ -104,25 +106,25 @@ state WORKSPACE_LAYOUT:
   layout = 'default', 'stacking', 'stacked', 'tabbed'
       -> call cfg_workspace_layout($layout)
 
-# new_window <normal|1pixel|none>
-# new_float <normal|1pixel|none>
-state NEW_WINDOW:
+# <default_border|new_window> <normal|1pixel|none>
+# <default_floating_border|new_float> <normal|1pixel|none>
+state DEFAULT_BORDER:
   border = 'normal', 'pixel'
-      -> NEW_WINDOW_PIXELS
+      -> DEFAULT_BORDER_PIXELS
   border = '1pixel', 'none'
-      -> call cfg_new_window($windowtype, $border, -1)
+      -> call cfg_default_border($windowtype, $border, -1)
 
-state NEW_WINDOW_PIXELS:
+state DEFAULT_BORDER_PIXELS:
   end
-      -> call cfg_new_window($windowtype, $border, 2)
+      -> call cfg_default_border($windowtype, $border, 2)
   width = number
-      -> NEW_WINDOW_PIXELS_PX
+      -> DEFAULT_BORDER_PIXELS_PX
 
-state NEW_WINDOW_PIXELS_PX:
+state DEFAULT_BORDER_PIXELS_PX:
   'px'
       ->
   end
-      -> call cfg_new_window($windowtype, $border, &width)
+      -> call cfg_default_border($windowtype, $border, &width)
 
 # hide_edge_borders <none|vertical|horizontal|both|smart>
 # also hide_edge_borders <bool> for compatibility
@@ -141,7 +143,7 @@ state FOR_WINDOW_COMMAND:
   command = string
       -> call cfg_for_window($command)
 
-# assign <criteria> [→] workspace
+# assign <criteria> [→] [workspace | output] <name>
 state ASSIGN:
   '['
       -> call cfg_criteria_init(ASSIGN_WORKSPACE); CRITERIA
@@ -149,10 +151,22 @@ state ASSIGN:
 state ASSIGN_WORKSPACE:
   '→'
       ->
+  'output'
+      -> ASSIGN_OUTPUT
   'workspace'
       ->
+  'number'
+      -> ASSIGN_WORKSPACE_NUMBER
   workspace = string
-      -> call cfg_assign($workspace)
+      -> call cfg_assign($workspace, 0)
+
+state ASSIGN_OUTPUT:
+  output = string
+      -> call cfg_assign_output($output)
+
+state ASSIGN_WORKSPACE_NUMBER:
+  number = string
+      -> call cfg_assign($number, 1)
 
 # no_focus <criteria>
 state NO_FOCUS:
@@ -196,6 +210,11 @@ state FOCUS_FOLLOWS_MOUSE:
 state MOUSE_WARPING:
   value = 'none', 'output'
       -> call cfg_mouse_warping($value)
+
+# focus_wrapping
+state FOCUS_WRAPPING:
+  value = '1', 'yes', 'true', 'on', 'enable', 'active', '0', 'no', 'false', 'off', 'disable', 'inactive', 'force'
+      -> call cfg_focus_wrapping($value)
 
 # force_focus_wrapping
 state FORCE_FOCUS_WRAPPING:
@@ -483,12 +502,16 @@ state BAR_WHEEL_DOWN_CMD:
       -> call cfg_bar_wheel_down_cmd($command); BAR
 
 state BAR_BINDSYM:
+  release = '--release'
+      ->
   button = word
       -> BAR_BINDSYM_COMMAND
 
 state BAR_BINDSYM_COMMAND:
+  release = '--release'
+      ->
   command = string
-      -> call cfg_bar_bindsym($button, $command); BAR
+      -> call cfg_bar_bindsym($button, $release, $command); BAR
 
 state BAR_POSITION:
   position = 'top', 'bottom'

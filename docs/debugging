@@ -153,7 +153,7 @@ When sending bug reports, please attach the *whole* log file. Even if you think
 you found the section which clearly highlights the problem, additional
 information might be necessary to completely diagnose the problem.
 
-When debugging with us in IRC, be prepared to use a so called nopaste service
+When debugging with us in IRC, be prepared to use a so-called nopaste service
 such as https://pastebin.com because pasting large amounts of text in IRC
 sometimes leads to incomplete lines (servers have line length limitations) or
 flood kicks.

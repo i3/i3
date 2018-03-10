@@ -58,12 +58,10 @@
 #error "SYSCONFDIR not defined"
 #endif
 
-#define FREE(pointer)          \
-    do {                       \
-        if (pointer != NULL) { \
-            free(pointer);     \
-            pointer = NULL;    \
-        }                      \
+#define FREE(pointer)   \
+    do {                \
+        free(pointer);  \
+        pointer = NULL; \
     } while (0)
 
 #include "xcb.h"
@@ -94,7 +92,7 @@ static xcb_get_modifier_mapping_reply_t *modmap_reply;
 static i3Font font;
 static i3Font bold_font;
 static int char_width;
-static char *socket_path;
+static char *socket_path = NULL;
 static xcb_window_t win;
 static surface_t surface;
 static xcb_key_symbols_t *symbols;
@@ -744,7 +742,6 @@ static void finish() {
 
 int main(int argc, char *argv[]) {
     char *xdg_config_home;
-    socket_path = getenv("I3SOCK");
     char *pattern = "pango:monospace 8";
     char *patternbold = "pango:monospace bold 8";
     int o, option_index = 0;
@@ -823,12 +820,6 @@ int main(int argc, char *argv[]) {
                                     &xkb_base_event,
                                     &xkb_base_error) != 1)
         errx(EXIT_FAILURE, "Could not setup XKB extension.");
-
-    if (socket_path == NULL)
-        socket_path = root_atom_contents("I3_SOCKET_PATH", conn, screen);
-
-    if (socket_path == NULL)
-        socket_path = "/tmp/i3-ipc.sock";
 
     keysyms = xcb_key_symbols_alloc(conn);
     xcb_get_modifier_mapping_cookie_t modmap_cookie;

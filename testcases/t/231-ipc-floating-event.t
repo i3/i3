@@ -19,41 +19,22 @@
 # Bug still in: 4.8-7-gf4a8253
 use i3test;
 
-my $i3 = i3(get_socket_path());
-$i3->connect->recv;
+sub floating_subtest {
+    my ($win, $cmd, $want) = @_;
 
-my $cv = AnyEvent->condvar;
+    my @events = events_for(
+	sub { cmd $cmd },
+	'window');
 
-$i3->subscribe({
-        window => sub {
-            my ($event) = @_;
-            $cv->send($event) if $event->{change} eq 'floating';
-        }
-    })->recv;
-
-my $t;
-$t = AnyEvent->timer(
-    after => 0.5,
-    cb => sub {
-        $cv->send(0);
-    }
-);
+    my @floating = grep { $_->{change} eq 'floating' } @events;
+    is(scalar @floating, 1, 'Received 1 floating event');
+    is($floating[0]->{container}->{window}, $win->{id}, "window id matches");
+    is($floating[0]->{container}->{floating}, $want, "floating is $want");
+}
 
 my $win = open_window();
 
-cmd '[id="' . $win->{id} . '"] floating enable';
-my $e = $cv->recv;
-
-isnt($e, 0, 'floating a container should send an ipc window event');
-is($e->{container}->{window}, $win->{id}, 'the event should contain information about the window');
-is($e->{container}->{floating}, 'user_on', 'the container should be floating');
-
-$cv = AnyEvent->condvar;
-cmd '[id="' . $win->{id} . '"] floating disable';
-$e = $cv->recv;
-
-isnt($e, 0, 'disabling floating on a container should send an ipc window event');
-is($e->{container}->{window}, $win->{id}, 'the event should contain information about the window');
-is($e->{container}->{floating}, 'user_off', 'the container should not be floating');
+subtest 'floating enable', \&floating_subtest, $win, '[id="' . $win->{id} . '"] floating enable', 'user_on';
+subtest 'floating disable', \&floating_subtest, $win, '[id="' . $win->{id} . '"] floating disable', 'user_off';
 
 done_testing;

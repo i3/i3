@@ -79,14 +79,6 @@
     } while (0)
 
 /*
- * Returns true if a is definitely greater than b (using the given epsilon)
- *
- */
-static bool definitelyGreaterThan(float a, float b, float epsilon) {
-    return (a - b) > ((fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
-}
-
-/*
  * Checks whether we switched to a new workspace and returns false in that case,
  * signaling that further workspace switching should be done by the calling function
  * If not, calls workspace_back_and_forth() if workspace_auto_back_and_forth is set
@@ -269,14 +261,20 @@ void cmd_criteria_add(I3_CMD, const char *ctype, const char *cvalue) {
     match_parse_property(current_match, ctype, cvalue);
 }
 
+static void move_matches_to_workspace(Con *ws) {
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        DLOG("matching: %p / %s\n", current->con, current->con->name);
+        con_move_to_workspace(current->con, ws, true, false, false);
+    }
+}
+
 /*
  * Implementation of 'move [window|container] [to] workspace
  * next|prev|next_on_output|prev_on_output|current'.
  *
  */
 void cmd_move_con_to_workspace(I3_CMD, const char *which) {
-    owindow *current;
-
     DLOG("which=%s\n", which);
 
     /* We have nothing to move:
@@ -309,10 +307,7 @@ void cmd_move_con_to_workspace(I3_CMD, const char *which) {
         return;
     }
 
-    TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false, false);
-    }
+    move_matches_to_workspace(ws);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -324,11 +319,7 @@ void cmd_move_con_to_workspace(I3_CMD, const char *which) {
  *
  */
 void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
-    owindow *current;
-    Con *ws;
-
-    ws = workspace_back_and_forth_get();
-
+    Con *ws = workspace_back_and_forth_get();
     if (ws == NULL) {
         yerror("No workspace was previously active.");
         return;
@@ -336,10 +327,7 @@ void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
 
     HANDLE_EMPTY_MATCH;
 
-    TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false, false);
-    }
+    move_matches_to_workspace(ws);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -358,7 +346,6 @@ void cmd_move_con_to_workspace_name(I3_CMD, const char *name, const char *_no_au
     }
 
     const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
-    owindow *current;
 
     /* We have nothing to move:
      *  when criteria was specified but didn't match any window or
@@ -382,10 +369,7 @@ void cmd_move_con_to_workspace_name(I3_CMD, const char *name, const char *_no_au
 
     HANDLE_EMPTY_MATCH;
 
-    TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, ws, true, false, false);
-    }
+    move_matches_to_workspace(ws);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -398,7 +382,6 @@ void cmd_move_con_to_workspace_name(I3_CMD, const char *name, const char *_no_au
  */
 void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_and_forth) {
     const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
-    owindow *current;
 
     /* We have nothing to move:
      *  when criteria was specified but didn't match any window or
@@ -412,7 +395,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *_no
 
     LOG("should move window to workspace %s\n", which);
     /* get the workspace */
-    Con *output, *workspace = NULL;
+    Con *output, *ws = NULL;
 
     long parsed_num = ws_name_to_number(which);
 
@@ -423,22 +406,19 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *_no
     }
 
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-    GREP_FIRST(workspace, output_get_content(output),
+    GREP_FIRST(ws, output_get_content(output),
                child->num == parsed_num);
 
-    if (!workspace) {
-        workspace = workspace_get(which, NULL);
+    if (!ws) {
+        ws = workspace_get(which, NULL);
     }
 
     if (!no_auto_back_and_forth)
-        workspace = maybe_auto_back_and_forth_workspace(workspace);
+        ws = maybe_auto_back_and_forth_workspace(ws);
 
     HANDLE_EMPTY_MATCH;
 
-    TAILQ_FOREACH(current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-        con_move_to_workspace(current->con, workspace, true, false, false);
-    }
+    move_matches_to_workspace(ws);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -511,7 +491,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     else
         search_direction = D_DOWN;
 
-    bool res = resize_find_tiling_participants(&first, &second, search_direction);
+    bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
     if (!res) {
         LOG("No second container in this direction found.\n");
         ysuccess(false);
@@ -525,8 +505,8 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     LOG("default percentage = %f\n", percentage);
 
     /* resize */
-    LOG("second->percent = %f\n", second->percent);
     LOG("first->percent before = %f\n", first->percent);
+    LOG("second->percent before = %f\n", second->percent);
     if (first->percent == 0.0)
         first->percent = percentage;
     if (second->percent == 0.0)
@@ -535,12 +515,10 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     double new_second_percent = second->percent - ((double)ppt / 100.0);
     LOG("new_first_percent = %f\n", new_first_percent);
     LOG("new_second_percent = %f\n", new_second_percent);
-    /* Ensure that the new percentages are positive and greater than
-     * 0.05 to have a reasonable minimum size. */
-    if (definitelyGreaterThan(new_first_percent, 0.05, DBL_EPSILON) &&
-        definitelyGreaterThan(new_second_percent, 0.05, DBL_EPSILON)) {
-        first->percent += ((double)ppt / 100.0);
-        second->percent -= ((double)ppt / 100.0);
+    /* Ensure that the new percentages are positive. */
+    if (new_first_percent > 0.0 && new_second_percent > 0.0) {
+        first->percent = new_first_percent;
+        second->percent = new_second_percent;
         LOG("first->percent after = %f\n", first->percent);
         LOG("second->percent after = %f\n", second->percent);
     } else {
@@ -552,43 +530,21 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
 
 static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way, const char *direction, int ppt) {
     LOG("width/height resize\n");
+
     /* get the appropriate current container (skip stacked/tabbed cons) */
-    while (current->parent->layout == L_STACKED ||
-           current->parent->layout == L_TABBED)
-        current = current->parent;
-
-    /* Then further go up until we find one with the matching orientation. */
-    orientation_t search_orientation =
-        (strcmp(direction, "width") == 0 ? HORIZ : VERT);
-
-    while (current->type != CT_WORKSPACE &&
-           current->type != CT_FLOATING_CON &&
-           (con_orientation(current->parent) != search_orientation || con_num_children(current->parent) == 1))
-        current = current->parent;
+    Con *dummy = NULL;
+    direction_t search_direction = (strcmp(direction, "width") == 0 ? D_LEFT : D_DOWN);
+    bool search_result = resize_find_tiling_participants(&current, &dummy, search_direction, true);
+    if (search_result == false) {
+        ysuccess(false);
+        return false;
+    }
 
     /* get the default percentage */
     int children = con_num_children(current->parent);
     LOG("ins. %d children\n", children);
     double percentage = 1.0 / children;
     LOG("default percentage = %f\n", percentage);
-
-    orientation_t orientation = con_orientation(current->parent);
-
-    if ((orientation == HORIZ &&
-         strcmp(direction, "height") == 0) ||
-        (orientation == VERT &&
-         strcmp(direction, "width") == 0)) {
-        LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
-            (orientation == HORIZ ? "horizontal" : "vertical"));
-        ysuccess(false);
-        return false;
-    }
-
-    if (children == 1) {
-        LOG("This is the only container, cannot resize.\n");
-        ysuccess(false);
-        return false;
-    }
 
     /* Ensure all the other children have a percentage set. */
     Con *child;
@@ -602,24 +558,23 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
     double subtract_percent = ((double)ppt / 100.0) / (children - 1);
     LOG("new_current_percent = %f\n", new_current_percent);
     LOG("subtract_percent = %f\n", subtract_percent);
-    /* Ensure that the new percentages are positive and greater than
-     * 0.05 to have a reasonable minimum size. */
+    /* Ensure that the new percentages are positive. */
     TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
         if (child == current)
             continue;
-        if (!definitelyGreaterThan(child->percent - subtract_percent, 0.05, DBL_EPSILON)) {
+        if (child->percent - subtract_percent <= 0.0) {
             LOG("Not resizing, already at minimum size (child %p would end up with a size of %.f\n", child, child->percent - subtract_percent);
             ysuccess(false);
             return false;
         }
     }
-    if (!definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON)) {
+    if (new_current_percent <= 0.0) {
         LOG("Not resizing, already at minimum size\n");
         ysuccess(false);
         return false;
     }
 
-    current->percent += ((double)ppt / 100.0);
+    current->percent = new_current_percent;
     LOG("current->percent after = %f\n", current->percent);
 
     TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
@@ -676,31 +631,97 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
 }
 
 /*
- * Implementation of 'resize set <px> [px] <px> [px]'.
+ * Implementation of 'resize set <width> [px | ppt] <height> [px | ppt]'.
  *
  */
-void cmd_resize_set(I3_CMD, long cwidth, long cheight) {
-    DLOG("resizing to %ldx%ld px\n", cwidth, cheight);
-    if (cwidth <= 0 || cheight <= 0) {
-        ELOG("Resize failed: dimensions cannot be negative (was %ldx%ld)\n", cwidth, cheight);
+void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, const char *mode_height) {
+    DLOG("resizing to %ld %s x %ld %s\n", cwidth, mode_width, cheight, mode_height);
+    if (cwidth < 0 || cheight < 0) {
+        ELOG("Resize failed: dimensions cannot be negative (was %ld %s x %ld %s)\n", cwidth, mode_width, cheight, mode_height);
         return;
     }
 
     HANDLE_EMPTY_MATCH;
 
     owindow *current;
+    bool success = true;
     TAILQ_FOREACH(current, &owindows, owindows) {
         Con *floating_con;
         if ((floating_con = con_inside_floating(current->con))) {
+            Con *output = con_get_output(floating_con);
+            if (cwidth == 0) {
+                cwidth = output->rect.width;
+            } else if (mode_width && strcmp(mode_width, "ppt") == 0) {
+                cwidth = output->rect.width * ((double)cwidth / 100.0);
+            }
+            if (cheight == 0) {
+                cheight = output->rect.height;
+            } else if (mode_height && strcmp(mode_height, "ppt") == 0) {
+                cheight = output->rect.height * ((double)cheight / 100.0);
+            }
             floating_resize(floating_con, cwidth, cheight);
         } else {
-            ELOG("Resize failed: %p not a floating container\n", current->con);
+            if (current->con->window && current->con->window->dock) {
+                DLOG("This is a dock window. Not resizing (con = %p)\n)", current->con);
+                continue;
+            }
+
+            if (cwidth > 0 && mode_width && strcmp(mode_width, "ppt") == 0) {
+                /* get the appropriate current container (skip stacked/tabbed cons) */
+                Con *target = current->con;
+                Con *dummy;
+                resize_find_tiling_participants(&target, &dummy, D_LEFT, true);
+
+                /* Calculate new size for the target container */
+                double current_percent = target->percent;
+                char *action_string;
+                long adjustment;
+
+                if (current_percent > cwidth) {
+                    action_string = "shrink";
+                    adjustment = (int)(current_percent * 100) - cwidth;
+                } else {
+                    action_string = "grow";
+                    adjustment = cwidth - (int)(current_percent * 100);
+                }
+
+                /* perform resizing and report failure if not possible */
+                if (!cmd_resize_tiling_width_height(current_match, cmd_output,
+                                                    target, action_string, "width", adjustment)) {
+                    success = false;
+                }
+            }
+
+            if (cheight > 0 && mode_width && strcmp(mode_width, "ppt") == 0) {
+                /* get the appropriate current container (skip stacked/tabbed cons) */
+                Con *target = current->con;
+                Con *dummy;
+                resize_find_tiling_participants(&target, &dummy, D_DOWN, true);
+
+                /* Calculate new size for the target container */
+                double current_percent = target->percent;
+                char *action_string;
+                long adjustment;
+
+                if (current_percent > cheight) {
+                    action_string = "shrink";
+                    adjustment = (int)(current_percent * 100) - cheight;
+                } else {
+                    action_string = "grow";
+                    adjustment = cheight - (int)(current_percent * 100);
+                }
+
+                /* perform resizing and report failure if not possible */
+                if (!cmd_resize_tiling_width_height(current_match, cmd_output,
+                                                    target, action_string, "height", adjustment)) {
+                    success = false;
+                }
+            }
         }
     }
 
     cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    ysuccess(success);
 }
 
 /*
@@ -760,6 +781,7 @@ void cmd_nop(I3_CMD, const char *comment) {
     LOG("-------------------------------------------------\n");
     LOG("  NOP: %s\n", comment);
     LOG("-------------------------------------------------\n");
+    ysuccess(true);
 }
 
 /*
@@ -1044,25 +1066,7 @@ void cmd_move_con_to_output(I3_CMD, const char *name) {
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
 
-        Output *current_output = get_output_for_con(current->con);
-        assert(current_output != NULL);
-
-        Output *output = get_output_from_string(current_output, name);
-        if (output == NULL) {
-            ELOG("Could not find output \"%s\", skipping.\n", name);
-            had_error = true;
-            continue;
-        }
-
-        Con *ws = NULL;
-        GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-        if (ws == NULL) {
-            ELOG("Could not find a visible workspace on output %p.\n", output);
-            had_error = true;
-            continue;
-        }
-
-        con_move_to_workspace(current->con, ws, true, false, false);
+        had_error |= !con_move_to_output_name(current->con, name, true);
     }
 
     cmd_output->needs_tree_render = true;
@@ -1132,6 +1136,10 @@ void cmd_move_workspace_to_output(I3_CMD, const char *name) {
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
         Con *ws = con_get_workspace(current->con);
+        if (con_is_internal(ws)) {
+            continue;
+        }
+
         bool success = workspace_move_to_output(ws, name);
         if (!success) {
             ELOG("Failed to move workspace to output.\n");
@@ -1258,34 +1266,54 @@ void cmd_focus_direction(I3_CMD, const char *direction) {
 }
 
 /*
+ * Focus a container and disable any other fullscreen container not permitting the focus.
+ *
+ */
+static void cmd_focus_force_focus(Con *con) {
+    /* Disable fullscreen container in workspace with container to be focused. */
+    Con *ws = con_get_workspace(con);
+    Con *fullscreen_on_ws = (focused && focused->fullscreen_mode == CF_GLOBAL) ? focused : con_get_fullscreen_con(ws, CF_OUTPUT);
+    if (fullscreen_on_ws && fullscreen_on_ws != con && !con_has_parent(con, fullscreen_on_ws)) {
+        con_disable_fullscreen(fullscreen_on_ws);
+    }
+    con_activate(con);
+}
+
+/*
  * Implementation of 'focus tiling|floating|mode_toggle'.
  *
  */
 void cmd_focus_window_mode(I3_CMD, const char *window_mode) {
     DLOG("window_mode = %s\n", window_mode);
 
-    Con *ws = con_get_workspace(focused);
-    if (ws != NULL) {
-        if (strcmp(window_mode, "mode_toggle") == 0) {
-            if (con_inside_floating(focused))
-                window_mode = "tiling";
-            else
-                window_mode = "floating";
-        }
-        Con *current;
-        TAILQ_FOREACH(current, &(ws->focus_head), focused) {
-            if ((strcmp(window_mode, "floating") == 0 && current->type != CT_FLOATING_CON) ||
-                (strcmp(window_mode, "tiling") == 0 && current->type == CT_FLOATING_CON))
-                continue;
-
-            con_focus(con_descend_focused(current));
-            break;
-        }
+    bool to_floating = false;
+    if (strcmp(window_mode, "mode_toggle") == 0) {
+        to_floating = !con_inside_floating(focused);
+    } else if (strcmp(window_mode, "floating") == 0) {
+        to_floating = true;
+    } else if (strcmp(window_mode, "tiling") == 0) {
+        to_floating = false;
     }
 
-    cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    Con *ws = con_get_workspace(focused);
+    Con *current;
+    bool success = false;
+    TAILQ_FOREACH(current, &(ws->focus_head), focused) {
+        if ((to_floating && current->type != CT_FLOATING_CON) ||
+            (!to_floating && current->type == CT_FLOATING_CON))
+            continue;
+
+        cmd_focus_force_focus(con_descend_focused(current));
+        success = true;
+        break;
+    }
+
+    if (success) {
+        cmd_output->needs_tree_render = true;
+        ysuccess(true);
+    } else {
+        yerror("Failed to find a %s container in workspace.", to_floating ? "floating" : "tiling");
+    }
 }
 
 /*
@@ -1342,13 +1370,6 @@ void cmd_focus(I3_CMD) {
         if (!ws)
             continue;
 
-        /* Check the fullscreen focus constraints. */
-        if (!con_fullscreen_permits_focusing(current->con)) {
-            LOG("Cannot change focus while in fullscreen mode (fullscreen rules).\n");
-            ysuccess(false);
-            return;
-        }
-
         /* In case this is a scratchpad window, call scratchpad_show(). */
         if (ws == __i3_scratch) {
             scratchpad_show(current->con);
@@ -1372,13 +1393,13 @@ void cmd_focus(I3_CMD) {
          * So we focus 'current' to make it the currently focused window of
          * the target workspace, then revert focus. */
         Con *currently_focused = focused;
-        con_focus(current->con);
-        con_focus(currently_focused);
+        cmd_focus_force_focus(current->con);
+        con_activate(currently_focused);
 
         /* Now switch to the workspace, then focus */
         workspace_show(ws);
         LOG("focusing %p / %s\n", current->con, current->con->name);
-        con_focus(current->con);
+        con_activate(current->con);
         count++;
     }
 
@@ -1490,7 +1511,7 @@ void cmd_move_direction(I3_CMD, const char *direction, long move_px) {
 
     /* the move command should not disturb focus */
     if (focused != initially_focused)
-        con_focus(initially_focused);
+        con_activate(initially_focused);
 
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
@@ -1615,7 +1636,7 @@ void cmd_open(I3_CMD) {
     LOG("opening new container\n");
     Con *con = tree_open_con(NULL, NULL);
     con->layout = L_SPLITH;
-    con_focus(con);
+    con_activate(con);
 
     y(map_open);
     ystr("success");
@@ -2004,7 +2025,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
     }
 
     /* Restore the previous focus since con_attach messes with the focus. */
-    con_focus(previously_focused);
+    con_activate(previously_focused);
 
     cmd_output->needs_tree_render = true;
     ysuccess(true);

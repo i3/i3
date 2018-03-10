@@ -39,7 +39,6 @@ static TAILQ_HEAD(state_head, placeholder_state) state_head =
 static xcb_connection_t *restore_conn;
 
 static struct ev_io *xcb_watcher;
-static struct ev_check *xcb_check;
 static struct ev_prepare *xcb_prepare;
 
 static void restore_handle_event(int type, xcb_generic_event_t *event);
@@ -49,10 +48,6 @@ static void restore_xcb_got_event(EV_P_ struct ev_io *w, int revents) {
 }
 
 static void restore_xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
-    xcb_flush(restore_conn);
-}
-
-static void restore_xcb_check_cb(EV_P_ ev_check *w, int revents) {
     xcb_generic_event_t *event;
 
     if (xcb_connection_has_error(restore_conn)) {
@@ -77,6 +72,8 @@ static void restore_xcb_check_cb(EV_P_ ev_check *w, int revents) {
 
         free(event);
     }
+
+    xcb_flush(restore_conn);
 }
 
 /*
@@ -91,7 +88,6 @@ void restore_connect(void) {
         /* This is not the initial connect, but a reconnect, most likely
          * because our X11 connection was killed (e.g. by a user with xkill. */
         ev_io_stop(main_loop, xcb_watcher);
-        ev_check_stop(main_loop, xcb_check);
         ev_prepare_stop(main_loop, xcb_prepare);
 
         placeholder_state *state;
@@ -107,7 +103,6 @@ void restore_connect(void) {
          */
         xcb_disconnect(restore_conn);
         free(xcb_watcher);
-        free(xcb_check);
         free(xcb_prepare);
     }
 
@@ -124,14 +119,10 @@ void restore_connect(void) {
     }
 
     xcb_watcher = scalloc(1, sizeof(struct ev_io));
-    xcb_check = scalloc(1, sizeof(struct ev_check));
     xcb_prepare = scalloc(1, sizeof(struct ev_prepare));
 
     ev_io_init(xcb_watcher, restore_xcb_got_event, xcb_get_file_descriptor(restore_conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);
-
-    ev_check_init(xcb_check, restore_xcb_check_cb);
-    ev_check_start(main_loop, xcb_check);
 
     ev_prepare_init(xcb_prepare, restore_xcb_prepare_cb);
     ev_prepare_start(main_loop, xcb_prepare);

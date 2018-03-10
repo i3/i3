@@ -259,9 +259,26 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         Con *wm_desktop_ws = NULL;
 
         /* If not, check if it is assigned to a specific workspace */
-        if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE))) {
+        if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE)) ||
+            (assignment = assignment_for(cwindow, A_TO_WORKSPACE_NUMBER))) {
             DLOG("Assignment matches (%p)\n", match);
-            Con *assigned_ws = workspace_get(assignment->dest.workspace, NULL);
+
+            Con *assigned_ws = NULL;
+            if (assignment->type == A_TO_WORKSPACE_NUMBER) {
+                Con *output = NULL;
+                long parsed_num = ws_name_to_number(assignment->dest.workspace);
+
+                /* This will only work for workspaces that already exist. */
+                TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+                    GREP_FIRST(assigned_ws, output_get_content(output), child->num == parsed_num);
+                }
+            }
+            /* A_TO_WORKSPACE type assignment or fallback from A_TO_WORKSPACE_NUMBER
+             * when the target workspace number does not exist yet. */
+            if (!assigned_ws) {
+                assigned_ws = workspace_get(assignment->dest.workspace, NULL);
+            }
+
             nc = con_descend_tiling_focused(assigned_ws);
             DLOG("focused on ws %s: %p / %s\n", assigned_ws->name, nc, nc->name);
             if (nc->type == CT_WORKSPACE)
@@ -304,6 +321,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
                 nc = focused;
             } else
                 nc = tree_open_con(NULL, cwindow);
+        }
+
+        if ((assignment = assignment_for(cwindow, A_TO_OUTPUT))) {
+            con_move_to_output_name(nc, assignment->dest.output, true);
         }
     } else {
         /* M_BELOW inserts the new window as a child of the one which was
@@ -367,7 +388,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
              * needed e.g. for LibreOffice Impress multi-monitor
              * presentations to work out of the box. */
             if (output != NULL)
-                con_move_to_output(nc, output);
+                con_move_to_output(nc, output, false);
             con_toggle_fullscreen(nc, CF_OUTPUT);
         }
         fs = NULL;
@@ -625,7 +646,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * proper window event sequence. */
     if (set_focus && nc->mapped) {
         DLOG("Now setting focus.\n");
-        con_focus(nc);
+        con_activate(nc);
     }
 
     tree_render();

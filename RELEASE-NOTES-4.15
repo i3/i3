@@ -1,0 +1,113 @@
+
+ ┌────────────────────────────┐
+ │ Release notes for i3 v4.15 │
+ └────────────────────────────┘
+
+This is i3 v4.15. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+Aside from a number of fixes and documentation improvements, a number of
+commands have been extended to be more complete (e.g. “assign”, “resize”).
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.15        │
+ └────────────────────────────┘
+
+  • build: AnyEvent::I3 moved to the i3 repository, so that its main consumer,
+    the i3 testsuite, can use new features immediately (such as the tick event,
+    in this case).
+  • docs/hacking-howto: promote “using git / sending patches” and “how to
+    build?” sections
+  • docs/i3bar-protocol: document that pango markup only works with pango fonts
+  • docs/ipc: document focus, nodes, floating_nodes
+  • docs/ipc: urgent: complete the list of container types
+  • docs/ipc: document how to detect i3’s byte order in memory-safe languages
+  • docs/ipc: document the GET_CONFIG request
+  • docs/userguide: fix formatting issue
+  • docs/userguide: explain why Mod4 is usually preferred as a modifier
+  • docs/userguide: use more idiomatic english (full-size, so-called)
+  • docs/userguide: switch from removed goto command to focus
+  • docs/userguide: mention <criteria> in focus
+  • docs/userguide: remove outdated 2013 last-modified date
+  • dump-asy: add prerequisite checks
+  • dump-asy: fix warnings about empty container names
+  • i3-dump-log: enable shmlog on demand
+  • i3-sensible-terminal: add “kitty”, “guake”, “tilda”
+  • i3-sensible-editor: add “gvim”
+  • i3bar: add --release flag for bindsym in bar blocks
+  • i3bar: add relative coordinates in JSON for click events
+  • ipc: rename COMMAND to RUN_COMMAND for consistency
+  • ipc: implement tick event for less flaky tests
+  • ipc: add error reply to “focus <window_mode>”
+  • ipc: send success response for nop
+  • default config: add $mod+r to toggle resize mode
+  • default config: use variables for workspace names to avoid repetition
+  • introduce “assign <criteria> [→] [workspace] [number] <workspace>”
+  • introduce “assign <criteria> [→] output left|right|up|down|primary|<output>”
+  • introduce a “focus_wrapping” option (subsumes “force_focus_wrapping”)
+  • introduce percentage point resizing for floating containers:
+    “resize set <width> [px | ppt] <height> [px | ppt]”
+  • introduce “resize set <width> ppt <height> ppt” for tiling windows
+  • rename “new_window” and “new_float” to “default_border” and
+    “default_floating_border” (the old names keep working)
+  • output names (e.g. “DP2”) can now be used as synonyms for monitor names
+    (e.g. “Dell UP2414Q”).
+  • the “swap” command now works with fullscreen windows
+  • raise floating windows to top when they are focused programmatically
+  • _NET_ACTIVE_WINDOW: invalidate focus to force SetInputFocus call
+  • make focus handling consistent when changing focus between outputs
+  • round non-integer Xft.dpi values
+  • tiling resize: remove minimum size
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • i3bar: fix various memory leaks
+  • i3bar: fix crash when no status_command is provided
+  • fix uninitialized variables in init_dpi_end, tree_restore
+  • fix incorrectly set up signal handling
+  • fix “swap” debug log message
+  • fix crash when specifying invalid con_id for “swap”
+  • fix crash upon restart with window marks
+  • fix crash when config file does not end in a newline
+  • fix crash in append_layout
+  • fix crash in layout toggle command
+  • fix crash when switching monitors
+  • fix use-after-free in randr_init error path
+  • fix move accidentally moving windows across outputs
+  • fix crash when floating window is tiled while being resized
+  • fix out-of-bounds memory read
+  • fix memory leak when config conversion fails
+  • fix layout toggle split, which didn’t work until enabling tabbed/stack mode
+    once
+  • move XCB event handling into xcb_prepare_cb
+  • avert endless loop on unexpected EOF in ipc messages
+  • perform proper cleanup for signals with Term action
+  • don’t match containers in the scratchpad with criteria
+  • fix “workspace show” related issues
+  • fix config file conversion with long variable names
+  • fix config file conversion memory initialization
+  • prevent access of freed workspace in _workspace_show
+  • disable fullscreen when required when programmatically focusing windows
+  • free last_motion_notify
+  • don’t raise floating windows when focused because of focus_follows_mouse
+  • correctly set EWMH atoms when closing a workspace
+  • don’t raise floating windows when workspace is shown
+  • keep focus order when encapsulating workspaces
+  • validate layout files before loading
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  Alex Lu, Ben Creasy, Bennett Piater, Cast, chressie, clonejo, Dan Elkouby,
+  Daniel Mueller, DebianWall, Diki Ananta, Edward Betts, hwangcc23, Ingo Bürk,
+  Jan Alexander Steffens, Johannes Lange, Kent Fredric, livanh, Martin
+  T. H. Sandsmark, Michael Siegel, Orestis Floros, Pallav Agarwal, Pawel
+  S. Veselov, Pietro Cerutti, Theo Buehler, Thomas Praxl, Tyler Brazier,
+  Vladimir Panteleev, walker0643, Wes Roberts, xzfc
+
+-- Michael Stapelberg, 2018-03-10

@@ -19,7 +19,7 @@ RUN apt-get update && \
     dpkg-dev devscripts git equivs \
     clang clang-format-3.8 \
     lintian \
-    libmodule-install-perl libanyevent-perl libextutils-pkgconfig-perl xcb-proto cpanminus xvfb xserver-xephyr xauth libinline-perl libinline-c-perl libxml-simple-perl libmouse-perl libmousex-nativetraits-perl libextutils-depends-perl perl libtest-deep-perl libtest-exception-perl libxml-parser-perl libtest-simple-perl libtest-fatal-perl libdata-dump-perl libtest-differences-perl libxml-tokeparser-perl libipc-run-perl libxcb-xtest0-dev libx11-xcb-perl libjson-xs-perl && \
+    libmodule-install-perl libanyevent-perl libextutils-pkgconfig-perl xcb-proto cpanminus xvfb xserver-xephyr xauth libinline-perl libinline-c-perl libxml-simple-perl libmouse-perl libmousex-nativetraits-perl libextutils-depends-perl perl libtest-deep-perl libtest-exception-perl libxml-parser-perl libtest-simple-perl libtest-fatal-perl libdata-dump-perl libtest-differences-perl libxml-tokeparser-perl libipc-run-perl libxcb-xtest0-dev libx11-xcb-perl libjson-xs-perl x11-xserver-utils && \
     rm -rf /var/lib/apt/lists/*
 
 # Install i3 build dependencies.

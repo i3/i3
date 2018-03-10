@@ -19,41 +19,19 @@
 # Bug still in: 4.7.2-135-g7deb23c
 use i3test;
 
-my $i3 = i3(get_socket_path());
-$i3->connect()->recv;
+open_window;
 
-my $cv;
-my $t;
+sub fullscreen_subtest {
+    my ($want) = @_;
+    my @events = events_for(
+	sub { cmd 'fullscreen' },
+	'window');
 
-sub reset_test {
-    $cv = AE::cv;
-    $t = AE::timer(0.5, 0, sub { $cv->send(0); });
+    is(scalar @events, 1, 'Received 1 event');
+    is($events[0]->{container}->{fullscreen_mode}, $want, "fullscreen_mode now $want");
 }
 
-reset_test;
-
-$i3->subscribe({
-        window => sub {
-            my ($e) = @_;
-            if ($e->{change} eq 'fullscreen_mode') {
-                $cv->send($e->{container});
-            }
-        },
-    })->recv;
-
-my $window = open_window;
-
-cmd 'fullscreen';
-my $con = $cv->recv;
-
-ok($con, 'got fullscreen window event (on)');
-is($con->{fullscreen_mode}, 1, 'window is fullscreen');
-
-reset_test;
-cmd 'fullscreen';
-$con = $cv->recv;
-
-ok($con, 'got fullscreen window event (off)');
-is($con->{fullscreen_mode}, 0, 'window is not fullscreen');
+subtest 'fullscreen on', \&fullscreen_subtest, 1;
+subtest 'fullscreen off', \&fullscreen_subtest, 0;
 
 done_testing;

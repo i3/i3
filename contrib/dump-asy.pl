@@ -13,7 +13,14 @@ use warnings;
 use Data::Dumper;
 use AnyEvent::I3;
 use File::Temp;
+use File::Basename;
 use v5.10;
+use IPC::Cmd qw[can_run];
+
+# prerequisites check so we can be specific about failures caused
+# by not having these tools in the path
+can_run('asy') or die 'Please install asymptote';
+can_run('gv') or die 'Please install gv';
 
 my $i3 = i3();
 
@@ -30,7 +37,7 @@ sub dump_node {
 
     my $o = ($n->{orientation} eq 'none' ? "u" : ($n->{orientation} eq 'horizontal' ? "h" : "v"));
     my $w = (defined($n->{window}) ? $n->{window} : "N");
-    my $na = $n->{name};
+    my $na = ($n->{name} or "[Empty]");
     $na =~ s/#/\\#/g;
     $na =~ s/\$/\\\$/g;
     $na =~ s/&/\\&/g;
@@ -38,7 +45,7 @@ sub dump_node {
     $na =~ s/~/\\textasciitilde{}/g;
     my $type = 'leaf';
     if (!defined($n->{window})) {
-        $type = $n->{orientation} . '-split';
+        $type = $n->{layout};
     }
     my $name = qq|``$na'' ($type)|;
 
@@ -75,4 +82,5 @@ say $tmp "draw(n" . $root->{id} . ", (0, 0));";
 close($tmp);
 my $rep = "$tmp";
 $rep =~ s/asy$/eps/;
-system("cd /tmp && asy $tmp && gv --scale=-1000 --noresize --widgetless $rep && rm $rep");
+my $tmp_dir = dirname($rep);
+system("cd $tmp_dir && asy $tmp && gv --scale=-1000 --noresize --widgetless $rep && rm $rep");

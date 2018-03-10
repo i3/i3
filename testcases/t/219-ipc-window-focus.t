@@ -16,13 +16,6 @@
 
 use i3test;
 
-SKIP: {
-
-    skip "AnyEvent::I3 too old (need >= 0.15)", 1 if $AnyEvent::I3::VERSION < 0.15;
-
-my $i3 = i3(get_socket_path());
-$i3->connect()->recv;
-
 ################################
 # Window focus event
 ################################
@@ -33,62 +26,29 @@ my $win0 = open_window;
 my $win1 = open_window;
 my $win2 = open_window;
 
-my $focus = AnyEvent->condvar;
-
-$i3->subscribe({
-    window => sub {
-        my ($event) = @_;
-        $focus->send($event);
-    }
-})->recv;
-
-my $t;
-$t = AnyEvent->timer(
-    after => 0.5,
-    cb => sub {
-        $focus->send(0);
-    }
-);
-
 # ensure the rightmost window contains input focus
-$i3->command('[id="' . $win2->id . '"] focus')->recv;
+cmd '[id="' . $win2->id . '"] focus';
 is($x->input_focus, $win2->id, "Window 2 focused");
 
-cmd 'focus left';
-my $event = $focus->recv;
-is($event->{change}, 'focus', 'Focus event received');
-is($focus->recv->{container}->{name}, 'Window 1', 'Window 1 focused');
+sub focus_subtest {
+    my ($cmd, $name) = @_;
 
-$focus = AnyEvent->condvar;
-cmd 'focus left';
-$event = $focus->recv;
-is($event->{change}, 'focus', 'Focus event received');
-is($event->{container}->{name}, 'Window 0', 'Window 0 focused');
+    my $focus = AnyEvent->condvar;
 
-$focus = AnyEvent->condvar;
-cmd 'focus right';
-$event = $focus->recv;
-is($event->{change}, 'focus', 'Focus event received');
-is($event->{container}->{name}, 'Window 1', 'Window 1 focused');
+    my @events = events_for(
+	sub { cmd $cmd },
+	'window');
 
-$focus = AnyEvent->condvar;
-cmd 'focus right';
-$event = $focus->recv;
-is($event->{change}, 'focus', 'Focus event received');
-is($event->{container}->{name}, 'Window 2', 'Window 2 focused');
-
-$focus = AnyEvent->condvar;
-cmd 'focus right';
-$event = $focus->recv;
-is($event->{change}, 'focus', 'Focus event received');
-is($event->{container}->{name}, 'Window 0', 'Window 0 focused');
-
-$focus = AnyEvent->condvar;
-cmd 'focus left';
-$event = $focus->recv;
-is($event->{change}, 'focus', 'Focus event received');
-is($event->{container}->{name}, 'Window 2', 'Window 2 focused');
-
+    is(scalar @events, 1, 'Received 1 event');
+    is($events[0]->{change}, 'focus', 'Focus event received');
+    is($events[0]->{container}->{name}, $name, "$name focused");
 }
+
+subtest 'focus left (1)', \&focus_subtest, 'focus left', $win1->name;
+subtest 'focus left (2)', \&focus_subtest, 'focus left', $win0->name;
+subtest 'focus right (1)', \&focus_subtest, 'focus right', $win1->name;
+subtest 'focus right (2)', \&focus_subtest, 'focus right', $win2->name;
+subtest 'focus right (3)', \&focus_subtest, 'focus right', $win0->name;
+subtest 'focus left', \&focus_subtest, 'focus left', $win2->name;
 
 done_testing;

@@ -180,5 +180,35 @@ cmd '[con_mark=marked] move workspace to output current';
 ok($ws1 ~~ @$x0, 'ws1 on fake-0');
 
 ################################################################################
+# Verify that '[class=".*"] move workspace to output' doesn't fail when
+# containers in the scratchpad are matched.
+# See issue: #3064.
+################################################################################
+my $__i3_scratch = get_ws('__i3_scratch');
+is(scalar @{$__i3_scratch->{floating_nodes}}, 0, 'scratchpad is empty');
+
+$ws0 = fresh_workspace(output => 0);
+open_window(wm_class => 'a');
+
+$ws1 = fresh_workspace(output => 1);
+open_window(wm_class => 'b');
+my $scratchpad_window = open_window(wm_class => 'c');
+cmd 'move to scratchpad';
+
+($x0, $x1) = workspaces_per_screen();
+ok($ws0 ~~ @$x0, 'ws0 on fake-0');
+ok($ws1 ~~ @$x1, 'ws1 on fake-1');
+
+my $reply = cmd '[class=".*"] move workspace to output fake-1';
+ok($reply->[0]->{success}, 'move successful');
+
+($x0, $x1) = workspaces_per_screen();
+ok($ws0 ~~ @$x1, 'ws0 on fake-1');
+ok($ws1 ~~ @$x1, 'ws1 on fake-1');
+
+$__i3_scratch = get_ws('__i3_scratch');
+is(scalar @{$__i3_scratch->{floating_nodes}}, 1, 'window still in scratchpad');
+
+################################################################################
 
 done_testing;

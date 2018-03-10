@@ -30,7 +30,7 @@ fresh_workspace;
 
 xtest_button_press(4, 50, 50);
 xtest_button_release(4, 50, 50);
-sync_with_i3;
+xtest_sync_with_i3;
 
 is(focused_ws(), 'special', 'the binding was triggered');
 

@@ -27,6 +27,7 @@ typedef enum { M_DOCK = 0,
 typedef struct binding_t {
     int input_code;
     char *command;
+    bool release;
 
     TAILQ_ENTRY(binding_t)
     bindings;

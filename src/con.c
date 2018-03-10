@@ -253,6 +253,27 @@ void con_focus(Con *con) {
 }
 
 /*
+ * Raise container to the top if it is floating or inside some floating
+ * container.
+ *
+ */
+static void con_raise(Con *con) {
+    Con *floating = con_inside_floating(con);
+    if (floating) {
+        floating_raise_con(floating);
+    }
+}
+
+/*
+ * Sets input focus to the given container and raises it to the top.
+ *
+ */
+void con_activate(Con *con) {
+    con_focus(con);
+    con_raise(con);
+}
+
+/*
  * Closes the given container.
  *
  */
@@ -795,6 +816,62 @@ Con *con_for_window(Con *con, i3Window *window, Match **store_match) {
     return NULL;
 }
 
+static int num_focus_heads(Con *con) {
+    int focus_heads = 0;
+
+    Con *current;
+    TAILQ_FOREACH(current, &(con->focus_head), focused) {
+        focus_heads++;
+    }
+
+    return focus_heads;
+}
+
+/*
+ * Iterate over the container's focus stack and return an array with the
+ * containers inside it, ordered from higher focus order to lowest.
+ *
+ */
+Con **get_focus_order(Con *con) {
+    const int focus_heads = num_focus_heads(con);
+    Con **focus_order = smalloc(focus_heads * sizeof(Con *));
+    Con *current;
+    int idx = 0;
+    TAILQ_FOREACH(current, &(con->focus_head), focused) {
+        assert(idx < focus_heads);
+        focus_order[idx++] = current;
+    }
+
+    return focus_order;
+}
+
+/*
+ * Clear the container's focus stack and re-add it using the provided container
+ * array. The function doesn't check if the provided array contains the same
+ * containers with the previous focus stack but will not add floating containers
+ * in the new focus stack if container is not a workspace.
+ *
+ */
+void set_focus_order(Con *con, Con **focus_order) {
+    int focus_heads = 0;
+    while (!TAILQ_EMPTY(&(con->focus_head))) {
+        Con *current = TAILQ_FIRST(&(con->focus_head));
+
+        TAILQ_REMOVE(&(con->focus_head), current, focused);
+        focus_heads++;
+    }
+
+    for (int idx = 0; idx < focus_heads; idx++) {
+        /* Useful when encapsulating a workspace. */
+        if (con->type != CT_WORKSPACE && con_inside_floating(focus_order[idx])) {
+            focus_heads++;
+            continue;
+        }
+
+        TAILQ_INSERT_TAIL(&(con->focus_head), focus_order[idx], focused);
+    }
+}
+
 /*
  * Returns the number of children of this container.
  *
@@ -994,9 +1071,9 @@ void con_enable_fullscreen(Con *con, fullscreen_mode_t fullscreen_mode) {
     Con *old_focused = focused;
     if (fullscreen_mode == CF_GLOBAL && cur_ws != con_ws)
         workspace_show(con_ws);
-    con_focus(con);
+    con_activate(con);
     if (fullscreen_mode != CF_GLOBAL && cur_ws != con_ws)
-        con_focus(old_focused);
+        con_activate(old_focused);
 
     con_set_fullscreen_mode(con, fullscreen_mode);
 }
@@ -1148,11 +1225,11 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
          * new workspace is hidden and it's necessary to immediately switch
          * back to the originally-focused workspace. */
         Con *old_focus = TAILQ_FIRST(&(output_get_content(dest_output)->focus_head));
-        con_focus(con_descend_focused(con));
+        con_activate(con_descend_focused(con));
 
         /* Restore focus if the output's focused workspace has changed. */
         if (con_get_workspace(focused) != old_focus)
-            con_focus(old_focus);
+            con_activate(old_focus);
     }
 
     /* 7: when moving to another workspace, we leave the focus on the current
@@ -1172,7 +1249,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
     /* Set focus only if con was on current workspace before moving.
      * Otherwise we would give focus to some window on different workspace. */
     if (!ignore_focus && source_ws == current_ws)
-        con_focus(con_descend_focused(focus_next));
+        con_activate(con_descend_focused(focus_next));
 
     /* 8. If anything within the container is associated with a startup sequence,
      * delete it so child windows won't be created on the old workspace. */
@@ -1300,12 +1377,33 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
  * visible workspace on the given output.
  *
  */
-void con_move_to_output(Con *con, Output *output) {
+void con_move_to_output(Con *con, Output *output, bool fix_coordinates) {
     Con *ws = NULL;
     GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
     assert(ws != NULL);
     DLOG("Moving con %p to output %s\n", con, output_primary_name(output));
-    con_move_to_workspace(con, ws, false, false, false);
+    con_move_to_workspace(con, ws, fix_coordinates, false, false);
+}
+
+/*
+ * Moves the given container to the currently focused container on the
+ * visible workspace on the output specified by the given name.
+ * The current output for the container is used to resolve relative names
+ * such as left, right, up, down.
+ *
+ */
+bool con_move_to_output_name(Con *con, const char *name, bool fix_coordinates) {
+    Output *current_output = get_output_for_con(con);
+    assert(current_output != NULL);
+
+    Output *output = get_output_from_string(current_output, name);
+    if (output == NULL) {
+        ELOG("Could not find output \"%s\"\n", name);
+        return false;
+    }
+
+    con_move_to_output(con, output, fix_coordinates);
+    return true;
 }
 
 /*
@@ -1735,7 +1833,7 @@ void con_set_layout(Con *con, layout_t layout) {
             con->workspace_layout = ws_layout;
             DLOG("Setting layout to %d\n", layout);
             con->layout = layout;
-        } else if (layout == L_STACKED || layout == L_TABBED) {
+        } else if (layout == L_STACKED || layout == L_TABBED || layout == L_SPLITV || layout == L_SPLITH) {
             DLOG("Creating new split container\n");
             /* 1: create a new split container */
             Con *new = con_new(NULL, NULL);
@@ -1746,17 +1844,9 @@ void con_set_layout(Con *con, layout_t layout) {
             new->layout = layout;
             new->last_split_layout = con->last_split_layout;
 
-            /* Save the container that was focused before we move containers
-             * around, but only if the container is visible (otherwise focus
-             * will be restored properly automatically when switching). */
-            Con *old_focused = TAILQ_FIRST(&(con->focus_head));
-            if (old_focused == TAILQ_END(&(con->focus_head)))
-                old_focused = NULL;
-            if (old_focused != NULL &&
-                !workspace_is_visible(con_get_workspace(old_focused)))
-                old_focused = NULL;
-
             /* 3: move the existing cons of this workspace below the new con */
+            Con **focus_order = get_focus_order(con);
+
             DLOG("Moving cons\n");
             Con *child;
             while (!TAILQ_EMPTY(&(con->nodes_head))) {
@@ -1765,12 +1855,12 @@ void con_set_layout(Con *con, layout_t layout) {
                 con_attach(child, new, true);
             }
 
+            set_focus_order(new, focus_order);
+            free(focus_order);
+
             /* 4: attach the new split container to the workspace */
             DLOG("Attaching new split to ws\n");
             con_attach(new, con, false);
-
-            if (old_focused)
-                con_focus(old_focused);
 
             tree_flatten(croot);
         }
@@ -1827,6 +1917,10 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
                  * change to the opposite split layout. */
                 if (parent->layout != L_SPLITH && parent->layout != L_SPLITV) {
                     layout = parent->last_split_layout;
+                    /* In case last_split_layout was not initialized… */
+                    if (layout == L_DEFAULT) {
+                        layout = L_SPLITH;
+                    }
                 } else {
                     layout = (parent->layout == L_SPLITH) ? L_SPLITV : L_SPLITH;
                 }
@@ -2045,14 +2139,7 @@ bool con_fullscreen_permits_focusing(Con *con) {
 
     /* Allow it only if the container to be focused is contained within the
      * current fullscreen container. */
-    do {
-        if (con->parent == fs)
-            return true;
-        con = con->parent;
-    } while (con);
-
-    /* Focusing con would hide it behind a fullscreen window, disallow it. */
-    return false;
+    return con_has_parent(con, fs);
 }
 
 /*
@@ -2294,15 +2381,14 @@ bool con_swap(Con *first, Con *second) {
     Con *current_ws = con_get_workspace(old_focus);
     const bool focused_within_first = (first == old_focus || con_has_parent(old_focus, first));
     const bool focused_within_second = (second == old_focus || con_has_parent(old_focus, second));
+    fullscreen_mode_t first_fullscreen_mode = first->fullscreen_mode;
+    fullscreen_mode_t second_fullscreen_mode = second->fullscreen_mode;
 
-    if (!con_fullscreen_permits_focusing(first_ws)) {
-        DLOG("Cannot swap because target workspace \"%s\" is obscured.\n", first_ws->name);
-        return false;
+    if (first_fullscreen_mode != CF_NONE) {
+        con_disable_fullscreen(first);
     }
-
-    if (!con_fullscreen_permits_focusing(second_ws)) {
-        DLOG("Cannot swap because target workspace \"%s\" is obscured.\n", second_ws->name);
-        return false;
+    if (second_fullscreen_mode != CF_NONE) {
+        con_disable_fullscreen(second);
     }
 
     double first_percent = first->percent;
@@ -2341,7 +2427,7 @@ bool con_swap(Con *first, Con *second) {
      * We don't need to check this for the second container because we've only
      * moved the first one at this point.*/
     if (first_ws != second_ws && focused_within_first) {
-        con_focus(con_descend_focused(current_ws));
+        con_activate(con_descend_focused(current_ws));
     }
 
     /* Move second to where first has been originally. */
@@ -2384,15 +2470,15 @@ bool con_swap(Con *first, Con *second) {
      */
     if (focused_within_first) {
         if (first_ws == second_ws) {
-            con_focus(old_focus);
+            con_activate(old_focus);
         } else {
-            con_focus(con_descend_focused(second));
+            con_activate(con_descend_focused(second));
         }
     } else if (focused_within_second) {
         if (first_ws == second_ws) {
-            con_focus(old_focus);
+            con_activate(old_focus);
         } else {
-            con_focus(con_descend_focused(first));
+            con_activate(con_descend_focused(first));
         }
     }
 
@@ -2403,7 +2489,17 @@ bool con_swap(Con *first, Con *second) {
     second->percent = first_percent;
     fake->percent = 0.0;
 
+    SWAP(first_fullscreen_mode, second_fullscreen_mode, fullscreen_mode_t);
+
 swap_end:
+    /* The two windows exchange their original fullscreen status */
+    if (first_fullscreen_mode != CF_NONE) {
+        con_enable_fullscreen(first, first_fullscreen_mode);
+    }
+    if (second_fullscreen_mode != CF_NONE) {
+        con_enable_fullscreen(second, second_fullscreen_mode);
+    }
+
     /* We don't actually need this since percentages-wise we haven't changed
      * anything, but we'll better be safe than sorry and just make sure as we'd
      * otherwise crash i3. */

@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <signal.h>
 
 #include "libi3.h"
 #include "shmlog.h"
@@ -38,6 +39,29 @@ static uint32_t wrap_count;
 static i3_shmlog_header *header;
 static char *logbuffer,
     *walk;
+static int ipcfd = -1;
+
+static volatile bool interrupted = false;
+
+static void sighandler(int signal) {
+    interrupted = true;
+}
+
+static void disable_shmlog(void) {
+    const char *disablecmd = "debuglog off; shmlog off";
+    if (ipc_send_message(ipcfd, strlen(disablecmd),
+                         I3_IPC_MESSAGE_TYPE_COMMAND, (uint8_t *)disablecmd) != 0)
+        err(EXIT_FAILURE, "IPC send");
+
+    /* Ensure the command was sent by waiting for the reply: */
+    uint32_t reply_length = 0;
+    uint8_t *reply = NULL;
+    if (ipc_recv_message(ipcfd, I3_IPC_REPLY_TYPE_COMMAND,
+                         &reply_length, &reply) != 0) {
+        err(EXIT_FAILURE, "IPC recv");
+    }
+    free(reply);
+}
 
 static int check_for_wrap(void) {
     if (wrap_count == header->wrap_count)
@@ -57,6 +81,14 @@ static void print_till_end(void) {
     const int len = (logbuffer + header->offset_next_write) - walk;
     swrite(STDOUT_FILENO, walk, len);
     walk += len;
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
 }
 
 int main(int argc, char *argv[]) {
@@ -123,15 +155,35 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
         if (root_atom_contents("I3_CONFIG_PATH", conn, screen) != NULL) {
-            fprintf(stderr, "i3-dump-log: ERROR: i3 is running, but SHM logging is not enabled.\n\n");
-            if (!is_debug_build()) {
+            fprintf(stderr, "i3-dump-log: ERROR: i3 is running, but SHM logging is not enabled. Enabling SHM log until cancelled\n\n");
+            ipcfd = ipc_connect(NULL);
+            const char *enablecmd = "debuglog on; shmlog 5242880";
+            if (ipc_send_message(ipcfd, strlen(enablecmd),
+                                 I3_IPC_MESSAGE_TYPE_COMMAND, (uint8_t *)enablecmd) != 0)
+                err(EXIT_FAILURE, "IPC send");
+            /* By the time we receive a reply, I3_SHMLOG_PATH is set: */
+            uint32_t reply_length = 0;
+            uint8_t *reply = NULL;
+            if (ipc_recv_message(ipcfd, I3_IPC_REPLY_TYPE_COMMAND,
+                                 &reply_length, &reply) != 0) {
+                err(EXIT_FAILURE, "IPC recv");
+            }
+            free(reply);
+
+            atexit(disable_shmlog);
+
+            /* Retry: */
+            shmname = root_atom_contents("I3_SHMLOG_PATH", NULL, 0);
+            if (shmname == NULL && !is_debug_build()) {
                 fprintf(stderr, "You seem to be using a release version of i3:\n  %s\n\n", I3_VERSION);
                 fprintf(stderr, "Release versions do not use SHM logging by default,\ntherefore i3-dump-log does not work.\n\n");
                 fprintf(stderr, "Please follow this guide instead:\nhttps://i3wm.org/docs/debugging-release-version.html\n");
                 exit(1);
             }
         }
-        errx(EXIT_FAILURE, "Cannot get I3_SHMLOG_PATH atom contents. Is i3 running on this display?");
+        if (shmname == NULL) {
+            errx(EXIT_FAILURE, "Cannot get I3_SHMLOG_PATH atom contents. Is i3 running on this display?");
+        }
     }
 
     if (*shmname == '\0')
@@ -182,22 +234,32 @@ int main(int argc, char *argv[]) {
     print_till_end();
 
 #if !defined(__OpenBSD__)
-    if (follow) {
-        /* Since pthread_cond_wait() expects a mutex, we need to provide one.
+    if (!follow) {
+        return 0;
+    }
+
+    /* Handle SIGINT gracefully to invoke atexit handlers, if any. */
+    struct sigaction action;
+    action.sa_handler = sighandler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    sigaction(SIGINT, &action, NULL);
+
+    /* Since pthread_cond_wait() expects a mutex, we need to provide one.
          * To not lock i3 (that’s bad, mhkay?) we just define one outside of
          * the shared memory. */
-        pthread_mutex_t dummy_mutex = PTHREAD_MUTEX_INITIALIZER;
-        pthread_mutex_lock(&dummy_mutex);
-        while (1) {
-            pthread_cond_wait(&(header->condvar), &dummy_mutex);
-            /* If this was not a spurious wakeup, print the new lines. */
-            if (header->offset_next_write != offset_next_write) {
-                offset_next_write = header->offset_next_write;
-                print_till_end();
-            }
+    pthread_mutex_t dummy_mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&dummy_mutex);
+    while (!interrupted) {
+        pthread_cond_wait(&(header->condvar), &dummy_mutex);
+        /* If this was not a spurious wakeup, print the new lines. */
+        if (header->offset_next_write != offset_next_write) {
+            offset_next_write = header->offset_next_write;
+            print_till_end();
         }
     }
-#endif
 
+#endif
+    exit(0);
     return 0;
 }

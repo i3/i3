@@ -47,15 +47,20 @@
         break;                            \
     }
 
-#define FREE(pointer)          \
-    do {                       \
-        if (pointer != NULL) { \
-            free(pointer);     \
-            pointer = NULL;    \
-        }                      \
+#define FREE(pointer)   \
+    do {                \
+        free(pointer);  \
+        pointer = NULL; \
     } while (0)
 
 #define CALL(obj, member, ...) obj->member(obj, ##__VA_ARGS__)
+
+#define SWAP(first, second, type) \
+    do {                          \
+        type tmp_SWAP = first;    \
+        first = second;           \
+        second = tmp_SWAP;        \
+    } while (0)
 
 int min(int a, int b);
 int max(int a, int b);

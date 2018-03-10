@@ -87,7 +87,7 @@ sub start_xserver {
 
     # First get the last used display number, then increment it by one.
     # Effectively falls back to 1 if no X server is running.
-    my ($displaynum) = map { /(\d+)$/ } reverse sort glob($x_socketpath . '*');
+    my ($displaynum) = reverse sort { $a <=> $b } map{ /(\d+)$/ } glob($x_socketpath . '*');
     $displaynum++;
 
     say "Starting $parallel Xephyr instances, starting at :$displaynum...";
@@ -105,7 +105,7 @@ sub start_xserver {
     for (1 .. $parallel) {
         my $socket = fork_xserver($keep_xserver_output, $displaynum,
                 'Xephyr', ":$displaynum", '-screen', '1280x800',
-                '-nolisten', 'tcp');
+                '-nolisten', 'tcp', '-name', "i3test");
         push(@displays, ":$displaynum");
         push(@sockets_waiting, $socket);
         $displaynum++;

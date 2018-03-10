@@ -107,34 +107,34 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 
     if (!strcmp(cur_key, "mode")) {
         DLOG("mode = %.*s, len = %d\n", len, val, len);
-        config.hide_on_modifier = (len == 4 && !strncmp((const char *)val, "dock", strlen("dock")) ? M_DOCK
-                                                                                                   : (len == 4 && !strncmp((const char *)val, "hide", strlen("hide")) ? M_HIDE
-                                                                                                                                                                      : M_INVISIBLE));
+        config.hide_on_modifier = (len == strlen("dock") && !strncmp((const char *)val, "dock", strlen("dock")) ? M_DOCK
+                                                                                                                : (len == strlen("hide") && !strncmp((const char *)val, "hide", strlen("hide")) ? M_HIDE
+                                                                                                                                                                                                : M_INVISIBLE));
         return 1;
     }
 
     if (!strcmp(cur_key, "hidden_state")) {
         DLOG("hidden_state = %.*s, len = %d\n", len, val, len);
-        config.hidden_state = (len == 4 && !strncmp((const char *)val, "hide", strlen("hide")) ? S_HIDE : S_SHOW);
+        config.hidden_state = (len == strlen("hide") && !strncmp((const char *)val, "hide", strlen("hide")) ? S_HIDE : S_SHOW);
         return 1;
     }
 
     if (!strcmp(cur_key, "modifier")) {
         DLOG("modifier = %.*s\n", len, val);
-        if (len == 4 && !strncmp((const char *)val, "none", strlen("none"))) {
+        if (len == strlen("none") && !strncmp((const char *)val, "none", strlen("none"))) {
             config.modifier = XCB_NONE;
             return 1;
         }
 
-        if (len == 5 && !strncmp((const char *)val, "shift", strlen("shift"))) {
+        if (len == strlen("shift") && !strncmp((const char *)val, "shift", strlen("shift"))) {
             config.modifier = ShiftMask;
             return 1;
         }
-        if (len == 4 && !strncmp((const char *)val, "ctrl", strlen("ctrl"))) {
+        if (len == strlen("ctrl") && !strncmp((const char *)val, "ctrl", strlen("ctrl"))) {
             config.modifier = ControlMask;
             return 1;
         }
-        if (len == 4 && !strncmp((const char *)val, "Mod", strlen("Mod"))) {
+        if (len == strlen("Mod") + 1 && !strncmp((const char *)val, "Mod", strlen("Mod"))) {
             switch (val[3]) {
                 case '1':
                     config.modifier = Mod1Mask;
@@ -179,7 +179,7 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 
     if (!strcmp(cur_key, "position")) {
         DLOG("position = %.*s\n", len, val);
-        config.position = (len == 3 && !strncmp((const char *)val, "top", strlen("top")) ? POS_TOP : POS_BOT);
+        config.position = (len == strlen("top") && !strncmp((const char *)val, "top", strlen("top")) ? POS_TOP : POS_BOT);
         return 1;
     }
 
@@ -192,6 +192,7 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 
     if (!strcmp(cur_key, "font")) {
         DLOG("font = %.*s\n", len, val);
+        FREE(config.fontname);
         sasprintf(&config.fontname, "%.*s", len, val);
         return 1;
     }
@@ -263,6 +264,21 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
  *
  */
 static int config_boolean_cb(void *params_, int val) {
+    if (parsing_bindings) {
+        if (strcmp(cur_key, "release") == 0) {
+            binding_t *binding = TAILQ_LAST(&(config.bindings), bindings_head);
+            if (binding == NULL) {
+                ELOG("There is no binding to put the current command onto. This is a bug in i3.\n");
+                return 0;
+            }
+
+            binding->release = val;
+            return 1;
+        }
+
+        ELOG("Unknown key \"%s\" while parsing bar bindings.\n", cur_key);
+    }
+
     if (!strcmp(cur_key, "binding_mode_indicator")) {
         DLOG("binding_mode_indicator = %d\n", val);
         config.disable_binding_mode_indicator = !val;

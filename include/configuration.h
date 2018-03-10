@@ -137,15 +137,24 @@ struct Config {
      * comes with i3. Thus, you can turn it off entirely. */
     bool disable_workspace_bar;
 
-    /** Think of the following layout: Horizontal workspace with a tabbed
-     * con on the left of the screen and a terminal on the right of the
-     * screen. You are in the second container in the tabbed container and
-     * focus to the right. By default, i3 will set focus to the terminal on
-     * the right. If you are in the first container in the tabbed container
-     * however, focusing to the left will wrap. This option forces i3 to
-     * always wrap, which will result in you having to use "focus parent"
-     * more often. */
-    bool force_focus_wrapping;
+    /** When focus wrapping is enabled (the default), attempting to
+     * move focus past the edge of the screen (in other words, in a
+     * direction in which there are no more containers to focus) will
+     * cause the focus to wrap to the opposite edge of the current
+     * container. When it is disabled, nothing happens; the current
+     * focus is preserved.
+     *
+     * Additionally, focus wrapping may be forced. Think of the
+     * following layout: Horizontal workspace with a tabbed con on the
+     * left of the screen and a terminal on the right of the
+     * screen. You are in the second container in the tabbed container
+     * and focus to the right. By default, i3 will set focus to the
+     * terminal on the right. If you are in the first container in the
+     * tabbed container however, focusing to the left will
+     * wrap. Setting focus_wrapping to FOCUS_WRAPPING_FORCE forces i3
+     * to always wrap, which will result in you having to use "focus
+     * parent" more often. */
+    focus_wrapping_t focus_wrapping;
 
     /** By default, use the RandR API for multi-monitor setups.
      * Unfortunately, the nVidia binary graphics driver doesn't support
@@ -374,6 +383,9 @@ struct Barbinding {
 
     /** The command which is to be executed for this button. */
     char *command;
+
+    /** If true, the command will be executed after the button is released. */
+    bool release;
 
     TAILQ_ENTRY(Barbinding)
     bindings;

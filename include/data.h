@@ -134,6 +134,15 @@ typedef enum {
 } warping_t;
 
 /**
+ * Focus wrapping modes.
+ */
+typedef enum {
+    FOCUS_WRAPPING_OFF = 0,
+    FOCUS_WRAPPING_ON = 1,
+    FOCUS_WRAPPING_FORCE = 2
+} focus_wrapping_t;
+
+/**
  * Stores a rectangle, for example the size of a window, the child window etc.
  * It needs to be packed so that the compiler will not add any padding bytes.
  * (it is used in src/ewmh.c for example)
@@ -556,7 +565,9 @@ struct Assignment {
         A_ANY = 0,
         A_COMMAND = (1 << 0),
         A_TO_WORKSPACE = (1 << 1),
-        A_NO_FOCUS = (1 << 2)
+        A_NO_FOCUS = (1 << 2),
+        A_TO_WORKSPACE_NUMBER = (1 << 3),
+        A_TO_OUTPUT = (1 << 4)
     } type;
 
     /** the criteria to check if a window matches */
@@ -566,6 +577,7 @@ struct Assignment {
     union {
         char *command;
         char *workspace;
+        char *output;
     } dest;
 
     TAILQ_ENTRY(Assignment)

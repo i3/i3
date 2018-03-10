@@ -64,6 +64,7 @@ to do that).
 | 7 | +GET_VERSION+ | <<_version_reply,VERSION>> | Gets the i3 version.
 | 8 | +GET_BINDING_MODES+ | <<_binding_modes_reply,BINDING_MODES>> | Gets the names of all currently configured binding modes.
 | 9 | +GET_CONFIG+ | <<_config_reply,CONFIG>> | Returns the last loaded i3 config.
+| 10 | +SEND_TICK+ | <<_tick_reply,TICK>> | Sends a tick event with the specified payload.
 |======================================================
 
 So, a typical message could look like this:
@@ -126,6 +127,8 @@ BINDING_MODES (8)::
         Reply to the GET_BINDING_MODES message.
 GET_CONFIG (9)::
 	Reply to the GET_CONFIG message.
+TICK (10)::
+	Reply to the SEND_TICK message.
 
 [[_command_reply]]
 === COMMAND reply
@@ -637,6 +640,19 @@ which is a string containing the config file as loaded by i3 most recently.
 { "config": "font pango:monospace 8\nbindsym Mod4+q exit\n" }
 -------------------
 
+[[_tick_reply]]
+=== TICK reply
+
+The reply is a map containing the "success" member. After the reply was
+received, the tick event has been written to all IPC connections which subscribe
+to tick events. UNIX sockets are usually buffered, but you can be certain that
+once you receive the tick event you just triggered, you must have received all
+events generated prior to the +SEND_TICK+ message (happened-before relation).
+
+*Example:*
+-------------------
+{ "success": true }
+-------------------
 
 == Events
 
@@ -694,6 +710,10 @@ binding (5)::
 	mouse
 shutdown (6)::
 	Sent when the ipc shuts down because of a restart or exit by user command
+tick (7)::
+	Sent when the ipc client subscribes to the tick event (with +"first":
+	true+) or when any ipc client sends a SEND_TICK message (with +"first":
+	false+).
 
 *Example:*
 --------------------------------------------------------------------
@@ -866,6 +886,27 @@ because of a user action such as a +restart+ or +exit+ command. The +change
 }
 ---------------------------
 
+=== tick event
+
+This event is triggered by a subscription to tick events or by a +SEND_TICK+
+message.
+
+*Example (upon subscription):*
+--------------------------------------------------------------------------------
+{
+ "first": true,
+ "payload": ""
+}
+--------------------------------------------------------------------------------
+
+*Example (upon +SEND_TICK+ with a payload of +arbitrary string+):*
+--------------------------------------------------------------------------------
+{
+ "first": false,
+ "payload": "arbitrary string"
+}
+--------------------------------------------------------------------------------
+
 == See also (existing libraries)
 
 [[libraries]]
@@ -881,6 +922,7 @@ C++::
 	* https://github.com/drmgc/i3ipcpp
 Go::
 	* https://github.com/mdirkse/i3ipc-go
+	* https://github.com/i3/go-i3
 JavaScript::
 	* https://github.com/acrisci/i3ipc-gjs
 Lua::
@@ -958,3 +1000,6 @@ detect the byte order i3 is using:
      payload. Then, receive the pending +COMMAND+ message reply in big endian.
 
 5. From here on out, send/receive all messages using the detected byte order.
+
+Find an example implementation of this technique in
+https://github.com/i3/go-i3/blob/master/byteorder.go

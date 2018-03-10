@@ -38,6 +38,8 @@ binmode STDERR, ':utf8';
 # subshell or situations like that.
 AnyEvent::Util::close_all_fds_except(0, 1, 2);
 
+our @CLEANUP;
+
 # convenience wrapper to write to the log file
 my $log;
 sub Log { say $log "@_" }
@@ -55,6 +57,7 @@ my %options = (
     xtrace => 0,
     coverage => 0,
     restart => 0,
+    xvfb => 1,
 );
 my $keep_xserver_output = 0;
 
@@ -64,6 +67,7 @@ my $result = GetOptions(
     "valgrind" => \$options{valgrind},
     "strace" => \$options{strace},
     "xtrace" => \$options{xtrace},
+    "xvfb!" => \$options{xvfb},
     "display=s" => \@displays,
     "parallel=i" => \$parallel,
     "help|?" => \$help,
@@ -111,6 +115,44 @@ $ENV{PATH} = join(':',
 
 qx(Xephyr -help 2>&1);
 die "Xephyr was not found in your path. Please install Xephyr (xserver-xephyr on Debian)." if $?;
+
+qx(xvfb-run --help 2>&1);
+if ($? && $options{xvfb}) {
+    say "xvfb-run not found, not running tests under xvfb. Install the xvfb package to speed up tests";
+    $options{xvfb} = 0;
+}
+
+if ($options{xvfb}) {
+    for (my $n = 99; $n < 120; $n++) {
+	my $path = File::Temp::tmpnam($ENV{TMPDIR} // "/tmp", "i3-testsXXXXXX");
+	if (!defined(POSIX::mkfifo($path, 0600))) {
+	    die "mkfifo: $!";
+	}
+	my $pid = fork // die "fork: $!";
+	if ($pid == 0) {
+	    # Child
+
+	    # Xvfb checks whether the parent ignores USR1 and sends USR1 to the
+	    # parent when ready, so that the wait call will be interrupted.  We
+	    # can’t implement this in Perl, as Perl’s waitpid transparently
+	    # handles -EINTR.
+	    exec('/bin/sh', '-c', qq|trap "exit" INT; trap : USR1; (trap '' USR1; exec Xvfb :$n -screen 0 640x480x8 -nolisten tcp) & PID=\$!; wait; if ! kill -0 \$PID 2>/dev/null; then echo 1:\$PID > $path; else echo 0:\$PID > $path; wait \$PID; fi|);
+	    die "exec: $!";
+	}
+	chomp(my $kill = slurp($path));
+	unlink($path);
+	my ($code, $xvfbpid) = ($kill =~ m,^([0-1]):(.*)$,);
+	next unless $code eq '0';
+
+	$ENV{DISPLAY} = ":$n";
+	say "Running tests under Xvfb display $ENV{DISPLAY}";
+
+	push(@CLEANUP, sub {
+	    kill(15, $xvfbpid);
+	});
+	last;
+    }
+}
 
 @displays = split(/,/, join(',', @displays));
 @displays = map { s/ //g; $_ } @displays;
@@ -379,7 +421,7 @@ sub take_job {
 
 sub cleanup {
     my $exitcode = $?;
-    $_->() for our @CLEANUP;
+    $_->() for @CLEANUP;
     exit $exitcode;
 }
 
@@ -442,6 +484,12 @@ C<latest/strace-for-$test.log>.
 
 Runs i3 under xtrace to trace X11 requests/replies. The output will be
 available in C<latest/xtrace-for-$test.log>.
+
+=item B<--xvfb>
+
+=item B<--no-xvfb>
+
+Enable or disable running tests under Xvfb. Enabled by default.
 
 =item B<--coverage-testing>
 

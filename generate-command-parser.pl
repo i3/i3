@@ -116,17 +116,16 @@ my @keys = sort { (length($b) <=> length($a)) or ($a cmp $b) } keys %states;
 
 open(my $enumfh, '>', "GENERATED_${prefix}_enums.h");
 
-# XXX: we might want to have a way to do this without a trailing comma, but gcc
-# seems to eat it.
 my %statenum;
 say $enumfh 'typedef enum {';
 my $cnt = 0;
 for my $state (@keys, '__CALL') {
-    say $enumfh "    $state = $cnt,";
+    say $enumfh ',' if $cnt > 0;
+    print $enumfh "    $state = $cnt";
     $statenum{$state} = $cnt;
     $cnt++;
 }
-say $enumfh '} cmdp_state;';
+say $enumfh "\n} cmdp_state;";
 close($enumfh);
 
 # Third step: Generate the call function.
@@ -225,7 +224,7 @@ for my $state (@keys) {
             $next_state = '__CALL';
         }
         my $identifier = $token->{identifier};
-        say $tokfh qq|    { "$token_name", "$identifier", $next_state, { $call_identifier } }, |;
+        say $tokfh qq|    { "$token_name", "$identifier", $next_state, { $call_identifier } },|;
     }
     say $tokfh '};';
 }

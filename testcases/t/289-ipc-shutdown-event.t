@@ -23,14 +23,14 @@
 # Bug still in: 4.12-46-g2123888
 use i3test;
 
-SKIP: {
-    skip "AnyEvent::I3 too old (need >= 0.17)", 1 if $AnyEvent::I3::VERSION < 0.17;
+# We cannot use events_for in this test as we cannot send events after
+# issuing the restart/shutdown command.
 
 my $i3 = i3(get_socket_path());
 $i3->connect->recv;
 
-my $cv = AE::cv;
-my $timer = AE::timer 0.5, 0, sub { $cv->send(0); };
+my $cv = AnyEvent->condvar;
+my $timer = AnyEvent->timer(after => 0.5, interval => 0, cb => sub { $cv->send(0); });
 
 $i3->subscribe({
         shutdown => sub {
@@ -50,8 +50,8 @@ is($e->{change}, 'restart', 'the `change` field should tell the reason for the s
 $i3 = i3(get_socket_path());
 $i3->connect->recv;
 
-$cv = AE::cv;
-$timer = AE::timer 0.5, 0, sub { $cv->send(0); };
+$cv = AnyEvent->condvar;
+$timer = AnyEvent->timer(after => 0.5, interval => 0, cb => sub { $cv->send(0); });
 
 $i3->subscribe({
         shutdown => sub {
@@ -66,6 +66,5 @@ $e = $cv->recv;
 diag "Event:\n", Dumper($e);
 ok($e, 'the shutdown event should emit when the ipc is exited by command');
 is($e->{change}, 'exit', 'the `change` field should tell the reason for the shutdown');
-}
 
 done_testing;

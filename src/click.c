@@ -49,7 +49,7 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
             break;
     }
 
-    bool res = resize_find_tiling_participants(&first, &second, search_direction);
+    bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
     if (!res) {
         LOG("No second container in this direction found.\n");
         return false;
@@ -241,7 +241,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
          * The splitv container will be focused. */
         Con *focused = con->parent;
         focused = TAILQ_FIRST(&(focused->focus_head));
-        con_focus(focused);
+        con_activate(focused);
         /* To prevent scrolling from going outside the container (see ticket
          * #557), we first check if scrolling is possible at all. */
         bool scroll_prev_possible = (TAILQ_PREV(focused, nodes_head, nodes) != NULL);
@@ -256,7 +256,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     }
 
     /* 2: focus this con. */
-    con_focus(con);
+    con_activate(con);
 
     /* 3: For floating containers, we also want to raise them on click.
      * We will skip handling events on floating cons in fullscreen mode */

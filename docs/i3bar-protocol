@@ -177,7 +177,8 @@ separator_block_width::
 markup::
 	A string that indicates how the text of the block should be parsed. Set to
 	+"pango"+ to use https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup].
-	Set to +"none"+ to not use any markup (default).
+	Set to +"none"+ to not use any markup (default). Pango markup only works
+	if you use a pango font.
 
 If you want to put in your own entries into a block, prefix the key with an
 underscore (_). i3bar will ignore all keys it doesn’t understand, and prefixing
@@ -236,6 +237,11 @@ x, y::
 	X11 root window coordinates where the click occurred
 button::
 	X11 button ID (for example 1 to 3 for left/middle/right mouse button)
+relative_x, relative_y::
+    Coordinates where the click occurred, with respect to the top left corner
+    of the block
+width, height::
+    Width and height (in px) of the block
 
 *Example*:
 ------------------------------------------
@@ -244,6 +250,10 @@ button::
  "instance": "eth0",
  "button": 1,
  "x": 1320,
- "y": 1400
+ "y": 1400,
+ "relative_x": 12,
+ "relative_y": 8,
+ "width": 50,
+ "height": 22
 }
 ------------------------------------------

@@ -37,12 +37,11 @@ SKIP: {
     skip "libxcb-xkb too old (need >= 1.11)", 1 unless
         ExtUtils::PkgConfig->atleast_version('xcb-xkb', '1.11');
 
-start_binding_capture;
-
 is(listen_for_binding(
     sub {
         xtest_key_press(107); # Print
         xtest_key_release(107); # Print
+        xtest_sync_with_i3;
     },
     ),
     'Print',
@@ -54,6 +53,7 @@ is(listen_for_binding(
         xtest_key_press(107); # Print
         xtest_key_release(107); # Print
         xtest_key_release(37); # Control_L
+        xtest_sync_with_i3;
     },
     ),
     'Control+Print',
@@ -65,6 +65,7 @@ is(listen_for_binding(
         xtest_key_press(56); # b
         xtest_key_release(56); # b
         xtest_key_release(64); # Alt_L
+        xtest_sync_with_i3;
     },
     ),
     'Mod1+b',
@@ -78,13 +79,11 @@ is(listen_for_binding(
         xtest_key_release(56); # b
         xtest_key_release(50); # Shift_L
         xtest_key_release(64); # Alt_L
+        xtest_sync_with_i3;
     },
     ),
     'Mod1+Shift+b release',
     'triggered the "Mod1+Shift+b" release keybinding');
-
-sync_with_i3;
-is(scalar @i3test::XTEST::binding_events, 4, 'Received exactly 4 binding events');
 
 }
 

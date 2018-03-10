@@ -91,29 +91,42 @@ bindcode $mod+38 focus parent
 # focus the child container
 #bindsym $mod+d focus child
 
+# Define names for default workspaces for which we configure key bindings later on.
+# We use variables to avoid repeating the names in multiple places.
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+
 # switch to workspace
-bindcode $mod+10 workspace 1
-bindcode $mod+11 workspace 2
-bindcode $mod+12 workspace 3
-bindcode $mod+13 workspace 4
-bindcode $mod+14 workspace 5
-bindcode $mod+15 workspace 6
-bindcode $mod+16 workspace 7
-bindcode $mod+17 workspace 8
-bindcode $mod+18 workspace 9
-bindcode $mod+19 workspace 10
+bindcode $mod+10 workspace $ws1
+bindcode $mod+11 workspace $ws2
+bindcode $mod+12 workspace $ws3
+bindcode $mod+13 workspace $ws4
+bindcode $mod+14 workspace $ws5
+bindcode $mod+15 workspace $ws6
+bindcode $mod+16 workspace $ws7
+bindcode $mod+17 workspace $ws8
+bindcode $mod+18 workspace $ws9
+bindcode $mod+19 workspace $ws10
 
 # move focused container to workspace
-bindcode $mod+Shift+10 move container to workspace 1
-bindcode $mod+Shift+11 move container to workspace 2
-bindcode $mod+Shift+12 move container to workspace 3
-bindcode $mod+Shift+13 move container to workspace 4
-bindcode $mod+Shift+14 move container to workspace 5
-bindcode $mod+Shift+15 move container to workspace 6
-bindcode $mod+Shift+16 move container to workspace 7
-bindcode $mod+Shift+17 move container to workspace 8
-bindcode $mod+Shift+18 move container to workspace 9
-bindcode $mod+Shift+19 move container to workspace 10
+bindcode $mod+Shift+10 move container to workspace $ws1
+bindcode $mod+Shift+11 move container to workspace $ws2
+bindcode $mod+Shift+12 move container to workspace $ws3
+bindcode $mod+Shift+13 move container to workspace $ws4
+bindcode $mod+Shift+14 move container to workspace $ws5
+bindcode $mod+Shift+15 move container to workspace $ws6
+bindcode $mod+Shift+16 move container to workspace $ws7
+bindcode $mod+Shift+17 move container to workspace $ws8
+bindcode $mod+Shift+18 move container to workspace $ws9
+bindcode $mod+Shift+19 move container to workspace $ws10
 
 # reload the configuration file
 bindcode $mod+Shift+54 reload
@@ -141,9 +154,10 @@ mode "resize" {
         bindcode 111 resize shrink height 10 px or 10 ppt
         bindcode 114 resize grow width 10 px or 10 ppt
 
-        # back to normal: Enter or Escape
+        # back to normal: Enter or Escape or $mod+r
         bindcode 36 mode "default"
         bindcode 9 mode "default"
+        bindcode $mod+27 mode "default"
 }
 
 bindcode $mod+27 mode "resize"

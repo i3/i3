@@ -18,27 +18,16 @@
 # Ticket: #2501
 use i3test;
 
-my ($i3, $timer, $event, $mark);
+sub mark_subtest {
+    my ($cmd) = @_;
 
-$i3 = i3(get_socket_path());
-$i3->connect()->recv;
+    my @events = events_for(
+	sub { cmd $cmd },
+	'window');
 
-$i3->subscribe({
-    window => sub {
-        my ($event) = @_;
-        return unless defined $mark;
-        return unless $event->{change} eq 'mark';
-
-        $mark->send($event);
-    }
-})->recv;
-
-$timer = AnyEvent->timer(
-    after => 0.5,
-    cb => sub {
-        $mark->send(0);
-    }
-);
+    my @mark = grep { $_->{change} eq 'mark' } @events;
+    is(scalar @mark, 1, 'Received 1 window::mark event');
+}
 
 ###############################################################################
 # Marking a container triggers a 'mark' event.
@@ -46,11 +35,7 @@ $timer = AnyEvent->timer(
 fresh_workspace;
 open_window;
 
-$mark = AnyEvent->condvar;
-cmd 'mark x';
-
-$event = $mark->recv;
-ok($event, 'window::mark event has been received');
+subtest 'mark', \&mark_subtest, 'mark x';
 
 ###############################################################################
 # Unmarking a container triggers a 'mark' event.
@@ -59,11 +44,7 @@ fresh_workspace;
 open_window;
 cmd 'mark x';
 
-$mark = AnyEvent->condvar;
-cmd 'unmark x';
-
-$event = $mark->recv;
-ok($event, 'window::mark event has been received');
+subtest 'unmark', \&mark_subtest, 'unmark x';
 
 ###############################################################################
 

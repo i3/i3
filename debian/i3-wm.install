@@ -1,2 +1,7 @@
 debian/tmp/etc
 debian/tmp/usr
+contrib/dump-asy.pl usr/share/doc/i3-wm/examples/
+contrib/gtk-tree-watch.pl usr/share/doc/i3-wm/examples/
+contrib/i3-wsbar usr/share/doc/i3-wm/examples/
+contrib/per-workspace-layout.pl usr/share/doc/i3-wm/examples/
+contrib/trivial-bar-script.sh usr/share/doc/i3-wm/examples/

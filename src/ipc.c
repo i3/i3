@@ -572,6 +572,8 @@ static void dump_bar_bindings(yajl_gen gen, Barconfig *config) {
         y(integer, current->input_code);
         ystr("command");
         ystr(current->command);
+        ystr("release");
+        y(bool, current->release == B_UPON_KEYRELEASE);
 
         y(map_close);
     }
@@ -1046,8 +1048,9 @@ static int add_subscription(void *extra, const unsigned char *s,
     memcpy(client->events[event], s, len);
 
     DLOG("client is now subscribed to:\n");
-    for (int i = 0; i < client->num_events; i++)
+    for (int i = 0; i < client->num_events; i++) {
         DLOG("event %s\n", client->events[i]);
+    }
     DLOG("(done)\n");
 
     return 1;
@@ -1099,6 +1102,25 @@ IPC_HANDLER(subscribe) {
     yajl_free(p);
     const char *reply = "{\"success\":true}";
     ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
+
+    if (client->first_tick_sent) {
+        return;
+    }
+
+    bool is_tick = false;
+    for (int i = 0; i < client->num_events; i++) {
+        if (strcmp(client->events[i], "tick") == 0) {
+            is_tick = true;
+            break;
+        }
+    }
+    if (!is_tick) {
+        return;
+    }
+
+    client->first_tick_sent = true;
+    const char *payload = "{\"first\":true,\"payload\":\"\"}";
+    ipc_send_message(client->fd, strlen(payload), I3_IPC_EVENT_TICK, (const uint8_t *)payload);
 }
 
 /*
@@ -1122,9 +1144,35 @@ IPC_HANDLER(get_config) {
     y(free);
 }
 
+/*
+ * Sends the tick event from the message payload to subscribers. Establishes a
+ * synchronization point in event-related tests.
+ */
+IPC_HANDLER(send_tick) {
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("payload");
+    yajl_gen_string(gen, (unsigned char *)message, message_size);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_event("tick", I3_IPC_EVENT_TICK, (const char *)payload);
+    y(free);
+
+    const char *reply = "{\"success\":true}";
+    ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_TICK, (const uint8_t *)reply);
+    DLOG("Sent tick event\n");
+}
+
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[10] = {
+handler_t handlers[11] = {
     handle_run_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -1135,6 +1183,7 @@ handler_t handlers[10] = {
     handle_get_version,
     handle_get_binding_modes,
     handle_get_config,
+    handle_send_tick,
 };
 
 /*

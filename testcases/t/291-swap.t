@@ -25,8 +25,9 @@ for_window[class="mark_B"] mark B
 EOT
 
 my ($ws, $ws1, $ws2, $ws3);
-my ($nodes, $expected_focus, $A, $B, $F);
+my ($node, $nodes, $expected_focus, $A, $B, $F);
 my ($result);
+my @fullscreen_permutations = ([], ["A"], ["B"], ["A", "B"]);
 my @urgent;
 
 ###############################################################################
@@ -162,26 +163,115 @@ kill_all_windows;
 # | Y | B |    Focus Stacks:
 # +---+---+        H2: B, Y
 ###############################################################################
+for my $fullscreen (@fullscreen_permutations){
+    $ws1 = fresh_workspace;
+    $A = open_window(wm_class => 'mark_A');
+    $expected_focus = get_focused($ws1);
+    open_window;
+    cmd 'focus left';
+
+    $ws2 = fresh_workspace;
+    open_window;
+    $B = open_window(wm_class => 'mark_B');
+
+    my $A_fullscreen = "A" ~~ @$fullscreen || 0;
+    my $B_fullscreen = "B" ~~ @$fullscreen || 0;
+    $A->fullscreen($A_fullscreen);
+    $B->fullscreen($B_fullscreen);
+    sync_with_i3;
+
+    cmd '[con_mark=B] swap container with mark A';
+
+    $nodes = get_ws_content($ws1);
+    $node = $nodes->[0];
+    is($node->{window}, $B->{id}, 'B is on ws1:left');
+    is_num_fullscreen($ws1, $A_fullscreen, 'amount of fullscreen windows in ws1');
+    is($node->{fullscreen_mode}, $A_fullscreen, 'B got A\'s fullscreen mode');
+
+    $nodes = get_ws_content($ws2);
+    $node = $nodes->[1];
+    is($node->{window}, $A->{id}, 'A is on ws2:right');
+    is(get_focused($ws2), $expected_focus, 'A is focused');
+    is_num_fullscreen($ws2, $B_fullscreen, 'amount of fullscreen windows in ws2');
+    is($node->{fullscreen_mode}, $B_fullscreen, 'A got B\'s fullscreen mode');
+
+    kill_all_windows;
+}
+
+###############################################################################
+# Swap a non-fullscreen window with a fullscreen one in different workspaces.
+# Layout: O1[ W1[ H1 ] W2[ B ] ]
+#
+# +---+---+    Layout: H1[ A F ]
+# | A | F |    Focus Stacks:
+# +---+---+        H1: F, A
+#
+# +---+---+
+# |   B   |
+# +---+---+
+###############################################################################
 $ws1 = fresh_workspace;
+
 $A = open_window(wm_class => 'mark_A');
+$F = open_window();
+$F->fullscreen(1);
 $expected_focus = get_focused($ws1);
-open_window;
-cmd 'focus left';
 
 $ws2 = fresh_workspace;
-open_window;
 $B = open_window(wm_class => 'mark_B');
+$B->fullscreen(1);
+sync_with_i3;
 
 cmd '[con_mark=B] swap container with mark A';
 
 $nodes = get_ws_content($ws1);
 is($nodes->[0]->{window}, $B->{id}, 'B is on ws1:left');
+is_num_fullscreen($ws1, 1, 'F still fullscreen in ws1');
+is(get_focused($ws1), $expected_focus, 'F is still focused');
 
 $nodes = get_ws_content($ws2);
-is($nodes->[1]->{window}, $A->{id}, 'A is on ws1:right');
-is(get_focused($ws2), $expected_focus, 'A is focused');
+is($nodes->[0]->{window}, $A->{id}, 'A is on ws1');
 
-kill_all_windows;
+###############################################################################
+# Try a more exotic layout with fullscreen containers.
+# A and F are fullscreened as a stack of two vertical containers before the
+# swap is performed.
+# A is swapped with fullscreened window B which is in another workspace.
+#
+# +---+---+    Layout: H1[ X V1[ A F ] ]
+# |   | A |    Focus Stacks:
+# | X +---+        H1: V1, X
+# |   | F |        V1: F, A
+# +---+---+
+###############################################################################
+$ws1 = fresh_workspace;
+
+open_window;
+$A = open_window(wm_class => 'mark_A');
+cmd "split v";
+open_window;
+cmd "focus parent";
+cmd "fullscreen enable";
+$expected_focus = get_focused($ws1);
+
+$ws2 = fresh_workspace;
+$B = open_window(wm_class => 'mark_B');
+$B->fullscreen(1);
+sync_with_i3;
+
+cmd '[con_mark=B] swap container with mark A';
+
+sync_with_i3;
+does_i3_live;
+
+$nodes = get_ws_content($ws1);
+is($nodes->[1]->{nodes}->[0]->{window}, $B->{id}, 'B is on top right in ws1');
+is(get_focused($ws1), $expected_focus, 'The container of the stacked windows remains focused in ws1');
+is_num_fullscreen($ws1, 1, 'Same amount of fullscreen windows in ws1');
+
+$nodes = get_ws_content($ws2);
+is($nodes->[0]->{window}, $A->{id}, 'A is on ws2');
+is_num_fullscreen($ws2, 1, 'A is in fullscreen mode');
 
 ###############################################################################
 # Swap two non-focused containers within the same workspace.
@@ -232,27 +322,41 @@ kill_all_windows;
 # | F |
 # +---+
 ###############################################################################
-$ws1 = fresh_workspace;
-$A = open_window(wm_class => 'mark_A');
+for my $fullscreen (@fullscreen_permutations){
+    $ws1 = fresh_workspace;
+    $A = open_window(wm_class => 'mark_A');
 
-$ws2 = fresh_workspace;
-$B = open_window(wm_class => 'mark_B');
+    $ws2 = fresh_workspace;
+    $B = open_window(wm_class => 'mark_B');
 
-$ws3 = fresh_workspace;
-open_window;
-$expected_focus = get_focused($ws3);
+    $ws3 = fresh_workspace;
+    open_window;
+    $expected_focus = get_focused($ws3);
 
-cmd '[con_mark=B] swap container with mark A';
+    my $A_fullscreen = "A" ~~ @$fullscreen || 0;
+    my $B_fullscreen = "B" ~~ @$fullscreen || 0;
+    $A->fullscreen($A_fullscreen);
+    $B->fullscreen($B_fullscreen);
+    sync_with_i3;
 
-$nodes = get_ws_content($ws1);
-is($nodes->[0]->{window}, $B->{id}, 'B is on the first workspace');
+    cmd '[con_mark=B] swap container with mark A';
 
-$nodes = get_ws_content($ws2);
-is($nodes->[0]->{window}, $A->{id}, 'A is on the second workspace');
+    $nodes = get_ws_content($ws1);
+    $node = $nodes->[0];
+    is($node->{window}, $B->{id}, 'B is on the first workspace');
+    is_num_fullscreen($ws1, $A_fullscreen, 'amount of fullscreen windows in ws1');
+    is($node->{fullscreen_mode}, $A_fullscreen, 'B got A\'s fullscreen mode');
 
-is(get_focused($ws3), $expected_focus, 'F is still focused');
+    $nodes = get_ws_content($ws2);
+    $node = $nodes->[0];
+    is($node->{window}, $A->{id}, 'A is on the second workspace');
+    is_num_fullscreen($ws2, $B_fullscreen, 'amount of fullscreen windows in ws2');
+    is($node->{fullscreen_mode}, $B_fullscreen, 'A got B\'s fullscreen mode');
 
-kill_all_windows;
+    is(get_focused($ws3), $expected_focus, 'F is still focused');
+
+    kill_all_windows;
+}
 
 ###############################################################################
 # Swap two non-focused containers with one being on a different workspace.
