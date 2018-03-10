@@ -126,6 +126,7 @@ WORKDIR /usr/src
 RUN mk-build-deps --install --remove --tool 'apt-get --no-install-recommends -y' i3-${RELEASE_VERSION}/debian/control
 WORKDIR /usr/src/i3-${RELEASE_VERSION}
 RUN dpkg-buildpackage -sa -j8
+RUN dpkg-buildpackage -S -sa -j8
 EOT
 
 CONTAINER_NAME=$(echo "i3-${TMPDIR}" | sed 's,/,,g')
@@ -139,7 +140,7 @@ echo "Content of resulting package’s .changes file:"
 cat ${TMPDIR}/debian/*.changes
 
 # debsign is in devscripts, which is available in fedora and debian
-debsign -k4AC8EE1D ${TMPDIR}/debian/*.changes
+debsign --no-re-sign -k4AC8EE1D ${TMPDIR}/debian/*.changes
 
 # TODO: docker cleanup
 
