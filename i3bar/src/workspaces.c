@@ -106,8 +106,8 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
         const char *ws_name = (const char *)val;
         params->workspaces_walk->canonical_name = sstrndup(ws_name, len);
 
-        if (config.strip_ws_numbers && params->workspaces_walk->num >= 0) {
-            /* Special case: strip off the workspace number */
+        if ((config.strip_ws_numbers || config.strip_ws_name) && params->workspaces_walk->num >= 0) {
+            /* Special case: strip off the workspace number/name */
             static char ws_num[10];
 
             snprintf(ws_num, sizeof(ws_num), "%d", params->workspaces_walk->num);
@@ -119,11 +119,14 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
             if (offset && ws_name[offset] == ':')
                 offset += 1;
 
-            /* Offset may be equal to length, in which case display the number */
-            params->workspaces_walk->name = (offset < len
-                                                 ? i3string_from_markup_with_length(ws_name + offset, len - offset)
-                                                 : i3string_from_markup(ws_num));
-
+            if (config.strip_ws_numbers) {
+                /* Offset may be equal to length, in which case display the number */
+                params->workspaces_walk->name = (offset < len
+                                                     ? i3string_from_markup_with_length(ws_name + offset, len - offset)
+                                                     : i3string_from_markup(ws_num));
+            } else {
+                params->workspaces_walk->name = i3string_from_markup(ws_num);
+            }
         } else {
             /* Default case: just save the name */
             params->workspaces_walk->name = i3string_from_markup_with_length(ws_name, len);

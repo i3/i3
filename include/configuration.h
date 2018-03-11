@@ -331,6 +331,10 @@ struct Barconfig {
      * 'strip_workspace_numbers yes'. */
     bool strip_workspace_numbers;
 
+    /** Strip workspace name? Configuration option is
+     * 'strip_workspace_name yes'. */
+    bool strip_workspace_name;
+
     /** Hide mode button? Configuration option is 'binding_mode_indicator no'
      * but we invert the bool for the same reason as hide_workspace_buttons.*/
     bool hide_binding_mode_indicator;

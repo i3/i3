@@ -297,6 +297,12 @@ static int config_boolean_cb(void *params_, int val) {
         return 1;
     }
 
+    if (!strcmp(cur_key, "strip_workspace_name")) {
+        DLOG("strip_workspace_name = %d\n", val);
+        config.strip_ws_name = val;
+        return 1;
+    }
+
     if (!strcmp(cur_key, "verbose")) {
         DLOG("verbose = %d\n", val);
         config.verbose = val;

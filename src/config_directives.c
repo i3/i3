@@ -627,6 +627,10 @@ CFGFUN(bar_strip_workspace_numbers, const char *value) {
     current_bar->strip_workspace_numbers = eval_boolstr(value);
 }
 
+CFGFUN(bar_strip_workspace_name, const char *value) {
+    current_bar->strip_workspace_name = eval_boolstr(value);
+}
+
 CFGFUN(bar_start) {
     current_bar = scalloc(1, sizeof(struct Barconfig));
     TAILQ_INIT(&(current_bar->bar_bindings));
