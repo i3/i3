@@ -1,21 +1,25 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
-# renders the layout tree using asymptote
-#
-# ./dump-asy.pl
-#   will render the entire tree
-# ./dump-asy.pl 'name'
-#   will render the tree starting from the node with the specified name,
-#   e.g. ./dump-asy.pl 2 will render workspace 2 and below
 
 use strict;
 use warnings;
 use Data::Dumper;
+use Getopt::Long;
+use Pod::Usage;
 use AnyEvent::I3;
 use File::Temp;
 use File::Basename;
 use v5.10;
 use IPC::Cmd qw[can_run];
+
+my %options = (
+    help => 0,
+);
+my $result = GetOptions(
+    "help|?" => \$options{help},
+);
+
+pod2usage(-verbose => 2, -exitcode => 0) if $options{help};
 
 # prerequisites check so we can be specific about failures caused
 # by not having these tools in the path
@@ -84,3 +88,23 @@ my $rep = "$tmp";
 $rep =~ s/asy$/eps/;
 my $tmp_dir = dirname($rep);
 system("cd $tmp_dir && asy $tmp && gv --scale=-1000 --noresize --widgetless $rep && rm $rep");
+
+__END__
+
+=head1 NAME
+
+dump-asy.pl - Render the layout tree using asymptote
+
+=head1 SYNOPSIS
+
+dump-asy.pl [workspace]
+
+=head1 EXAMPLE
+
+Render the entire tree, run:
+
+  ./dump-asy.pl
+
+Render the tree starting from the node with the specified name, run:
+
+  ./dump-asy.pl 'name'
