@@ -47,7 +47,8 @@ sub dump_node {
     if (!defined($n->{window})) {
         $type = $n->{layout};
     }
-    my $name = qq|``$na'' ($type)|;
+    my $marks = $n->{marks} ? ' [' . join('][', @{$n->{marks}}) . ']' : '';
+    my $name = qq|``$na'' ($type)$marks|;
 
     print $tmp "TreeNode n" . $n->{id} . " = makeNode(";
 
