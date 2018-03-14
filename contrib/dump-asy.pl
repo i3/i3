@@ -15,10 +15,12 @@ use IPC::Cmd qw[can_run];
 
 my %options = (
     gv => 1,
+    save => undef,
     help => 0,
 );
 my $result = GetOptions(
     "gv!" => \$options{gv},
+    "save=s" => \$options{save},
     "help|?" => \$options{help},
 );
 
@@ -91,10 +93,18 @@ my $rep = "$tmp";
 $rep =~ s/asy$/eps/;
 if ($options{gv}) {
     my $tmp_dir = dirname($rep);
+    $options{save} = File::Spec->rel2abs($options{save}) if $options{save};
     chdir($tmp_dir);
+} else {
+    $rep = basename($rep);  # Output in current dir.
 }
 system("asy $tmp");  # Create the .eps file.
-system("gv --scale=-1000 --noresize --widgetless $rep && rm $rep") if $options{gv};
+system("gv --scale=-1000 --noresize --widgetless $rep") if $options{gv};
+if ($options{save}) {
+    system("mv $rep ${options{save}}");
+} elsif ($options{gv}) {
+    system("rm $rep");
+}
 system("rm $tmp");
 
 __END__
@@ -117,6 +127,10 @@ Render the tree starting from the node with the specified name, run:
 
   ./dump-asy.pl 'name'
 
+Render the entire tree, save in file 'file.eps' and show using gv, run:
+
+  ./dump-asy.pl --save file.eps
+
 =head1 OPTIONS
 
 =over 8
@@ -127,5 +141,10 @@ Render the tree starting from the node with the specified name, run:
 
 Enable or disable showing the result through gv. If disabled, an .eps file will
 be saved in the current working directory. Enabled by default.
+
+=item B<--save>
+
+Save result using the specified file-name. If omitted, no file will be saved
+when using '--gv' or a random name will be used when using '--no-gv'.
 
 =back
