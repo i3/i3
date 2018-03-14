@@ -8,14 +8,17 @@ use Getopt::Long;
 use Pod::Usage;
 use AnyEvent::I3;
 use File::Temp;
+use File::Spec;
 use File::Basename;
 use v5.10;
 use IPC::Cmd qw[can_run];
 
 my %options = (
+    gv => 1,
     help => 0,
 );
 my $result = GetOptions(
+    "gv!" => \$options{gv},
     "help|?" => \$options{help},
 );
 
@@ -24,7 +27,7 @@ pod2usage(-verbose => 2, -exitcode => 0) if $options{help};
 # prerequisites check so we can be specific about failures caused
 # by not having these tools in the path
 can_run('asy') or die 'Please install asymptote';
-can_run('gv') or die 'Please install gv';
+can_run('gv') or die 'Please install gv' unless !$options{gv};
 
 my $i3 = i3();
 
@@ -86,8 +89,13 @@ say $tmp "draw(n" . $root->{id} . ", (0, 0));";
 close($tmp);
 my $rep = "$tmp";
 $rep =~ s/asy$/eps/;
-my $tmp_dir = dirname($rep);
-system("cd $tmp_dir && asy $tmp && gv --scale=-1000 --noresize --widgetless $rep && rm $rep");
+if ($options{gv}) {
+    my $tmp_dir = dirname($rep);
+    chdir($tmp_dir);
+}
+system("asy $tmp");  # Create the .eps file.
+system("gv --scale=-1000 --noresize --widgetless $rep && rm $rep") if $options{gv};
+system("rm $tmp");
 
 __END__
 
@@ -108,3 +116,16 @@ Render the entire tree, run:
 Render the tree starting from the node with the specified name, run:
 
   ./dump-asy.pl 'name'
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--gv>
+
+=item B<--no-gv>
+
+Enable or disable showing the result through gv. If disabled, an .eps file will
+be saved in the current working directory. Enabled by default.
+
+=back
