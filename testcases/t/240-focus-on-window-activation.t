@@ -22,7 +22,7 @@ use List::Util qw(first);
 my ($config, $pid, $first, $second, $ws1, $ws2);
 
 sub send_net_active_window {
-    my ($id) = @_; 
+    my ($id) = @_;
 
     my $msg = pack "CCSLLLLLLL",
         X11::XCB::CLIENT_MESSAGE, # response_type

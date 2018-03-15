@@ -58,7 +58,7 @@ exit_gracefully($pid);
 
 ##########################################################################
 # Given a floating container and the cursor is in the left upper edge
-# of the output, when moving the container to the mouse, then the 
+# of the output, when moving the container to the mouse, then the
 # container is moved but adjusted to stay in-bounds.
 ##########################################################################
 
@@ -84,7 +84,7 @@ exit_gracefully($pid);
 
 ##########################################################################
 # Given a floating container and the cursor is in the left right lower
-# edge of the output, when moving the container to the mouse, then the 
+# edge of the output, when moving the container to the mouse, then the
 # container is moved but adjusted to stay in-bounds.
 ##########################################################################
 
