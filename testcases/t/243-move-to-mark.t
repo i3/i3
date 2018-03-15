@@ -31,7 +31,7 @@ my $_NET_WM_STATE_ADD = 1;
 my $_NET_WM_STATE_TOGGLE = 2;
 
 sub set_urgency {
-    my ($win, $urgent_flag) = @_; 
+    my ($win, $urgent_flag) = @_;
     my $msg = pack "CCSLLLLLL",
         X11::XCB::CLIENT_MESSAGE, # response_type
         32, # format
@@ -119,7 +119,7 @@ is($nodes->[0]->{window}, $M->{id}, 'M is left of S');
 is($nodes->[1]->{window}, $S->{id}, 'S is right of M');
 
 ###############################################################################
-# Given 'S' and 'M' on different workspaces and 'S' is urgent, when 'S' is 
+# Given 'S' and 'M' on different workspaces and 'S' is urgent, when 'S' is
 # moved to 'M', then the urgency flag is transferred to the target workspace.
 ###############################################################################
 

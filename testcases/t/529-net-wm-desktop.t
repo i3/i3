@@ -31,15 +31,15 @@ use X11::XCB qw(:all);
 sub get_net_wm_desktop {
     sync_with_i3;
 
-    my ($con) = @_; 
+    my ($con) = @_;
     my $cookie = $x->get_property(
-        0,  
+        0,
         $con->{id},
         $x->atom(name => '_NET_WM_DESKTOP')->id,
         $x->atom(name => 'CARDINAL')->id,
-        0,  
+        0,
         1
-    );  
+    );
 
     my $reply = $x->get_property_reply($cookie->{sequence});
     return undef if $reply->{length} != 1;

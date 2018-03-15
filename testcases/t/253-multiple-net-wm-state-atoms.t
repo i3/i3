@@ -21,15 +21,15 @@ use X11::XCB qw(:all);
 sub get_wm_state {
     sync_with_i3;
 
-    my ($con) = @_; 
+    my ($con) = @_;
     my $cookie = $x->get_property(
-        0,  
+        0,
         $con->{id},
         $x->atom(name => '_NET_WM_STATE')->id,
         GET_PROPERTY_TYPE_ANY,
-        0,  
+        0,
         4096
-    );  
+    );
 
     my $reply = $x->get_property_reply($cookie->{sequence});
     my $len = $reply->{length};
