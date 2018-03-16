@@ -333,6 +333,34 @@ for ($type = 1; $type <= 2; $type++) {
     is($target_ws->{urgent}, 1, 'Target workspace is now marked urgent');
 
 ##############################################################################
+# Test that moving an unfocused container doesn't reset its urgency hint.
+##############################################################################
+    $tmp = fresh_workspace;
+    $win1 = open_window;
+    $win2 = open_window;
+    cmd 'split v';
+    $win3 = open_window;
+    set_urgency($win1, 1, $type);
+    sync_with_i3;
+
+    my $win1_info;
+
+    @content = @{get_ws_content($tmp)};
+    $win1_info = first { $_->{window} == $win1->id } @content;
+    ok($win1_info->{urgent}, 'win1 window is marked urgent');
+
+    cmd '[id="' . $win1->id . '"] move right';
+    cmd '[id="' . $win1->id . '"] move right';
+    @content = @{get_ws_content($tmp)};
+    $win1_info = first { $_->{window} == $win1->id } @content;
+    ok($win1_info->{urgent}, 'win1 window is still marked urgent after moving');
+
+    cmd '[id="' . $win1->id . '"] focus';
+    @content = @{get_ws_content($tmp)};
+    $win1_info = first { $_->{window} == $win1->id } @content;
+    ok(!$win1_info->{urgent}, 'win1 window is not marked urgent after focusing');
+
+##############################################################################
 
     exit_gracefully($pid);
 }
