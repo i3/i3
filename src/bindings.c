@@ -227,9 +227,9 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
         /* For keyboard bindings where a symbol was specified by the user, we
          * need to look in the array of translated keycodes for the event’s
          * keycode */
+        bool found_keycode = false;
         if (input_type == B_KEYBOARD && bind->symbol != NULL) {
             xcb_keycode_t input_keycode = (xcb_keycode_t)input_code;
-            bool found_keycode = false;
             struct Binding_Keycode *binding_keycode;
             TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
                 const uint32_t modifiers_mask = (binding_keycode->modifiers & 0x0000FFFF);
@@ -241,16 +241,12 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
                     break;
                 }
             }
-            if (!found_keycode) {
-                continue;
-            }
         } else {
             /* This case is easier: The user specified a keycode */
             if (bind->keycode != input_code) {
                 continue;
             }
 
-            bool found_keycode = false;
             struct Binding_Keycode *binding_keycode;
             TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
                 const uint32_t modifiers_mask = (binding_keycode->modifiers & 0x0000FFFF);
@@ -262,9 +258,9 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
                     break;
                 }
             }
-            if (!found_keycode) {
-                continue;
-            }
+        }
+        if (!found_keycode) {
+            continue;
         }
 
         /* If this binding is a release binding, it matches the key which the
