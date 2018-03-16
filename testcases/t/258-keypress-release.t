@@ -31,6 +31,11 @@ bindsym Mod1+b nop Mod1+b
 bindsym --release Mod1+Shift+b nop Mod1+Shift+b release
 
 bindsym --release Shift+x nop Shift+x
+
+# see issue #2733
+# 133 == Mod4
+bindcode 133 nop 133
+bindcode --release 133 nop 133 release
 EOT
 use i3test::XTEST;
 use ExtUtils::PkgConfig;
@@ -110,6 +115,25 @@ is(listen_for_binding(
         ),
        'Shift+x',
        'triggered the "Shift+x" keybinding by releasing Shift first');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(133);
+        xtest_sync_with_i3;
+    },
+    ),
+    '133',
+    'triggered the 133 keycode press binding');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_release(133);
+        xtest_sync_with_i3;
+    },
+    ),
+    '133 release',
+    'triggered the 133 keycode release binding');
+
 }
 
 done_testing;
