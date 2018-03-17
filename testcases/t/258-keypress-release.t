@@ -29,6 +29,8 @@ bindsym --release Control+Print nop Control+Print
 # see issue #2442
 bindsym Mod1+b nop Mod1+b
 bindsym --release Mod1+Shift+b nop Mod1+Shift+b release
+
+bindsym --release Shift+x nop Shift+x
 EOT
 use i3test::XTEST;
 use ExtUtils::PkgConfig;
@@ -85,6 +87,29 @@ is(listen_for_binding(
     'Mod1+Shift+b release',
     'triggered the "Mod1+Shift+b" release keybinding');
 
+is(listen_for_binding(
+        sub {
+            xtest_key_press(50); # Shift
+            xtest_key_press(53); # x
+            xtest_key_release(53); # x
+            xtest_key_release(50); # Shift
+            xtest_sync_with_i3;
+        },
+        ),
+       'Shift+x',
+       'triggered the "Shift+x" keybinding by releasing x first');
+
+is(listen_for_binding(
+        sub {
+            xtest_key_press(50); # Shift
+            xtest_key_press(53); # x
+            xtest_key_release(50); # Shift
+            xtest_key_release(53);  # x
+            xtest_sync_with_i3;
+        },
+        ),
+       'Shift+x',
+       'triggered the "Shift+x" keybinding by releasing Shift first');
 }
 
 done_testing;

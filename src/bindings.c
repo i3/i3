@@ -236,7 +236,8 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
                 const bool mods_match = (modifiers_mask == modifiers_state);
                 DLOG("binding_keycode->modifiers = %d, modifiers_mask = %d, modifiers_state = %d, mods_match = %s\n",
                      binding_keycode->modifiers, modifiers_mask, modifiers_state, (mods_match ? "yes" : "no"));
-                if (binding_keycode->keycode == input_keycode && mods_match) {
+                if (binding_keycode->keycode == input_keycode &&
+                    (mods_match || (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS && is_release))) {
                     found_keycode = true;
                     break;
                 }
