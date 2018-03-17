@@ -89,6 +89,14 @@ Output *get_output_by_name(const char *name, const bool require_active);
 Output *get_output_containing(unsigned int x, unsigned int y);
 
 /**
+ * Returns the active output which contains the midpoint of the given rect. If
+ * such an output doesn't exist, returns the output which contains most of the
+ * rectangle or NULL if there is no output which intersects with it.
+ *
+ */
+Output *get_output_from_rect(Rect rect);
+
+/**
  * Returns the active output which spans exactly the area specified by
  * rect or NULL if there is no output like this.
  *

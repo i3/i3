@@ -115,6 +115,20 @@ Output *get_output_containing(unsigned int x, unsigned int y) {
 }
 
 /*
+ * Returns the active output which contains the midpoint of the given rect. If
+ * such an output doesn't exist, returns the output which contains most of the
+ * rectangle or NULL if there is no output which intersects with it.
+ *
+ */
+Output *get_output_from_rect(Rect rect) {
+    unsigned int mid_x = rect.x + rect.width / 2;
+    unsigned int mid_y = rect.y + rect.height / 2;
+    Output *output = get_output_containing(mid_x, mid_y);
+
+    return output ? output : output_containing_rect(rect);
+}
+
+/*
  * Returns the active output which spans exactly the area specified by
  * rect or NULL if there is no output like this.
  *
