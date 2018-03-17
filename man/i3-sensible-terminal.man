@@ -47,6 +47,7 @@ It tries to start one of the following (in that order):
 * kitty
 * guake
 * tilda
+* alacritty
 
 Please don’t complain about the order: If the user has any preference, they will
 have $TERMINAL set or modified their i3 configuration file.
