@@ -95,15 +95,14 @@ Output *get_output_containing(unsigned int x, unsigned int y);
  */
 Output *get_output_with_dimensions(Rect rect);
 
-/*
- * In contained_by_output, we check if any active output contains part of the container.
+/**
+ * In output_containing_rect, we check if any active output contains part of the container.
  * We do this by checking if the output rect is intersected by the Rect.
  * This is the 2-dimensional counterpart of get_output_containing.
- * Since we don't actually need the outputs intersected by the given Rect (There could
- * be many), we just return true or false for convenience.
+ * Returns the output with the maximum intersecting area.
  *
  */
-bool contained_by_output(Rect rect);
+Output *output_containing_rect(Rect rect);
 
 /**
  * Gets the output which is the next one in the given direction.

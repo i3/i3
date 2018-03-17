@@ -867,7 +867,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
 void floating_reposition(Con *con, Rect newrect) {
     /* Sanity check: Are the new coordinates on any output? If not, we
      * ignore that request. */
-    if (!contained_by_output(newrect)) {
+    if (!output_containing_rect(newrect)) {
         ELOG("No output found at destination coordinates. Not repositioning.\n");
         return;
     }
