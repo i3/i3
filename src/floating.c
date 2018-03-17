@@ -413,9 +413,7 @@ void floating_raise_con(Con *con) {
  *
  */
 bool floating_maybe_reassign_ws(Con *con) {
-    Output *output = get_output_containing(
-        con->rect.x + (con->rect.width / 2),
-        con->rect.y + (con->rect.height / 2));
+    Output *output = get_output_from_rect(con->rect);
 
     if (!output) {
         ELOG("No output found at destination coordinates?\n");
