@@ -95,8 +95,10 @@ static int reply_start_map_cb(void *params) {
 
 static int reply_end_map_cb(void *params) {
     if (!last_reply.success) {
-        fprintf(stderr, "ERROR: Your command: %s\n", last_reply.input);
-        fprintf(stderr, "ERROR:               %s\n", last_reply.errorposition);
+        if (last_reply.input) {
+            fprintf(stderr, "ERROR: Your command: %s\n", last_reply.input);
+            fprintf(stderr, "ERROR:               %s\n", last_reply.errorposition);
+        }
         fprintf(stderr, "ERROR: %s\n", last_reply.error);
     }
     return 1;
