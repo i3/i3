@@ -396,7 +396,7 @@ state MOVE_TO_POSITION_X:
 
 state MOVE_TO_POSITION_Y:
   'px', end
-      -> call cmd_move_window_to_position($method, &coord_x, &coord_y)
+      -> call cmd_move_window_to_position(&coord_x, &coord_y)
 
 # mode <string>
 state MODE:

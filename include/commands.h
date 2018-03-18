@@ -264,7 +264,7 @@ void cmd_focus_output(I3_CMD, const char *name);
  * Implementation of 'move [window|container] [to] [absolute] position <px> [px] <px> [px]
  *
  */
-void cmd_move_window_to_position(I3_CMD, const char *method, long x, long y);
+void cmd_move_window_to_position(I3_CMD, long x, long y);
 
 /**
  * Implementation of 'move [window|container] [to] [absolute] position center
