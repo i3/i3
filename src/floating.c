@@ -864,12 +864,12 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
  * outputs.
  *
  */
-void floating_reposition(Con *con, Rect newrect) {
+bool floating_reposition(Con *con, Rect newrect) {
     /* Sanity check: Are the new coordinates on any output? If not, we
      * ignore that request. */
     if (!contained_by_output(newrect)) {
         ELOG("No output found at destination coordinates. Not repositioning.\n");
-        return;
+        return false;
     }
 
     con->rect = newrect;
@@ -881,6 +881,7 @@ void floating_reposition(Con *con, Rect newrect) {
         con->scratchpad_state = SCRATCHPAD_CHANGED;
 
     tree_render();
+    return true;
 }
 
 /*

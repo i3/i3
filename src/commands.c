@@ -1718,10 +1718,12 @@ void cmd_move_window_to_position(I3_CMD, long x, long y) {
         newrect.x = x;
         newrect.y = y;
 
-        floating_reposition(current->con->parent, newrect);
+        if (!floating_reposition(current->con->parent, newrect)) {
+            yerror("Cannot move window/container out of bounds.");
+            has_error = true;
+        }
     }
 
-    // XXX: default reply for now, make this a better reply
     if (!has_error)
         ysuccess(true);
 }
