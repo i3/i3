@@ -573,7 +573,7 @@ struct Assignment {
     /** the criteria to check if a window matches */
     Match match;
 
-    /** destination workspace/command, depending on the type */
+    /** destination workspace/command/output, depending on the type */
     union {
         char *command;
         char *workspace;
