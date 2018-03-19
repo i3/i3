@@ -2258,8 +2258,7 @@ See <<move_to_outputs>> for how to move a container/workspace to a different
 RandR output.
 
 [[move_to_outputs]]
-[[_moving_containers_workspaces_to_randr_outputs]]
-=== Moving containers/workspaces to RandR outputs
+=== [[_moving_containers_workspaces_to_randr_outputs]]Moving containers/workspaces to RandR outputs
 
 To move a container to another RandR output (addressed by names like +LVDS1+ or
 +VGA1+) or to a RandR output identified by a specific direction (like +left+,
