@@ -103,6 +103,8 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 FREE(assign->dest.workspace);
             else if (assign->type == A_COMMAND)
                 FREE(assign->dest.command);
+            else if (assign->type == A_TO_OUTPUT)
+                FREE(assign->dest.output);
             match_free(&(assign->match));
             TAILQ_REMOVE(&assignments, assign, assignments);
             FREE(assign);
