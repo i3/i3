@@ -649,6 +649,14 @@ void switch_mode(const char *new_mode) {
         translate_keysyms();
         grab_all_keys(conn);
 
+        /* Reset all B_UPON_KEYRELEASE_IGNORE_MODS bindings to avoid possibly
+         * activating one of them. */
+        Binding *bind;
+        TAILQ_FOREACH(bind, bindings, bindings) {
+            if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
+                bind->release = B_UPON_KEYRELEASE;
+        }
+
         char *event_msg;
         sasprintf(&event_msg, "{\"change\":\"%s\", \"pango_markup\":%s}",
                   mode->name, (mode->pango_markup ? "true" : "false"));

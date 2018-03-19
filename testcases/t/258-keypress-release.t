@@ -36,6 +36,13 @@ bindsym --release Shift+x nop Shift+x
 # 133 == Mod4
 bindcode 133 nop 133
 bindcode --release 133 nop 133 release
+
+mode "a_mode" {
+    # 27 == r
+    bindcode 27 --release mode "default"
+}
+bindsym Mod1+r mode "a_mode"
+bindcode 27 nop do not receive
 EOT
 use i3test::XTEST;
 use ExtUtils::PkgConfig;
@@ -133,6 +140,30 @@ is(listen_for_binding(
     ),
     '133 release',
     'triggered the 133 keycode release binding');
+
+for my $i (1 .. 2) {
+    is(listen_for_binding(
+        sub {
+            xtest_key_press(64); # Alt_l
+            xtest_key_press(27); # r
+            xtest_key_release(27); # r
+            xtest_key_release(64); # Alt_l
+            xtest_sync_with_i3;
+        },
+        ),
+        'mode "a_mode"',
+        "switched to mode \"a_mode\" $i/2");
+
+    is(listen_for_binding(
+        sub {
+            xtest_key_press(27); # r
+            xtest_key_release(27); # r
+            xtest_sync_with_i3;
+        },
+        ),
+        'mode "default"',
+        "switched back to default $i/2");
+}
 
 }
 
