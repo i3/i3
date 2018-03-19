@@ -160,10 +160,16 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(barconfig);
         }
 
-        /* Invalidate pixmap caches in case font or colors changed */
         Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons)
-        FREE(con->deco_render_params);
+        TAILQ_FOREACH(con, &all_cons, all_cons) {
+            /* Assignments changed, previously ran assignments are invalid. */
+            if (con->window) {
+                con->window->nr_assignments = 0;
+                FREE(con->window->ran_assignments);
+            }
+            /* Invalidate pixmap caches in case font or colors changed. */
+            FREE(con->deco_render_params);
+        }
 
         /* Get rid of the current font */
         free_font();
