@@ -431,31 +431,20 @@ static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key,
  *
  */
 void translate_keysyms(void) {
-    struct xkb_state *dummy_state = xkb_state_new(xkb_keymap);
-    if (dummy_state == NULL) {
-        ELOG("Could not create XKB state, cannot translate keysyms.\n");
-        return;
-    }
-
-    struct xkb_state *dummy_state_no_shift = xkb_state_new(xkb_keymap);
-    if (dummy_state_no_shift == NULL) {
-        ELOG("Could not create XKB state, cannot translate keysyms.\n");
-        return;
-    }
-
-    struct xkb_state *dummy_state_numlock = xkb_state_new(xkb_keymap);
-    if (dummy_state_numlock == NULL) {
-        ELOG("Could not create XKB state, cannot translate keysyms.\n");
-        return;
-    }
-
-    struct xkb_state *dummy_state_numlock_no_shift = xkb_state_new(xkb_keymap);
-    if (dummy_state_numlock_no_shift == NULL) {
-        ELOG("Could not create XKB state, cannot translate keysyms.\n");
-        return;
-    }
-
+    struct xkb_state *dummy_state = NULL;
+    struct xkb_state *dummy_state_no_shift = NULL;
+    struct xkb_state *dummy_state_numlock = NULL;
+    struct xkb_state *dummy_state_numlock_no_shift = NULL;
     bool has_errors = false;
+
+    if ((dummy_state = xkb_state_new(xkb_keymap)) == NULL ||
+        (dummy_state_no_shift = xkb_state_new(xkb_keymap)) == NULL ||
+        (dummy_state_numlock = xkb_state_new(xkb_keymap)) == NULL ||
+        (dummy_state_numlock_no_shift = xkb_state_new(xkb_keymap)) == NULL) {
+        ELOG("Could not create XKB state, cannot translate keysyms.\n");
+        goto out;
+    }
+
     Binding *bind;
     TAILQ_FOREACH(bind, bindings, bindings) {
 #define ADD_TRANSLATED_KEY(code, mods)                                                     \
@@ -620,6 +609,7 @@ void translate_keysyms(void) {
 #undef ADD_TRANSLATED_KEY
     }
 
+out:
     xkb_state_unref(dummy_state);
     xkb_state_unref(dummy_state_no_shift);
     xkb_state_unref(dummy_state_numlock);
