@@ -687,8 +687,7 @@ struct drag_x11_cb {
     const void *extra;
 };
 
-static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
-    struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w->data;
+static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
     xcb_motion_notify_event_t *last_motion_notify = NULL;
     xcb_generic_event_t *event;
 
@@ -749,12 +748,14 @@ static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
 
         if (dragloop->result != DRAGGING) {
             free(last_motion_notify);
-            return;
+            ev_break(EV_A_ EVBREAK_ONE);
+            return true;
         }
     }
 
-    if (last_motion_notify == NULL)
-        return;
+    if (last_motion_notify == NULL) {
+        return true;
+    }
 
     /* Ensure that we are either dragging the resize handle (con is NULL) or that the
      * container still exists. The latter might not be true, e.g., if the window closed
@@ -767,9 +768,17 @@ static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
             last_motion_notify->root_y,
             dragloop->extra);
     }
-    free(last_motion_notify);
+    FREE(last_motion_notify);
 
     xcb_flush(conn);
+    return false;
+}
+
+static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
+    struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w->data;
+    while (!drain_drag_events(EV_A, dragloop)) {
+        /* repeatedly drain events: draining might produce additional ones */
+    }
 }
 
 /*
@@ -844,8 +853,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
     main_set_x11_cb(false);
     ev_prepare_start(main_loop, prepare);
 
-    while (loop.result == DRAGGING)
-        ev_run(main_loop, EVRUN_ONCE);
+    ev_loop(main_loop, 0);
 
     ev_prepare_stop(main_loop, prepare);
     main_set_x11_cb(true);
