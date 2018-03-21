@@ -1694,7 +1694,7 @@ void cmd_focus_output(I3_CMD, const char *name) {
  * Implementation of 'move [window|container] [to] [absolute] position <px> [px] <px> [px]
  *
  */
-void cmd_move_window_to_position(I3_CMD, const char *method, long x, long y) {
+void cmd_move_window_to_position(I3_CMD, long x, long y) {
     bool has_error = false;
 
     owindow *current;
@@ -1712,27 +1712,18 @@ void cmd_move_window_to_position(I3_CMD, const char *method, long x, long y) {
             continue;
         }
 
-        if (strcmp(method, "absolute") == 0) {
-            current->con->parent->rect.x = x;
-            current->con->parent->rect.y = y;
+        Rect newrect = current->con->parent->rect;
 
-            DLOG("moving to absolute position %ld %ld\n", x, y);
-            floating_maybe_reassign_ws(current->con->parent);
-            cmd_output->needs_tree_render = true;
-        }
+        DLOG("moving to position %ld %ld\n", x, y);
+        newrect.x = x;
+        newrect.y = y;
 
-        if (strcmp(method, "position") == 0) {
-            Rect newrect = current->con->parent->rect;
-
-            DLOG("moving to position %ld %ld\n", x, y);
-            newrect.x = x;
-            newrect.y = y;
-
-            floating_reposition(current->con->parent, newrect);
+        if (!floating_reposition(current->con->parent, newrect)) {
+            yerror("Cannot move window/container out of bounds.");
+            has_error = true;
         }
     }
 
-    // XXX: default reply for now, make this a better reply
     if (!has_error)
         ysuccess(true);
 }

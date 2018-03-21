@@ -143,7 +143,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
  * outputs.
  *
  */
-void floating_reposition(Con *con, Rect newrect);
+bool floating_reposition(Con *con, Rect newrect);
 
 /**
  * Sets size of the CT_FLOATING_CON to specified dimensions. Might limit the
