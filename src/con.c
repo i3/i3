@@ -1208,7 +1208,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
         /* Restore focus if the output's focused workspace has changed. */
         if (con_get_workspace(focused) != old_focus)
-            con_activate(old_focus);
+            con_focus(old_focus);
     }
 
     /* 7: when moving to another workspace, we leave the focus on the current
