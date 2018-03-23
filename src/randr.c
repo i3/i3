@@ -115,6 +115,20 @@ Output *get_output_containing(unsigned int x, unsigned int y) {
 }
 
 /*
+ * Returns the active output which contains the midpoint of the given rect. If
+ * such an output doesn't exist, returns the output which contains most of the
+ * rectangle or NULL if there is no output which intersects with it.
+ *
+ */
+Output *get_output_from_rect(Rect rect) {
+    unsigned int mid_x = rect.x + rect.width / 2;
+    unsigned int mid_y = rect.y + rect.height / 2;
+    Output *output = get_output_containing(mid_x, mid_y);
+
+    return output ? output : output_containing_rect(rect);
+}
+
+/*
  * Returns the active output which spans exactly the area specified by
  * rect or NULL if there is no output like this.
  *
@@ -136,27 +150,37 @@ Output *get_output_with_dimensions(Rect rect) {
 }
 
 /*
- * In contained_by_output, we check if any active output contains part of the container.
+ * In output_containing_rect, we check if any active output contains part of the container.
  * We do this by checking if the output rect is intersected by the Rect.
  * This is the 2-dimensional counterpart of get_output_containing.
- * Since we don't actually need the outputs intersected by the given Rect (There could
- * be many), we just return true or false for convenience.
+ * Returns the output with the maximum intersecting area.
  *
  */
-bool contained_by_output(Rect rect) {
+Output *output_containing_rect(Rect rect) {
     Output *output;
     int lx = rect.x, uy = rect.y;
     int rx = rect.x + rect.width, by = rect.y + rect.height;
+    long max_area = 0;
+    Output *result = NULL;
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (!output->active)
             continue;
+        int lx_o = (int)output->rect.x, uy_o = (int)output->rect.y;
+        int rx_o = (int)(output->rect.x + output->rect.width), by_o = (int)(output->rect.y + output->rect.height);
         DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
              rect.x, rect.y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
-        if (rx >= (int)output->rect.x && lx <= (int)(output->rect.x + output->rect.width) &&
-            by >= (int)output->rect.y && uy <= (int)(output->rect.y + output->rect.height))
-            return true;
+        int left = max(lx, lx_o);
+        int right = min(rx, rx_o);
+        int bottom = min(by, by_o);
+        int top = max(uy, uy_o);
+        if (left < right && bottom > top) {
+            long area = (right - left) * (bottom - top);
+            if (area > max_area) {
+                result = output;
+            }
+        }
     }
-    return false;
+    return result;
 }
 
 /*
