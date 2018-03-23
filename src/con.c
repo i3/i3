@@ -1170,20 +1170,6 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
             floating_fix_coordinates(con, &(source_output->rect), &(dest_output->rect));
         } else
             DLOG("Not fixing coordinates, fix_coordinates flag = %d\n", fix_coordinates);
-
-        /* If moving to a visible workspace, call show so it can be considered
-         * focused. Must do before attaching because workspace_show checks to see
-         * if focused container is in its area. */
-        if (!ignore_focus && workspace_is_visible(target_ws)) {
-            workspace_show(target_ws);
-
-            /* Don’t warp if told so (when dragging floating windows with the
-             * mouse for example) */
-            if (dont_warp)
-                x_set_warp_to(NULL);
-            else
-                x_set_warp_to(&(con->rect));
-        }
     }
 
     /* If moving a fullscreen container and the destination already has a
