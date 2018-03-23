@@ -256,7 +256,13 @@ void tree_move(Con *con, int direction) {
         return;
     }
 
-    if (con->parent->type == CT_WORKSPACE && con_num_children(con->parent) == 1) {
+    if (con->fullscreen_mode == CF_GLOBAL) {
+        DLOG("Not moving fullscreen global container\n");
+        return;
+    }
+
+    if ((con->fullscreen_mode == CF_OUTPUT) ||
+        (con->parent->type == CT_WORKSPACE && con_num_children(con->parent) == 1)) {
         /* This is the only con on this workspace */
         move_to_output_directed(con, direction);
         return;
