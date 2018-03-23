@@ -1213,10 +1213,6 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
     /* 7: when moving to another workspace, we leave the focus on the current
      * workspace. (see also #809) */
-
-    /* Descend focus stack in case focus_next is a workspace which can
-     * occur if we move to the same workspace.  Also show current workspace
-     * to ensure it is focused. */
     if (!ignore_focus) {
         workspace_show(current_ws);
         if (dont_warp) {
