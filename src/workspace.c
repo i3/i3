@@ -397,10 +397,8 @@ void workspace_show(Con *workspace) {
      * focused) are skipped, see bug #868. */
     if (current && !con_is_internal(current)) {
         FREE(previous_workspace_name);
-        if (current) {
-            previous_workspace_name = sstrdup(current->name);
-            DLOG("Setting previous_workspace_name = %s\n", previous_workspace_name);
-        }
+        previous_workspace_name = sstrdup(current->name);
+        DLOG("Setting previous_workspace_name = %s\n", previous_workspace_name);
     }
 
     workspace_reassign_sticky(workspace);
