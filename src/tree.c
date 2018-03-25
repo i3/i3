@@ -567,9 +567,16 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         if (!workspace)
             return false;
 
-        Con *focus = con_descend_tiling_focused(workspace);
-        if (focus == workspace) {
-            focus = con_descend_focused(workspace);
+        /* Use descend_focused first to give higher priority to floating or
+         * tiling fullscreen containers. */
+        Con *focus = con_descend_focused(workspace);
+        if (focus->fullscreen_mode == CF_NONE) {
+            Con *focus_tiling = con_descend_tiling_focused(workspace);
+            /* If descend_tiling returned a workspace then focus is either a
+             * floating container or the same workspace. */
+            if (focus_tiling != workspace) {
+                focus = focus_tiling;
+            }
         }
 
         workspace_show(workspace);
