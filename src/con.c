@@ -1140,7 +1140,13 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
     /* 1: save the container which is going to be focused after the current
      * container is moved away */
-    Con *focus_next = con_next_focused(con);
+    Con *focus_next = NULL;
+    if (!ignore_focus && source_ws == current_ws) {
+        focus_next = con_descend_focused(source_ws);
+        if (focus_next == con || con_has_parent(focus_next, con)) {
+            focus_next = con_next_focused(con);
+        }
+    }
 
     /* 2: we go up one level, but only when target is a normal container */
     if (target->type != CT_WORKSPACE) {
@@ -1223,7 +1229,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
     /* Set focus only if con was on current workspace before moving.
      * Otherwise we would give focus to some window on different workspace. */
-    if (!ignore_focus && source_ws == current_ws)
+    if (focus_next)
         con_activate(con_descend_focused(focus_next));
 
     /* 8. If anything within the container is associated with a startup sequence,
