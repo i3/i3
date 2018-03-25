@@ -328,21 +328,18 @@ CFGFUN(workspace, const char *workspace, const char *output) {
      * don’t have assignments of a single workspace to different
      * outputs */
     struct Workspace_Assignment *assignment;
-    bool duplicate = false;
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
         if (strcasecmp(assignment->name, workspace) == 0) {
             ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
                  workspace);
-            assignment->output = sstrdup(output);
-            duplicate = true;
+            return;
         }
     }
-    if (!duplicate) {
-        assignment = scalloc(1, sizeof(struct Workspace_Assignment));
-        assignment->name = sstrdup(workspace);
-        assignment->output = sstrdup(output);
-        TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
-    }
+
+    assignment = scalloc(1, sizeof(struct Workspace_Assignment));
+    assignment->name = sstrdup(workspace);
+    assignment->output = sstrdup(output);
+    TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
 }
 
 CFGFUN(ipc_socket, const char *path) {

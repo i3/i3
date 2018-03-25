@@ -1917,7 +1917,6 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
              * now let's activate the current layout (next in list) */
             if (current_layout_found) {
                 new_layout = layout;
-                free(tm_dup);
                 break;
             }
 
@@ -1925,6 +1924,7 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
                 current_layout_found = true;
             }
         }
+        free(tm_dup);
 
         if (new_layout != L_DEFAULT) {
             con_set_layout(con, new_layout);

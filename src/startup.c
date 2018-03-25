@@ -49,6 +49,7 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
 
     if (!sequence) {
         DLOG("Sequence already deleted, nevermind.\n");
+        free(w);
         return;
     }
 
