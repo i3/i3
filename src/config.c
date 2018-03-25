@@ -99,7 +99,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         struct Assignment *assign;
         while (!TAILQ_EMPTY(&assignments)) {
             assign = TAILQ_FIRST(&assignments);
-            if (assign->type == A_TO_WORKSPACE)
+            if (assign->type == A_TO_WORKSPACE || assign->type == A_TO_WORKSPACE_NUMBER)
                 FREE(assign->dest.workspace);
             else if (assign->type == A_COMMAND)
                 FREE(assign->dest.command);
