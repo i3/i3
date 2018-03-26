@@ -27,6 +27,7 @@ sub kill_and_confirm_focus {
 }
 
 my @windows;
+my $ws;
 
 sub focus_windows {
     for (my $i = $#windows; $i >= 0; $i--) {
@@ -121,5 +122,23 @@ $windows[0] = open_window;
 
 cmd '[id=' . $windows[3]->id . '] move right';
 confirm_focus('split-v + unfocused move');
+
+######################################################################
+# Test that moving an unfocused container from inside a split
+# container to another workspace doesn't focus sibling.
+######################################################################
+
+$ws = fresh_workspace;
+$windows[0] = open_window;
+$windows[1] = open_window;
+cmd 'split v';
+open_window;
+cmd 'mark a';
+
+cmd '[id=' . $windows[0]->id . '] focus';
+cmd '[con_mark=a] move to workspace ' . get_unused_workspace;
+
+is(@{get_ws_content($ws)}, 2, 'Sanity check: marked window moved');
+confirm_focus('Move unfocused window from split container');
 
 done_testing;
