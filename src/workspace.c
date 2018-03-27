@@ -34,6 +34,20 @@ Con *get_existing_workspace_by_name(const char *name) {
 }
 
 /*
+ * Returns the workspace with the given number or NULL if such a workspace does
+ * not exist.
+ *
+ */
+Con *get_existing_workspace_by_num(int num) {
+    Con *output, *workspace = NULL;
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        GREP_FIRST(workspace, output_get_content(output), child->num == num);
+    }
+
+    return workspace;
+}
+
+/*
  * Sets ws->layout to splith/splitv if default_orientation was specified in the
  * configfile. Otherwise, it uses splith/splitv depending on whether the output
  * is higher than wide.
@@ -225,17 +239,10 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         DLOG("Getting next unused workspace by number\n");
         int c = 0;
         while (exists) {
-            c++;
-
-            ws->num = c;
-
-            Con *out, *current = NULL;
-            TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
-            GREP_FIRST(current, output_get_content(out), child->num == ws->num);
-            exists = (current != NULL);
-
+            exists = (get_existing_workspace_by_num(++c) != NULL);
             DLOG("result for ws %d: exists = %d\n", c, exists);
         }
+        ws->num = c;
         sasprintf(&(ws->name), "%d", c);
     }
     con_attach(ws, content, false);

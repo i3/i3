@@ -394,21 +394,15 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *_no
     }
 
     LOG("should move window to workspace %s\n", which);
-    /* get the workspace */
-    Con *output, *ws = NULL;
 
     long parsed_num = ws_name_to_number(which);
-
     if (parsed_num == -1) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
         yerror("Could not parse number \"%s\"", which);
         return;
     }
 
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-    GREP_FIRST(ws, output_get_content(output),
-               child->num == parsed_num);
-
+    Con *ws = get_existing_workspace_by_num(parsed_num);
     if (!ws) {
         ws = workspace_get(which, NULL);
     }
@@ -901,7 +895,6 @@ void cmd_workspace(I3_CMD, const char *which) {
  */
 void cmd_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_and_forth) {
     const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
-    Con *output, *workspace = NULL;
 
     if (con_get_fullscreen_con(croot, CF_GLOBAL)) {
         LOG("Cannot switch workspace while in global fullscreen\n");
@@ -910,17 +903,13 @@ void cmd_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_a
     }
 
     long parsed_num = ws_name_to_number(which);
-
     if (parsed_num == -1) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
         yerror("Could not parse number \"%s\"", which);
         return;
     }
 
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-    GREP_FIRST(workspace, output_get_content(output),
-               child->num == parsed_num);
-
+    Con *workspace = get_existing_workspace_by_num(parsed_num);
     if (!workspace) {
         LOG("There is no workspace with number %ld, creating a new one.\n", parsed_num);
         ysuccess(true);
