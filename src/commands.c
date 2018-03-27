@@ -2019,6 +2019,9 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
             LOG("Could not get output named \"%s\"\n", assignment->output);
             continue;
         }
+        if (!output_triggers_assignment(target_output, assignment)) {
+            continue;
+        }
         workspace_move_to_output(workspace, target_output);
 
         bool can_restore_focus = previously_focused != NULL;

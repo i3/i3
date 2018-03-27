@@ -322,8 +322,8 @@ CFGFUN(show_marks, const char *value) {
     config.show_marks = eval_boolstr(value);
 }
 
-CFGFUN(workspace, const char *workspace, const char *output) {
-    DLOG("Assigning workspace \"%s\" to output \"%s\"\n", workspace, output);
+CFGFUN(workspace, const char *workspace, const char *outputs) {
+    DLOG("Assigning workspace \"%s\" to outputs \"%s\"\n", workspace, outputs);
     /* Check for earlier assignments of the same workspace so that we
      * don’t have assignments of a single workspace to different
      * outputs */
@@ -336,10 +336,16 @@ CFGFUN(workspace, const char *workspace, const char *output) {
         }
     }
 
-    assignment = scalloc(1, sizeof(struct Workspace_Assignment));
-    assignment->name = sstrdup(workspace);
-    assignment->output = sstrdup(output);
-    TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
+    char *buf = sstrdup(outputs);
+    char *output = strtok(buf, " ");
+    while (output != NULL) {
+        assignment = scalloc(1, sizeof(struct Workspace_Assignment));
+        assignment->name = sstrdup(workspace);
+        assignment->output = sstrdup(output);
+        TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
+        output = strtok(NULL, " ");
+    }
+    free(buf);
 }
 
 CFGFUN(ipc_socket, const char *path) {

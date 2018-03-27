@@ -72,26 +72,45 @@ static void _workspace_apply_default_orientation(Con *ws) {
  * given name or number or NULL if no such output exists. If there is a
  * workspace with a matching name and another workspace with a matching number,
  * the output assigned to the first one is returned.
+ * The order of the 'ws_assignments' queue is respected: if multiple assignments
+ * match the specified workspace, the first one is returned.
  * If 'name' is NULL it will be ignored.
  * If 'parsed_num' is -1 it will be ignored.
  *
  */
 static Con *get_assigned_output(const char *name, long parsed_num) {
     Con *output = NULL;
-
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
         if (name && strcmp(assignment->name, name) == 0) {
             DLOG("Found workspace name assignment to output \"%s\"\n", assignment->output);
-            GREP_FIRST(output, croot, !strcmp(child->name, assignment->output));
-            break;
-        } else if (parsed_num != -1 && name_is_digits(assignment->name) && ws_name_to_number(assignment->name) == parsed_num) {
+            Output *assigned_by_name = get_output_by_name(assignment->output, true);
+            if (assigned_by_name) {
+                /* When the name matches exactly, skip numbered assignments. */
+                return assigned_by_name->con;
+            }
+        } else if (!output && /* Only keep the first numbered assignment. */
+                   parsed_num != -1 &&
+                   name_is_digits(assignment->name) &&
+                   ws_name_to_number(assignment->name) == parsed_num) {
             DLOG("Found workspace number assignment to output \"%s\"\n", assignment->output);
-            GREP_FIRST(output, croot, !strcmp(child->name, assignment->output));
+            Output *assigned_by_num = get_output_by_name(assignment->output, true);
+            if (assigned_by_num) {
+                output = assigned_by_num->con;
+            }
         }
     }
 
     return output;
+}
+
+/*
+ * Returns true if the first output assigned to a workspace with the given
+ * workspace assignment is the same as the given output.
+ */
+bool output_triggers_assignment(Output *output, struct Workspace_Assignment *assignment) {
+    Con *assigned = get_assigned_output(assignment->name, -1);
+    return assigned && assigned == output->con;
 }
 
 /*
@@ -957,8 +976,9 @@ bool workspace_move_to_output(Con *ws, Output *output) {
         bool used_assignment = false;
         struct Workspace_Assignment *assignment;
         TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-            if (assignment->output == NULL || strcmp(assignment->output, output_primary_name(current_output)) != 0)
+            if (!output_triggers_assignment(current_output, assignment)) {
                 continue;
+            }
             /* check if this workspace is already attached to the tree */
             if (get_existing_workspace_by_name(assignment->name) != NULL) {
                 continue;

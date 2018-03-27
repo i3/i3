@@ -26,6 +26,8 @@ workspace 1:override output fake-0
 workspace 2 output fake-0
 workspace 1 output fake-1
 workspace 2:override output fake-1
+workspace 3 output fake-0
+workspace 3:override output doesnotexist fake-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
@@ -53,5 +55,11 @@ cmd 'workspace "1:override"';
 is(get_output_for_workspace('1:override'), 'fake-0',
     'Assignment rules should not be affected by the order assignments are declared')
     or diag 'Since workspace "1:override" is assigned by name to fake-0, it should open on fake-0';
+
+cmd 'focus output fake-1';
+cmd 'workspace "3:override"';
+is(get_output_for_workspace('3:override'), 'fake-1',
+   'Assignment rules should not be affected by multiple output assignments')
+    or diag 'Since workspace "3:override" is assigned by name to fake-1, it should open on fake-1';
 
 done_testing;

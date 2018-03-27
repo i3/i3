@@ -54,7 +54,49 @@ check_output('4', 'fake-3', 'First available number that is not assigned to exis
 check_output('dontusethisname', '', 'Named workspace that is assigned to output that does not exist is not used');
 check_output('donotoverride', '', 'Named workspace assigned to already occupied output is not used');
 
+exit_gracefully($pid);
 
+################################################################################
+# Test multiple assignments
+################################################################################
+
+sub do_test {
+    my ($workspace, $output, $msg) = @_;
+    cmd 'focus output ' . ($output eq 'fake-3' ? 'fake-0' : 'fake-3');
+
+    cmd "workspace $workspace";
+    check_output($workspace, $output, $msg)
+}
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+fake-outputs 1024x768+0+0P,1024x768+1024+0,1024x768+1024+768,1024x768+0+768
+
+workspace 1 output fake-0
+workspace 1 output fake-1 fake-2
+workspace 2 output fake-3 fake-4 fake-0 fake-1
+workspace 3 output these outputs do not exist but these do: fake-0 fake-3
+workspace 4 output whitespace                    fake-0
+workspace special output doesnotexist1 doesnotexist2 doesnotexist3
+EOT
+
+$pid = launch_with_config($config);
+
+do_test('1', 'fake-0', 'Multiple assignments do not override a single one');
+do_test('2', 'fake-3', 'First output out of multiple assignments is used');
+do_test('3', 'fake-0', 'First existing output is used');
+do_test('4', 'fake-0', 'Excessive whitespace is ok');
+do_test('5', 'fake-1', 'Numbered initialization for fake-1');
+do_test('6', 'fake-2', 'Numbered initialization for fake-2');
+
+cmd 'focus output fake-0, workspace special';
+check_output('special', 'fake-0', 'Workspace with only non-existing assigned outputs opened in current output.');
+
+# Moving assigned workspaces.
+cmd 'workspace 2, move workspace to output left';
+check_output('2', 'fake-2', 'Moved assigned workspace up');
 
 exit_gracefully($pid);
 done_testing;

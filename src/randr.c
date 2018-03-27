@@ -424,9 +424,9 @@ void init_ws_for_output(Output *output, Con *content) {
     /* go through all assignments and move the existing workspaces to this output */
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-        if (strcmp(assignment->output, output_primary_name(output)) != 0)
+        if (!output_triggers_assignment(output, assignment)) {
             continue;
-
+        }
         Con *workspace = get_existing_workspace_by_name(assignment->name);
         if (workspace == NULL)
             continue;
@@ -501,8 +501,9 @@ void init_ws_for_output(Output *output, Con *content) {
 
     /* otherwise, we create the first assigned ws for this output */
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-        if (strcmp(assignment->output, output_primary_name(output)) != 0)
+        if (!output_triggers_assignment(output, assignment)) {
             continue;
+        }
 
         LOG("Initializing first assigned workspace \"%s\" for output \"%s\"\n",
             assignment->name, assignment->output);
