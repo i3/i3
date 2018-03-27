@@ -789,11 +789,10 @@ void cmd_nop(I3_CMD, const char *comment) {
  *
  */
 void cmd_append_layout(I3_CMD, const char *cpath) {
-    char *path = sstrdup(cpath);
-    LOG("Appending layout \"%s\"\n", path);
+    LOG("Appending layout \"%s\"\n", cpath);
 
     /* Make sure we allow paths like '~/.i3/layout.json' */
-    path = resolve_tilde(path);
+    char *path = resolve_tilde(cpath);
 
     char *buf = NULL;
     ssize_t len;
