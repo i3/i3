@@ -30,21 +30,6 @@ workspace 2:override output fake-1
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
 
-my $i3 = i3(get_socket_path());
-$i3->connect->recv;
-
-# Returns the name of the output on which this workspace resides
-sub get_output_for_workspace {
-    my $ws_name = shift @_;
-
-    foreach (grep { not $_->{name} =~ /^__/ } @{$i3->get_tree->recv->{nodes}}) {
-        my $output = $_->{name};
-        foreach (grep { $_->{name} =~ "content" } @{$_->{nodes}}) {
-            return $output if $_->{nodes}[0]->{name} =~ $ws_name;
-        }
-    }
-}
-
 ################################################################################
 # Workspace assignments with bare numbers should be interpreted as `workspace
 # number` config directives. Any workspace beginning with that number should be

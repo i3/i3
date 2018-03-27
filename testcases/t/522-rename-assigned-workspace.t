@@ -31,21 +31,6 @@ workspace baz output fake-1
 workspace 5 output left
 EOT
 
-my $i3 = i3(get_socket_path());
-$i3->connect->recv;
-
-# Returns the name of the output on which this workspace resides
-sub get_output_for_workspace {
-    my $ws_name = shift @_;
-
-    foreach (grep { not $_->{name} =~ /^__/ } @{$i3->get_tree->recv->{nodes}}) {
-        my $output = $_->{name};
-        foreach (grep { $_->{name} =~ "content" } @{$_->{nodes}}) {
-            return $output if $_->{nodes}[0]->{name} =~ $ws_name;
-        }
-    }
-}
-
 ##########################################################################
 # Renaming the workspace to an unassigned name does not move the workspace
 # (regression test)
