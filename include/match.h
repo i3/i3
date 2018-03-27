@@ -53,3 +53,5 @@ void match_free(Match *match);
  *
  */
 void match_parse_property(Match *match, const char *ctype, const char *cvalue);
+
+bool match_cmp(Match *match1, Match *match2);

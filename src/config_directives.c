@@ -151,16 +151,35 @@ CFGFUN(exec, const char *exectype, const char *no_startup_id, const char *comman
     }
 }
 
+//TODO: explain
+static Assignment *pop_assignment(const char *command, Match *match) {
+    Assignment *assignment;
+    TAILQ_FOREACH(assignment, &old_assignments, assignments) {
+        if (assignment->type == A_COMMAND &&
+            match_cmp(&(assignment->match), match) &&
+            strcmp(assignment->dest.command, command) == 0) {
+            TAILQ_REMOVE(&old_assignments, assignment, assignments);
+            return assignment;
+        }
+    }
+    return NULL;
+}
+
 CFGFUN(for_window, const char *command) {
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this for_window statement\n");
         return;
     }
     DLOG("\t should execute command %s for the criteria mentioned above\n", command);
-    Assignment *assignment = scalloc(1, sizeof(Assignment));
-    assignment->type = A_COMMAND;
-    match_copy(&(assignment->match), current_match);
-    assignment->dest.command = sstrdup(command);
+    Assignment *assignment = pop_assignment(command, current_match);
+    if (assignment) {
+        DLOG("Assignment already exists for command and criteria\n");
+    } else {
+        assignment = scalloc(1, sizeof(Assignment));
+        assignment->type = A_COMMAND;
+        match_copy(&(assignment->match), current_match);
+        assignment->dest.command = sstrdup(command);
+    }
     TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
 }
 
