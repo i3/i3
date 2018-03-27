@@ -1955,11 +1955,9 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
         LOG("Renaming current workspace to \"%s\"\n", new_name);
     }
 
-    Con *output, *workspace = NULL;
+    Con *workspace;
     if (old_name) {
-        TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-        GREP_FIRST(workspace, output_get_content(output),
-                   !strcasecmp(child->name, old_name));
+        workspace = get_existing_workspace_by_name(old_name);
     } else {
         workspace = con_get_workspace(focused);
         old_name = workspace->name;
@@ -1970,10 +1968,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
         return;
     }
 
-    Con *check_dest = NULL;
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-    GREP_FIRST(check_dest, output_get_content(output),
-               !strcasecmp(child->name, new_name));
+    Con *check_dest = get_existing_workspace_by_name(new_name);
 
     /* If check_dest == workspace, the user might be changing the case of the
      * workspace, or it might just be a no-op. */

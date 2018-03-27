@@ -427,11 +427,7 @@ void init_ws_for_output(Output *output, Con *content) {
         if (strcmp(assignment->output, output_primary_name(output)) != 0)
             continue;
 
-        /* check if this workspace actually exists */
-        Con *workspace = NULL, *out;
-        TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
-        GREP_FIRST(workspace, output_get_content(out),
-                   !strcasecmp(child->name, assignment->name));
+        Con *workspace = get_existing_workspace_by_name(assignment->name);
         if (workspace == NULL)
             continue;
 

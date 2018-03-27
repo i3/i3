@@ -20,6 +20,20 @@ static char *previous_workspace_name = NULL;
 static char **binding_workspace_names = NULL;
 
 /*
+ * Returns the workspace with the given name or NULL if such a workspace does
+ * not exist.
+ *
+ */
+Con *get_existing_workspace_by_name(const char *name) {
+    Con *output, *workspace = NULL;
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, name));
+    }
+
+    return workspace;
+}
+
+/*
  * Sets ws->layout to splith/splitv if default_orientation was specified in the
  * configfile. Otherwise, it uses splith/splitv depending on whether the output
  * is higher than wide.
@@ -46,15 +60,12 @@ static void _workspace_apply_default_orientation(Con *ws) {
  *
  */
 Con *workspace_get(const char *num, bool *created) {
-    Con *output, *workspace = NULL;
-
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-    GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, num));
+    Con *workspace = get_existing_workspace_by_name(num);
 
     if (workspace == NULL) {
         LOG("Creating new workspace \"%s\"\n", num);
         /* unless an assignment is found, we will create this workspace on the current output */
-        output = con_get_output(focused);
+        Con *output = con_get_output(focused);
         /* look for assignments */
         struct Workspace_Assignment *assignment;
 
@@ -172,7 +183,6 @@ void extract_workspace_names_from_bindings(void) {
  */
 Con *create_workspace_on_output(Output *output, Con *content) {
     /* add a workspace to this output */
-    Con *out, *current;
     char *name;
     bool exists = true;
     Con *ws = con_new(NULL, NULL);
@@ -198,10 +208,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         if (assigned)
             continue;
 
-        current = NULL;
-        TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
-        GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, target_name));
-        exists = (current != NULL);
+        exists = (get_existing_workspace_by_name(target_name) != NULL);
         if (!exists) {
             ws->name = sstrdup(target_name);
             /* Set ->num to the number of the workspace, if the name actually
@@ -222,7 +229,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
 
             ws->num = c;
 
-            current = NULL;
+            Con *out, *current = NULL;
             TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
             GREP_FIRST(current, output_get_content(out), child->num == ws->num);
             exists = (current != NULL);
@@ -940,14 +947,10 @@ bool workspace_move_to_output(Con *ws, const char *name) {
         TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
             if (assignment->output == NULL || strcmp(assignment->output, output_primary_name(current_output)) != 0)
                 continue;
-
             /* check if this workspace is already attached to the tree */
-            Con *workspace = NULL, *out;
-            TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
-            GREP_FIRST(workspace, output_get_content(out),
-                       !strcasecmp(child->name, assignment->name));
-            if (workspace != NULL)
+            if (get_existing_workspace_by_name(assignment->name) != NULL) {
                 continue;
+            }
 
             /* so create the workspace referenced to by this assignment */
             LOG("Creating workspace from assignment %s.\n", assignment->name);
