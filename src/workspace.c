@@ -248,7 +248,9 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         DLOG("Getting next unused workspace by number\n");
         int c = 0;
         while (exists) {
-            exists = (get_existing_workspace_by_num(++c) != NULL);
+            c++;
+            Con *assigned = get_assigned_output(NULL, c);
+            exists = (get_existing_workspace_by_num(c) || (assigned && assigned != output->con));
             DLOG("result for ws %d: exists = %d\n", c, exists);
         }
         ws->num = c;
