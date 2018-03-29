@@ -108,18 +108,11 @@ static int json_end_map(void *ctx) {
             /* Prevent name clashes when appending a workspace, e.g. when the
              * user tries to restore a workspace called “1” but already has a
              * workspace called “1”. */
-            Con *output;
-            Con *workspace = NULL;
-            TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-            GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, json_node->name));
             char *base = sstrdup(json_node->name);
             int cnt = 1;
-            while (workspace != NULL) {
+            while (get_existing_workspace_by_name(json_node->name) != NULL) {
                 FREE(json_node->name);
                 sasprintf(&(json_node->name), "%s_%d", base, cnt++);
-                workspace = NULL;
-                TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-                GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, json_node->name));
             }
             free(base);
 

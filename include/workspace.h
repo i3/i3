@@ -25,6 +25,20 @@
 #define NET_WM_DESKTOP_ALL 0xFFFFFFFF
 
 /**
+ * Returns the workspace with the given name or NULL if such a workspace does
+ * not exist.
+ *
+ */
+Con *get_existing_workspace_by_name(const char *name);
+
+/**
+ * Returns the workspace with the given number or NULL if such a workspace does
+ * not exist.
+ *
+ */
+Con *get_existing_workspace_by_num(int num);
+
+/**
  * Returns a pointer to the workspace with the given number (starting at 0),
  * creating the workspace if necessary (by allocating the necessary amount of
  * memory and initializing the data structures correctly).

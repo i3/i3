@@ -265,13 +265,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
             Con *assigned_ws = NULL;
             if (assignment->type == A_TO_WORKSPACE_NUMBER) {
-                Con *output = NULL;
                 long parsed_num = ws_name_to_number(assignment->dest.workspace);
 
-                /* This will only work for workspaces that already exist. */
-                TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-                    GREP_FIRST(assigned_ws, output_get_content(output), child->num == parsed_num);
-                }
+                assigned_ws = get_existing_workspace_by_num(parsed_num);
             }
             /* A_TO_WORKSPACE type assignment or fallback from A_TO_WORKSPACE_NUMBER
              * when the target workspace number does not exist yet. */
