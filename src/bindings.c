@@ -958,10 +958,7 @@ bool load_keymap(void) {
             .options = NULL};
         if (fill_rmlvo_from_root(&names) == -1) {
             ELOG("Could not get _XKB_RULES_NAMES atom from root window, falling back to defaults.\n");
-            if ((new_keymap = xkb_keymap_new_from_names(xkb_context, &names, 0)) == NULL) {
-                ELOG("xkb_keymap_new_from_names(NULL) failed\n");
-                return false;
-            }
+            /* Using NULL for the fields of xkb_rule_names. */
         }
         new_keymap = xkb_keymap_new_from_names(xkb_context, &names, 0);
         free((char *)names.rules);
@@ -970,7 +967,7 @@ bool load_keymap(void) {
         free((char *)names.variant);
         free((char *)names.options);
         if (new_keymap == NULL) {
-            ELOG("xkb_keymap_new_from_names(RMLVO) failed\n");
+            ELOG("xkb_keymap_new_from_names failed\n");
             return false;
         }
     }
