@@ -9,7 +9,21 @@ i3-config-wizard - creates a keysym based config based on your layout
 
 == SYNOPSIS
 
-i3-config-wizard
+i3-config-wizard [*-s* 'socket'] [*-m* 'modifier'] [*-v*] [*-h*]
+
+== OPTIONS
+
+*-s, --socket* 'socket'::
+Overwrites the path to the i3 IPC socket.
+
+*-m, --modifier* 'modifier'::
+Generates the configuration file headlessly. Accepts win or alt.
+
+*-v, --version*::
+Display version number and exit.
+
+*-h, --help*::
+Display a short help message and exit.
 
 == FILES
 

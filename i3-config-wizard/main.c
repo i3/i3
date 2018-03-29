@@ -780,7 +780,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'h':
                 printf("i3-config-wizard " I3_VERSION "\n");
-                printf("i3-config-wizard [-s <socket>] [-v] [-m <modifier key>]\n");
+                printf("i3-config-wizard [-s <socket>] [-m win|alt] [-v] [-h]\n");
                 return 0;
         }
     }
