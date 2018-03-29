@@ -758,7 +758,7 @@ int main(int argc, char *argv[]) {
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}};
 
-    char *options_string = "s:vh";
+    char *options_string = "sm:vh";
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (o) {
@@ -780,7 +780,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'h':
                 printf("i3-config-wizard " I3_VERSION "\n");
-                printf("i3-config-wizard [-s <socket>] [-v] [--modifier <modifier key>]\n");
+                printf("i3-config-wizard [-s <socket>] [-v] [-m <modifier key>]\n");
                 return 0;
         }
     }
