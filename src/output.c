@@ -101,6 +101,12 @@ void output_push_sticky_windows(Con *to_focus) {
                 if (con_is_sticky(current)) {
                     bool ignore_focus = (to_focus == NULL) || (current != to_focus->parent);
                     con_move_to_workspace(current, visible_ws, true, false, ignore_focus);
+                    if (!ignore_focus) {
+                        Con *current_ws = con_get_workspace(focused);
+                        con_activate(con_descend_focused(current));
+                        /* Pushing sticky windows shouldn't change the focused workspace. */
+                        con_activate(con_descend_focused(current_ws));
+                    }
                 }
             }
         }
