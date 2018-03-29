@@ -745,10 +745,12 @@ int main(int argc, char *argv[]) {
     char *pattern = "pango:monospace 8";
     char *patternbold = "pango:monospace bold 8";
     int o, option_index = 0;
+    bool headless_run = false;
 
     static struct option long_options[] = {
         {"socket", required_argument, 0, 's'},
         {"version", no_argument, 0, 'v'},
+        {"modifier", required_argument, 0, 'm'},
         {"limit", required_argument, 0, 'l'},
         {"prompt", required_argument, 0, 'P'},
         {"prefix", required_argument, 0, 'p'},
@@ -767,9 +769,18 @@ int main(int argc, char *argv[]) {
             case 'v':
                 printf("i3-config-wizard " I3_VERSION "\n");
                 return 0;
+            case 'm':
+                headless_run = true;
+                if (strcmp(optarg, "alt") == 0)
+                    modifier = MOD_Mod1;
+                else if (strcmp(optarg, "win") == 0)
+                    modifier = MOD_Mod4;
+                else
+                    err(EXIT_FAILURE, "Invalid modifier key %s", optarg);
+                break;
             case 'h':
                 printf("i3-config-wizard " I3_VERSION "\n");
-                printf("i3-config-wizard [-s <socket>] [-v]\n");
+                printf("i3-config-wizard [-s <socket>] [-v] [--modifier <modifier key>]\n");
                 return 0;
         }
     }
@@ -825,6 +836,11 @@ int main(int argc, char *argv[]) {
     xcb_get_modifier_mapping_cookie_t modmap_cookie;
     modmap_cookie = xcb_get_modifier_mapping(conn);
     symbols = xcb_key_symbols_alloc(conn);
+
+    if (headless_run) {
+        finish();
+        return 0;
+    }
 
 /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
