@@ -37,9 +37,7 @@ void match_init(Match *match) {
  *
  */
 bool match_is_empty(Match *match) {
-    /* we cannot simply use memcmp() because the structure is part of a
-     * TAILQ and I don’t want to start with things like assuming that the
-     * last member of a struct really is at the end in memory… */
+    /*TODO: match_init + match_cmp*/
     return (match->title == NULL &&
             match->mark == NULL &&
             match->application == NULL &&
@@ -53,6 +51,31 @@ bool match_is_empty(Match *match) {
             match->con_id == NULL &&
             match->dock == M_NODOCK &&
             match->window_mode == WM_ANY);
+}
+
+bool match_cmp(Match *match1, Match *match2) {
+#define CMP_FIELD(field) (match1->field == match2->field)
+#define CMP_REGEX_FIELD(field) (CMP_FIELD(field) || strcmp(match1->field->pattern, match2->field->pattern) == 0)
+
+    /* we cannot simply use memcmp() because the structure is part of a
+     * TAILQ and I don’t want to start with things like assuming that the
+     * last member of a struct really is at the end in memory… */
+    return (CMP_REGEX_FIELD(title) &&
+            CMP_REGEX_FIELD(mark) &&
+            CMP_REGEX_FIELD(application) &&
+            CMP_REGEX_FIELD(class) &&
+            CMP_REGEX_FIELD(instance) &&
+            CMP_REGEX_FIELD(window_role) &&
+            CMP_REGEX_FIELD(workspace) &&
+            CMP_FIELD(urgent) &&
+            CMP_FIELD(id) &&
+            CMP_FIELD(window_type) &&
+            CMP_FIELD(con_id) &&
+            CMP_FIELD(dock) &&
+            CMP_FIELD(window_mode));
+
+#undef CMP_REGEX_FIELD
+#undef CMP_FIELD
 }
 
 /*

@@ -17,6 +17,7 @@ char *current_config = NULL;
 Config config;
 struct modes_head modes;
 struct barconfig_head barconfigs = TAILQ_HEAD_INITIALIZER(barconfigs);
+struct old_assignments_head old_assignments = TAILQ_HEAD_INITIALIZER(assignments);
 
 /**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
@@ -65,6 +66,18 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
     return parse_file(path, use_nagbar);
 }
 
+static void free_assignment(Assignment *assign) {
+    if (assign->type == A_TO_WORKSPACE || assign->type == A_TO_WORKSPACE_NUMBER)
+        FREE(assign->dest.workspace);
+    else if (assign->type == A_COMMAND) {
+        FREE(assign->dest.command);
+    } else if (assign->type == A_TO_OUTPUT)
+        FREE(assign->dest.output);
+    match_free(&(assign->match));
+    TAILQ_REMOVE(&assignments, assign, assignments);
+    FREE(assign);
+}
+
 /*
  * (Re-)loads the configuration file (sets useful defaults before).
  *
@@ -96,18 +109,17 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(mode);
         }
 
+        TAILQ_INIT(&old_assignments);
         struct Assignment *assign;
         while (!TAILQ_EMPTY(&assignments)) {
             assign = TAILQ_FIRST(&assignments);
-            if (assign->type == A_TO_WORKSPACE || assign->type == A_TO_WORKSPACE_NUMBER)
-                FREE(assign->dest.workspace);
-            else if (assign->type == A_COMMAND)
-                FREE(assign->dest.command);
-            else if (assign->type == A_TO_OUTPUT)
-                FREE(assign->dest.output);
-            match_free(&(assign->match));
-            TAILQ_REMOVE(&assignments, assign, assignments);
-            FREE(assign);
+            if (assign->type == A_COMMAND) {
+                TAILQ_REMOVE(&assignments, assign, assignments);
+                TAILQ_INSERT_TAIL(&old_assignments, assign, assignments);
+                continue;
+            }
+
+            free_assignment(assign);
         }
 
         /* Clear bar configs */
@@ -160,17 +172,6 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(barconfig->colors.binding_mode_text);
             TAILQ_REMOVE(&barconfigs, barconfig, configs);
             FREE(barconfig);
-        }
-
-        Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            /* Assignments changed, previously ran assignments are invalid. */
-            if (con->window) {
-                con->window->nr_assignments = 0;
-                FREE(con->window->ran_assignments);
-            }
-            /* Invalidate pixmap caches in case font or colors changed. */
-            FREE(con->deco_render_params);
         }
 
         /* Get rid of the current font */
@@ -240,6 +241,41 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     parse_configuration(override_configpath, true);
 
     if (reload) {
+        Con *con;
+        Assignment *assign;
+        TAILQ_FOREACH(con, &all_cons, all_cons) {
+            //TODO: test removed assignments, test added assignment, test same assignments.
+            /* Assignments changed, previously ran assignments are invalid. */
+            if (con->window && con->window->nr_assignments) {
+                const uint32_t max_assignments = con->window->nr_assignments;
+                uint32_t idx;
+                uint32_t idx2 = 0;
+                Assignment **ran_assignments = malloc(max_assignments * sizeof(Assignment));
+                for (idx = 0; idx < max_assignments; idx++) {
+                    bool outdated = false;
+                    TAILQ_FOREACH(assign, &old_assignments, assignments) {
+                        if (assign == con->window->ran_assignments[idx]) {
+                            outdated = true;
+                            break;
+                        }
+                    }
+                    if (!outdated) {
+                        ran_assignments[idx2++] = con->window->ran_assignments[idx];
+                    }
+                }
+
+                free(con->window->ran_assignments);
+                con->window->ran_assignments = realloc(ran_assignments, (++idx2) * sizeof(Assignment));
+                con->window->nr_assignments = idx2;
+            }
+            /* Invalidate pixmap caches in case font or colors changed. */
+            FREE(con->deco_render_params);
+        }
+
+        while (!TAILQ_EMPTY(&old_assignments)) {
+            free_assignment(TAILQ_FIRST(&old_assignments));
+        }
+
         translate_keysyms();
         grab_all_keys(conn);
         regrab_all_buttons(conn);
