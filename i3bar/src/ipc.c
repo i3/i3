@@ -114,13 +114,18 @@ void got_bar_config(char *reply) {
 
 /* Data structure to easily call the reply handlers later */
 handler_t reply_handlers[] = {
-    &got_command_reply,
-    &got_workspace_reply,
-    &got_subscribe_reply,
-    &got_output_reply,
-    NULL,
-    NULL,
-    &got_bar_config,
+    &got_command_reply,   /* I3_IPC_REPLY_TYPE_COMMAND */
+    &got_workspace_reply, /* I3_IPC_REPLY_TYPE_WORKSPACES */
+    &got_subscribe_reply, /* I3_IPC_REPLY_TYPE_SUBSCRIBE */
+    &got_output_reply,    /* I3_IPC_REPLY_TYPE_OUTPUTS */
+    NULL,                 /* I3_IPC_REPLY_TYPE_TREE */
+    NULL,                 /* I3_IPC_REPLY_TYPE_MARKS */
+    &got_bar_config,      /* I3_IPC_REPLY_TYPE_BAR_CONFIG */
+    NULL,                 /* I3_IPC_REPLY_TYPE_VERSION */
+    NULL,                 /* I3_IPC_REPLY_TYPE_BINDING_MODES */
+    NULL,                 /* I3_IPC_REPLY_TYPE_CONFIG */
+    NULL,                 /* I3_IPC_REPLY_TYPE_TICK */
+    NULL,                 /* I3_IPC_REPLY_TYPE_SYNC */
 };
 
 /*
