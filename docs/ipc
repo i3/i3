@@ -65,6 +65,7 @@ to do that).
 | 8 | +GET_BINDING_MODES+ | <<_binding_modes_reply,BINDING_MODES>> | Gets the names of all currently configured binding modes.
 | 9 | +GET_CONFIG+ | <<_config_reply,CONFIG>> | Returns the last loaded i3 config.
 | 10 | +SEND_TICK+ | <<_tick_reply,TICK>> | Sends a tick event with the specified payload.
+| 11 | +SYNC+ | <<_sync_reply,SYNC>> | Sends an i3 sync event with the specified random value to the specified window.
 |======================================================
 
 So, a typical message could look like this:
@@ -648,6 +649,18 @@ received, the tick event has been written to all IPC connections which subscribe
 to tick events. UNIX sockets are usually buffered, but you can be certain that
 once you receive the tick event you just triggered, you must have received all
 events generated prior to the +SEND_TICK+ message (happened-before relation).
+
+*Example:*
+-------------------
+{ "success": true }
+-------------------
+
+[[_sync_reply]]
+=== SYNC reply
+
+The reply is a map containing the "success" member. After the reply was
+received, the https://i3wm.org/docs/testsuite.html#i3_sync[i3 sync message] was
+responded to.
 
 *Example:*
 -------------------

@@ -694,21 +694,12 @@ static void handle_client_message(xcb_client_message_event_t *event) {
     if (event->type == atoms[I3_SYNC]) {
         xcb_window_t window = event->data.data32[0];
         uint32_t rnd = event->data.data32[1];
-        DLOG("[i3 sync protocol] Forwarding random value %d, X11 window 0x%08x to i3\n", rnd, window);
-
-        void *reply = scalloc(32, 1);
-        xcb_client_message_event_t *ev = reply;
-
-        ev->response_type = XCB_CLIENT_MESSAGE;
-        ev->window = window;
-        ev->type = atoms[I3_SYNC];
-        ev->format = 32;
-        ev->data.data32[0] = window;
-        ev->data.data32[1] = rnd;
-
-        xcb_send_event(conn, false, xcb_root, XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT, (char *)ev);
-        xcb_flush(conn);
-        free(reply);
+        /* Forward the request to i3 via the IPC interface so that all pending
+         * IPC messages are guaranteed to be handled. */
+        char *payload = NULL;
+        sasprintf(&payload, "{\"rnd\":%d, \"window\":%d}", rnd, window);
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_SYNC, payload);
+        free(payload);
     } else if (event->type == atoms[_NET_SYSTEM_TRAY_OPCODE] &&
                event->format == 32) {
         DLOG("_NET_SYSTEM_TRAY_OPCODE received\n");
