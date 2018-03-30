@@ -1173,9 +1173,68 @@ IPC_HANDLER(send_tick) {
     DLOG("Sent tick event\n");
 }
 
+struct sync_state {
+    char *last_key;
+    uint32_t rnd;
+    xcb_window_t window;
+};
+
+static int _sync_json_key(void *extra, const unsigned char *val, size_t len) {
+    struct sync_state *state = extra;
+    FREE(state->last_key);
+    state->last_key = scalloc(len + 1, 1);
+    memcpy(state->last_key, val, len);
+    return 1;
+}
+
+static int _sync_json_int(void *extra, long long val) {
+    struct sync_state *state = extra;
+    if (strcasecmp(state->last_key, "rnd") == 0) {
+        state->rnd = val;
+    } else if (strcasecmp(state->last_key, "window") == 0) {
+        state->window = (xcb_window_t)val;
+    }
+    return 1;
+}
+
+IPC_HANDLER(sync) {
+    yajl_handle p;
+    yajl_status stat;
+
+    /* Setup the JSON parser */
+    static yajl_callbacks callbacks = {
+        .yajl_map_key = _sync_json_key,
+        .yajl_integer = _sync_json_int,
+    };
+
+    struct sync_state state;
+    memset(&state, '\0', sizeof(struct sync_state));
+    p = yalloc(&callbacks, (void *)&state);
+    stat = yajl_parse(p, (const unsigned char *)message, message_size);
+    FREE(state.last_key);
+    if (stat != yajl_status_ok) {
+        unsigned char *err;
+        err = yajl_get_error(p, true, (const unsigned char *)message,
+                             message_size);
+        ELOG("YAJL parse error: %s\n", err);
+        yajl_free_error(p, err);
+
+        const char *reply = "{\"success\":false}";
+        ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SYNC, (const uint8_t *)reply);
+        yajl_free(p);
+        return;
+    }
+    yajl_free(p);
+
+    DLOG("received IPC sync request (rnd = %d, window = 0x%08x)\n", state.rnd, state.window);
+    sync_respond(state.window, state.rnd);
+    const char *reply = "{\"success\":true}";
+    ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SYNC, (const uint8_t *)reply);
+}
+
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[11] = {
+handler_t handlers[12] = {
     handle_run_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -1187,6 +1246,7 @@ handler_t handlers[11] = {
     handle_get_binding_modes,
     handle_get_config,
     handle_send_tick,
+    handle_sync,
 };
 
 /*
