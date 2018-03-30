@@ -562,6 +562,7 @@ i3_SOURCES = \
 	src/sd-daemon.c \
 	src/sighandler.c \
 	src/startup.c \
+	src/sync.c \
 	src/tree.c \
 	src/util.c \
 	src/version.c \
