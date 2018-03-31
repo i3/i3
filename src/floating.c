@@ -176,11 +176,36 @@ void floating_enable(Con *con, bool automatic) {
         return;
     }
 
+    Con *focus_head_placeholder = NULL;
+    bool focus_before_parent = true;
+    if (!set_focus) {
+        /* Find recursively the ancestor container which is a child of our workspace.
+         * We need to reuse its focus position later. */
+        Con *ancestor = con;
+        while (ancestor->parent->type != CT_WORKSPACE) {
+            focus_before_parent &= TAILQ_FIRST(&(ancestor->parent->focus_head)) == ancestor;
+            ancestor = ancestor->parent;
+        }
+        /* Consider the part of the focus stack of our current workspace:
+         * [ ... S_{i-1} S_{i} S_{i+1} ... ]
+         * Where S_{x} is a container tree and the container 'con' that is beeing switched to
+         * floating belongs in S_{i}. The new floating container, 'nc', will have the
+         * workspace as its parent so it needs to be placed in this stack. If C was focused
+         * we just need to call con_focus(). Otherwise, nc must be placed before or after S_{i}.
+         * We should avoid using the S_{i} container for our operations since it might get
+         * killed if it has no other children. So, the two possible positions are after S_{i-1}
+         * or before S_{i+1}.
+         */
+        if (focus_before_parent) {
+            focus_head_placeholder = TAILQ_PREV(ancestor, focus_head, focused);
+        } else {
+            focus_head_placeholder = TAILQ_NEXT(ancestor, focused);
+        }
+    }
+
     /* 1: detach the container from its parent */
     /* TODO: refactor this with tree_close_internal() */
-    TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
-    TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-
+    con_detach(con);
     con_fix_percent(con->parent);
 
     /* 2: create a new container to render the decoration on, add
@@ -196,12 +221,23 @@ void floating_enable(Con *con, bool automatic) {
     /* We insert nc already, even though its rect is not yet calculated. This
      * is necessary because otherwise the workspace might be empty (and get
      * closed in tree_close_internal()) even though it’s not. */
-    if (set_focus) {
-        TAILQ_INSERT_TAIL(&(ws->floating_head), nc, floating_windows);
+    TAILQ_INSERT_HEAD(&(ws->floating_head), nc, floating_windows);
+
+    struct focus_head *fh = &(ws->focus_head);
+    if (focus_before_parent) {
+        if (focus_head_placeholder) {
+            TAILQ_INSERT_AFTER(fh, focus_head_placeholder, nc, focused);
+        } else {
+            TAILQ_INSERT_HEAD(fh, nc, focused);
+        }
     } else {
-        TAILQ_INSERT_HEAD(&(ws->floating_head), nc, floating_windows);
+        if (focus_head_placeholder) {
+            TAILQ_INSERT_BEFORE(focus_head_placeholder, nc, focused);
+        } else {
+            /* Also used for the set_focus case */
+            TAILQ_INSERT_TAIL(fh, nc, focused);
+        }
     }
-    TAILQ_INSERT_TAIL(&(ws->focus_head), nc, focused);
 
     /* check if the parent container is empty and close it if so */
     if ((con->parent->type == CT_CON || con->parent->type == CT_FLOATING_CON) &&
@@ -329,45 +365,22 @@ void floating_disable(Con *con, bool automatic) {
         return;
     }
 
-    const bool set_focus = (con == focused);
-
     Con *ws = con_get_workspace(con);
-    Con *parent = con->parent;
+    Con *tiling_focused = con_descend_tiling_focused(ws);
 
-    /* 1: detach from parent container */
-    TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
-    TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-
-    /* 2: kill parent container */
-    TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
-    TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
-    /* clear the pointer before calling tree_close_internal in which the memory is freed */
-    con->parent = NULL;
-    tree_close_internal(parent, DONT_KILL_WINDOW, true, false);
-
-    /* 3: re-attach to the parent of the currently focused con on the workspace
-     * this floating con was on */
-    Con *focused = con_descend_tiling_focused(ws);
-
-    /* if there is no other container on this workspace, focused will be the
-     * workspace itself */
-    if (focused->type == CT_WORKSPACE)
-        con->parent = focused;
-    else
-        con->parent = focused->parent;
-
-    /* con_fix_percent will adjust the percent value */
-    con->percent = 0.0;
+    if (tiling_focused->type == CT_WORKSPACE) {
+        Con *parent = con->parent;
+        con_detach(con);
+        con->parent = NULL;
+        tree_close_internal(parent, DONT_KILL_WINDOW, true, false);
+        con_attach(con, tiling_focused, false);
+        con->percent = 0.0;
+        con_fix_percent(con->parent);
+    } else {
+        insert_con_into(con, tiling_focused, AFTER);
+    }
 
     con->floating = FLOATING_USER_OFF;
-
-    con_attach(con, con->parent, false);
-
-    con_fix_percent(con->parent);
-
-    if (set_focus)
-        con_activate(con);
-
     floating_set_hint_atom(con, false);
     ipc_send_window_event("floating", con);
 }

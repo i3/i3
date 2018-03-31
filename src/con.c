@@ -1436,40 +1436,6 @@ orientation_t con_orientation(Con *con) {
  *
  */
 Con *con_next_focused(Con *con) {
-    Con *next;
-    /* floating containers are attached to a workspace, so we focus either the
-     * next floating container (if any) or the workspace itself. */
-    if (con->type == CT_FLOATING_CON) {
-        DLOG("selecting next for CT_FLOATING_CON\n");
-        next = TAILQ_NEXT(con, floating_windows);
-        DLOG("next = %p\n", next);
-        if (!next) {
-            next = TAILQ_PREV(con, floating_head, floating_windows);
-            DLOG("using prev, next = %p\n", next);
-        }
-        if (!next) {
-            Con *ws = con_get_workspace(con);
-            next = ws;
-            DLOG("no more floating containers for next = %p, restoring workspace focus\n", next);
-            while (next != TAILQ_END(&(ws->focus_head)) && !TAILQ_EMPTY(&(next->focus_head))) {
-                next = TAILQ_FIRST(&(next->focus_head));
-                if (next == con) {
-                    DLOG("skipping container itself, we want the next client\n");
-                    next = TAILQ_NEXT(next, focused);
-                }
-            }
-            if (next == TAILQ_END(&(ws->focus_head))) {
-                DLOG("Focus list empty, returning ws\n");
-                next = ws;
-            }
-        } else {
-            /* Instead of returning the next CT_FLOATING_CON, we descend it to
-             * get an actual window to focus. */
-            next = con_descend_focused(next);
-        }
-        return next;
-    }
-
     /* dock clients cannot be focused, so we focus the workspace instead */
     if (con->parent->type == CT_DOCKAREA) {
         DLOG("selecting workspace for dock client\n");
@@ -1478,10 +1444,9 @@ Con *con_next_focused(Con *con) {
 
     /* if 'con' is not the first entry in the focus stack, use the first one as
      * it’s currently focused already */
-    Con *first = TAILQ_FIRST(&(con->parent->focus_head));
-    if (first != con) {
-        DLOG("Using first entry %p\n", first);
-        next = first;
+    Con *next = TAILQ_FIRST(&(con->parent->focus_head));
+    if (next != con) {
+        DLOG("Using first entry %p\n", next);
     } else {
         /* try to focus the next container on the same level as this one or fall
          * back to its parent */
@@ -1494,6 +1459,10 @@ Con *con_next_focused(Con *con) {
      * possible, excluding the current container */
     while (!TAILQ_EMPTY(&(next->focus_head)) && TAILQ_FIRST(&(next->focus_head)) != con) {
         next = TAILQ_FIRST(&(next->focus_head));
+    }
+
+    if (con->type == CT_FLOATING_CON && next != con->parent) {
+        next = con_descend_focused(next);
     }
 
     return next;
