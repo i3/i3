@@ -233,7 +233,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
          event->detail == XCB_BUTTON_SCROLL_LEFT ||
          event->detail == XCB_BUTTON_SCROLL_RIGHT)) {
         DLOG("Scrolling on a window decoration\n");
-        orientation_t orientation = (con->parent->layout == L_STACKED ? VERT : HORIZ);
+        orientation_t orientation = con_orientation(con->parent);
         /* Use the focused child of the tabbed / stacked container, not the
          * container the user scrolled on. */
         Con *focused = con->parent;
