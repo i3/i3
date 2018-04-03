@@ -92,10 +92,11 @@ typedef enum {
     L_DEFAULT = 0,
     L_STACKED = 1,
     L_TABBED = 2,
-    L_DOCKAREA = 3,
-    L_OUTPUT = 4,
-    L_SPLITV = 5,
-    L_SPLITH = 6
+    L_HDOCKAREA = 3,
+    L_VDOCKAREA = 4,
+    L_OUTPUT = 5,
+    L_SPLITV = 6,
+    L_SPLITH = 7
 } layout_t;
 
 /**
@@ -453,7 +454,9 @@ struct Window {
     /** Whether the window says it is a dock window */
     enum { W_NODOCK = 0,
            W_DOCK_TOP = 1,
-           W_DOCK_BOTTOM = 2 } dock;
+           W_DOCK_BOTTOM = 2,
+           W_DOCK_LEFT = 3,
+           W_DOCK_RIGHT = 4 } dock;
 
     /** When this window was marked urgent. 0 means not urgent */
     struct timeval urgent;
@@ -511,7 +514,9 @@ struct Match {
         M_NODOCK = 0,
         M_DOCK_ANY = 1,
         M_DOCK_TOP = 2,
-        M_DOCK_BOTTOM = 3
+        M_DOCK_BOTTOM = 3,
+        M_DOCK_LEFT = 4,
+        M_DOCK_RIGHT = 5
     } dock;
     xcb_window_t id;
     enum { WM_ANY = 0,
@@ -625,7 +630,8 @@ struct Con {
         CT_CON = 2,
         CT_FLOATING_CON = 3,
         CT_WORKSPACE = 4,
-        CT_DOCKAREA = 5
+        CT_HDOCKAREA = 5,
+        CT_VDOCKAREA = 6
     } type;
 
     /** the workspace number, if this Con is of type CT_WORKSPACE and the
@@ -761,4 +767,6 @@ struct Con {
 
     /* The colormap for this con if a custom one is used. */
     xcb_colormap_t colormap;
+
+    bool is_docked;
 };

@@ -265,8 +265,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         case CT_WORKSPACE:
             ystr("workspace");
             break;
-        case CT_DOCKAREA:
+        case CT_HDOCKAREA:
             ystr("dockarea");
+            break;
+        case CT_VDOCKAREA:
+            ystr("vdockarea");
             break;
         default:
             DLOG("About to dump unknown container type=%d. This is a bug.\n", con->type);
@@ -345,8 +348,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         case L_TABBED:
             ystr("tabbed");
             break;
-        case L_DOCKAREA:
+        case L_HDOCKAREA:
             ystr("dockarea");
+            break;
+        case L_VDOCKAREA:
+            ystr("vdockarea");
             break;
         case L_OUTPUT:
             ystr("output");
@@ -461,7 +467,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("nodes");
     y(array_open);
     Con *node;
-    if (con->type != CT_DOCKAREA || !inplace_restart) {
+    if (!con->is_docked || !inplace_restart) {
         TAILQ_FOREACH(node, &(con->nodes_head), nodes) {
             dump_node(gen, node, inplace_restart);
         }

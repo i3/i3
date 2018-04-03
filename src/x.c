@@ -409,7 +409,7 @@ void x_draw_decoration(Con *con) {
          parent->layout != L_STACKED &&
          parent->layout != L_TABBED) ||
         parent->type == CT_OUTPUT ||
-        parent->type == CT_DOCKAREA ||
+        parent->is_docked ||
         con->type == CT_FLOATING_CON)
         return;
 

@@ -149,7 +149,7 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     /* If we cannot find the container, the user moved their cursor to the root
      * window. In this case and if they used it to a dock, we need to focus the
      * workspace on the correct output. */
-    if (con == NULL || con->parent->type == CT_DOCKAREA) {
+    if (con == NULL || con->parent->is_docked) {
         DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
         check_crossing_screen_boundary(event->root_x, event->root_y);
         return;
@@ -372,7 +372,7 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
     }
 
     /* Dock windows can be reconfigured in their height and moved to another output. */
-    if (con->parent && con->parent->type == CT_DOCKAREA) {
+    if (con->parent && con->parent->is_docked) {
         DLOG("Reconfiguring dock window (con = %p).\n", con);
         if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
             DLOG("Dock client wants to change height to %d, we can do that.\n", event->height);
@@ -921,7 +921,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             case _NET_WM_MOVERESIZE_MOVE:
                 floating_drag_window(con->parent, &fake);
                 break;
-            case _NET_WM_MOVERESIZE_SIZE_TOPLEFT... _NET_WM_MOVERESIZE_SIZE_LEFT:
+            case _NET_WM_MOVERESIZE_SIZE_TOPLEFT ... _NET_WM_MOVERESIZE_SIZE_LEFT:
                 floating_resize_window(con->parent, false, &fake);
                 break;
             default:
@@ -1225,7 +1225,7 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
     }
 
     /* Skip dock clients, they cannot get the i3 focus. */
-    if (con->parent->type == CT_DOCKAREA) {
+    if (con->parent->is_docked) {
         DLOG("This is a dock client, not focusing.\n");
         return;
     }
@@ -1355,7 +1355,7 @@ static bool handle_strut_partial_change(void *data, xcb_connection_t *conn, uint
     window_update_strut_partial(con->window, prop);
 
     /* we only handle this change for dock clients */
-    if (con->parent == NULL || con->parent->type != CT_DOCKAREA) {
+    if (con->parent == NULL || !con->parent->is_docked) {
         return true;
     }
 
@@ -1367,22 +1367,44 @@ static bool handle_strut_partial_change(void *data, xcb_connection_t *conn, uint
     }
 
     /* find out the desired position of this dock window */
-    if (con->window->reserved.top > 0 && con->window->reserved.bottom == 0) {
-        DLOG("Top dock client\n");
-        con->window->dock = W_DOCK_TOP;
-    } else if (con->window->reserved.top == 0 && con->window->reserved.bottom > 0) {
-        DLOG("Bottom dock client\n");
-        con->window->dock = W_DOCK_BOTTOM;
-    } else {
-        DLOG("Ignoring invalid reserved edges (_NET_WM_STRUT_PARTIAL), using position as fallback:\n");
-        if (con->geometry.y < (search_at->rect.height / 2)) {
-            DLOG("geom->y = %d < rect.height / 2 = %d, it is a top dock client\n",
-                 con->geometry.y, (search_at->rect.height / 2));
+    if (abs(con->window->reserved.bottom - con->window->reserved.top) >
+        abs(con->window->reserved.right - con->window->reserved.left)) { /* handle horizontal dock window */
+        if (con->window->reserved.top > 0 && con->window->reserved.bottom == 0) {
+            DLOG("Top dock client\n");
             con->window->dock = W_DOCK_TOP;
-        } else {
-            DLOG("geom->y = %d >= rect.height / 2 = %d, it is a bottom dock client\n",
-                 con->geometry.y, (search_at->rect.height / 2));
+        } else if (con->window->reserved.top == 0 && con->window->reserved.bottom > 0) {
+            DLOG("Bottom dock client\n");
             con->window->dock = W_DOCK_BOTTOM;
+        } else {
+            DLOG("Ignoring invalid reserved edges (_NET_WM_STRUT_PARTIAL), using position as fallback:\n");
+            if (con->geometry.y < (int16_t)(search_at->rect.height / 2)) {
+                DLOG("con->geometry.y = %d < rect.height / 2 = %d, it is a top dock client\n",
+                     con->geometry.y, (search_at->rect.height / 2));
+                con->window->dock = W_DOCK_TOP;
+            } else {
+                DLOG("con->geometry.y = %d >= rect.height / 2 = %d, it is a bottom dock client\n",
+                     con->geometry.y, (search_at->rect.height / 2));
+                con->window->dock = W_DOCK_BOTTOM;
+            }
+        }
+    } else { /* handle vertial dock window */
+        if (con->window->reserved.left > 0 && con->window->reserved.right == 0) {
+            DLOG("Left dock client\n");
+            con->window->dock = W_DOCK_LEFT;
+        } else if (con->window->reserved.left == 0 && con->window->reserved.right > 0) {
+            DLOG("Right dock client\n");
+            con->window->dock = W_DOCK_RIGHT;
+        } else {
+            DLOG("Ignoring invalid reserved edges (_NET_WM_STRUT_PARTIAL), using position as fallback:\n");
+            if (con->geometry.x < (int16_t)(search_at->rect.width / 2)) {
+                DLOG("con->geometry.x = %d < rect.width / 2 = %d, it is a left dock client\n",
+                     con->geometry.x, (search_at->rect.width / 2));
+                con->window->dock = W_DOCK_LEFT;
+            } else {
+                DLOG("con->geometry.x = %d >= rect.width / 2 = %d, it is a right dock client\n",
+                     con->geometry.x, (search_at->rect.width / 2));
+                con->window->dock = W_DOCK_RIGHT;
+            }
         }
     }
 

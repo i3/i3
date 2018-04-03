@@ -148,7 +148,7 @@ Con *tree_open_con(Con *con, i3Window *window) {
         con = focused->parent;
         /* If the parent is an output, we are on a workspace. In this case,
          * the new container needs to be opened as a leaf of the workspace. */
-        if (con->parent->type == CT_OUTPUT && con->type != CT_DOCKAREA) {
+        if (con->parent->type == CT_OUTPUT && !con->is_docked) {
             con = focused;
         }
 
@@ -349,7 +349,7 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
     if (was_mapped || con == focused) {
         if ((kill_window != DONT_KILL_WINDOW) || !dont_kill_parent || con == focused) {
             DLOG("focusing %p / %s\n", next, next->name);
-            if (next->type == CT_DOCKAREA) {
+            if (next->is_docked) {
                 /* Instead of focusing the dockarea, we need to restore focus to the workspace */
                 con_activate(con_descend_focused(output_get_content(next->parent)));
             } else {

@@ -68,3 +68,5 @@ Makefile.in
 /install-sh
 /missing
 /stamp-h1
+
+*.kdev4

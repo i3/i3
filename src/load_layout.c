@@ -334,7 +334,9 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
             else if (strcasecmp(buf, "workspace") == 0)
                 json_node->type = CT_WORKSPACE;
             else if (strcasecmp(buf, "dockarea") == 0)
-                json_node->type = CT_DOCKAREA;
+                json_node->type = CT_HDOCKAREA;
+            else if (strcasecmp(buf, "vdockarea") == 0)
+                json_node->type = CT_VDOCKAREA;
             else
                 LOG("Unhandled \"type\": %s\n", buf);
             free(buf);
@@ -348,8 +350,10 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
                 json_node->layout = L_STACKED;
             else if (strcasecmp(buf, "tabbed") == 0)
                 json_node->layout = L_TABBED;
-            else if (strcasecmp(buf, "dockarea") == 0)
-                json_node->layout = L_DOCKAREA;
+            else if (strcasecmp(buf, "hdockarea") == 0)
+                json_node->layout = L_HDOCKAREA;
+            else if (strcasecmp(buf, "vdockarea") == 0)
+                json_node->layout = L_VDOCKAREA;
             else if (strcasecmp(buf, "output") == 0)
                 json_node->layout = L_OUTPUT;
             else if (strcasecmp(buf, "splith") == 0)

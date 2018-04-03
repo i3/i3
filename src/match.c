@@ -211,7 +211,10 @@ bool match_matches_window(Match *match, i3Window *window) {
     if (match->dock != M_DONTCHECK) {
         if ((window->dock == W_DOCK_TOP && match->dock == M_DOCK_TOP) ||
             (window->dock == W_DOCK_BOTTOM && match->dock == M_DOCK_BOTTOM) ||
-            ((window->dock == W_DOCK_TOP || window->dock == W_DOCK_BOTTOM) &&
+            (window->dock == W_DOCK_LEFT && match->dock == M_DOCK_LEFT) ||
+            (window->dock == W_DOCK_RIGHT && match->dock == M_DOCK_RIGHT) ||
+            ((window->dock == W_DOCK_TOP || window->dock == W_DOCK_BOTTOM ||
+              window->dock == W_DOCK_LEFT || window->dock == W_DOCK_RIGHT) &&
              match->dock == M_DOCK_ANY) ||
             (window->dock == W_NODOCK && match->dock == M_NODOCK)) {
             LOG("dock status matches\n");
