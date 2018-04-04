@@ -764,38 +764,50 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             return;
         }
 
-        /* data32[0] indicates the source of the request (application or pager) */
-        if (event->data.data32[0] == 2) {
-            /* Always focus the con if it is from a pager, because this is most
-             * likely from some user action */
-            DLOG("This request came from a pager. Focusing con = %p\n", con);
+        focus_on_window_activation_t behavior = config.focus_on_window_activation;
 
-            if (con_is_internal(ws)) {
-                scratchpad_show(con);
+        /* Handle smart focus */
+        if (behavior == FOWA_SMART) {
+            if (!con_is_internal(ws) && workspace_is_visible(ws)) {
+                behavior = FOWA_FOCUS;
             } else {
-                workspace_show(ws);
-                /* Re-set focus, even if unchanged from i3’s perspective. */
-                focused_id = XCB_NONE;
-                con_activate(con);
+                behavior = FOWA_URGENT;
             }
-        } else {
-            /* Request is from an application. */
-            if (con_is_internal(ws)) {
-                DLOG("Ignoring request to make con = %p active because it's on an internal workspace.\n", con);
-                return;
-            }
-
-            if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
-                DLOG("Focusing con = %p\n", con);
-                workspace_show(ws);
-                con_activate(con);
-            } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(ws))) {
-                DLOG("Marking con = %p urgent\n", con);
-                con_set_urgency(con, true);
-            } else
-                DLOG("Ignoring request for con = %p.\n", con);
         }
 
+        /* data32[0] indicates the type of client: always 0 in old spec, 1 for
+         * normal applications, and 2 for pagers and other clients that
+         * represent direct user action. Therefore always focus when 2. */
+        if (event->data.data32[0] == 2) {
+            DLOG("Request indicates it comes from pager or direct user action.\n");
+            behavior = FOWA_FOCUS;
+            /* Re-set focus, even if unchanged from i3’s perspective. */
+            focused_id = XCB_NONE;
+        }
+
+        /* Set focus */
+        switch (behavior) {
+            case FOWA_SMART:
+                ELOG("Unhandled case for focus_on_window_activation smart. This is a bug in i3.\n");
+                assert(false);
+                break;
+            case FOWA_FOCUS:
+                DLOG("Focusing con = %p\n", con);
+                if (con_is_internal(ws)) {
+                    scratchpad_show(con);
+                } else {
+                    workspace_show(ws);
+                    con_activate(con);
+                }
+                break;
+            case FOWA_URGENT:
+                DLOG("Marking con = %p urgent\n", con);
+                con_set_urgency(con, true);
+                break;
+            case FOWA_NONE:
+                DLOG("Ignoring request for con = %p.\n", con);
+                break;
+        }
         tree_render();
     } else if (event->type == A_I3_SYNC) {
         xcb_window_t window = event->data.data32[0];

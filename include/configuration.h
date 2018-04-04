@@ -89,6 +89,23 @@ struct Mode {
 };
 
 /**
+ * Defines the focus behavior when a _NET_ACTIVE_WINDOW client message is
+ * received for a window.
+ * Used by the config directive focus_on_window_activation.
+ *
+ */
+typedef enum {
+    /* Focus if the target workspace is visible, set urgency hint otherwise. */
+    FOWA_SMART,
+    /* Always set the urgency hint. */
+    FOWA_URGENT,
+    /* Always focus the window. */
+    FOWA_FOCUS,
+    /* Ignore the request (no focus, no urgency hint). */
+    FOWA_NONE
+} focus_on_window_activation_t;
+
+/**
  * Holds part of the configuration (the part which is not already in dedicated
  * structures in include/data.h).
  *
@@ -185,17 +202,9 @@ struct Config {
      * flag can be delayed using an urgency timer. */
     float workspace_urgency_timer;
 
-    /** Behavior when a window sends a NET_ACTIVE_WINDOW message. */
-    enum {
-        /* Focus if the target workspace is visible, set urgency hint otherwise. */
-        FOWA_SMART,
-        /* Always set the urgency hint. */
-        FOWA_URGENT,
-        /* Always focus the window. */
-        FOWA_FOCUS,
-        /* Ignore the request (no focus, no urgency hint). */
-        FOWA_NONE
-    } focus_on_window_activation;
+    /** Defines the focus behavior when a _NET_ACTIVE_WINDOW client message is
+     * received for a window. */
+    focus_on_window_activation_t focus_on_window_activation;
 
     /** Specifies whether or not marks should be displayed in the window
      * decoration. Marks starting with a "_" will be ignored either way. */
