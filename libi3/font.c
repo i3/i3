@@ -283,9 +283,6 @@ void free_font(void) {
             /* Free the font description */
             pango_font_description_free(savedFont->specific.pango_desc);
             break;
-        default:
-            assert(false);
-            break;
     }
 
     savedFont = NULL;
@@ -314,9 +311,6 @@ void set_font_colors(xcb_gcontext_t gc, color_t foreground, color_t background) 
             pango_font_red = foreground.red;
             pango_font_green = foreground.green;
             pango_font_blue = foreground.blue;
-            break;
-        default:
-            assert(false);
             break;
     }
 }
@@ -388,8 +382,6 @@ void draw_text(i3String *text, xcb_drawable_t drawable, xcb_gcontext_t gc,
             draw_text_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
                             drawable, visual, x, y, max_width, i3string_is_markup(text));
             return;
-        default:
-            assert(false);
     }
 }
 
@@ -425,8 +417,6 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
             draw_text_pango(text, strlen(text),
                             drawable, root_visual_type, x, y, max_width, false);
             return;
-        default:
-            assert(false);
     }
 }
 
@@ -519,8 +509,6 @@ int predict_text_width(i3String *text) {
             /* Calculate extents using Pango */
             return predict_text_width_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
                                             i3string_is_markup(text));
-        default:
-            assert(false);
-            return 0;
     }
+    assert(false);
 }

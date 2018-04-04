@@ -268,10 +268,6 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         case CT_DOCKAREA:
             ystr("dockarea");
             break;
-        default:
-            DLOG("About to dump unknown container type=%d. This is a bug.\n", con->type);
-            assert(false);
-            break;
     }
 
     /* provided for backwards compatibility only. */
