@@ -28,6 +28,7 @@ workspace 1 output fake-0
 workspace 2 output fake-1
 workspace 3:foo output fake-1
 workspace baz output fake-1
+workspace 5 output left
 EOT
 
 my $i3 = i3(get_socket_path());
@@ -81,5 +82,16 @@ cmd 'focus output fake-0';
 cmd 'rename workspace to baz';
 is(get_output_for_workspace('baz'), 'fake-1',
     'Renaming the workspace to a number and name should move it to the assigned output');
+
+##########################################################################
+# Renaming a workspace so that it is assigned a directional output does
+# not move the workspace or crash
+##########################################################################
+
+cmd 'focus output fake-0';
+cmd 'workspace bar';
+cmd 'rename workspace to 5';
+is(get_output_for_workspace('5'), 'fake-0',
+    'Renaming the workspace to a workspace assigned to a directional output should not move the workspace');
 
 done_testing;

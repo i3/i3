@@ -1128,7 +1128,21 @@ void cmd_move_workspace_to_output(I3_CMD, const char *name) {
             continue;
         }
 
-        bool success = workspace_move_to_output(ws, name);
+        Output *current_output = get_output_for_con(ws);
+        if (current_output == NULL) {
+            ELOG("Cannot get current output. This is a bug in i3.\n");
+            ysuccess(false);
+            return;
+        }
+
+        Output *target_output = get_output_from_string(current_output, name);
+        if (!target_output) {
+            ELOG("Could not get output from string \"%s\"\n", name);
+            ysuccess(false);
+            return;
+        }
+
+        bool success = workspace_move_to_output(ws, target_output);
         if (!success) {
             ELOG("Failed to move workspace to output.\n");
             ysuccess(false);
@@ -1990,7 +2004,12 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
             continue;
         }
 
-        workspace_move_to_output(workspace, assignment->output);
+        Output *target_output = get_output_by_name(assignment->output, true);
+        if (!target_output) {
+            LOG("Could not get output named \"%s\"\n", assignment->output);
+            continue;
+        }
+        workspace_move_to_output(workspace, target_output);
 
         if (previously_focused)
             workspace_show(con_get_workspace(previously_focused));

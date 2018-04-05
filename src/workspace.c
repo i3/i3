@@ -923,18 +923,12 @@ Con *workspace_encapsulate(Con *ws) {
  * Move the given workspace to the specified output.
  * This returns true if and only if moving the workspace was successful.
  */
-bool workspace_move_to_output(Con *ws, const char *name) {
-    LOG("Trying to move workspace %p / %s to output \"%s\".\n", ws, ws->name, name);
+bool workspace_move_to_output(Con *ws, Output *output) {
+    LOG("Trying to move workspace %p / %s to output %p / \"%s\".\n", ws, ws->name, output, output_primary_name(output));
 
     Output *current_output = get_output_for_con(ws);
     if (current_output == NULL) {
         ELOG("Cannot get current output. This is a bug in i3.\n");
-        return false;
-    }
-
-    Output *output = get_output_from_string(current_output, name);
-    if (!output) {
-        ELOG("Could not get output from string \"%s\"\n", name);
         return false;
     }
 
