@@ -820,7 +820,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         Rect r = {
             config.default_border_width, /* left */
             config.default_border_width, /* right */
-            config.font.height + 5,      /* top */
+            render_deco_height(),        /* top */
             config.default_border_width  /* bottom */
         };
         xcb_change_property(
