@@ -337,5 +337,49 @@ sync_with_i3;
 does_i3_live;
 
 ###############################################################################
+# Given 'S' and 'M' where 'M' is a workspace and 'S' is on a different
+# workspace, then 'S' ends up as a tiling container on 'M'.
+###############################################################################
+
+fresh_workspace;
+$S = open_window;
+$target_ws = fresh_workspace;
+$M = $target_ws;
+cmd 'mark target';
+
+cmd '[id="' . $S->{id} . '"] move container to mark target';
+sync_with_i3;
+
+does_i3_live;
+
+($nodes, $focus) = get_ws_content($target_ws);
+is(@{$nodes}, 1, 'tiling container moved to the target workspace');
+
+###############################################################################
+# Given 'S' and 'M' where 'S' is a workspace and 'M' is a container on a
+# different workspace, then all the contents of workspace 'S' end up in 'M's
+# workspace.
+###############################################################################
+
+$S = fresh_workspace;
+cmd 'mark S';
+open_window;
+open_window;
+cmd 'splitv';
+open_window;
+open_floating_window;
+$target_ws = fresh_workspace;
+$M = open_window;
+cmd 'mark target';
+
+cmd '[con_mark=S] move container to mark target';
+sync_with_i3;
+
+($nodes, $focus) = get_ws_content($target_ws);
+is(@{$nodes}, 2, 'there is a window and a container with the contents of the original workspace');
+is($nodes->[0]->{window}, $M->{id}, 'M remains the first window');
+is(@{get_ws($target_ws)->{floating_nodes}}, 1, 'target workspace has the floating container');
+
+###############################################################################
 
 done_testing;

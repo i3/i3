@@ -1305,7 +1305,7 @@ bool con_move_to_mark(Con *con, const char *mark) {
         return true;
     }
 
-    if (con->type == CT_WORKSPACE) {
+    if (target->type == CT_WORKSPACE) {
         DLOG("target container is a workspace, simply moving the container there.\n");
         con_move_to_workspace(con, target, true, false, false);
         return true;
