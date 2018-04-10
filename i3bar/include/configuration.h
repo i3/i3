@@ -47,7 +47,7 @@ typedef struct config_t {
     bindings;
 
     position_t position;
-    int verbose;
+    bool verbose;
     struct xcb_color_strings_t colors;
     bool disable_binding_mode_indicator;
     bool disable_ws;
