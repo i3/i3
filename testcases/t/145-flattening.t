@@ -72,4 +72,55 @@ $ws = get_ws($tmp);
 @nodes = @{$ws->{nodes}};
 is(@nodes, 2, 'all three windows on workspace level');
 
+################################################################################
+# Ensure that containers that contain only a single child after moving are 
+# flattened. If the child of the container does not have the same layout as the 
+# parent, append the child to the parent.
+################################################################################
+
+$tmp = fresh_workspace;
+
+my $stack1 = open_window;
+cmd 'layout stacking';
+my $stack2 = open_window;
+cmd 'split h';
+my $top = open_window;
+cmd 'split v';
+my $bottom = open_window;
+cmd 'focus left';
+cmd 'move left';
+
+$ws = get_ws($tmp);
+@nodes = @{$ws->{nodes}};
+is(@nodes, 2, 'two windows on workspace');
+is($nodes[1]->{layout}, 'stacked', 'layout is stacked');
+is(@{$nodes[1]->{nodes}}, 2, 'two nodes in stacked container');
+is($nodes[1]->{nodes}->[1]->{layout}, 'splitv', 'vertical layout');
+is(@{$nodes[1]->{nodes}->[1]->{nodes}}, 2, 'two nodes in vertical container');
+
+################################################################################
+# Ensure that containers that contain only a single child after moving are 
+# flattened. If the child of the container is the same layout as the parent
+# append the childs children to the parent.
+################################################################################
+
+$tmp = fresh_workspace;
+
+$stack1 = open_window;
+cmd 'split v';
+$stack2 = open_window;
+cmd 'split h';
+$top = open_window;
+cmd 'split v';
+$bottom = open_window;
+cmd 'focus left';
+cmd 'move left';
+
+$ws = get_ws($tmp);
+@nodes = @{$ws->{nodes}};
+is($ws->{layout}, 'splith', 'workspace is split horizontally');
+is(@nodes, 2, 'two windows on workspace');
+is($nodes[1]->{layout}, 'splitv', 'layout is split vertically');
+is(@{$nodes[1]->{nodes}}, 3, 'three nodes in split container');
+
 done_testing;

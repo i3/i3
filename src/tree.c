@@ -682,7 +682,7 @@ void tree_next(char way, orientation_t orientation) {
 }
 
 /*
- * tree_flatten() removes pairs of redundant split containers, e.g.:
+ * tree_flatten() removes redundant split containers, e.g.:
  *       [workspace, horizontal]
  *   [v-split]           [child3]
  *   [h-split]
@@ -692,7 +692,13 @@ void tree_next(char way, orientation_t orientation) {
  * not the orientation of their parent container. i3 needs to create a new
  * split container then and if you move containers this way multiple times,
  * redundant chains of split-containers can be the result.
- *
+ *      [workspace, horizontal]
+ *    [child 1]         [stacking]
+ *                  [child2]  [h-split]
+ *                            [v-split]
+ *                        [child3] [child4]
+ * In this example, the h-split container is redundant. The v-split container is
+ * not redundant as it does not have the same layout as the stacking ancestor.
  */
 void tree_flatten(Con *con) {
     Con *current, *child, *parent = con->parent;
@@ -725,10 +731,20 @@ void tree_flatten(Con *con) {
     /* 1: save focus */
     Con *focus_next = TAILQ_FIRST(&(child->focus_head));
 
-    DLOG("detaching...\n");
+    /* If the child's layout is the same as the parent's layout then both the
+     * child and the con are redundant, otherwise only the con is redundant */
+    Con *remove_con;
+    if (parent->layout == child->layout) {
+        DLOG("detaching child's nodes\n");
+        remove_con = child;
+    } else {
+        DLOG("detaching con's nodes\n");
+        remove_con = con;
+    }
+
     /* 2: re-attach the children to the parent before con */
-    while (!TAILQ_EMPTY(&(child->nodes_head))) {
-        current = TAILQ_FIRST(&(child->nodes_head));
+    while (!TAILQ_EMPTY(&(remove_con->nodes_head))) {
+        current = TAILQ_FIRST(&(remove_con->nodes_head));
         DLOG("detaching current=%p / %s\n", current, current->name);
         con_detach(current);
         DLOG("re-attaching\n");
