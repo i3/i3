@@ -507,7 +507,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
 
     double relative_percent;
     if (ppt != 0) {
-        // resize based on the ppet
+        // resize based on the ppt
         relative_percent = first_size / total_size + (double)ppt/100.0;
     } else  {
         // resize based on the px
