@@ -160,7 +160,8 @@ flood kicks.
 
 == Debugging i3bar
 
-To debug i3bar problems, add +verbose yes+ to all +bar {}+ blocks in your i3
+To debug i3bar problems, use the +--verbose+ commandline parameter,
+or add +verbose yes+ to all +bar {}+ blocks in your i3
 config, reload your config and then restart all i3bar instances like this:
 
 ---------------------------------------------------------------------
