@@ -304,8 +304,10 @@ static int config_boolean_cb(void *params_, int val) {
     }
 
     if (!strcmp(cur_key, "verbose")) {
-        DLOG("verbose = %d\n", val);
-        config.verbose = val;
+        if (!config.verbose) {
+            DLOG("verbose = %d\n", val);
+            config.verbose = val;
+        }
         return 1;
     }
 
