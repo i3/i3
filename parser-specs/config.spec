@@ -491,8 +491,14 @@ state BAR_ID:
       -> call cfg_bar_id($bar_id); BAR
 
 state BAR_MODIFIER:
-  modifier = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Control', 'Ctrl', 'Shift', 'none', 'off'
-      -> call cfg_bar_modifier($modifier); BAR
+  'off', 'none'
+      -> call cfg_bar_modifier(NULL); BAR
+  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl'
+      ->
+  '+'
+      ->
+  end
+      -> call cfg_bar_modifier($modifiers); BAR
 
 state BAR_WHEEL_UP_CMD:
   command = string

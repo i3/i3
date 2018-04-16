@@ -79,7 +79,7 @@ int bar_height;
 
 /* These are only relevant for XKB, which we only need for grabbing modifiers */
 int xkb_base;
-int mod_pressed = 0;
+bool mod_pressed = 0;
 
 /* Event watchers, to interact with the user */
 ev_prepare *xcb_prep;
@@ -1108,49 +1108,15 @@ void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revents) {
             DLOG("received an xkb event\n");
 
             xcb_xkb_state_notify_event_t *state = (xcb_xkb_state_notify_event_t *)event;
+            const uint32_t mod = (config.modifier & 0xFFFF);
+            mod_pressed = (mod != 0 && (state->mods & mod) == mod);
             if (state->xkbType == XCB_XKB_STATE_NOTIFY && config.modifier != XCB_NONE) {
-                int modstate = state->mods & config.modifier;
-
-#define DLOGMOD(modmask, status)                        \
-    do {                                                \
-        switch (modmask) {                              \
-            case ShiftMask:                             \
-                DLOG("ShiftMask got " #status "!\n");   \
-                break;                                  \
-            case ControlMask:                           \
-                DLOG("ControlMask got " #status "!\n"); \
-                break;                                  \
-            case Mod1Mask:                              \
-                DLOG("Mod1Mask got " #status "!\n");    \
-                break;                                  \
-            case Mod2Mask:                              \
-                DLOG("Mod2Mask got " #status "!\n");    \
-                break;                                  \
-            case Mod3Mask:                              \
-                DLOG("Mod3Mask got " #status "!\n");    \
-                break;                                  \
-            case Mod4Mask:                              \
-                DLOG("Mod4Mask got " #status "!\n");    \
-                break;                                  \
-            case Mod5Mask:                              \
-                DLOG("Mod5Mask got " #status "!\n");    \
-                break;                                  \
-        }                                               \
-    } while (0)
-
-                if (modstate != mod_pressed) {
-                    if (modstate == 0) {
-                        DLOGMOD(config.modifier, released);
-                        if (!activated_mode)
-                            hide_bars();
-                    } else {
-                        DLOGMOD(config.modifier, pressed);
-                        activated_mode = false;
-                        unhide_bars();
-                    }
-                    mod_pressed = modstate;
+                if (mod_pressed) {
+                    activated_mode = false;
+                    unhide_bars();
+                } else if (!activated_mode) {
+                    hide_bars();
                 }
-#undef DLOGMOD
             }
 
             free(event);

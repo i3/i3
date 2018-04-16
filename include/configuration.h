@@ -289,16 +289,7 @@ struct Barconfig {
            S_SHOW = 1 } hidden_state;
 
     /** Bar modifier (to show bar when in hide mode). */
-    enum {
-        M_NONE = 0,
-        M_CONTROL = 1,
-        M_SHIFT = 2,
-        M_MOD1 = 3,
-        M_MOD2 = 4,
-        M_MOD3 = 5,
-        M_MOD4 = 6,
-        M_MOD5 = 7
-    } modifier;
+    uint32_t modifier;
 
     TAILQ_HEAD(bar_bindings_head, Barbinding)
     bar_bindings;
