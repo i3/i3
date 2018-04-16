@@ -108,4 +108,27 @@ $second = fresh_workspace(output => 0);
 
 verify_scratchpad_switch($first, $second);
 
+################################################################################
+# If the --focused-workspace flag is set then scratchpad show should only affect
+# scratchpads on the currently focused workspace.
+################################################################################
+my $ws2 = fresh_workspace(output => 1);
+
+# Kill all but one of the scratchpad windows and focus it
+cmd 'scratchpad show';
+cmd 'kill window';
+cmd 'scratchpad show';
+cmd 'kill window';
+cmd 'scratchpad show';
+cmd 'kill window';
+cmd 'scratchpad show';
+
+# verify that calling scratchpad show on ws1 will not affect the scratchpad on
+# ws2 if focused-workspace flag is set.
+my $ws1 = fresh_workspace(output => 0);
+my $result = cmd qq|scratchpad --focused-workspace show|;
+ok($result->[0]->{success}, "call to scratchpad succeeded");
+is(scalar @{get_ws($ws2)->{floating_nodes}}, 1, 'one floating node on this workspace');
+is(scalar @{get_ws($ws1)->{floating_nodes}}, 0, 'no floating nodes on other workspace');
+
 done_testing;
