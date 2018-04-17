@@ -479,25 +479,8 @@ CFGFUN(bar_verbose, const char *verbose) {
     current_bar->verbose = eval_boolstr(verbose);
 }
 
-CFGFUN(bar_modifier, const char *modifier) {
-    if (strcmp(modifier, "Mod1") == 0)
-        current_bar->modifier = M_MOD1;
-    else if (strcmp(modifier, "Mod2") == 0)
-        current_bar->modifier = M_MOD2;
-    else if (strcmp(modifier, "Mod3") == 0)
-        current_bar->modifier = M_MOD3;
-    else if (strcmp(modifier, "Mod4") == 0)
-        current_bar->modifier = M_MOD4;
-    else if (strcmp(modifier, "Mod5") == 0)
-        current_bar->modifier = M_MOD5;
-    else if (strcmp(modifier, "Control") == 0 ||
-             strcmp(modifier, "Ctrl") == 0)
-        current_bar->modifier = M_CONTROL;
-    else if (strcmp(modifier, "Shift") == 0)
-        current_bar->modifier = M_SHIFT;
-    else if (strcmp(modifier, "none") == 0 ||
-             strcmp(modifier, "off") == 0)
-        current_bar->modifier = M_NONE;
+CFGFUN(bar_modifier, const char *modifiers) {
+    current_bar->modifier = modifiers ? event_state_from_str(modifiers) : XCB_NONE;
 }
 
 static void bar_configure_binding(const char *button, const char *release, const char *command) {
@@ -633,7 +616,7 @@ CFGFUN(bar_start) {
     TAILQ_INIT(&(current_bar->bar_bindings));
     TAILQ_INIT(&(current_bar->tray_outputs));
     current_bar->tray_padding = 2;
-    current_bar->modifier = M_MOD4;
+    current_bar->modifier = XCB_KEY_BUT_MASK_MOD_4;
 }
 
 CFGFUN(bar_finish) {

@@ -41,7 +41,7 @@ typedef struct tray_output_t {
 } tray_output_t;
 
 typedef struct config_t {
-    int modifier;
+    uint32_t modifier;
 
     TAILQ_HEAD(bindings_head, binding_t)
     bindings;
