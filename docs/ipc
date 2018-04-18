@@ -328,6 +328,8 @@ window (integer)::
 	This field is set to null for split containers or otherwise empty
 	containers. This ID corresponds to what xwininfo(1) and other
 	X11-related tools display (usually in hex).
+window_properties (map)::
+	X11 window properties title, instance, class, window_role and transient_for.
 urgent (bool)::
 	Whether this container (window, split container, floating container or
 	workspace) has the urgency hint set, directly or indirectly. All parent
@@ -422,6 +424,12 @@ JSON dump:
 	    "y": 0,
 	    "width": 1280,
 	    "height": 782
+	  },
+	  "window_properties": {
+	    "class": "Evince",
+	    "instance": "evince",
+	    "title": "Properties",
+	    "transient_for": 52428808
 	  },
 	  "floating_nodes": [],
 	  "nodes": [
