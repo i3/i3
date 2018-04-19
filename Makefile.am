@@ -521,6 +521,7 @@ i3_SOURCES = \
 	include/shmlog.h \
 	include/sighandler.h \
 	include/startup.h \
+	include/sync.h \
 	include/tree.h \
 	include/util.h \
 	include/window.h \
