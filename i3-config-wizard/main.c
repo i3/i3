@@ -104,7 +104,7 @@ static struct xkb_keymap *xkb_keymap;
 static uint8_t xkb_base_event;
 static uint8_t xkb_base_error;
 
-static void finish();
+static void finish(void);
 
 #include "GENERATED_config_enums.h"
 
@@ -482,7 +482,7 @@ static void txt(int col, int row, char *text, color_t fg, color_t bg) {
  * Handles expose events, that is, draws the window contents.
  *
  */
-static int handle_expose() {
+static int handle_expose(void) {
     const color_t black = draw_util_hex_to_color("#000000");
     const color_t white = draw_util_hex_to_color("#FFFFFF");
     const color_t green = draw_util_hex_to_color("#00FF00");
@@ -641,7 +641,7 @@ static void handle_button_press(xcb_button_press_event_t *event) {
  * Creates the config file and tells i3 to reload.
  *
  */
-static void finish() {
+static void finish(void) {
     printf("creating \"%s\"...\n", config_path);
 
     struct xkb_context *xkb_context;

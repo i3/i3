@@ -32,7 +32,7 @@ void ungrab_all_keys(xcb_connection_t *conn) {
  * Sends the current bar configuration as an event to all barconfig_update listeners.
  *
  */
-void update_barconfig() {
+void update_barconfig(void) {
     Barconfig *current;
     TAILQ_FOREACH(current, &barconfigs, configs) {
         ipc_send_barconfig_update_event(current);

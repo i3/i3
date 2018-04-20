@@ -1254,7 +1254,7 @@ void x_set_name(Con *con, const char *name) {
  * Set up the I3_SHMLOG_PATH atom.
  *
  */
-void update_shmlog_atom() {
+void update_shmlog_atom(void) {
     if (*shmlogname == '\0') {
         xcb_delete_property(conn, root, A_I3_SHMLOG_PATH);
     } else {

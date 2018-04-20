@@ -1185,7 +1185,7 @@ void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  * depend on 'config'.
  *
  */
-char *init_xcb_early() {
+char *init_xcb_early(void) {
     /* FIXME: xcb_connect leaks memory */
     xcb_connection = xcb_connect(NULL, &screen);
     if (xcb_connection_has_error(xcb_connection)) {
@@ -1248,7 +1248,7 @@ char *init_xcb_early() {
  * in xcb.
  *
  */
-void register_xkb_keyevents() {
+void register_xkb_keyevents(void) {
     const xcb_query_extension_reply_t *extreply;
     extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
     if (!extreply->present) {
@@ -1272,7 +1272,7 @@ void register_xkb_keyevents() {
  * Deregister from xkb keyevents.
  *
  */
-void deregister_xkb_keyevents() {
+void deregister_xkb_keyevents(void) {
     xcb_xkb_select_events(conn,
                           XCB_XKB_ID_USE_CORE_KBD,
                           0,

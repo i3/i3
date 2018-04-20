@@ -472,7 +472,7 @@ xcb_visualtype_t *get_visualtype(xcb_screen_t *screen);
  * release version), based on the git version number.
  *
  */
-bool is_debug_build() __attribute__((const));
+bool is_debug_build(void) __attribute__((const));
 
 /**
  * Returns the name of a temporary file with the specified prefix.
