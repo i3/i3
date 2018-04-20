@@ -191,10 +191,6 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
     bindings = default_mode->bindings;
 
-#define REQUIRED_OPTION(name) \
-    if (config.name == NULL)  \
-        die("You did not specify required configuration option " #name "\n");
-
     /* Clear the old config or initialize the data structure */
     memset(&config, 0, sizeof(config));
 
