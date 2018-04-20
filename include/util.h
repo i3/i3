@@ -25,9 +25,6 @@
 #define STARTS_WITH(string, needle) (strncasecmp((string), (needle), strlen((needle))) == 0)
 #define CIRCLEQ_NEXT_OR_NULL(head, elm, field) (CIRCLEQ_NEXT(elm, field) != CIRCLEQ_END(head) ? CIRCLEQ_NEXT(elm, field) : NULL)
 #define CIRCLEQ_PREV_OR_NULL(head, elm, field) (CIRCLEQ_PREV(elm, field) != CIRCLEQ_END(head) ? CIRCLEQ_PREV(elm, field) : NULL)
-#define FOR_TABLE(workspace)                             \
-    for (int cols = 0; cols < (workspace)->cols; cols++) \
-        for (int rows = 0; rows < (workspace)->rows; rows++)
 
 #define NODES_FOREACH(head)                                                    \
     for (Con *child = (Con *)-1; (child == (Con *)-1) && ((child = 0), true);) \
