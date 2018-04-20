@@ -299,7 +299,7 @@ static void sighandler_handle_key_press(xcb_key_press_event_t *event) {
     }
 }
 
-void handle_signal(int sig, siginfo_t *info, void *data) {
+static void handle_signal(int sig, siginfo_t *info, void *data) {
     DLOG("i3 crashed. SIG: %d\n", sig);
 
     struct sigaction action;

@@ -146,13 +146,13 @@ int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
     return 0;
 }
 
-uint32_t get_sep_offset(struct status_block *block) {
+static uint32_t get_sep_offset(struct status_block *block) {
     if (!block->no_separator && block->sep_block_width > 0)
         return block->sep_block_width / 2 + block->sep_block_width % 2;
     return 0;
 }
 
-int get_tray_width(struct tc_head *trayclients) {
+static int get_tray_width(struct tc_head *trayclients) {
     trayclient *trayclient;
     int tray_width = 0;
     TAILQ_FOREACH_REVERSE(trayclient, trayclients, tc_head, tailq) {
@@ -193,7 +193,7 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
     }
 }
 
-uint32_t predict_statusline_length(bool use_short_text) {
+static uint32_t predict_statusline_length(bool use_short_text) {
     uint32_t width = 0;
     struct status_block *block;
 
@@ -245,7 +245,7 @@ uint32_t predict_statusline_length(bool use_short_text) {
 /*
  * Redraws the statusline to the output's statusline_buffer
  */
-void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_colors, bool use_short_text) {
+static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_colors, bool use_short_text) {
     struct status_block *block;
 
     color_t bar_color = (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg);
@@ -330,7 +330,7 @@ void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_color
  * Hides all bars (unmaps them)
  *
  */
-void hide_bars(void) {
+static void hide_bars(void) {
     if ((config.hide_on_modifier == M_DOCK) || (config.hidden_state == S_SHOW && config.hide_on_modifier == M_HIDE)) {
         return;
     }
@@ -349,7 +349,7 @@ void hide_bars(void) {
  * Unhides all bars (maps them)
  *
  */
-void unhide_bars(void) {
+static void unhide_bars(void) {
     if (config.hide_on_modifier != M_HIDE) {
         return;
     }
@@ -457,7 +457,7 @@ static bool execute_custom_command(xcb_keycode_t input_code, bool event_is_relea
  * wheel was used and change the workspace appropriately
  *
  */
-void handle_button(xcb_button_press_event_t *event) {
+static void handle_button(xcb_button_press_event_t *event) {
     /* Determine, which bar was clicked */
     i3_output *walk;
     xcb_window_t bar = event->event;
@@ -1080,7 +1080,7 @@ static void handle_resize_request(xcb_resize_request_event_t *event) {
  * events from X11, handle them, then flush our outgoing queue.
  *
  */
-void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revents) {
+static void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revents) {
     xcb_generic_event_t *event;
 
     if (xcb_connection_has_error(xcb_connection)) {
@@ -1177,7 +1177,7 @@ void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revents) {
  * are triggered
  *
  */
-void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+static void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 }
 
 /*
@@ -1248,7 +1248,7 @@ char *init_xcb_early(void) {
  * in xcb.
  *
  */
-void register_xkb_keyevents(void) {
+static void register_xkb_keyevents(void) {
     const xcb_query_extension_reply_t *extreply;
     extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
     if (!extreply->present) {
@@ -1272,7 +1272,7 @@ void register_xkb_keyevents(void) {
  * Deregister from xkb keyevents.
  *
  */
-void deregister_xkb_keyevents(void) {
+static void deregister_xkb_keyevents(void) {
     xcb_xkb_select_events(conn,
                           XCB_XKB_ID_USE_CORE_KBD,
                           0,
@@ -1338,7 +1338,7 @@ static void send_tray_clientmessage(void) {
  * atom. Afterwards, tray clients will send ClientMessages to our window.
  *
  */
-void init_tray(void) {
+static void init_tray(void) {
     DLOG("Initializing system tray functionality\n");
     /* request the tray manager atom for the X11 display we are running on */
     char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
@@ -1567,7 +1567,7 @@ void destroy_window(i3_output *output) {
 
 /* Strut partial tells i3 where to reserve space for i3bar. This is determined
  * by the `position` bar config directive. */
-xcb_void_cookie_t config_strut_partial(i3_output *output) {
+static xcb_void_cookie_t config_strut_partial(i3_output *output) {
     /* A local struct to save the strut_partial property */
     struct {
         uint32_t left;

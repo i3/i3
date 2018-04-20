@@ -217,7 +217,7 @@ static char **add_argument(char **original, char *opt_char, char *opt_arg, char 
 #define y(x, ...) yajl_gen_##x(gen, ##__VA_ARGS__)
 #define ystr(str) yajl_gen_string(gen, (unsigned char *)str, strlen(str))
 
-char *store_restart_layout(void) {
+static char *store_restart_layout(void) {
     setlocale(LC_NUMERIC, "C");
     yajl_gen gen = yajl_gen_alloc(NULL);
 

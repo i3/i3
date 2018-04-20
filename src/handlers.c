@@ -949,8 +949,8 @@ static void handle_client_message(xcb_client_message_event_t *event) {
     }
 }
 
-bool handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                        xcb_atom_t atom, xcb_get_property_reply_t *reply) {
+static bool handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                               xcb_atom_t atom, xcb_get_property_reply_t *reply) {
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;

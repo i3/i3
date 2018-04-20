@@ -308,7 +308,7 @@ bool workspace_is_visible(Con *ws) {
  * XXX: we need to clean up all this recursive walking code.
  *
  */
-Con *_get_sticky(Con *con, const char *sticky_group, Con *exclude) {
+static Con *_get_sticky(Con *con, const char *sticky_group, Con *exclude) {
     Con *current;
 
     TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
