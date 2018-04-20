@@ -52,6 +52,7 @@ typedef struct {
     char *action;
     int16_t x;
     uint16_t width;
+    bool terminal;
 } button_t;
 
 static xcb_window_t win;
@@ -184,7 +185,11 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     }
 
     char *terminal_cmd;
-    sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", link_path);
+    if (button->terminal) {
+        sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", link_path);
+    } else {
+        terminal_cmd = sstrdup(link_path);
+    }
     printf("argv0 = %s\n", argv0);
     printf("terminal_cmd = %s\n", terminal_cmd);
 
@@ -358,12 +363,13 @@ int main(int argc, char *argv[]) {
         {"version", no_argument, 0, 'v'},
         {"font", required_argument, 0, 'f'},
         {"button", required_argument, 0, 'b'},
+        {"button-no-terminal", required_argument, 0, 'B'},
         {"help", no_argument, 0, 'h'},
         {"message", required_argument, 0, 'm'},
         {"type", required_argument, 0, 't'},
         {0, 0, 0, 0}};
 
-    char *options_string = "b:f:m:t:vh";
+    char *options_string = "b:B:f:m:t:vh";
 
     prompt = i3string_from_utf8("Please do not run this program.");
 
@@ -385,12 +391,14 @@ int main(int argc, char *argv[]) {
                 break;
             case 'h':
                 printf("i3-nagbar " I3_VERSION "\n");
-                printf("i3-nagbar [-m <message>] [-b <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
+                printf("i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
                 return 0;
             case 'b':
+            case 'B':
                 buttons = srealloc(buttons, sizeof(button_t) * (buttoncnt + 1));
                 buttons[buttoncnt].label = i3string_from_utf8(optarg);
                 buttons[buttoncnt].action = argv[optind];
+                buttons[buttoncnt].terminal = (o == 'b');
                 printf("button with label *%s* and action *%s*\n",
                        i3string_as_utf8(buttons[buttoncnt].label),
                        buttons[buttoncnt].action);

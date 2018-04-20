@@ -9,7 +9,7 @@ i3-nagbar - displays an error bar on top of your screen
 
 == SYNOPSIS
 
-i3-nagbar [-m <message>] [-b <button> <action>] [-t warning|error] [-f <font>] [-v]
+i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t warning|error] [-f <font>] [-v]
 
 == OPTIONS
 
@@ -32,6 +32,12 @@ Select font that is being used.
 *-b, --button* 'button' 'action'::
 Create a button with text 'button'. The 'action' are the shell commands that
 will be executed by this button. Multiple buttons can be defined.
+Will launch the shell commands inside a terminal emulator, using
+i3-sensible-terminal.
+
+*-B, --button-no-terminal* 'button' 'action'::
+Same as above, but will execute the shell commands directly, without launching a
+terminal emulator.
 
 == DESCRIPTION
 
