@@ -32,7 +32,7 @@
  * RLIM_INFINITY for i3 debugging versions. */
 struct rlimit original_rlimit_core;
 
-/** The number of file descriptors passed via socket activation. */
+/* The number of file descriptors passed via socket activation. */
 int listen_fds;
 
 /* We keep the xcb_prepare watcher around to be able to enable and disable it

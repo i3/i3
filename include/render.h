@@ -12,7 +12,10 @@
 
 #include <config.h>
 
-/* This is used to keep a state to pass around when rendering a con in render_con(). */
+/**
+ * This is used to keep a state to pass around when rendering a con in render_con().
+ *
+ */
 typedef struct render_params {
     /* A copy of the coordinates of the container which is being rendered. */
     int x;
@@ -39,7 +42,8 @@ typedef struct render_params {
  */
 void render_con(Con *con, bool render_fullscreen);
 
-/*
+/**
  * Returns the height for the decorations
+ *
  */
 int render_deco_height(void);

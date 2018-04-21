@@ -330,7 +330,7 @@ void cmd_move_con_to_workspace(I3_CMD, const char *which) {
     ysuccess(true);
 }
 
-/**
+/*
  * Implementation of 'move [window|container] [to] workspace back_and_forth'.
  *
  */

@@ -42,7 +42,7 @@ typedef struct con_state {
     bool child_mapped;
     bool is_hidden;
 
-    /** The con for which this state is. */
+    /* The con for which this state is. */
     Con *con;
 
     /* For reparenting, we have a flag (need_reparent) and the X ID of the old

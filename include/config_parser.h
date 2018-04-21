@@ -16,7 +16,7 @@
 SLIST_HEAD(variables_head, Variable);
 extern pid_t config_error_nagbar_pid;
 
-/*
+/**
  * An intermediate reprsentation of the result of a parse_config call.
  * Currently unused, but the JSON output will be useful in the future when we
  * implement a config parsing IPC command.

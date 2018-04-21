@@ -312,7 +312,7 @@ bool con_has_managed_window(Con *con) {
     return (con != NULL && con->window != NULL && con->window->id != XCB_WINDOW_NONE && con_get_workspace(con) != NULL);
 }
 
-/**
+/*
  * Returns true if this node has regular or floating children.
  *
  */
@@ -526,7 +526,7 @@ Con *con_get_fullscreen_covering_ws(Con *ws) {
     return fs;
 }
 
-/**
+/*
  * Returns true if the container is internal, such as __i3_scratch
  *
  */
@@ -896,7 +896,7 @@ int con_num_children(Con *con) {
     return children;
 }
 
-/**
+/*
  * Returns the number of visible non-floating children of this container.
  * For example, if the container contains a hsplit which has two children,
  * this will return 2 instead of 1.

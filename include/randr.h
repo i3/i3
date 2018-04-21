@@ -137,7 +137,7 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
  */
 Output *get_output_next_wrap(direction_t direction, Output *current);
 
-/*
+/**
  * Creates an output covering the root window.
  *
  */

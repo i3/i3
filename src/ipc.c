@@ -1580,7 +1580,7 @@ void ipc_send_workspace_event(const char *change, Con *current, Con *old) {
     y(free);
 }
 
-/**
+/*
  * For the window events we send, along the usual "change" field,
  * also the window container, in "container".
  */
@@ -1610,7 +1610,7 @@ void ipc_send_window_event(const char *property, Con *con) {
     setlocale(LC_NUMERIC, "");
 }
 
-/**
+/*
  * For the barconfig update events, we send the serialized barconfig.
  */
 void ipc_send_barconfig_update_event(Barconfig *barconfig) {

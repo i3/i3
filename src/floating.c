@@ -59,7 +59,7 @@ static void floating_set_hint_atom(Con *con, bool floating) {
     xcb_flush(conn);
 }
 
-/**
+/*
  * Called when a floating window is created or resized.
  * This function resizes the window if its size is higher or lower than the
  * configured maximum/minimum size, respectively.

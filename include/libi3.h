@@ -343,7 +343,7 @@ uint32_t get_colorpixel(const char *hex) __attribute__((const));
 
 #if defined(__APPLE__)
 
-/*
+/**
  * Taken from FreeBSD
  * Returns a pointer to a new string which is a duplicate of the
  * string, but only copies at most n characters.

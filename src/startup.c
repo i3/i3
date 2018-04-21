@@ -95,7 +95,7 @@ static int _prune_startup_sequences(void) {
     return active_sequences;
 }
 
-/**
+/*
  * Deletes a startup sequence, ignoring whether its timeout has elapsed.
  * Useful when e.g. a window is moved between workspaces and its children
  * shouldn't spawn on the original workspace.
@@ -257,7 +257,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
     }
 }
 
-/**
+/*
  * Renames workspaces that are mentioned in the startup sequences.
  *
  */
@@ -273,7 +273,7 @@ void startup_sequence_rename_workspace(const char *old_name, const char *new_nam
     }
 }
 
-/**
+/*
  * Gets the stored startup sequence for the _NET_STARTUP_ID of a given window.
  *
  */
