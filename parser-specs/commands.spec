@@ -86,16 +86,16 @@ state DEBUGLOG:
 # border normal|pixel [<n>]
 # border none|1pixel|toggle
 state BORDER:
-  border_style = 'normal', 'pixel'
+  border_style = 'normal', 'pixel', 'toggle'
     -> BORDER_WIDTH
-  border_style = 'none', 'toggle'
+  border_style = 'none'
     -> call cmd_border($border_style, 0)
-  border_style = '1pixel'
-    -> call cmd_border($border_style, 1)
+  '1pixel'
+    -> call cmd_border("pixel", 1)
 
 state BORDER_WIDTH:
   end
-    -> call cmd_border($border_style, 2)
+    -> call cmd_border($border_style, -1)
   border_width = number
     -> call cmd_border($border_style, &border_width)
 
