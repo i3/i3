@@ -718,6 +718,26 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
     ysuccess(success);
 }
 
+static int border_width_from_style(border_style_t border_style, long border_width, Con *con) {
+    if (border_style == BS_NONE) {
+        return 0;
+    }
+    if (border_width >= 0) {
+        return logical_px(border_width);
+    }
+
+    const bool is_floating = con_inside_floating(con) != NULL;
+    /* Load the configured defaults. */
+    if (is_floating && border_style == config.default_floating_border) {
+        return config.default_floating_border_width;
+    } else if (!is_floating && border_style == config.default_border) {
+        return config.default_border_width;
+    } else {
+        /* Use some hardcoded values. */
+        return logical_px(border_style == BS_NORMAL ? 2 : 1);
+    }
+}
+
 /*
  * Implementation of 'border normal|pixel [<n>]', 'border none|1pixel|toggle'.
  *
@@ -730,36 +750,24 @@ void cmd_border(I3_CMD, const char *border_style_str, long border_width) {
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        int border_style = current->con->border_style;
-        int con_border_width = border_width;
 
+        border_style_t border_style;
         if (strcmp(border_style_str, "toggle") == 0) {
-            border_style++;
-            border_style %= 3;
-            if (border_style == BS_NORMAL)
-                con_border_width = 2;
-            else if (border_style == BS_NONE)
-                con_border_width = 0;
-            else if (border_style == BS_PIXEL)
-                con_border_width = 1;
+            border_style = (current->con->border_style + 1) % 3;
+        } else if (strcmp(border_style_str, "normal") == 0) {
+            border_style = BS_NORMAL;
+        } else if (strcmp(border_style_str, "pixel") == 0) {
+            border_style = BS_PIXEL;
+        } else if (strcmp(border_style_str, "none") == 0) {
+            border_style = BS_NONE;
         } else {
-            if (strcmp(border_style_str, "normal") == 0) {
-                border_style = BS_NORMAL;
-            } else if (strcmp(border_style_str, "pixel") == 0) {
-                border_style = BS_PIXEL;
-            } else if (strcmp(border_style_str, "1pixel") == 0) {
-                border_style = BS_PIXEL;
-                con_border_width = 1;
-            } else if (strcmp(border_style_str, "none") == 0) {
-                border_style = BS_NONE;
-            } else {
-                ELOG("BUG: called with border_style=%s\n", border_style_str);
-                ysuccess(false);
-                return;
-            }
+            ELOG("BUG: called with border_style=%s\n", border_style_str);
+            ysuccess(false);
+            return;
         }
 
-        con_set_border_style(current->con, border_style, logical_px(con_border_width));
+        const int con_border_width = border_width_from_style(border_style, border_width, current->con);
+        con_set_border_style(current->con, border_style, con_border_width);
     }
 
     cmd_output->needs_tree_render = true;

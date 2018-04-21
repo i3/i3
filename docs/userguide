@@ -2476,7 +2476,9 @@ To change the border of the current client, you can use +border normal+ to use t
 border (including window title), +border pixel 1+ to use a 1-pixel border (no window title)
 and +border none+ to make the client borderless.
 
-There is also +border toggle+ which will toggle the different border styles.
+There is also +border toggle+ which will toggle the different border styles. The
+optional pixel argument can be used to specify the border width when switching
+to the normal and pixel styles.
 
 Note that "pixel" refers to logical pixel. On HiDPI displays, a logical pixel
 may be represented by multiple physical pixels, so +pixel 1+ might not
@@ -2484,8 +2486,8 @@ necessarily translate into a single pixel row wide border.
 
 *Syntax*:
 -----------------------------------------------
-border normal|pixel [<n>]
-border none|toggle
+border normal|pixel|toggle [<n>]
+border none
 
 # legacy syntax, equivalent to "border pixel 1"
 border 1pixel
