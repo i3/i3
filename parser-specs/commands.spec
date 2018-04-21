@@ -410,8 +410,10 @@ state NOP:
       -> call cmd_nop(NULL)
 
 state SCRATCHPAD:
+  focused_workspace = '--focused-workspace'
+    ->
   'show'
-      -> call cmd_scratchpad_show()
+      -> call cmd_scratchpad_show($focused_workspace)
 
 # swap [container] [with] id <window>
 # swap [container] [with] con_id <con_id>

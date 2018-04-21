@@ -288,7 +288,7 @@ void cmd_move_scratchpad(I3_CMD);
  * Implementation of 'scratchpad show'.
  *
  */
-void cmd_scratchpad_show(I3_CMD);
+void cmd_scratchpad_show(I3_CMD, const char *focused_workspace);
 
 /**
  * Implementation of 'swap [container] [with] id|con_id|mark <arg>'.

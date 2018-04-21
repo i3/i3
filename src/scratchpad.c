@@ -84,7 +84,7 @@ void scratchpad_move(Con *con) {
  * can press the same key to quickly look something up).
  *
  */
-void scratchpad_show(Con *con) {
+void scratchpad_show(Con *con, bool focused_workspace) {
     DLOG("should show scratchpad window %p\n", con);
     Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
     Con *floating;
@@ -139,6 +139,10 @@ void scratchpad_show(Con *con) {
             (floating = con_inside_floating(walk_con)) &&
             floating->scratchpad_state != SCRATCHPAD_NONE) {
             DLOG("Found a visible scratchpad window on another workspace,\n");
+            if (focused_workspace) {
+                DLOG("Not moving workspace, --focused-workspace flag set\n");
+                return;
+            }
             DLOG("moving it to this workspace: con = %p\n", walk_con);
             con_move_to_workspace(walk_con, focused_ws, true, false, false);
             return;

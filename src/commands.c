@@ -1382,7 +1382,7 @@ void cmd_focus(I3_CMD) {
 
         /* In case this is a scratchpad window, call scratchpad_show(). */
         if (ws == __i3_scratch) {
-            scratchpad_show(current->con);
+            scratchpad_show(current->con, false);
             count++;
             /* While for the normal focus case we can change focus multiple
              * times and only a single window ends up focused, we could show
@@ -1830,16 +1830,18 @@ void cmd_move_scratchpad(I3_CMD) {
  * Implementation of 'scratchpad show'.
  *
  */
-void cmd_scratchpad_show(I3_CMD) {
+void cmd_scratchpad_show(I3_CMD, const char *focused_workspace) {
     DLOG("should show scratchpad window\n");
     owindow *current;
 
+    bool focused_ws = focused_workspace != NULL;
+
     if (match_is_empty(current_match)) {
-        scratchpad_show(NULL);
+        scratchpad_show(NULL, focused_ws);
     } else {
         TAILQ_FOREACH(current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
-            scratchpad_show(current->con);
+            scratchpad_show(current->con, focused_ws);
         }
     }
 

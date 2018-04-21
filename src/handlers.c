@@ -771,7 +771,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             DLOG("This request came from a pager. Focusing con = %p\n", con);
 
             if (con_is_internal(ws)) {
-                scratchpad_show(con);
+                scratchpad_show(con, false);
             } else {
                 workspace_show(ws);
                 /* Re-set focus, even if unchanged from i3’s perspective. */
