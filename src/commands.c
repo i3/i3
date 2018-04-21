@@ -1833,19 +1833,20 @@ void cmd_move_scratchpad(I3_CMD) {
 void cmd_scratchpad_show(I3_CMD) {
     DLOG("should show scratchpad window\n");
     owindow *current;
+    bool result = false;
 
     if (match_is_empty(current_match)) {
-        scratchpad_show(NULL);
+        result = scratchpad_show(NULL);
     } else {
         TAILQ_FOREACH(current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
-            scratchpad_show(current->con);
+            result |= scratchpad_show(current->con);
         }
     }
 
     cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+
+    ysuccess(result);
 }
 
 /*
