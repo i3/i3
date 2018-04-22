@@ -651,6 +651,15 @@ struct Con {
     /** The format with which the window's name should be displayed. */
     char *title_format;
 
+    enum {
+        ALIGN_LEFT = 0,
+        ALIGN_CENTER = 1,
+        ALIGN_RIGHT = 2
+    } align;
+
+    /** Window's name align */
+    int title_align;
+
     /* a sticky-group is an identifier which bundles several containers to a
      * group. The contents are shared between all of them, that is they are
      * displayed on whichever of the containers is currently visible */

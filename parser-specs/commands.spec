@@ -40,6 +40,7 @@ state INITIAL:
   'scratchpad' -> SCRATCHPAD
   'swap' -> SWAP
   'title_format' -> TITLE_FORMAT
+  'title_align' -> TITLE_ALIGN
   'mode' -> MODE
   'bar' -> BAR
 
@@ -131,7 +132,7 @@ state WORKSPACE:
       -> call cmd_workspace_back_and_forth()
   'number'
       -> WORKSPACE_NUMBER
-  workspace = string 
+  workspace = string
       -> call cmd_workspace_name($workspace, $no_auto_back_and_forth)
 
 state WORKSPACE_NUMBER:
@@ -431,6 +432,10 @@ state SWAP_ARGUMENT:
 state TITLE_FORMAT:
   format = string
       -> call cmd_title_format($format)
+
+state TITLE_ALIGN:
+  direction = 'left', 'center', 'right'
+      -> call cmd_title_align($direction)
 
 # bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]
 state BAR:
