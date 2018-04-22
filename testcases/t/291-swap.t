@@ -372,26 +372,31 @@ for my $fullscreen (@fullscreen_permutations){
 # +---+---+    Layout: H2[ B, F ]
 # | B | F |    Focus Stacks:
 # +---+---+        H2: F, B
+#
+# See issue: #3259
 ###############################################################################
 
-$ws1 = fresh_workspace;
-$A = open_window(wm_class => 'mark_A');
+for my $fullscreen (0..1){
+    $ws1 = fresh_workspace;
+    $A = open_window(wm_class => 'mark_A');
 
-$ws2 = fresh_workspace;
-$B = open_window(wm_class => 'mark_B');
-open_window;
-$expected_focus = get_focused($ws2);
+    $ws2 = fresh_workspace;
+    $B = open_window(wm_class => 'mark_B');
+    open_window;
+    cmd 'fullscreen enable' if $fullscreen;
+    $expected_focus = get_focused($ws2);
 
-cmd '[con_mark=B] swap container with mark A';
+    cmd '[con_mark=B] swap container with mark A';
 
-$nodes = get_ws_content($ws1);
-is($nodes->[0]->{window}, $B->{id}, 'B is on the first workspace');
+    $nodes = get_ws_content($ws1);
+    is($nodes->[0]->{window}, $B->{id}, 'B is on the first workspace');
 
-$nodes = get_ws_content($ws2);
-is($nodes->[0]->{window}, $A->{id}, 'A is on the left of the second workspace');
-is(get_focused($ws2), $expected_focus, 'F is still focused');
+    $nodes = get_ws_content($ws2);
+    is($nodes->[0]->{window}, $A->{id}, 'A is on the left of the second workspace');
+    is(get_focused($ws2), $expected_focus, 'F is still focused');
 
-kill_all_windows;
+    kill_all_windows;
+}
 
 ###############################################################################
 # 1. A container cannot be swapped with its parent.

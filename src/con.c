@@ -1097,7 +1097,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
     /* Prevent moving if this would violate the fullscreen focus restrictions. */
     Con *target_ws = con_get_workspace(target);
-    if (!con_fullscreen_permits_focusing(target_ws)) {
+    if (!ignore_focus && !con_fullscreen_permits_focusing(target_ws)) {
         LOG("Cannot move out of a fullscreen container.\n");
         return false;
     }
@@ -2373,6 +2373,10 @@ bool con_swap(Con *first, Con *second) {
 
     /* Move first to second. */
     result &= _con_move_to_con(first, second, false, false, false, true, false);
+    /* If swapping the containers didn't work we don't need to mess with the focus. */
+    if (!result) {
+        goto swap_end;
+    }
 
     /* If we moved the container holding the focused window to another
      * workspace we need to ensure the visible workspace has the focused
@@ -2385,8 +2389,6 @@ bool con_swap(Con *first, Con *second) {
 
     /* Move second to where first has been originally. */
     result &= _con_move_to_con(second, fake, false, false, false, true, false);
-
-    /* If swapping the containers didn't work we don't need to mess with the focus. */
     if (!result) {
         goto swap_end;
     }
