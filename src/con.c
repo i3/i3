@@ -1097,7 +1097,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
     /* Prevent moving if this would violate the fullscreen focus restrictions. */
     Con *target_ws = con_get_workspace(target);
-    if (!con_fullscreen_permits_focusing(target_ws)) {
+    if (!ignore_focus && !con_fullscreen_permits_focusing(target_ws)) {
         LOG("Cannot move out of a fullscreen container.\n");
         return false;
     }
