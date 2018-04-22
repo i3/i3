@@ -38,6 +38,16 @@ static void set_nonblock(int sockfd) {
         err(-1, "Could not set O_NONBLOCK");
 }
 
+static void free_ipc_client(ipc_client *client) {
+    close(client->fd);
+    for (int i = 0; i < client->num_events; i++){
+        free(client->events[i]);
+    }
+    free(client->events);
+    TAILQ_REMOVE(&all_clients, client, clients);
+    free(client);
+}
+
 /*
  * Sends the specified event to all IPC clients which are currently connected
  * and subscribed to this kind of event.
@@ -99,12 +109,7 @@ void ipc_shutdown(shutdown_reason_t reason) {
     while (!TAILQ_EMPTY(&all_clients)) {
         current = TAILQ_FIRST(&all_clients);
         shutdown(current->fd, SHUT_RDWR);
-        close(current->fd);
-        for (int i = 0; i < current->num_events; i++)
-            free(current->events[i]);
-        free(current->events);
-        TAILQ_REMOVE(&all_clients, current, clients);
-        free(current);
+        free_ipc_client(current);
     }
 }
 
@@ -1247,24 +1252,20 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
             return;
         }
 
-        /* If not, there was some kind of error. We don’t bother
-         * and close the connection */
-        close(w->fd);
-
-        /* Delete the client from the list of clients */
+        /* If not, there was some kind of error. We don’t bother and close the
+         * connection. Delete the client from the list of clients. */
+        bool closed = false;
         ipc_client *current;
         TAILQ_FOREACH(current, &all_clients, clients) {
             if (current->fd != w->fd)
                 continue;
 
-            for (int i = 0; i < current->num_events; i++)
-                free(current->events[i]);
-            free(current->events);
-            /* We can call TAILQ_REMOVE because we break out of the
-             * TAILQ_FOREACH afterwards */
-            TAILQ_REMOVE(&all_clients, current, clients);
-            free(current);
+            free_ipc_client(current);
+            closed = true;
             break;
+        }
+        if (!closed) {
+            close(w->fd);
         }
 
         ev_io_stop(EV_A_ w);
