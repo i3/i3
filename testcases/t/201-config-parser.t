@@ -497,6 +497,7 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         fake-outputs
         force_display_urgency_hint
         focus_on_window_activation
+        title_align
         show_marks
         workspace
         ipc_socket

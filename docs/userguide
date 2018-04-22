@@ -585,6 +585,16 @@ workspace_layout default|stacking|tabbed
 workspace_layout tabbed
 ---------------------
 
+=== Window title alignment
+
+This option determines the window title's text alignment.
+Default is +left+
+
+*Syntax*:
+---------------------------------------------
+title_align left|center|right
+---------------------------------------------
+
 === Default border style for new windows
 
 This option determines which border style new windows will have. The default is
