@@ -693,6 +693,14 @@ program does not want to cope which such kinds of race conditions (an
 event based library may not have a problem here), I suggest you create a
 separate connection to receive events.
 
+If an event message needs to be sent and the socket is not writeable (write
+returns EAGAIN, happens when the socket doesn't have enough buffer space for
+writing new data) then i3 uses a queue system to store outgoing messages for
+each client. This is combined with a timer: if the message queue for a client is
+not empty and no data where successfully written in the past 10 seconds, the
+connection is killed. Practically, this means that your client should try to
+always read events from the socket to avoid having its connection closed.
+
 === Subscribing to events
 
 By sending a message of type SUBSCRIBE with a JSON-encoded array as payload

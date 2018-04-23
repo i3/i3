@@ -35,6 +35,11 @@ typedef struct ipc_client {
      * event has been sent by i3. */
     bool first_tick_sent;
 
+    struct ev_io *callback;
+    struct ev_timer *timeout;
+    uint8_t *buffer;
+    size_t buffer_size;
+
     TAILQ_ENTRY(ipc_client)
     clients;
 } ipc_client;
@@ -124,3 +129,9 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig);
  * For the binding events, we send the serialized binding struct.
  */
 void ipc_send_binding_event(const char *event_type, Binding *bind);
+
+/**
+  * Set the maximum duration that we allow for a connection with an unwriteable
+  * socket.
+  */
+void ipc_set_kill_timeout(ev_tstamp new);

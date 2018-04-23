@@ -167,6 +167,14 @@ int sasprintf(char **strp, const char *fmt, ...);
 ssize_t writeall(int fd, const void *buf, size_t count);
 
 /**
+ * Like writeall, but instead of retrying upon EAGAIN (returned when a write
+ * would block), the function stops and returns the total number of bytes
+ * written so far.
+ *
+ */
+ssize_t writeall_nonblock(int fd, const void *buf, size_t count);
+
+/**
  * Safe-wrapper around writeall which exits if it returns -1 (meaning that
  * write failed)
  *

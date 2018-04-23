@@ -501,6 +501,7 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         workspace
         ipc_socket
         ipc-socket
+        ipc_kill_timeout
         restart_state
         popup_during_fullscreen
         exec_always

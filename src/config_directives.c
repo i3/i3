@@ -446,6 +446,10 @@ CFGFUN(no_focus) {
     TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
 }
 
+CFGFUN(ipc_kill_timeout, const long timeout_ms) {
+    ipc_set_kill_timeout(timeout_ms / 1000.0);
+}
+
 /*******************************************************************************
  * Bar configuration (i3bar)
  ******************************************************************************/
