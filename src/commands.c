@@ -493,12 +493,12 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     double first_size;
     double total_size;
     switch (search_direction) {
-        case D_RIGHT: // fall through
+        case D_RIGHT:  // fall through
         case D_LEFT:
             first_size = first->rect.width + first->deco_rect.width;
             total_size = first_size + second->rect.width + second->deco_rect.width;
             break;
-        case D_DOWN: // fall through
+        case D_DOWN:  // fall through
         case D_UP:
             first_size = first->rect.height + first->deco_rect.height;
             total_size = first_size + second->rect.height + second->deco_rect.height;
@@ -508,8 +508,8 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     double relative_percent;
     if (ppt != 0) {
         // resize based on the ppt
-        relative_percent = first_size / total_size + (double)ppt/100.0;
-    } else  {
+        relative_percent = first_size / total_size + (double)ppt / 100.0;
+    } else {
         // resize based on the px
         relative_percent = (first_size + px) / total_size;
     }
@@ -521,7 +521,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     }
 
     first->percent = total_percent * relative_percent;
-    second->percent = total_percent  * (1 - relative_percent);
+    second->percent = total_percent * (1 - relative_percent);
 
     return true;
 }
