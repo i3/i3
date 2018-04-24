@@ -495,8 +495,11 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     switch (search_direction) {
         case D_RIGHT:  // fall through
         case D_LEFT:
-            first_size = first->rect.width + first->deco_rect.width;
-            total_size = first_size + second->rect.width + second->deco_rect.width;
+            /* Note that we don't add on the deco_rect.width here; the
+             * width is handled differently than the height.  See render.c in
+             * render_con_split. */
+            first_size = first->rect.width;
+            total_size = first_size + second->rect.width;
             break;
         case D_DOWN:  // fall through
         case D_UP:
