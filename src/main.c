@@ -39,8 +39,6 @@ int listen_fds;
  * temporarily for drag_pointer(). */
 static struct ev_prepare *xcb_prepare;
 
-extern Con *focused;
-
 char **start_argv;
 
 xcb_connection_t *conn;
