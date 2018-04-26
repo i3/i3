@@ -191,7 +191,7 @@ void start_application(const char *command, bool no_startup_id) {
             if (!no_startup_id)
                 sn_launcher_context_setup_child_process(context);
 
-            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (void *)NULL);
+            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
             /* not reached */
         }
         _exit(0);
