@@ -664,5 +664,4 @@ geom_out:
     free(geom);
 out:
     free(attr);
-    return;
 }

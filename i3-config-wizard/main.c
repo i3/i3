@@ -631,8 +631,6 @@ static void handle_button_press(xcb_button_press_event_t *event) {
         modifier = MOD_Mod1;
         handle_expose();
     }
-
-    return;
 }
 
 /*
