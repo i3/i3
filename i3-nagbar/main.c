@@ -115,7 +115,7 @@ static void start_application(const char *command) {
         setsid();
         if (fork() == 0) {
             /* This is the child */
-            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (void *)NULL);
+            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
             /* not reached */
         }
         exit(0);

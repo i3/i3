@@ -184,8 +184,6 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     focused_id = XCB_NONE;
     con_focus(con_descend_focused(con));
     tree_render();
-
-    return;
 }
 
 /*
@@ -249,8 +247,6 @@ static void handle_mapping_notify(xcb_mapping_notify_event_t *event) {
     ungrab_all_keys(conn);
     translate_keysyms();
     grab_all_keys(conn);
-
-    return;
 }
 
 /*
@@ -266,7 +262,6 @@ static void handle_map_request(xcb_map_request_event_t *event) {
     add_ignore_event(event->sequence, -1);
 
     manage_window(event->window, cookie, false);
-    return;
 }
 
 /*
@@ -474,8 +469,6 @@ static void handle_screen_change(xcb_generic_event_t *e) {
     scratchpad_fix_resolution();
 
     ipc_send_event("output", I3_IPC_EVENT_OUTPUT, "{\"change\":\"unspecified\"}");
-
-    return;
 }
 
 /*
@@ -659,7 +652,6 @@ static void handle_expose_event(xcb_expose_event_t *event) {
     draw_util_copy_surface(&(parent->frame_buffer), &(parent->frame),
                            0, 0, 0, 0, parent->rect.width, parent->rect.height);
     xcb_flush(conn);
-    return;
 }
 
 #define _NET_WM_MOVERESIZE_SIZE_TOPLEFT 0
@@ -1243,7 +1235,6 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
     /* We update focused_id because we don’t need to set focus again */
     focused_id = event->event;
     tree_render();
-    return;
 }
 
 /*

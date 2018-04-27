@@ -83,8 +83,7 @@ xcb_char2b_t *convert_utf8_to_ucs2(char *input, size_t *real_strlen) {
     }
 
     /* Do the conversion */
-    size_t rc = iconv(ucs2_conversion_descriptor, (char **)&input,
-                      &input_size, (char **)&output, &output_size);
+    size_t rc = iconv(ucs2_conversion_descriptor, &input, &input_size, (char **)&output, &output_size);
     if (rc == (size_t)-1) {
         perror("Converting to UCS-2 failed");
         free(buffer);
