@@ -2164,21 +2164,22 @@ void cmd_shmlog(I3_CMD, const char *argument) {
     else if (!strcmp(argument, "off"))
         shmlog_size = 0;
     else {
+        long new_size = 0;
+        if (!parse_long(argument, &new_size, 0)) {
+            yerror("Failed to parse %s into a shmlog size.\n", argument);
+            return;
+        }
         /* If shm logging now, restart logging with the new size. */
         if (shmlog_size > 0) {
             shmlog_size = 0;
             LOG("Restarting shm logging...\n");
             init_logging();
         }
-        shmlog_size = atoi(argument);
-        /* Make a weakly attempt at ensuring the argument is valid. */
-        if (shmlog_size <= 0)
-            shmlog_size = default_shmlog_size;
+        shmlog_size = (int)new_size;
     }
     LOG("%s shm logging\n", shmlog_size > 0 ? "Enabling" : "Disabling");
     init_logging();
     update_shmlog_atom();
-    // XXX: default reply for now, make this a better reply
     ysuccess(true);
 }
 
