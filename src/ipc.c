@@ -1127,6 +1127,9 @@ IPC_HANDLER(send_tick) {
 
     y(map_open);
 
+    ystr("first");
+    y(bool, false);
+
     ystr("payload");
     yajl_gen_string(gen, (unsigned char *)message, message_size);
 
