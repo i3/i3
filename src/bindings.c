@@ -361,6 +361,14 @@ struct resolve {
     struct xkb_state *xkb_state_numlock_no_shift;
 };
 
+#define ADD_TRANSLATED_KEY(code, mods)                                                     \
+    do {                                                                                   \
+        struct Binding_Keycode *binding_keycode = smalloc(sizeof(struct Binding_Keycode)); \
+        binding_keycode->modifiers = (mods);                                               \
+        binding_keycode->keycode = (code);                                                 \
+        TAILQ_INSERT_TAIL(&(bind->keycodes_head), binding_keycode, keycodes);              \
+    } while (0)
+
 /*
  * add_keycode_if_matches is called for each keycode in the keymap and will add
  * the keycode to |data->bind| if the keycode can result in the keysym
@@ -390,18 +398,10 @@ static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key,
     }
     Binding *bind = resolving->bind;
 
-#define ADD_TRANSLATED_KEY(mods)                                                           \
-    do {                                                                                   \
-        struct Binding_Keycode *binding_keycode = smalloc(sizeof(struct Binding_Keycode)); \
-        binding_keycode->modifiers = (mods);                                               \
-        binding_keycode->keycode = key;                                                    \
-        TAILQ_INSERT_TAIL(&(bind->keycodes_head), binding_keycode, keycodes);              \
-    } while (0)
-
-    ADD_TRANSLATED_KEY(bind->event_state_mask);
+    ADD_TRANSLATED_KEY(key, bind->event_state_mask);
 
     /* Also bind the key with active CapsLock */
-    ADD_TRANSLATED_KEY(bind->event_state_mask | XCB_MOD_MASK_LOCK);
+    ADD_TRANSLATED_KEY(key, bind->event_state_mask | XCB_MOD_MASK_LOCK);
 
     /* If this binding is not explicitly for NumLock, check whether we need to
      * add a fallback. */
@@ -413,17 +413,15 @@ static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key,
         xkb_keysym_t sym_numlock = xkb_state_key_get_one_sym(numlock_state, key);
         if (sym_numlock == resolving->keysym) {
             /* Also bind the key with active NumLock */
-            ADD_TRANSLATED_KEY(bind->event_state_mask | xcb_numlock_mask);
+            ADD_TRANSLATED_KEY(key, bind->event_state_mask | xcb_numlock_mask);
 
             /* Also bind the key with active NumLock+CapsLock */
-            ADD_TRANSLATED_KEY(bind->event_state_mask | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+            ADD_TRANSLATED_KEY(key, bind->event_state_mask | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
         } else {
             DLOG("Skipping automatic numlock fallback, key %d resolves to 0x%x with numlock\n",
                  key, sym_numlock);
         }
     }
-
-#undef ADD_TRANSLATED_KEY
 }
 
 /*
@@ -447,14 +445,6 @@ void translate_keysyms(void) {
 
     Binding *bind;
     TAILQ_FOREACH(bind, bindings, bindings) {
-#define ADD_TRANSLATED_KEY(code, mods)                                                     \
-    do {                                                                                   \
-        struct Binding_Keycode *binding_keycode = smalloc(sizeof(struct Binding_Keycode)); \
-        binding_keycode->modifiers = (mods);                                               \
-        binding_keycode->keycode = (code);                                                 \
-        TAILQ_INSERT_TAIL(&(bind->keycodes_head), binding_keycode, keycodes);              \
-    } while (0)
-
         if (bind->input_type == B_MOUSE) {
             long button;
             if (!parse_long(bind->symbol + (sizeof("button") - 1), &button, 10)) {
@@ -605,8 +595,6 @@ void translate_keysyms(void) {
         DLOG("state=0x%x, cfg=\"%s\", sym=0x%x → keycodes%s (%d)\n",
              bind->event_state_mask, bind->symbol, keysym, keycodes, num_keycodes);
         free(keycodes);
-
-#undef ADD_TRANSLATED_KEY
     }
 
 out:
@@ -619,6 +607,8 @@ out:
         start_config_error_nagbar(current_configpath, true);
     }
 }
+
+#undef ADD_TRANSLATED_KEY
 
 /*
  * Switches the key bindings to the given mode, if the mode exists
