@@ -94,4 +94,16 @@ cmd 'rename workspace to 5';
 is(get_output_for_workspace('5'), 'fake-0',
     'Renaming the workspace to a workspace assigned to a directional output should not move the workspace');
 
+##########################################################################
+# Renaming a workspace, so that it becomes assigned to the focused
+# output's workspace (and the focused output is empty) should
+# result in the original workspace replacing the originally
+# focused workspace.
+##########################################################################
+
+cmd 'workspace baz';
+cmd 'rename workspace 5 to 2';
+is(get_output_for_workspace('2'), 'fake-1',
+    'Renaming a workspace so that it moves to the focused output which contains only an empty workspace should replace the empty workspace');
+
 done_testing;
