@@ -1991,7 +1991,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
 
     /* By re-attaching, the sort order will be correct afterwards. */
     Con *previously_focused = focused;
-    bool previously_focused_is_workspace = focused->type == CT_WORKSPACE;
+    Con *previously_focused_content = focused->type == CT_WORKSPACE ? focused->parent : NULL;
     Con *parent = workspace->parent;
     con_detach(workspace);
     con_attach(workspace, parent, false);
@@ -2019,11 +2019,9 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
          * focus order/number of other workspaces on the output.
          * Instead, we loop through the available workspaces and only focus
          * previously_focused if we still find it. */
-        if (previously_focused_is_workspace) {
-            Con *output, *workspace = NULL;
-            TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-                GREP_FIRST(workspace, output_get_content(output), child == previously_focused);
-            }
+        if (previously_focused_content) {
+            Con *workspace = NULL;
+            GREP_FIRST(workspace, previously_focused_content, child == previously_focused);
             can_restore_focus &= (workspace != NULL);
         }
 
