@@ -79,4 +79,21 @@ do_test(int(0.44 * 1333), 111);
 cmd 'resize set 222 px 100 ppt';
 do_test(222, 999);
 
+################################################################################
+# Zero is interpreted as no change.
+# See issue: #3276.
+################################################################################
+
+cmd 'resize set 0 px 333 px';
+do_test(0, 333);
+
+cmd 'resize set 333 px 0 ppt';
+do_test(333, 0);
+
+cmd 'resize set 0 px 0 ppt';
+do_test(0, 0);
+
+cmd 'resize set 100 ppt 0 px';
+do_test(1333, 0);
+
 done_testing;

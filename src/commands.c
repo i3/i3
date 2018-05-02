@@ -644,12 +644,12 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
         if ((floating_con = con_inside_floating(current->con))) {
             Con *output = con_get_output(floating_con);
             if (cwidth == 0) {
-                cwidth = output->rect.width;
+                cwidth = floating_con->rect.width;
             } else if (mode_width && strcmp(mode_width, "ppt") == 0) {
                 cwidth = output->rect.width * ((double)cwidth / 100.0);
             }
             if (cheight == 0) {
-                cheight = output->rect.height;
+                cheight = floating_con->rect.height;
             } else if (mode_height && strcmp(mode_height, "ppt") == 0) {
                 cheight = output->rect.height * ((double)cheight / 100.0);
             }
