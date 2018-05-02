@@ -26,76 +26,57 @@ workspace ws output fake-0
 EOT
 
 ################################################################################
-# Check that setting floating windows size works
+# Init variables used for all tests.
 ################################################################################
 
 my $tmp = fresh_workspace;
-
 open_floating_window;
-
 my @content = @{get_ws($tmp)->{floating_nodes}};
 is(@content, 1, 'one floating node on this ws');
-
 my $oldrect = $content[0]->{rect};
 
-cmd 'resize set 100 px 250 px';
+sub do_test {
+    my ($width, $height) = @_;
 
-@content = @{get_ws($tmp)->{floating_nodes}};
-cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x untouched');
-cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y untouched');
-cmp_ok($content[0]->{rect}->{width}, '!=', $oldrect->{width}, 'width changed');
-cmp_ok($content[0]->{rect}->{height}, '!=', $oldrect->{width}, 'height changed');
-cmp_ok($content[0]->{rect}->{width}, '==', 100, 'width changed to 100 px');
-cmp_ok($content[0]->{rect}->{height}, '==', 250, 'height changed to 250 px');
+    cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x unchanged');
+    cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y unchanged');
+
+    @content = @{get_ws($tmp)->{floating_nodes}};
+    if ($width) {
+        cmp_ok($content[0]->{rect}->{width}, '==', $width, "width changed to $width px");
+    } else {
+        cmp_ok($content[0]->{rect}->{width}, '==', $oldrect->{width}, 'width unchanged');
+    }
+    if ($height) {
+        cmp_ok($content[0]->{rect}->{height}, '==', $height, "height changed to $height px");
+    } else {
+        cmp_ok($content[0]->{rect}->{height}, '==', $oldrect->{height}, 'height unchanged');
+    }
+    $oldrect = $content[0]->{rect};
+}
+
+################################################################################
+# Check that setting floating windows size works
+################################################################################
+
+cmd 'resize set 100 px 250 px';
+do_test(100, 250);
 
 ################################################################################
 # Same but with ppt instead of px
 ################################################################################
 
-kill_all_windows;
-$tmp = 'ws';
-cmd "workspace $tmp";
-open_floating_window;
-
-@content = @{get_ws($tmp)->{floating_nodes}};
-is(@content, 1, 'one floating node on this ws');
-
-$oldrect = $content[0]->{rect};
-
 cmd 'resize set 33 ppt 20 ppt';
-my $expected_width = int(0.33 * 1333);
-my $expected_height = int(0.2 * 999);
-
-@content = @{get_ws($tmp)->{floating_nodes}};
-cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x untouched');
-cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y untouched');
-cmp_ok($content[0]->{rect}->{width}, '!=', $oldrect->{width}, 'width changed');
-cmp_ok($content[0]->{rect}->{height}, '!=', $oldrect->{width}, 'height changed');
-cmp_ok($content[0]->{rect}->{width}, '==', $expected_width, "width changed to $expected_width px");
-cmp_ok($content[0]->{rect}->{height}, '==', $expected_height, "height changed to $expected_height px");
+do_test(int(0.33 * 1333), int(0.2 * 999));
 
 ################################################################################
 # Mix ppt and px in a single resize set command
 ################################################################################
 
 cmd 'resize set 44 ppt 111 px';
-$expected_width = int(0.44 * 1333);
-$expected_height = 111;
-
-@content = @{get_ws($tmp)->{floating_nodes}};
-cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x untouched');
-cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y untouched');
-cmp_ok($content[0]->{rect}->{width}, '==', $expected_width, "width changed to $expected_width px");
-cmp_ok($content[0]->{rect}->{height}, '==', $expected_height, "height changed to $expected_height px");
+do_test(int(0.44 * 1333), 111);
 
 cmd 'resize set 222 px 100 ppt';
-$expected_width = 222;
-$expected_height = 999;
-
-@content = @{get_ws($tmp)->{floating_nodes}};
-cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x untouched');
-cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y untouched');
-cmp_ok($content[0]->{rect}->{width}, '==', $expected_width, "width changed to $expected_width px");
-cmp_ok($content[0]->{rect}->{height}, '==', $expected_height, "height changed to $expected_height px");
+do_test(222, 999);
 
 done_testing;
