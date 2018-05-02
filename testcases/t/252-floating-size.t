@@ -96,4 +96,22 @@ do_test(0, 0);
 cmd 'resize set 100 ppt 0 px';
 do_test(1333, 0);
 
+################################################################################
+# Use 'width' and 'height' keywords.
+# See issue: #3275.
+################################################################################
+
+cmd 'resize set width 200 px';
+do_test(200, 0);
+
+cmd 'resize set height 200 px';
+do_test(0, 200);
+
+cmd 'resize set width 300 px height 300 px';
+do_test(300, 300);
+
+# ppt + keyword used only for height
+cmd 'resize set 100 ppt height 100 px';
+do_test(1333, 100);
+
 done_testing;

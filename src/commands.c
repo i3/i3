@@ -686,7 +686,7 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
                 }
             }
 
-            if (cheight > 0 && mode_width && strcmp(mode_width, "ppt") == 0) {
+            if (cheight > 0 && mode_height && strcmp(mode_height, "ppt") == 0) {
                 /* get the appropriate current container (skip stacked/tabbed cons) */
                 Con *target = current->con;
                 Con *dummy;

@@ -39,6 +39,14 @@ my ($nodes, $focus) = get_ws_content($tmp);
 cmp_float($nodes->[0]->{percent}, 0.25, 'left window got only 25%');
 cmp_float($nodes->[1]->{percent}, 0.75, 'right window got 75%');
 
+# Same but use the 'width' keyword.
+cmd 'resize set width 80 ppt';
+
+($nodes, $focus) = get_ws_content($tmp);
+
+cmp_float($nodes->[0]->{percent}, 0.20, 'left window got 20%');
+cmp_float($nodes->[1]->{percent}, 0.80, 'right window got 80%');
+
 ############################################################
 # resize vertically
 ############################################################
@@ -61,6 +69,13 @@ my ($nodes, $focus) = get_ws_content($tmp);
 cmp_float($nodes->[0]->{percent}, 0.25, 'top window got only 25%');
 cmp_float($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
 
+# Same but use the 'height' keyword.
+cmd 'resize set height 80 ppt';
+
+($nodes, $focus) = get_ws_content($tmp);
+
+cmp_float($nodes->[0]->{percent}, 0.20, 'top window got 20%');
+cmp_float($nodes->[1]->{percent}, 0.80, 'bottom window got 80%');
 
 ############################################################
 # resize horizontally and vertically

@@ -2320,7 +2320,9 @@ If you want to resize containers/windows using your keyboard, you can use the
 *Syntax*:
 -------------------------------------------------------
 resize grow|shrink <direction> [<px> px [or <ppt> ppt]]
-resize set <width> [px | ppt] <height> [px | ppt]
+resize set [width] <width> [px | ppt]
+resize set height <height> [px | ppt]
+resize set [width] <width> [px | ppt] [height] <height> [px | ppt]
 -------------------------------------------------------
 
 Direction can either be one of +up+, +down+, +left+ or +right+. Or you can be
