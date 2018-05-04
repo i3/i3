@@ -254,12 +254,24 @@ state RESIZE_TILING_FINAL:
       -> call cmd_resize($way, $direction, &resize_px, &resize_ppt)
 
 state RESIZE_SET:
+  'height'
+      -> RESIZE_HEIGHT_GET_NUMBER
+  'width'
+      ->
   width = number
       -> RESIZE_WIDTH
 
 state RESIZE_WIDTH:
   mode_width = 'px', 'ppt'
       ->
+  end
+      -> call cmd_resize_set(&width, $mode_width, 0, 0)
+  'height'
+      -> RESIZE_HEIGHT_GET_NUMBER
+  height = number
+      -> RESIZE_HEIGHT
+
+state RESIZE_HEIGHT_GET_NUMBER:
   height = number
       -> RESIZE_HEIGHT
 
