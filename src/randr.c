@@ -856,8 +856,9 @@ void randr_query_outputs(void) {
     /* If there's no randr output, enable the output covering the root window. */
     if (any_randr_output_active()) {
         DLOG("Active RandR output found. Disabling root output.\n");
-        if (root_output->active)
+        if (root_output && root_output->active) {
             root_output->to_be_disabled = true;
+        }
     } else {
         DLOG("No active RandR output found. Enabling root output.\n");
         root_output->active = true;
