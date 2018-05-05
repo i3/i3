@@ -235,6 +235,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
          * container the user scrolled on. */
         Con *focused = con->parent;
         focused = TAILQ_FIRST(&(focused->focus_head));
+        con_activate(con_descend_focused(focused));
         /* To prevent scrolling from going outside the container (see ticket
          * #557), we first check if scrolling is possible at all. */
         bool scroll_prev_possible = (TAILQ_PREV(focused, nodes_head, nodes) != NULL);

@@ -53,7 +53,7 @@ open_window;
 cmd 'splitv';
 my $last = open_window;
 # Second child of the outer horizontal split, next to the tabbed one.
-open_window;
+my $outside = open_window;
 cmd 'move right, move right';
 
 cmd '[id=' . $first->id . '] focus';
@@ -75,5 +75,10 @@ scroll_up;
 is($x->input_focus, $first->id, 'First window focused through scrolling');
 scroll_up;
 is($x->input_focus, $first->id, 'Scrolling again doesn\'t focus the whole sibling');
+
+# Try scrolling with another window focused
+cmd '[id=' . $outside->id . '] focus';
+scroll_up;
+is($x->input_focus, $first->id, 'Scrolling from outside the tabbed container works');
 
 done_testing;
