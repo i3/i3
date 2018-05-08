@@ -309,7 +309,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
     char *buffer = smalloc(to_write);
     char *walk = buffer;
 
-    strncpy(buffer, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC));
+    memcpy(buffer, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC));
     walk += strlen(I3_IPC_MAGIC);
     memcpy(walk, &len, sizeof(uint32_t));
     walk += sizeof(uint32_t);
