@@ -604,7 +604,7 @@ void handle_button(xcb_button_press_event_t *event) {
 
     const size_t len = namelen + strlen("workspace \"\"") + 1;
     char *buffer = scalloc(len + num_quotes, 1);
-    strncpy(buffer, "workspace \"", strlen("workspace \""));
+    memcpy(buffer, "workspace \"", strlen("workspace \""));
     size_t inpos, outpos;
     for (inpos = 0, outpos = strlen("workspace \"");
          inpos < namelen;
