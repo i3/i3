@@ -1,18 +1,62 @@
-Output of `i3 --moreversion 2>&- || i3 --version`:
+<!--
+PLEASE HELP US PROCESS GITHUB ISSUES FASTER BY PROVIDING THE FOLLOWING INFORMATION.
+-->
 
-_REPLACE: i3 version output_
+## I'm submitting a…
+<!-- Please check one of the following options with "x" -->
+<pre>
+[ ] Bug
+[ ] Feature Request
+[ ] Documentation Request
+[ ] Other (Please describe in detail)
+</pre>
 
-URL to a logfile as per https://i3wm.org/docs/debugging.html:
+## Current Behavior
+<!-- Describe the current behavior, e.g., »When pressing Alt+j (focus left), the window above the current window is focused.« -->
 
-_REPLACE: URL to logfile_
+## Expected Behavior
+<!-- Describe the desired behavior you expect after mitigation of the issue, e.g., »The window left next to the current window should be focused.« -->
 
-**What I did:**
+## Reproduction Instructions
+<!--
+For bug reports, please provide detailed instructions on how the bug can be reproduced.
+For feature requests you can remove this section.
 
-_REPLACE: e.g. "I’m pressing Alt+j (focus left)"_
+E.g., »Open three windows in a V[A H[B C]] layout on a new workspace«
+-->
 
-**What I saw:**
+## Environment
+<!--
+Please include your exact i3 version.
+Note that we only support the latest major release and the current development version. If you are using an older version of i3, please first update to the current release version and reproduce the issue there.
+-->
+Output of `i3 --moreversion 2>&-`:
+<pre>
+i3 version: 
+</pre>
 
-_REPLACE: e.g. "i3 changed focus to the window ABOVE the current window"_
+<!--
+For bug reports, please include your (complete) i3 config with which the issue occurs. You can either paste the file directly or provide a link to a service such as pastebin.
 
-**What I expected instead:**
-_REPLACE: e.g. "Focus should be on the window to the left"_
+If you would like to help debugging the issue, please try to reduce the config such that it is as close to the default config as possible while still reproducing the issue. This can help us bisect the root cause.
+-->
+<pre>
+</pre>
+
+<!--
+Providing a logfile can help us trace the root cause of an issue much quicker. You can learn how to generate the logfile here:
+https://i3wm.org/docs/debugging.html
+
+Providing the logfile is optional.
+-->
+<pre>
+Logfile URL:
+</pre>
+
+<!--
+Please also anser the questions below to help us process your issue faster. If you have any other information to share, please add it here as well.
+-->
+<pre>
+- Linux Distribution & Version:
+- Are you using a compositor (e.g., xcompmgr or compton):
+</pre>
