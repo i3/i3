@@ -355,8 +355,16 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             }
         }
     }
+    xcb_window_t old_frame = XCB_NONE;
     if (nc->window != cwindow && nc->window != NULL) {
         window_free(nc->window);
+        /* Match frame and window depth. This is needed because X will refuse to reparent a
+         * window whose background is ParentRelative under a window with a different depth. */
+        if (nc->depth != cwindow->depth) {
+            old_frame = nc->frame.id;
+            nc->depth = cwindow->depth;
+            x_con_reframe(nc);
+        }
     }
     nc->window = cwindow;
     x_reinit(nc);
@@ -646,6 +654,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     }
 
     tree_render();
+
+    /* Destroy the old frame if we had to reframe the container. This needs to be done
+     * after rendering in order to prevent the background from flickering in its place. */
+    if (old_frame != XCB_NONE) {
+        xcb_destroy_window(conn, old_frame);
+    }
 
     /* Windows might get managed with the urgency hint already set (Pidgin is
      * known to do that), so check for that and handle the hint accordingly.
