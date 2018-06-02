@@ -1118,6 +1118,7 @@ force_xinerama yes
 Also note that your output names are not descriptive (like +HDMI1+) when using
 Xinerama, instead they are counted up, starting at 0: +xinerama-0+, +xinerama-1+, …
 
+[[workspace_auto_back_and_forth]]
 === Automatic back-and-forth when switching to the current workspace
 
 This configuration directive enables automatic +workspace back_and_forth+ (see
@@ -2121,8 +2122,8 @@ for_window [instance=notepad] sticky enable
 
 To change to a specific workspace, use the +workspace+ command, followed by the
 number or name of the workspace. Pass the optional flag
-+--no-auto-back-and-forth+ to disable <<back_and_forth>> for this specific call
-only.
++--no-auto-back-and-forth+ to disable <<workspace_auto_back_and_forth>> for this
+specific call only.
 
 To move containers to specific workspaces, use +move container to workspace+.
 
