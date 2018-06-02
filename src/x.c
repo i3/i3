@@ -249,11 +249,7 @@ void x_move_win(Con *src, Con *dest) {
     }
 }
 
-/*
- * Kills the window decoration associated with the given container.
- *
- */
-void x_con_kill(Con *con) {
+static void _x_con_kill(Con *con) {
     con_state *state;
 
     if (con->colormap != XCB_NONE) {
@@ -262,7 +258,6 @@ void x_con_kill(Con *con) {
 
     draw_util_surface_free(conn, &(con->frame));
     draw_util_surface_free(conn, &(con->frame_buffer));
-    xcb_destroy_window(conn, con->frame.id);
     xcb_free_pixmap(conn, con->frame_buffer.id);
     state = state_for_frame(con->frame.id);
     CIRCLEQ_REMOVE(&state_head, state, state);
@@ -273,6 +268,24 @@ void x_con_kill(Con *con) {
 
     /* Invalidate focused_id to correctly focus new windows with the same ID */
     focused_id = last_focused = XCB_NONE;
+}
+
+/*
+ * Kills the window decoration associated with the given container.
+ *
+ */
+void x_con_kill(Con *con) {
+    _x_con_kill(con);
+    xcb_destroy_window(conn, con->frame.id);
+}
+
+/*
+ * Completely reinitializes the container's frame, without destroying the old window.
+ *
+ */
+void x_con_reframe(Con *con) {
+    _x_con_kill(con);
+    x_con_init(con);
 }
 
 /*
