@@ -641,7 +641,7 @@ int main(int argc, char *argv[]) {
         /* Setting both, XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE and
          * XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED, will lead to the
          * X server sending us the full XKB state in KeyPress and KeyRelease:
-         * https://sources.debian.net/src/xorg-server/2:1.17.2-1.1/xkb/xkbEvents.c/?hl=927#L927
+         * https://cgit.freedesktop.org/xorg/xserver/tree/xkb/xkbEvents.c?h=xorg-server-1.20.0#n927
          */
         xcb_xkb_per_client_flags_reply_t *pcf_reply;
         /* The last three parameters are unset because they are only relevant
