@@ -69,6 +69,12 @@ get_version::
 Gets the version of i3. The reply will be a JSON-encoded dictionary with the
 major, minor, patch and human-readable version.
 
+get_config::
+Gets the currently loaded i3 configuration.
+
+send_tick::
+Sends a tick to all IPC connections which subscribe to tick events.
+
 == DESCRIPTION
 
 i3-msg is a sample implementation for a client using the unix socket IPC
