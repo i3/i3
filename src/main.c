@@ -642,7 +642,15 @@ int main(int argc, char *argv[]) {
          * XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED, will lead to the
          * X server sending us the full XKB state in KeyPress and KeyRelease:
          * https://cgit.freedesktop.org/xorg/xserver/tree/xkb/xkbEvents.c?h=xorg-server-1.20.0#n927
+         *
+         * XCB_XKB_PER_CLIENT_FLAG_DETECTABLE_AUTO_REPEAT enable detectable autorepeat:
+         * https://www.x.org/releases/current/doc/kbproto/xkbproto.html#Detectable_Autorepeat
+         * This affects bindings using the --release flag: instead of getting multiple KeyRelease
+         * events we get only one event when the key is physically released by the user.
          */
+        const uint32_t mask = XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE |
+                              XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED |
+                              XCB_XKB_PER_CLIENT_FLAG_DETECTABLE_AUTO_REPEAT;
         xcb_xkb_per_client_flags_reply_t *pcf_reply;
         /* The last three parameters are unset because they are only relevant
          * when using a feature called “automatic reset of boolean controls”:
@@ -653,20 +661,24 @@ int main(int argc, char *argv[]) {
             xcb_xkb_per_client_flags(
                 conn,
                 XCB_XKB_ID_USE_CORE_KBD,
-                XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE | XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED,
-                XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE | XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED,
+                mask,
+                mask,
                 0 /* uint32_t ctrlsToChange */,
                 0 /* uint32_t autoCtrls */,
                 0 /* uint32_t autoCtrlsValues */),
             NULL);
-        if (pcf_reply == NULL ||
-            !(pcf_reply->value & XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE)) {
-            ELOG("Could not set XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE\n");
-        }
-        if (pcf_reply == NULL ||
-            !(pcf_reply->value & XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED)) {
-            ELOG("Could not set XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED\n");
-        }
+
+#define PCF_REPLY_ERROR(_value)                                    \
+    do {                                                           \
+        if (pcf_reply == NULL || !(pcf_reply->value & (_value))) { \
+            ELOG("Could not set " #_value "\n");                   \
+        }                                                          \
+    } while (0)
+
+        PCF_REPLY_ERROR(XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE);
+        PCF_REPLY_ERROR(XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED);
+        PCF_REPLY_ERROR(XCB_XKB_PER_CLIENT_FLAG_DETECTABLE_AUTO_REPEAT);
+
         free(pcf_reply);
         xkb_base = extreply->first_event;
     }
