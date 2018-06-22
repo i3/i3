@@ -29,6 +29,20 @@ bindsym --release Control+Print nop Control+Print
 # see issue #2442
 bindsym Mod1+b nop Mod1+b
 bindsym --release Mod1+Shift+b nop Mod1+Shift+b release
+
+bindsym --release Shift+x nop Shift+x
+
+# see issue #2733
+# 133 == Mod4
+bindcode 133 nop 133
+bindcode --release 133 nop 133 release
+
+mode "a_mode" {
+    # 27 == r
+    bindcode 27 --release mode "default"
+}
+bindsym Mod1+r mode "a_mode"
+bindcode 27 nop do not receive
 EOT
 use i3test::XTEST;
 use ExtUtils::PkgConfig;
@@ -84,6 +98,72 @@ is(listen_for_binding(
     ),
     'Mod1+Shift+b release',
     'triggered the "Mod1+Shift+b" release keybinding');
+
+is(listen_for_binding(
+        sub {
+            xtest_key_press(50); # Shift
+            xtest_key_press(53); # x
+            xtest_key_release(53); # x
+            xtest_key_release(50); # Shift
+            xtest_sync_with_i3;
+        },
+        ),
+       'Shift+x',
+       'triggered the "Shift+x" keybinding by releasing x first');
+
+is(listen_for_binding(
+        sub {
+            xtest_key_press(50); # Shift
+            xtest_key_press(53); # x
+            xtest_key_release(50); # Shift
+            xtest_key_release(53);  # x
+            xtest_sync_with_i3;
+        },
+        ),
+       'Shift+x',
+       'triggered the "Shift+x" keybinding by releasing Shift first');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_press(133);
+        xtest_sync_with_i3;
+    },
+    ),
+    '133',
+    'triggered the 133 keycode press binding');
+
+is(listen_for_binding(
+    sub {
+        xtest_key_release(133);
+        xtest_sync_with_i3;
+    },
+    ),
+    '133 release',
+    'triggered the 133 keycode release binding');
+
+for my $i (1 .. 2) {
+    is(listen_for_binding(
+        sub {
+            xtest_key_press(64); # Alt_l
+            xtest_key_press(27); # r
+            xtest_key_release(27); # r
+            xtest_key_release(64); # Alt_l
+            xtest_sync_with_i3;
+        },
+        ),
+        'mode "a_mode"',
+        "switched to mode \"a_mode\" $i/2");
+
+    is(listen_for_binding(
+        sub {
+            xtest_key_press(27); # r
+            xtest_key_release(27); # r
+            xtest_sync_with_i3;
+        },
+        ),
+        'mode "default"',
+        "switched back to default $i/2");
+}
 
 }
 

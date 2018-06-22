@@ -198,6 +198,7 @@ void regrab_all_buttons(xcb_connection_t *conn) {
  */
 static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_release, uint16_t input_code, input_type_t input_type) {
     Binding *bind;
+    Binding *result = NULL;
 
     if (!is_release) {
         /* On a press event, we first reset all B_UPON_KEYRELEASE_IGNORE_MODS
@@ -227,22 +228,20 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
         /* For keyboard bindings where a symbol was specified by the user, we
          * need to look in the array of translated keycodes for the event’s
          * keycode */
+        bool found_keycode = false;
         if (input_type == B_KEYBOARD && bind->symbol != NULL) {
             xcb_keycode_t input_keycode = (xcb_keycode_t)input_code;
-            bool found_keycode = false;
             struct Binding_Keycode *binding_keycode;
             TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
                 const uint32_t modifiers_mask = (binding_keycode->modifiers & 0x0000FFFF);
                 const bool mods_match = (modifiers_mask == modifiers_state);
                 DLOG("binding_keycode->modifiers = %d, modifiers_mask = %d, modifiers_state = %d, mods_match = %s\n",
                      binding_keycode->modifiers, modifiers_mask, modifiers_state, (mods_match ? "yes" : "no"));
-                if (binding_keycode->keycode == input_keycode && mods_match) {
+                if (binding_keycode->keycode == input_keycode &&
+                    (mods_match || (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS && is_release))) {
                     found_keycode = true;
                     break;
                 }
-            }
-            if (!found_keycode) {
-                continue;
             }
         } else {
             /* This case is easier: The user specified a keycode */
@@ -250,7 +249,6 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
                 continue;
             }
 
-            bool found_keycode = false;
             struct Binding_Keycode *binding_keycode;
             TAILQ_FOREACH(binding_keycode, &(bind->keycodes_head), keycodes) {
                 const uint32_t modifiers_mask = (binding_keycode->modifiers & 0x0000FFFF);
@@ -262,9 +260,9 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
                     break;
                 }
             }
-            if (!found_keycode) {
-                continue;
-            }
+        }
+        if (!found_keycode) {
+            continue;
         }
 
         /* If this binding is a release binding, it matches the key which the
@@ -274,23 +272,26 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
         if (bind->release == B_UPON_KEYRELEASE && !is_release) {
             bind->release = B_UPON_KEYRELEASE_IGNORE_MODS;
             DLOG("marked bind %p as B_UPON_KEYRELEASE_IGNORE_MODS\n", bind);
-            /* The correct binding has been found, so abort the search, but
-             * also don’t return this binding, since it should not be executed
-             * yet (only when the keys are released). */
-            bind = TAILQ_END(bindings);
-            break;
-        }
-
-        /* Check if the binding is for a press or a release event */
-        if ((bind->release == B_UPON_KEYPRESS && is_release) ||
-            (bind->release >= B_UPON_KEYRELEASE && !is_release)) {
+            if (result) {
+                break;
+            }
             continue;
         }
 
-        break;
+        /* Check if the binding is for a press or a release event */
+        if ((bind->release == B_UPON_KEYPRESS && is_release)) {
+            continue;
+        }
+
+        if (is_release) {
+            return bind;
+        } else if (!result) {
+            /* Continue looping to mark needed B_UPON_KEYRELEASE_IGNORE_MODS. */
+            result = bind;
+        }
     }
 
-    return (bind == TAILQ_END(bindings) ? NULL : bind);
+    return result;
 }
 
 /*
@@ -627,6 +628,14 @@ void switch_mode(const char *new_mode) {
         bindings = mode->bindings;
         translate_keysyms();
         grab_all_keys(conn);
+
+        /* Reset all B_UPON_KEYRELEASE_IGNORE_MODS bindings to avoid possibly
+         * activating one of them. */
+        Binding *bind;
+        TAILQ_FOREACH(bind, bindings, bindings) {
+            if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
+                bind->release = B_UPON_KEYRELEASE;
+        }
 
         char *event_msg;
         sasprintf(&event_msg, "{\"change\":\"%s\", \"pango_markup\":%s}",
