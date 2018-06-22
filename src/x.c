@@ -796,11 +796,8 @@ void x_push_node(Con *con) {
          * background and only afterwards change the window size. This reduces
          * flickering. */
 
-        /* As the pixmap only depends on the size and not on the position, it
-         * is enough to check if width/height have changed. Also, we don’t
-         * create a pixmap at all when the window is actually not visible
-         * (height == 0) or when it is not needed. */
-        bool has_rect_changed = (state->rect.width != rect.width || state->rect.height != rect.height);
+        bool has_rect_changed = (state->rect.x != rect.x || state->rect.y != rect.y ||
+                                 state->rect.width != rect.width || state->rect.height != rect.height);
 
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
