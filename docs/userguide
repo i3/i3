@@ -2473,6 +2473,22 @@ for_window [class=".*"] title_format "<b>%title</b>"
 for_window [class="(?i)firefox"] title_format "<span foreground='red'>%title</span>"
 -------------------------------------------------------------------------------------
 
+=== Window title alignment
+
+Control the window title alignment int the title bar.
+Default is +left+
+
+*Syntax*:
+---------------------
+title_align left|center|right
+---------------------
+
+*Examples*:
+-------------------------------------------------------------------------------------
+# print all window titles bold
+for_window [class=".*"] title_align center
+-------------------------------------------------------------------------------------
+
 === Changing border style
 
 To change the border of the current client, you can use +border normal+ to use the normal

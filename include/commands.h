@@ -303,6 +303,12 @@ void cmd_swap(I3_CMD, const char *mode, const char *arg);
 void cmd_title_format(I3_CMD, const char *format);
 
 /**
+ * Implementation of 'title_align <direction>'
+ *
+ */
+void cmd_title_align(I3_CMD, const char *direction);
+
+/**
  * Implementation of 'rename workspace <name> to <name>'
  *
  */

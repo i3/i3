@@ -1952,6 +1952,37 @@ void cmd_title_format(I3_CMD, const char *format) {
 }
 
 /*
+ * Implementation of 'title_align <direction>'
+ *
+ */
+void cmd_title_align(I3_CMD, const char *direction) {
+    DLOG("setting title_align to \"%s\"\n", direction);
+    HANDLE_EMPTY_MATCH;
+
+    int dir;
+
+    if (strcmp(direction, "left") == 0) {
+        dir = ALIGN_LEFT;
+    } else if (strcmp(direction, "center") == 0) {
+        dir = ALIGN_CENTER;
+    } else if (strcmp(direction, "right") == 0) {
+        dir = ALIGN_RIGHT;
+    } else {
+        yerror("Invalid value \"%s\" for title_align. Expected one of \"left\", \"center\", \"right\".", direction);
+        return;
+    }
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        DLOG("setting title_align for %p / %s\n", current->con, current->con->name);
+        current->con->align = dir;
+    }
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'rename workspace [<name>] to <name>'
  *
  */
