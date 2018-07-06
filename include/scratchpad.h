@@ -32,6 +32,17 @@ void scratchpad_move(Con *con);
 bool scratchpad_show(Con *con);
 
 /**
+ * Either shows the top-most scratchpad window (con == NULL) or the specified
+ * con (if it is scratchpad window) on the specified output.
+ *
+ * When called with con == NULL and either the scratchpad window is currently
+ * focused (or hide_if_visible is true and it is visible on the target output)
+ * it will hide the window again.
+ */
+bool scratchpad_show_on_output(Con *con, Output *current_output, Output *output,
+                               bool hide_if_visible);
+
+/**
  * When starting i3 initially (and after each change to the connected outputs),
  * this function fixes the resolution of the __i3 pseudo-output. When that
  * resolution is not set to a function which shares a common divisor with every

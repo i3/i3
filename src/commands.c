@@ -1850,6 +1850,86 @@ void cmd_scratchpad_show(I3_CMD) {
 }
 
 /*
+ * Implementation of 'scratchpad show [on] [--hide-if-visible] output <name>'.
+ *
+ */
+void cmd_scratchpad_show_on_output(I3_CMD, const char* hide, const char* name) {
+    DLOG("should show scartchpad on output %s (hide? %s)\n", name, hide);
+    owindow *current;
+    bool result = false;
+    char *primary_name;
+    bool hide_if_visible = (hide != NULL);
+
+    /* prevent user from showing to internal output or workspace */
+    if (strncmp(name, "__", strlen("__")) == 0) {
+        LOG("You cannot show the scratchpad on an i3-internal output (\"%s\").\n",
+                name);
+        ysuccess(false);
+        return;
+    }
+
+    // TODO: remove duplicate code
+    Output *output, *current_output = NULL;
+    if (match_is_empty(current_match)) {
+        current_output = get_output_for_con(focused);
+        if (!current_output) {
+            ELOG("Could not find an output for matching con %p.\n", current->con);
+            ysuccess(false);
+            return;
+        }
+        output = get_output_from_string(current_output, name);
+        if (!output) {
+            ELOG("Could not get output from string \"%s\" for con %p.\n",
+                    name, current->con);
+            ysuccess(false);
+            return;
+        }
+        /* make sure the target output isn't anything internal */
+        if (!strncmp((primary_name = output_primary_name(output)),
+                    "__", strlen("__"))) {
+            ELOG("You can not show scratchpad on internal input (\"%s\").\n",
+                    primary_name);
+            ysuccess(false);
+            return;
+        }
+        result = scratchpad_show_on_output(NULL, current_output, output, hide_if_visible);
+    } else {
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            DLOG("matching: %p / %s\n", current->con, current->con->name);
+            /* get the output of the current matched window */
+            current_output = get_output_for_con(current->con);
+            if (!current_output) {
+                ELOG("Could not find an output for matching con %p.\n", current->con);
+                result |= false;
+                continue;
+            }
+            /* get the target output */
+            output = get_output_from_string(current_output, name);
+            if (!output) {
+                ELOG("Could not get output from string \"%s\" for con %p.\n",
+                        name, current->con);
+                result |= false;
+                continue;
+            }
+            /* make sure the target output isn't anything internal */
+            if (!strncmp((primary_name = output_primary_name(output)),
+                        "__", strlen("__"))) {
+                ELOG("You can not show scratchpad on internal input (\"%s\").\n",
+                        primary_name);
+                result |= false;
+                continue;
+            }
+            result |= scratchpad_show_on_output(current->con, current_output,
+                    output, hide_if_visible);
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+
+    ysuccess(result);
+}
+
+/*
  * Implementation of 'swap [container] [with] id|con_id|mark <arg>'.
  *
  */

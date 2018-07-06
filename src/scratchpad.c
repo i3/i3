@@ -210,6 +210,157 @@ bool scratchpad_show(Con *con) {
     return true;
 }
 
+/**
+ * Either shows the top-most scratchpad window (con == NULL) or the specified
+ * con (if it is scratchpad window) on the specified output.
+ *
+ * When called with con == NULL and either the scratchpad window is currently
+ * focused (or hide_if_visible is true and it is visible on the target output)
+ * it will hide the window again.
+ */
+bool scratchpad_show_on_output(Con *con, Output *current_output, Output *output,
+        bool hide_if_visible) {
+    DLOG("should show scratchpad window %p on output %p\n", con, output);
+    Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
+    Con *floating, *output_con, *walk_con, *ws;
+
+    /* if this was called with no criteria and the focused window is a
+     * scratchpad window on the target output, we should hide it. */
+    if (!con &&
+        (floating = con_inside_floating(focused)) &&
+        floating->scratchpad_state != SCRATCHPAD_NONE &&
+        get_output_for_con(floating)->id == output->id) {
+        DLOG("Focused window is scratchpad and in target output, hiding it.\n");
+        scratchpad_move(focused);
+        return true;
+    }
+
+    /* When the hide-if-visible flag is set (and there are no criteria), the
+     * command will always hide scratchpad windows if there are any visible in
+     * the target output. */
+    if (hide_if_visible && !con) {
+        /* get the visible workspace on the target output */
+        ws = NULL;
+        GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
+        assert(ws != NULL);
+
+        /* search for a scratchpad window */
+        TAILQ_FOREACH(walk_con, &(ws->floating_head), floating_windows) {
+            if ((floating = con_inside_floating(walk_con)) &&
+                floating->scratchpad_state != SCRATCHPAD_NONE) {
+                DLOG("Found scratchpad window a visible workspace on target output "
+                     "and hide_if_visible is set.\n");
+                scratchpad_move(floating);
+                return true;
+            }
+        }
+    }
+
+    /* ? is there a reliable way of starting from the most recently focused
+     * workspace on an output? */
+    /* If the command was called with no criteria and there is a scratchpad
+     * window on any workspace of the target output, focus on it. */
+    if (!con) {
+        NODES_FOREACH(output_get_content(output->con)) {
+            if (child->type != CT_WORKSPACE || con_is_internal(child))
+                continue;
+
+            ws = child;
+            TAILQ_FOREACH(walk_con, &(ws->floating_head), floating_windows) {
+                if ((floating = con_inside_floating(walk_con)) &&
+                    floating->scratchpad_state != SCRATCHPAD_NONE) {
+                    DLOG("Found a scratchpad window in a workspace in the output. "
+                         "Moving it to front and focusing on it.\n");
+                    con_move_to_output(floating, output, true);
+                    con_activate(con_descend_focused(floating));
+                    return true;
+                }
+            }
+        }
+    }
+
+    /* If the command was called with no criteria and there is a scratchpad
+     * on any other workspace, show it on the target output */
+    if (!con) {
+        ws = con_get_workspace(focused);
+        TAILQ_FOREACH(walk_con, &all_cons, all_cons) {
+            Con *walk_ws = con_get_workspace(walk_con);
+            if (walk_ws &&
+                !con_is_internal(walk_ws) && ws != walk_ws &&
+                (floating = con_inside_floating(walk_con)) &&
+                floating->scratchpad_state != SCRATCHPAD_NONE) {
+                DLOG("Found a visible scratchpad window on another workspace,\n");
+                DLOG("moving it to this workspace: con = %p\n", walk_con);
+                con_move_to_output(walk_con, output, true);
+                return true;
+            }
+        }
+    }
+
+    /* If the command was called with criteria, check if the window is
+     * actually in the scratchpad */
+    if (con && con->parent->scratchpad_state == SCRATCHPAD_NONE) {
+        DLOG("Window is not in the scratchpad, doing nothing.\n");
+        return false;
+    }
+
+    /* If the command was called with criteria and it matches a currently
+     * visible window, hide it. */
+    ws = con_get_workspace(con);
+    if (con &&
+        (floating = con_inside_floating(con)) &&
+        floating->scratchpad_state != SCRATCHPAD_NONE &&
+        ws != __i3_scratch) {
+        /* If the window is in the active workspace, we hide it, if it's not
+         * we show it. */
+        if (ws == con_get_workspace(focused)) {
+            DLOG("Window is a scratchpad window, hiding it.\n");
+            scratchpad_move(con);
+            return true;
+        }
+    }
+
+    if (con) {
+        con = con_inside_floating(con);
+    } else {
+        /* if no criteria was passed, use the window highest in the focus stack
+         * in __i3_scratch. */
+        con = TAILQ_FIRST(&(__i3_scratch->floating_head));
+
+        if (!con) {
+            LOG("You don't have any scratchpad windows yet.\n"
+                "Use 'move scratchpad' to move a window to the scratchpad.\n");
+            return false;
+        }
+    }
+
+    /* grab active workspace on output as target workspace */
+    ws = NULL;
+    GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
+    assert(ws != NULL);
+
+    /* 1: Move window from __i3_scratch to the current workspace */
+    con_move_to_workspace(con, ws, true, false, false);
+
+    /* 2: adjust the size if the window was not adjusted yet */
+    if (con->scratchpad_state == SCRATCHPAD_FRESH) {
+        output_con = output->con;
+        DLOG("Adjust size of this window.\n");
+        con->rect.width = output_con->rect.width * 0.5;
+        con->rect.width = output_con->rect.height * 0.75;
+        floating_check_size(con);
+        floating_center(con, ws->rect);
+    }
+
+    /* Activate target output workspace if it wasn't in focus already */
+    if (ws != con_get_workspace(focused)) {
+        workspace_show(ws);
+    }
+
+    con_activate(con_descend_focused(con));
+    return true;
+}
+
 /*
  * Greatest common divisor, implemented only for the least common multiple
  * below.

@@ -421,9 +421,25 @@ state NOP:
   end
       -> call cmd_nop(NULL)
 
+# scratchpad show
+# scratchpad show [on] [--hide-if-visible] output <name>
 state SCRATCHPAD:
   'show'
+      -> SCRATCHPAD_SHOW
+
+state SCRATCHPAD_SHOW:
+  end
       -> call cmd_scratchpad_show()
+  'on'
+      ->
+  hide = '--hide-if-visible'
+      ->
+  'output'
+      -> SCRATCHPAD_SHOW_OUTPUT
+
+state SCRATCHPAD_SHOW_OUTPUT:
+  name = string
+      -> call cmd_scratchpad_show_on_output($hide, $name)
 
 # swap [container] [with] id <window>
 # swap [container] [with] con_id <con_id>
