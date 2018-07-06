@@ -1854,11 +1854,12 @@ void cmd_scratchpad_show(I3_CMD) {
  *
  */
 void cmd_scratchpad_show_on_output(I3_CMD, const char* hide, const char* name) {
-    DLOG("should show scartchpad on output %s (hide? %s)\n", name, hide);
     owindow *current;
     bool result = false;
     char *primary_name;
     bool hide_if_visible = (hide != NULL);
+
+    DLOG("should show scratchpad on output %s (hide? %s)\n", name, hide);
 
     /* prevent user from showing to internal output or workspace */
     if (strncmp(name, "__", strlen("__")) == 0) {
@@ -1873,14 +1874,14 @@ void cmd_scratchpad_show_on_output(I3_CMD, const char* hide, const char* name) {
     if (match_is_empty(current_match)) {
         current_output = get_output_for_con(focused);
         if (!current_output) {
-            ELOG("Could not find an output for matching con %p.\n", current->con);
+            ELOG("Could not find an output for matching con %p.\n", focused);
             ysuccess(false);
             return;
         }
         output = get_output_from_string(current_output, name);
         if (!output) {
             ELOG("Could not get output from string \"%s\" for con %p.\n",
-                    name, current->con);
+                    name, focused);
             ysuccess(false);
             return;
         }
