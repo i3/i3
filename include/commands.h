@@ -294,7 +294,7 @@ void cmd_scratchpad_show(I3_CMD);
  * Implementation of 'scratchpad show [--hide-if-visible] [on] output <name>'.
  *
  */
-void cmd_scratchpad_show_on_output(I3_CMD, const char* hide, const char* name);
+void cmd_scratchpad_show_on_output(I3_CMD, const char *hide, const char *name);
 
 /**
  * Implementation of 'swap [container] [with] id|con_id|mark <arg>'.

@@ -1853,7 +1853,7 @@ void cmd_scratchpad_show(I3_CMD) {
  * Implementation of 'scratchpad show [on] [--hide-if-visible] output <name>'.
  *
  */
-void cmd_scratchpad_show_on_output(I3_CMD, const char* hide, const char* name) {
+void cmd_scratchpad_show_on_output(I3_CMD, const char *hide, const char *name) {
     owindow *current;
     bool result = false;
     char *primary_name;
@@ -1864,7 +1864,7 @@ void cmd_scratchpad_show_on_output(I3_CMD, const char* hide, const char* name) {
     /* prevent user from showing to internal output or workspace */
     if (strncmp(name, "__", strlen("__")) == 0) {
         LOG("You cannot show the scratchpad on an i3-internal output (\"%s\").\n",
-                name);
+            name);
         ysuccess(false);
         return;
     }
@@ -1881,15 +1881,15 @@ void cmd_scratchpad_show_on_output(I3_CMD, const char* hide, const char* name) {
         output = get_output_from_string(current_output, name);
         if (!output) {
             ELOG("Could not get output from string \"%s\" for con %p.\n",
-                    name, focused);
+                 name, focused);
             ysuccess(false);
             return;
         }
         /* make sure the target output isn't anything internal */
         if (!strncmp((primary_name = output_primary_name(output)),
-                    "__", strlen("__"))) {
+                     "__", strlen("__"))) {
             ELOG("You can not show scratchpad on internal input (\"%s\").\n",
-                    primary_name);
+                 primary_name);
             ysuccess(false);
             return;
         }
@@ -1908,20 +1908,20 @@ void cmd_scratchpad_show_on_output(I3_CMD, const char* hide, const char* name) {
             output = get_output_from_string(current_output, name);
             if (!output) {
                 ELOG("Could not get output from string \"%s\" for con %p.\n",
-                        name, current->con);
+                     name, current->con);
                 result |= false;
                 continue;
             }
             /* make sure the target output isn't anything internal */
             if (!strncmp((primary_name = output_primary_name(output)),
-                        "__", strlen("__"))) {
+                         "__", strlen("__"))) {
                 ELOG("You can not show scratchpad on internal input (\"%s\").\n",
-                        primary_name);
+                     primary_name);
                 result |= false;
                 continue;
             }
             result |= scratchpad_show_on_output(current->con, current_output,
-                    output, hide_if_visible);
+                                                output, hide_if_visible);
         }
     }
 

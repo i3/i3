@@ -219,7 +219,7 @@ bool scratchpad_show(Con *con) {
  * it will hide the window again.
  */
 bool scratchpad_show_on_output(Con *con, Output *current_output, Output *output,
-        bool hide_if_visible) {
+                               bool hide_if_visible) {
     DLOG("should show scratchpad window %p on output %p\n", con, output);
     Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
     Con *floating, *output_con, *walk_con, *ws;
