@@ -794,7 +794,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
 
             /* If no tray_output has been specified, we fall back to the first
              * available output. */
-            if (output == NULL && TAILQ_EMPTY(&(config.tray_outputs))) {
+            if (output == NULL) {
                 SLIST_FOREACH(walk, outputs, slist) {
                     if (!walk->active)
                         continue;
