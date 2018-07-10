@@ -49,7 +49,8 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
     char *path = get_config_path(override_configpath, true);
     if (path == NULL) {
         die("Unable to find the configuration file (looked at "
-            "~/.i3/config, $XDG_CONFIG_HOME/i3/config, " SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
+            "$XDG_CONFIG_HOME/i3/config, ~/.i3/config, $XDG_CONFIG_DIRS/i3/config "
+            "and " SYSCONFDIR "/i3/config)");
     }
 
     LOG("Parsing configfile %s\n", path);

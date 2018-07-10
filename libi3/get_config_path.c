@@ -21,11 +21,11 @@ static bool path_exists(const char *path) {
 }
 
 /*
- * Get the path of the first configuration file found. If override_configpath
- * is specified, that path is returned and saved for further calls. Otherwise,
- * checks the home directory first, then the system directory first, always
- * taking into account the XDG Base Directory Specification ($XDG_CONFIG_HOME,
- * $XDG_CONFIG_DIRS)
+ * Get the path of the first configuration file found. If override_configpath is
+ * specified, that path is returned and saved for further calls. Otherwise,
+ * checks the home directory first, then the system directory, always taking
+ * into account the XDG Base Directory Specification ($XDG_CONFIG_HOME,
+ * $XDG_CONFIG_DIRS).
  *
  */
 char *get_config_path(const char *override_configpath, bool use_system_paths) {
@@ -38,40 +38,41 @@ char *get_config_path(const char *override_configpath, bool use_system_paths) {
         return sstrdup(saved_configpath);
     }
 
-    if (saved_configpath != NULL)
+    if (saved_configpath != NULL) {
         return sstrdup(saved_configpath);
+    }
 
-    /* 1: check the traditional path under the home directory */
-    config_path = resolve_tilde("~/.i3/config");
-    if (path_exists(config_path))
-        return config_path;
-    free(config_path);
-
-    /* 2: check for $XDG_CONFIG_HOME/i3/config */
-    if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL)
+    /* 1: check for $XDG_CONFIG_HOME/i3/config */
+    if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL) {
         xdg_config_home = "~/.config";
+    }
 
     xdg_config_home = resolve_tilde(xdg_config_home);
     sasprintf(&config_path, "%s/i3/config", xdg_config_home);
     free(xdg_config_home);
 
-    if (path_exists(config_path))
+    if (path_exists(config_path)) {
         return config_path;
+    }
+    free(config_path);
+
+    /* 2: check the traditional path under the home directory */
+    config_path = resolve_tilde("~/.i3/config");
+    if (path_exists(config_path)) {
+        return config_path;
+    }
     free(config_path);
 
     /* The below paths are considered system-level, and can be skipped if the
      * caller only wants user-level configs. */
-    if (!use_system_paths)
+    if (!use_system_paths) {
         return NULL;
+    }
 
-    /* 3: check the traditional path under /etc */
-    config_path = SYSCONFDIR "/i3/config";
-    if (path_exists(config_path))
-        return sstrdup(config_path);
-
-    /* 4: check for $XDG_CONFIG_DIRS/i3/config */
-    if ((xdg_config_dirs = getenv("XDG_CONFIG_DIRS")) == NULL)
+    /* 3: check for $XDG_CONFIG_DIRS/i3/config */
+    if ((xdg_config_dirs = getenv("XDG_CONFIG_DIRS")) == NULL) {
         xdg_config_dirs = SYSCONFDIR "/xdg";
+    }
 
     char *buf = sstrdup(xdg_config_dirs);
     char *tok = strtok(buf, ":");
@@ -87,6 +88,12 @@ char *get_config_path(const char *override_configpath, bool use_system_paths) {
         tok = strtok(NULL, ":");
     }
     free(buf);
+
+    /* 4: check the traditional path under /etc */
+    config_path = SYSCONFDIR "/i3/config";
+    if (path_exists(config_path)) {
+        return sstrdup(config_path);
+    }
 
     return NULL;
 }
