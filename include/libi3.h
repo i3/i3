@@ -506,11 +506,11 @@ int logical_px(const int logical);
 char *resolve_tilde(const char *path);
 
 /**
- * Get the path of the first configuration file found. If override_configpath
- * is specified, that path is returned and saved for further calls. Otherwise,
- * checks the home directory first, then the system directory first, always
- * taking into account the XDG Base Directory Specification ($XDG_CONFIG_HOME,
- * $XDG_CONFIG_DIRS)
+ * Get the path of the first configuration file found. If override_configpath is
+ * specified, that path is returned and saved for further calls. Otherwise,
+ * checks the home directory first, then the system directory, always taking
+ * into account the XDG Base Directory Specification ($XDG_CONFIG_HOME,
+ * $XDG_CONFIG_DIRS).
  *
  */
 char *get_config_path(const char *override_configpath, bool use_system_paths);
