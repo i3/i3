@@ -888,7 +888,7 @@ the second screen and so on).
 
 *Syntax*:
 -------------------------------------
-workspace <workspace> output <output>
+workspace <workspace> output <output1> [output2]…
 -------------------------------------
 
 The 'output' is the name of the RandR output you attach your screen to. On a
@@ -907,12 +907,15 @@ monitor name is “Dell UP2414Q”.
 entire monitor, i3 will still use the entire area of the containing monitor
 rather than that of just the output's.)
 
+You can specify multiple outputs. The first available will be used.
+
 If you use named workspaces, they must be quoted:
 
 *Examples*:
 ---------------------------
 workspace 1 output LVDS1
-workspace 5 output VGA1
+workspace 2 output primary
+workspace 5 output VGA1 LVDS1
 workspace "2: vim" output VGA1
 ---------------------------
 

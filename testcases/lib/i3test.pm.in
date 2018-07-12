@@ -26,6 +26,7 @@ use Data::Dumper ();
 use Exporter ();
 our @EXPORT = qw(
     get_workspace_names
+    get_output_for_workspace
     get_unused_workspace
     fresh_workspace
     get_ws_content
@@ -400,6 +401,29 @@ sub get_workspace_names {
         @cons = (@cons, @{$content->{nodes}});
     }
     [ map { $_->{name} } @cons ]
+}
+
+=head2 get_output_for_workspace()
+
+Returns the name of the output on which this workspace resides
+
+  cmd 'focus output fake-1';
+  cmd 'workspace 1';
+  is(get_output_for_workspace('1', 'fake-0', 'Workspace 1 in output fake-0');
+
+=cut
+sub get_output_for_workspace {
+    my $ws_name = shift @_;
+    my $i3 = i3(get_socket_path());
+    my $tree = $i3->get_tree->recv;
+    my @outputs = @{$tree->{nodes}};
+
+    foreach (grep { not $_->{name} =~ /^__/ } @outputs) {
+        my $output = $_->{name};
+        foreach (grep { $_->{name} =~ "content" } @{$_->{nodes}}) {
+            return $output if $_->{nodes}[0]->{name} =~ $ws_name;
+        }
+    }
 }
 
 =head2 get_unused_workspace

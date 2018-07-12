@@ -29,22 +29,9 @@ workspace 2 output fake-1
 workspace 3:foo output fake-1
 workspace baz output fake-1
 workspace 5 output left
+workspace 6 output doesnotexist fake-0
+workspace 7 output fake-1 fake-0
 EOT
-
-my $i3 = i3(get_socket_path());
-$i3->connect->recv;
-
-# Returns the name of the output on which this workspace resides
-sub get_output_for_workspace {
-    my $ws_name = shift @_;
-
-    foreach (grep { not $_->{name} =~ /^__/ } @{$i3->get_tree->recv->{nodes}}) {
-        my $output = $_->{name};
-        foreach (grep { $_->{name} =~ "content" } @{$_->{nodes}}) {
-            return $output if $_->{nodes}[0]->{name} =~ $ws_name;
-        }
-    }
-}
 
 ##########################################################################
 # Renaming the workspace to an unassigned name does not move the workspace
@@ -105,5 +92,25 @@ cmd 'workspace baz';
 cmd 'rename workspace 5 to 2';
 is(get_output_for_workspace('2'), 'fake-1',
     'Renaming a workspace so that it moves to the focused output which contains only an empty workspace should replace the empty workspace');
+
+##########################################################################
+# Renaming a workspace with multiple assignments, where the first output
+# doesn't exist.
+##########################################################################
+
+cmd 'focus output fake-1';
+cmd 'rename workspace to 6';
+is(get_output_for_workspace('6'), 'fake-0',
+   'Renaming the workspace while first target output doesn\'t exist moves it to the second assigned output');
+
+##########################################################################
+# Renaming a workspace with multiple assignments, where both outputs exist
+# moves it to the first output.
+##########################################################################
+
+cmd 'focus output fake-0';
+cmd 'rename workspace to 7';
+is(get_output_for_workspace('7'), 'fake-1',
+   'Renaming a workspace with multiple assignments, where both outputs exist moves it to the first output.');
 
 done_testing;

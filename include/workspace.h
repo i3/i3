@@ -39,6 +39,13 @@ Con *get_existing_workspace_by_name(const char *name);
 Con *get_existing_workspace_by_num(int num);
 
 /**
+ * Returns true if the first output assigned to a workspace with the given
+ * workspace assignment is the same as the given output.
+ *
+ */
+bool output_triggers_assignment(Output *output, struct Workspace_Assignment *assignment);
+
+/**
  * Returns a pointer to the workspace with the given number (starting at 0),
  * creating the workspace if necessary (by allocating the necessary amount of
  * memory and initializing the data structures correctly).
