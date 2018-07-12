@@ -54,7 +54,7 @@ Logfile URL:
 </pre>
 
 <!--
-Please also anser the questions below to help us process your issue faster. If you have any other information to share, please add it here as well.
+Please also answer the questions below to help us process your issue faster. If you have any other information to share, please add it here as well.
 -->
 <pre>
 - Linux Distribution & Version:
