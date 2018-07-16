@@ -107,7 +107,7 @@ stop_signal::
 	processing.
 	The default value (if none is specified) is SIGSTOP.
 cont_signal::
-	Specify to i3bar the signal (as an integer)to send to continue your
+	Specify to i3bar the signal (as an integer) to send to continue your
 	processing.
 	The default value (if none is specified) is SIGCONT.
 click_events::
