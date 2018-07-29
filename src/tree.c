@@ -175,16 +175,6 @@ Con *tree_open_con(Con *con, i3Window *window) {
     return new;
 }
 
-static bool _is_con_mapped(Con *con) {
-    Con *child;
-
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
-    if (_is_con_mapped(child))
-        return true;
-
-    return con->mapped;
-}
-
 /*
  * Closes the given container including all children.
  * Returns true if the container was killed or false if just WM_DELETE was sent
@@ -193,21 +183,9 @@ static bool _is_con_mapped(Con *con) {
  * The dont_kill_parent flag is specified when the function calls itself
  * recursively while deleting a containers children.
  *
- * The force_set_focus flag is specified in the case of killing a floating
- * window: tree_close_internal() will be invoked for the CT_FLOATINGCON (the parent
- * container) and focus should be set there.
- *
  */
-bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool force_set_focus) {
-    bool was_mapped = con->mapped;
+bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_parent) {
     Con *parent = con->parent;
-
-    if (!was_mapped) {
-        /* Even if the container itself is not mapped, its children may be
-         * mapped (for example split containers don't have a mapped window on
-         * their own but usually contain mapped children). */
-        was_mapped = _is_con_mapped(con);
-    }
 
     /* remove the urgency hint of the workspace (if set) */
     if (con->urgent) {
@@ -215,10 +193,6 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
         con_update_parents_urgency(con);
         workspace_update_urgent_flag(con_get_workspace(con));
     }
-
-    /* Get the container which is next focused */
-    Con *next = con_next_focused(con);
-    DLOG("next = %p, focused = %p\n", next, focused);
 
     DLOG("closing %p, kill_window = %d\n", con, kill_window);
     Con *child, *nextchild;
@@ -228,8 +202,9 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
     for (child = TAILQ_FIRST(&(con->nodes_head)); child;) {
         nextchild = TAILQ_NEXT(child, nodes);
         DLOG("killing child=%p\n", child);
-        if (!tree_close_internal(child, kill_window, true, false))
+        if (!tree_close_internal(child, kill_window, true)) {
             abort_kill = true;
+        }
         child = nextchild;
     }
 
@@ -281,17 +256,8 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
     Con *ws = con_get_workspace(con);
 
     /* Figure out which container to focus next before detaching 'con'. */
-    if (con_is_floating(con)) {
-        if (con == focused) {
-            DLOG("This is the focused container, i need to find another one to focus. I start looking at ws = %p\n", ws);
-            next = con_next_focused(parent);
-
-            dont_kill_parent = true;
-            DLOG("Alright, focusing %p\n", next);
-        } else {
-            next = NULL;
-        }
-    }
+    Con *next = (con == focused) ? con_next_focused(con) : NULL;
+    DLOG("next = %p, focused = %p\n", next, focused);
 
     /* Detach the container so that it will not be rendered anymore. */
     con_detach(con);
@@ -324,12 +290,6 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
     /* kill the X11 part of this container */
     x_con_kill(con);
 
-    if (con_is_floating(con)) {
-        DLOG("Container was floating, killing floating container\n");
-        tree_close_internal(parent, DONT_KILL_WINDOW, false, (con == focused));
-        DLOG("parent container killed\n");
-    }
-
     if (ws == con) {
         DLOG("Closing a workspace container, updating EWMH atoms\n");
         ewmh_update_number_of_desktops();
@@ -339,30 +299,10 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
 
     con_free(con);
 
-    /* in the case of floating windows, we already focused another container
-     * when closing the parent, so we can exit now. */
-    if (!next) {
-        DLOG("No next container, i will just exit now\n");
-        return true;
-    }
-
-    if (was_mapped || con == focused) {
-        if ((kill_window != DONT_KILL_WINDOW) || !dont_kill_parent || con == focused) {
-            DLOG("focusing %p / %s\n", next, next->name);
-            if (next->type == CT_DOCKAREA) {
-                /* Instead of focusing the dockarea, we need to restore focus to the workspace */
-                con_activate(con_descend_focused(output_get_content(next->parent)));
-            } else {
-                if (!force_set_focus && con != focused)
-                    DLOG("not changing focus, the container was not focused before\n");
-                else
-                    con_activate(next);
-            }
-        } else {
-            DLOG("not focusing because we're not killing anybody\n");
-        }
+    if (next) {
+        con_activate(next);
     } else {
-        DLOG("not focusing, was not mapped\n");
+        DLOG("not changing focus, the container was not focused before\n");
     }
 
     /* check if the parent container is empty now and close it */
@@ -755,7 +695,7 @@ void tree_flatten(Con *con) {
 
     /* 4: close the redundant cons */
     DLOG("closing redundant cons\n");
-    tree_close_internal(con, DONT_KILL_WINDOW, true, false);
+    tree_close_internal(con, DONT_KILL_WINDOW, true);
 
     /* Well, we got to abort the recursion here because we destroyed the
      * container. However, if tree_flatten() is called sufficiently often,

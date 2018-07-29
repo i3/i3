@@ -78,7 +78,7 @@ void tree_next(char way, orientation_t orientation);
  * container) and focus should be set there.
  *
  */
-bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool force_set_focus);
+bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_parent);
 
 /**
  * Loads tree from ~/.i3/_restart.json (used for in-place restarts).

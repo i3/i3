@@ -511,7 +511,7 @@ static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
     xcb_delete_property(conn, event->window, A__NET_WM_DESKTOP);
     xcb_delete_property(conn, event->window, A__NET_WM_STATE);
 
-    tree_close_internal(con, DONT_KILL_WINDOW, false, false);
+    tree_close_internal(con, DONT_KILL_WINDOW, false);
     tree_render();
 
 ignore_end:
@@ -884,7 +884,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             if (event->data.data32[0])
                 last_timestamp = event->data.data32[0];
 
-            tree_close_internal(con, KILL_WINDOW, false, false);
+            tree_close_internal(con, KILL_WINDOW, false);
             tree_render();
         } else {
             DLOG("Couldn't find con for _NET_CLOSE_WINDOW request. (window = %d)\n", event->window);

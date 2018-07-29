@@ -496,7 +496,7 @@ void workspace_show(Con *workspace) {
         if (!workspace_is_visible(old)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
             yajl_gen gen = ipc_marshal_workspace_event("empty", old, NULL);
-            tree_close_internal(old, DONT_KILL_WINDOW, false, false);
+            tree_close_internal(old, DONT_KILL_WINDOW, false);
 
             const unsigned char *payload;
             ylength length;
