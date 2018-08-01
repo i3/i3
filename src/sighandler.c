@@ -62,14 +62,13 @@ static int sighandler_backtrace(void) {
 
     char *filename = NULL;
     int suffix = 0;
-    struct stat bt;
     /* Find a unique filename for the backtrace (since the PID of i3 stays the
      * same), so that we don’t overwrite earlier backtraces. */
     do {
         FREE(filename);
         sasprintf(&filename, "%s/i3-backtrace.%d.%d.txt", tmpdir, pid_parent, suffix);
         suffix++;
-    } while (stat(filename, &bt) == 0);
+    } while (path_exists(filename));
 
     pid_t pid_gdb = fork();
     if (pid_gdb < 0) {
@@ -130,7 +129,7 @@ static int sighandler_backtrace(void) {
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
         DLOG("GDB did not run properly\n");
         return -1;
-    } else if (stat(filename, &bt) == -1) {
+    } else if (!path_exists(filename)) {
         DLOG("GDB executed successfully, but no backtrace was generated\n");
         return -1;
     }
