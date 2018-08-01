@@ -216,7 +216,7 @@ static const char *get_string(const char *identifier) {
 
 static void clear_stack(void) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].type == STACK_STR && stack[c].val.str != NULL)
+        if (stack[c].type == STACK_STR)
             free(stack[c].val.str);
         stack[c].identifier = NULL;
         stack[c].val.str = NULL;

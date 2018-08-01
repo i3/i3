@@ -224,9 +224,7 @@ i3Font load_font(const char *pattern, const bool fallback) {
                      error->error_code);
         }
     }
-    if (error != NULL) {
-        free(error);
-    }
+    free(error);
 
     font.pattern = sstrdup(pattern);
     LOG("Using X font %s\n", pattern);
@@ -275,8 +273,7 @@ void free_font(void) {
         case FONT_TYPE_XCB: {
             /* Close the font and free the info */
             xcb_close_font(conn, savedFont->specific.xcb.id);
-            if (savedFont->specific.xcb.info)
-                free(savedFont->specific.xcb.info);
+            free(savedFont->specific.xcb.info);
             break;
         }
         case FONT_TYPE_PANGO:
