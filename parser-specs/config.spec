@@ -48,6 +48,7 @@ state INITIAL:
   'show_marks'                             -> SHOW_MARKS
   'workspace'                              -> WORKSPACE
   'ipc_socket', 'ipc-socket'               -> IPC_SOCKET
+  'ipc_kill_timeout'                       -> IPC_KILL_TIMEOUT
   'restart_state'                          -> RESTART_STATE
   'popup_during_fullscreen'                -> POPUP_DURING_FULLSCREEN
   exectype = 'exec_always', 'exec'         -> EXEC
@@ -280,6 +281,11 @@ state WORKSPACE_OUTPUT_STR:
 state IPC_SOCKET:
   path = string
       -> call cfg_ipc_socket($path)
+
+# ipc_kill_timeout
+state IPC_KILL_TIMEOUT:
+  timeout = number
+      -> call cfg_ipc_kill_timeout(&timeout)
 
 # restart_state <path> (for testcases)
 state RESTART_STATE:

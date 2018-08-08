@@ -62,6 +62,7 @@ CFGFUN(assign_output, const char *output);
 CFGFUN(assign, const char *workspace, bool is_number);
 CFGFUN(no_focus);
 CFGFUN(ipc_socket, const char *path);
+CFGFUN(ipc_kill_timeout, const long timeout_ms);
 CFGFUN(restart_state, const char *path);
 CFGFUN(popup_during_fullscreen, const char *value);
 CFGFUN(color, const char *colorclass, const char *border, const char *background, const char *text, const char *indicator, const char *child_border);
