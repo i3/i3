@@ -97,9 +97,8 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(mode);
         }
 
-        struct Assignment *assign;
         while (!TAILQ_EMPTY(&assignments)) {
-            assign = TAILQ_FIRST(&assignments);
+            struct Assignment *assign = TAILQ_FIRST(&assignments);
             if (assign->type == A_TO_WORKSPACE || assign->type == A_TO_WORKSPACE_NUMBER)
                 FREE(assign->dest.workspace);
             else if (assign->type == A_COMMAND)
@@ -108,6 +107,14 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 FREE(assign->dest.output);
             match_free(&(assign->match));
             TAILQ_REMOVE(&assignments, assign, assignments);
+            FREE(assign);
+        }
+
+        while (!TAILQ_EMPTY(&ws_assignments)) {
+            struct Workspace_Assignment *assign = TAILQ_FIRST(&ws_assignments);
+            FREE(assign->name);
+            FREE(assign->output);
+            TAILQ_REMOVE(&ws_assignments, assign, ws_assignments);
             FREE(assign);
         }
 
