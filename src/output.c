@@ -10,7 +10,7 @@
 #include "all.h"
 
 /*
- * Returns the output container below the given output container.
+ * Returns the content container below the given output container.
  *
  */
 Con *output_get_content(Con *output) {
