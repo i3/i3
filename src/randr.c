@@ -946,7 +946,9 @@ void randr_query_outputs(void) {
             continue;
 
         DLOG("Focusing primary output %s\n", output_primary_name(output));
-        con_activate(con_descend_focused(output->con));
+        Con *content = output_get_content(output->con);
+        Con *ws = TAILQ_FIRST(&(content)->focus_head);
+        workspace_show(ws);
     }
 
     /* render_layout flushes */
