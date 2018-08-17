@@ -517,7 +517,7 @@ void init_ws_for_output(Output *output, Con *content) {
     Con *ws = create_workspace_on_output(output, content);
 
     /* TODO: Set focus in main.c */
-    con_activate(ws);
+    con_focus(ws);
 }
 
 /*
