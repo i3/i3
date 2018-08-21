@@ -742,9 +742,14 @@ static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
             free(event);
 
         if (dragloop->result != DRAGGING) {
-            free(last_motion_notify);
             ev_break(EV_A_ EVBREAK_ONE);
-            return true;
+            if (dragloop->result == DRAG_SUCCESS) {
+                /* Ensure motion notify events are handled. */
+                break;
+            } else {
+                free(last_motion_notify);
+                return true;
+            }
         }
     }
 
@@ -766,7 +771,7 @@ static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
     FREE(last_motion_notify);
 
     xcb_flush(conn);
-    return false;
+    return dragloop->result != DRAGGING;
 }
 
 static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
