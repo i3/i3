@@ -537,8 +537,10 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
     }
 
     /* If the user cancelled, undo the changes. */
-    if (drag_result == DRAG_REVERT)
+    if (drag_result == DRAG_REVERT) {
         floating_reposition(con, initial_rect);
+        return;
+    }
 
     /* If this is a scratchpad window, don't auto center it from now on. */
     if (con->scratchpad_state == SCRATCHPAD_FRESH)
