@@ -406,23 +406,22 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
             goto out;
         }
 
-        Con *ws = con_get_workspace(con);
-        if (ws == NULL) {
+        if (workspace == NULL) {
             DLOG("Window is not being managed, ignoring ConfigureRequest\n");
             goto out;
         }
 
-        if (strcmp(ws->name, "__i3_scratch") == 0) {
+        if (strcmp(workspace->name, "__i3_scratch") == 0) {
             DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
             goto out;
         }
 
-        if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
+        if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(workspace))) {
             DLOG("Focusing con = %p\n", con);
-            workspace_show(ws);
+            workspace_show(workspace);
             con_activate(con);
             tree_render();
-        } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(ws))) {
+        } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(workspace))) {
             DLOG("Marking con = %p urgent\n", con);
             con_set_urgency(con, true);
             tree_render();
