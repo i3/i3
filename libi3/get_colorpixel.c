@@ -60,8 +60,7 @@ uint32_t get_colorpixel(const char *hex) {
 
     xcb_alloc_color_reply_t *reply;
 
-    reply = xcb_alloc_color_reply(conn, xcb_alloc_color(conn, root_screen->default_colormap,
-                                                        r16, g16, b16),
+    reply = xcb_alloc_color_reply(conn, xcb_alloc_color(conn, root_screen->default_colormap, r16, g16, b16),
                                   NULL);
 
     if (!reply) {

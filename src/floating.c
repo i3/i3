@@ -791,8 +791,7 @@ static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
  * rect of the client, the event and the new coordinates (x, y).
  *
  */
-drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
-                                                                                confine_to,
+drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t confine_to,
                            border_t border, int cursor, callback_t callback, const void *extra) {
     xcb_cursor_t xcursor = (cursor && xcursor_supported) ? xcursor_get_cursor(cursor) : XCB_NONE;
 

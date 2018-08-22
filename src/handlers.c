@@ -1141,8 +1141,7 @@ static bool handle_transient_for(void *data, xcb_connection_t *conn, uint8_t sta
     }
 
     if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
-                                                                       false, window, XCB_ATOM_WM_TRANSIENT_FOR, XCB_ATOM_WINDOW, 0, 32),
+        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, XCB_ATOM_WM_TRANSIENT_FOR, XCB_ATOM_WINDOW, 0, 32),
                                       NULL);
         if (prop == NULL)
             return false;
@@ -1165,8 +1164,7 @@ static bool handle_clientleader_change(void *data, xcb_connection_t *conn, uint8
         return false;
 
     if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
-                                                                       false, window, A_WM_CLIENT_LEADER, XCB_ATOM_WINDOW, 0, 32),
+        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, A_WM_CLIENT_LEADER, XCB_ATOM_WINDOW, 0, 32),
                                       NULL);
         if (prop == NULL)
             return false;
@@ -1266,8 +1264,7 @@ static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t stat
         return false;
 
     if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
-                                                                       false, window, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 0, 32),
+        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 0, 32),
                                       NULL);
 
         if (prop == NULL)
@@ -1290,8 +1287,7 @@ static bool handle_motif_hints_change(void *data, xcb_connection_t *conn, uint8_
         return false;
 
     if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
-                                                                       false, window, A__MOTIF_WM_HINTS, XCB_GET_PROPERTY_TYPE_ANY, 0, 5 * sizeof(uint64_t)),
+        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, A__MOTIF_WM_HINTS, XCB_GET_PROPERTY_TYPE_ANY, 0, 5 * sizeof(uint64_t)),
                                       NULL);
 
         if (prop == NULL)
