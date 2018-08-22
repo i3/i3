@@ -327,7 +327,7 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
 
         if (strcmp(con_get_workspace(floatingcon)->name, "__i3_scratch") == 0) {
             DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
-            return;
+            goto out;
         }
 
         Rect newrect = floatingcon->rect;
@@ -387,15 +387,14 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
                 DLOG("Dock client will not be moved, we only support moving it to another output.\n");
             }
         }
-        fake_absolute_configure_notify(con);
-        return;
+        goto out;
     }
 
     if (event->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
         DLOG("window 0x%08x wants to be stacked %d\n", event->window, event->stack_mode);
 
         /* Emacs and IntelliJ Idea “request focus” by stacking their window
-             * above all others. */
+         * above all others. */
         if (event->stack_mode != XCB_STACK_MODE_ABOVE) {
             DLOG("stack_mode != XCB_STACK_MODE_ABOVE, ignoring ConfigureRequest\n");
             goto out;
