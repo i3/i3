@@ -378,9 +378,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     /* handle fullscreen containers */
     Con *ws = con_get_workspace(nc);
-    Con *fs = (ws ? con_get_fullscreen_con(ws, CF_OUTPUT) : NULL);
-    if (fs == NULL)
-        fs = con_get_fullscreen_con(croot, CF_GLOBAL);
+    Con *fs = con_get_fullscreen_covering_ws(ws);
 
     if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_FULLSCREEN)) {
         /* If this window is already fullscreen (after restarting!), skip

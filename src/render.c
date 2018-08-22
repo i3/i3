@@ -232,7 +232,7 @@ static void render_root(Con *con, Con *fullscreen) {
             continue;
         }
         Con *workspace = TAILQ_FIRST(&(content->focus_head));
-        Con *fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
+        Con *fullscreen = con_get_fullscreen_covering_ws(workspace);
         Con *child;
         TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
             if (fullscreen != NULL) {

@@ -254,7 +254,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
 
     /* 3: For floating containers, we also want to raise them on click.
      * We will skip handling events on floating cons in fullscreen mode */
-    Con *fs = (ws ? con_get_fullscreen_con(ws, CF_OUTPUT) : NULL);
+    Con *fs = con_get_fullscreen_covering_ws(ws);
     if (floatingcon != NULL && fs != con) {
         /* 4: floating_modifier plus left mouse button drags */
         if (mod_pressed && event->detail == XCB_BUTTON_CLICK_LEFT) {

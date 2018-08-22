@@ -509,6 +509,23 @@ Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode) {
     return NULL;
 }
 
+/*
+ * Returns the fullscreen node that covers the given workspace if it exists.
+ * This is either a CF_GLOBAL fullscreen container anywhere or a CF_OUTPUT
+ * fullscreen container in the workspace.
+ *
+ */
+Con *con_get_fullscreen_covering_ws(Con *ws) {
+    if (!ws) {
+        return NULL;
+    }
+    Con *fs = con_get_fullscreen_con(croot, CF_GLOBAL);
+    if (!fs) {
+        return con_get_fullscreen_con(ws, CF_OUTPUT);
+    }
+    return fs;
+}
+
 /**
  * Returns true if the container is internal, such as __i3_scratch
  *
