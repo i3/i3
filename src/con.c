@@ -1711,8 +1711,7 @@ adjacent_t con_adjacent_borders(Con *con) {
  *
  */
 int con_border_style(Con *con) {
-    Con *fs = con_get_fullscreen_con(con->parent, CF_OUTPUT);
-    if (fs == con) {
+    if (con->fullscreen_mode == CF_OUTPUT || con->fullscreen_mode == CF_GLOBAL) {
         DLOG("this one is fullscreen! overriding BS_NONE\n");
         return BS_NONE;
     }
