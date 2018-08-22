@@ -1168,6 +1168,13 @@ void x_push_changes(Con *con) {
 
                 change_ewmh_focus((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE), last_focused);
 
+                /* Some applications request iconic state when they lose focus, revert them to normal when they regain focus. */
+                if (focused->window != NULL) {
+                    long data[] = {XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE};
+                    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, focused->window->id,
+                                        A_WM_STATE, A_WM_STATE, 32, 2, data);
+                }
+
                 if (to_focus != XCB_NONE && to_focus != last_focused && focused->window != NULL && is_con_attached(focused))
                     ipc_send_window_event("focus", focused);
             }
