@@ -951,12 +951,11 @@ int main(int argc, char *argv[]) {
         /* Strip off the highest bit (set if the event is generated) */
         int type = (event->response_type & 0x7F);
 
+        /* TODO: handle mappingnotify */
         switch (type) {
             case XCB_KEY_PRESS:
                 handle_key_press(NULL, conn, (xcb_key_press_event_t *)event);
                 break;
-
-            /* TODO: handle mappingnotify */
 
             case XCB_BUTTON_PRESS:
                 handle_button_press((xcb_button_press_event_t *)event);
