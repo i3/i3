@@ -243,7 +243,7 @@ state RESIZE_TILING:
   'or'
       -> RESIZE_TILING_OR
   end
-      -> call cmd_resize($way, $direction, &resize_px, 10)
+      -> call cmd_resize($way, $direction, &resize_px, 0)
 
 state RESIZE_TILING_OR:
   resize_ppt = number

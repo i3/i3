@@ -174,3 +174,9 @@ bool parse_long(const char *str, long *out, int base);
  *
  */
 ssize_t slurp(const char *path, char **buf);
+
+/**
+ * Convert a string direction ("left", "right", etc.) to a direction_t,
+ * or return false if the direction does not match one of those strings.
+ */
+bool parse_direction(const char *str, direction_t *direction);

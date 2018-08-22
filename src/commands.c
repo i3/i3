@@ -471,53 +471,60 @@ static void cmd_resize_floating(I3_CMD, const char *way, const char *direction, 
         floating_con->scratchpad_state = SCRATCHPAD_CHANGED;
 }
 
-static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, const char *direction, int ppt) {
+static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, const char *direction, int px, int ppt) {
     LOG("tiling resize\n");
     Con *second = NULL;
     Con *first = current;
     direction_t search_direction;
-    if (!strcmp(direction, "left"))
-        search_direction = D_LEFT;
-    else if (!strcmp(direction, "right"))
-        search_direction = D_RIGHT;
-    else if (!strcmp(direction, "up"))
-        search_direction = D_UP;
-    else
-        search_direction = D_DOWN;
-
-    bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
-    if (!res) {
-        LOG("No second container in this direction found.\n");
+    if (!parse_direction(direction, &search_direction)) {
+        LOG("Unknown direction '%s'.\n", direction);
         ysuccess(false);
         return false;
     }
 
-    /* get the default percentage */
-    int children = con_num_children(first->parent);
-    LOG("ins. %d children\n", children);
-    double percentage = 1.0 / children;
-    LOG("default percentage = %f\n", percentage);
-
-    /* resize */
-    LOG("first->percent before = %f\n", first->percent);
-    LOG("second->percent before = %f\n", second->percent);
-    if (first->percent == 0.0)
-        first->percent = percentage;
-    if (second->percent == 0.0)
-        second->percent = percentage;
-    double new_first_percent = first->percent + ((double)ppt / 100.0);
-    double new_second_percent = second->percent - ((double)ppt / 100.0);
-    LOG("new_first_percent = %f\n", new_first_percent);
-    LOG("new_second_percent = %f\n", new_second_percent);
-    /* Ensure that the new percentages are positive. */
-    if (new_first_percent > 0.0 && new_second_percent > 0.0) {
-        first->percent = new_first_percent;
-        second->percent = new_second_percent;
-        LOG("first->percent after = %f\n", first->percent);
-        LOG("second->percent after = %f\n", second->percent);
-    } else {
-        LOG("Not resizing, already at minimum size\n");
+    bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
+    if (!res) {
+        LOG("No second container found in this direction.\n");
+        ysuccess(false);
+        return false;
     }
+
+    double total_percent = first->percent + second->percent;
+    double first_size;
+    double total_size;
+    switch (search_direction) {
+        case D_RIGHT:  // fall through
+        case D_LEFT:
+            first_size = first->rect.width;
+            total_size = first_size + second->rect.width;
+            break;
+        case D_DOWN:  // fall through
+        case D_UP:
+            /* For height changes, we need to account for the title bar (if
+             * present) because it is used in the rendering function when
+             * calculating the height */
+            first_size = first->rect.height + first->deco_rect.height;
+            total_size = first_size + second->rect.height + second->deco_rect.height;
+            break;
+    }
+
+    double relative_percent;
+    if (ppt != 0) {
+        // resize based on the ppt
+        relative_percent = first_size / total_size + (double)ppt / 100.0;
+    } else {
+        // resize based on the px
+        relative_percent = (first_size + px) / total_size;
+    }
+
+    if (relative_percent <= 0.0 || relative_percent >= 1.0) {
+        LOG("Not resizing, already at minimum size\n");
+        ysuccess(false);
+        return false;
+    }
+
+    first->percent = total_percent * relative_percent;
+    second->percent = total_percent * (1 - relative_percent);
 
     return true;
 }
@@ -613,7 +620,8 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
                     return;
             } else {
                 if (!cmd_resize_tiling_direction(current_match, cmd_output,
-                                                 current->con, way, direction, resize_ppt))
+                                                 current->con, way, direction,
+                                                 resize_px, resize_ppt))
                     return;
             }
         }

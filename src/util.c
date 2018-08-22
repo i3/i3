@@ -507,3 +507,22 @@ ssize_t slurp(const char *path, char **buf) {
     }
     return (ssize_t)n;
 }
+
+/**
+ * Convert a string direction ("left", "right", etc.) to a direction_t,
+ * or return false if the direction does not match one of those strings.
+ */
+bool parse_direction(const char *str, direction_t *direction) {
+    if (strcasecmp(str, "left") == 0)
+        *direction = D_LEFT;
+    else if (strcasecmp(str, "right") == 0)
+        *direction = D_RIGHT;
+    else if (strcasecmp(str, "up") == 0)
+        *direction = D_UP;
+    else if (strcasecmp(str, "down") == 0)
+        *direction = D_DOWN;
+    else
+        return false;
+
+    return true;
+}
