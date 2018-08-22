@@ -311,6 +311,10 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
     DLOG("Configure request!\n");
 
     Con *workspace = con_get_workspace(con);
+    if (workspace && (strcmp(workspace->name, "__i3_scratch") == 0)) {
+        DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
+        goto out;
+    }
     Con *fullscreen = con_get_fullscreen_covering_ws(workspace);
 
     if (fullscreen != con && con_is_floating(con) && con_is_leaf(con)) {
@@ -324,12 +328,6 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
             bsr.height -= deco_height;
         }
         Con *floatingcon = con->parent;
-
-        if (strcmp(con_get_workspace(floatingcon)->name, "__i3_scratch") == 0) {
-            DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
-            goto out;
-        }
-
         Rect newrect = floatingcon->rect;
 
         if (event->value_mask & XCB_CONFIG_WINDOW_X) {
@@ -407,11 +405,6 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
 
         if (workspace == NULL) {
             DLOG("Window is not being managed, ignoring ConfigureRequest\n");
-            goto out;
-        }
-
-        if (strcmp(workspace->name, "__i3_scratch") == 0) {
-            DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
             goto out;
         }
 
