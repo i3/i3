@@ -235,22 +235,19 @@ static void render_root(Con *con, Con *fullscreen) {
         Con *fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
         Con *child;
         TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
-            /* Don’t render floating windows when there is a fullscreen window
-             * on that workspace. Necessary to make floating fullscreen work
-             * correctly (ticket #564). */
-            /* If there is no fullscreen->window, this cannot be a
-             * transient window, so we _know_ we need to skip it. This
-             * happens during restarts where the container already exists,
-             * but the window was not yet associated. */
-            if (fullscreen != NULL && fullscreen->window == NULL)
-                continue;
-            if (fullscreen != NULL && fullscreen->window != NULL) {
+            if (fullscreen != NULL) {
+                /* Don’t render floating windows when there is a fullscreen
+                 * window on that workspace. Necessary to make floating
+                 * fullscreen work correctly (ticket #564). Exception to the
+                 * above rule: smart popup_during_fullscreen handling (popups
+                 * belonging to the fullscreen app will be rendered). */
+                if (config.popup_during_fullscreen != PDF_SMART) {
+                    continue;
+                }
+
                 Con *floating_child = con_descend_focused(child);
                 Con *transient_con = floating_child;
                 bool is_transient_for = false;
-                /* Exception to the above rule: smart
-                 * popup_during_fullscreen handling (popups belonging to
-                 * the fullscreen app will be rendered). */
                 while (transient_con != NULL &&
                        transient_con->window != NULL &&
                        transient_con->window->transient_for != XCB_NONE) {
