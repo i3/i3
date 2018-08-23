@@ -101,10 +101,8 @@ bool resize_find_tiling_participants(Con **current, Con **other, direction_t dir
     return true;
 }
 
-int resize_graphical_handler(Con *first, Con *second, orientation_t orientation, const xcb_button_press_event_t *event) {
-    DLOG("resize handler\n");
 
-    /* TODO: previously, we were getting a rect containing all screens. why? */
+void resize_graphical_handler(Con *first, Con *second, orientation_t orientation, const xcb_button_press_event_t *event) {
     Con *output = con_get_output(first);
     DLOG("x = %d, width = %d\n", output->rect.x, output->rect.width);
 
@@ -117,29 +115,27 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     mask = XCB_CW_OVERRIDE_REDIRECT;
     values[0] = 1;
 
-    /* Open a new window, the resizebar. Grab the pointer and move the window around
-       as the user moves the pointer. */
+    /* Open a new window, the resizebar. Grab the pointer and move the window
+     * around as the user moves the pointer. */
     xcb_window_t grabwin = create_window(conn, output->rect, XCB_COPY_FROM_PARENT, XCB_COPY_FROM_PARENT,
                                          XCB_WINDOW_CLASS_INPUT_ONLY, XCURSOR_CURSOR_POINTER, true, mask, values);
 
-    /* Keep track of the coordinate orthogonal to motion so we can determine
-     * the length of the resize afterward. */
+    /* Keep track of the coordinate orthogonal to motion so we can determine the
+     * length of the resize afterward. */
     uint32_t initial_position, new_position;
 
     /* Configure the resizebar and snap the pointer. The resizebar runs along
      * the rect of the second con and follows the motion of the pointer. */
     Rect helprect;
+    helprect.x = second->rect.x;
+    helprect.y = second->rect.y;
     if (orientation == HORIZ) {
-        helprect.x = second->rect.x;
-        helprect.y = second->rect.y;
         helprect.width = logical_px(2);
         helprect.height = second->rect.height;
         initial_position = second->rect.x;
         xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
                          second->rect.x, event->root_y);
     } else {
-        helprect.x = second->rect.x;
-        helprect.y = second->rect.y;
         helprect.width = second->rect.width;
         helprect.height = logical_px(2);
         initial_position = second->rect.y;
@@ -173,19 +169,18 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     xcb_flush(conn);
 
     /* User cancelled the drag so no action should be taken. */
-    if (drag_result == DRAG_REVERT)
-        return 0;
+    if (drag_result == DRAG_REVERT) {
+        return;
+    }
 
     int pixels = (new_position - initial_position);
-
     DLOG("Done, pixels = %d\n", pixels);
 
-    // if we got thus far, the containers must have
-    // percentages associated with them
+    /* if we got thus far, the containers must have valid percentages. */
     assert(first->percent > 0.0);
     assert(second->percent > 0.0);
 
-    // calculate the new percentage for the first container
+    /* calculate the new percentage for the first container */
     double new_percent, difference;
     double percent = first->percent;
     DLOG("percent = %f\n", percent);
@@ -197,13 +192,11 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     DLOG("new percent = %f\n", new_percent);
     first->percent = new_percent;
 
-    // calculate the new percentage for the second container
+    /* calculate the new percentage for the second container */
     double s_percent = second->percent;
     second->percent = s_percent + difference;
     DLOG("second->percent = %f\n", second->percent);
 
-    // now we must make sure that the sum of the percentages remain 1.0
+    /* now we must make sure that the sum of the percentages remain 1.0 */
     con_fix_percent(first->parent);
-
-    return 0;
 }
