@@ -497,47 +497,23 @@ static void cmd_resize_floating(I3_CMD, const char *way, const char *direction_s
     }
 }
 
-static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, const char *direction, int ppt) {
-    LOG("tiling resize\n");
+static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, const char *direction, int px, int ppt) {
     Con *second = NULL;
     Con *first = current;
     direction_t search_direction = parse_direction(direction);
 
     bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
     if (!res) {
-        LOG("No second container in this direction found.\n");
-        ysuccess(false);
+        yerror("No second container found in this direction.\n");
         return false;
     }
 
-    /* get the default percentage */
-    int children = con_num_children(first->parent);
-    LOG("ins. %d children\n", children);
-    double percentage = 1.0 / children;
-    LOG("default percentage = %f\n", percentage);
-
-    /* resize */
-    LOG("first->percent before = %f\n", first->percent);
-    LOG("second->percent before = %f\n", second->percent);
-    if (first->percent == 0.0)
-        first->percent = percentage;
-    if (second->percent == 0.0)
-        second->percent = percentage;
-    double new_first_percent = first->percent + ((double)ppt / 100.0);
-    double new_second_percent = second->percent - ((double)ppt / 100.0);
-    LOG("new_first_percent = %f\n", new_first_percent);
-    LOG("new_second_percent = %f\n", new_second_percent);
-    /* Ensure that the new percentages are positive. */
-    if (new_first_percent > 0.0 && new_second_percent > 0.0) {
-        first->percent = new_first_percent;
-        second->percent = new_second_percent;
-        LOG("first->percent after = %f\n", first->percent);
-        LOG("second->percent after = %f\n", second->percent);
-    } else {
-        LOG("Not resizing, already at minimum size\n");
+    if (ppt) {
+        /* For backwards compatibility, 'X px or Y ppt' means that ppt is
+         * preferred. */
+        px = 0;
     }
-
-    return true;
+    return resize_neighboring_cons(first, second, px, ppt);
 }
 
 static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way, const char *direction, int ppt) {
@@ -631,7 +607,8 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
                     return;
             } else {
                 if (!cmd_resize_tiling_direction(current_match, cmd_output,
-                                                 current->con, way, direction, resize_ppt))
+                                                 current->con, way, direction,
+                                                 resize_px, resize_ppt))
                     return;
             }
         }

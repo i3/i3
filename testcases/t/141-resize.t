@@ -142,6 +142,81 @@ cmp_float($nodes->[2]->{percent}, 0.166666666666667, 'third window got 16%');
 cmp_float($nodes->[3]->{percent}, 0.50, 'fourth window got 50%');
 
 ################################################################################
+# Check that we can grow tiled windows by pixels
+################################################################################
+
+$tmp = fresh_workspace;
+
+$left = open_window;
+$right = open_window;
+
+($nodes, $focus) = get_ws_content($tmp);
+cmp_float($nodes->[0]->{rect}->{width}, 640, 'left window is 640px');
+cmp_float($nodes->[1]->{rect}->{width}, 640, 'right window is 640px');
+
+cmd 'resize grow left 10px';
+($nodes, $focus) = get_ws_content($tmp);
+cmp_float($nodes->[0]->{rect}->{width}, 630, 'left window is 630px');
+cmp_float($nodes->[1]->{rect}->{width}, 650, 'right window is 650px');
+
+################################################################################
+# Check that we can shrink tiled windows by pixels
+################################################################################
+
+$tmp = fresh_workspace;
+
+$left = open_window;
+$right = open_window;
+
+($nodes, $focus) = get_ws_content($tmp);
+cmp_float($nodes->[0]->{rect}->{width}, 640, 'left window is 640px');
+cmp_float($nodes->[1]->{rect}->{width}, 640, 'right window is 640px');
+
+cmd 'resize shrink left 10px';
+($nodes, $focus) = get_ws_content($tmp);
+cmp_float($nodes->[0]->{rect}->{width}, 650, 'left window is 650px');
+cmp_float($nodes->[1]->{rect}->{width}, 630, 'right window is 630px');
+
+
+################################################################################
+# Check that we can shrink vertical tiled windows by pixels
+################################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'split v';
+
+$top = open_window;
+$bottom = open_window;
+
+($nodes, $focus) = get_ws_content($tmp);
+my @heights = ($nodes->[0]->{rect}->{height}, $nodes->[1]->{rect}->{height});
+
+cmd 'resize grow up 10px';
+($nodes, $focus) = get_ws_content($tmp);
+cmp_float($nodes->[0]->{rect}->{height}, $heights[0] - 10, 'top window is 10px larger');
+cmp_float($nodes->[1]->{rect}->{height}, $heights[1] + 10, 'bottom window is 10px smaller');
+
+################################################################################
+# Check that we can shrink vertical tiled windows by pixels
+################################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'split v';
+
+$top = open_window;
+$bottom = open_window;
+
+($nodes, $focus) = get_ws_content($tmp);
+my @heights = ($nodes->[0]->{rect}->{height}, $nodes->[1]->{rect}->{height});
+
+cmd 'resize shrink up 10px';
+($nodes, $focus) = get_ws_content($tmp);
+cmp_float($nodes->[0]->{rect}->{height}, $heights[0] + 10, 'top window is 10px smaller');
+cmp_float($nodes->[1]->{rect}->{height}, $heights[1] - 10, 'bottom window is 10px larger');
+
+################################################################################
 # Check that the resize grow/shrink width/height syntax works if a nested split
 # was set on the container, but no sibling has been opened yet. See #2015.
 ################################################################################
