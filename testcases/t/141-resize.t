@@ -142,6 +142,72 @@ cmp_float($nodes->[2]->{percent}, 0.166666666666667, 'third window got 16%');
 cmp_float($nodes->[3]->{percent}, 0.50, 'fourth window got 50%');
 
 ################################################################################
+# Same but using pixels instead of ppt.
+################################################################################
+
+# Use two windows
+$tmp = fresh_workspace;
+
+$left = open_window;
+$right = open_window;
+
+($nodes, $focus) = get_ws_content($tmp);
+my @widths = ($nodes->[0]->{rect}->{width}, $nodes->[1]->{rect}->{width});
+
+cmd 'resize grow width 10 px';
+
+($nodes, $focus) = get_ws_content($tmp);
+cmp_float($nodes->[0]->{rect}->{width}, $widths[0] - 10, 'left window is 10px smaller');
+cmp_float($nodes->[1]->{rect}->{width}, $widths[1] + 10, 'right window is 10px larger');
+
+# Now test it with four windows
+$tmp = fresh_workspace;
+
+open_window for (1..4);
+
+($nodes, $focus) = get_ws_content($tmp);
+my $width = $nodes->[0]->{rect}->{width};
+
+cmd 'resize grow width 10 px';
+
+($nodes, $focus) = get_ws_content($tmp);
+cmp_float($nodes->[3]->{rect}->{width}, $width + 10, 'last window is 10px larger');
+
+################################################################################
+# Same but for height
+################################################################################
+
+# Use two windows
+$tmp = fresh_workspace;
+cmd 'split v';
+
+$left = open_window;
+$right = open_window;
+
+($nodes, $focus) = get_ws_content($tmp);
+my @heights = ($nodes->[0]->{rect}->{height}, $nodes->[1]->{rect}->{height});
+
+cmd 'resize grow height 10 px';
+
+($nodes, $focus) = get_ws_content($tmp);
+cmp_float($nodes->[0]->{rect}->{height}, $heights[0] - 10, 'left window is 10px smaller');
+cmp_float($nodes->[1]->{rect}->{height}, $heights[1] + 10, 'right window is 10px larger');
+
+# Now test it with four windows
+$tmp = fresh_workspace;
+cmd 'split v';
+
+open_window for (1..4);
+
+($nodes, $focus) = get_ws_content($tmp);
+my $height = $nodes->[0]->{rect}->{height};
+
+cmd 'resize grow height 10 px';
+
+($nodes, $focus) = get_ws_content($tmp);
+cmp_float($nodes->[3]->{rect}->{height}, $height + 10, 'last window is 10px larger');
+
+################################################################################
 # Check that we can grow tiled windows by pixels
 ################################################################################
 

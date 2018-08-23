@@ -516,7 +516,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     return resize_neighboring_cons(first, second, px, ppt);
 }
 
-static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way, const char *direction, int ppt) {
+static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way, const char *direction, int px, int _ppt) {
     LOG("width/height resize\n");
 
     /* get the appropriate current container (skip stacked/tabbed cons) */
@@ -542,8 +542,17 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
             child->percent = percentage;
     }
 
-    double new_current_percent = current->percent + ((double)ppt / 100.0);
-    double subtract_percent = ((double)ppt / 100.0) / (children - 1);
+    double ppt = (double)_ppt / 100.0;
+    double new_current_percent;
+    double subtract_percent;
+    if (_ppt) {
+        new_current_percent = current->percent + ppt;
+    } else {
+        new_current_percent = px_resize_to_percent(current, px);
+        ppt = new_current_percent - current->percent;
+    }
+    subtract_percent = ppt / (children - 1);
+
     LOG("new_current_percent = %f\n", new_current_percent);
     LOG("subtract_percent = %f\n", subtract_percent);
     /* Ensure that the new percentages are positive. */
@@ -603,7 +612,8 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
             if (strcmp(direction, "width") == 0 ||
                 strcmp(direction, "height") == 0) {
                 if (!cmd_resize_tiling_width_height(current_match, cmd_output,
-                                                    current->con, way, direction, resize_ppt))
+                                                    current->con, way, direction,
+                                                    resize_px, resize_ppt))
                     return;
             } else {
                 if (!cmd_resize_tiling_direction(current_match, cmd_output,
@@ -676,7 +686,7 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
 
                 /* perform resizing and report failure if not possible */
                 if (!cmd_resize_tiling_width_height(current_match, cmd_output,
-                                                    target, action_string, "width", adjustment)) {
+                                                    target, action_string, "width", 0, adjustment)) {
                     success = false;
                 }
             }
@@ -702,7 +712,7 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
 
                 /* perform resizing and report failure if not possible */
                 if (!cmd_resize_tiling_width_height(current_match, cmd_output,
-                                                    target, action_string, "height", adjustment)) {
+                                                    target, action_string, "height", 0, adjustment)) {
                     success = false;
                 }
             }
