@@ -192,7 +192,7 @@ static int *precalculate_sizes(Con *con, render_params *p) {
         int total = con_orientation(con) == HORIZ ? p->rect.width : p->rect.height;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             double percentage = child->percent > 0.0 ? child->percent : 1.0 / p->children;
-            assigned += sizes[i++] = percentage * total;
+            assigned += sizes[i++] = lround(percentage * total);
         }
         assert(assigned == total ||
                (assigned > total && assigned - total <= p->children * 2) ||
