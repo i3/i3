@@ -174,3 +174,9 @@ bool parse_long(const char *str, long *out, int base);
  *
  */
 ssize_t slurp(const char *path, char **buf);
+
+/**
+ * Convert a direction to its corresponding orientation.
+ *
+ */
+orientation_t orientation_from_direction(direction_t direction);

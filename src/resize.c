@@ -57,7 +57,7 @@ bool resize_find_tiling_participants(Con **current, Con **other, direction_t dir
     }
 
     /* Go up in the tree and search for a container to resize */
-    const orientation_t search_orientation = ((direction == D_LEFT || direction == D_RIGHT) ? HORIZ : VERT);
+    const orientation_t search_orientation = orientation_from_direction(direction);
     const bool dir_backwards = (direction == D_UP || direction == D_LEFT);
     while (first->type != CT_WORKSPACE &&
            first->type != CT_FLOATING_CON &&
