@@ -183,26 +183,28 @@ free_params:
 }
 
 static int *precalculate_sizes(Con *con, render_params *p) {
-    int *sizes = smalloc(p->children * sizeof(int));
-    if ((con->layout == L_SPLITH || con->layout == L_SPLITV) && p->children > 0) {
-        assert(!TAILQ_EMPTY(&con->nodes_head));
+    if ((con->layout != L_SPLITH && con->layout != L_SPLITV) || p->children <= 0) {
+        return NULL;
+    }
 
-        Con *child;
-        int i = 0, assigned = 0;
-        int total = con_orientation(con) == HORIZ ? p->rect.width : p->rect.height;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-            double percentage = child->percent > 0.0 ? child->percent : 1.0 / p->children;
-            assigned += sizes[i++] = percentage * total;
-        }
-        assert(assigned == total ||
-               (assigned > total && assigned - total <= p->children * 2) ||
-               (assigned < total && total - assigned <= p->children * 2));
-        int signal = assigned < total ? 1 : -1;
-        while (assigned != total) {
-            for (i = 0; i < p->children && assigned != total; ++i) {
-                sizes[i] += signal;
-                assigned += signal;
-            }
+    int *sizes = smalloc(p->children * sizeof(int));
+    assert(!TAILQ_EMPTY(&con->nodes_head));
+
+    Con *child;
+    int i = 0, assigned = 0;
+    int total = con_orientation(con) == HORIZ ? p->rect.width : p->rect.height;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        double percentage = child->percent > 0.0 ? child->percent : 1.0 / p->children;
+        assigned += sizes[i++] = lround(percentage * total);
+    }
+    assert(assigned == total ||
+           (assigned > total && assigned - total <= p->children * 2) ||
+           (assigned < total && total - assigned <= p->children * 2));
+    int signal = assigned < total ? 1 : -1;
+    while (assigned != total) {
+        for (i = 0; i < p->children && assigned != total; ++i) {
+            sizes[i] += signal;
+            assigned += signal;
         }
     }
 

@@ -265,7 +265,7 @@ void tree_move(Con *con, int direction) {
         return;
     }
 
-    orientation_t o = (direction == D_LEFT || direction == D_RIGHT ? HORIZ : VERT);
+    orientation_t o = orientation_from_direction(direction);
 
     Con *same_orientation = con_parent_with_orientation(con, o);
     /* The do {} while is used to 'restart' at this point with a different

@@ -2330,16 +2330,15 @@ resize set [width] <width> [px | ppt] [height] <height> [px | ppt]
 -------------------------------------------------------
 
 Direction can either be one of +up+, +down+, +left+ or +right+. Or you can be
-less specific and use +width+ or +height+, in which case i3 will take/give
-space from all the other containers. The optional pixel argument specifies by
-how many pixels a *floating container* should be grown or shrunk (the default
-is 10 pixels). The ppt argument means percentage points and specifies by how
-many percentage points a *tiling container* should be grown or shrunk (the
-default is 10 percentage points).
+less specific and use +width+ or +height+, in which case i3 will take/give space
+from all the other containers. The optional pixel argument specifies by how many
+pixels a container should be grown or shrunk (the default is 10 pixels). The
+optional ppt argument means "percentage points", and if specified it indicates
+that a *tiling container* should be grown or shrunk by that many points, instead
+of by the +px+ value.
 
-Notes about +resize set+: a value of 0 for <width> or <height> means "do
-not resize in this direction", and resizing a tiling container by +px+ is not
-implemented.
+Note about +resize set+: a value of 0 for <width> or <height> means "do not
+resize in this direction".
 
 It is recommended to define bindings for resizing in a dedicated binding mode.
 See <<binding_modes>> and the example in the i3

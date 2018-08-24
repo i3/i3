@@ -216,7 +216,7 @@ void cmd_sticky(I3_CMD, const char *action);
  * Implementation of 'move <direction> [<pixels> [px]]'.
  *
  */
-void cmd_move_direction(I3_CMD, const char *direction, long move_px);
+void cmd_move_direction(I3_CMD, const char *direction_str, long move_px);
 
 /**
  * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith'.
