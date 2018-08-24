@@ -121,6 +121,14 @@ Con *con_parent_with_orientation(Con *con, orientation_t orientation);
 Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode);
 
 /**
+ * Returns the fullscreen node that covers the given workspace if it exists.
+ * This is either a CF_GLOBAL fullscreen container anywhere or a CF_OUTPUT
+ * fullscreen container in the workspace.
+ *
+ */
+Con *con_get_fullscreen_covering_ws(Con *ws);
+
+/**
  * Returns true if the container is internal, such as __i3_scratch
  *
  */

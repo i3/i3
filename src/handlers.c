@@ -310,16 +310,12 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
 
     DLOG("Configure request!\n");
 
-    Con *workspace = con_get_workspace(con),
-        *fullscreen = NULL;
-
-    /* There might not be a corresponding workspace for dock cons, therefore we
-     * have to be careful here. */
-    if (workspace) {
-        fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
-        if (!fullscreen)
-            fullscreen = con_get_fullscreen_con(workspace, CF_GLOBAL);
+    Con *workspace = con_get_workspace(con);
+    if (workspace && (strcmp(workspace->name, "__i3_scratch") == 0)) {
+        DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
+        goto out;
     }
+    Con *fullscreen = con_get_fullscreen_covering_ws(workspace);
 
     if (fullscreen != con && con_is_floating(con) && con_is_leaf(con)) {
         /* find the height for the decorations */
@@ -332,12 +328,6 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
             bsr.height -= deco_height;
         }
         Con *floatingcon = con->parent;
-
-        if (strcmp(con_get_workspace(floatingcon)->name, "__i3_scratch") == 0) {
-            DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
-            return;
-        }
-
         Rect newrect = floatingcon->rect;
 
         if (event->value_mask & XCB_CONFIG_WINDOW_X) {
@@ -395,15 +385,14 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
                 DLOG("Dock client will not be moved, we only support moving it to another output.\n");
             }
         }
-        fake_absolute_configure_notify(con);
-        return;
+        goto out;
     }
 
     if (event->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
         DLOG("window 0x%08x wants to be stacked %d\n", event->window, event->stack_mode);
 
         /* Emacs and IntelliJ Idea “request focus” by stacking their window
-             * above all others. */
+         * above all others. */
         if (event->stack_mode != XCB_STACK_MODE_ABOVE) {
             DLOG("stack_mode != XCB_STACK_MODE_ABOVE, ignoring ConfigureRequest\n");
             goto out;
@@ -414,23 +403,17 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
             goto out;
         }
 
-        Con *ws = con_get_workspace(con);
-        if (ws == NULL) {
+        if (workspace == NULL) {
             DLOG("Window is not being managed, ignoring ConfigureRequest\n");
             goto out;
         }
 
-        if (strcmp(ws->name, "__i3_scratch") == 0) {
-            DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
-            goto out;
-        }
-
-        if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
+        if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(workspace))) {
             DLOG("Focusing con = %p\n", con);
-            workspace_show(ws);
+            workspace_show(workspace);
             con_activate(con);
             tree_render();
-        } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(ws))) {
+        } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(workspace))) {
             DLOG("Marking con = %p urgent\n", con);
             con_set_urgency(con, true);
             tree_render();

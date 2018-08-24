@@ -1272,7 +1272,7 @@ void cmd_focus_direction(I3_CMD, const char *direction) {
 static void cmd_focus_force_focus(Con *con) {
     /* Disable fullscreen container in workspace with container to be focused. */
     Con *ws = con_get_workspace(con);
-    Con *fullscreen_on_ws = (focused && focused->fullscreen_mode == CF_GLOBAL) ? focused : con_get_fullscreen_con(ws, CF_OUTPUT);
+    Con *fullscreen_on_ws = con_get_fullscreen_covering_ws(ws);
     if (fullscreen_on_ws && fullscreen_on_ws != con && !con_has_parent(con, fullscreen_on_ws)) {
         con_disable_fullscreen(fullscreen_on_ws);
     }
