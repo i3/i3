@@ -497,7 +497,7 @@ static void cmd_resize_floating(I3_CMD, const char *way, const char *direction_s
     }
 }
 
-static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, const char *direction, int px, int ppt) {
+static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *direction, int px, int ppt) {
     Con *second = NULL;
     Con *first = current;
     direction_t search_direction = parse_direction(direction);
@@ -516,7 +516,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     return resize_neighboring_cons(first, second, px, ppt);
 }
 
-static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way, const char *direction, int px, int _ppt) {
+static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *direction, int px, int _ppt) {
     LOG("width/height resize\n");
 
     /* get the appropriate current container (skip stacked/tabbed cons) */
@@ -612,12 +612,12 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
             if (strcmp(direction, "width") == 0 ||
                 strcmp(direction, "height") == 0) {
                 if (!cmd_resize_tiling_width_height(current_match, cmd_output,
-                                                    current->con, way, direction,
+                                                    current->con, direction,
                                                     resize_px, resize_ppt))
                     return;
             } else {
                 if (!cmd_resize_tiling_direction(current_match, cmd_output,
-                                                 current->con, way, direction,
+                                                 current->con, direction,
                                                  resize_px, resize_ppt))
                     return;
             }
@@ -673,20 +673,17 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
 
                 /* Calculate new size for the target container */
                 double current_percent = target->percent;
-                char *action_string;
                 long adjustment;
 
                 if (current_percent > cwidth) {
-                    action_string = "shrink";
                     adjustment = (int)(current_percent * 100) - cwidth;
                 } else {
-                    action_string = "grow";
                     adjustment = cwidth - (int)(current_percent * 100);
                 }
 
                 /* perform resizing and report failure if not possible */
                 if (!cmd_resize_tiling_width_height(current_match, cmd_output,
-                                                    target, action_string, "width", 0, adjustment)) {
+                                                    target, "width", 0, adjustment)) {
                     success = false;
                 }
             }
@@ -699,20 +696,17 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
 
                 /* Calculate new size for the target container */
                 double current_percent = target->percent;
-                char *action_string;
                 long adjustment;
 
                 if (current_percent > cheight) {
-                    action_string = "shrink";
                     adjustment = (int)(current_percent * 100) - cheight;
                 } else {
-                    action_string = "grow";
                     adjustment = cheight - (int)(current_percent * 100);
                 }
 
                 /* perform resizing and report failure if not possible */
                 if (!cmd_resize_tiling_width_height(current_match, cmd_output,
-                                                    target, action_string, "height", 0, adjustment)) {
+                                                    target, "height", 0, adjustment)) {
                     success = false;
                 }
             }
