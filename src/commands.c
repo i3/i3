@@ -629,6 +629,35 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
     ysuccess(true);
 }
 
+static bool resize_set_tiling(I3_CMD, Con *target, orientation_t resize_orientation, bool is_ppt, long target_size) {
+    direction_t search_direction;
+    char *mode;
+    if (resize_orientation == HORIZ) {
+        search_direction = D_LEFT;
+        mode = "width";
+    } else {
+        search_direction = D_DOWN;
+        mode = "height";
+    }
+
+    /* Get the appropriate current container (skip stacked/tabbed cons) */
+    Con *dummy;
+    resize_find_tiling_participants(&target, &dummy, search_direction, true);
+
+    /* Calculate new size for the target container */
+    int ppt = 0;
+    int px = 0;
+    if (is_ppt) {
+        ppt = target_size - target->percent * 100;
+    } else {
+        px = target_size - (resize_orientation == HORIZ ? target->rect.width : target->rect.height);
+    }
+
+    /* Perform resizing and report failure if not possible */
+    return cmd_resize_tiling_width_height(current_match, cmd_output,
+                                          target, mode, px, ppt);
+}
+
 /*
  * Implementation of 'resize set <width> [px | ppt] <height> [px | ppt]'.
  *
@@ -665,50 +694,13 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
                 continue;
             }
 
-            if (cwidth > 0 && mode_width && strcmp(mode_width, "ppt") == 0) {
-                /* get the appropriate current container (skip stacked/tabbed cons) */
-                Con *target = current->con;
-                Con *dummy;
-                resize_find_tiling_participants(&target, &dummy, D_LEFT, true);
-
-                /* Calculate new size for the target container */
-                double current_percent = target->percent;
-                long adjustment;
-
-                if (current_percent > cwidth) {
-                    adjustment = (int)(current_percent * 100) - cwidth;
-                } else {
-                    adjustment = cwidth - (int)(current_percent * 100);
-                }
-
-                /* perform resizing and report failure if not possible */
-                if (!cmd_resize_tiling_width_height(current_match, cmd_output,
-                                                    target, "width", 0, adjustment)) {
-                    success = false;
-                }
+            if (cwidth > 0 && mode_width) {
+                success &= resize_set_tiling(current_match, cmd_output, current->con,
+                                             HORIZ, strcmp(mode_width, "ppt") == 0, cwidth);
             }
-
-            if (cheight > 0 && mode_height && strcmp(mode_height, "ppt") == 0) {
-                /* get the appropriate current container (skip stacked/tabbed cons) */
-                Con *target = current->con;
-                Con *dummy;
-                resize_find_tiling_participants(&target, &dummy, D_DOWN, true);
-
-                /* Calculate new size for the target container */
-                double current_percent = target->percent;
-                long adjustment;
-
-                if (current_percent > cheight) {
-                    adjustment = (int)(current_percent * 100) - cheight;
-                } else {
-                    adjustment = cheight - (int)(current_percent * 100);
-                }
-
-                /* perform resizing and report failure if not possible */
-                if (!cmd_resize_tiling_width_height(current_match, cmd_output,
-                                                    target, "height", 0, adjustment)) {
-                    success = false;
-                }
+            if (cheight > 0 && mode_height) {
+                success &= resize_set_tiling(current_match, cmd_output, current->con,
+                                             VERT, strcmp(mode_height, "ppt") == 0, cheight);
             }
         }
     }

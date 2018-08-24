@@ -47,6 +47,13 @@ cmd 'resize set width 80 ppt';
 cmp_float($nodes->[0]->{percent}, 0.20, 'left window got 20%');
 cmp_float($nodes->[1]->{percent}, 0.80, 'right window got 80%');
 
+# Same but with px.
+cmd 'resize set width 200 px';
+
+($nodes, $focus) = get_ws_content($tmp);
+
+cmp_float($nodes->[1]->{rect}->{width}, 200, 'right window got 200 px');
+
 ############################################################
 # resize vertically
 ############################################################
@@ -77,6 +84,13 @@ cmd 'resize set height 80 ppt';
 cmp_float($nodes->[0]->{percent}, 0.20, 'top window got 20%');
 cmp_float($nodes->[1]->{percent}, 0.80, 'bottom window got 80%');
 
+# Same but with px.
+cmd 'resize set height 200 px';
+
+($nodes, $focus) = get_ws_content($tmp);
+
+cmp_float($nodes->[1]->{rect}->{height}, 200, 'bottom window got 200 px');
+
 ############################################################
 # resize horizontally and vertically
 ############################################################
@@ -102,6 +116,13 @@ cmp_float($nodes->[1]->{percent}, 0.75, 'right container got 75%');
 cmp_float($nodes->[1]->{nodes}->[0]->{percent}, 0.25, 'top-right window got 25%');
 cmp_float($nodes->[1]->{nodes}->[1]->{percent}, 0.75, 'bottom-right window got 75%');
 
+# Same but with px.
+cmd 'resize set 155 px 135 px';
+
+($nodes, $focus) = get_ws_content($tmp);
+
+cmp_float($nodes->[1]->{nodes}->[1]->{rect}->{width}, 155, 'bottom-right window got 155 px width');
+cmp_float($nodes->[1]->{nodes}->[1]->{rect}->{height}, 135, 'bottom-right window got 135 px height');
 
 ############################################################
 # resize from inside a tabbed container
@@ -130,6 +151,12 @@ cmd 'resize set 75 ppt 0 ppt';
 cmp_float($nodes->[0]->{percent}, 0.25, 'left container got 25%');
 cmp_float($nodes->[1]->{percent}, 0.75, 'right container got 75%');
 
+# Same but with px.
+cmd 'resize set 155 px';
+
+($nodes, $focus) = get_ws_content($tmp);
+
+cmp_float($nodes->[1]->{rect}->{width}, 155, 'right container got 155 px');
 
 ############################################################
 # resize from inside a stacked container
@@ -158,5 +185,11 @@ cmd 'resize set 75 ppt 0 ppt';
 cmp_float($nodes->[0]->{percent}, 0.25, 'left container got 25%');
 cmp_float($nodes->[1]->{percent}, 0.75, 'right container got 75%');
 
+# Same but with px.
+cmd 'resize set 130 px';
+
+($nodes, $focus) = get_ws_content($tmp);
+
+cmp_float($nodes->[1]->{rect}->{width}, 130, 'right container got 130 px');
 
 done_testing;
