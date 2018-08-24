@@ -124,6 +124,15 @@ cmd 'resize set 155 px 135 px';
 cmp_float($nodes->[1]->{nodes}->[1]->{rect}->{width}, 155, 'bottom-right window got 155 px width');
 cmp_float($nodes->[1]->{nodes}->[1]->{rect}->{height}, 135, 'bottom-right window got 135 px height');
 
+# Mix ppt and px
+cmd 'resize set 75 ppt 200 px';
+
+($nodes, $focus) = get_ws_content($tmp);
+
+cmp_float($nodes->[0]->{percent}, 0.25, 'left container got 25%');
+cmp_float($nodes->[1]->{percent}, 0.75, 'right container got 75%');
+cmp_float($nodes->[1]->{nodes}->[1]->{rect}->{height}, 200, 'bottom-right window got 200 px height');
+
 ############################################################
 # resize from inside a tabbed container
 ############################################################

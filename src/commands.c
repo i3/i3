@@ -516,7 +516,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *direct
     return resize_neighboring_cons(first, second, px, ppt);
 }
 
-static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *direction, int px, int _ppt) {
+static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *direction, int px, double ppt) {
     LOG("width/height resize\n");
 
     /* get the appropriate current container (skip stacked/tabbed cons) */
@@ -542,10 +542,9 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *dir
             child->percent = percentage;
     }
 
-    double ppt = (double)_ppt / 100.0;
     double new_current_percent;
     double subtract_percent;
-    if (_ppt) {
+    if (ppt != 0.0) {
         new_current_percent = current->percent + ppt;
     } else {
         new_current_percent = px_resize_to_percent(current, px);
@@ -611,9 +610,10 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
         } else {
             if (strcmp(direction, "width") == 0 ||
                 strcmp(direction, "height") == 0) {
+                const double ppt = (double)resize_ppt / 100.0;
                 if (!cmd_resize_tiling_width_height(current_match, cmd_output,
                                                     current->con, direction,
-                                                    resize_px, resize_ppt))
+                                                    resize_px, ppt))
                     return;
             } else {
                 if (!cmd_resize_tiling_direction(current_match, cmd_output,
@@ -645,10 +645,10 @@ static bool resize_set_tiling(I3_CMD, Con *target, orientation_t resize_orientat
     resize_find_tiling_participants(&target, &dummy, search_direction, true);
 
     /* Calculate new size for the target container */
-    int ppt = 0;
+    double ppt = 0.0;
     int px = 0;
     if (is_ppt) {
-        ppt = target_size - target->percent * 100;
+        ppt = (double)target_size / 100.0 - target->percent;
     } else {
         px = target_size - (resize_orientation == HORIZ ? target->rect.width : target->rect.height);
     }
