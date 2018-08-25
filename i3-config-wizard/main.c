@@ -48,6 +48,9 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-x11.h>
 
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-launchee.h>
+
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
@@ -847,6 +850,10 @@ int main(int argc, char *argv[]) {
 #include "atoms.xmacro"
 #undef xmacro
 
+    /* Init startup notification. */
+    SnDisplay *sndisplay = sn_xcb_display_new(conn, NULL, NULL);
+    SnLauncheeContext *sncontext = sn_launchee_context_new_from_environment(sndisplay, screen);
+
     root_screen = xcb_aux_get_screen(conn, screen);
     root = root_screen->root;
 
@@ -879,6 +886,7 @@ int main(int argc, char *argv[]) {
             0, /* back pixel: black */
             XCB_EVENT_MASK_EXPOSURE |
                 XCB_EVENT_MASK_BUTTON_PRESS});
+    sn_launchee_context_setup_window(sncontext, win);
 
     /* Map the window (make it visible) */
     xcb_map_window(conn, win);
@@ -939,6 +947,11 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Could not grab keyboard, status = %d\n", reply->status);
         exit(-1);
     }
+
+    /* Startup complete. */
+    sn_launchee_context_complete(sncontext);
+    sn_launchee_context_unref(sncontext);
+    sn_display_unref(sndisplay);
 
     xcb_flush(conn);
 
