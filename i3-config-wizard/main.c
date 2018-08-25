@@ -293,6 +293,7 @@ static char *next_state(const cmdp_token *token) {
         }
         sasprintf(&res, "bindsym %s%s%s %s%s\n", (modifiers == NULL ? "" : modrep), (modifiers == NULL ? "" : "+"), str, (release == NULL ? "" : release), get_string("command"));
         clear_stack();
+        free(modrep);
         return res;
     }
 
