@@ -32,6 +32,9 @@
 #include <xcb/randr.h>
 #include <xcb/xcb_cursor.h>
 
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-launchee.h>
+
 #include "i3-nagbar.h"
 
 /** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
@@ -415,6 +418,10 @@ int main(int argc, char *argv[]) {
 #include "atoms.xmacro"
 #undef xmacro
 
+    /* Init startup notification. */
+    SnDisplay *sndisplay = sn_xcb_display_new(conn, NULL, NULL);
+    SnLauncheeContext *sncontext = sn_launchee_context_new_from_environment(sndisplay, screens);
+
     root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
@@ -484,6 +491,7 @@ int main(int argc, char *argv[]) {
                 XCB_EVENT_MASK_BUTTON_PRESS |
                 XCB_EVENT_MASK_BUTTON_RELEASE,
             cursor});
+    sn_launchee_context_setup_window(sncontext, win);
 
     /* Map the window (make it visible) */
     xcb_map_window(conn, win);
@@ -543,6 +551,11 @@ int main(int argc, char *argv[]) {
 
     /* Initialize the drawable bar */
     draw_util_surface_init(conn, &bar, win, get_visualtype(root_screen), win_pos.width, win_pos.height);
+
+    /* Startup complete. */
+    sn_launchee_context_complete(sncontext);
+    sn_launchee_context_unref(sncontext);
+    sn_display_unref(sndisplay);
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);

@@ -357,10 +357,12 @@ i3_msg_i3_msg_SOURCES = \
 
 i3_nagbar_i3_nagbar_CFLAGS = \
 	$(AM_CFLAGS) \
+	$(LIBSN_CFLAGS) \
 	$(libi3_CFLAGS)
 
 i3_nagbar_i3_nagbar_LDADD = \
 	$(libi3_LIBS) \
+	$(LIBSN_LIBS) \
 	$(XCB_UTIL_CURSOR_LIBS)
 
 i3_nagbar_i3_nagbar_SOURCES = \
@@ -414,10 +416,12 @@ i3bar_i3bar_SOURCES = \
 i3_config_wizard_i3_config_wizard_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(libi3_CFLAGS) \
+	$(LIBSN_CFLAGS) \
 	$(XKBCOMMON_CFLAGS)
 
 i3_config_wizard_i3_config_wizard_LDADD = \
 	$(libi3_LIBS) \
+	$(LIBSN_LIBS) \
 	$(XCB_UTIL_KEYSYMS_LIBS) \
 	$(XKBCOMMON_LIBS)
 
