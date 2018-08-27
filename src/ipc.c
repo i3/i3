@@ -1414,12 +1414,14 @@ static void ipc_client_timeout(EV_P_ ev_timer *w, int revents) {
         }
     }
     cmdline = buf;
-#endif
 
-end:
     if (cmdline) {
         ELOG("client %p with pid %d and cmdline '%s' on fd %d timed out, killing\n", client, peercred.pid, cmdline, client->fd);
-    } else {
+    }
+
+end:
+#endif
+    if (!cmdline) {
         ELOG("client %p on fd %d timed out, killing\n", client, client->fd);
     }
 
