@@ -517,4 +517,20 @@ fresh_workspace;
 $result = cmd 'scratchpad show';
 is($result->[0]->{success}, 1, 'call to scratchpad in another workspace succeeded');
 
+################################################################################
+# 18: Disabling floating for a scratchpad window should not work.
+################################################################################
+
+kill_all_windows;
+
+$ws = fresh_workspace;
+$window = open_window;
+cmd 'move scratchpad';
+cmd '[id=' . $window->id . '] floating disable';
+
+is(scalar @{get_ws_content($ws)}, 0, 'no window in workspace');
+cmd 'scratchpad show';
+is($x->input_focus, $window->id, 'scratchpad window shown');
+
+
 done_testing;

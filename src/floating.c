@@ -366,6 +366,10 @@ void floating_disable(Con *con, bool automatic) {
     }
 
     Con *ws = con_get_workspace(con);
+    if (con_is_internal(ws)) {
+        LOG("Can't disable floating for container in internal workspace.\n");
+        return;
+    }
     Con *tiling_focused = con_descend_tiling_focused(ws);
 
     if (tiling_focused->type == CT_WORKSPACE) {
