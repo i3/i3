@@ -81,7 +81,7 @@ AC_SEARCH_LIBS([floor], [m], , [AC_MSG_FAILURE([cannot find the required floor()
 # libev does not ship with a pkg-config file :(.
 AC_SEARCH_LIBS([ev_run], [ev], , [AC_MSG_FAILURE([cannot find the required ev_run() function despite trying to link with -lev])])
 
-AC_SEARCH_LIBS([shm_open], [rt])
+AC_SEARCH_LIBS([shm_open], [rt], [], [], [-pthread])
 
 AC_SEARCH_LIBS([iconv_open], [iconv], ,
 AC_SEARCH_LIBS([libiconv_open], [iconv], , [AC_MSG_FAILURE([cannot find the required iconv_open() function despite trying to link with -liconv])]))
