@@ -115,6 +115,19 @@ double px_resize_to_percent(Con *con, int px_diff) {
 }
 
 /*
+ * Calculate the minimum percent needed for the given container to be at least 1
+ * pixel.
+ *
+ */
+double percent_for_1px(Con *con) {
+    Con *parent = con->parent;
+    const orientation_t o = con_orientation(parent);
+    const int total = (o == HORIZ ? parent->rect.width : parent->rect.height);
+    const int target = (o == HORIZ ? 1 : 1 + con->deco_rect.height);
+    return ((double)target / (double)total);
+}
+
+/*
  * Resize the two given containers using the given amount of pixels or
  * percentage points. One of the two needs to be 0. A positive amount means
  * growing the first container while a negative means shrinking it.
@@ -126,8 +139,6 @@ bool resize_neighboring_cons(Con *first, Con *second, int px, int ppt) {
     assert(px * ppt == 0);
 
     Con *parent = first->parent;
-    orientation_t orientation = con_orientation(parent);
-    const int total = (orientation == HORIZ ? parent->rect.width : parent->rect.height);
     double new_first_percent;
     double new_second_percent;
     if (ppt) {
@@ -139,7 +150,7 @@ bool resize_neighboring_cons(Con *first, Con *second, int px, int ppt) {
     }
     /* Ensure that no container will be less than 1 pixel in the resizing
      * direction. */
-    if (lround(new_first_percent * total) <= 0 || lround(new_second_percent * total) <= 0) {
+    if (new_first_percent < percent_for_1px(first) || new_second_percent < percent_for_1px(second)) {
         return false;
     }
 
