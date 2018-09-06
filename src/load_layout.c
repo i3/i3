@@ -632,6 +632,9 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
         while (incomplete-- > 0) {
             Con *parent = json_node->parent;
             DLOG("freeing incomplete container %p\n", json_node);
+            if (json_node == to_focus) {
+                to_focus = NULL;
+            }
             con_free(json_node);
             json_node = parent;
         }
