@@ -551,23 +551,24 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *dir
         ppt = new_current_percent - current->percent;
     }
     subtract_percent = ppt / (children - 1);
+    if (ppt < 0.0 && new_current_percent < percent_for_1px(current)) {
+        yerror("Not resizing, container would end with less than 1px\n");
+        return false;
+    }
 
     LOG("new_current_percent = %f\n", new_current_percent);
     LOG("subtract_percent = %f\n", subtract_percent);
     /* Ensure that the new percentages are positive. */
-    TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
-        if (child == current)
-            continue;
-        if (child->percent - subtract_percent <= 0.0) {
-            LOG("Not resizing, already at minimum size (child %p would end up with a size of %.f\n", child, child->percent - subtract_percent);
-            ysuccess(false);
-            return false;
+    if (subtract_percent >= 0.0) {
+        TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
+            if (child == current) {
+                continue;
+            }
+            if (child->percent - subtract_percent < percent_for_1px(child)) {
+                yerror("Not resizing, already at minimum size (child %p would end up with a size of %.f\n", child, child->percent - subtract_percent);
+                return false;
+            }
         }
-    }
-    if (new_current_percent <= 0.0) {
-        LOG("Not resizing, already at minimum size\n");
-        ysuccess(false);
-        return false;
     }
 
     current->percent = new_current_percent;

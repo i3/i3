@@ -26,6 +26,13 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
 bool resize_neighboring_cons(Con *first, Con *second, int px, int ppt);
 
 /**
+ * Calculate the minimum percent needed for the given container to be at least 1
+ * pixel.
+ *
+ */
+double percent_for_1px(Con *con);
+
+/**
  * Calculate the given container's new percent given a change in pixels.
  *
  */
