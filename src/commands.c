@@ -694,13 +694,15 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
                 continue;
             }
 
-            if (cwidth > 0 && mode_width) {
+            if (cwidth > 0) {
+                bool is_ppt = mode_width && strcmp(mode_width, "ppt") == 0;
                 success &= resize_set_tiling(current_match, cmd_output, current->con,
-                                             HORIZ, strcmp(mode_width, "ppt") == 0, cwidth);
+                                             HORIZ, is_ppt, cwidth);
             }
-            if (cheight > 0 && mode_height) {
+            if (cheight > 0) {
+                bool is_ppt = mode_height && strcmp(mode_height, "ppt") == 0;
                 success &= resize_set_tiling(current_match, cmd_output, current->con,
-                                             VERT, strcmp(mode_height, "ppt") == 0, cheight);
+                                             VERT, is_ppt, cheight);
             }
         }
     }
