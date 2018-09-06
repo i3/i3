@@ -94,6 +94,21 @@ is(get_output_for_workspace('2'), 'fake-1',
     'Renaming an unfocused workspace, triggering an assignment to the output which holds the currently focused empty workspace should result in the original workspace replacing the empty one');
 
 ##########################################################################
+# Renaming an unfocused empty workspace, triggering an assignment to the
+# output which holds the currently focused non-empty workspace should
+# close the empty workspace and not crash i3.
+# See issue #3248.
+##########################################################################
+
+cmd 'workspace 1';
+cmd 'workspace 2';
+open_window;
+cmd 'rename workspace 1 to baz';
+is(get_output_for_workspace('baz'), '',
+    'Renaming an unfocused empty workspace, triggering an assignment to the output which holds the currently focused non-empty workspace should close the empty workspace and not crash i3');
+kill_all_windows;
+
+##########################################################################
 # Renaming a workspace with multiple assignments, where the first output
 # doesn't exist.
 ##########################################################################
