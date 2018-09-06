@@ -611,6 +611,10 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
     yajl_config(hand, yajl_allow_comments, true);
     /* Allow multiple values, i.e. multiple nodes to attach */
     yajl_config(hand, yajl_allow_multiple_values, true);
+    /* Allow strings that are not valid UTF8. Could be possible if a container
+     * name contains such characters. If yajl stops parsing because of this, an
+     * in-place restart could fail: see #3156. */
+    yajl_config(hand, yajl_dont_validate_strings, true);
     json_node = con;
     to_focus = NULL;
     incomplete = 0;
@@ -632,6 +636,9 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
         while (incomplete-- > 0) {
             Con *parent = json_node->parent;
             DLOG("freeing incomplete container %p\n", json_node);
+            if (json_node == to_focus) {
+                to_focus = NULL;
+            }
             con_free(json_node);
             json_node = parent;
         }
