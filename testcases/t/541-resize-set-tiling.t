@@ -124,6 +124,14 @@ cmd 'resize set 155 px 135 px';
 cmp_float($nodes->[1]->{nodes}->[1]->{rect}->{width}, 155, 'bottom-right window got 155 px width');
 cmp_float($nodes->[1]->{nodes}->[1]->{rect}->{height}, 135, 'bottom-right window got 135 px height');
 
+# Without specifying mode
+cmd 'resize set 201 131';
+
+($nodes, $focus) = get_ws_content($tmp);
+
+cmp_float($nodes->[1]->{nodes}->[1]->{rect}->{width}, 201, 'bottom-right window got 201 px width');
+cmp_float($nodes->[1]->{nodes}->[1]->{rect}->{height}, 131, 'bottom-right window got 131 px height');
+
 # Mix ppt and px
 cmd 'resize set 75 ppt 200 px';
 
