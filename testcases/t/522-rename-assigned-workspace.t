@@ -82,16 +82,31 @@ is(get_output_for_workspace('5'), 'fake-0',
     'Renaming the workspace to a workspace assigned to a directional output should not move the workspace');
 
 ##########################################################################
-# Renaming a workspace, so that it becomes assigned to the focused
-# output's workspace (and the focused output is empty) should
-# result in the original workspace replacing the originally
-# focused workspace.
+# Renaming an unfocused workspace, triggering an assignment to the output
+# which holds the currently focused empty workspace should result in the
+# original workspace replacing the empty one.
+# See issue #3228.
 ##########################################################################
 
 cmd 'workspace baz';
 cmd 'rename workspace 5 to 2';
 is(get_output_for_workspace('2'), 'fake-1',
-    'Renaming a workspace so that it moves to the focused output which contains only an empty workspace should replace the empty workspace');
+    'Renaming an unfocused workspace, triggering an assignment to the output which holds the currently focused empty workspace should result in the original workspace replacing the empty one');
+
+##########################################################################
+# Renaming an unfocused empty workspace, triggering an assignment to the
+# output which holds the currently focused non-empty workspace should
+# close the empty workspace and not crash i3.
+# See issue #3248.
+##########################################################################
+
+cmd 'workspace 1';
+cmd 'workspace 2';
+open_window;
+cmd 'rename workspace 1 to baz';
+is(get_output_for_workspace('baz'), '',
+    'Renaming an unfocused empty workspace, triggering an assignment to the output which holds the currently focused non-empty workspace should close the empty workspace and not crash i3');
+kill_all_windows;
 
 ##########################################################################
 # Renaming a workspace with multiple assignments, where the first output
