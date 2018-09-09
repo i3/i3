@@ -92,6 +92,10 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
 
     DLOG("appended tree, using new root\n");
     croot = TAILQ_FIRST(&(croot->nodes_head));
+    if (!croot) {
+        /* tree_append_json failed. Continuing here would segfault. */
+        goto out;
+    }
     DLOG("new root = %p\n", croot);
     Con *out = TAILQ_FIRST(&(croot->nodes_head));
     DLOG("out = %p\n", out);
