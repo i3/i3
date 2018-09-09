@@ -30,15 +30,7 @@ struct _i3String {
  *
  */
 i3String *i3string_from_utf8(const char *from_utf8) {
-    i3String *str = scalloc(1, sizeof(i3String));
-
-    /* Get the text */
-    str->utf8 = sstrdup(from_utf8);
-
-    /* Compute and store the length */
-    str->num_bytes = strlen(str->utf8);
-
-    return str;
+    return i3string_from_utf8_with_length(from_utf8, -1);
 }
 
 /*
@@ -60,16 +52,14 @@ i3String *i3string_from_markup(const char *from_markup) {
  * Returns the newly-allocated i3String.
  *
  */
-i3String *i3string_from_utf8_with_length(const char *from_utf8, size_t num_bytes) {
+i3String *i3string_from_utf8_with_length(const char *from_utf8, ssize_t num_bytes) {
     i3String *str = scalloc(1, sizeof(i3String));
 
-    /* Copy the actual text to our i3String */
-    str->utf8 = scalloc(num_bytes + 1, 1);
-    strncpy(str->utf8, from_utf8, num_bytes);
-    str->utf8[num_bytes] = '\0';
+    /* g_utf8_make_valid NULL-terminates the string. */
+    str->utf8 = g_utf8_make_valid(from_utf8, num_bytes);
 
-    /* Store the length */
-    str->num_bytes = num_bytes;
+    /* num_bytes < 0 means NULL-terminated string, need to calculate length */
+    str->num_bytes = num_bytes < 0 ? strlen(str->utf8) : (size_t)num_bytes;
 
     return str;
 }

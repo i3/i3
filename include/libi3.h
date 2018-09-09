@@ -200,7 +200,7 @@ i3String *i3string_from_markup(const char *from_markup);
  * Returns the newly-allocated i3String.
  *
  */
-i3String *i3string_from_utf8_with_length(const char *from_utf8, size_t num_bytes);
+i3String *i3string_from_utf8_with_length(const char *from_utf8, ssize_t num_bytes);
 
 /**
  * Build an i3String from an UTF-8 encoded string in Pango markup with fixed
