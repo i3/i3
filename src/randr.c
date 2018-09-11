@@ -421,6 +421,8 @@ void output_init_con(Output *output) {
  *
  */
 void init_ws_for_output(Output *output, Con *content) {
+    Con *previous_focus = con_get_workspace(focused);
+
     /* go through all assignments and move the existing workspaces to this output */
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
@@ -451,6 +453,9 @@ void init_ws_for_output(Output *output, Con *content) {
         workspace_move_to_output(workspace, output);
     }
 
+    /* Temporarily set the focused container, might not be initialized yet. */
+    focused = content;
+
     /* if a workspace exists, we are done now */
     if (!TAILQ_EMPTY(&(content->nodes_head))) {
         /* ensure that one of the workspaces is actually visible (in fullscreen
@@ -459,10 +464,9 @@ void init_ws_for_output(Output *output, Con *content) {
         GREP_FIRST(visible, content, child->fullscreen_mode == CF_OUTPUT);
         if (!visible) {
             visible = TAILQ_FIRST(&(content->nodes_head));
-            focused = content;
             workspace_show(visible);
         }
-        return;
+        goto restore_focus;
     }
 
     /* otherwise, we create the first assigned ws for this output */
@@ -473,17 +477,18 @@ void init_ws_for_output(Output *output, Con *content) {
 
         LOG("Initializing first assigned workspace \"%s\" for output \"%s\"\n",
             assignment->name, assignment->output);
-        focused = content;
         workspace_show_by_name(assignment->name);
-        return;
+        goto restore_focus;
     }
 
     /* if there is still no workspace, we create the first free workspace */
     DLOG("Now adding a workspace\n");
-    Con *ws = create_workspace_on_output(output, content);
+    workspace_show(create_workspace_on_output(output, content));
 
-    /* TODO: Set focus in main.c */
-    con_focus(ws);
+restore_focus:
+    if (previous_focus) {
+        workspace_show(previous_focus);
+    }
 }
 
 /*
