@@ -339,4 +339,15 @@ $ws = get_ws($tmp2);
 is_num_children($tmp2, 0, 'no regular nodes on second workspace');
 is(@{$ws->{floating_nodes}}, 1, 'one floating node on second workspace');
 
+###################################################################
+# Check that moving an empty workspace using criteria doesn't
+# create unfocused empty workspace.
+###################################################################
+$tmp2 = get_unused_workspace();
+$tmp = fresh_workspace();
+cmd 'mark a';
+cmd "[con_mark=a] move to workspace $tmp2";
+
+is (get_ws($tmp2), undef, 'No empty workspace created');
+
 done_testing;
