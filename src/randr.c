@@ -942,13 +942,8 @@ void randr_disable_output(Output *output) {
 
     if (output->con != NULL) {
         /* We need to move the workspaces from the disappearing output to the first output */
-        /* 1: Get the con to focus next, if the disappearing ws is focused */
-        Con *next = NULL;
-        if (TAILQ_FIRST(&(croot->focus_head)) == output->con) {
-            DLOG("This output (%p) was focused! Getting next\n", output->con);
-            next = focused;
-            DLOG("next = %p\n", next);
-        }
+        /* 1: Get the con to focus next */
+        Con *next = focused;
 
         /* 2: iterate through workspaces and re-assign them, fixing the coordinates
          * of floating containers as we go */
@@ -971,15 +966,12 @@ void randr_disable_output(Output *output) {
             TAILQ_FOREACH(floating_con, &(current->floating_head), floating_windows) {
                 floating_fix_coordinates(floating_con, &(output->con->rect), &(first->con->rect));
             }
-            DLOG("Done, next\n");
         }
-        DLOG("re-attached all workspaces\n");
 
-        if (next) {
-            DLOG("now focusing next = %p\n", next);
-            con_activate(next);
-            workspace_show(con_get_workspace(next));
-        }
+        /* Restore focus after con_detach / con_attach */
+        DLOG("now focusing next = %p\n", next);
+        con_focus(next);
+        workspace_show(con_get_workspace(next));
 
         /* 3: move the dock clients to the first output */
         Con *child;
