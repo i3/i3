@@ -442,47 +442,13 @@ void init_ws_for_output(Output *output, Con *content) {
             continue;
         }
 
-        /* if so, move it over */
-        LOG("Moving workspace \"%s\" from output \"%s\" to \"%s\" due to assignment\n",
-            workspace->name, workspace_out->name, output_primary_name(output));
-
-        /* if the workspace is currently visible on that output, we need to
-         * switch to a different workspace - otherwise the output would end up
-         * with no active workspace */
-        bool visible = workspace_is_visible(workspace);
-        Con *previous = NULL;
-        if (visible && (previous = TAILQ_NEXT(workspace, focused))) {
-            LOG("Switching to previously used workspace \"%s\" on output \"%s\"\n",
-                previous->name, workspace_out->name);
-            workspace_show(previous);
-        }
-
-        /* Render the output on which the workspace was to get correct Rects.
-         * Then, we need to work with the "content" container, since we cannot
-         * be sure that the workspace itself was rendered at all (in case it’s
-         * invisible, it won’t be rendered). */
-        render_con(workspace_out, false);
-        Con *ws_out_content = output_get_content(workspace_out);
-
-        Con *floating_con;
-        TAILQ_FOREACH(floating_con, &(workspace->floating_head), floating_windows)
-        /* NB: We use output->con here because content is not yet rendered,
-             * so it has a rect of {0, 0, 0, 0}. */
-        floating_fix_coordinates(floating_con, &(ws_out_content->rect), &(output->con->rect));
-
-        con_detach(workspace);
-        con_attach(workspace, content, false);
-
-        /* In case the workspace we just moved was visible but there was no
-         * other workspace to switch to, we need to initialize the source
-         * output as well */
-        if (visible && previous == NULL) {
-            LOG("There is no workspace left on \"%s\", re-initializing\n",
-                workspace_out->name);
-            init_ws_for_output(get_output_by_name(workspace_out->name, true),
-                               output_get_content(workspace_out));
-            DLOG("Done re-initializing, continuing with \"%s\"\n", output_primary_name(output));
-        }
+        DLOG("Moving workspace \"%s\" from output \"%s\" to \"%s\" due to assignment\n",
+             workspace->name, workspace_out->name, output_primary_name(output));
+        /* Need to copy output's rect since content is not yet rendered. We
+         * can't call render_con here because render_output only proceeds if a
+         * workspace exists. */
+        content->rect = output->con->rect;
+        workspace_move_to_output(workspace, output);
     }
 
     /* if a workspace exists, we are done now */
