@@ -74,7 +74,7 @@ void fake_outputs_init(const char *output_spec) {
             else
                 TAILQ_INSERT_TAIL(&outputs, new_output, outputs);
             output_init_con(new_output);
-            init_ws_for_output(new_output, output_get_content(new_output->con));
+            init_ws_for_output(new_output);
             num_screens++;
         }
         new_output->primary = primary;

@@ -420,7 +420,8 @@ void output_init_con(Output *output) {
  * • Create the first unused workspace.
  *
  */
-void init_ws_for_output(Output *output, Con *content) {
+void init_ws_for_output(Output *output) {
+    Con *content = output_get_content(output->con);
     Con *previous_focus = con_get_workspace(focused);
 
     /* go through all assignments and move the existing workspaces to this output */
@@ -908,7 +909,7 @@ void randr_query_outputs(void) {
         if (!TAILQ_EMPTY(&(content->nodes_head)))
             continue;
         DLOG("Should add ws for output %s\n", output_primary_name(output));
-        init_ws_for_output(output, content);
+        init_ws_for_output(output);
     }
 
     /* Focus the primary screen, if possible */
@@ -1013,7 +1014,7 @@ void randr_disable_output(Output *output) {
 static void fallback_to_root_output(void) {
     root_output->active = true;
     output_init_con(root_output);
-    init_ws_for_output(root_output, output_get_content(root_output->con));
+    init_ws_for_output(root_output);
 }
 
 /*
