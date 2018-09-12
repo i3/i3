@@ -647,7 +647,7 @@ void switch_mode(const char *new_mode) {
         return;
     }
 
-    ELOG("ERROR: Mode not found\n");
+    ELOG("Mode not found\n");
 }
 
 static int reorder_binding_cmp(const void *a, const void *b) {
