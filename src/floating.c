@@ -96,6 +96,18 @@ void floating_check_size(Con *floating_con) {
             floating_con->rect.height += border_rect.height;
         }
 
+        if (focused_con->window->max_width) {
+            floating_con->rect.width -= border_rect.width;
+            floating_con->rect.width = min(floating_con->rect.width, focused_con->window->max_width);
+            floating_con->rect.width += border_rect.width;
+        }
+
+        if (focused_con->window->max_height) {
+            floating_con->rect.height -= border_rect.height;
+            floating_con->rect.height = min(floating_con->rect.height, focused_con->window->max_height);
+            floating_con->rect.height += border_rect.height;
+        }
+
         if (focused_con->window->height_increment &&
             floating_con->rect.height >= focused_con->window->base_height + border_rect.height) {
             floating_con->rect.height -= focused_con->window->base_height + border_rect.height;

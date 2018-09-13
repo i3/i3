@@ -477,6 +477,10 @@ struct Window {
     int min_width;
     int min_height;
 
+    /* Maximum size specified for the window. */
+    int max_width;
+    int max_height;
+
     /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
     double aspect_ratio;
 };
