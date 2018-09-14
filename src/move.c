@@ -243,11 +243,10 @@ static void move_to_output_directed(Con *con, direction_t direction) {
 }
 
 /*
- * Moves the given container in the given direction (D_LEFT, D_RIGHT,
- * D_UP, D_DOWN).
+ * Moves the given container in the given direction
  *
  */
-void tree_move(Con *con, int direction) {
+void tree_move(Con *con, direction_t direction) {
     position_t position;
     Con *target;
 

@@ -12,11 +12,10 @@
 #include <config.h>
 
 /**
- * Moves the given container in the given direction (TOK_LEFT, TOK_RIGHT,
- * TOK_UP, TOK_DOWN from cmdparse.l)
+ * Moves the given container in the given direction
  *
  */
-void tree_move(Con *con, int direction);
+void tree_move(Con *con, direction_t direction);
 
 typedef enum { BEFORE,
                AFTER } position_t;
