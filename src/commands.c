@@ -1213,6 +1213,21 @@ void cmd_exec(I3_CMD, const char *nosn, const char *command) {
     ysuccess(true);
 }
 
+#define CMD_FOCUS_WARN_CHILDREN                                                        \
+    do {                                                                               \
+        int count = 0;                                                                 \
+        owindow *current;                                                              \
+        TAILQ_FOREACH(current, &owindows, owindows) {                                  \
+            count++;                                                                   \
+        }                                                                              \
+                                                                                       \
+        if (count > 1) {                                                               \
+            LOG("WARNING: Your criteria for the focus command matches %d containers, " \
+                "while only exactly one container can be focused at a time.\n",        \
+                count);                                                                \
+        }                                                                              \
+    } while (0)
+
 /*
  * Implementation of 'focus left|right|up|down'.
  *
@@ -1315,12 +1330,15 @@ void cmd_focus(I3_CMD) {
         ELOG("Example: [class=\"urxvt\" title=\"irssi\"] focus\n");
 
         yerror("You have to specify which window/container should be focused");
-
+        return;
+    } else if (TAILQ_EMPTY(&owindows)) {
+        yerror("No window matches given criteria");
         return;
     }
 
+    CMD_FOCUS_WARN_CHILDREN;
+
     Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
-    int count = 0;
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
         Con *ws = con_get_workspace(current->con);
@@ -1332,7 +1350,6 @@ void cmd_focus(I3_CMD) {
         /* In case this is a scratchpad window, call scratchpad_show(). */
         if (ws == __i3_scratch) {
             scratchpad_show(current->con);
-            count++;
             /* While for the normal focus case we can change focus multiple
              * times and only a single window ends up focused, we could show
              * multiple scratchpad windows. So, rather break here. */
@@ -1341,16 +1358,10 @@ void cmd_focus(I3_CMD) {
 
         LOG("focusing %p / %s\n", current->con, current->con->name);
         con_activate_unblock(current->con);
-        count++;
     }
 
-    if (count > 1)
-        LOG("WARNING: Your criteria for the focus command matches %d containers, "
-            "while only exactly one container can be focused at a time.\n",
-            count);
-
     cmd_output->needs_tree_render = true;
-    ysuccess(count > 0);
+    ysuccess(true);
 }
 
 /*
