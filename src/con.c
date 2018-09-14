@@ -1171,13 +1171,13 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
         target = target->parent;
     }
 
-    /* 3: if the target container is floating, we get the workspace instead.
-     * Only tiling windows need to get inserted next to the current container.
-     * */
-    Con *floatingcon = con_inside_floating(target);
-    if (floatingcon != NULL) {
+    /* 3: if the original target is the direct child of a floating container, we
+     * can't move con next to it - floating containers have only one child - so
+     * we get the workspace instead. */
+    if (target->type == CT_FLOATING_CON) {
         DLOG("floatingcon, going up even further\n");
-        target = floatingcon->parent;
+        orig_target = target;
+        target = target->parent;
     }
 
     if (con->type == CT_FLOATING_CON) {
