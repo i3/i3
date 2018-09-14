@@ -123,9 +123,7 @@ sub strip_containers {
     delete $tree->{current_border_width} if $tree->{current_border_width} == -1;
 
     for my $key (keys %$tree) {
-        next if exists($allowed_keys{$key});
-
-        delete $tree->{$key};
+        delete $tree->{$key} unless exists($allowed_keys{$key});
     }
 
     for my $key (qw(nodes floating_nodes)) {
@@ -169,7 +167,8 @@ sub dump_containers {
     if (leaf_node($tree)) {
         my $swallows = {};
         for my $property (keys %{$tree->{window_properties}}) {
-            $swallows->{$property} = '^' . quotemeta($tree->{window_properties}->{$property}) . '$';
+            $swallows->{$property} = '^' . quotemeta($tree->{window_properties}->{$property}) . '$'
+                if $property ne 'transient_for';
         }
         $tree->{swallows} = [ $swallows ];
     }
