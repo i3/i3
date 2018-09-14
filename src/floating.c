@@ -246,7 +246,7 @@ void floating_enable(Con *con, bool automatic) {
         Con *parent = con->parent;
         /* clear the pointer before calling tree_close_internal in which the memory is freed */
         con->parent = NULL;
-        tree_close_internal(parent, DONT_KILL_WINDOW, false, false);
+        tree_close_internal(parent, DONT_KILL_WINDOW, false);
     }
 
     char *name;
@@ -376,7 +376,7 @@ void floating_disable(Con *con, bool automatic) {
         Con *parent = con->parent;
         con_detach(con);
         con->parent = NULL;
-        tree_close_internal(parent, DONT_KILL_WINDOW, true, false);
+        tree_close_internal(parent, DONT_KILL_WINDOW, true);
         con_attach(con, tiling_focused, false);
         con->percent = 0.0;
         con_fix_percent(con->parent);
