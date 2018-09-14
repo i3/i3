@@ -212,21 +212,13 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
          event->detail == XCB_BUTTON_SCROLL_LEFT ||
          event->detail == XCB_BUTTON_SCROLL_RIGHT)) {
         DLOG("Scrolling on a window decoration\n");
-        orientation_t orientation = con_orientation(con->parent);
         /* Use the focused child of the tabbed / stacked container, not the
          * container the user scrolled on. */
-        Con *focused = con->parent;
-        focused = TAILQ_FIRST(&(focused->focus_head));
-        con_activate(con_descend_focused(focused));
-        /* To prevent scrolling from going outside the container (see ticket
-         * #557), we first check if scrolling is possible at all. */
-        bool scroll_prev_possible = (TAILQ_PREV(focused, nodes_head, nodes) != NULL);
-        bool scroll_next_possible = (TAILQ_NEXT(focused, nodes) != NULL);
-        if ((event->detail == XCB_BUTTON_SCROLL_UP || event->detail == XCB_BUTTON_SCROLL_LEFT) && scroll_prev_possible) {
-            tree_next('p', orientation);
-        } else if ((event->detail == XCB_BUTTON_SCROLL_DOWN || event->detail == XCB_BUTTON_SCROLL_RIGHT) && scroll_next_possible) {
-            tree_next('n', orientation);
-        }
+        Con *current = TAILQ_FIRST(&(con->parent->focus_head));
+        const position_t direction =
+            (event->detail == XCB_BUTTON_SCROLL_UP || event->detail == XCB_BUTTON_SCROLL_LEFT) ? BEFORE : AFTER;
+        Con *next = get_tree_next_sibling(current, direction);
+        con_activate(con_descend_focused(next ? next : current));
 
         goto done;
     }

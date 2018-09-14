@@ -1229,23 +1229,62 @@ void cmd_exec(I3_CMD, const char *nosn, const char *command) {
     } while (0)
 
 /*
- * Implementation of 'focus left|right|up|down'.
+ * Implementation of 'focus left|right|up|down|next|prev'.
  *
  */
-void cmd_focus_direction(I3_CMD, const char *direction) {
-    switch (parse_direction(direction)) {
-        case D_LEFT:
-            tree_next('p', HORIZ);
-            break;
-        case D_RIGHT:
-            tree_next('n', HORIZ);
-            break;
-        case D_UP:
-            tree_next('p', VERT);
-            break;
-        case D_DOWN:
-            tree_next('n', VERT);
-            break;
+void cmd_focus_direction(I3_CMD, const char *direction_str) {
+    HANDLE_EMPTY_MATCH;
+    CMD_FOCUS_WARN_CHILDREN;
+
+    direction_t direction;
+    position_t position;
+    bool auto_direction = true;
+    if (strcmp(direction_str, "prev") == 0) {
+        position = BEFORE;
+    } else if (strcmp(direction_str, "next") == 0) {
+        position = AFTER;
+    } else {
+        auto_direction = false;
+        direction = parse_direction(direction_str);
+    }
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        Con *ws = con_get_workspace(current->con);
+        if (!ws || con_is_internal(ws)) {
+            continue;
+        }
+        if (auto_direction) {
+            orientation_t o = con_orientation(current->con->parent);
+            direction = direction_from_orientation_position(o, position);
+        }
+        tree_next(current->con, direction);
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'focus next|prev sibling'
+ *
+ */
+void cmd_focus_sibling(I3_CMD, const char *direction_str) {
+    HANDLE_EMPTY_MATCH;
+    CMD_FOCUS_WARN_CHILDREN;
+
+    const position_t direction = (STARTS_WITH(direction_str, "prev")) ? BEFORE : AFTER;
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        Con *ws = con_get_workspace(current->con);
+        if (!ws || con_is_internal(ws)) {
+            continue;
+        }
+        Con *next = get_tree_next_sibling(current->con, direction);
+        if (next) {
+            con_activate(next);
+        }
     }
 
     cmd_output->needs_tree_render = true;

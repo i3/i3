@@ -59,11 +59,16 @@ bool level_down(void);
 void tree_render(void);
 
 /**
- * Changes focus in the given way (next/previous) and given orientation
- * (horizontal/vertical).
+ * Changes focus in the given direction
  *
  */
-void tree_next(char way, orientation_t orientation);
+void tree_next(Con *con, direction_t direction);
+
+/**
+ * Get the previous / next sibling
+ *
+ */
+Con *get_tree_next_sibling(Con *con, position_t direction);
 
 /**
  * Closes the given container including all children.
