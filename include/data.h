@@ -59,6 +59,8 @@ typedef enum { D_LEFT,
 typedef enum { NO_ORIENTATION = 0,
                HORIZ,
                VERT } orientation_t;
+typedef enum { BEFORE,
+               AFTER } position_t;
 typedef enum { BS_NORMAL = 0,
                BS_NONE = 1,
                BS_PIXEL = 2 } border_style_t;

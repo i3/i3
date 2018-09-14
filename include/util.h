@@ -181,3 +181,15 @@ ssize_t slurp(const char *path, char **buf);
  *
  */
 orientation_t orientation_from_direction(direction_t direction);
+
+/**
+ * Convert a direction to its corresponding position.
+ *
+ */
+position_t position_from_direction(direction_t direction);
+
+/**
+ * Convert orientation and position to the corresponding direction.
+ *
+ */
+direction_t direction_from_orientation_position(orientation_t orientation, position_t position);

@@ -518,3 +518,23 @@ ssize_t slurp(const char *path, char **buf) {
 orientation_t orientation_from_direction(direction_t direction) {
     return (direction == D_LEFT || direction == D_RIGHT) ? HORIZ : VERT;
 }
+
+/*
+ * Convert a direction to its corresponding position.
+ *
+ */
+position_t position_from_direction(direction_t direction) {
+    return (direction == D_LEFT || direction == D_UP) ? BEFORE : AFTER;
+}
+
+/*
+ * Convert orientation and position to the corresponding direction.
+ *
+ */
+direction_t direction_from_orientation_position(orientation_t orientation, position_t position) {
+    if (orientation == HORIZ) {
+        return position == BEFORE ? D_LEFT : D_RIGHT;
+    } else {
+        return position == BEFORE ? D_UP : D_DOWN;
+    }
+}
