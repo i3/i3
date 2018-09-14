@@ -46,7 +46,7 @@ sub dump_node {
 
     my $o = ($n->{orientation} eq 'none' ? "u" : ($n->{orientation} eq 'horizontal' ? "h" : "v"));
     my $w = (defined($n->{window}) ? $n->{window} : "N");
-    my $na = ($n->{name} or "[Empty]");
+    my $na = ($n->{name} or ($n->{type} eq "floating_con" ? "[Floating con]" : "[Empty]"));
     $na =~ s/#/\\#/g;
     $na =~ s/\$/\\\$/g;
     $na =~ s/&/\\&/g;
@@ -64,7 +64,8 @@ sub dump_node {
     print $tmp "n" . $parent->{id} . ", " if defined($parent);
     print $tmp "\"" . $name . "\");\n";
 
-	dump_node($_, $n) for @{$n->{nodes}};
+    dump_node($_, $n) for @{$n->{nodes}};
+    dump_node($_, $n) for @{$n->{floating_nodes}};
 }
 
 sub find_node_with_name {
