@@ -322,6 +322,27 @@ sync_with_i3;
 is(@{$nodes}, 1, 'tiling container moved to the target workspace');
 
 ###############################################################################
+# Given 'S' and 'M' where 'M' is inside a floating container but not its direct
+# child, when 'S' is moved to 'M', i3 should not crash.
+# See issue: #3402
+###############################################################################
+
+$target_ws = fresh_workspace;
+$S = open_window;
+open_window;
+cmd 'splitv';
+$M = open_window;
+cmd 'mark target';
+cmd 'focus parent, floating enable, focus child';
+
+cmd '[id="' . $S->{id} . '"] move container to mark target';
+does_i3_live;
+
+# Note: this is not actively supported behavior.
+$nodes = get_ws($target_ws)->{floating_nodes}->[0]->{nodes}->[0]->{nodes};
+is(1, (grep { $_->{window} == $S->{id} } @{$nodes}), 'tiling container moved inside floating container');
+
+###############################################################################
 # Given 'S' and 'M' are the same container, when 'S' is moved to 'M', then
 # the command is ignored.
 ###############################################################################
