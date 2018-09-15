@@ -106,5 +106,15 @@ cmd '[workspace=__focused__] move to workspace trash';
 is(@{get_ws($ws)->{nodes}}, 0, '__focused__ works for workspace');
 
 ###############################################################################
+# 6: Test that __focused__ in command criteria when no window is focused does
+# not crash i3.
+# See issue: #3406
+###############################################################################
+
+fresh_workspace;
+cmd '[class=__focused__] focus';
+does_i3_live;
+
+###############################################################################
 
 done_testing;
