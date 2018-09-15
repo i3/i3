@@ -15,10 +15,11 @@
 #   (unless you are already familiar with Perl)
 #
 # Tests focus_wrapping yes|no|force|workspace with cmp_tree
-# Tickets: #2352
+# Tickets: #2180 #2352
 use i3test i3_autostart => 0;
 
 my $pid = 0;
+
 sub focus_wrapping {
     my ($setting) = @_;
 
@@ -222,7 +223,7 @@ cmp_tree(
     cb => sub {
         cmd 'focus left';
     });
-cmp_tree(  # 'focus_wrapping force' exclusive test
+cmp_tree(    # 'focus_wrapping force' exclusive test
     msg => 'But leaves when selecting parent',
     layout_before => 'S[a b] V[c d T[e* f g]]',
     layout_after => 'S[a b*] V[c d T[e f g]]',
@@ -239,7 +240,7 @@ cmp_tree(
         cmd 'focus right';
         is(focused_ws, 'left-top', 'Correct workspace focused');
     });
-cmp_tree(  # 'focus_wrapping force|workspace' exclusive test
+cmp_tree(    # 'focus_wrapping force|workspace' exclusive test
     msg => 'But leaves when selecting parent x2',
     layout_before => 'S[a b] V[c d* T[e f g]]',
     layout_after => 'S[a b] V[c d T[e f g]]',
@@ -249,7 +250,96 @@ cmp_tree(  # 'focus_wrapping force|workspace' exclusive test
         is(focused_ws, 'right-top', 'Correct workspace focused');
     });
 
-exit_gracefully($pid);
+###############################################################################
+focus_wrapping('workspace');
+# See issue #2180
+###############################################################################
 
+cmp_tree(
+    msg => 'Normal focus up - should work for all options',
+    layout_before => 'S[a b*] V[c d T[e f g]]',
+    layout_after => 'S[a* b] V[c d T[e f g]]',
+    ws => 'left-top',
+    cb => sub {
+        cmd 'focus up';
+    });
+cmp_tree(
+    msg => 'Normal focus right - should work for all options',
+    layout_before => 'S[a b] V[c d T[e* f g]]',
+    layout_after => 'S[a b] V[c d T[e f* g]]',
+    ws => 'left-top',
+    cb => sub {
+        cmd 'focus right';
+    });
+cmp_tree(
+    msg => 'Focus does not leave workspace vertically',
+    layout_before => 'S[a b*] V[c d T[e f g]]',
+    layout_after => 'S[a* b] V[c d T[e f g]]',
+    ws => 'left-top',
+    cb => sub {
+        cmd 'focus down';
+        is(focused_ws, 'left-top', 'Correct workspace focused');
+    });
+cmp_tree(
+    msg => 'Focus wraps vertically',
+    layout_before => 'S[a* b] V[c d T[e f g]]',
+    layout_after => 'S[a b*] V[c d T[e f g]]',
+    ws => 'left-top',
+    cb => sub {
+        cmd 'focus up';
+    });
+cmp_tree(
+    msg => 'Focus wraps horizontally',
+    layout_before => 'S[a b*] V[c d T[e f g]]',
+    layout_after => 'S[a b] V[c d T[e f g*]]',
+    ws => 'left-top',
+    cb => sub {
+        cmd 'focus left';
+    });
+cmp_tree(
+    msg => 'Directional focus in the orientation of the parent does not wrap',
+    layout_before => 'S[a b] V[c d T[e* f g]]',
+    layout_after => 'S[a b*] V[c d T[e f g]]',
+    ws => 'left-top',
+    cb => sub {
+        cmd 'focus left';
+    });
+cmp_tree(
+    msg => 'Focus does not leave workspace horizontally',
+    layout_before => 'S[a b] V[c d* T[e f g]]',
+    layout_after => 'S[a b*] V[c d T[e f g]]',
+    ws => 'left-top',
+    cb => sub {
+        cmd 'focus right';
+        is(focused_ws, 'left-top', 'Correct workspace focused');
+    });
+cmp_tree(    # 'focus_wrapping force|workspace' exclusive test
+    msg => 'But leaves when selecting parent x2',
+    layout_before => 'S[a b] V[c d* T[e f g]]',
+    layout_after => 'S[a b] V[c d T[e f g]]',
+    ws => 'left-top',
+    cb => sub {
+        cmd 'focus parent, focus parent, focus right';
+        is(focused_ws, 'right-top', 'Correct workspace focused');
+    });
+
+cmp_tree(    # 'focus_wrapping workspace' exclusive test
+    msg => 'x',
+    layout_before => 'S[a* b] V[c d T[e f g]]',
+    layout_after => 'S[a b] V[c d T[e f g]]',
+    ws => 'left-top',
+    cb => sub {
+        subtest 'random tests' => sub {
+            my @directions = qw(left right top down);
+            for my $i (1 .. 50) {
+                my $direction = $directions[rand @directions];
+                cmd "focus $direction";
+
+                return unless is(focused_ws, 'left-top', "'focus $direction' did not change workspace");
+            }
+        };
+    });
+
+exit_gracefully($pid);
 
 done_testing;

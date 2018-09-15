@@ -497,6 +497,13 @@ static Con *get_tree_next(Con *con, direction_t direction) {
     const orientation_t orientation = orientation_from_direction(direction);
 
     Con *first_wrap = NULL;
+
+    if (con->type == CT_WORKSPACE) {
+        /* Special case for FOCUS_WRAPPING_WORKSPACE: allow the focus to leave
+         * the workspace only when a workspace is selected. */
+        goto handle_workspace;
+    }
+
     while (con->type != CT_WORKSPACE) {
         if (con->fullscreen_mode == CF_OUTPUT) {
             /* We've reached a fullscreen container. Directional focus should
@@ -542,6 +549,7 @@ static Con *get_tree_next(Con *con, direction_t direction) {
             switch (config.focus_wrapping) {
                 case FOCUS_WRAPPING_OFF:
                     break;
+                case FOCUS_WRAPPING_WORKSPACE:
                 case FOCUS_WRAPPING_ON:
                     if (!first_wrap && con_fullscreen_permits_focusing(wrap)) {
                         first_wrap = wrap;
@@ -561,6 +569,11 @@ static Con *get_tree_next(Con *con, direction_t direction) {
     }
 
     assert(con->type == CT_WORKSPACE);
+    if (config.focus_wrapping == FOCUS_WRAPPING_WORKSPACE) {
+        return first_wrap;
+    }
+
+handle_workspace:;
     Con *workspace = get_tree_next_workspace(con, direction);
     return workspace ? workspace : first_wrap;
 }

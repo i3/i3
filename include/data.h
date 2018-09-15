@@ -141,7 +141,8 @@ typedef enum {
 typedef enum {
     FOCUS_WRAPPING_OFF = 0,
     FOCUS_WRAPPING_ON = 1,
-    FOCUS_WRAPPING_FORCE = 2
+    FOCUS_WRAPPING_FORCE = 2,
+    FOCUS_WRAPPING_WORKSPACE = 3
 } focus_wrapping_t;
 
 /**
