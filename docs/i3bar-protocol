@@ -118,7 +118,8 @@ click_events::
 
 full_text::
 	The +full_text+ will be displayed by i3bar on the status line. This is the
-	only required key.
+	only required key. If +full_text+ is an empty string, the block will be
+	skipped.
 short_text::
 	Where appropriate, the +short_text+ (string) entry should also be
 	provided. It will be used in case the status line needs to be shortened
