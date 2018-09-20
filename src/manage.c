@@ -520,6 +520,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         nc->window->min_height = wm_size_hints.min_height;
     }
 
+    if (wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MAX_SIZE) {
+        DLOG("Window specifies maximum size %d x %d\n", wm_size_hints.max_width, wm_size_hints.max_height);
+        nc->window->max_width = wm_size_hints.max_width;
+        nc->window->max_height = wm_size_hints.max_height;
+    }
+
     /* Store the requested geometry. The width/height gets raised to at least
      * 75x50 when entering floating mode, which is the minimum size for a
      * window to be useful (smaller windows are usually overlays/toolbars/…

@@ -981,9 +981,18 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
         con->window->min_height = size_hints.min_height;
     }
 
+    if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MAX_SIZE)) {
+        DLOG("Maximum size: %d (width) x %d (height)\n", size_hints.max_width, size_hints.max_height);
+
+        con->window->max_width = size_hints.max_width;
+        con->window->max_height = size_hints.max_height;
+    }
+
     if (con_is_floating(con)) {
         win_width = MAX(win_width, con->window->min_width);
         win_height = MAX(win_height, con->window->min_height);
+        win_width = MIN(win_width, con->window->max_width);
+        win_height = MIN(win_height, con->window->max_height);
     }
 
     bool changed = false;
