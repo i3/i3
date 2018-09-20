@@ -48,7 +48,7 @@ i3String *i3string_from_markup(const char *from_markup) {
 
 /*
  * Build an i3String from an UTF-8 encoded string with fixed length.
- * To be used when no proper NUL-terminaison is available.
+ * To be used when no proper NULL-termination is available.
  * Returns the newly-allocated i3String.
  *
  */
