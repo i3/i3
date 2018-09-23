@@ -853,6 +853,7 @@ int main(int argc, char *argv[]) {
     /* Init startup notification. */
     SnDisplay *sndisplay = sn_xcb_display_new(conn, NULL, NULL);
     SnLauncheeContext *sncontext = sn_launchee_context_new_from_environment(sndisplay, screen);
+    sn_display_unref(sndisplay);
 
     root_screen = xcb_aux_get_screen(conn, screen);
     root = root_screen->root;
@@ -886,7 +887,9 @@ int main(int argc, char *argv[]) {
             0, /* back pixel: black */
             XCB_EVENT_MASK_EXPOSURE |
                 XCB_EVENT_MASK_BUTTON_PRESS});
-    sn_launchee_context_setup_window(sncontext, win);
+    if (sncontext) {
+        sn_launchee_context_setup_window(sncontext, win);
+    }
 
     /* Map the window (make it visible) */
     xcb_map_window(conn, win);
@@ -949,9 +952,10 @@ int main(int argc, char *argv[]) {
     }
 
     /* Startup complete. */
-    sn_launchee_context_complete(sncontext);
-    sn_launchee_context_unref(sncontext);
-    sn_display_unref(sndisplay);
+    if (sncontext) {
+        sn_launchee_context_complete(sncontext);
+        sn_launchee_context_unref(sncontext);
+    }
 
     xcb_flush(conn);
 
