@@ -806,6 +806,18 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             XCB_ATOM_CARDINAL, 32, 4,
             &r);
         xcb_flush(conn);
+    } else if (event->type == A_WM_CHANGE_STATE) {
+        /* http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.4 */
+        if (event->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
+            /* For compatiblity reasons, Wine will request iconic state and cannot ensure that the WM has agreed on it;
+             * immediately revert to normal to avoid being stuck in a paused state. */
+            DLOG("Client has requested iconic state, rejecting. (window = %d)\n", event->window);
+            long data[] = {XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE};
+            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, event->window,
+                                A_WM_STATE, A_WM_STATE, 32, 2, data);
+        } else {
+            DLOG("Not handling WM_CHANGE_STATE request. (window = %d, state = %d)\n", event->window, event->data.data32[0]);
+        }
     } else if (event->type == A__NET_CURRENT_DESKTOP) {
         /* This request is used by pagers and bars to change the current
          * desktop likely as a result of some user action. We interpret this as
