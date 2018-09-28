@@ -196,7 +196,7 @@ i3String *i3string_from_markup(const char *from_markup);
 
 /**
  * Build an i3String from an UTF-8 encoded string with fixed length.
- * To be used when no proper NUL-terminaison is available.
+ * To be used when no proper NULL-termination is available.
  * Returns the newly-allocated i3String.
  *
  */
@@ -319,6 +319,11 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
  *
  */
 void fake_configure_notify(xcb_connection_t *conn, xcb_rectangle_t r, xcb_window_t window, int border_width);
+
+#define HAS_G_UTF8_MAKE_VALID GLIB_CHECK_VERSION(2, 52, 0)
+#if !HAS_G_UTF8_MAKE_VALID
+gchar *g_utf8_make_valid(const gchar *str, gssize len);
+#endif
 
 /**
  * Returns the colorpixel to use for the given hex color (think of HTML). Only

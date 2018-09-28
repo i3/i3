@@ -301,6 +301,7 @@ libi3_a_SOURCES = \
 	libi3/fake_configure_notify.c \
 	libi3/font.c \
 	libi3/format_placeholders.c \
+	libi3/g_utf8_make_valid.c \
 	libi3/get_colorpixel.c \
 	libi3/get_config_path.c \
 	libi3/get_exe_path.c \
