@@ -936,6 +936,10 @@ int con_num_windows(Con *con) {
         num += con_num_windows(current);
     }
 
+    TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
+        num += con_num_windows(current);
+    }
+
     return num;
 }
 
