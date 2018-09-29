@@ -1072,7 +1072,7 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
 
     /* Convert numerator/denominator to a double */
     double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
-    double max_aspect = (double)size_hints.max_aspect_num / size_hints.min_aspect_den;
+    double max_aspect = (double)size_hints.max_aspect_num / size_hints.max_aspect_den;
 
     DLOG("Aspect ratio set: minimum %f, maximum %f\n", min_aspect, max_aspect);
     DLOG("width = %f, height = %f\n", width, height);
