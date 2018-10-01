@@ -64,35 +64,6 @@ void render_con(Con *con, bool render_fullscreen) {
         inset->width -= (2 * con->border_width);
         inset->height -= (2 * con->border_width);
 
-        /* Obey the aspect ratio, if any, unless we are in fullscreen mode.
-         *
-         * The spec isn’t explicit on whether the aspect ratio hints should be
-         * respected during fullscreen mode. Other WMs such as Openbox don’t do
-         * that, and this post suggests that this is the correct way to do it:
-         * https://mail.gnome.org/archives/wm-spec-list/2003-May/msg00007.html
-         *
-         * Ignoring aspect ratio during fullscreen was necessary to fix MPlayer
-         * subtitle rendering, see https://bugs.i3wm.org/594 */
-        if (!render_fullscreen && con->window->aspect_ratio > 0.0) {
-            DLOG("aspect_ratio = %f, current width/height are %d/%d\n",
-                 con->window->aspect_ratio, inset->width, inset->height);
-            double new_height = inset->height + 1;
-            int new_width = inset->width;
-
-            while (new_height > inset->height) {
-                new_height = (1.0 / con->window->aspect_ratio) * new_width;
-
-                if (new_height > inset->height)
-                    new_width--;
-            }
-            /* Center the window */
-            inset->y += ceil(inset->height / 2) - floor((new_height + .5) / 2);
-            inset->x += ceil(inset->width / 2) - floor(new_width / 2);
-
-            inset->height = new_height + .5;
-            inset->width = new_width;
-        }
-
         /* NB: We used to respect resize increment size hints for tiling
          * windows up until commit 0db93d9 here. However, since all terminal
          * emulators cope with ignoring the size hints in a better way than we

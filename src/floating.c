@@ -60,12 +60,17 @@ static void floating_set_hint_atom(Con *con, bool floating) {
 }
 
 /*
- * Called when a floating window is created or resized.
- * This function resizes the window if its size is higher or lower than the
- * configured maximum/minimum size, respectively.
+ * Called when a floating window is created or resized.  This function resizes
+ * the window if its size is higher or lower than the configured maximum/minimum
+ * size, respectively or when adjustments are needed to conform to the
+ * configured size increments or aspect ratio limits.
+ *
+ * When prefer_height is true and the window needs to be resized because of the
+ * configured aspect ratio, the width is adjusted first, preserving the previous
+ * height.
  *
  */
-void floating_check_size(Con *floating_con) {
+void floating_check_size(Con *floating_con, bool prefer_height) {
     /* Define reasonable minimal and maximal sizes for floating windows */
     const int floating_sane_min_height = 50;
     const int floating_sane_min_width = 75;
@@ -85,15 +90,22 @@ void floating_check_size(Con *floating_con) {
 
     i3Window *window = focused_con->window;
     if (window != NULL) {
-        if (window->min_width) {
+        /* ICCCM says: If a base size is not provided, the minimum size is to be used in its place
+         * and vice versa. */
+        int min_width = (window->min_width ? window->min_width : window->base_width);
+        int min_height = (window->min_height ? window->min_height : window->base_height);
+        int base_width = (window->base_width ? window->base_width : window->min_width);
+        int base_height = (window->base_height ? window->base_height : window->min_height);
+
+        if (min_width) {
             floating_con->rect.width -= border_rect.width;
-            floating_con->rect.width = max(floating_con->rect.width, window->min_width);
+            floating_con->rect.width = max(floating_con->rect.width, min_width);
             floating_con->rect.width += border_rect.width;
         }
 
-        if (window->min_height) {
+        if (min_height) {
             floating_con->rect.height -= border_rect.height;
-            floating_con->rect.height = max(floating_con->rect.height, window->min_height);
+            floating_con->rect.height = max(floating_con->rect.height, min_height);
             floating_con->rect.height += border_rect.height;
         }
 
@@ -109,18 +121,56 @@ void floating_check_size(Con *floating_con) {
             floating_con->rect.height += border_rect.height;
         }
 
+        /* Obey the aspect ratio, if any, unless we are in fullscreen mode.
+         *
+         * The spec isn’t explicit on whether the aspect ratio hints should be
+         * respected during fullscreen mode. Other WMs such as Openbox don’t do
+         * that, and this post suggests that this is the correct way to do it:
+         * https://mail.gnome.org/archives/wm-spec-list/2003-May/msg00007.html
+         *
+         * Ignoring aspect ratio during fullscreen was necessary to fix MPlayer
+         * subtitle rendering, see https://bugs.i3wm.org/594 */
+        const double min_ar = window->min_aspect_ratio;
+        const double max_ar = window->max_aspect_ratio;
+        if (floating_con->fullscreen_mode == CF_NONE && (min_ar > 0 || max_ar > 0)) {
+            /* The ICCCM says to subtract the base size from the window size for
+             * aspect ratio calculations. However, unlike determining the base
+             * size itself we must not fall back to using the minimum size in
+             * this case according to the ICCCM. */
+            double width = floating_con->rect.width - window->base_width - border_rect.width;
+            double height = floating_con->rect.height - window->base_height - border_rect.height;
+            const double ar = (double)width / (double)height;
+            double new_ar = -1;
+            if (min_ar > 0 && ar < min_ar) {
+                new_ar = min_ar;
+            } else if (max_ar > 0 && ar > max_ar) {
+                new_ar = max_ar;
+            }
+            if (new_ar > 0) {
+                if (prefer_height) {
+                    width = round(height * new_ar);
+                    height = round(width / new_ar);
+                } else {
+                    height = round(width / new_ar);
+                    width = round(height * new_ar);
+                }
+                floating_con->rect.width = width + window->base_width + border_rect.width;
+                floating_con->rect.height = height + window->base_height + border_rect.height;
+            }
+        }
+
         if (window->height_increment &&
-            floating_con->rect.height >= window->base_height + border_rect.height) {
-            floating_con->rect.height -= window->base_height + border_rect.height;
+            floating_con->rect.height >= base_height + border_rect.height) {
+            floating_con->rect.height -= base_height + border_rect.height;
             floating_con->rect.height -= floating_con->rect.height % window->height_increment;
-            floating_con->rect.height += window->base_height + border_rect.height;
+            floating_con->rect.height += base_height + border_rect.height;
         }
 
         if (window->width_increment &&
-            floating_con->rect.width >= window->base_width + border_rect.width) {
-            floating_con->rect.width -= window->base_width + border_rect.width;
+            floating_con->rect.width >= base_width + border_rect.width) {
+            floating_con->rect.width -= base_width + border_rect.width;
             floating_con->rect.width -= floating_con->rect.width % window->width_increment;
-            floating_con->rect.width += window->base_width + border_rect.width;
+            floating_con->rect.width += base_width + border_rect.width;
         }
     }
 
@@ -314,7 +364,7 @@ void floating_enable(Con *con, bool automatic) {
     nc->rect.height += con->border_width * 2;
     nc->rect.width += con->border_width * 2;
 
-    floating_check_size(nc);
+    floating_check_size(nc, false);
 
     /* Some clients (like GIMP’s color picker window) get mapped
      * to (0, 0), so we push them to a reasonable position
@@ -612,7 +662,7 @@ DRAGGING_CB(resize_window_callback) {
     con->rect = (Rect){dest_x, dest_y, dest_width, dest_height};
 
     /* Obey window size */
-    floating_check_size(con);
+    floating_check_size(con, false);
 
     /* If not the lower right corner is grabbed, we must also reposition
      * the client by exactly the amount we resized it */
@@ -931,6 +981,7 @@ void floating_resize(Con *floating_con, uint32_t x, uint32_t y) {
     }
     int wi = focused_con->window->width_increment;
     int hi = focused_con->window->height_increment;
+    bool prefer_height = (rect->width == x);
     rect->width = x;
     rect->height = y;
     if (wi)
@@ -938,7 +989,7 @@ void floating_resize(Con *floating_con, uint32_t x, uint32_t y) {
     if (hi)
         rect->height += (hi - 1 - rect->height) % hi;
 
-    floating_check_size(floating_con);
+    floating_check_size(floating_con, prefer_height);
 
     /* If this is a scratchpad window, don't auto center it from now on. */
     if (floating_con->scratchpad_state == SCRATCHPAD_FRESH)

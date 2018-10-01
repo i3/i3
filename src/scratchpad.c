@@ -196,7 +196,7 @@ bool scratchpad_show(Con *con) {
         Con *output = con_get_output(con);
         con->rect.width = output->rect.width * 0.5;
         con->rect.height = output->rect.height * 0.75;
-        floating_check_size(con);
+        floating_check_size(con, false);
         floating_center(con, con_get_workspace(con)->rect);
     }
 

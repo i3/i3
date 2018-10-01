@@ -46,7 +46,6 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     new->current_border_width = -1;
     if (window) {
         new->depth = window->depth;
-        new->window->aspect_ratio = 0.0;
     } else {
         new->depth = root_depth;
     }

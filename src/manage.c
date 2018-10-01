@@ -185,9 +185,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_hints(cwindow, xcb_get_property_reply(conn, wm_hints_cookie, NULL), &urgency_hint);
     border_style_t motif_border_style = BS_NORMAL;
     window_update_motif_hints(cwindow, xcb_get_property_reply(conn, motif_wm_hints_cookie, NULL), &motif_border_style);
-    xcb_size_hints_t wm_size_hints;
-    if (!xcb_icccm_get_wm_size_hints_reply(conn, wm_normal_hints_cookie, &wm_size_hints, NULL))
-        memset(&wm_size_hints, '\0', sizeof(xcb_size_hints_t));
+    window_update_normal_hints(cwindow, xcb_get_property_reply(conn, wm_normal_hints_cookie, NULL), geom);
     xcb_get_property_reply_t *type_reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
     xcb_get_property_reply_t *state_reply = xcb_get_property_reply(conn, state_cookie, NULL);
 
@@ -437,10 +435,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_TOOLBAR) ||
         xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_SPLASH) ||
         xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_MODAL) ||
-        (wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MAX_SIZE &&
-         wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE &&
-         wm_size_hints.min_height == wm_size_hints.max_height &&
-         wm_size_hints.min_width == wm_size_hints.max_width)) {
+        (cwindow->max_width > 0 && cwindow->max_height > 0 &&
+         cwindow->min_height == cwindow->max_height &&
+         cwindow->min_width == cwindow->max_width)) {
         LOG("This window is a dialog window, setting floating\n");
         want_floating = true;
     }
@@ -498,29 +495,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* dock clients cannot be floating, that makes no sense */
     if (cwindow->dock)
         want_floating = false;
-
-    /* Plasma windows set their geometry in WM_SIZE_HINTS. */
-    if ((wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_US_POSITION || wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_POSITION) &&
-        (wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_US_SIZE || wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_SIZE)) {
-        DLOG("We are setting geometry according to wm_size_hints x=%d y=%d w=%d h=%d\n",
-             wm_size_hints.x, wm_size_hints.y, wm_size_hints.width, wm_size_hints.height);
-        geom->x = wm_size_hints.x;
-        geom->y = wm_size_hints.y;
-        geom->width = wm_size_hints.width;
-        geom->height = wm_size_hints.height;
-    }
-
-    if (wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE) {
-        DLOG("Window specifies minimum size %d x %d\n", wm_size_hints.min_width, wm_size_hints.min_height);
-        nc->window->min_width = wm_size_hints.min_width;
-        nc->window->min_height = wm_size_hints.min_height;
-    }
-
-    if (wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MAX_SIZE) {
-        DLOG("Window specifies maximum size %d x %d\n", wm_size_hints.max_width, wm_size_hints.max_height);
-        nc->window->max_width = wm_size_hints.max_width;
-        nc->window->max_height = wm_size_hints.max_height;
-    }
 
     /* Store the requested geometry. The width/height gets raised to at least
      * 75x50 when entering floating mode, which is the minimum size for a
