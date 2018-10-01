@@ -152,7 +152,7 @@ bool floating_reposition(Con *con, Rect newrect);
  * window's size hints.
  *
  */
-void floating_resize(Con *floating_con, int x, int y);
+void floating_resize(Con *floating_con, uint32_t x, uint32_t y);
 
 /**
  * Fixes the coordinates of the floating window whenever the window gets

@@ -921,7 +921,7 @@ bool floating_reposition(Con *con, Rect newrect) {
  * window's size hints.
  *
  */
-void floating_resize(Con *floating_con, int x, int y) {
+void floating_resize(Con *floating_con, uint32_t x, uint32_t y) {
     DLOG("floating resize to %dx%d px\n", x, y);
     Rect *rect = &floating_con->rect;
     Con *focused_con = con_descend_focused(floating_con);
