@@ -674,9 +674,7 @@ DRAGGING_CB(resize_window_callback) {
     con->rect.x = dest_x;
     con->rect.y = dest_y;
 
-    /* TODO: don’t re-render the whole tree just because we change
-     * coordinates of a floating window */
-    tree_render();
+    render_con(con);
     x_push_changes(croot);
 }
 
@@ -957,7 +955,7 @@ bool floating_reposition(Con *con, Rect newrect) {
 
     /* Workspace change will already result in a tree_render. */
     if (!reassigned) {
-        render_con(con, false);
+        render_con(con);
         x_push_node(con);
     }
     return true;
