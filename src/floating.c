@@ -83,43 +83,44 @@ void floating_check_size(Con *floating_con) {
         border_rect.height += render_deco_height();
     }
 
-    if (focused_con->window != NULL) {
-        if (focused_con->window->min_width) {
+    i3Window *window = focused_con->window;
+    if (window != NULL) {
+        if (window->min_width) {
             floating_con->rect.width -= border_rect.width;
-            floating_con->rect.width = max(floating_con->rect.width, focused_con->window->min_width);
+            floating_con->rect.width = max(floating_con->rect.width, window->min_width);
             floating_con->rect.width += border_rect.width;
         }
 
-        if (focused_con->window->min_height) {
+        if (window->min_height) {
             floating_con->rect.height -= border_rect.height;
-            floating_con->rect.height = max(floating_con->rect.height, focused_con->window->min_height);
+            floating_con->rect.height = max(floating_con->rect.height, window->min_height);
             floating_con->rect.height += border_rect.height;
         }
 
-        if (focused_con->window->max_width) {
+        if (window->max_width) {
             floating_con->rect.width -= border_rect.width;
-            floating_con->rect.width = min(floating_con->rect.width, focused_con->window->max_width);
+            floating_con->rect.width = min(floating_con->rect.width, window->max_width);
             floating_con->rect.width += border_rect.width;
         }
 
-        if (focused_con->window->max_height) {
+        if (window->max_height) {
             floating_con->rect.height -= border_rect.height;
-            floating_con->rect.height = min(floating_con->rect.height, focused_con->window->max_height);
+            floating_con->rect.height = min(floating_con->rect.height, window->max_height);
             floating_con->rect.height += border_rect.height;
         }
 
-        if (focused_con->window->height_increment &&
-            floating_con->rect.height >= focused_con->window->base_height + border_rect.height) {
-            floating_con->rect.height -= focused_con->window->base_height + border_rect.height;
-            floating_con->rect.height -= floating_con->rect.height % focused_con->window->height_increment;
-            floating_con->rect.height += focused_con->window->base_height + border_rect.height;
+        if (window->height_increment &&
+            floating_con->rect.height >= window->base_height + border_rect.height) {
+            floating_con->rect.height -= window->base_height + border_rect.height;
+            floating_con->rect.height -= floating_con->rect.height % window->height_increment;
+            floating_con->rect.height += window->base_height + border_rect.height;
         }
 
-        if (focused_con->window->width_increment &&
-            floating_con->rect.width >= focused_con->window->base_width + border_rect.width) {
-            floating_con->rect.width -= focused_con->window->base_width + border_rect.width;
-            floating_con->rect.width -= floating_con->rect.width % focused_con->window->width_increment;
-            floating_con->rect.width += focused_con->window->base_width + border_rect.width;
+        if (window->width_increment &&
+            floating_con->rect.width >= window->base_width + border_rect.width) {
+            floating_con->rect.width -= window->base_width + border_rect.width;
+            floating_con->rect.width -= floating_con->rect.width % window->width_increment;
+            floating_con->rect.width += window->base_width + border_rect.width;
         }
     }
 
