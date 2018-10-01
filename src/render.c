@@ -37,16 +37,15 @@ int render_deco_height(void) {
  * updated in X11.
  *
  */
-void render_con(Con *con, bool render_fullscreen) {
+void render_con(Con *con) {
     render_params params = {
         .rect = con->rect,
         .x = con->rect.x,
         .y = con->rect.y,
         .children = con_num_children(con)};
 
-    DLOG("Rendering %snode %p / %s / layout %d / children %d\n",
-         (render_fullscreen ? "fullscreen " : ""), con, con->name, con->layout,
-         params.children);
+    DLOG("Rendering node %p / %s / layout %d / children %d\n", con, con->name,
+         con->layout, params.children);
 
     int i = 0;
     con->mapped = true;
@@ -57,8 +56,9 @@ void render_con(Con *con, bool render_fullscreen) {
          * needs to be smaller */
         Rect *inset = &(con->window_rect);
         *inset = (Rect){0, 0, con->rect.width, con->rect.height};
-        if (!render_fullscreen)
+        if (con->fullscreen_mode == CF_NONE) {
             *inset = rect_add(*inset, con_border_style_rect(con));
+        }
 
         /* Obey x11 border */
         inset->width -= (2 * con->border_width);
@@ -81,7 +81,7 @@ void render_con(Con *con, bool render_fullscreen) {
     if (fullscreen) {
         fullscreen->rect = params.rect;
         x_raise_con(fullscreen);
-        render_con(fullscreen, true);
+        render_con(fullscreen);
         /* Fullscreen containers are either global (underneath the CT_ROOT
          * container) or per-output (underneath the CT_CONTENT container). For
          * global fullscreen containers, we cannot abort rendering here yet,
@@ -124,7 +124,7 @@ void render_con(Con *con, bool render_fullscreen) {
             DLOG("child at (%d, %d) with (%d x %d)\n",
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
             x_raise_con(child);
-            render_con(child, false);
+            render_con(child);
             i++;
         }
 
@@ -137,7 +137,7 @@ void render_con(Con *con, bool render_fullscreen) {
              * that we have a non-leaf-container inside the stack. In that
              * case, the children of the non-leaf-container need to be raised
              * as well. */
-                render_con(child, false);
+                render_con(child);
             }
 
             if (params.children != 1)
@@ -186,7 +186,7 @@ static void render_root(Con *con, Con *fullscreen) {
     Con *output;
     if (!fullscreen) {
         TAILQ_FOREACH(output, &(con->nodes_head), nodes) {
-            render_con(output, false);
+            render_con(output);
         }
     }
 
@@ -252,7 +252,7 @@ static void render_root(Con *con, Con *fullscreen) {
             DLOG("floating child at (%d,%d) with %d x %d\n",
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
             x_raise_con(child);
-            render_con(child, false);
+            render_con(child);
         }
     }
 }
@@ -302,7 +302,7 @@ static void render_output(Con *con) {
     if (fullscreen) {
         fullscreen->rect = con->rect;
         x_raise_con(fullscreen);
-        render_con(fullscreen, true);
+        render_con(fullscreen);
         return;
     }
 
@@ -342,7 +342,7 @@ static void render_output(Con *con) {
         DLOG("child at (%d, %d) with (%d x %d)\n",
              child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         x_raise_con(child);
-        render_con(child, false);
+        render_con(child);
     }
 }
 
