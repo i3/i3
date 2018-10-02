@@ -246,9 +246,6 @@ int main(int argc, char *argv[]) {
         err(EXIT_FAILURE, "IPC: write()");
     free(payload);
 
-    if (quiet)
-        return 0;
-
     uint32_t reply_length;
     uint32_t reply_type;
     uint8_t *reply;
@@ -275,8 +272,9 @@ int main(int argc, char *argv[]) {
                 errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
         }
 
-        /* NB: We still fall-through and print the reply, because even if one
-         * command failed, that doesn’t mean that all commands failed. */
+        if (!quiet) {
+            printf("%.*s\n", reply_length, reply);
+        }
     } else if (reply_type == I3_IPC_REPLY_TYPE_CONFIG) {
         yajl_handle handle = yajl_alloc(&config_callbacks, NULL, NULL);
         yajl_status state = yajl_parse(handle, (const unsigned char *)reply, reply_length);
@@ -289,12 +287,12 @@ int main(int argc, char *argv[]) {
             case yajl_status_error:
                 errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
         }
-
-        goto exit;
+    } else {
+        if (!quiet) {
+            printf("%.*s\n", reply_length, reply);
+        }
     }
-    printf("%.*s\n", reply_length, reply);
 
-exit:
     free(reply);
 
     close(sockfd);
