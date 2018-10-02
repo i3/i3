@@ -755,14 +755,23 @@ set_from_resource $black i3wm.color0 #000000
 
 To automatically make a specific window show up on a specific workspace, you
 can use an *assignment*. You can match windows by using any criteria,
-see <<command_criteria>>. It is recommended that you match on window classes
-(and instances, when appropriate) instead of window titles whenever possible
-because some applications first create their window, and then worry about
-setting the correct title. Firefox with Vimperator comes to mind. The window
-starts up being named Firefox, and only when Vimperator is loaded does the
-title change. As i3 will get the title as soon as the application maps the
-window (mapping means actually displaying it on the screen), you’d need to have
-to match on 'Firefox' in this case.
+see <<command_criteria>>. The difference between +assign+ and
++for_window <criteria> move to workspace+ is that the former will only be
+executed when the application maps the window (mapping means actually displaying
+it on the screen) but the latter will be executed whenever a window changes its
+properties to something that matches the specified criteria.
+
+Thus, it is recommended that you match on window classes (and instances, when
+appropriate) instead of window titles whenever possible because some
+applications first create their window, and then worry about setting the correct
+title. Firefox with Vimperator comes to mind. The window starts up being named
+Firefox, and only when Vimperator is loaded does the title change. As i3 will
+get the title as soon as the application maps the window, you’d need to have to
+match on 'Firefox' in this case.
+Another known issue is with Spotify, which doesn't set the class hints when
+mapping the window, meaning you'll have to use a +for_window+ rule to assign
+Spotify to a specific workspace.
+Finally, using +assign [tiling]+ and +assign [floating]+ is not supported.
 
 You can also assign a window to show up on a specific output. You can use RandR
 names such as +VGA1+ or names relative to the output with the currently focused
