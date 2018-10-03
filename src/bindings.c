@@ -859,8 +859,6 @@ static int fill_rmlvo_from_root(struct xkb_rule_names *xkb_names) {
     xcb_intern_atom_reply_t *atom_reply;
     size_t content_max_words = 256;
 
-    xcb_window_t root = root_screen->root;
-
     atom_reply = xcb_intern_atom_reply(
         conn, xcb_intern_atom(conn, 0, strlen("_XKB_RULES_NAMES"), "_XKB_RULES_NAMES"), NULL);
     if (atom_reply == NULL)
