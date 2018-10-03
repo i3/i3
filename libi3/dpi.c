@@ -49,7 +49,7 @@ void init_dpi(void) {
         dpi = 0;
         goto init_dpi_end;
     }
-    dpi = (long)round(in_dpi);
+    dpi = lround(in_dpi);
 
     DLOG("Found Xft.dpi = %ld.\n", dpi);
 
