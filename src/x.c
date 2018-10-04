@@ -504,9 +504,7 @@ void x_draw_decoration(Con *con) {
     /* 3: draw a rectangle in border color around the client */
     if (p->border_style != BS_NONE && p->con_is_leaf) {
         /* We might hide some borders adjacent to the screen-edge */
-        adjacent_t borders_to_hide = ADJ_NONE;
-        borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
-
+        adjacent_t borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
         Rect br = con_border_style_rect(con);
 
         /* These rectangles represent the border around the child window
