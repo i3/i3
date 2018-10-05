@@ -166,16 +166,18 @@ int main(int argc, char *argv[]) {
     uint32_t message_type = I3_IPC_MESSAGE_TYPE_RUN_COMMAND;
     char *payload = NULL;
     bool quiet = false;
+    bool monitor = false;
 
     static struct option long_options[] = {
         {"socket", required_argument, 0, 's'},
         {"type", required_argument, 0, 't'},
         {"version", no_argument, 0, 'v'},
         {"quiet", no_argument, 0, 'q'},
+        {"monitor", no_argument, 0, 'm'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}};
 
-    char *options_string = "s:t:vhq";
+    char *options_string = "s:t:vhqm";
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         if (o == 's') {
@@ -204,23 +206,32 @@ int main(int argc, char *argv[]) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_CONFIG;
             } else if (strcasecmp(optarg, "send_tick") == 0) {
                 message_type = I3_IPC_MESSAGE_TYPE_SEND_TICK;
+            } else if (strcasecmp(optarg, "subscribe") == 0) {
+                message_type = I3_IPC_MESSAGE_TYPE_SUBSCRIBE;
             } else {
                 printf("Unknown message type\n");
-                printf("Known types: run_command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config, get_binding_modes, get_version, get_config, send_tick\n");
+                printf("Known types: run_command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config, get_binding_modes, get_version, get_config, send_tick, subscribe\n");
                 exit(EXIT_FAILURE);
             }
         } else if (o == 'q') {
             quiet = true;
+        } else if (o == 'm') {
+            monitor = true;
         } else if (o == 'v') {
             printf("i3-msg " I3_VERSION "\n");
             return 0;
         } else if (o == 'h') {
             printf("i3-msg " I3_VERSION "\n");
-            printf("i3-msg [-s <socket>] [-t <type>] <message>\n");
+            printf("i3-msg [-s <socket>] [-t <type>] [-m] <message>\n");
             return 0;
         } else if (o == '?') {
             exit(EXIT_FAILURE);
         }
+    }
+
+    if (monitor && message_type != I3_IPC_MESSAGE_TYPE_SUBSCRIBE) {
+        fprintf(stderr, "The monitor option -m is used with -t SUBSCRIBE exclusively.\n");
+        exit(EXIT_FAILURE);
     }
 
     /* Use all arguments, separated by whitespace, as payload.
@@ -245,9 +256,6 @@ int main(int argc, char *argv[]) {
     if (ipc_send_message(sockfd, strlen(payload), message_type, (uint8_t *)payload) == -1)
         err(EXIT_FAILURE, "IPC: write()");
     free(payload);
-
-    if (quiet)
-        return 0;
 
     uint32_t reply_length;
     uint32_t reply_type;
@@ -275,8 +283,9 @@ int main(int argc, char *argv[]) {
                 errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
         }
 
-        /* NB: We still fall-through and print the reply, because even if one
-         * command failed, that doesn’t mean that all commands failed. */
+        if (!quiet) {
+            printf("%.*s\n", reply_length, reply);
+        }
     } else if (reply_type == I3_IPC_REPLY_TYPE_CONFIG) {
         yajl_handle handle = yajl_alloc(&config_callbacks, NULL, NULL);
         yajl_status state = yajl_parse(handle, (const unsigned char *)reply, reply_length);
@@ -289,12 +298,30 @@ int main(int argc, char *argv[]) {
             case yajl_status_error:
                 errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
         }
+    } else if (reply_type == I3_IPC_REPLY_TYPE_SUBSCRIBE) {
+        do {
+            free(reply);
+            if ((ret = ipc_recv_message(sockfd, &reply_type, &reply_length, &reply)) != 0) {
+                if (ret == -1)
+                    err(EXIT_FAILURE, "IPC: read()");
+                exit(1);
+            }
 
-        goto exit;
+            if (!(reply_type & I3_IPC_EVENT_MASK)) {
+                errx(EXIT_FAILURE, "IPC: Received reply of type %d but expected an event", reply_type);
+            }
+
+            if (!quiet) {
+                fprintf(stdout, "%.*s\n", reply_length, reply);
+                fflush(stdout);
+            }
+        } while (monitor);
+    } else {
+        if (!quiet) {
+            printf("%.*s\n", reply_length, reply);
+        }
     }
-    printf("%.*s\n", reply_length, reply);
 
-exit:
     free(reply);
 
     close(sockfd);
