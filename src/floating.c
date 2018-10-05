@@ -899,13 +899,17 @@ bool floating_reposition(Con *con, Rect newrect) {
 
     con->rect = newrect;
 
-    floating_maybe_reassign_ws(con);
+    bool reassigned = floating_maybe_reassign_ws(con);
 
     /* If this is a scratchpad window, don't auto center it from now on. */
     if (con->scratchpad_state == SCRATCHPAD_FRESH)
         con->scratchpad_state = SCRATCHPAD_CHANGED;
 
-    tree_render();
+    /* Workspace change will already result in a tree_render. */
+    if (!reassigned) {
+        render_con(con, false);
+        x_push_node(con);
+    }
     return true;
 }
 
