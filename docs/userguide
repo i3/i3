@@ -2667,7 +2667,8 @@ A 4K monitor is great, but if you do not change the configurationn of
 i3 you need really good eyes: the letters become very, very
 small. Here are some suggestions to properly setup your environment.
 
-Change "~/.Xresoures" to include the following
+Change "~/.Xresoures" to include the following (for more details on
+"~/.Xresourses" see https://wiki.archlinux.org/index.php/HiDPI).
 -------------------------------------------------------------------------------
 $ cat > ~/.Xresources
 ! Fonts {{{
@@ -2679,7 +2680,8 @@ Xft.dpi:       130
 ! }}}
 -------------------------------------------------------------------------------
 
-Go to the font section of "~/.i3/config" and add the last lines of the below.
+Next,go to the font section of "~/.i3/config" and add/uncomment the
+last two lines of the below.
 -------------------------------------------------------------------------------
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below. ISO 10646 = Unicode
@@ -2692,18 +2694,13 @@ font pango:DejaVu Sans Mono 10
 font pango:Source Code Pro for Powerline 10
 -------------------------------------------------------------------------------
 
-Finaly, the fonts in the regular "xterm" remain still very small. So I
-chose the i3-sensible-terminal option in "~/.i3/config": 
--------------------------------------------------------------------------------
-# start a terminal
-bindsym $mod+Return exec i3-sensible-terminal
--------------------------------------------------------------------------------
+Finaly, the fonts in the regular "xterm" remain still very small. So
+chose either of the following terminals in "~/.i3/config":
 
-On Ubunt this also worked:
 -------------------------------------------------------------------------------
 # start a terminal
-#bindsym $mod+Return exec i3-sensible-terminal
-bindsym $mod+Return exec gnome-terminal
+bindsym $mod+Return exec i3-sensible-terminal # use this option
+# bindsym $mod+Return exec gnome-terminal     # or this option
 -------------------------------------------------------------------------------
 
 
