@@ -2656,8 +2656,59 @@ bindsym $mod+b bar mode hide bar-1
 bindsym $mod+Shift+b bar mode invisible bar-1
 ------------------------------------------------
 
+[[monitors]]
+== Monitors 
+
+Here we discuss how to setup 4K monitors and support for multiple monitors.
+
+=== 4K Monitors
+
+A 4K monitor is great, but if you do not change the configurationn of
+i3 you need really good eyes: the letters become very, very
+small. Here are some suggestions to properly setup your environment.
+
+Change "~/.Xresoures" to include the following
+-------------------------------------------------------------------------------
+$ cat > ~/.Xresources
+! Fonts {{{
+Xft.antialias: true
+Xft.hinting:   true
+Xft.rgba:      rgb
+Xft.hintstyle: hintfull
+Xft.dpi:       130
+! }}}
+-------------------------------------------------------------------------------
+
+Go to the font section of "~/.i3/config" and add the last lines of the below.
+-------------------------------------------------------------------------------
+# Font for window titles. Will also be used by the bar unless a different font
+# is used in the bar {} block below. ISO 10646 = Unicode
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+# The font above is very space-efficient, that is, it looks good, sharp and
+# clear in small sizes. However, if you need a lot of unicode glyphs or
+# right-to-left text rendering, you should instead use pango for rendering and
+# chose a FreeType font, such as:
+font pango:DejaVu Sans Mono 10
+font pango:Source Code Pro for Powerline 10
+-------------------------------------------------------------------------------
+
+Finaly, the fonts in the regular "xterm" remain still very small. So I
+chose the i3-sensible-terminal option in "~/.i3/config": 
+-------------------------------------------------------------------------------
+# start a terminal
+bindsym $mod+Return exec i3-sensible-terminal
+-------------------------------------------------------------------------------
+
+On Ubunt this also worked:
+-------------------------------------------------------------------------------
+# start a terminal
+#bindsym $mod+Return exec i3-sensible-terminal
+bindsym $mod+Return exec gnome-terminal
+-------------------------------------------------------------------------------
+
+
 [[multi_monitor]]
-== Multiple monitors
+=== Multiple monitors
 
 As you can see in the goal list on the website, i3 was specifically developed
 with support for multiple monitors in mind. This section will explain how to
@@ -2683,7 +2734,7 @@ create an unlimited number of workspaces in i3 and tie them to specific
 screens, you can have the "traditional" approach of having X workspaces per
 screen by changing your configuration (using modes, for example).
 
-=== Configuring your monitors
+==== Configuring your monitors
 
 To help you get going if you have never used multiple monitors before, here is
 a short overview of the xrandr options which will probably be of interest to
@@ -2747,7 +2798,7 @@ only what you can see in xrandr.
 
 See also <<presentations>> for more examples of multi-monitor setups.
 
-=== Interesting configuration for multi-monitor environments
+==== Interesting configuration for multi-monitor environments
 
 There are several things to configure in i3 which may be interesting if you
 have more than one monitor:
