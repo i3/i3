@@ -2667,8 +2667,8 @@ A 4K monitor is great, but if you do not change the configurationn of
 i3 you need really good eyes: the letters become very, very
 small. Here are some suggestions to properly setup your environment.
 
-Change "~/.Xresoures" to include the following (for more details on
-"~/.Xresourses" see https://wiki.archlinux.org/index.php/HiDPI).
+Change "~/.Xresourses" to include the following (for more details on
+"~/.Xresources" see https://wiki.archlinux.org/index.php/HiDPI).
 -------------------------------------------------------------------------------
 $ cat > ~/.Xresources
 ! Fonts {{{
