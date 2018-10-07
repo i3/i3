@@ -1,3 +1,8 @@
+---
+name: Feature request
+about: Suggest an idea for this project
+---
+
 <!--
 PLEASE HELP US PROCESS GITHUB ISSUES FASTER BY PROVIDING THE FOLLOWING INFORMATION.
 -->
@@ -6,7 +11,7 @@ PLEASE HELP US PROCESS GITHUB ISSUES FASTER BY PROVIDING THE FOLLOWING INFORMATI
 <!-- Please check one of the following options with "x" -->
 <pre>
 [ ] Bug
-[ ] Feature Request
+[x] Feature Request
 [ ] Documentation Request
 [ ] Other (Please describe in detail)
 </pre>
@@ -17,18 +22,10 @@ Describe the current behavior,
 e.g., »When pressing Alt+j (focus left), the window above the current window is focused.«
 -->
 
-## Expected Behavior
+## Desired Behavior
 <!--
 Describe the desired behavior you expect after mitigation of the issue,
 e.g., »The window left next to the current window should be focused.«
--->
-
-## Reproduction Instructions
-<!--
-For bug reports, please provide detailed instructions on how the bug can be reproduced.
-For feature requests you can remove this section.
-
-E.g., »Open three windows in a V[A H[B C]] layout on a new workspace«
 -->
 
 ## Environment
@@ -39,24 +36,6 @@ Note that we only support the latest major release and the current development v
 Output of `i3 --moreversion 2>&-`:
 <pre>
 i3 version: 
-</pre>
-
-<!--
-For bug reports, please include your (complete) i3 config with which the issue occurs. You can either paste the file directly or provide a link to a service such as pastebin.
-
-If you would like to help debugging the issue, please try to reduce the config such that it is as close to the default config as possible while still reproducing the issue. This can help us bisect the root cause.
--->
-<pre>
-</pre>
-
-<!--
-Providing a logfile can help us trace the root cause of an issue much quicker. You can learn how to generate the logfile here:
-https://i3wm.org/docs/debugging.html
-
-Providing the logfile is optional.
--->
-<pre>
-Logfile URL:
 </pre>
 
 <!--

@@ -1,3 +1,8 @@
+---
+name: Bug report
+about: Create a report to help us improve
+---
+
 <!--
 PLEASE HELP US PROCESS GITHUB ISSUES FASTER BY PROVIDING THE FOLLOWING INFORMATION.
 -->
@@ -5,7 +10,7 @@ PLEASE HELP US PROCESS GITHUB ISSUES FASTER BY PROVIDING THE FOLLOWING INFORMATI
 ## I'm submitting a…
 <!-- Please check one of the following options with "x" -->
 <pre>
-[ ] Bug
+[x] Bug
 [ ] Feature Request
 [ ] Documentation Request
 [ ] Other (Please describe in detail)
@@ -25,9 +30,7 @@ e.g., »The window left next to the current window should be focused.«
 
 ## Reproduction Instructions
 <!--
-For bug reports, please provide detailed instructions on how the bug can be reproduced.
-For feature requests you can remove this section.
-
+Please provide detailed instructions on how the bug can be reproduced.
 E.g., »Open three windows in a V[A H[B C]] layout on a new workspace«
 -->
 
@@ -42,7 +45,7 @@ i3 version:
 </pre>
 
 <!--
-For bug reports, please include your (complete) i3 config with which the issue occurs. You can either paste the file directly or provide a link to a service such as pastebin.
+Please include your (complete) i3 config with which the issue occurs. You can either paste the file directly or provide a link to a service such as pastebin.
 
 If you would like to help debugging the issue, please try to reduce the config such that it is as close to the default config as possible while still reproducing the issue. This can help us bisect the root cause.
 -->
