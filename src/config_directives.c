@@ -406,6 +406,11 @@ CFGFUN(assign_output, const char *output) {
         return;
     }
 
+    if (current_match->window_mode != WM_ANY) {
+        ELOG("Assignments using window mode (floating/tiling) is not supported\n");
+        return;
+    }
+
     DLOG("New assignment, using above criteria, to output \"%s\".\n", output);
     Assignment *assignment = scalloc(1, sizeof(Assignment));
     match_copy(&(assignment->match), current_match);
@@ -417,6 +422,11 @@ CFGFUN(assign_output, const char *output) {
 CFGFUN(assign, const char *workspace, bool is_number) {
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this assignment\n");
+        return;
+    }
+
+    if (current_match->window_mode != WM_ANY) {
+        ELOG("Assignments using window mode (floating/tiling) is not supported\n");
         return;
     }
 
