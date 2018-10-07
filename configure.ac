@@ -110,12 +110,27 @@ AC_PROG_MAKE_SET
 AC_PROG_RANLIB
 AC_PROG_LN_S
 
-AC_PATH_PROG([PATH_ASCIIDOC], [asciidoc])
-AC_PATH_PROG([PATH_XMLTO], [xmlto])
-AC_PATH_PROG([PATH_POD2MAN], [pod2man])
-
-AM_CONDITIONAL([BUILD_MANS], [test x$PATH_ASCIIDOC != x && test x$PATH_XMLTO != x && test x$PATH_POD2MAN != x])
-AM_CONDITIONAL([BUILD_DOCS], [test x$PATH_ASCIIDOC != x])
+AC_ARG_ENABLE(docs,
+  AS_HELP_STRING(
+    [--disable-docs],
+    [disable building documentation]),
+  [ax_docs=$enableval],
+  [ax_docs=yes])
+AC_ARG_ENABLE(mans,
+  AS_HELP_STRING(
+    [--disable-mans],
+    [disable building manual pages]),
+  [ax_mans=$enableval],
+  [ax_mans=yes])
+AS_IF([test x$ax_docs = xyes || test x$ax_mans = xyes], [
+  AC_PATH_PROG([PATH_ASCIIDOC], [asciidoc])
+])
+AS_IF([test x$ax_mans = xyes], [
+  AC_PATH_PROG([PATH_XMLTO], [xmlto])
+  AC_PATH_PROG([PATH_POD2MAN], [pod2man])
+])
+AM_CONDITIONAL([BUILD_MANS], [test x$ax_mans = xyes && test x$PATH_ASCIIDOC != x && test x$PATH_XMLTO != x && test x$PATH_POD2MAN != x])
+AM_CONDITIONAL([BUILD_DOCS], [test x$ax_docs = xyes && test x$PATH_ASCIIDOC != x])
 
 AM_PROG_AR
 
