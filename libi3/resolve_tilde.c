@@ -35,9 +35,10 @@ char *resolve_tilde(const char *path) {
     } else {
         head = globbuf.gl_pathv[0];
         result = scalloc(strlen(head) + (tail ? strlen(tail) : 0) + 1, 1);
-        strncpy(result, head, strlen(head));
-        if (tail)
-            strncat(result, tail, strlen(tail));
+        strcpy(result, head);
+        if (tail) {
+            strcat(result, tail);
+        }
     }
     globfree(&globbuf);
 
