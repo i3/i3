@@ -1954,11 +1954,17 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
     }
 
     Con *check_dest = get_existing_workspace_by_name(new_name);
+    if (!check_dest) {
+        long new_num = ws_name_to_number(new_name);
+        if (new_num != -1) {
+            check_dest = get_existing_workspace_by_num(new_num);
+        }
+    }
 
     /* If check_dest == workspace, the user might be changing the case of the
      * workspace, or it might just be a no-op. */
     if (check_dest != NULL && check_dest != workspace) {
-        yerror("New workspace \"%s\" already exists", new_name);
+        yerror("Workspace %ld named \"%s\" already exists", check_dest->num, check_dest->name);
         return;
     }
 
