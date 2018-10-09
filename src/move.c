@@ -298,9 +298,10 @@ void tree_move(Con *con, int direction) {
 
         /* easy case: the move is within this container */
         if (same_orientation == con->parent) {
-            DLOG("We are in the same container\n");
-            Con *swap;
-            if ((swap = (direction == D_LEFT || direction == D_UP ? TAILQ_PREV(con, nodes_head, nodes) : TAILQ_NEXT(con, nodes)))) {
+            Con *swap = (direction == D_LEFT || direction == D_UP)
+                            ? TAILQ_PREV(con, nodes_head, nodes)
+                            : TAILQ_NEXT(con, nodes);
+            if (swap) {
                 if (!con_is_leaf(swap)) {
                     DLOG("Moving into our bordering branch\n");
                     target = con_descend_direction(swap, direction);
@@ -312,17 +313,15 @@ void tree_move(Con *con, int direction) {
                     insert_con_into(con, target, position);
                     goto end;
                 }
-                if (direction == D_LEFT || direction == D_UP)
+
+                DLOG("Swapping with sibling.\n");
+                if (direction == D_LEFT || direction == D_UP) {
                     TAILQ_SWAP(swap, con, &(swap->parent->nodes_head), nodes);
-                else
+                } else {
                     TAILQ_SWAP(con, swap, &(swap->parent->nodes_head), nodes);
+                }
 
-                TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-                TAILQ_INSERT_HEAD(&(swap->parent->focus_head), con, focused);
-
-                DLOG("Swapped.\n");
                 ipc_send_window_event("move", con);
-                ewmh_update_wm_desktop();
                 return;
             }
 

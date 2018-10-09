@@ -125,6 +125,22 @@ $windows[0] = open_window;
 cmd '[id=' . $windows[3]->id . '] move right';
 confirm_focus('unfocused move from other output');
 
+#####################################################################
+# Test that moving an unfocused container inside its original parent
+# maintains the correct focus order.
+#####################################################################
+
+fresh_workspace;
+$windows[0] = open_window;
+$windows[1] = open_window;
+cmd 'split v';
+$windows[2] = open_window;
+$windows[3] = open_window;
+focus_windows;
+
+cmd '[id=' . $windows[2]->id . '] move up';
+confirm_focus('split-v + unfocused move inside parent');
+
 ######################################################################
 # Test that moving an unfocused container maintains the correct focus
 # order.
