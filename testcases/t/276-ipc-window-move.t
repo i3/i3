@@ -34,7 +34,7 @@ sub move_subtest {
     is($move[0]->{container}->{window}, $window->{id}, 'window id matches');
 }
 
-subtest 'move right', \&move_subtest, 'move right';
+subtest 'move left', \&move_subtest, 'move left';
 subtest 'move to workspace', \&move_subtest, 'move to workspace ws_new';
 
 done_testing;

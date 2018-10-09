@@ -16,7 +16,11 @@
 #
 # Verify that the corrent focus stack order is preserved after various
 # operations.
-use i3test;
+use i3test i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+fake-outputs 1024x768+0+0,1024x768+1024+0
+EOT
 
 sub kill_and_confirm_focus {
     my $focus = shift;
@@ -68,7 +72,6 @@ confirm_focus('tabbed');
 #####################################################################
 
 fresh_workspace;
-
 $windows[3] = open_window;
 $windows[1] = open_window;
 $windows[0] = open_window;
@@ -106,6 +109,21 @@ $windows[0] = open_window;
 
 cmd 'move left';
 confirm_focus('split-v + move');
+
+#####################################################################
+# Test that moving an unfocused container from another output
+# maintains the correct focus order.
+#####################################################################
+
+fresh_workspace(output => 0);
+$windows[3] = open_window;
+fresh_workspace(output => 1);
+$windows[2] = open_window;
+$windows[1] = open_window;
+$windows[0] = open_window;
+
+cmd '[id=' . $windows[3]->id . '] move right';
+confirm_focus('unfocused move from other output');
 
 ######################################################################
 # Test that moving an unfocused container maintains the correct focus
