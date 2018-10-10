@@ -67,11 +67,8 @@ my $tmp = fresh_workspace;
 my ($first_floating, $second_floating);
 
 synced_warp_pointer(0, 0);
-$first_floating = open_floating_window;
-$first_floating->rect(X11::XCB::Rect->new(x => 1, y => 1, width => 100, height => 100));
-$second_floating = open_floating_window;
-$second_floating->rect(X11::XCB::Rect->new(x => 50, y => 50, width => 100, height => 100));
-sync_with_i3;
+$first_floating = open_floating_window(rect => [ 1, 1, 100, 100 ]);
+$second_floating = open_floating_window(rect => [ 50, 50, 100, 100 ]);
 $first = open_window;
 
 is($x->input_focus, $first->id, 'first (tiling) window focused');
