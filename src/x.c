@@ -509,7 +509,7 @@ void x_draw_decoration(Con *con) {
 
         /* These rectangles represent the border around the child window
          * (left, bottom and right part). We don’t just fill the whole
-         * rectangle because some childs are not freely resizable and we want
+         * rectangle because some children are not freely resizable and we want
          * their background color to "shine through". */
         if (!(borders_to_hide & ADJ_LEFT_SCREEN_EDGE)) {
             draw_util_rectangle(&(con->frame_buffer), p->color->child_border, 0, 0, br.x, r->height);
