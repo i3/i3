@@ -87,7 +87,7 @@ typedef struct i3_ipc_header {
  * Events from i3 to clients. Events have the first bit set high.
  *
  */
-#define I3_IPC_EVENT_MASK (1 << 31)
+#define I3_IPC_EVENT_MASK (1UL << 31)
 
 /* The workspace event will be triggered upon changes in the workspace list */
 #define I3_IPC_EVENT_WORKSPACE (I3_IPC_EVENT_MASK | 0)

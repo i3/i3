@@ -278,8 +278,8 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     buffer[size] = '\0';
 
     /* And call the callback (indexed by the type) */
-    if (type & (1 << 31)) {
-        type ^= 1 << 31;
+    if (type & (1UL << 31)) {
+        type ^= 1UL << 31;
         event_handlers[type](buffer);
     } else {
         if (reply_handlers[type])
