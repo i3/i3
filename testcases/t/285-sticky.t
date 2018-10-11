@@ -16,7 +16,14 @@
 #
 # Tests sticky windows.
 # Ticket: #1455
-use i3test;
+use i3test i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+workspace ws-on-0 output fake-0
+
+fake-outputs 1024x768+0+0,1024x768+1024+0
+EOT
 
 my ($ws, $tmp, $focused);
 
@@ -106,6 +113,24 @@ $ws = fresh_workspace;
 cmd '[con_mark=sticky] sticky enable';
 
 is(@{get_ws($ws)->{floating_nodes}}, 1, 'the sticky window jumps to the front');
+kill_all_windows;
+
+###############################################################################
+# 7: Given a sticky floating container and a workspace on another output, when
+#    a new workspace assigned to the first output is focused, then the sticky
+#    container should jump to the new workspace and have input focus correctly.
+###############################################################################
+$ws = fresh_workspace(output => 0);
+open_floating_window;
+cmd 'sticky enabled';
+$focused = get_focused($ws);
+$ws = fresh_workspace(output => 1);
+
+is(@{get_ws($ws)->{floating_nodes}}, 0, 'the sticky window didn\'t jump to a workspace on a different output');
+$ws = 'ws-on-0';
+cmd "workspace $ws";
+is(@{get_ws($ws)->{floating_nodes}}, 1, 'the sticky window moved to new workspace on first output');
+is(get_focused($ws), $focused, 'the sticky window has focus');
 kill_all_windows;
 
 ###############################################################################

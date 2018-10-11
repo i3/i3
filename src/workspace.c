@@ -410,7 +410,6 @@ static void workspace_defer_update_urgent_hint_cb(EV_P_ ev_timer *w, int revents
  */
 void workspace_show(Con *workspace) {
     Con *current, *old = NULL;
-    Con *old_focus = focused;
 
     /* safe-guard against showing i3-internal workspaces like __i3_scratch */
     if (con_is_internal(workspace))
@@ -432,6 +431,13 @@ void workspace_show(Con *workspace) {
         DLOG("Not switching, already there.\n");
         return;
     }
+
+    /* Used to correctly update focus when pushing sticky windows. Holds the
+     * previously focused container in the same output as workspace. For
+     * example, if a sticky window is focused and then we switch focus to a
+     * workspace in another output and then switch to a third workspace in the
+     * first output, the sticky window needs to be refocused. */
+    Con *old_focus = old ? con_descend_focused(old) : NULL;
 
     /* Remember currently focused workspace for switching back to it later with
      * the 'workspace back_and_forth' command.
