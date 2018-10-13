@@ -44,10 +44,7 @@ int mkdirp(const char *path, mode_t mode) {
 
     char *sep = strrchr(copy, '/');
     if (sep == NULL) {
-        if (copy != NULL) {
-            free(copy);
-            copy = NULL;
-        }
+        free(copy);
         return -1;
     }
     *sep = '\0';
