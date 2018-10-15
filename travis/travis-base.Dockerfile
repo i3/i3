@@ -24,6 +24,7 @@ RUN apt-get update && \
 
 # Install i3 build dependencies.
 COPY debian/control /usr/src/i3-debian-packaging/control
+COPY debian/changelog /usr/src/i3-debian-packaging/changelog
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends -y' /usr/src/i3-debian-packaging/control && \
     rm -rf /var/lib/apt/lists/*
