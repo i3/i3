@@ -40,7 +40,7 @@ Description: metapackage (i3 window manager, screen locker, menu, statusbar)
 
 Package: i3-wm
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}, x11-utils
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}
 Provides: x-window-manager
 Recommends: xfonts-base, fonts-dejavu-core, libanyevent-i3-perl (>= 0.12), libjson-xs-perl, rxvt-unicode | x-terminal-emulator
 Description: improved dynamic tiling window manager
