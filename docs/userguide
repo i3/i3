@@ -1004,7 +1004,7 @@ ipc-socket ~/.i3/i3-ipc.sock
 ----------------------------
 
 You can then use the +i3-msg+ application to perform any command listed in
-the next section.
+<<list_of_commands>>.
 
 === Focus follows mouse
 
@@ -1725,6 +1725,7 @@ bar {
 }
 --------------------------------------
 
+[[list_of_commands]]
 == List of commands
 
 Commands are what you bind to specific keypresses. You can also issue commands
