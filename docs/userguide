@@ -247,7 +247,7 @@ So, how can you open a new terminal window to the *right* of the current one?
 The solution is to use +focus parent+, which will focus the +Parent Container+ of
 the current +Container+. In default configuration, use +$mod+a+ to navigate one 
 +Container+ up the tree (you can repeat this multiple times until you get to the
-+Workspace Container+. In this case, you would focus the +Vertical Split Container+
++Workspace Container+). In this case, you would focus the +Vertical Split Container+
 which is *inside* the horizontally oriented workspace. Thus, now new windows will be
 opened to the right of the +Vertical Split Container+:
 
