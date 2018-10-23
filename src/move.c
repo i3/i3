@@ -179,18 +179,16 @@ void insert_con_into(Con *con, Con *target, position_t position) {
 static void attach_to_workspace(Con *con, Con *ws, direction_t direction) {
     con_detach(con);
     con_fix_percent(con->parent);
-
     CALL(con->parent, on_remove_child);
 
     con->parent = ws;
 
     if (direction == D_RIGHT || direction == D_DOWN) {
         TAILQ_INSERT_HEAD(&(ws->nodes_head), con, nodes);
-        TAILQ_INSERT_HEAD(&(ws->focus_head), con, focused);
     } else {
         TAILQ_INSERT_TAIL(&(ws->nodes_head), con, nodes);
-        TAILQ_INSERT_TAIL(&(ws->focus_head), con, focused);
     }
+    TAILQ_INSERT_TAIL(&(ws->focus_head), con, focused);
 
     /* Pretend the con was just opened with regards to size percent values.
      * Since the con is moved to a completely different con, the old value
@@ -205,7 +203,6 @@ static void attach_to_workspace(Con *con, Con *ws, direction_t direction) {
  *
  */
 static void move_to_output_directed(Con *con, direction_t direction) {
-    Con *old_ws = con_get_workspace(con);
     Output *current_output = get_output_for_con(con);
     Output *output = get_output_next(direction, current_output, CLOSEST_OUTPUT);
 
@@ -222,17 +219,26 @@ static void move_to_output_directed(Con *con, direction_t direction) {
         return;
     }
 
+    Con *old_ws = con_get_workspace(con);
+    const bool moves_focus = (focused == con);
     attach_to_workspace(con, ws, direction);
-
-    /* fix the focus stack */
-    con_activate(con);
+    if (moves_focus) {
+        /* workspace_show will not correctly update the active workspace because
+         * the focused container, con, is now a child of ws. To work around this
+         * and still produce the correct workspace focus events (see
+         * 517-regress-move-direction-ipc.t) we need to temporarily set focused
+         * to the old workspace. */
+        focused = old_ws;
+        workspace_show(ws);
+        con_focus(con);
+    }
 
     /* force re-painting the indicators */
     FREE(con->deco_render_params);
 
     tree_flatten(croot);
-
-    ipc_send_workspace_event("focus", ws, old_ws);
+    ipc_send_window_event("move", con);
+    ewmh_update_wm_desktop();
 }
 
 /*
@@ -292,9 +298,10 @@ void tree_move(Con *con, int direction) {
 
         /* easy case: the move is within this container */
         if (same_orientation == con->parent) {
-            DLOG("We are in the same container\n");
-            Con *swap;
-            if ((swap = (direction == D_LEFT || direction == D_UP ? TAILQ_PREV(con, nodes_head, nodes) : TAILQ_NEXT(con, nodes)))) {
+            Con *swap = (direction == D_LEFT || direction == D_UP)
+                            ? TAILQ_PREV(con, nodes_head, nodes)
+                            : TAILQ_NEXT(con, nodes);
+            if (swap) {
                 if (!con_is_leaf(swap)) {
                     DLOG("Moving into our bordering branch\n");
                     target = con_descend_direction(swap, direction);
@@ -306,26 +313,22 @@ void tree_move(Con *con, int direction) {
                     insert_con_into(con, target, position);
                     goto end;
                 }
-                if (direction == D_LEFT || direction == D_UP)
+
+                DLOG("Swapping with sibling.\n");
+                if (direction == D_LEFT || direction == D_UP) {
                     TAILQ_SWAP(swap, con, &(swap->parent->nodes_head), nodes);
-                else
+                } else {
                     TAILQ_SWAP(con, swap, &(swap->parent->nodes_head), nodes);
+                }
 
-                TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-                TAILQ_INSERT_HEAD(&(swap->parent->focus_head), con, focused);
-
-                DLOG("Swapped.\n");
                 ipc_send_window_event("move", con);
-                ewmh_update_wm_desktop();
                 return;
             }
 
             if (con->parent == con_get_workspace(con)) {
-                /*  If we couldn't find a place to move it on this workspace,
-                 *  try to move it to a workspace on a different output */
+                /* If we couldn't find a place to move it on this workspace, try
+                 * to move it to a workspace on a different output */
                 move_to_output_directed(con, direction);
-                ipc_send_window_event("move", con);
-                ewmh_update_wm_desktop();
                 return;
             }
 
@@ -370,6 +373,7 @@ void tree_move(Con *con, int direction) {
          * and move it to the next output. */
         DLOG("Grandparent is workspace\n");
         move_to_output_directed(con, direction);
+        return;
     } else {
         DLOG("Moving into container above\n");
         position = (direction == D_UP || direction == D_LEFT ? BEFORE : AFTER);
