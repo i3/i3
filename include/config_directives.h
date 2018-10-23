@@ -56,6 +56,7 @@ CFGFUN(disable_randr15, const char *value);
 CFGFUN(fake_outputs, const char *outputs);
 CFGFUN(force_display_urgency_hint, const long duration_ms);
 CFGFUN(focus_on_window_activation, const char *mode);
+CFGFUN(title_align, const char *alignment);
 CFGFUN(show_marks, const char *value);
 CFGFUN(hide_edge_borders, const char *borders);
 CFGFUN(assign_output, const char *output);

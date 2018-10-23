@@ -318,6 +318,18 @@ CFGFUN(focus_on_window_activation, const char *mode) {
     DLOG("Set new focus_on_window_activation mode = %i.\n", config.focus_on_window_activation);
 }
 
+CFGFUN(title_align, const char *alignment) {
+    if (strcmp(alignment, "left") == 0) {
+        config.title_align = ALIGN_LEFT;
+    } else if (strcmp(alignment, "center") == 0) {
+        config.title_align = ALIGN_CENTER;
+    } else if (strcmp(alignment, "right") == 0) {
+        config.title_align = ALIGN_RIGHT;
+    } else {
+        assert(false);
+    }
+}
+
 CFGFUN(show_marks, const char *value) {
     config.show_marks = eval_boolstr(value);
 }
