@@ -15,7 +15,7 @@
  * release version), based on the git version number.
  *
  */
-bool is_debug_build() {
+bool is_debug_build(void) {
     /* i3_version contains either something like this:
      *     "4.0.2 (2011-11-11, branch "release")".
      * or: "4.0.2-123-gCOFFEEBABE (2011-11-11, branch "next")".

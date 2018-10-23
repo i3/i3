@@ -95,7 +95,7 @@ static int _prune_startup_sequences(void) {
     return active_sequences;
 }
 
-/**
+/*
  * Deletes a startup sequence, ignoring whether its timeout has elapsed.
  * Useful when e.g. a window is moved between workspaces and its children
  * shouldn't spawn on the original workspace.
@@ -118,10 +118,10 @@ void startup_sequence_delete(struct Startup_Sequence *sequence) {
 }
 
 /*
- * Starts the given application by passing it through a shell. We use double fork
- * to avoid zombie processes. As the started application’s parent exits (immediately),
- * the application is reparented to init (process-id 1), which correctly handles
- * childs, so we don’t have to do it :-).
+ * Starts the given application by passing it through a shell. We use double
+ * fork to avoid zombie processes. As the started application’s parent exits
+ * (immediately), the application is reparented to init (process-id 1), which
+ * correctly handles children, so we don’t have to do it :-).
  *
  * The shell used to start applications is the system's bourne shell (i.e.,
  * /bin/sh).
@@ -257,7 +257,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
     }
 }
 
-/**
+/*
  * Renames workspaces that are mentioned in the startup sequences.
  *
  */
@@ -273,7 +273,7 @@ void startup_sequence_rename_workspace(const char *old_name, const char *new_nam
     }
 }
 
-/**
+/*
  * Gets the stored startup sequence for the _NET_STARTUP_ID of a given window.
  *
  */

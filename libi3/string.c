@@ -99,7 +99,7 @@ i3String *i3string_from_ucs2(const xcb_char2b_t *from_ucs2, size_t num_glyphs) {
     return str;
 }
 
-/**
+/*
  * Copies the given i3string.
  * Note that this will not free the source string.
  */

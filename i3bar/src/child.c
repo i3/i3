@@ -133,7 +133,7 @@ finish:
  * Stop and free() the stdin- and SIGCHLD-watchers
  *
  */
-void cleanup(void) {
+static void cleanup(void) {
     if (stdin_io != NULL) {
         ev_io_stop(main_loop, stdin_io);
         FREE(stdin_io);
@@ -400,7 +400,7 @@ static bool read_json_input(unsigned char *input, int length) {
  * in statusline
  *
  */
-void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+static void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     int rec;
     unsigned char *buffer = get_buffer(watcher, &rec);
     if (buffer == NULL)
@@ -420,7 +420,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  * whether this is JSON or plain text
  *
  */
-void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+static void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     int rec;
     unsigned char *buffer = get_buffer(watcher, &rec);
     if (buffer == NULL)
@@ -457,7 +457,7 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  * anymore
  *
  */
-void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
+static void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     int exit_status = WEXITSTATUS(watcher->rstatus);
 
     ELOG("Child (pid: %d) unexpectedly exited with status %d\n",
@@ -477,7 +477,7 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     draw_bars(false);
 }
 
-void child_write_output(void) {
+static void child_write_output(void) {
     if (child.click_events) {
         const unsigned char *output;
         size_t size;
@@ -580,7 +580,7 @@ void start_child(char *command) {
     atexit(kill_child_at_exit);
 }
 
-void child_click_events_initialize(void) {
+static void child_click_events_initialize(void) {
     if (!child.click_events_init) {
         yajl_gen_array_open(gen);
         child_write_output();
@@ -588,7 +588,7 @@ void child_click_events_initialize(void) {
     }
 }
 
-void child_click_events_key(const char *key) {
+static void child_click_events_key(const char *key) {
     yajl_gen_string(gen, (const unsigned char *)key, strlen(key));
 }
 

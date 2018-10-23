@@ -20,7 +20,8 @@
  */
 Con *con_new_skeleton(Con *parent, i3Window *window);
 
-/* A wrapper for con_new_skeleton, to retain the old con_new behaviour
+/**
+ * A wrapper for con_new_skeleton, to retain the old con_new behaviour
  *
  */
 Con *con_new(Con *parent, i3Window *window);
@@ -220,7 +221,7 @@ void con_mark_toggle(Con *con, const char *mark, mark_mode_t mode);
  */
 void con_mark(Con *con, const char *mark, mark_mode_t mode);
 
-/*
+/**
  * Removes marks from containers.
  * If con is NULL, all containers are considered.
  * If name is NULL, this removes all existing marks.
@@ -402,7 +403,7 @@ Con *con_descend_focused(Con *con);
  */
 Con *con_descend_tiling_focused(Con *con);
 
-/*
+/**
  * Returns the leftmost, rightmost, etc. container in sub-tree. For example, if
  * direction is D_LEFT, then we return the rightmost container and if direction
  * is D_RIGHT, we return the leftmost container.  This is because if we are

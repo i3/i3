@@ -550,7 +550,7 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
     }
 
     /* If default_orientation is NO_ORIENTATION, we change the orientation of
-     * the workspaces and their childs depending on output resolution. This is
+     * the workspaces and their children depending on output resolution. This is
      * only done for workspaces with maximum one child. */
     if (config.default_orientation == NO_ORIENTATION) {
         TAILQ_FOREACH(workspace, &(content->nodes_head), nodes) {

@@ -343,7 +343,7 @@ uint32_t get_colorpixel(const char *hex) __attribute__((const));
 
 #if defined(__APPLE__)
 
-/*
+/**
  * Taken from FreeBSD
  * Returns a pointer to a new string which is a duplicate of the
  * string, but only copies at most n characters.
@@ -472,7 +472,7 @@ xcb_visualtype_t *get_visualtype(xcb_screen_t *screen);
  * release version), based on the git version number.
  *
  */
-bool is_debug_build() __attribute__((const));
+bool is_debug_build(void) __attribute__((const));
 
 /**
  * Returns the name of a temporary file with the specified prefix.

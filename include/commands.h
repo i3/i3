@@ -314,13 +314,13 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name);
  */
 void cmd_bar(I3_CMD, const char *bar_type, const char *bar_value, const char *bar_id);
 
-/*
+/**
  * Implementation of 'shmlog <size>|toggle|on|off'
  *
  */
 void cmd_shmlog(I3_CMD, const char *argument);
 
-/*
+/**
  * Implementation of 'debuglog toggle|on|off'
  *
  */

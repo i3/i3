@@ -330,7 +330,7 @@ void cmd_move_con_to_workspace(I3_CMD, const char *which) {
     ysuccess(true);
 }
 
-/**
+/*
  * Implementation of 'move [window|container] [to] workspace back_and_forth'.
  *
  */
@@ -2034,7 +2034,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
  * Implementation of 'bar mode dock|hide|invisible|toggle [<bar_id>]'
  *
  */
-bool cmd_bar_mode(const char *bar_mode, const char *bar_id) {
+static bool cmd_bar_mode(const char *bar_mode, const char *bar_id) {
     int mode = M_DOCK;
     bool toggle = false;
     if (strcmp(bar_mode, "dock") == 0)
@@ -2079,7 +2079,7 @@ bool cmd_bar_mode(const char *bar_mode, const char *bar_id) {
  * Implementation of 'bar hidden_state hide|show|toggle [<bar_id>]'
  *
  */
-bool cmd_bar_hidden_state(const char *bar_hidden_state, const char *bar_id) {
+static bool cmd_bar_hidden_state(const char *bar_hidden_state, const char *bar_id) {
     int hidden_state = S_SHOW;
     bool toggle = false;
     if (strcmp(bar_hidden_state, "hide") == 0)

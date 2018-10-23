@@ -44,7 +44,7 @@ void debuglog(char *fmt, ...) {
  * Glob path, i.e. expand ~
  *
  */
-char *expand_path(char *path) {
+static char *expand_path(char *path) {
     static glob_t globbuf;
     if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0) {
         ELOG("glob() failed\n");
@@ -55,7 +55,7 @@ char *expand_path(char *path) {
     return result;
 }
 
-void print_usage(char *elf_name) {
+static void print_usage(char *elf_name) {
     printf("Usage: %s -b bar_id [-s sock_path] [-h] [-v]\n", elf_name);
     printf("\n");
     printf("-b, --bar_id  <bar_id>\tBar ID for which to get the configuration\n");
@@ -76,7 +76,7 @@ void print_usage(char *elf_name) {
  * in main() with that
  *
  */
-void sig_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
+static void sig_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
     switch (watcher->signum) {
         case SIGTERM:
             DLOG("Got a SIGTERM, stopping\n");

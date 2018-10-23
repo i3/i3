@@ -246,17 +246,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     DLOG("Initial geometry: (%d, %d, %d, %d)\n", geom->x, geom->y, geom->width, geom->height);
 
-    Con *nc = NULL;
-    Match *match = NULL;
-    Assignment *assignment;
-
-    /* TODO: two matches for one container */
-
     /* See if any container swallows this new window */
-    nc = con_for_window(search_at, cwindow, &match);
+    Match *match = NULL;
+    Con *nc = con_for_window(search_at, cwindow, &match);
     const bool match_from_restart_mode = (match && match->restart_mode);
     if (nc == NULL) {
         Con *wm_desktop_ws = NULL;
+        Assignment *assignment;
 
         /* If not, check if it is assigned to a specific workspace */
         if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE)) ||

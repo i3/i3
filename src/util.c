@@ -217,7 +217,7 @@ static char **add_argument(char **original, char *opt_char, char *opt_arg, char 
 #define y(x, ...) yajl_gen_##x(gen, ##__VA_ARGS__)
 #define ystr(str) yajl_gen_string(gen, (unsigned char *)str, strlen(str))
 
-char *store_restart_layout(void) {
+static char *store_restart_layout(void) {
     setlocale(LC_NUMERIC, "C");
     yajl_gen gen = yajl_gen_alloc(NULL);
 
@@ -501,8 +501,7 @@ ssize_t slurp(const char *path, char **buf) {
     fclose(f);
     if ((ssize_t)n != stbuf.st_size) {
         ELOG("File \"%s\" could not be read entirely: got %zd, want %" PRIi64 "\n", path, n, (int64_t)stbuf.st_size);
-        free(*buf);
-        *buf = NULL;
+        FREE(*buf);
         return -1;
     }
     return (ssize_t)n;

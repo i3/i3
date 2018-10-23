@@ -308,7 +308,7 @@ bool workspace_is_visible(Con *ws) {
  * XXX: we need to clean up all this recursive walking code.
  *
  */
-Con *_get_sticky(Con *con, const char *sticky_group, Con *exclude) {
+static Con *_get_sticky(Con *con, const char *sticky_group, Con *exclude) {
     Con *current;
 
     TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
@@ -914,7 +914,7 @@ Con *workspace_attach_to(Con *ws) {
     return new;
 }
 
-/**
+/*
  * Creates a new container and re-parents all of children from the given
  * workspace into it.
  *
@@ -949,7 +949,7 @@ Con *workspace_encapsulate(Con *ws) {
     return new;
 }
 
-/**
+/*
  * Move the given workspace to the specified output.
  * This returns true if and only if moving the workspace was successful.
  */

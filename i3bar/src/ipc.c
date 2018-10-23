@@ -34,7 +34,7 @@ typedef void (*handler_t)(char *);
  * Since i3 does not give us much feedback on commands, we do not much
  *
  */
-void got_command_reply(char *reply) {
+static void got_command_reply(char *reply) {
     /* TODO: Error handling for command replies */
 }
 
@@ -42,7 +42,7 @@ void got_command_reply(char *reply) {
  * Called, when we get a reply with workspaces data
  *
  */
-void got_workspace_reply(char *reply) {
+static void got_workspace_reply(char *reply) {
     DLOG("Got workspace data!\n");
     parse_workspaces_json(reply);
     draw_bars(false);
@@ -53,7 +53,7 @@ void got_workspace_reply(char *reply) {
  * Since i3 does not give us much feedback on commands, we do not much
  *
  */
-void got_subscribe_reply(char *reply) {
+static void got_subscribe_reply(char *reply) {
     DLOG("Got subscribe reply: %s\n", reply);
     /* TODO: Error handling for subscribe commands */
 }
@@ -62,7 +62,7 @@ void got_subscribe_reply(char *reply) {
  * Called, when we get a reply with outputs data
  *
  */
-void got_output_reply(char *reply) {
+static void got_output_reply(char *reply) {
     DLOG("Clearing old output configuration...\n");
     free_outputs();
 
@@ -87,7 +87,7 @@ void got_output_reply(char *reply) {
  * Called when we get the configuration for our bar instance
  *
  */
-void got_bar_config(char *reply) {
+static void got_bar_config(char *reply) {
     DLOG("Received bar config \"%s\"\n", reply);
     /* We initiate the main function by requesting infos about the outputs and
      * workspaces. Everything else (creating the bars, showing the right workspace-
@@ -132,7 +132,7 @@ handler_t reply_handlers[] = {
  * Called, when a workspace event arrives (i.e. the user changed the workspace)
  *
  */
-void got_workspace_event(char *event) {
+static void got_workspace_event(char *event) {
     DLOG("Got workspace event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
 }
@@ -141,7 +141,7 @@ void got_workspace_event(char *event) {
  * Called, when an output event arrives (i.e. the screen configuration changed)
  *
  */
-void got_output_event(char *event) {
+static void got_output_event(char *event) {
     DLOG("Got output event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
     if (!config.disable_ws) {
@@ -153,7 +153,7 @@ void got_output_event(char *event) {
  * Called, when a mode event arrives (i3 changed binding mode).
  *
  */
-void got_mode_event(char *event) {
+static void got_mode_event(char *event) {
     DLOG("Got mode event!\n");
     parse_mode_json(event);
     draw_bars(false);
@@ -163,7 +163,7 @@ void got_mode_event(char *event) {
  * Called, when a barconfig_update event arrives (i.e. i3 changed the bar hidden_state or mode)
  *
  */
-void got_bar_config_update(char *event) {
+static void got_bar_config_update(char *event) {
     /* check whether this affect this bar instance by checking the bar_id */
     char *expected_id;
     sasprintf(&expected_id, "\"id\":\"%s\"", config.bar_id);
@@ -213,7 +213,7 @@ handler_t event_handlers[] = {
  * Called, when we get a message from i3
  *
  */
-void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
+static void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     DLOG("Got data!\n");
     int fd = watcher->fd;
 

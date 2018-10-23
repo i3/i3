@@ -125,7 +125,7 @@ void i3_restart(bool forget_layout);
 
 #if defined(__OpenBSD__) || defined(__APPLE__)
 
-/*
+/**
  * Taken from FreeBSD
  * Find the first occurrence of the byte string s in byte string l.
  *

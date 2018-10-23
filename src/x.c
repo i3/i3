@@ -42,7 +42,7 @@ typedef struct con_state {
     bool child_mapped;
     bool is_hidden;
 
-    /** The con for which this state is. */
+    /* The con for which this state is. */
     Con *con;
 
     /* For reparenting, we have a flag (need_reparent) and the X ID of the old
@@ -504,14 +504,12 @@ void x_draw_decoration(Con *con) {
     /* 3: draw a rectangle in border color around the client */
     if (p->border_style != BS_NONE && p->con_is_leaf) {
         /* We might hide some borders adjacent to the screen-edge */
-        adjacent_t borders_to_hide = ADJ_NONE;
-        borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
-
+        adjacent_t borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
         Rect br = con_border_style_rect(con);
 
         /* These rectangles represent the border around the child window
          * (left, bottom and right part). We don’t just fill the whole
-         * rectangle because some childs are not freely resizable and we want
+         * rectangle because some children are not freely resizable and we want
          * their background color to "shine through". */
         if (!(borders_to_hide & ADJ_LEFT_SCREEN_EDGE)) {
             draw_util_rectangle(&(con->frame_buffer), p->color->child_border, 0, 0, br.x, r->height);
@@ -1254,7 +1252,7 @@ void x_set_name(Con *con, const char *name) {
  * Set up the I3_SHMLOG_PATH atom.
  *
  */
-void update_shmlog_atom() {
+void update_shmlog_atom(void) {
     if (*shmlogname == '\0') {
         xcb_delete_property(conn, root, A_I3_SHMLOG_PATH);
     } else {

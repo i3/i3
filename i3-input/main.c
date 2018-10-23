@@ -156,7 +156,7 @@ static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_rel
     return 1;
 }
 
-static void finish_input() {
+static void finish_input(void) {
     char *command = (char *)concat_strings(glyphs_utf8, input_position);
 
     /* count the occurrences of %s in the string */

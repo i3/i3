@@ -60,7 +60,7 @@ int separator_symbol_width;
  * depend on 'config'.
  *
  */
-char *init_xcb_early();
+char *init_xcb_early(void);
 
 /**
  * Initialization which depends on 'config' being usable. Called after the
