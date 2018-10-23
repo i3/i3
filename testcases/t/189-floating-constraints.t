@@ -265,11 +265,13 @@ my sub open_with_max_size {
 }
 
 my sub check_minsize {
+    sync_with_i3;
     is($window->rect->{width}, $min_width, 'width = min_width');
     is($window->rect->{height}, $min_height, 'height = min_height');
 }
 
 my sub check_maxsize {
+    sync_with_i3;
     is($window->rect->{width}, $max_width, 'width = max_width');
     is($window->rect->{height}, $max_height, 'height = max_height');
 }
@@ -279,7 +281,6 @@ $pid = launch_with_config($config);
 $window = open_with_max_size;
 cmd 'floating enable';
 cmd 'border none';
-sync_with_i3;
 
 cmd "resize set $min_width px $min_height px";
 check_minsize;
