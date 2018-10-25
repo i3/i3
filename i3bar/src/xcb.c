@@ -524,7 +524,8 @@ static void handle_button(xcb_button_press_event_t *event) {
                 const int relative_x = statusline_x - last_block_x;
                 if (relative_x >= 0 && (uint32_t)relative_x <= render->width) {
                     send_block_clicked(event->detail, block->name, block->instance,
-                                       event->root_x, event->root_y, relative_x, event->event_y, render->width, bar_height);
+                                       event->root_x, event->root_y, relative_x, event->event_y, render->width, bar_height,
+                                       event->state);
                     return;
                 }
 

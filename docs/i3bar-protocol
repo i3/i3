@@ -243,6 +243,9 @@ relative_x, relative_y::
     of the block
 width, height::
     Width and height (in px) of the block
+modifiers::
+    An array of the modifiers active when the click occurred. The order in which
+    modifiers are listed is not guaranteed.
 
 *Example*:
 ------------------------------------------
@@ -250,6 +253,7 @@ width, height::
  "name": "ethernet",
  "instance": "eth0",
  "button": 1,
+ "modifiers": ["Shift", "Mod1"],
  "x": 1320,
  "y": 1400,
  "relative_x": 12,
