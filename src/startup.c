@@ -190,6 +190,7 @@ void start_application(const char *command, bool no_startup_id) {
             /* Setup the environment variable(s) */
             if (!no_startup_id)
                 sn_launcher_context_setup_child_process(context);
+            setenv("I3SOCK", current_socketpath, 1);
 
             execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
             /* not reached */
