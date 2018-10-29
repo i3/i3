@@ -1234,14 +1234,12 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
         Con *old_focus = focused;
         con_activate(con_descend_focused(con));
 
-        /* Restore focus if the output's focused workspace has changed. */
-        if (con_get_workspace(focused) != old_focus_ws) {
-            con_focus(old_focus);
-        }
-
-        /* Restore focus to the currently focused container. */
         if (old_focus_ws == current_ws && old_focus->type != CT_WORKSPACE) {
+            /* Restore focus to the currently focused container. */
             con_activate(old_focus);
+        } else if (con_get_workspace(focused) != old_focus_ws) {
+            /* Restore focus if the output's focused workspace has changed. */
+            con_focus(con_descend_focused(old_focus_ws));
         }
     }
 
