@@ -36,6 +36,7 @@
 #include <libsn/sn-launchee.h>
 
 #include "i3-nagbar.h"
+#include <glib.h>
 
 /** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
  * constant for that. */
@@ -78,6 +79,8 @@ static color_t color_text;              /* color of the text */
 xcb_window_t root;
 xcb_connection_t *conn;
 xcb_screen_t *root_screen;
+
+static char lock_file[4096];
 
 /*
  * Having verboselog(), errorlog() and debuglog() is necessary when using libi3.
@@ -321,6 +324,41 @@ free_resources:
     return result;
 }
 
+/**
+ * Removes the lock file once 
+ * i3-nagbar exits.
+ */
+void remove_lock_file() {
+    unlink(lock_file);
+}
+
+/**
+ * 
+ * Ensure i3-nagbar runs only one instance with 
+ * same message and bar type.
+ * Uses lock file in /tmp based on the 
+ * SHA-1 digest of message and type.
+ *
+ */
+void ensure_singleton_per_message_and_type(int bar_type, i3String *prompt) {
+    const char *message = i3string_as_utf8(prompt);
+    GChecksum *checksum = g_checksum_new(G_CHECKSUM_SHA1);
+
+    g_checksum_update(checksum, (guchar *)message, -1);
+    g_checksum_update(checksum,
+                      !bar_type ? (const guchar *)"e" : (const guchar *)"w", -1);
+
+    snprintf(lock_file, sizeof(lock_file), "/tmp/i3-nagbar-%s-%d", (char *)g_checksum_get_string(checksum), getuid());
+    int fd = open(lock_file, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    atexit(remove_lock_file);
+
+    if (-1 == fd)
+        exit(1);
+
+    close(fd);
+    g_checksum_free(checksum);
+}
+
 int main(int argc, char *argv[]) {
     /* The following lines are a terribly horrible kludge. Because terminal
      * emulators have different ways of interpreting the -e command line
@@ -412,6 +450,8 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
+
+    ensure_singleton_per_message_and_type(bar_type, prompt);
 
     btn_close.label = i3string_from_utf8("X");
 
