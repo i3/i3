@@ -87,6 +87,12 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
 bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry);
 
 /**
+ * Removes the target node while shifting its children up to its parent.
+ * Assumes: target->window == NULL
+ */
+void tree_remove_node(Con* target);
+
+/**
  * tree_flatten() removes pairs of redundant split containers, e.g.:
  *       [workspace, horizontal]
  *   [v-split]           [child3]

@@ -317,6 +317,90 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
 }
 
 /*
+ * Closes the given container.
+ * Assumes it has no children and isnt actual X window.
+ * TODO:
+ * - This is modified tree_close_internal, it would be nice to unify the two. Maybe just make it a wrapper with asserts to that function.
+ *
+ * We dont kill actual windows, only containers (TODO: terminology)
+ *
+ */
+static void tree_close_empty(Con *con) {
+  /* bool dont_kill_parent = false */
+    Con *parent = con->parent;
+
+    /* remove the urgency hint of the workspace (if set) */
+    if (con->urgent) {
+        con_set_urgency(con, false);
+        con_update_parents_urgency(con);
+        workspace_update_urgent_flag(con_get_workspace(con));
+    }
+
+    DLOG("closing %p, no kill_window", con);
+    assert(TAILQ_EMPTY(&(con->nodes_head)));
+    DLOG("container %p is indeed empty", con);
+    assert(con->window == NULL);
+    DLOG("container %p indeed has no window", con);
+
+    Con *ws = con_get_workspace(con);
+
+    /* Figure out which container to focus next before detaching 'con'. */
+    Con *next = (con == focused) ? con_next_focused(con) : NULL;
+    DLOG("next = %p, focused = %p\n", next, focused);
+
+    /* Detach the container so that it will not be rendered anymore. */
+    con_detach(con);
+
+    /* disable urgency timer, if needed */
+    if (con->urgency_timer != NULL) {
+        DLOG("Removing urgency timer of con %p\n", con);
+        workspace_update_urgent_flag(ws);
+        ev_timer_stop(main_loop, con->urgency_timer);
+        FREE(con->urgency_timer);
+    }
+
+    // TODO here is the part about sizes, gotta make them stay the same
+    // (I suppose new_size = old_size * old_parent.size)
+    if (con->type != CT_FLOATING_CON) {
+        /* If the container is *not* floating, we might need to re-distribute
+         * percentage values for the resized containers. */
+        con_fix_percent(parent);
+    }
+
+    // TODO do we want to render here?
+    /* Render the tree so that the surrounding containers take up the space
+     * which 'con' does no longer occupy. If we don’t render here, there will
+     * be a gap in our containers and that could trigger an EnterNotify for an
+     * underlying container, see ticket #660.
+     *
+     * Rendering has to be avoided when dont_kill_parent is set (when
+     * tree_close_internal calls itself recursively) because the tree is in a
+     * non-renderable state during that time. */
+    tree_render();
+
+    /* kill the X11 part of this container */
+    x_con_kill(con);
+
+    if (ws == con) {
+        DLOG("Closing a workspace container, updating EWMH atoms\n");
+        ewmh_update_number_of_desktops();
+        ewmh_update_desktop_names();
+        ewmh_update_wm_desktop();
+    }
+
+    con_free(con);
+
+    if (next) {
+        con_activate(next);
+    } else {
+        DLOG("not changing focus, the container was not focused before\n");
+    }
+
+    /* check if the parent container is empty now and close it */
+    CALL(parent, on_remove_child);
+}
+
+/*
  * Splits (horizontally or vertically) the given container by creating a new
  * container which contains the old one and the future ones.
  *
@@ -623,6 +707,42 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
 void tree_next(char way, orientation_t orientation) {
     _tree_next(focused, way, orientation,
                config.focus_wrapping != FOCUS_WRAPPING_OFF);
+}
+
+/* Doesnt check if you dont mess up the whole tree so choose targets wisely.
+ */
+// TODO manage focus and size correctly
+// TODO could specialize this for to=from->parent
+static void tree_transfer_children(Con *from, Con *to) {
+  Con *curr, *next;
+  curr = TAILQ_FIRST(&(from->nodes_head));
+  while (curr != NULL) {
+    next = TAILQ_NEXT(curr, nodes);
+
+    DLOG("Transferring %p / %s from %p / %s to %p / %s\n",
+         curr, curr->name,
+         curr->parent, curr->parent->name,
+         to, to->name);
+
+    con_detach(curr);
+    // TODO ignore_focus - false or true?
+    con_attach(curr, to, false);
+
+    curr = next;
+  }
+}
+
+/* Remove a node while moving its children to its parent
+ * Assumes its not actual X client, just a container (TODO terminology)
+ */
+// TODO it should keep the ordering
+// (S[C1 S[C2] C3] -> S[C1 C2 C3])
+// TODO it shouldnt change sizes when possible
+void tree_remove_node(Con *target) {
+  //collapse_chain(target->parent, target);
+  tree_transfer_children(target, target->parent);
+
+  tree_close_empty(target);
 }
 
 /*
