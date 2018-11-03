@@ -105,6 +105,10 @@ static con_state *state_for_frame(xcb_window_t window) {
  *
  */
 static void change_ewmh_focus(xcb_window_t new_focus, xcb_window_t old_focus) {
+    if (new_focus == old_focus) {
+        return;
+    }
+
     ewmh_update_active_window(new_focus);
 
     if (new_focus != XCB_WINDOW_NONE) {
