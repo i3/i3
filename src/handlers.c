@@ -908,7 +908,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             case _NET_WM_MOVERESIZE_MOVE:
                 floating_drag_window(con->parent, &fake);
                 break;
-            case _NET_WM_MOVERESIZE_SIZE_TOPLEFT... _NET_WM_MOVERESIZE_SIZE_LEFT:
+            case _NET_WM_MOVERESIZE_SIZE_TOPLEFT ... _NET_WM_MOVERESIZE_SIZE_LEFT:
                 floating_resize_window(con->parent, false, &fake);
                 break;
             default:
