@@ -1811,6 +1811,7 @@ void con_set_layout(Con *con, layout_t layout) {
             DLOG("Creating new split container\n");
             /* 1: create a new split container */
             Con *new = con_new(NULL, NULL);
+            DLOG("Created container: %p\n", new);
             new->parent = con;
 
             /* 2: Set the requested layout on the split container and mark it as
@@ -1836,7 +1837,8 @@ void con_set_layout(Con *con, layout_t layout) {
             DLOG("Attaching new split to ws\n");
             con_attach(new, con, false);
 
-            tree_flatten(croot);
+            // whoops this could be called during tree_flatten
+            //tree_flatten(croot);
         }
         con_force_split_parents_redraw(con);
         return;

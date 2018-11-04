@@ -153,6 +153,10 @@ void cmd_remove_parent(I3_CMD) {
   tree_remove_node(focused->parent);
 }
 
+void cmd_flatten_tree(I3_CMD) {
+  tree_flatten(croot);
+}
+
 /*
  * Initializes the specified 'Match' data structure and the initial state of
  * commands.c for matching target windows of a command.

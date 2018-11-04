@@ -745,103 +745,124 @@ void tree_remove_node(Con *target) {
   tree_close_empty(target);
 }
 
-/*
- * tree_flatten() removes pairs of redundant split containers, e.g.:
- *       [workspace, horizontal]
- *   [v-split]           [child3]
- *   [h-split]
- * [child1] [child2]
- * In this example, the v-split and h-split container are redundant.
- * Such a situation can be created by moving containers in a direction which is
- * not the orientation of their parent container. i3 needs to create a new
- * split container then and if you move containers this way multiple times,
- * redundant chains of split-containers can be the result.
- *
+/* Whether you this container has visual elements other than its children
+ * - if no, then this container is flattenable
  */
-void tree_flatten(Con *con) {
-    Con *current, *child, *parent = con->parent;
-    DLOG("Checking if I can flatten con = %p / %s\n", con, con->name);
+// TODO maybe call this "is_flattenable"
+static bool is_headerless(Con *con) {
+  if (con->layout == L_SPLITH)
+    return true;
+  if (con->layout == L_SPLITV)
+    return true;
+  return false;
+}
 
-    /* We only consider normal containers without windows */
-    if (con->type != CT_CON ||
-        parent->layout == L_OUTPUT || /* con == "content" */
-        con->window != NULL)
-        goto recurse;
+// assume we are already somewhere inside workspace -> there wont be another
+// also only workspace has floating containers so we dont have to worry about these here
+/* We want to remove containers that at the same time:
+ * - arent focused
+ * - their child isnt focused (TODO: optional?)
+ * - either:
+ *   - are the only child and their parent is a h/v split
+ *   - the same direction h/v split as their parent*
+ * *I'm not sure if this is the 'fullest' condition
+ *
+ * First two conditions are there to let you prepare a container for a new window. The last one describes nodes that have no effect on visual representation.
+ *
+ * Flatten this subtree, but dont move 'fixed'
+ */
+// TODO maybe call this flatten_children?
+/* because of con.c:con_set_layout we cant flatten a stacked/tabbed child of workspace 
+ * NOTE: apparently splith/v are bad too, will not flatten workspace children (from tree_flatten)
+ */
+void tree_flatten_ws(Con *fixed) {
+  DLOG("Considering children of fixed = %p / %s\n", fixed, fixed->name);
 
-    /* Ensure it got only one child */
-    child = TAILQ_FIRST(&(con->nodes_head));
-    if (child == NULL || TAILQ_NEXT(child, nodes) != NULL)
-        goto recurse;
-
-    DLOG("child = %p, con = %p, parent = %p\n", child, con, parent);
-
-    /* The child must have a different orientation than the con but the same as
-     * the con’s parent to be redundant */
-    if (!con_is_split(con) ||
-        !con_is_split(child) ||
-        (con->layout != L_SPLITH && con->layout != L_SPLITV) ||
-        (child->layout != L_SPLITH && child->layout != L_SPLITV) ||
-        con_orientation(con) == con_orientation(child) ||
-        con_orientation(child) != con_orientation(parent))
-        goto recurse;
-
-    DLOG("Alright, I have to flatten this situation now. Stay calm.\n");
-    /* 1: save focus */
-    Con *focus_next = TAILQ_FIRST(&(child->focus_head));
-
-    DLOG("detaching...\n");
-    /* 2: re-attach the children to the parent before con */
-    while (!TAILQ_EMPTY(&(child->nodes_head))) {
-        current = TAILQ_FIRST(&(child->nodes_head));
-        DLOG("detaching current=%p / %s\n", current, current->name);
-        con_detach(current);
-        DLOG("re-attaching\n");
-        /* We don’t use con_attach() here because for a CT_CON, the special
-         * case handling of con_attach() does not trigger. So all it would do
-         * is calling TAILQ_INSERT_AFTER, but with the wrong container. So we
-         * directly use the TAILQ macros. */
-        current->parent = parent;
-        TAILQ_INSERT_BEFORE(con, current, nodes);
-        DLOG("attaching to focus list\n");
-        TAILQ_INSERT_TAIL(&(parent->focus_head), current, focused);
-        current->percent = con->percent;
-    }
-    DLOG("re-attached all\n");
-
-    /* 3: restore focus, if con was focused */
-    if (focus_next != NULL &&
-        TAILQ_FIRST(&(parent->focus_head)) == con) {
-        DLOG("restoring focus to focus_next=%p\n", focus_next);
-        TAILQ_REMOVE(&(parent->focus_head), focus_next, focused);
-        TAILQ_INSERT_HEAD(&(parent->focus_head), focus_next, focused);
-        DLOG("restored focus.\n");
-    }
-
-    /* 4: close the redundant cons */
-    DLOG("closing redundant cons\n");
-    tree_close_internal(con, DONT_KILL_WINDOW, true);
-
-    /* Well, we got to abort the recursion here because we destroyed the
-     * container. However, if tree_flatten() is called sufficiently often,
-     * there can’t be the situation of having two pairs of redundant containers
-     * at once. Therefore, we can safely abort the recursion on this level
-     * after flattening. */
+  // TODO is this the good spot for this check?
+  // TODO are these always X11 clients?
+  if (fixed->window != NULL)
     return;
 
-recurse:
-    /* We cannot use normal foreach here because tree_flatten might close the
-     * current container. */
-    current = TAILQ_FIRST(&(con->nodes_head));
-    while (current != NULL) {
-        Con *next = TAILQ_NEXT(current, nodes);
-        tree_flatten(current);
-        current = next;
+  Con *child = TAILQ_FIRST(&(fixed->nodes_head));
+  Con *prev = NULL;
+  while (child != NULL) {
+    DLOG("Checking if I can flatten child = %p / %s / %p\n",
+         child, child->name, child->window);
+
+    while (true) {
+      if (focused == child)
+        break;
+      if (focused != NULL && focused->parent == child)
+        break;
+      if (child->window != NULL)
+        break;
+      /* workspace can't become tabbed/stacked -- TODO why exactly? */
+      if (fixed->type == CT_WORKSPACE
+          && (child->layout == L_TABBED
+              || child->layout == L_STACKED))
+        break;
+      
+      if (is_headerless(fixed)
+          && ( fixed->layout == child->layout
+               || TAILQ_NEXT(child, nodes) == NULL )) {
+        if (fixed->layout != child->layout)
+          con_set_layout(fixed, child->layout);
+
+        DLOG("Flattening child = %p / %s / %p\n",
+             child, child->name, child->window);
+        Con* c;
+        TAILQ_FOREACH(c, &child->nodes_head, nodes) {
+          DLOG("Child's child: %p / %s / %p\n",
+               c, c->name, c->window);
+        }
+    
+        tree_remove_node(child);
+
+        if (prev == NULL)
+          child = TAILQ_FIRST(&(fixed->nodes_head));
+        else
+          child = TAILQ_NEXT(prev, nodes);
+      }
+      else {
+        break;
+      }
     }
 
-    current = TAILQ_FIRST(&(con->floating_head));
-    while (current != NULL) {
-        Con *next = TAILQ_NEXT(current, floating_windows);
-        tree_flatten(current);
-        current = next;
+    // TODO could be it NULL now? I think it shouldnt
+    DLOG("child is now %p\n", child);
+    if (child != NULL) {
+      tree_flatten_ws(child);
+      child = TAILQ_NEXT(child, nodes);
     }
+  }
+}
+
+void tree_flatten(Con *con) {
+  Con *current;
+  DLOG("Checking if I can flatten con = %p / %s\n", con, con->name);
+
+  
+  /* /\* We only consider normal containers without windows *\/ */
+  /* if (con->type != CT_CON || */
+  /*     parent->layout == L_OUTPUT || /\* con == "content" *\/ */
+  /*     con->window != NULL) { */
+  /* we want to skip down to workspaces and flatten them separately */
+  if (con->type != CT_WORKSPACE) {
+    TAILQ_FOREACH(current, &con->nodes_head, nodes) {
+      tree_flatten(current);
+    }
+
+    TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
+      tree_flatten(current);
+    }
+  }
+  else {
+    TAILQ_FOREACH(current, &con->nodes_head, nodes) {
+      tree_flatten_ws(current);
+    }
+
+    TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
+      tree_flatten_ws(current);
+    }
+  }
 }

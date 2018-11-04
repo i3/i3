@@ -236,7 +236,7 @@ static void move_to_output_directed(Con *con, direction_t direction) {
     /* force re-painting the indicators */
     FREE(con->deco_render_params);
 
-    tree_flatten(croot);
+    //tree_flatten(croot);
     ipc_send_window_event("move", con);
     ewmh_update_wm_desktop();
 }
@@ -384,7 +384,7 @@ end:
     /* force re-painting the indicators */
     FREE(con->deco_render_params);
 
-    tree_flatten(croot);
+    //tree_flatten(croot);
     ipc_send_window_event("move", con);
     ewmh_update_wm_desktop();
 }

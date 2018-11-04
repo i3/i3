@@ -13,6 +13,7 @@ state INITIAL:
   # We have an end token here for all the commands which just call some
   # function without using an explicit 'end' token.
   end ->
+  'flatten' -> call cmd_flatten_tree()
   '[' -> call cmd_criteria_init(); CRITERIA
   'remove_parent' -> call cmd_remove_parent()
   'move' -> MOVE
