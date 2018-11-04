@@ -90,7 +90,7 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry);
  * Removes the target node while shifting its children up to its parent.
  * Assumes: target->window == NULL
  */
-void tree_remove_node(Con* target);
+void tree_remove_node(Con *target);
 
 /**
  * tree_flatten() removes pairs of redundant split containers, e.g.:
