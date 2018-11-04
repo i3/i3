@@ -775,7 +775,7 @@ static bool is_headerless(Con *con) {
 /* because of con.c:con_set_layout we cant flatten a stacked/tabbed child of workspace 
  * NOTE: apparently splith/v are bad too, will not flatten workspace children (from tree_flatten)
  */
-void tree_flatten_ws(Con *fixed) {
+static void tree_flatten_ws(Con *fixed) {
     DLOG("Considering children of fixed = %p / %s\n", fixed, fixed->name);
 
     // TODO is this the good spot for this check?
