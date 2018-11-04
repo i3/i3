@@ -154,7 +154,7 @@ void cmd_remove_parent(I3_CMD) {
 }
 
 void cmd_flatten_tree(I3_CMD) {
-  tree_flatten(croot);
+    tree_flatten(croot);
 }
 
 /*

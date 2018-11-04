@@ -750,11 +750,11 @@ void tree_remove_node(Con *target) {
  */
 // TODO maybe call this "is_flattenable"
 static bool is_headerless(Con *con) {
-  if (con->layout == L_SPLITH)
-    return true;
-  if (con->layout == L_SPLITV)
-    return true;
-  return false;
+    if (con->layout == L_SPLITH)
+        return true;
+    if (con->layout == L_SPLITV)
+        return true;
+    return false;
 }
 
 // assume we are already somewhere inside workspace -> there wont be another
@@ -776,93 +776,86 @@ static bool is_headerless(Con *con) {
  * NOTE: apparently splith/v are bad too, will not flatten workspace children (from tree_flatten)
  */
 void tree_flatten_ws(Con *fixed) {
-  DLOG("Considering children of fixed = %p / %s\n", fixed, fixed->name);
+    DLOG("Considering children of fixed = %p / %s\n", fixed, fixed->name);
 
-  // TODO is this the good spot for this check?
-  // TODO are these always X11 clients?
-  if (fixed->window != NULL)
-    return;
+    // TODO is this the good spot for this check?
+    // TODO are these always X11 clients?
+    if (fixed->window != NULL)
+        return;
 
-  Con *child = TAILQ_FIRST(&(fixed->nodes_head));
-  Con *prev = NULL;
-  while (child != NULL) {
-    DLOG("Checking if I can flatten child = %p / %s / %p\n",
-         child, child->name, child->window);
-
-    while (true) {
-      if (focused == child)
-        break;
-      if (focused != NULL && focused->parent == child)
-        break;
-      if (child->window != NULL)
-        break;
-      /* workspace can't become tabbed/stacked -- TODO why exactly? */
-      if (fixed->type == CT_WORKSPACE
-          && (child->layout == L_TABBED
-              || child->layout == L_STACKED))
-        break;
-      
-      if (is_headerless(fixed)
-          && ( fixed->layout == child->layout
-               || TAILQ_NEXT(child, nodes) == NULL )) {
-        if (fixed->layout != child->layout)
-          con_set_layout(fixed, child->layout);
-
-        DLOG("Flattening child = %p / %s / %p\n",
+    Con *child = TAILQ_FIRST(&(fixed->nodes_head));
+    Con *prev = NULL;
+    while (child != NULL) {
+        DLOG("Checking if I can flatten child = %p / %s / %p\n",
              child, child->name, child->window);
-        Con* c;
-        TAILQ_FOREACH(c, &child->nodes_head, nodes) {
-          DLOG("Child's child: %p / %s / %p\n",
-               c, c->name, c->window);
+
+        while (true) {
+            if (focused == child)
+                break;
+            if (focused != NULL && focused->parent == child)
+                break;
+            if (child->window != NULL)
+                break;
+            /* workspace can't become tabbed/stacked -- TODO why exactly? */
+            if (fixed->type == CT_WORKSPACE && (child->layout == L_TABBED || child->layout == L_STACKED))
+                break;
+
+            if (is_headerless(fixed) && (fixed->layout == child->layout || TAILQ_NEXT(child, nodes) == NULL)) {
+                if (fixed->layout != child->layout)
+                    con_set_layout(fixed, child->layout);
+
+                DLOG("Flattening child = %p / %s / %p\n",
+                     child, child->name, child->window);
+                Con *c;
+                TAILQ_FOREACH(c, &child->nodes_head, nodes) {
+                    DLOG("Child's child: %p / %s / %p\n",
+                         c, c->name, c->window);
+                }
+
+                tree_remove_node(child);
+
+                if (prev == NULL)
+                    child = TAILQ_FIRST(&(fixed->nodes_head));
+                else
+                    child = TAILQ_NEXT(prev, nodes);
+            } else {
+                break;
+            }
         }
-    
-        tree_remove_node(child);
 
-        if (prev == NULL)
-          child = TAILQ_FIRST(&(fixed->nodes_head));
-        else
-          child = TAILQ_NEXT(prev, nodes);
-      }
-      else {
-        break;
-      }
+        // TODO could be it NULL now? I think it shouldnt
+        DLOG("child is now %p\n", child);
+        if (child != NULL) {
+            tree_flatten_ws(child);
+            child = TAILQ_NEXT(child, nodes);
+        }
     }
-
-    // TODO could be it NULL now? I think it shouldnt
-    DLOG("child is now %p\n", child);
-    if (child != NULL) {
-      tree_flatten_ws(child);
-      child = TAILQ_NEXT(child, nodes);
-    }
-  }
 }
 
 void tree_flatten(Con *con) {
-  Con *current;
-  DLOG("Checking if I can flatten con = %p / %s\n", con, con->name);
+    Con *current;
+    DLOG("Checking if I can flatten con = %p / %s\n", con, con->name);
 
-  
-  /* /\* We only consider normal containers without windows *\/ */
-  /* if (con->type != CT_CON || */
-  /*     parent->layout == L_OUTPUT || /\* con == "content" *\/ */
-  /*     con->window != NULL) { */
-  /* we want to skip down to workspaces and flatten them separately */
-  if (con->type != CT_WORKSPACE) {
-    TAILQ_FOREACH(current, &con->nodes_head, nodes) {
-      tree_flatten(current);
-    }
+    /* /\* We only consider normal containers without windows *\/ */
+    /* if (con->type != CT_CON || */
+    /*     parent->layout == L_OUTPUT || /\* con == "content" *\/ */
+    /*     con->window != NULL) { */
+    /* we want to skip down to workspaces and flatten them separately */
+    if (con->type != CT_WORKSPACE) {
+        TAILQ_FOREACH(current, &con->nodes_head, nodes) {
+            tree_flatten(current);
+        }
 
-    TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
-      tree_flatten(current);
-    }
-  }
-  else {
-    TAILQ_FOREACH(current, &con->nodes_head, nodes) {
-      tree_flatten_ws(current);
-    }
+        TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
+            tree_flatten(current);
+        }
+    } else {
+        TAILQ_FOREACH(current, &con->nodes_head, nodes) {
+            tree_flatten_ws(current);
+        }
 
-    TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
-      tree_flatten_ws(current);
+        TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
+            tree_flatten_ws(current);
+        }
     }
-  }
 }
