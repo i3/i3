@@ -1,8 +1,8 @@
-i3-wm (4.15.1-1) unstable; urgency=medium
+i3-wm (4.16-1) unstable; urgency=medium
 
   * New upstream release.
 
- -- Michael Stapelberg <stapelberg@debian.org>  Sat, 10 Mar 2018 17:27:26 +0100
+ -- Michael Stapelberg <stapelberg@debian.org>  Sun, 04 Nov 2018 14:47:25 +0100
 
 i3-wm (4.15-1) unstable; urgency=medium
 
