@@ -326,7 +326,7 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
  *
  */
 static void tree_close_empty(Con *con) {
-  /* bool dont_kill_parent = false */
+    /* bool dont_kill_parent = false */
     Con *parent = con->parent;
 
     /* remove the urgency hint of the workspace (if set) */
@@ -714,22 +714,22 @@ void tree_next(char way, orientation_t orientation) {
 // TODO manage focus and size correctly
 // TODO could specialize this for to=from->parent
 static void tree_transfer_children(Con *from, Con *to) {
-  Con *curr, *next;
-  curr = TAILQ_FIRST(&(from->nodes_head));
-  while (curr != NULL) {
-    next = TAILQ_NEXT(curr, nodes);
+    Con *curr, *next;
+    curr = TAILQ_FIRST(&(from->nodes_head));
+    while (curr != NULL) {
+        next = TAILQ_NEXT(curr, nodes);
 
-    DLOG("Transferring %p / %s from %p / %s to %p / %s\n",
-         curr, curr->name,
-         curr->parent, curr->parent->name,
-         to, to->name);
+        DLOG("Transferring %p / %s from %p / %s to %p / %s\n",
+             curr, curr->name,
+             curr->parent, curr->parent->name,
+             to, to->name);
 
-    con_detach(curr);
-    // TODO ignore_focus - false or true?
-    con_attach(curr, to, false);
+        con_detach(curr);
+        // TODO ignore_focus - false or true?
+        con_attach(curr, to, false);
 
-    curr = next;
-  }
+        curr = next;
+    }
 }
 
 /* Remove a node while moving its children to its parent
@@ -739,10 +739,10 @@ static void tree_transfer_children(Con *from, Con *to) {
 // (S[C1 S[C2] C3] -> S[C1 C2 C3])
 // TODO it shouldnt change sizes when possible
 void tree_remove_node(Con *target) {
-  //collapse_chain(target->parent, target);
-  tree_transfer_children(target, target->parent);
+    //collapse_chain(target->parent, target);
+    tree_transfer_children(target, target->parent);
 
-  tree_close_empty(target);
+    tree_close_empty(target);
 }
 
 /*
