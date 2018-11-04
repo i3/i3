@@ -242,6 +242,8 @@ void cmd_exit(I3_CMD);
  */
 void cmd_reload(I3_CMD);
 
+void cmd_remove_parent(I3_CMD);
+
 /**
  * Implementation of 'restart'.
  *

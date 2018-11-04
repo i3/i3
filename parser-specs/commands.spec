@@ -14,6 +14,7 @@ state INITIAL:
   # function without using an explicit 'end' token.
   end ->
   '[' -> call cmd_criteria_init(); CRITERIA
+  'remove_parent' -> call cmd_remove_parent()
   'move' -> MOVE
   'exec' -> EXEC
   'exit' -> call cmd_exit()

@@ -143,6 +143,16 @@ typedef TAILQ_HEAD(owindows_head, owindow) owindows_head;
 
 static owindows_head owindows;
 
+void cmd_remove_parent(I3_CMD) {
+  // TODO is this possible?
+  if (focused == NULL)
+    return;
+  if (focused->parent->type == CT_WORKSPACE)
+    return;
+
+  tree_remove_node(focused->parent);
+}
+
 /*
  * Initializes the specified 'Match' data structure and the initial state of
  * commands.c for matching target windows of a command.
