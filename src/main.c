@@ -32,14 +32,12 @@
  * RLIM_INFINITY for i3 debugging versions. */
 struct rlimit original_rlimit_core;
 
-/** The number of file descriptors passed via socket activation. */
+/* The number of file descriptors passed via socket activation. */
 int listen_fds;
 
 /* We keep the xcb_prepare watcher around to be able to enable and disable it
  * temporarily for drag_pointer(). */
 static struct ev_prepare *xcb_prepare;
-
-extern Con *focused;
 
 char **start_argv;
 
@@ -643,8 +641,16 @@ int main(int argc, char *argv[]) {
         /* Setting both, XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE and
          * XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED, will lead to the
          * X server sending us the full XKB state in KeyPress and KeyRelease:
-         * https://sources.debian.net/src/xorg-server/2:1.17.2-1.1/xkb/xkbEvents.c/?hl=927#L927
+         * https://cgit.freedesktop.org/xorg/xserver/tree/xkb/xkbEvents.c?h=xorg-server-1.20.0#n927
+         *
+         * XCB_XKB_PER_CLIENT_FLAG_DETECTABLE_AUTO_REPEAT enable detectable autorepeat:
+         * https://www.x.org/releases/current/doc/kbproto/xkbproto.html#Detectable_Autorepeat
+         * This affects bindings using the --release flag: instead of getting multiple KeyRelease
+         * events we get only one event when the key is physically released by the user.
          */
+        const uint32_t mask = XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE |
+                              XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED |
+                              XCB_XKB_PER_CLIENT_FLAG_DETECTABLE_AUTO_REPEAT;
         xcb_xkb_per_client_flags_reply_t *pcf_reply;
         /* The last three parameters are unset because they are only relevant
          * when using a feature called “automatic reset of boolean controls”:
@@ -655,20 +661,24 @@ int main(int argc, char *argv[]) {
             xcb_xkb_per_client_flags(
                 conn,
                 XCB_XKB_ID_USE_CORE_KBD,
-                XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE | XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED,
-                XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE | XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED,
+                mask,
+                mask,
                 0 /* uint32_t ctrlsToChange */,
                 0 /* uint32_t autoCtrls */,
                 0 /* uint32_t autoCtrlsValues */),
             NULL);
-        if (pcf_reply == NULL ||
-            !(pcf_reply->value & XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE)) {
-            ELOG("Could not set XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE\n");
-        }
-        if (pcf_reply == NULL ||
-            !(pcf_reply->value & XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED)) {
-            ELOG("Could not set XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED\n");
-        }
+
+#define PCF_REPLY_ERROR(_value)                                    \
+    do {                                                           \
+        if (pcf_reply == NULL || !(pcf_reply->value & (_value))) { \
+            ELOG("Could not set " #_value "\n");                   \
+        }                                                          \
+    } while (0)
+
+        PCF_REPLY_ERROR(XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE);
+        PCF_REPLY_ERROR(XCB_XKB_PER_CLIENT_FLAG_LOOKUP_STATE_WHEN_GRABBED);
+        PCF_REPLY_ERROR(XCB_XKB_PER_CLIENT_FLAG_DETECTABLE_AUTO_REPEAT);
+
         free(pcf_reply);
         xkb_base = extreply->first_event;
     }
@@ -949,8 +959,9 @@ int main(int argc, char *argv[]) {
     Barconfig *barconfig;
     TAILQ_FOREACH(barconfig, &barconfigs, configs) {
         char *command = NULL;
-        sasprintf(&command, "%s --bar_id=%s --socket=\"%s\"",
+        sasprintf(&command, "%s %s --bar_id=%s --socket=\"%s\"",
                   barconfig->i3bar_command ? barconfig->i3bar_command : "i3bar",
+                  barconfig->verbose ? "-V" : "",
                   barconfig->id, current_socketpath);
         LOG("Starting bar process: %s\n", command);
         start_application(command, true);

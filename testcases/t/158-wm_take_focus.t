@@ -55,6 +55,7 @@ subtest 'Window without WM_TAKE_FOCUS', sub {
     my $window = open_window;
 
     ok(!recv_take_focus($window), 'did not receive ClientMessage');
+    ok(is_net_wm_state_focused($window), '_NET_WM_STATE_FOCUSED set');
 
     my ($nodes) = get_ws_content($ws);
     my $con = shift @$nodes;
@@ -91,6 +92,7 @@ subtest 'Window with WM_TAKE_FOCUS and without InputHint', sub {
     $window->map;
 
     ok(!recv_take_focus($window), 'did not receive ClientMessage');
+    ok(is_net_wm_state_focused($window), '_NET_WM_STATE_FOCUSED set');
 
     my ($nodes) = get_ws_content($ws);
     my $con = shift @$nodes;
@@ -112,6 +114,7 @@ subtest 'Window with WM_TAKE_FOCUS and unspecified InputHint', sub {
     my $window = open_window({ protocols => [ $take_focus ] });
 
     ok(!recv_take_focus($window), 'did not receive ClientMessage');
+    ok(is_net_wm_state_focused($window), '_NET_WM_STATE_FOCUSED set');
 
     my ($nodes) = get_ws_content($ws);
     my $con = shift @$nodes;

@@ -318,31 +318,46 @@ CFGFUN(focus_on_window_activation, const char *mode) {
     DLOG("Set new focus_on_window_activation mode = %i.\n", config.focus_on_window_activation);
 }
 
+CFGFUN(title_align, const char *alignment) {
+    if (strcmp(alignment, "left") == 0) {
+        config.title_align = ALIGN_LEFT;
+    } else if (strcmp(alignment, "center") == 0) {
+        config.title_align = ALIGN_CENTER;
+    } else if (strcmp(alignment, "right") == 0) {
+        config.title_align = ALIGN_RIGHT;
+    } else {
+        assert(false);
+    }
+}
+
 CFGFUN(show_marks, const char *value) {
     config.show_marks = eval_boolstr(value);
 }
 
-CFGFUN(workspace, const char *workspace, const char *output) {
-    DLOG("Assigning workspace \"%s\" to output \"%s\"\n", workspace, output);
+CFGFUN(workspace, const char *workspace, const char *outputs) {
+    DLOG("Assigning workspace \"%s\" to outputs \"%s\"\n", workspace, outputs);
     /* Check for earlier assignments of the same workspace so that we
      * don’t have assignments of a single workspace to different
      * outputs */
     struct Workspace_Assignment *assignment;
-    bool duplicate = false;
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
         if (strcasecmp(assignment->name, workspace) == 0) {
             ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
                  workspace);
-            assignment->output = sstrdup(output);
-            duplicate = true;
+            return;
         }
     }
-    if (!duplicate) {
+
+    char *buf = sstrdup(outputs);
+    char *output = strtok(buf, " ");
+    while (output != NULL) {
         assignment = scalloc(1, sizeof(struct Workspace_Assignment));
         assignment->name = sstrdup(workspace);
         assignment->output = sstrdup(output);
         TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
+        output = strtok(NULL, " ");
     }
+    free(buf);
 }
 
 CFGFUN(ipc_socket, const char *path) {
@@ -403,6 +418,11 @@ CFGFUN(assign_output, const char *output) {
         return;
     }
 
+    if (current_match->window_mode != WM_ANY) {
+        ELOG("Assignments using window mode (floating/tiling) is not supported\n");
+        return;
+    }
+
     DLOG("New assignment, using above criteria, to output \"%s\".\n", output);
     Assignment *assignment = scalloc(1, sizeof(Assignment));
     match_copy(&(assignment->match), current_match);
@@ -414,6 +434,11 @@ CFGFUN(assign_output, const char *output) {
 CFGFUN(assign, const char *workspace, bool is_number) {
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this assignment\n");
+        return;
+    }
+
+    if (current_match->window_mode != WM_ANY) {
+        ELOG("Assignments using window mode (floating/tiling) is not supported\n");
         return;
     }
 
@@ -441,6 +466,10 @@ CFGFUN(no_focus) {
     match_copy(&(assignment->match), current_match);
     assignment->type = A_NO_FOCUS;
     TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
+}
+
+CFGFUN(ipc_kill_timeout, const long timeout_ms) {
+    ipc_set_kill_timeout(timeout_ms / 1000.0);
 }
 
 /*******************************************************************************
@@ -482,25 +511,8 @@ CFGFUN(bar_verbose, const char *verbose) {
     current_bar->verbose = eval_boolstr(verbose);
 }
 
-CFGFUN(bar_modifier, const char *modifier) {
-    if (strcmp(modifier, "Mod1") == 0)
-        current_bar->modifier = M_MOD1;
-    else if (strcmp(modifier, "Mod2") == 0)
-        current_bar->modifier = M_MOD2;
-    else if (strcmp(modifier, "Mod3") == 0)
-        current_bar->modifier = M_MOD3;
-    else if (strcmp(modifier, "Mod4") == 0)
-        current_bar->modifier = M_MOD4;
-    else if (strcmp(modifier, "Mod5") == 0)
-        current_bar->modifier = M_MOD5;
-    else if (strcmp(modifier, "Control") == 0 ||
-             strcmp(modifier, "Ctrl") == 0)
-        current_bar->modifier = M_CONTROL;
-    else if (strcmp(modifier, "Shift") == 0)
-        current_bar->modifier = M_SHIFT;
-    else if (strcmp(modifier, "none") == 0 ||
-             strcmp(modifier, "off") == 0)
-        current_bar->modifier = M_NONE;
+CFGFUN(bar_modifier, const char *modifiers) {
+    current_bar->modifier = modifiers ? event_state_from_str(modifiers) : XCB_NONE;
 }
 
 static void bar_configure_binding(const char *button, const char *release, const char *command) {
@@ -627,12 +639,16 @@ CFGFUN(bar_strip_workspace_numbers, const char *value) {
     current_bar->strip_workspace_numbers = eval_boolstr(value);
 }
 
+CFGFUN(bar_strip_workspace_name, const char *value) {
+    current_bar->strip_workspace_name = eval_boolstr(value);
+}
+
 CFGFUN(bar_start) {
     current_bar = scalloc(1, sizeof(struct Barconfig));
     TAILQ_INIT(&(current_bar->bar_bindings));
     TAILQ_INIT(&(current_bar->tray_outputs));
     current_bar->tray_padding = 2;
-    current_bar->modifier = M_MOD4;
+    current_bar->modifier = XCB_KEY_BUT_MASK_MOD_4;
 }
 
 CFGFUN(bar_finish) {

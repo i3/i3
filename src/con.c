@@ -286,14 +286,14 @@ void con_close(Con *con, kill_window_t kill_window) {
         for (child = TAILQ_FIRST(&(con->focus_head)); child;) {
             nextchild = TAILQ_NEXT(child, focused);
             DLOG("killing child = %p.\n", child);
-            tree_close_internal(child, kill_window, false, false);
+            tree_close_internal(child, kill_window, false);
             child = nextchild;
         }
 
         return;
     }
 
-    tree_close_internal(con, kill_window, false, false);
+    tree_close_internal(con, kill_window, false);
 }
 
 /*
@@ -312,7 +312,7 @@ bool con_has_managed_window(Con *con) {
     return (con != NULL && con->window != NULL && con->window->id != XCB_WINDOW_NONE && con_get_workspace(con) != NULL);
 }
 
-/**
+/*
  * Returns true if this node has regular or floating children.
  *
  */
@@ -509,7 +509,24 @@ Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode) {
     return NULL;
 }
 
-/**
+/*
+ * Returns the fullscreen node that covers the given workspace if it exists.
+ * This is either a CF_GLOBAL fullscreen container anywhere or a CF_OUTPUT
+ * fullscreen container in the workspace.
+ *
+ */
+Con *con_get_fullscreen_covering_ws(Con *ws) {
+    if (!ws) {
+        return NULL;
+    }
+    Con *fs = con_get_fullscreen_con(croot, CF_GLOBAL);
+    if (!fs) {
+        return con_get_fullscreen_con(ws, CF_OUTPUT);
+    }
+    return fs;
+}
+
+/*
  * Returns true if the container is internal, such as __i3_scratch
  *
  */
@@ -879,7 +896,7 @@ int con_num_children(Con *con) {
     return children;
 }
 
-/**
+/*
  * Returns the number of visible non-floating children of this container.
  * For example, if the container contains a hsplit which has two children,
  * this will return 2 instead of 1.
@@ -916,6 +933,10 @@ int con_num_windows(Con *con) {
     int num = 0;
     Con *current = NULL;
     TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+        num += con_num_windows(current);
+    }
+
+    TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
         num += con_num_windows(current);
     }
 
@@ -1097,7 +1118,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
     /* Prevent moving if this would violate the fullscreen focus restrictions. */
     Con *target_ws = con_get_workspace(target);
-    if (!con_fullscreen_permits_focusing(target_ws)) {
+    if (!ignore_focus && !con_fullscreen_permits_focusing(target_ws)) {
         LOG("Cannot move out of a fullscreen container.\n");
         return false;
     }
@@ -1140,7 +1161,13 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
     /* 1: save the container which is going to be focused after the current
      * container is moved away */
-    Con *focus_next = con_next_focused(con);
+    Con *focus_next = NULL;
+    if (!ignore_focus && source_ws == current_ws) {
+        focus_next = con_descend_focused(source_ws);
+        if (focus_next == con || con_has_parent(focus_next, con)) {
+            focus_next = con_next_focused(con);
+        }
+    }
 
     /* 2: we go up one level, but only when target is a normal container */
     if (target->type != CT_WORKSPACE) {
@@ -1148,13 +1175,13 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
         target = target->parent;
     }
 
-    /* 3: if the target container is floating, we get the workspace instead.
-     * Only tiling windows need to get inserted next to the current container.
-     * */
-    Con *floatingcon = con_inside_floating(target);
-    if (floatingcon != NULL) {
+    /* 3: if the original target is the direct child of a floating container, we
+     * can't move con next to it - floating containers have only one child - so
+     * we get the workspace instead. */
+    if (target->type == CT_FLOATING_CON) {
         DLOG("floatingcon, going up even further\n");
-        target = floatingcon->parent;
+        orig_target = target;
+        target = target->parent;
     }
 
     if (con->type == CT_FLOATING_CON) {
@@ -1170,20 +1197,6 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
             floating_fix_coordinates(con, &(source_output->rect), &(dest_output->rect));
         } else
             DLOG("Not fixing coordinates, fix_coordinates flag = %d\n", fix_coordinates);
-
-        /* If moving to a visible workspace, call show so it can be considered
-         * focused. Must do before attaching because workspace_show checks to see
-         * if focused container is in its area. */
-        if (!ignore_focus && workspace_is_visible(target_ws)) {
-            workspace_show(target_ws);
-
-            /* Don’t warp if told so (when dragging floating windows with the
-             * mouse for example) */
-            if (dont_warp)
-                x_set_warp_to(NULL);
-            else
-                x_set_warp_to(&(con->rect));
-        }
     }
 
     /* If moving a fullscreen container and the destination already has a
@@ -1217,20 +1230,21 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
         /* We need to save the focused workspace on the output in case the
          * new workspace is hidden and it's necessary to immediately switch
          * back to the originally-focused workspace. */
-        Con *old_focus = TAILQ_FIRST(&(output_get_content(dest_output)->focus_head));
+        Con *old_focus_ws = TAILQ_FIRST(&(output_get_content(dest_output)->focus_head));
+        Con *old_focus = focused;
         con_activate(con_descend_focused(con));
 
-        /* Restore focus if the output's focused workspace has changed. */
-        if (con_get_workspace(focused) != old_focus)
+        if (old_focus_ws == current_ws && old_focus->type != CT_WORKSPACE) {
+            /* Restore focus to the currently focused container. */
             con_activate(old_focus);
+        } else if (con_get_workspace(focused) != old_focus_ws) {
+            /* Restore focus if the output's focused workspace has changed. */
+            con_focus(con_descend_focused(old_focus_ws));
+        }
     }
 
     /* 7: when moving to another workspace, we leave the focus on the current
      * workspace. (see also #809) */
-
-    /* Descend focus stack in case focus_next is a workspace which can
-     * occur if we move to the same workspace.  Also show current workspace
-     * to ensure it is focused. */
     if (!ignore_focus) {
         workspace_show(current_ws);
         if (dont_warp) {
@@ -1241,7 +1255,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
     /* Set focus only if con was on current workspace before moving.
      * Otherwise we would give focus to some window on different workspace. */
-    if (!ignore_focus && source_ws == current_ws)
+    if (focus_next)
         con_activate(con_descend_focused(focus_next));
 
     /* 8. If anything within the container is associated with a startup sequence,
@@ -1310,7 +1324,7 @@ bool con_move_to_mark(Con *con, const char *mark) {
         return true;
     }
 
-    if (con->type == CT_WORKSPACE) {
+    if (target->type == CT_WORKSPACE) {
         DLOG("target container is a workspace, simply moving the container there.\n");
         con_move_to_workspace(con, target, true, false, false);
         return true;
@@ -1418,20 +1432,16 @@ orientation_t con_orientation(Con *con) {
             return HORIZ;
 
         case L_DEFAULT:
-            DLOG("Someone called con_orientation() on a con with L_DEFAULT, this is a bug in the code.\n");
+            ELOG("Someone called con_orientation() on a con with L_DEFAULT, this is a bug in the code.\n");
             assert(false);
-            return HORIZ;
 
         case L_DOCKAREA:
         case L_OUTPUT:
-            DLOG("con_orientation() called on dockarea/output (%d) container %p\n", con->layout, con);
-            assert(false);
-            return HORIZ;
-
-        default:
-            DLOG("con_orientation() ran into default\n");
+            ELOG("con_orientation() called on dockarea/output (%d) container %p\n", con->layout, con);
             assert(false);
     }
+    /* should not be reached */
+    assert(false);
 }
 
 /*
@@ -1441,52 +1451,20 @@ orientation_t con_orientation(Con *con) {
  *
  */
 Con *con_next_focused(Con *con) {
-    Con *next;
-    /* floating containers are attached to a workspace, so we focus either the
-     * next floating container (if any) or the workspace itself. */
-    if (con->type == CT_FLOATING_CON) {
-        DLOG("selecting next for CT_FLOATING_CON\n");
-        next = TAILQ_NEXT(con, floating_windows);
-        DLOG("next = %p\n", next);
-        if (!next) {
-            next = TAILQ_PREV(con, floating_head, floating_windows);
-            DLOG("using prev, next = %p\n", next);
-        }
-        if (!next) {
-            Con *ws = con_get_workspace(con);
-            next = ws;
-            DLOG("no more floating containers for next = %p, restoring workspace focus\n", next);
-            while (next != TAILQ_END(&(ws->focus_head)) && !TAILQ_EMPTY(&(next->focus_head))) {
-                next = TAILQ_FIRST(&(next->focus_head));
-                if (next == con) {
-                    DLOG("skipping container itself, we want the next client\n");
-                    next = TAILQ_NEXT(next, focused);
-                }
-            }
-            if (next == TAILQ_END(&(ws->focus_head))) {
-                DLOG("Focus list empty, returning ws\n");
-                next = ws;
-            }
-        } else {
-            /* Instead of returning the next CT_FLOATING_CON, we descend it to
-             * get an actual window to focus. */
-            next = con_descend_focused(next);
-        }
-        return next;
-    }
-
     /* dock clients cannot be focused, so we focus the workspace instead */
     if (con->parent->type == CT_DOCKAREA) {
         DLOG("selecting workspace for dock client\n");
         return con_descend_focused(output_get_content(con->parent->parent));
     }
+    if (con_is_floating(con)) {
+        con = con->parent;
+    }
 
     /* if 'con' is not the first entry in the focus stack, use the first one as
      * it’s currently focused already */
-    Con *first = TAILQ_FIRST(&(con->parent->focus_head));
-    if (first != con) {
-        DLOG("Using first entry %p\n", first);
-        next = first;
+    Con *next = TAILQ_FIRST(&(con->parent->focus_head));
+    if (next != con) {
+        DLOG("Using first entry %p\n", next);
     } else {
         /* try to focus the next container on the same level as this one or fall
          * back to its parent */
@@ -1499,6 +1477,10 @@ Con *con_next_focused(Con *con) {
      * possible, excluding the current container */
     while (!TAILQ_EMPTY(&(next->focus_head)) && TAILQ_FIRST(&(next->focus_head)) != con) {
         next = TAILQ_FIRST(&(next->focus_head));
+    }
+
+    if (con->type == CT_FLOATING_CON && next != con->parent) {
+        next = con_descend_focused(next);
     }
 
     return next;
@@ -1734,8 +1716,7 @@ adjacent_t con_adjacent_borders(Con *con) {
  *
  */
 int con_border_style(Con *con) {
-    Con *fs = con_get_fullscreen_con(con->parent, CF_OUTPUT);
-    if (fs == con) {
+    if (con->fullscreen_mode == CF_OUTPUT || con->fullscreen_mode == CF_GLOBAL) {
         DLOG("this one is fullscreen! overriding BS_NONE\n");
         return BS_NONE;
     }
@@ -1935,7 +1916,6 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
              * now let's activate the current layout (next in list) */
             if (current_layout_found) {
                 new_layout = layout;
-                free(tm_dup);
                 break;
             }
 
@@ -1943,6 +1923,7 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
                 current_layout_found = true;
             }
         }
+        free(tm_dup);
 
         if (new_layout != L_DEFAULT) {
             con_set_layout(con, new_layout);
@@ -1995,7 +1976,7 @@ static void con_on_remove_child(Con *con) {
         if (TAILQ_EMPTY(&(con->focus_head)) && !workspace_is_visible(con)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", con, con->name);
             yajl_gen gen = ipc_marshal_workspace_event("empty", con, NULL);
-            tree_close_internal(con, DONT_KILL_WINDOW, false, false);
+            tree_close_internal(con, DONT_KILL_WINDOW, false);
 
             const unsigned char *payload;
             ylength length;
@@ -2016,7 +1997,7 @@ static void con_on_remove_child(Con *con) {
     int children = con_num_children(con);
     if (children == 0) {
         DLOG("Container empty, closing\n");
-        tree_close_internal(con, DONT_KILL_WINDOW, false, false);
+        tree_close_internal(con, DONT_KILL_WINDOW, false);
         return;
     }
 }
@@ -2413,6 +2394,10 @@ bool con_swap(Con *first, Con *second) {
 
     /* Move first to second. */
     result &= _con_move_to_con(first, second, false, false, false, true, false);
+    /* If swapping the containers didn't work we don't need to mess with the focus. */
+    if (!result) {
+        goto swap_end;
+    }
 
     /* If we moved the container holding the focused window to another
      * workspace we need to ensure the visible workspace has the focused
@@ -2425,8 +2410,6 @@ bool con_swap(Con *first, Con *second) {
 
     /* Move second to where first has been originally. */
     result &= _con_move_to_con(second, fake, false, false, false, true, false);
-
-    /* If swapping the containers didn't work we don't need to mess with the focus. */
     if (!result) {
         goto swap_end;
     }

@@ -118,7 +118,7 @@ EXTRA_DIST = \
 	I3_VERSION \
 	LICENSE \
 	PACKAGE-MAINTAINER \
-	RELEASE-NOTES-4.15 \
+	RELEASE-NOTES-4.16 \
 	generate-command-parser.pl \
 	parser-specs/commands.spec \
 	parser-specs/config.spec \
@@ -301,6 +301,7 @@ libi3_a_SOURCES = \
 	libi3/fake_configure_notify.c \
 	libi3/font.c \
 	libi3/format_placeholders.c \
+	libi3/g_utf8_make_valid.c \
 	libi3/get_colorpixel.c \
 	libi3/get_config_path.c \
 	libi3/get_exe_path.c \
@@ -357,10 +358,12 @@ i3_msg_i3_msg_SOURCES = \
 
 i3_nagbar_i3_nagbar_CFLAGS = \
 	$(AM_CFLAGS) \
+	$(LIBSN_CFLAGS) \
 	$(libi3_CFLAGS)
 
 i3_nagbar_i3_nagbar_LDADD = \
 	$(libi3_LIBS) \
+	$(LIBSN_LIBS) \
 	$(XCB_UTIL_CURSOR_LIBS)
 
 i3_nagbar_i3_nagbar_SOURCES = \
@@ -414,10 +417,12 @@ i3bar_i3bar_SOURCES = \
 i3_config_wizard_i3_config_wizard_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(libi3_CFLAGS) \
+	$(LIBSN_CFLAGS) \
 	$(XKBCOMMON_CFLAGS)
 
 i3_config_wizard_i3_config_wizard_LDADD = \
 	$(libi3_LIBS) \
+	$(LIBSN_LIBS) \
 	$(XCB_UTIL_KEYSYMS_LIBS) \
 	$(XKBCOMMON_LIBS)
 
@@ -521,6 +526,7 @@ i3_SOURCES = \
 	include/shmlog.h \
 	include/sighandler.h \
 	include/startup.h \
+	include/sync.h \
 	include/tree.h \
 	include/util.h \
 	include/window.h \
@@ -562,6 +568,7 @@ i3_SOURCES = \
 	src/sd-daemon.c \
 	src/sighandler.c \
 	src/startup.c \
+	src/sync.c \
 	src/tree.c \
 	src/util.c \
 	src/version.c \

@@ -31,6 +31,11 @@ with an error.
 *-t* 'type'::
 Send ipc message, see below. This option defaults to "command".
 
+*-m*, *--monitor*::
+Instead of exiting right after receiving the first subscribed event,
+wait indefinitely for all of them. Can only be used with "-t subscribe".
+See the "subscribe" IPC message type below for details.
+
 *message*::
 Send ipc message, see below.
 
@@ -69,6 +74,17 @@ get_version::
 Gets the version of i3. The reply will be a JSON-encoded dictionary with the
 major, minor, patch and human-readable version.
 
+get_config::
+Gets the currently loaded i3 configuration.
+
+send_tick::
+Sends a tick to all IPC connections which subscribe to tick events.
+
+subscribe::
+The payload of the message describes the events to subscribe to.
+Upon reception, each event will be dumped as a JSON-encoded object.
+See the -m option for continuous monitoring.
+
 == DESCRIPTION
 
 i3-msg is a sample implementation for a client using the unix socket IPC
@@ -85,6 +101,9 @@ i3-msg border normal
 
 # Dump the layout tree
 i3-msg -t get_tree
+
+# Monitor window changes
+i3-msg -t subscribe -m '[ "window" ]'
 ------------------------------------------------
 
 == ENVIRONMENT

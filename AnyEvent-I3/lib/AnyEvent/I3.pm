@@ -100,11 +100,12 @@ use constant TYPE_GET_VERSION => 7;
 use constant TYPE_GET_BINDING_MODES => 8;
 use constant TYPE_GET_CONFIG => 9;
 use constant TYPE_SEND_TICK => 10;
+use constant TYPE_SYNC => 11;
 
 our %EXPORT_TAGS = ( 'all' => [
     qw(i3 TYPE_RUN_COMMAND TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS
        TYPE_GET_TREE TYPE_GET_MARKS TYPE_GET_BAR_CONFIG TYPE_GET_VERSION
-       TYPE_GET_BINDING_MODES TYPE_GET_CONFIG TYPE_SEND_TICK)
+       TYPE_GET_BINDING_MODES TYPE_GET_CONFIG TYPE_SEND_TICK TYPE_SYNC)
 ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
@@ -532,6 +533,19 @@ sub send_tick {
     $self->_ensure_connection;
 
     $self->message(TYPE_SEND_TICK, $payload);
+}
+
+=head2 sync
+
+Sends an i3 sync event. Requires i3 >= 4.16
+
+=cut
+sub sync {
+    my ($self, $payload) = @_;
+
+    $self->_ensure_connection;
+
+    $self->message(TYPE_SYNC, $payload);
 }
 
 =head2 command($content)

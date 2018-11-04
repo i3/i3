@@ -2,8 +2,8 @@
 =====================================================
 
 [![Build Status](https://travis-ci.org/i3/i3.svg?branch=next)](https://travis-ci.org/i3/i3)
-[![Issue Stats](http://www.issuestats.com/github/i3/i3/badge/issue?style=flat)](http://www.issuestats.com/github/i3/i3)
-[![Pull Request Stats](http://www.issuestats.com/github/i3/i3/badge/pr?style=flat)](http://www.issuestats.com/github/i3/i3)
+[![Issue Stats](https://img.shields.io/github/issues/i3/i3.svg)](https://github.com/i3/i3/issues)
+[![Pull Request Stats](https://img.shields.io/github/issues-pr/i3/i3.svg)](https://github.com/i3/i3/pulls)
 
 i3 is a tiling window manager for X11.
 

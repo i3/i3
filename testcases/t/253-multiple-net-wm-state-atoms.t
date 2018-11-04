@@ -21,22 +21,22 @@ use X11::XCB qw(:all);
 sub get_wm_state {
     sync_with_i3;
 
-    my ($con) = @_; 
+    my ($con) = @_;
     my $cookie = $x->get_property(
-        0,  
+        0,
         $con->{id},
         $x->atom(name => '_NET_WM_STATE')->id,
         GET_PROPERTY_TYPE_ANY,
-        0,  
+        0,
         4096
-    );  
+    );
 
     my $reply = $x->get_property_reply($cookie->{sequence});
     my $len = $reply->{length};
     return undef if $len == 0;
 
     my @atoms = unpack("L$len", $reply->{value});
-    return \@atoms;
+    return @atoms;
 }
 
 my $wm_state_sticky = $x->atom(name => '_NET_WM_STATE_STICKY')->id;
@@ -51,18 +51,24 @@ my $wm_state_fullscreen = $x->atom(name => '_NET_WM_STATE_FULLSCREEN')->id;
 fresh_workspace;
 my $window = open_window;
 cmd 'sticky enable';
-is_deeply(get_wm_state($window), [ $wm_state_sticky ], 'sanity check: _NET_WM_STATE_STICKY is set');
+my @state = get_wm_state($window);
+ok((scalar grep { $_ == $wm_state_sticky } @state) > 0, 'sanity check: _NET_WM_STATE_STICKY is set');
 
 cmd 'fullscreen enable';
-is_deeply(get_wm_state($window), [ $wm_state_sticky, $wm_state_fullscreen ],
-    'both _NET_WM_STATE_FULLSCREEN and _NET_WM_STATE_STICKY are set');
+@state = get_wm_state($window);
+ok((scalar grep { $_ == $wm_state_sticky } @state) > 0, '_NET_WM_STATE_STICKY is set');
+ok((scalar grep { $_ == $wm_state_fullscreen } @state) > 0, '_NET_WM_STATE_FULLSCREEN is set');
 
 cmd 'sticky disable';
-is_deeply(get_wm_state($window), [ $wm_state_fullscreen ], 'only _NET_WM_STATE_FULLSCREEN is set');
+@state = get_wm_state($window);
+ok((scalar grep { $_ == $wm_state_sticky } @state) == 0, '_NET_WM_STATE_STICKY is not set');
+ok((scalar grep { $_ == $wm_state_fullscreen } @state) > 0, '_NET_WM_STATE_FULLSCREEN is set');
 
 cmd 'sticky enable';
 cmd 'fullscreen disable';
-is_deeply(get_wm_state($window), [ $wm_state_sticky ], 'only _NET_WM_STATE_STICKY is set');
+@state = get_wm_state($window);
+ok((scalar grep { $_ == $wm_state_sticky } @state) > 0, '_NET_WM_STATE_STICKY is set');
+ok((scalar grep { $_ == $wm_state_fullscreen } @state) == 0, '_NET_WM_STATE_FULLSCREEN is not set');
 
 ###############################################################################
 # _NET_WM_STATE is removed when the window is withdrawn.
@@ -71,7 +77,8 @@ is_deeply(get_wm_state($window), [ $wm_state_sticky ], 'only _NET_WM_STATE_STICK
 fresh_workspace;
 $window = open_window;
 cmd 'sticky enable';
-is_deeply(get_wm_state($window), [ $wm_state_sticky ], 'sanity check: _NET_WM_STATE_STICKY is set');
+@state = get_wm_state($window);
+ok((scalar grep { $_ == $wm_state_sticky } @state) > 0, '_NET_WM_STATE_STICKY is set');
 
 $window->unmap;
 wait_for_unmap($window);

@@ -86,9 +86,9 @@ is(parser_calls(
    'resize shrink left 25 px or 33 ppt; ' .
    'resize shrink left 25'),
    "cmd_resize(shrink, left, 10, 10)\n" .
-   "cmd_resize(shrink, left, 25, 10)\n" .
+   "cmd_resize(shrink, left, 25, 0)\n" .
    "cmd_resize(shrink, left, 25, 33)\n" .
-   "cmd_resize(shrink, left, 25, 10)",
+   "cmd_resize(shrink, left, 25, 0)",
    'simple resize ok');
 
 is(parser_calls('resize shrink left 25 px or 33 ppt,'),

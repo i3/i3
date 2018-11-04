@@ -32,6 +32,9 @@
 #include <xcb/randr.h>
 #include <xcb/xcb_cursor.h>
 
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-launchee.h>
+
 #include "i3-nagbar.h"
 
 /** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
@@ -52,6 +55,7 @@ typedef struct {
     char *action;
     int16_t x;
     uint16_t width;
+    bool terminal;
 } button_t;
 
 static xcb_window_t win;
@@ -99,10 +103,10 @@ void debuglog(char *fmt, ...) {
 }
 
 /*
- * Starts the given application by passing it through a shell. We use double fork
- * to avoid zombie processes. As the started application’s parent exits (immediately),
- * the application is reparented to init (process-id 1), which correctly handles
- * childs, so we don’t have to do it :-).
+ * Starts the given application by passing it through a shell. We use double
+ * fork to avoid zombie processes. As the started application’s parent exits
+ * (immediately), the application is reparented to init (process-id 1), which
+ * correctly handles children, so we don’t have to do it :-).
  *
  * The shell is determined by looking for the SHELL environment variable. If it
  * does not exist, /bin/sh is used.
@@ -115,7 +119,7 @@ static void start_application(const char *command) {
         setsid();
         if (fork() == 0) {
             /* This is the child */
-            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (void *)NULL);
+            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
             /* not reached */
         }
         exit(0);
@@ -184,7 +188,11 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     }
 
     char *terminal_cmd;
-    sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", link_path);
+    if (button->terminal) {
+        sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", link_path);
+    } else {
+        terminal_cmd = sstrdup(link_path);
+    }
     printf("argv0 = %s\n", argv0);
     printf("terminal_cmd = %s\n", terminal_cmd);
 
@@ -358,12 +366,13 @@ int main(int argc, char *argv[]) {
         {"version", no_argument, 0, 'v'},
         {"font", required_argument, 0, 'f'},
         {"button", required_argument, 0, 'b'},
+        {"button-no-terminal", required_argument, 0, 'B'},
         {"help", no_argument, 0, 'h'},
         {"message", required_argument, 0, 'm'},
         {"type", required_argument, 0, 't'},
         {0, 0, 0, 0}};
 
-    char *options_string = "b:f:m:t:vh";
+    char *options_string = "b:B:f:m:t:vh";
 
     prompt = i3string_from_utf8("Please do not run this program.");
 
@@ -385,12 +394,14 @@ int main(int argc, char *argv[]) {
                 break;
             case 'h':
                 printf("i3-nagbar " I3_VERSION "\n");
-                printf("i3-nagbar [-m <message>] [-b <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
+                printf("i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
                 return 0;
             case 'b':
+            case 'B':
                 buttons = srealloc(buttons, sizeof(button_t) * (buttoncnt + 1));
                 buttons[buttoncnt].label = i3string_from_utf8(optarg);
                 buttons[buttoncnt].action = argv[optind];
+                buttons[buttoncnt].terminal = (o == 'b');
                 printf("button with label *%s* and action *%s*\n",
                        i3string_as_utf8(buttons[buttoncnt].label),
                        buttons[buttoncnt].action);
@@ -414,6 +425,11 @@ int main(int argc, char *argv[]) {
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
 #include "atoms.xmacro"
 #undef xmacro
+
+    /* Init startup notification. */
+    SnDisplay *sndisplay = sn_xcb_display_new(conn, NULL, NULL);
+    SnLauncheeContext *sncontext = sn_launchee_context_new_from_environment(sndisplay, screens);
+    sn_display_unref(sndisplay);
 
     root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
@@ -484,6 +500,9 @@ int main(int argc, char *argv[]) {
                 XCB_EVENT_MASK_BUTTON_PRESS |
                 XCB_EVENT_MASK_BUTTON_RELEASE,
             cursor});
+    if (sncontext) {
+        sn_launchee_context_setup_window(sncontext, win);
+    }
 
     /* Map the window (make it visible) */
     xcb_map_window(conn, win);
@@ -543,6 +562,12 @@ int main(int argc, char *argv[]) {
 
     /* Initialize the drawable bar */
     draw_util_surface_init(conn, &bar, win, get_visualtype(root_screen), win_pos.width, win_pos.height);
+
+    /* Startup complete. */
+    if (sncontext) {
+        sn_launchee_context_complete(sncontext);
+        sn_launchee_context_unref(sncontext);
+    }
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);

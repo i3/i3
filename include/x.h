@@ -49,6 +49,12 @@ void x_reinit(Con *con);
  */
 void x_con_kill(Con *con);
 
+/*
+ * Completely reinitializes the container's frame, without destroying the old window.
+ *
+ */
+void x_con_reframe(Con *con);
+
 /**
  * Returns true if the client supports the given protocol atom (like WM_DELETE_WINDOW)
  *

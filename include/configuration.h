@@ -201,6 +201,13 @@ struct Config {
      * decoration. Marks starting with a "_" will be ignored either way. */
     bool show_marks;
 
+    /** Title alignment options. */
+    enum {
+        ALIGN_LEFT,
+        ALIGN_CENTER,
+        ALIGN_RIGHT
+    } title_align;
+
     /** The default border style for new windows. */
     border_style_t default_border;
 
@@ -289,16 +296,7 @@ struct Barconfig {
            S_SHOW = 1 } hidden_state;
 
     /** Bar modifier (to show bar when in hide mode). */
-    enum {
-        M_NONE = 0,
-        M_CONTROL = 1,
-        M_SHIFT = 2,
-        M_MOD1 = 3,
-        M_MOD2 = 4,
-        M_MOD3 = 5,
-        M_MOD4 = 6,
-        M_MOD5 = 7
-    } modifier;
+    uint32_t modifier;
 
     TAILQ_HEAD(bar_bindings_head, Barbinding)
     bar_bindings;
@@ -330,6 +328,10 @@ struct Barconfig {
     /** Strip workspace numbers? Configuration option is
      * 'strip_workspace_numbers yes'. */
     bool strip_workspace_numbers;
+
+    /** Strip workspace name? Configuration option is
+     * 'strip_workspace_name yes'. */
+    bool strip_workspace_name;
 
     /** Hide mode button? Configuration option is 'binding_mode_indicator no'
      * but we invert the bool for the same reason as hide_workspace_buttons.*/
@@ -432,7 +434,7 @@ void ungrab_all_keys(xcb_connection_t *conn);
  * Sends the current bar configuration as an event to all barconfig_update listeners.
  *
  */
-void update_barconfig();
+void update_barconfig(void);
 
 /**
  * Kills the configerror i3-nagbar process, if any.

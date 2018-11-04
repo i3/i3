@@ -183,26 +183,28 @@ free_params:
 }
 
 static int *precalculate_sizes(Con *con, render_params *p) {
-    int *sizes = smalloc(p->children * sizeof(int));
-    if ((con->layout == L_SPLITH || con->layout == L_SPLITV) && p->children > 0) {
-        assert(!TAILQ_EMPTY(&con->nodes_head));
+    if ((con->layout != L_SPLITH && con->layout != L_SPLITV) || p->children <= 0) {
+        return NULL;
+    }
 
-        Con *child;
-        int i = 0, assigned = 0;
-        int total = con_orientation(con) == HORIZ ? p->rect.width : p->rect.height;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-            double percentage = child->percent > 0.0 ? child->percent : 1.0 / p->children;
-            assigned += sizes[i++] = percentage * total;
-        }
-        assert(assigned == total ||
-               (assigned > total && assigned - total <= p->children * 2) ||
-               (assigned < total && total - assigned <= p->children * 2));
-        int signal = assigned < total ? 1 : -1;
-        while (assigned != total) {
-            for (i = 0; i < p->children && assigned != total; ++i) {
-                sizes[i] += signal;
-                assigned += signal;
-            }
+    int *sizes = smalloc(p->children * sizeof(int));
+    assert(!TAILQ_EMPTY(&con->nodes_head));
+
+    Con *child;
+    int i = 0, assigned = 0;
+    int total = con_orientation(con) == HORIZ ? p->rect.width : p->rect.height;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        double percentage = child->percent > 0.0 ? child->percent : 1.0 / p->children;
+        assigned += sizes[i++] = lround(percentage * total);
+    }
+    assert(assigned == total ||
+           (assigned > total && assigned - total <= p->children * 2) ||
+           (assigned < total && total - assigned <= p->children * 2));
+    int signal = assigned < total ? 1 : -1;
+    while (assigned != total) {
+        for (i = 0; i < p->children && assigned != total; ++i) {
+            sizes[i] += signal;
+            assigned += signal;
         }
     }
 
@@ -232,25 +234,22 @@ static void render_root(Con *con, Con *fullscreen) {
             continue;
         }
         Con *workspace = TAILQ_FIRST(&(content->focus_head));
-        Con *fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
+        Con *fullscreen = con_get_fullscreen_covering_ws(workspace);
         Con *child;
         TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
-            /* Don’t render floating windows when there is a fullscreen window
-             * on that workspace. Necessary to make floating fullscreen work
-             * correctly (ticket #564). */
-            /* If there is no fullscreen->window, this cannot be a
-             * transient window, so we _know_ we need to skip it. This
-             * happens during restarts where the container already exists,
-             * but the window was not yet associated. */
-            if (fullscreen != NULL && fullscreen->window == NULL)
-                continue;
-            if (fullscreen != NULL && fullscreen->window != NULL) {
+            if (fullscreen != NULL) {
+                /* Don’t render floating windows when there is a fullscreen
+                 * window on that workspace. Necessary to make floating
+                 * fullscreen work correctly (ticket #564). Exception to the
+                 * above rule: smart popup_during_fullscreen handling (popups
+                 * belonging to the fullscreen app will be rendered). */
+                if (config.popup_during_fullscreen != PDF_SMART) {
+                    continue;
+                }
+
                 Con *floating_child = con_descend_focused(child);
                 Con *transient_con = floating_child;
                 bool is_transient_for = false;
-                /* Exception to the above rule: smart
-                 * popup_during_fullscreen handling (popups belonging to
-                 * the fullscreen app will be rendered). */
                 while (transient_con != NULL &&
                        transient_con->window != NULL &&
                        transient_con->window->transient_for != XCB_NONE) {

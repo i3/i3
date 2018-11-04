@@ -48,6 +48,9 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-x11.h>
 
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-launchee.h>
+
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
@@ -101,7 +104,7 @@ static struct xkb_keymap *xkb_keymap;
 static uint8_t xkb_base_event;
 static uint8_t xkb_base_error;
 
-static void finish();
+static void finish(void);
 
 #include "GENERATED_config_enums.h"
 
@@ -213,7 +216,7 @@ static const char *get_string(const char *identifier) {
 
 static void clear_stack(void) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].type == STACK_STR && stack[c].val.str != NULL)
+        if (stack[c].type == STACK_STR)
             free(stack[c].val.str);
         stack[c].identifier = NULL;
         stack[c].val.str = NULL;
@@ -293,6 +296,7 @@ static char *next_state(const cmdp_token *token) {
         }
         sasprintf(&res, "bindsym %s%s%s %s%s\n", (modifiers == NULL ? "" : modrep), (modifiers == NULL ? "" : "+"), str, (release == NULL ? "" : release), get_string("command"));
         clear_stack();
+        free(modrep);
         return res;
     }
 
@@ -478,7 +482,7 @@ static void txt(int col, int row, char *text, color_t fg, color_t bg) {
  * Handles expose events, that is, draws the window contents.
  *
  */
-static int handle_expose() {
+static int handle_expose(void) {
     const color_t black = draw_util_hex_to_color("#000000");
     const color_t white = draw_util_hex_to_color("#FFFFFF");
     const color_t green = draw_util_hex_to_color("#00FF00");
@@ -631,15 +635,13 @@ static void handle_button_press(xcb_button_press_event_t *event) {
         modifier = MOD_Mod1;
         handle_expose();
     }
-
-    return;
 }
 
 /*
  * Creates the config file and tells i3 to reload.
  *
  */
-static void finish() {
+static void finish(void) {
     printf("creating \"%s\"...\n", config_path);
 
     struct xkb_context *xkb_context;
@@ -745,10 +747,12 @@ int main(int argc, char *argv[]) {
     char *pattern = "pango:monospace 8";
     char *patternbold = "pango:monospace bold 8";
     int o, option_index = 0;
+    bool headless_run = false;
 
     static struct option long_options[] = {
         {"socket", required_argument, 0, 's'},
         {"version", no_argument, 0, 'v'},
+        {"modifier", required_argument, 0, 'm'},
         {"limit", required_argument, 0, 'l'},
         {"prompt", required_argument, 0, 'P'},
         {"prefix", required_argument, 0, 'p'},
@@ -756,7 +760,7 @@ int main(int argc, char *argv[]) {
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}};
 
-    char *options_string = "s:vh";
+    char *options_string = "sm:vh";
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (o) {
@@ -767,9 +771,18 @@ int main(int argc, char *argv[]) {
             case 'v':
                 printf("i3-config-wizard " I3_VERSION "\n");
                 return 0;
+            case 'm':
+                headless_run = true;
+                if (strcmp(optarg, "alt") == 0)
+                    modifier = MOD_Mod1;
+                else if (strcmp(optarg, "win") == 0)
+                    modifier = MOD_Mod4;
+                else
+                    err(EXIT_FAILURE, "Invalid modifier key %s", optarg);
+                break;
             case 'h':
                 printf("i3-config-wizard " I3_VERSION "\n");
-                printf("i3-config-wizard [-s <socket>] [-v]\n");
+                printf("i3-config-wizard [-s <socket>] [-m win|alt] [-v] [-h]\n");
                 return 0;
         }
     }
@@ -826,11 +839,21 @@ int main(int argc, char *argv[]) {
     modmap_cookie = xcb_get_modifier_mapping(conn);
     symbols = xcb_key_symbols_alloc(conn);
 
+    if (headless_run) {
+        finish();
+        return 0;
+    }
+
 /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
 #include "atoms.xmacro"
 #undef xmacro
+
+    /* Init startup notification. */
+    SnDisplay *sndisplay = sn_xcb_display_new(conn, NULL, NULL);
+    SnLauncheeContext *sncontext = sn_launchee_context_new_from_environment(sndisplay, screen);
+    sn_display_unref(sndisplay);
 
     root_screen = xcb_aux_get_screen(conn, screen);
     root = root_screen->root;
@@ -864,6 +887,9 @@ int main(int argc, char *argv[]) {
             0, /* back pixel: black */
             XCB_EVENT_MASK_EXPOSURE |
                 XCB_EVENT_MASK_BUTTON_PRESS});
+    if (sncontext) {
+        sn_launchee_context_setup_window(sncontext, win);
+    }
 
     /* Map the window (make it visible) */
     xcb_map_window(conn, win);
@@ -925,6 +951,12 @@ int main(int argc, char *argv[]) {
         exit(-1);
     }
 
+    /* Startup complete. */
+    if (sncontext) {
+        sn_launchee_context_complete(sncontext);
+        sn_launchee_context_unref(sncontext);
+    }
+
     xcb_flush(conn);
 
     xcb_generic_event_t *event;
@@ -937,12 +969,11 @@ int main(int argc, char *argv[]) {
         /* Strip off the highest bit (set if the event is generated) */
         int type = (event->response_type & 0x7F);
 
+        /* TODO: handle mappingnotify */
         switch (type) {
             case XCB_KEY_PRESS:
                 handle_key_press(NULL, conn, (xcb_key_press_event_t *)event);
                 break;
-
-            /* TODO: handle mappingnotify */
 
             case XCB_BUTTON_PRESS:
                 handle_button_press((xcb_button_press_event_t *)event);

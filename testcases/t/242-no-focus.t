@@ -68,7 +68,7 @@ is($x->input_focus, $first->id, 'input focus has not changed');
 exit_gracefully($pid);
 
 #####################################################################
-## 3: no_focus doesn't affect the first window opened on a workspace
+# 3: no_focus doesn't affect the first window opened on a workspace
 #####################################################################
 
 $config = <<EOT;
@@ -86,6 +86,13 @@ $first = open_window(wm_class => 'focusme');
 
 sync_with_i3;
 is($x->input_focus, $first->id, 'input focus has changed');
+
+# Also check that it counts floating windows
+# See issue #3423.
+open_floating_window(wm_class => 'focusme');
+
+sync_with_i3;
+is($x->input_focus, $first->id, 'input focus didn\'t change to floating window');
 
 exit_gracefully($pid);
 

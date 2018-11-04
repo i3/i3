@@ -59,7 +59,7 @@ static void floating_set_hint_atom(Con *con, bool floating) {
     xcb_flush(conn);
 }
 
-/**
+/*
  * Called when a floating window is created or resized.
  * This function resizes the window if its size is higher or lower than the
  * configured maximum/minimum size, respectively.
@@ -93,6 +93,18 @@ void floating_check_size(Con *floating_con) {
         if (focused_con->window->min_height) {
             floating_con->rect.height -= border_rect.height;
             floating_con->rect.height = max(floating_con->rect.height, focused_con->window->min_height);
+            floating_con->rect.height += border_rect.height;
+        }
+
+        if (focused_con->window->max_width) {
+            floating_con->rect.width -= border_rect.width;
+            floating_con->rect.width = min(floating_con->rect.width, focused_con->window->max_width);
+            floating_con->rect.width += border_rect.width;
+        }
+
+        if (focused_con->window->max_height) {
+            floating_con->rect.height -= border_rect.height;
+            floating_con->rect.height = min(floating_con->rect.height, focused_con->window->max_height);
             floating_con->rect.height += border_rect.height;
         }
 
@@ -176,11 +188,36 @@ void floating_enable(Con *con, bool automatic) {
         return;
     }
 
+    Con *focus_head_placeholder = NULL;
+    bool focus_before_parent = true;
+    if (!set_focus) {
+        /* Find recursively the ancestor container which is a child of our workspace.
+         * We need to reuse its focus position later. */
+        Con *ancestor = con;
+        while (ancestor->parent->type != CT_WORKSPACE) {
+            focus_before_parent &= TAILQ_FIRST(&(ancestor->parent->focus_head)) == ancestor;
+            ancestor = ancestor->parent;
+        }
+        /* Consider the part of the focus stack of our current workspace:
+         * [ ... S_{i-1} S_{i} S_{i+1} ... ]
+         * Where S_{x} is a container tree and the container 'con' that is beeing switched to
+         * floating belongs in S_{i}. The new floating container, 'nc', will have the
+         * workspace as its parent so it needs to be placed in this stack. If C was focused
+         * we just need to call con_focus(). Otherwise, nc must be placed before or after S_{i}.
+         * We should avoid using the S_{i} container for our operations since it might get
+         * killed if it has no other children. So, the two possible positions are after S_{i-1}
+         * or before S_{i+1}.
+         */
+        if (focus_before_parent) {
+            focus_head_placeholder = TAILQ_PREV(ancestor, focus_head, focused);
+        } else {
+            focus_head_placeholder = TAILQ_NEXT(ancestor, focused);
+        }
+    }
+
     /* 1: detach the container from its parent */
     /* TODO: refactor this with tree_close_internal() */
-    TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
-    TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-
+    con_detach(con);
     con_fix_percent(con->parent);
 
     /* 2: create a new container to render the decoration on, add
@@ -196,12 +233,23 @@ void floating_enable(Con *con, bool automatic) {
     /* We insert nc already, even though its rect is not yet calculated. This
      * is necessary because otherwise the workspace might be empty (and get
      * closed in tree_close_internal()) even though it’s not. */
-    if (set_focus) {
-        TAILQ_INSERT_TAIL(&(ws->floating_head), nc, floating_windows);
+    TAILQ_INSERT_HEAD(&(ws->floating_head), nc, floating_windows);
+
+    struct focus_head *fh = &(ws->focus_head);
+    if (focus_before_parent) {
+        if (focus_head_placeholder) {
+            TAILQ_INSERT_AFTER(fh, focus_head_placeholder, nc, focused);
+        } else {
+            TAILQ_INSERT_HEAD(fh, nc, focused);
+        }
     } else {
-        TAILQ_INSERT_HEAD(&(ws->floating_head), nc, floating_windows);
+        if (focus_head_placeholder) {
+            TAILQ_INSERT_BEFORE(focus_head_placeholder, nc, focused);
+        } else {
+            /* Also used for the set_focus case */
+            TAILQ_INSERT_TAIL(fh, nc, focused);
+        }
     }
-    TAILQ_INSERT_TAIL(&(ws->focus_head), nc, focused);
 
     /* check if the parent container is empty and close it if so */
     if ((con->parent->type == CT_CON || con->parent->type == CT_FLOATING_CON) &&
@@ -210,7 +258,7 @@ void floating_enable(Con *con, bool automatic) {
         Con *parent = con->parent;
         /* clear the pointer before calling tree_close_internal in which the memory is freed */
         con->parent = NULL;
-        tree_close_internal(parent, DONT_KILL_WINDOW, false, false);
+        tree_close_internal(parent, DONT_KILL_WINDOW, false);
     }
 
     char *name;
@@ -284,10 +332,7 @@ void floating_enable(Con *con, bool automatic) {
 
     /* Sanity check: Are the coordinates on the appropriate output? If not, we
      * need to change them */
-    Output *current_output = get_output_containing(nc->rect.x +
-                                                       (nc->rect.width / 2),
-                                                   nc->rect.y + (nc->rect.height / 2));
-
+    Output *current_output = get_output_from_rect(nc->rect);
     Con *correct_output = con_get_output(ws);
     if (!current_output || current_output->con != correct_output) {
         DLOG("This floating window is on the wrong output, fixing coordinates (currently (%d, %d))\n",
@@ -295,11 +340,13 @@ void floating_enable(Con *con, bool automatic) {
 
         /* If moving from one output to another, keep the relative position
          * consistent (e.g. a centered dialog will remain centered). */
-        if (current_output)
+        if (current_output) {
             floating_fix_coordinates(nc, &current_output->con->rect, &correct_output->rect);
-        else {
-            nc->rect.x = correct_output->rect.x;
-            nc->rect.y = correct_output->rect.y;
+            /* Make sure that the result is in the correct output. */
+            current_output = get_output_from_rect(nc->rect);
+        }
+        if (!current_output || current_output->con != correct_output) {
+            floating_center(nc, ws->rect);
         }
     }
 
@@ -320,21 +367,6 @@ void floating_enable(Con *con, bool automatic) {
     if (set_focus)
         con_activate(con);
 
-    /* Check if we need to re-assign it to a different workspace because of its
-     * coordinates and exit if that was done successfully. */
-    if (floating_maybe_reassign_ws(nc)) {
-        goto done;
-    }
-
-    /* Sanitize coordinates: Check if they are on any output */
-    if (get_output_containing(nc->rect.x, nc->rect.y) != NULL) {
-        goto done;
-    }
-
-    ELOG("No output found at destination coordinates, centering floating window on current ws\n");
-    floating_center(nc, ws->rect);
-
-done:
     floating_set_hint_atom(nc, true);
     ipc_send_window_event("floating", con);
 }
@@ -345,45 +377,26 @@ void floating_disable(Con *con, bool automatic) {
         return;
     }
 
-    const bool set_focus = (con == focused);
-
     Con *ws = con_get_workspace(con);
-    Con *parent = con->parent;
+    if (con_is_internal(ws)) {
+        LOG("Can't disable floating for container in internal workspace.\n");
+        return;
+    }
+    Con *tiling_focused = con_descend_tiling_focused(ws);
 
-    /* 1: detach from parent container */
-    TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
-    TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-
-    /* 2: kill parent container */
-    TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
-    TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
-    /* clear the pointer before calling tree_close_internal in which the memory is freed */
-    con->parent = NULL;
-    tree_close_internal(parent, DONT_KILL_WINDOW, true, false);
-
-    /* 3: re-attach to the parent of the currently focused con on the workspace
-     * this floating con was on */
-    Con *focused = con_descend_tiling_focused(ws);
-
-    /* if there is no other container on this workspace, focused will be the
-     * workspace itself */
-    if (focused->type == CT_WORKSPACE)
-        con->parent = focused;
-    else
-        con->parent = focused->parent;
-
-    /* con_fix_percent will adjust the percent value */
-    con->percent = 0.0;
+    if (tiling_focused->type == CT_WORKSPACE) {
+        Con *parent = con->parent;
+        con_detach(con);
+        con->parent = NULL;
+        tree_close_internal(parent, DONT_KILL_WINDOW, true);
+        con_attach(con, tiling_focused, false);
+        con->percent = 0.0;
+        con_fix_percent(con->parent);
+    } else {
+        insert_con_into(con, tiling_focused, AFTER);
+    }
 
     con->floating = FLOATING_USER_OFF;
-
-    con_attach(con, con->parent, false);
-
-    con_fix_percent(con->parent);
-
-    if (set_focus)
-        con_activate(con);
-
     floating_set_hint_atom(con, false);
     ipc_send_window_event("floating", con);
 }
@@ -429,9 +442,7 @@ void floating_raise_con(Con *con) {
  *
  */
 bool floating_maybe_reassign_ws(Con *con) {
-    Output *output = get_output_containing(
-        con->rect.x + (con->rect.width / 2),
-        con->rect.y + (con->rect.height / 2));
+    Output *output = get_output_from_rect(con->rect);
 
     if (!output) {
         ELOG("No output found at destination coordinates?\n");
@@ -542,8 +553,10 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
     }
 
     /* If the user cancelled, undo the changes. */
-    if (drag_result == DRAG_REVERT)
+    if (drag_result == DRAG_REVERT) {
         floating_reposition(con, initial_rect);
+        return;
+    }
 
     /* If this is a scratchpad window, don't auto center it from now on. */
     if (con->scratchpad_state == SCRATCHPAD_FRESH)
@@ -687,8 +700,7 @@ struct drag_x11_cb {
     const void *extra;
 };
 
-static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
-    struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w->data;
+static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
     xcb_motion_notify_event_t *last_motion_notify = NULL;
     xcb_generic_event_t *event;
 
@@ -748,13 +760,20 @@ static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
             free(event);
 
         if (dragloop->result != DRAGGING) {
-            free(last_motion_notify);
-            return;
+            ev_break(EV_A_ EVBREAK_ONE);
+            if (dragloop->result == DRAG_SUCCESS) {
+                /* Ensure motion notify events are handled. */
+                break;
+            } else {
+                free(last_motion_notify);
+                return true;
+            }
         }
     }
 
-    if (last_motion_notify == NULL)
-        return;
+    if (last_motion_notify == NULL) {
+        return true;
+    }
 
     /* Ensure that we are either dragging the resize handle (con is NULL) or that the
      * container still exists. The latter might not be true, e.g., if the window closed
@@ -767,9 +786,17 @@ static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
             last_motion_notify->root_y,
             dragloop->extra);
     }
-    free(last_motion_notify);
+    FREE(last_motion_notify);
 
     xcb_flush(conn);
+    return dragloop->result != DRAGGING;
+}
+
+static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
+    struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w->data;
+    while (!drain_drag_events(EV_A, dragloop)) {
+        /* repeatedly drain events: draining might produce additional ones */
+    }
 }
 
 /*
@@ -780,8 +807,7 @@ static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
  * rect of the client, the event and the new coordinates (x, y).
  *
  */
-drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
-                                                                                confine_to,
+drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t confine_to,
                            border_t border, int cursor, callback_t callback, const void *extra) {
     xcb_cursor_t xcursor = (cursor && xcursor_supported) ? xcursor_get_cursor(cursor) : XCB_NONE;
 
@@ -844,8 +870,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
     main_set_x11_cb(false);
     ev_prepare_start(main_loop, prepare);
 
-    while (loop.result == DRAGGING)
-        ev_run(main_loop, EVRUN_ONCE);
+    ev_loop(main_loop, 0);
 
     ev_prepare_stop(main_loop, prepare);
     main_set_x11_cb(true);
@@ -864,23 +889,28 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
  * outputs.
  *
  */
-void floating_reposition(Con *con, Rect newrect) {
+bool floating_reposition(Con *con, Rect newrect) {
     /* Sanity check: Are the new coordinates on any output? If not, we
      * ignore that request. */
-    if (!contained_by_output(newrect)) {
+    if (!output_containing_rect(newrect)) {
         ELOG("No output found at destination coordinates. Not repositioning.\n");
-        return;
+        return false;
     }
 
     con->rect = newrect;
 
-    floating_maybe_reassign_ws(con);
+    bool reassigned = floating_maybe_reassign_ws(con);
 
     /* If this is a scratchpad window, don't auto center it from now on. */
     if (con->scratchpad_state == SCRATCHPAD_FRESH)
         con->scratchpad_state = SCRATCHPAD_CHANGED;
 
-    tree_render();
+    /* Workspace change will already result in a tree_render. */
+    if (!reassigned) {
+        render_con(con, false);
+        x_push_node(con);
+    }
+    return true;
 }
 
 /*

@@ -11,8 +11,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifndef STARTS_WITH
-#define STARTS_WITH(string, needle) (strncasecmp((string), (needle), strlen((needle))) == 0)
+#ifndef CS_STARTS_WITH
+#define CS_STARTS_WITH(string, needle) (strncmp((string), (needle), strlen((needle))) == 0)
 #endif
 
 /*
@@ -28,7 +28,7 @@ char *format_placeholders(char *format, placeholder_t *placeholders, int num) {
     int buffer_len = strlen(format) + 1;
     for (char *walk = format; *walk != '\0'; walk++) {
         for (int i = 0; i < num; i++) {
-            if (!STARTS_WITH(walk, placeholders[i].name))
+            if (!CS_STARTS_WITH(walk, placeholders[i].name))
                 continue;
 
             buffer_len = buffer_len - strlen(placeholders[i].name) + strlen(placeholders[i].value);
@@ -48,7 +48,7 @@ char *format_placeholders(char *format, placeholder_t *placeholders, int num) {
 
         bool matched = false;
         for (int i = 0; i < num; i++) {
-            if (!STARTS_WITH(walk, placeholders[i].name)) {
+            if (!CS_STARTS_WITH(walk, placeholders[i].name)) {
                 continue;
             }
 

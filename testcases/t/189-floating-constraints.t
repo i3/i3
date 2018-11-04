@@ -21,6 +21,7 @@
 #
 
 use i3test i3_autostart => 0;
+use X11::XCB qw/PROP_MODE_REPLACE/;
 
 ################################################################################
 # 1: check floating_minimum_size (with non-default limits)
@@ -215,6 +216,85 @@ sync_with_i3;
 $rect = $window->rect;
 is($rect->{width}, 80, 'width did not exceed minimum width');
 is($rect->{height}, 70, 'height did not exceed minimum height');
+
+exit_gracefully($pid);
+
+################################################################################
+# 8: check minimum_size and maximum_size set by WM_NORMAL_HINTS
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+EOT
+
+my $min_width = 150;
+my $min_height = 100;
+my $max_width = 250;
+my $max_height = 200;
+
+my sub open_with_max_size {
+    # The type of the WM_NORMAL_HINTS property is WM_SIZE_HINTS
+    # https://tronche.com/gui/x/icccm/sec-4.html#s-4.1.2.3
+    my $XCB_ICCCM_SIZE_HINT_P_MIN_SIZE = 0x32;
+    my $XCB_ICCCM_SIZE_HINT_P_MAX_SIZE = 0x16;
+
+    my $flags = $XCB_ICCCM_SIZE_HINT_P_MIN_SIZE | $XCB_ICCCM_SIZE_HINT_P_MAX_SIZE;
+
+    my $pad = 0x00;
+
+    my $window = open_window(
+        before_map => sub {
+            my ($window) = @_;
+
+            my $atomname = $x->atom(name => 'WM_NORMAL_HINTS');
+            my $atomtype = $x->atom(name => 'WM_SIZE_HINTS');
+            $x->change_property(
+                PROP_MODE_REPLACE,
+                $window->id,
+                $atomname->id,
+                $atomtype->id,
+                32,
+                13,
+                pack('C5N8', $flags, $pad, $pad, $pad, $pad, 0, 0, 0, $min_width, $min_height, $max_width, $max_height),
+            );
+        },
+    );
+
+    return $window;
+}
+
+my sub check_minsize {
+    sync_with_i3;
+    is($window->rect->{width}, $min_width, 'width = min_width');
+    is($window->rect->{height}, $min_height, 'height = min_height');
+}
+
+my sub check_maxsize {
+    sync_with_i3;
+    is($window->rect->{width}, $max_width, 'width = max_width');
+    is($window->rect->{height}, $max_height, 'height = max_height');
+}
+
+$pid = launch_with_config($config);
+
+$window = open_with_max_size;
+cmd 'floating enable';
+cmd 'border none';
+
+cmd "resize set $min_width px $min_height px";
+check_minsize;
+
+# Try to resize below minimum width
+cmd 'resize set ' . ($min_width - 10) . ' px ' . ($min_height - 50) . ' px';
+check_minsize;
+
+cmd "resize set $max_width px $max_height px";
+check_maxsize;
+
+# Try to resize above maximum width
+cmd 'resize set ' . ($max_width + 150) . ' px ' . ($max_height + 500) . ' px';
+check_maxsize;
 
 exit_gracefully($pid);
 

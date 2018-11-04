@@ -22,7 +22,7 @@ void run_assignments(i3Window *window) {
     /* Check if any assignments match */
     Assignment *current;
     TAILQ_FOREACH(current, &assignments, assignments) {
-        if (!match_matches_window(&(current->match), window))
+        if (current->type != A_COMMAND || !match_matches_window(&(current->match), window))
             continue;
 
         bool skip = false;
@@ -45,19 +45,16 @@ void run_assignments(i3Window *window) {
         window->ran_assignments = srealloc(window->ran_assignments, sizeof(Assignment *) * window->nr_assignments);
         window->ran_assignments[window->nr_assignments - 1] = current;
 
-        DLOG("matching assignment, would do:\n");
-        if (current->type == A_COMMAND) {
-            DLOG("execute command %s\n", current->dest.command);
-            char *full_command;
-            sasprintf(&full_command, "[id=\"%d\"] %s", window->id, current->dest.command);
-            CommandResult *result = parse_command(full_command, NULL);
-            free(full_command);
+        DLOG("matching assignment, execute command %s\n", current->dest.command);
+        char *full_command;
+        sasprintf(&full_command, "[id=\"%d\"] %s", window->id, current->dest.command);
+        CommandResult *result = parse_command(full_command, NULL);
+        free(full_command);
 
-            if (result->needs_tree_render)
-                needs_tree_render = true;
+        if (result->needs_tree_render)
+            needs_tree_render = true;
 
-            command_result_free(result);
-        }
+        command_result_free(result);
     }
 
     /* If any of the commands required re-rendering, we will do that now. */

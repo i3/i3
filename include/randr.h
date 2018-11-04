@@ -89,21 +89,28 @@ Output *get_output_by_name(const char *name, const bool require_active);
 Output *get_output_containing(unsigned int x, unsigned int y);
 
 /**
+ * Returns the active output which contains the midpoint of the given rect. If
+ * such an output doesn't exist, returns the output which contains most of the
+ * rectangle or NULL if there is no output which intersects with it.
+ *
+ */
+Output *get_output_from_rect(Rect rect);
+
+/**
  * Returns the active output which spans exactly the area specified by
  * rect or NULL if there is no output like this.
  *
  */
 Output *get_output_with_dimensions(Rect rect);
 
-/*
- * In contained_by_output, we check if any active output contains part of the container.
+/**
+ * In output_containing_rect, we check if any active output contains part of the container.
  * We do this by checking if the output rect is intersected by the Rect.
  * This is the 2-dimensional counterpart of get_output_containing.
- * Since we don't actually need the outputs intersected by the given Rect (There could
- * be many), we just return true or false for convenience.
+ * Returns the output with the maximum intersecting area.
  *
  */
-bool contained_by_output(Rect rect);
+Output *output_containing_rect(Rect rect);
 
 /**
  * Gets the output which is the next one in the given direction.
@@ -130,7 +137,7 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
  */
 Output *get_output_next_wrap(direction_t direction, Output *current);
 
-/*
+/**
  * Creates an output covering the root window.
  *
  */

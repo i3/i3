@@ -497,10 +497,12 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         fake-outputs
         force_display_urgency_hint
         focus_on_window_activation
+        title_align
         show_marks
         workspace
         ipc_socket
         ipc-socket
+        ipc_kill_timeout
         restart_state
         popup_during_fullscreen
         exec_always
@@ -725,7 +727,7 @@ EOT
 $expected = <<'EOT';
 cfg_bar_start()
 cfg_bar_output(LVDS-1)
-ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'i3bar_command', 'status_command', 'socket_path', 'mode', 'hidden_state', 'id', 'modifier', 'wheel_up_cmd', 'wheel_down_cmd', 'bindsym', 'position', 'output', 'tray_output', 'tray_padding', 'font', 'separator_symbol', 'binding_mode_indicator', 'workspace_buttons', 'strip_workspace_numbers', 'verbose', 'colors', '}'
+ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'i3bar_command', 'status_command', 'socket_path', 'mode', 'hidden_state', 'id', 'modifier', 'wheel_up_cmd', 'wheel_down_cmd', 'bindsym', 'position', 'output', 'tray_output', 'tray_padding', 'font', 'separator_symbol', 'binding_mode_indicator', 'workspace_buttons', 'strip_workspace_numbers', 'strip_workspace_name', 'verbose', 'colors', '}'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: bar {
 ERROR: CONFIG: Line   2:     output LVDS-1

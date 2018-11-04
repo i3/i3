@@ -20,7 +20,7 @@
 /* Default shmlog size if not set by user. */
 extern const int default_shmlog_size;
 
-/*
+/**
  * Header of the shmlog file. Used by i3/src/log.c and i3/i3-dump-log/main.c.
  *
  */

@@ -45,9 +45,11 @@ state INITIAL:
   'fake_outputs', 'fake-outputs'           -> FAKE_OUTPUTS
   'force_display_urgency_hint'             -> FORCE_DISPLAY_URGENCY_HINT
   'focus_on_window_activation'             -> FOCUS_ON_WINDOW_ACTIVATION
+  'title_align'                            -> TITLE_ALIGN
   'show_marks'                             -> SHOW_MARKS
   'workspace'                              -> WORKSPACE
   'ipc_socket', 'ipc-socket'               -> IPC_SOCKET
+  'ipc_kill_timeout'                       -> IPC_KILL_TIMEOUT
   'restart_state'                          -> RESTART_STATE
   'popup_during_fullscreen'                -> POPUP_DURING_FULLSCREEN
   exectype = 'exec_always', 'exec'         -> EXEC
@@ -247,6 +249,11 @@ state FORCE_DISPLAY_URGENCY_HINT:
   duration_ms = number
       -> FORCE_DISPLAY_URGENCY_HINT_MS
 
+# title_align [left|center|right]
+state TITLE_ALIGN:
+  alignment = 'left', 'center', 'right'
+      -> call cfg_title_align($alignment)
+
 # show_marks
 state SHOW_MARKS:
   value = word
@@ -273,13 +280,18 @@ state WORKSPACE_OUTPUT:
       -> WORKSPACE_OUTPUT_STR
 
 state WORKSPACE_OUTPUT_STR:
-  output = word
+  output = string
       -> call cfg_workspace($workspace, $output)
 
 # ipc-socket <path>
 state IPC_SOCKET:
   path = string
       -> call cfg_ipc_socket($path)
+
+# ipc_kill_timeout
+state IPC_KILL_TIMEOUT:
+  timeout = number
+      -> call cfg_ipc_kill_timeout(&timeout)
 
 # restart_state <path> (for testcases)
 state RESTART_STATE:
@@ -455,6 +467,7 @@ state BAR:
   'binding_mode_indicator' -> BAR_BINDING_MODE_INDICATOR
   'workspace_buttons'      -> BAR_WORKSPACE_BUTTONS
   'strip_workspace_numbers' -> BAR_STRIP_WORKSPACE_NUMBERS
+  'strip_workspace_name' -> BAR_STRIP_WORKSPACE_NAME
   'verbose'                -> BAR_VERBOSE
   'colors'                 -> BAR_COLORS_BRACE
   '}'
@@ -490,8 +503,14 @@ state BAR_ID:
       -> call cfg_bar_id($bar_id); BAR
 
 state BAR_MODIFIER:
-  modifier = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Control', 'Ctrl', 'Shift', 'none', 'off'
-      -> call cfg_bar_modifier($modifier); BAR
+  'off', 'none'
+      -> call cfg_bar_modifier(NULL); BAR
+  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl'
+      ->
+  '+'
+      ->
+  end
+      -> call cfg_bar_modifier($modifiers); BAR
 
 state BAR_WHEEL_UP_CMD:
   command = string
@@ -554,6 +573,10 @@ state BAR_WORKSPACE_BUTTONS:
 state BAR_STRIP_WORKSPACE_NUMBERS:
   value = word
       -> call cfg_bar_strip_workspace_numbers($value); BAR
+
+state BAR_STRIP_WORKSPACE_NAME:
+  value = word
+      -> call cfg_bar_strip_workspace_name($value); BAR
 
 state BAR_VERBOSE:
   value = word

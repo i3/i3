@@ -63,6 +63,9 @@ typedef struct i3_ipc_header {
 /** Send a tick event to all subscribers. */
 #define I3_IPC_MESSAGE_TYPE_SEND_TICK 10
 
+/** Trigger an i3 sync protocol message via IPC. */
+#define I3_IPC_MESSAGE_TYPE_SYNC 11
+
 /*
  * Messages from i3 to clients
  *
@@ -78,12 +81,13 @@ typedef struct i3_ipc_header {
 #define I3_IPC_REPLY_TYPE_BINDING_MODES 8
 #define I3_IPC_REPLY_TYPE_CONFIG 9
 #define I3_IPC_REPLY_TYPE_TICK 10
+#define I3_IPC_REPLY_TYPE_SYNC 11
 
 /*
  * Events from i3 to clients. Events have the first bit set high.
  *
  */
-#define I3_IPC_EVENT_MASK (1 << 31)
+#define I3_IPC_EVENT_MASK (1UL << 31)
 
 /* The workspace event will be triggered upon changes in the workspace list */
 #define I3_IPC_EVENT_WORKSPACE (I3_IPC_EVENT_MASK | 0)

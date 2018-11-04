@@ -285,6 +285,20 @@ void ewmh_update_sticky(xcb_window_t window, bool sticky) {
 }
 
 /*
+ * Set or remove _NEW_WM_STATE_FOCUSED on the window.
+ *
+ */
+void ewmh_update_focused(xcb_window_t window, bool is_focused) {
+    if (is_focused) {
+        DLOG("Setting _NET_WM_STATE_FOCUSED for window = %d.\n", window);
+        xcb_add_property_atom(conn, window, A__NET_WM_STATE, A__NET_WM_STATE_FOCUSED);
+    } else {
+        DLOG("Removing _NET_WM_STATE_FOCUSED for window = %d.\n", window);
+        xcb_remove_property_atom(conn, window, A__NET_WM_STATE, A__NET_WM_STATE_FOCUSED);
+    }
+}
+
+/*
  * Set up the EWMH hints on the root window.
  *
  */

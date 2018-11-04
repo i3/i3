@@ -471,4 +471,66 @@ is(scalar @$nodes, 0, 'no window on current ws anymore');
 
 is($scratch_nodes[0]->{scratchpad_state}, 'changed', 'scratchpad_state changed');
 
+################################################################################
+# 15: Verify that 'scratchpad show' returns correct info.
+################################################################################
+
+kill_all_windows;
+
+my $result = cmd 'scratchpad show';
+is($result->[0]->{success}, 0, 'no scratchpad window and call to scratchpad failed');
+
+open_window;
+cmd 'move scratchpad';
+$result = cmd 'scratchpad show';
+is($result->[0]->{success}, 1, 'call to scratchpad succeeded');
+$result = cmd 'scratchpad show';
+is($result->[0]->{success}, 1, 'call to scratchpad succeeded');
+
+kill_all_windows;
+$result = cmd 'scratchpad show';
+is($result->[0]->{success}, 0, 'call to scratchpad failed');
+
+################################################################################
+# 16: Verify that 'scratchpad show' with the criteria returns correct info.
+################################################################################
+
+open_window(name => "scratch-match");
+cmd 'move scratchpad';
+
+$result = cmd '[title="scratch-match"] scratchpad show';
+is($result->[0]->{success}, 1, 'call to scratchpad with the criteria succeeded');
+
+$result = cmd '[title="nomatch"] scratchpad show';
+is($result->[0]->{success}, 0, 'call to scratchpad with non-matching criteria failed');
+
+################################################################################
+# 17: Open a scratchpad window on a workspace, switch to another workspace and
+# call 'scratchpad show' again. Verify that it returns correct info.
+################################################################################
+
+fresh_workspace;
+open_window;
+cmd 'move scratchpad';
+
+fresh_workspace;
+$result = cmd 'scratchpad show';
+is($result->[0]->{success}, 1, 'call to scratchpad in another workspace succeeded');
+
+################################################################################
+# 18: Disabling floating for a scratchpad window should not work.
+################################################################################
+
+kill_all_windows;
+
+$ws = fresh_workspace;
+$window = open_window;
+cmd 'move scratchpad';
+cmd '[id=' . $window->id . '] floating disable';
+
+is(scalar @{get_ws_content($ws)}, 0, 'no window in workspace');
+cmd 'scratchpad show';
+is($x->input_focus, $window->id, 'scratchpad window shown');
+
+
 done_testing;

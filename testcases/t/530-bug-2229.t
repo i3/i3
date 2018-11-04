@@ -24,8 +24,6 @@ fake-outputs 400x400+0+0,400x400+400+0
 workspace_auto_back_and_forth no
 EOT
 
-my $i3 = i3(get_socket_path());
-
 # Set it up such that workspace 3 is on the left output and
 # workspace 4 is on the right output
 cmd 'focus output fake-0';
@@ -37,10 +35,6 @@ open_window;
 
 cmd 'move workspace to output left';
 
-# ensure that workspace 3 has now vanished
-my $get_ws = $i3->get_workspaces->recv;
-my @ws_names = map { $_->{name} } @$get_ws;
-# TODO get rid of smartmatch
-ok(!('3' ~~ @ws_names), 'workspace 3 has been closed');
+ok(!workspace_exists('3'), 'workspace 3 has been closed');
 
 done_testing;

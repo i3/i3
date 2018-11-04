@@ -8,6 +8,7 @@
  *
  */
 #include "common.h"
+#include "yajl_utils.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -26,6 +27,8 @@
 #include <yajl/yajl_version.h>
 #include <yajl/yajl_gen.h>
 #include <paths.h>
+
+#include <xcb/xcb_keysyms.h>
 
 /* Global variables for child_*() */
 i3bar_child child;
@@ -133,7 +136,7 @@ finish:
  * Stop and free() the stdin- and SIGCHLD-watchers
  *
  */
-void cleanup(void) {
+static void cleanup(void) {
     if (stdin_io != NULL) {
         ev_io_stop(main_loop, stdin_io);
         FREE(stdin_io);
@@ -400,7 +403,7 @@ static bool read_json_input(unsigned char *input, int length) {
  * in statusline
  *
  */
-void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+static void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     int rec;
     unsigned char *buffer = get_buffer(watcher, &rec);
     if (buffer == NULL)
@@ -420,7 +423,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  * whether this is JSON or plain text
  *
  */
-void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+static void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     int rec;
     unsigned char *buffer = get_buffer(watcher, &rec);
     if (buffer == NULL)
@@ -457,7 +460,7 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  * anymore
  *
  */
-void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
+static void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     int exit_status = WEXITSTATUS(watcher->rstatus);
 
     ELOG("Child (pid: %d) unexpectedly exited with status %d\n",
@@ -477,7 +480,7 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     draw_bars(false);
 }
 
-void child_write_output(void) {
+static void child_write_output(void) {
     if (child.click_events) {
         const unsigned char *output;
         size_t size;
@@ -580,7 +583,7 @@ void start_child(char *command) {
     atexit(kill_child_at_exit);
 }
 
-void child_click_events_initialize(void) {
+static void child_click_events_initialize(void) {
     if (!child.click_events_init) {
         yajl_gen_array_open(gen);
         child_write_output();
@@ -588,15 +591,11 @@ void child_click_events_initialize(void) {
     }
 }
 
-void child_click_events_key(const char *key) {
-    yajl_gen_string(gen, (const unsigned char *)key, strlen(key));
-}
-
 /*
  * Generates a click event, if enabled.
  *
  */
-void send_block_clicked(int button, const char *name, const char *instance, int x, int y, int x_rel, int y_rel, int width, int height) {
+void send_block_clicked(int button, const char *name, const char *instance, int x, int y, int x_rel, int y_rel, int width, int height, int mods) {
     if (!child.click_events) {
         return;
     }
@@ -606,34 +605,52 @@ void send_block_clicked(int button, const char *name, const char *instance, int 
     yajl_gen_map_open(gen);
 
     if (name) {
-        child_click_events_key("name");
-        yajl_gen_string(gen, (const unsigned char *)name, strlen(name));
+        ystr("name");
+        ystr(name);
     }
 
     if (instance) {
-        child_click_events_key("instance");
-        yajl_gen_string(gen, (const unsigned char *)instance, strlen(instance));
+        ystr("instance");
+        ystr(instance);
     }
 
-    child_click_events_key("button");
+    ystr("button");
     yajl_gen_integer(gen, button);
 
-    child_click_events_key("x");
+    ystr("modifiers");
+    yajl_gen_array_open(gen);
+    if (mods & XCB_MOD_MASK_SHIFT)
+        ystr("Shift");
+    if (mods & XCB_MOD_MASK_CONTROL)
+        ystr("Control");
+    if (mods & XCB_MOD_MASK_1)
+        ystr("Mod1");
+    if (mods & XCB_MOD_MASK_2)
+        ystr("Mod2");
+    if (mods & XCB_MOD_MASK_3)
+        ystr("Mod3");
+    if (mods & XCB_MOD_MASK_4)
+        ystr("Mod4");
+    if (mods & XCB_MOD_MASK_5)
+        ystr("Mod5");
+    yajl_gen_array_close(gen);
+
+    ystr("x");
     yajl_gen_integer(gen, x);
 
-    child_click_events_key("y");
+    ystr("y");
     yajl_gen_integer(gen, y);
 
-    child_click_events_key("relative_x");
+    ystr("relative_x");
     yajl_gen_integer(gen, x_rel);
 
-    child_click_events_key("relative_y");
+    ystr("relative_y");
     yajl_gen_integer(gen, y_rel);
 
-    child_click_events_key("width");
+    ystr("width");
     yajl_gen_integer(gen, width);
 
-    child_click_events_key("height");
+    ystr("height");
     yajl_gen_integer(gen, height);
 
     yajl_gen_map_close(gen);

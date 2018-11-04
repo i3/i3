@@ -40,5 +40,12 @@ Output *get_output_for_con(Con *con);
  * Iterates over all outputs and pushes sticky windows to the currently visible
  * workspace on that output.
  *
+ * old_focus is used to determine if a sticky window is going to be focused.
+ * old_focus might be different than the currently focused container because the
+ * caller might need to temporarily change the focus and then call
+ * output_push_sticky_windows. For example, workspace_show needs to set focus to
+ * one of its descendants first, then call output_push_sticky_windows that
+ * should focus a sticky window if it was the focused in the previous workspace.
+ *
  */
-void output_push_sticky_windows(Con *to_focus);
+void output_push_sticky_windows(Con *old_focus);

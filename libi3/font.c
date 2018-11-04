@@ -109,9 +109,8 @@ static void draw_text_pango(const char *text, size_t text_len,
     cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
     pango_cairo_update_layout(cr, layout);
     pango_layout_get_pixel_size(layout, NULL, &height);
-    /* Center the piece of text vertically if its height is smaller than the
-     * cached font height, and just let "high" symbols fall out otherwise. */
-    int yoffset = (height < savedFont->height ? 0.5 : 1) * (height - savedFont->height);
+    /* Center the piece of text vertically. */
+    int yoffset = (height - savedFont->height) / 2;
     cairo_move_to(cr, x, y - yoffset);
     pango_cairo_show_layout(cr, layout);
 
@@ -224,9 +223,7 @@ i3Font load_font(const char *pattern, const bool fallback) {
                      error->error_code);
         }
     }
-    if (error != NULL) {
-        free(error);
-    }
+    free(error);
 
     font.pattern = sstrdup(pattern);
     LOG("Using X font %s\n", pattern);
@@ -275,16 +272,12 @@ void free_font(void) {
         case FONT_TYPE_XCB: {
             /* Close the font and free the info */
             xcb_close_font(conn, savedFont->specific.xcb.id);
-            if (savedFont->specific.xcb.info)
-                free(savedFont->specific.xcb.info);
+            free(savedFont->specific.xcb.info);
             break;
         }
         case FONT_TYPE_PANGO:
             /* Free the font description */
             pango_font_description_free(savedFont->specific.pango_desc);
-            break;
-        default:
-            assert(false);
             break;
     }
 
@@ -314,9 +307,6 @@ void set_font_colors(xcb_gcontext_t gc, color_t foreground, color_t background) 
             pango_font_red = foreground.red;
             pango_font_green = foreground.green;
             pango_font_blue = foreground.blue;
-            break;
-        default:
-            assert(false);
             break;
     }
 }
@@ -388,8 +378,6 @@ void draw_text(i3String *text, xcb_drawable_t drawable, xcb_gcontext_t gc,
             draw_text_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
                             drawable, visual, x, y, max_width, i3string_is_markup(text));
             return;
-        default:
-            assert(false);
     }
 }
 
@@ -425,8 +413,6 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
             draw_text_pango(text, strlen(text),
                             drawable, root_visual_type, x, y, max_width, false);
             return;
-        default:
-            assert(false);
     }
 }
 
@@ -519,8 +505,6 @@ int predict_text_width(i3String *text) {
             /* Calculate extents using Pango */
             return predict_text_width_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
                                             i3string_is_markup(text));
-        default:
-            assert(false);
-            return 0;
     }
+    assert(false);
 }

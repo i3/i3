@@ -86,16 +86,16 @@ state DEBUGLOG:
 # border normal|pixel [<n>]
 # border none|1pixel|toggle
 state BORDER:
-  border_style = 'normal', 'pixel'
+  border_style = 'normal', 'pixel', 'toggle'
     -> BORDER_WIDTH
-  border_style = 'none', 'toggle'
+  border_style = 'none'
     -> call cmd_border($border_style, 0)
-  border_style = '1pixel'
-    -> call cmd_border($border_style, 1)
+  '1pixel'
+    -> call cmd_border("pixel", 1)
 
 state BORDER_WIDTH:
   end
-    -> call cmd_border($border_style, 2)
+    -> call cmd_border($border_style, -1)
   border_width = number
     -> call cmd_border($border_style, &border_width)
 
@@ -243,7 +243,7 @@ state RESIZE_TILING:
   'or'
       -> RESIZE_TILING_OR
   end
-      -> call cmd_resize($way, $direction, &resize_px, 10)
+      -> call cmd_resize($way, $direction, &resize_px, 0)
 
 state RESIZE_TILING_OR:
   resize_ppt = number
@@ -254,12 +254,24 @@ state RESIZE_TILING_FINAL:
       -> call cmd_resize($way, $direction, &resize_px, &resize_ppt)
 
 state RESIZE_SET:
+  'height'
+      -> RESIZE_HEIGHT_GET_NUMBER
+  'width'
+      ->
   width = number
       -> RESIZE_WIDTH
 
 state RESIZE_WIDTH:
   mode_width = 'px', 'ppt'
       ->
+  end
+      -> call cmd_resize_set(&width, $mode_width, 0, 0)
+  'height'
+      -> RESIZE_HEIGHT_GET_NUMBER
+  height = number
+      -> RESIZE_HEIGHT
+
+state RESIZE_HEIGHT_GET_NUMBER:
   height = number
       -> RESIZE_HEIGHT
 
@@ -396,7 +408,7 @@ state MOVE_TO_POSITION_X:
 
 state MOVE_TO_POSITION_Y:
   'px', end
-      -> call cmd_move_window_to_position($method, &coord_x, &coord_y)
+      -> call cmd_move_window_to_position(&coord_x, &coord_y)
 
 # mode <string>
 state MODE:

@@ -1,9 +1,9 @@
 #!/bin/zsh
 # This script is used to prepare a new release of i3.
 
-export RELEASE_VERSION="4.14.1"
+export RELEASE_VERSION="4.15"
 export PREVIOUS_VERSION="4.14"
-export RELEASE_BRANCH="master"
+export RELEASE_BRANCH="next"
 
 if [ ! -e "../i3.github.io" ]
 then
@@ -85,12 +85,12 @@ if [ "${RELEASE_BRANCH}" = "master" ]; then
 	git checkout master
 	git merge --no-ff release-${RELEASE_VERSION} -m "Merge branch 'release-${RELEASE_VERSION}'"
 	git checkout next
-	git merge --no-ff -X ours master -m "Merge branch 'master' into next"
+	git merge --no-ff -s recursive -X ours -X no-renames master -m "Merge branch 'master' into next"
 else
 	git checkout next
 	git merge --no-ff release-${RELEASE_VERSION} -m "Merge branch 'release-${RELEASE_VERSION}'"
 	git checkout master
-	git merge --no-ff -X theirs next -m "Merge branch 'next' into master"
+	git merge --no-ff -s recursive -X theirs -X no-renames next -m "Merge branch 'next' into master"
 fi
 
 git remote remove origin
@@ -126,6 +126,7 @@ WORKDIR /usr/src
 RUN mk-build-deps --install --remove --tool 'apt-get --no-install-recommends -y' i3-${RELEASE_VERSION}/debian/control
 WORKDIR /usr/src/i3-${RELEASE_VERSION}
 RUN dpkg-buildpackage -sa -j8
+RUN dpkg-buildpackage -S -sa -j8
 EOT
 
 CONTAINER_NAME=$(echo "i3-${TMPDIR}" | sed 's,/,,g')
@@ -139,7 +140,7 @@ echo "Content of resulting package’s .changes file:"
 cat ${TMPDIR}/debian/*.changes
 
 # debsign is in devscripts, which is available in fedora and debian
-debsign -k4AC8EE1D ${TMPDIR}/debian/*.changes
+debsign --no-re-sign -k4AC8EE1D ${TMPDIR}/debian/*.changes
 
 # TODO: docker cleanup
 
@@ -227,7 +228,7 @@ echo "  cd ${TMPDIR}/i3.github.io"
 echo "  git push"
 echo ""
 echo "  cd ${TMPDIR}/debian"
-echo "  dput *.changes"
+echo "  dput"
 echo ""
 echo "  cd ${TMPDIR}"
 echo "  sendmail -t < email.txt"

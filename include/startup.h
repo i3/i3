@@ -21,7 +21,7 @@
  * Starts the given application by passing it through a shell. We use double
  * fork to avoid zombie processes. As the started application’s parent exits
  * (immediately), the application is reparented to init (process-id 1), which
- * correctly handles childs, so we don’t have to do it :-).
+ * correctly handles children, so we don’t have to do it :-).
  *
  * The shell used to start applications is the system's bourne shell (i.e.,
  * /bin/sh).

@@ -1,0 +1,145 @@
+
+ ┌────────────────────────────┐
+ │ Release notes for i3 v4.16 │
+ └────────────────────────────┘
+
+This is i3 v4.16. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+This release contains a number of assorted fixes and improvements across pretty
+much all individual components of i3.
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.16        │
+ └────────────────────────────┘
+
+  • build: add conditionals for building docs/mans
+  • docs/i3bar-protocol: mention skipping blocks with empty full_text
+  • docs/ipc: add window_properties to tree node
+  • docs/layout-saving: clarify JSON non-compliance
+  • docs/userguide: clarify X resource value format
+  • docs/userguide: fix move_to_outputs link
+  • docs/userguide: link workspace_auto_back_and_forth from workspace
+    command
+  • docs/userguide: mention known issues for assign
+  • docs/userguide: use anchor for list_of_commands
+  • docs/userguide: add the default keybinding for focus parent
+  • man/*: fix title markers (for asciidoctor)
+  • man/i3-msg.man: add get_config and send_tick
+  • ipc: kill misbehaving subscribed clients instead of hanging
+  • ipc: introduce the sync IPC command for synchronization with i3bar
+  • ipc: scratchpad show now returns correct success
+  • ipc: send_tick now sets the already-documented “first” field
+  • i3bar-protocol: add modifiers to events sent by i3bar
+  • dump-asy: use Pod::Usage for --help and perldoc
+  • dump-asy: introduce -gv flag to disable opening ghostview
+  • dump-asy: introduce -save flag to store the rendered tree in a file
+  • dump-asy: add marks
+  • dump-asy: include floating containers
+  • i3bar: add --verbose flag
+  • i3bar: make modifier accept combinations (like floating_modifier)
+  • i3-config-wizard: add --modifier flag to allow for headless config
+  • i3-config-wizard: support startup notifications
+  • i3-msg: only print input + error position if they are set
+  • i3-msg: check replies also in quiet mode (-q)
+  • i3-msg: add support for the SUBSCRIBE message type
+  • i3-nagbar: support startup notifications
+  • i3-nagbar: add option for button that runs commands without a terminal
+  • i3-save-tree: exclude unsupported transient_for property
+  • i3-sensible-terminal: add alacritty
+  • i3-sensible-terminal: add hyper
+  • introduce strip_workspace_name alongside strip_workspace_numbers
+  • introduce title_align config directive
+  • “border toggle” now accepts an optional pixel argument
+  • “resize set” now interprets 0 as “no change”
+  • “resize set” now accepts the “width” and “height” keywords
+  • “resize” with pixel values now works for tiling containers
+  • the optional “absolute” method is now silently ignored in “move position”
+    commands, where it did not cause a visible difference anyway
+  • the _NET_WM_STATE_FOCUSED atom is now supported, resulting in e.g.
+    GTK applications displaying the correct window decoration
+  • moving fullscreen containers now moves them across outputs
+  • floating windows can now be used with a geometry of e.g. +1+1, i.e.
+    their top-left corner can be outside any output as long as the window
+    is contained partially by one
+  • prefer floating fullscreen containers when switching focus
+  • moving containers to an active workspace no longer changes focus
+  • the rename workspace command no longer confuses directions (e.g. “left”)
+    with output names
+  • prefer $XDG_CONFIG_HOME/i3/config over ~/.i3/config
+  • allow multiple assignments of workspaces to output
+  • respect maximum size in WM_NORMAL_HINTS
+  • reject requests for WM_STATE_ICONIC, which avoids e.g. wine
+    applications being stuck in paused state
+  • a number of code refactorings and cleanups, some of which tool-assisted
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • build: fix static linking
+  • i3bar: fix various memory leaks
+  • i3bar: fix crash when no status_command is provided
+  • i3bar: fix chopping the first character on the very left when using the
+    full width of the output
+  • i3bar: fix relative_x and width properties of click events
+  • i3bar: fix the tray disappearing in some cases when using "tray_output"
+  • fix various memory leaks and memory correctness issues
+  • refocus focused window on FOCUS_IN events for the root window. This
+    fixes incorrect behavior with steam and some tk apps
+  • fix focus bugs when moving unfocused containers
+  • fix incorrect urgent window state edge case
+  • moving an unfocused container from inside a split container to another
+    workspace doesn’t focus siblings
+  • toggling and killing floating windows now maintains focus order
+  • don’t incorrectly focus siblings when scrolling on window decorations
+  • fix crash when moving a container to a marked workspace
+  • fix swap when first is behind a fullscreen window
+  • fix crash when renaming an existing workspace to a name assigned to the
+    focused output
+  • reframe swallowed windows if depth doesn’t match
+  • use detectable autorepeat so that --release bindings are run only when
+    the key is actually released (and not when it is repeated)
+  • fix border artifacts when moving windows
+  • correctly handle bindings for the same mod key with and without --release
+  • reset B_UPON_KEYRELEASE_IGNORE_MODS bindings when switching modes
+  • fix height offset calculation in pango text drawing
+  • fix detection of libiconv on OpenBSD
+  • free workspace assignments on reload
+  • fix mouse position at startup with multiple outputs
+  • no longer allow dragging global fullscreen floating containers
+  • fix rendering artifacts with global fullscreen containers
+  • fix disabling floating for scratchpad windows
+  • fix a crash when renaming an unfocused empty workspace matching an
+    assignment
+  • ensure containers have a size of at least 1px after resize
+  • permit invalid UTF-8 in layout JSON files (e.g. for window titles)
+  • correct invalid UTF-8 characters in window and container titles
+  • fix a crash when moving to a child of a floating container
+  • fix a crash when matching __focused__ with no window open
+  • fix no_focus when only using floating windows
+  • fix max_aspect calculation
+  • moving an unfocused container from another output now maintains
+    the correct focus order
+  • don’t change focus order when swapping containers
+  • correctly update _NET_CURRENT_DESKTOP when moving containers between outputs
+    using the directional move command
+  • don’t produce move events after attempting to directionally move a container
+    towards a direction it can’t go
+  • fix sticky focus when switching to workspace on different output
+
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  Adrian Cybulski, Aestek, Alan Barr, Andriy Yablonskyy, Cassandra Fox,
+  Christian Duerr, Dan Elkouby, downzer0, Elouan Martinet, Felix Buehler,
+  Gravemind, Harry Lawrence, Hritik Vijay, hwangcc23, Ingo Bürk, Joona, Klorax,
+  lasers, Łukasz Adamczak, Martin, Michael Stapelberg, Oliver Graff,
+  Orestis Floros, Soumya, Takashi Iwai, Thomas Fischer, Todd Walton, Tony
+  Crisci, Uli Schlachter, Vivien Didelot
+
+-- Michael Stapelberg, 2018-11-04

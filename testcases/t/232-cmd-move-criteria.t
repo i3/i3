@@ -45,7 +45,7 @@ is($x->input_focus, $win3->{id}, 'it should not disturb focus');
 ###############################################################################
 
 # test all window types
-my %window_types = ( 
+my %window_types = (
     'normal'        => '_NET_WM_WINDOW_TYPE_NORMAL',
     'dialog'        => '_NET_WM_WINDOW_TYPE_DIALOG',
     'utility'       => '_NET_WM_WINDOW_TYPE_UTILITY',

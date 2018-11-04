@@ -97,4 +97,32 @@ is(scalar @{get_ws_content('left-top')}, 1, 'moved some window to left-bottom wo
 $compare_window = shift @{get_ws_content('left-top')};
 is($social_window->name, $compare_window->{name}, 'moved correct window to left-bottom workspace');
 
+#####################################################################
+# Moving a fullscreen container should change its output.
+#####################################################################
+
+kill_all_windows;
+
+cmd 'workspace left-top';
+open_window;
+my $fs_window = open_window;
+open_window;
+
+cmd '[id=' . $fs_window->id . '] fullscreen enable, move right';
+is(scalar @{get_ws_content('right-top')}, 1, 'moved fullscreen window to right-top workspace');
+
+#####################################################################
+# Moving a global fullscreen container should not change its output.
+#####################################################################
+
+kill_all_windows;
+
+cmd 'workspace left-top';
+open_window;
+open_window;
+open_window;
+
+cmd 'fullscreen global, move right, fullscreen disable';
+is(scalar @{get_ws_content('right-top')}, 0, 'global fullscreen window didn\'t change workspace with move');
+
 done_testing;

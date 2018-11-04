@@ -57,7 +57,7 @@ bool resize_find_tiling_participants(Con **current, Con **other, direction_t dir
     }
 
     /* Go up in the tree and search for a container to resize */
-    const orientation_t search_orientation = ((direction == D_LEFT || direction == D_RIGHT) ? HORIZ : VERT);
+    const orientation_t search_orientation = orientation_from_direction(direction);
     const bool dir_backwards = (direction == D_UP || direction == D_LEFT);
     while (first->type != CT_WORKSPACE &&
            first->type != CT_FLOATING_CON &&
@@ -101,10 +101,66 @@ bool resize_find_tiling_participants(Con **current, Con **other, direction_t dir
     return true;
 }
 
-int resize_graphical_handler(Con *first, Con *second, orientation_t orientation, const xcb_button_press_event_t *event) {
-    DLOG("resize handler\n");
+/*
+ * Calculate the given container's new percent given a change in pixels.
+ *
+ */
+double px_resize_to_percent(Con *con, int px_diff) {
+    Con *parent = con->parent;
+    const orientation_t o = con_orientation(parent);
+    const int total = (o == HORIZ ? parent->rect.width : parent->rect.height);
+    /* deco_rect.height is subtracted from each child in render_con_split */
+    const int target = px_diff + (o == HORIZ ? con->rect.width : con->rect.height + con->deco_rect.height);
+    return ((double)target / (double)total);
+}
 
-    /* TODO: previously, we were getting a rect containing all screens. why? */
+/*
+ * Calculate the minimum percent needed for the given container to be at least 1
+ * pixel.
+ *
+ */
+double percent_for_1px(Con *con) {
+    Con *parent = con->parent;
+    const orientation_t o = con_orientation(parent);
+    const int total = (o == HORIZ ? parent->rect.width : parent->rect.height);
+    const int target = (o == HORIZ ? 1 : 1 + con->deco_rect.height);
+    return ((double)target / (double)total);
+}
+
+/*
+ * Resize the two given containers using the given amount of pixels or
+ * percentage points. One of the two needs to be 0. A positive amount means
+ * growing the first container while a negative means shrinking it.
+ * Returns false when the resize would result in one of the two containers
+ * having less than 1 pixel of size.
+ *
+ */
+bool resize_neighboring_cons(Con *first, Con *second, int px, int ppt) {
+    assert(px * ppt == 0);
+
+    Con *parent = first->parent;
+    double new_first_percent;
+    double new_second_percent;
+    if (ppt) {
+        new_first_percent = first->percent + ((double)ppt / 100.0);
+        new_second_percent = second->percent - ((double)ppt / 100.0);
+    } else {
+        new_first_percent = px_resize_to_percent(first, px);
+        new_second_percent = second->percent + first->percent - new_first_percent;
+    }
+    /* Ensure that no container will be less than 1 pixel in the resizing
+     * direction. */
+    if (new_first_percent < percent_for_1px(first) || new_second_percent < percent_for_1px(second)) {
+        return false;
+    }
+
+    first->percent = new_first_percent;
+    second->percent = new_second_percent;
+    con_fix_percent(parent);
+    return true;
+}
+
+void resize_graphical_handler(Con *first, Con *second, orientation_t orientation, const xcb_button_press_event_t *event) {
     Con *output = con_get_output(first);
     DLOG("x = %d, width = %d\n", output->rect.x, output->rect.width);
 
@@ -117,29 +173,27 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     mask = XCB_CW_OVERRIDE_REDIRECT;
     values[0] = 1;
 
-    /* Open a new window, the resizebar. Grab the pointer and move the window around
-       as the user moves the pointer. */
+    /* Open a new window, the resizebar. Grab the pointer and move the window
+     * around as the user moves the pointer. */
     xcb_window_t grabwin = create_window(conn, output->rect, XCB_COPY_FROM_PARENT, XCB_COPY_FROM_PARENT,
                                          XCB_WINDOW_CLASS_INPUT_ONLY, XCURSOR_CURSOR_POINTER, true, mask, values);
 
-    /* Keep track of the coordinate orthogonal to motion so we can determine
-     * the length of the resize afterward. */
+    /* Keep track of the coordinate orthogonal to motion so we can determine the
+     * length of the resize afterward. */
     uint32_t initial_position, new_position;
 
     /* Configure the resizebar and snap the pointer. The resizebar runs along
      * the rect of the second con and follows the motion of the pointer. */
     Rect helprect;
+    helprect.x = second->rect.x;
+    helprect.y = second->rect.y;
     if (orientation == HORIZ) {
-        helprect.x = second->rect.x;
-        helprect.y = second->rect.y;
         helprect.width = logical_px(2);
         helprect.height = second->rect.height;
         initial_position = second->rect.x;
         xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
                          second->rect.x, event->root_y);
     } else {
-        helprect.x = second->rect.x;
-        helprect.y = second->rect.y;
         helprect.width = second->rect.width;
         helprect.height = logical_px(2);
         initial_position = second->rect.y;
@@ -173,37 +227,17 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     xcb_flush(conn);
 
     /* User cancelled the drag so no action should be taken. */
-    if (drag_result == DRAG_REVERT)
-        return 0;
+    if (drag_result == DRAG_REVERT) {
+        return;
+    }
 
     int pixels = (new_position - initial_position);
-
     DLOG("Done, pixels = %d\n", pixels);
 
-    // if we got thus far, the containers must have
-    // percentages associated with them
+    /* if we got thus far, the containers must have valid percentages. */
     assert(first->percent > 0.0);
     assert(second->percent > 0.0);
-
-    // calculate the new percentage for the first container
-    double new_percent, difference;
-    double percent = first->percent;
-    DLOG("percent = %f\n", percent);
-    int original = (orientation == HORIZ ? first->rect.width : first->rect.height);
-    DLOG("original = %d\n", original);
-    new_percent = (original + pixels) * (percent / original);
-    difference = percent - new_percent;
-    DLOG("difference = %f\n", difference);
-    DLOG("new percent = %f\n", new_percent);
-    first->percent = new_percent;
-
-    // calculate the new percentage for the second container
-    double s_percent = second->percent;
-    second->percent = s_percent + difference;
-    DLOG("second->percent = %f\n", second->percent);
-
-    // now we must make sure that the sum of the percentages remain 1.0
-    con_fix_percent(first->parent);
-
-    return 0;
+    const bool result = resize_neighboring_cons(first, second, pixels, 0);
+    DLOG("Graphical resize %s: first->percent = %f, second->percent = %f.\n",
+         result ? "successful" : "failed", first->percent, second->percent);
 }

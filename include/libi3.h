@@ -167,6 +167,14 @@ int sasprintf(char **strp, const char *fmt, ...);
 ssize_t writeall(int fd, const void *buf, size_t count);
 
 /**
+ * Like writeall, but instead of retrying upon EAGAIN (returned when a write
+ * would block), the function stops and returns the total number of bytes
+ * written so far.
+ *
+ */
+ssize_t writeall_nonblock(int fd, const void *buf, size_t count);
+
+/**
  * Safe-wrapper around writeall which exits if it returns -1 (meaning that
  * write failed)
  *
@@ -188,11 +196,11 @@ i3String *i3string_from_markup(const char *from_markup);
 
 /**
  * Build an i3String from an UTF-8 encoded string with fixed length.
- * To be used when no proper NUL-terminaison is available.
+ * To be used when no proper NULL-termination is available.
  * Returns the newly-allocated i3String.
  *
  */
-i3String *i3string_from_utf8_with_length(const char *from_utf8, size_t num_bytes);
+i3String *i3string_from_utf8_with_length(const char *from_utf8, ssize_t num_bytes);
 
 /**
  * Build an i3String from an UTF-8 encoded string in Pango markup with fixed
@@ -312,6 +320,11 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
  */
 void fake_configure_notify(xcb_connection_t *conn, xcb_rectangle_t r, xcb_window_t window, int border_width);
 
+#define HAS_G_UTF8_MAKE_VALID GLIB_CHECK_VERSION(2, 52, 0)
+#if !HAS_G_UTF8_MAKE_VALID
+gchar *g_utf8_make_valid(const gchar *str, gssize len);
+#endif
+
 /**
  * Returns the colorpixel to use for the given hex color (think of HTML). Only
  * works for true-color (vast majority of cases) at the moment, avoiding a
@@ -330,7 +343,7 @@ uint32_t get_colorpixel(const char *hex) __attribute__((const));
 
 #if defined(__APPLE__)
 
-/*
+/**
  * Taken from FreeBSD
  * Returns a pointer to a new string which is a duplicate of the
  * string, but only copies at most n characters.
@@ -459,7 +472,7 @@ xcb_visualtype_t *get_visualtype(xcb_screen_t *screen);
  * release version), based on the git version number.
  *
  */
-bool is_debug_build() __attribute__((const));
+bool is_debug_build(void) __attribute__((const));
 
 /**
  * Returns the name of a temporary file with the specified prefix.
@@ -506,11 +519,11 @@ int logical_px(const int logical);
 char *resolve_tilde(const char *path);
 
 /**
- * Get the path of the first configuration file found. If override_configpath
- * is specified, that path is returned and saved for further calls. Otherwise,
- * checks the home directory first, then the system directory first, always
- * taking into account the XDG Base Directory Specification ($XDG_CONFIG_HOME,
- * $XDG_CONFIG_DIRS)
+ * Get the path of the first configuration file found. If override_configpath is
+ * specified, that path is returned and saved for further calls. Otherwise,
+ * checks the home directory first, then the system directory, always taking
+ * into account the XDG Base Directory Specification ($XDG_CONFIG_HOME,
+ * $XDG_CONFIG_DIRS).
  *
  */
 char *get_config_path(const char *override_configpath, bool use_system_paths);

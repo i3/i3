@@ -65,6 +65,7 @@ to do that).
 | 8 | +GET_BINDING_MODES+ | <<_binding_modes_reply,BINDING_MODES>> | Gets the names of all currently configured binding modes.
 | 9 | +GET_CONFIG+ | <<_config_reply,CONFIG>> | Returns the last loaded i3 config.
 | 10 | +SEND_TICK+ | <<_tick_reply,TICK>> | Sends a tick event with the specified payload.
+| 11 | +SYNC+ | <<_sync_reply,SYNC>> | Sends an i3 sync event with the specified random value to the specified window.
 |======================================================
 
 So, a typical message could look like this:
@@ -327,6 +328,8 @@ window (integer)::
 	This field is set to null for split containers or otherwise empty
 	containers. This ID corresponds to what xwininfo(1) and other
 	X11-related tools display (usually in hex).
+window_properties (map)::
+	X11 window properties title, instance, class, window_role and transient_for.
 urgent (bool)::
 	Whether this container (window, split container, floating container or
 	workspace) has the urgency hint set, directly or indirectly. All parent
@@ -421,6 +424,12 @@ JSON dump:
 	    "y": 0,
 	    "width": 1280,
 	    "height": 782
+	  },
+	  "window_properties": {
+	    "class": "Evince",
+	    "instance": "evince",
+	    "title": "Properties",
+	    "transient_for": 52428808
 	  },
 	  "floating_nodes": [],
 	  "nodes": [
@@ -654,6 +663,18 @@ events generated prior to the +SEND_TICK+ message (happened-before relation).
 { "success": true }
 -------------------
 
+[[_sync_reply]]
+=== SYNC reply
+
+The reply is a map containing the "success" member. After the reply was
+received, the https://i3wm.org/docs/testsuite.html#i3_sync[i3 sync message] was
+responded to.
+
+*Example:*
+-------------------
+{ "success": true }
+-------------------
+
 == Events
 
 [[events]]
@@ -671,6 +692,14 @@ situation can happen: You send a GET_WORKSPACES request but you receive a
 program does not want to cope which such kinds of race conditions (an
 event based library may not have a problem here), I suggest you create a
 separate connection to receive events.
+
+If an event message needs to be sent and the socket is not writeable (write
+returns EAGAIN, happens when the socket doesn't have enough buffer space for
+writing new data) then i3 uses a queue system to store outgoing messages for
+each client. This is combined with a timer: if the message queue for a client is
+not empty and no data where successfully written in the past 10 seconds, the
+connection is killed. Practically, this means that your client should try to
+always read events from the socket to avoid having its connection closed.
 
 === Subscribing to events
 

@@ -115,6 +115,20 @@ Output *get_output_containing(unsigned int x, unsigned int y) {
 }
 
 /*
+ * Returns the active output which contains the midpoint of the given rect. If
+ * such an output doesn't exist, returns the output which contains most of the
+ * rectangle or NULL if there is no output which intersects with it.
+ *
+ */
+Output *get_output_from_rect(Rect rect) {
+    unsigned int mid_x = rect.x + rect.width / 2;
+    unsigned int mid_y = rect.y + rect.height / 2;
+    Output *output = get_output_containing(mid_x, mid_y);
+
+    return output ? output : output_containing_rect(rect);
+}
+
+/*
  * Returns the active output which spans exactly the area specified by
  * rect or NULL if there is no output like this.
  *
@@ -136,27 +150,37 @@ Output *get_output_with_dimensions(Rect rect) {
 }
 
 /*
- * In contained_by_output, we check if any active output contains part of the container.
+ * In output_containing_rect, we check if any active output contains part of the container.
  * We do this by checking if the output rect is intersected by the Rect.
  * This is the 2-dimensional counterpart of get_output_containing.
- * Since we don't actually need the outputs intersected by the given Rect (There could
- * be many), we just return true or false for convenience.
+ * Returns the output with the maximum intersecting area.
  *
  */
-bool contained_by_output(Rect rect) {
+Output *output_containing_rect(Rect rect) {
     Output *output;
     int lx = rect.x, uy = rect.y;
     int rx = rect.x + rect.width, by = rect.y + rect.height;
+    long max_area = 0;
+    Output *result = NULL;
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (!output->active)
             continue;
+        int lx_o = (int)output->rect.x, uy_o = (int)output->rect.y;
+        int rx_o = (int)(output->rect.x + output->rect.width), by_o = (int)(output->rect.y + output->rect.height);
         DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
              rect.x, rect.y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
-        if (rx >= (int)output->rect.x && lx <= (int)(output->rect.x + output->rect.width) &&
-            by >= (int)output->rect.y && uy <= (int)(output->rect.y + output->rect.height))
-            return true;
+        int left = max(lx, lx_o);
+        int right = min(rx, rx_o);
+        int bottom = min(by, by_o);
+        int top = max(uy, uy_o);
+        if (left < right && bottom > top) {
+            long area = (right - left) * (bottom - top);
+            if (area > max_area) {
+                result = output;
+            }
+        }
     }
-    return false;
+    return result;
 }
 
 /*
@@ -400,14 +424,10 @@ void init_ws_for_output(Output *output, Con *content) {
     /* go through all assignments and move the existing workspaces to this output */
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-        if (strcmp(assignment->output, output_primary_name(output)) != 0)
+        if (!output_triggers_assignment(output, assignment)) {
             continue;
-
-        /* check if this workspace actually exists */
-        Con *workspace = NULL, *out;
-        TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
-        GREP_FIRST(workspace, output_get_content(out),
-                   !strcasecmp(child->name, assignment->name));
+        }
+        Con *workspace = get_existing_workspace_by_name(assignment->name);
         if (workspace == NULL)
             continue;
 
@@ -481,8 +501,9 @@ void init_ws_for_output(Output *output, Con *content) {
 
     /* otherwise, we create the first assigned ws for this output */
     TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-        if (strcmp(assignment->output, output_primary_name(output)) != 0)
+        if (!output_triggers_assignment(output, assignment)) {
             continue;
+        }
 
         LOG("Initializing first assigned workspace \"%s\" for output \"%s\"\n",
             assignment->name, assignment->output);
@@ -496,7 +517,7 @@ void init_ws_for_output(Output *output, Con *content) {
     Con *ws = create_workspace_on_output(output, content);
 
     /* TODO: Set focus in main.c */
-    con_activate(ws);
+    con_focus(ws);
 }
 
 /*
@@ -529,7 +550,7 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
     }
 
     /* If default_orientation is NO_ORIENTATION, we change the orientation of
-     * the workspaces and their childs depending on output resolution. This is
+     * the workspaces and their children depending on output resolution. This is
      * only done for workspaces with maximum one child. */
     if (config.default_orientation == NO_ORIENTATION) {
         TAILQ_FOREACH(workspace, &(content->nodes_head), nodes) {
@@ -836,8 +857,9 @@ void randr_query_outputs(void) {
     /* If there's no randr output, enable the output covering the root window. */
     if (any_randr_output_active()) {
         DLOG("Active RandR output found. Disabling root output.\n");
-        if (root_output->active)
+        if (root_output && root_output->active) {
             root_output->to_be_disabled = true;
+        }
     } else {
         DLOG("No active RandR output found. Enabling root output.\n");
         root_output->active = true;
@@ -924,7 +946,9 @@ void randr_query_outputs(void) {
             continue;
 
         DLOG("Focusing primary output %s\n", output_primary_name(output));
-        con_activate(con_descend_focused(output->con));
+        Con *content = output_get_content(output->con);
+        Con *ws = TAILQ_FIRST(&(content)->focus_head);
+        workspace_show(ws);
     }
 
     /* render_layout flushes */
@@ -969,7 +993,7 @@ void randr_disable_output(Output *output) {
             if (current != next && TAILQ_EMPTY(&(current->focus_head))) {
                 /* the workspace is empty and not focused, get rid of it */
                 DLOG("Getting rid of current = %p / %s (empty, unfocused)\n", current, current->name);
-                tree_close_internal(current, DONT_KILL_WINDOW, false, false);
+                tree_close_internal(current, DONT_KILL_WINDOW, false);
                 continue;
             }
             DLOG("Detaching current = %p / %s\n", current, current->name);
@@ -1015,7 +1039,7 @@ void randr_disable_output(Output *output) {
         Con *con = output->con;
         /* clear the pointer before calling tree_close_internal in which the memory is freed */
         output->con = NULL;
-        tree_close_internal(con, DONT_KILL_WINDOW, true, false);
+        tree_close_internal(con, DONT_KILL_WINDOW, true);
         DLOG("Done. Should be fine now\n");
     }
 

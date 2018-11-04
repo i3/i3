@@ -105,18 +105,14 @@ cmd 'split v';
 cmd 'layout stacked';
 $second = open_window({ background_color => '#00ff00' });   # window 6
 $third = open_window({ background_color => '#0000ff' }); # window 7
-
 is($x->input_focus, $third->id, 'last container focused');
 
-cmd 'floating enable';
-
 cmd '[id="' . $second->id . '"] focus';
-
-is($x->input_focus, $second->id, 'second con focused');
-
 cmd 'floating enable';
+cmd '[id="' . $third->id . '"] floating enable';
 
 sync_with_i3;
+is($x->input_focus, $second->id, 'second con focused');
 
 # now kill the second one. focus should fall back to the third one, which is
 # also floating
@@ -239,5 +235,185 @@ is($x->input_focus, $first->id, 'first floating window focused');
 $ws = get_ws($tmp);
 is($ws->{floating_nodes}->[1]->{nodes}->[0]->{window}, $first->id, 'first on top');
 is($ws->{floating_nodes}->[0]->{nodes}->[0]->{window}, $second->id, 'second behind');
+
+#############################################################################
+# 9: verify that disabling / enabling floating for a window from a different
+# workspace maintains the correct focus order.
+#############################################################################
+
+sub open_window_helper {
+    my $floating = shift if @_;
+    if ($floating){
+        return open_floating_window;
+    }
+    else {
+        return open_window;
+    }
+}
+
+for my $floating (0, 1){
+    $tmp = fresh_workspace;
+    $first = open_window;
+    $second = open_window_helper($floating);
+    is($x->input_focus, $second->id, "second window focused");
+
+    fresh_workspace;
+    cmd "[id=" . $second->id . "] floating toggle";
+    cmd "workspace $tmp";
+    sync_with_i3;
+
+    my $workspace = get_ws($tmp);
+    is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $second->id, 'second window on first workspace, floating') unless $floating;
+    is($workspace->{nodes}->[1]->{window}, $second->id, 'second window on first workspace, right') unless !$floating;
+    is($x->input_focus, $second->id, 'second window still focused');
+}
+
+#############################################################################
+# 10: verify that toggling floating for an unfocused window on another
+# workspace doesn't make it focused.
+#############################################################################
+
+for my $floating (0, 1){
+    $tmp = fresh_workspace;
+    $first = open_window_helper($floating);
+    $second = open_window;
+    is($x->input_focus, $second->id, 'second (tiling) window focused');
+
+    fresh_workspace;
+    cmd "[id=" . $first->id . "] floating toggle";
+    cmd "workspace $tmp";
+    sync_with_i3;
+
+    my $workspace = get_ws($tmp);
+    is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $first->id, 'first window on first workspace, floating') unless $floating;
+    is($workspace->{nodes}->[1]->{window}, $first->id, 'first window on first workspace, right') unless !$floating;
+    is($x->input_focus, $second->id, 'second window still focused');
+}
+
+#############################################################################
+# 11: verify that toggling floating for a focused window on another workspace
+# which has another, unfocused floating window maintains the focus of the
+# first window.
+#############################################################################
+for my $floating (0, 1){
+    $tmp = fresh_workspace;
+    $first = open_window;
+    $second = open_floating_window;
+    is($x->input_focus, $second->id, 'second (floating) window focused');
+    $third = open_window_helper($floating);
+    is($x->input_focus, $third->id, "third (floating = $floating) window focused");
+
+    fresh_workspace;
+    cmd "[id=" . $third->id . "] floating toggle";
+    cmd "workspace $tmp";
+    sync_with_i3;
+
+    my $workspace = get_ws($tmp);
+    is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $third->id, 'third window on first workspace, floating') unless $floating;
+    is($workspace->{nodes}->[1]->{window}, $third->id, 'third window on first workspace, right') unless !$floating;
+    is($x->input_focus, $third->id, 'third window still focused');
+}
+
+#############################################################################
+# 12: verify that toggling floating for an unfocused window on another
+# workspace which has another, focused floating window doesn't change focus.
+#############################################################################
+
+for my $floating (0, 1){
+    $tmp = fresh_workspace;
+    $first = open_window;
+    $second = open_window_helper($floating);
+    is($x->input_focus, $second->id, "second (floating = $floating) window focused");
+    $third = open_floating_window;
+    is($x->input_focus, $third->id, 'third (floating) window focused');
+
+    fresh_workspace;
+    cmd "[id=" . $second->id . "] floating toggle";
+    cmd "workspace $tmp";
+    sync_with_i3;
+
+    my $workspace = get_ws($tmp);
+    is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $second->id, 'second window on first workspace, floating') unless $floating;
+    is($workspace->{nodes}->[1]->{window}, $second->id, 'second window on first workspace, right') unless !$floating;
+    is($x->input_focus, $third->id, 'third window still focused');
+}
+
+#############################################################################
+# 13: For layout [H1 [A V1[ B F ] ] ] verify that toggling F's floating
+# mode maintains its focus.
+#############################################################################
+
+for my $floating (0, 1){
+    $tmp = fresh_workspace;
+    $first = open_window;
+    $second = open_window;
+    cmd "split v";
+    sync_with_i3;
+    is($x->input_focus, $second->id, "second (floating = $floating) window focused");
+    $third = open_window_helper($floating);
+    is($x->input_focus, $third->id, 'third (floating) window focused');
+
+    fresh_workspace;
+    cmd "[id=" . $third->id . "] floating toggle";
+    cmd "workspace $tmp";
+    sync_with_i3;
+
+    my $workspace = get_ws($tmp);
+    is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $third->id, 'third window on first workspace, floating') unless $floating;
+    is($workspace->{nodes}->[1]->{nodes}->[1]->{window}, $third->id, 'third window on first workspace') unless !$floating;
+    is($x->input_focus, $third->id, 'third window still focused');
+}
+
+#############################################################################
+# 14: For layout [H1 [A V1[ H2 [B H2 [ C V2 [ F D ] ] ] ] ] ] verify that
+# toggling F's floating mode maintains its focus.
+#############################################################################
+
+sub kill_and_confirm_focus {
+    my $focus = shift;
+    my $msg = shift;
+    cmd "kill";
+    sync_with_i3;
+    is($x->input_focus, $focus, $msg);
+}
+
+$tmp = fresh_workspace;
+my $A = open_window;
+my $B = open_window;
+cmd "split v";
+my $C = open_window;
+cmd "split h";
+my $F = open_window;
+cmd "split v";
+my $D = open_window;
+is($x->input_focus, $D->id, "D is focused");
+
+sync_with_i3;
+my $workspace = get_ws($tmp);
+is($workspace->{nodes}->[1]->{nodes}->[1]->{nodes}->[1]->{nodes}->[0]->{window}, $F->id, 'F opened in its expected position');
+
+fresh_workspace;
+cmd "[id=" . $F->id . "] floating enable";
+cmd "workspace $tmp";
+sync_with_i3;
+
+$workspace = get_ws($tmp);
+is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $F->id, 'F on first workspace, floating');
+is($workspace->{nodes}->[1]->{nodes}->[1]->{nodes}->[1]->{nodes}->[0]->{window}, $D->id, 'D where F used to be');
+is($x->input_focus, $D->id, 'D still focused');
+
+fresh_workspace;
+cmd "[id=" . $F->id . "] floating disable";
+cmd "workspace $tmp";
+sync_with_i3;
+
+$workspace = get_ws($tmp);
+is($workspace->{nodes}->[1]->{nodes}->[1]->{nodes}->[1]->{nodes}->[1]->{window}, $F->id, 'F where D used to be');
+is($x->input_focus, $D->id, 'D still focused');
+
+kill_and_confirm_focus($F->id, 'F focused after D is killed');
+kill_and_confirm_focus($C->id, 'C focused after F is killed');
+kill_and_confirm_focus($B->id, 'B focused after C is killed');
+kill_and_confirm_focus($A->id, 'A focused after B is killed');
 
 done_testing;

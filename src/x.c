@@ -42,7 +42,7 @@ typedef struct con_state {
     bool child_mapped;
     bool is_hidden;
 
-    /** The con for which this state is. */
+    /* The con for which this state is. */
     Con *con;
 
     /* For reparenting, we have a flag (need_reparent) and the X ID of the old
@@ -97,6 +97,27 @@ static con_state *state_for_frame(xcb_window_t window) {
     ELOG("No state found\n");
     assert(false);
     return NULL;
+}
+
+/*
+ * Changes the atoms on the root window and the windows themselves to properly
+ * reflect the current focus for ewmh compliance.
+ *
+ */
+static void change_ewmh_focus(xcb_window_t new_focus, xcb_window_t old_focus) {
+    if (new_focus == old_focus) {
+        return;
+    }
+
+    ewmh_update_active_window(new_focus);
+
+    if (new_focus != XCB_WINDOW_NONE) {
+        ewmh_update_focused(new_focus, true);
+    }
+
+    if (old_focus != XCB_WINDOW_NONE) {
+        ewmh_update_focused(old_focus, false);
+    }
 }
 
 /*
@@ -232,11 +253,7 @@ void x_move_win(Con *src, Con *dest) {
     }
 }
 
-/*
- * Kills the window decoration associated with the given container.
- *
- */
-void x_con_kill(Con *con) {
+static void _x_con_kill(Con *con) {
     con_state *state;
 
     if (con->colormap != XCB_NONE) {
@@ -245,7 +262,6 @@ void x_con_kill(Con *con) {
 
     draw_util_surface_free(conn, &(con->frame));
     draw_util_surface_free(conn, &(con->frame_buffer));
-    xcb_destroy_window(conn, con->frame.id);
     xcb_free_pixmap(conn, con->frame_buffer.id);
     state = state_for_frame(con->frame.id);
     CIRCLEQ_REMOVE(&state_head, state, state);
@@ -256,6 +272,24 @@ void x_con_kill(Con *con) {
 
     /* Invalidate focused_id to correctly focus new windows with the same ID */
     focused_id = last_focused = XCB_NONE;
+}
+
+/*
+ * Kills the window decoration associated with the given container.
+ *
+ */
+void x_con_kill(Con *con) {
+    _x_con_kill(con);
+    xcb_destroy_window(conn, con->frame.id);
+}
+
+/*
+ * Completely reinitializes the container's frame, without destroying the old window.
+ *
+ */
+void x_con_reframe(Con *con) {
+    _x_con_kill(con);
+    x_con_init(con);
 }
 
 /*
@@ -474,14 +508,12 @@ void x_draw_decoration(Con *con) {
     /* 3: draw a rectangle in border color around the client */
     if (p->border_style != BS_NONE && p->con_is_leaf) {
         /* We might hide some borders adjacent to the screen-edge */
-        adjacent_t borders_to_hide = ADJ_NONE;
-        borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
-
+        adjacent_t borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
         Rect br = con_border_style_rect(con);
 
         /* These rectangles represent the border around the child window
          * (left, bottom and right part). We don’t just fill the whole
-         * rectangle because some childs are not freely resizable and we want
+         * rectangle because some children are not freely resizable and we want
          * their background color to "shine through". */
         if (!(borders_to_hide & ADJ_LEFT_SCREEN_EDGE)) {
             draw_util_rectangle(&(con->frame_buffer), p->color->child_border, 0, 0, br.x, r->height);
@@ -572,6 +604,8 @@ void x_draw_decoration(Con *con) {
         goto after_title;
     }
 
+    const int title_padding = logical_px(2);
+    const int deco_width = (int)con->deco_rect.width;
     int mark_width = 0;
     if (config.show_marks && !TAILQ_EMPTY(&(con->marks_head))) {
         char *formatted_mark = sstrdup("");
@@ -593,12 +627,17 @@ void x_draw_decoration(Con *con) {
             i3String *mark = i3string_from_utf8(formatted_mark);
             mark_width = predict_text_width(mark);
 
+            int mark_offset_x = (config.title_align == ALIGN_RIGHT)
+                                    ? title_padding
+                                    : deco_width - mark_width - title_padding;
+
             draw_util_text(mark, &(parent->frame_buffer),
                            p->color->text, p->color->background,
-                           con->deco_rect.x + con->deco_rect.width - mark_width - logical_px(2),
+                           con->deco_rect.x + mark_offset_x,
                            con->deco_rect.y + text_offset_y, mark_width);
-
             I3STRING_FREE(mark);
+
+            mark_width += title_padding;
         }
 
         FREE(formatted_mark);
@@ -609,11 +648,33 @@ void x_draw_decoration(Con *con) {
         goto copy_pixmaps;
     }
 
+    int title_offset_x;
+    switch (config.title_align) {
+        case ALIGN_LEFT:
+            /* (pad)[text    ](pad)[mark + its pad) */
+            title_offset_x = title_padding;
+            break;
+        case ALIGN_CENTER:
+            /* (pad)[  text  ](pad)[mark + its pad)
+             * To center the text inside its allocated space, the surface
+             * between the brackets, we use the formula
+             * (surface_width - predict_text_width) / 2
+             * where surface_width = deco_width - 2 * pad - mark_width
+             * so, offset = pad + (surface_width - predict_text_width) / 2 =
+             * = … = (deco_width - mark_width - predict_text_width) / 2 */
+            title_offset_x = max(title_padding, (deco_width - mark_width - predict_text_width(title)) / 2);
+            break;
+        case ALIGN_RIGHT:
+            /* [mark + its pad](pad)[    text](pad) */
+            title_offset_x = max(title_padding + mark_width, deco_width - title_padding - predict_text_width(title));
+            break;
+    }
+
     draw_util_text(title, &(parent->frame_buffer),
                    p->color->text, p->color->background,
-                   con->deco_rect.x + logical_px(2),
+                   con->deco_rect.x + title_offset_x,
                    con->deco_rect.y + text_offset_y,
-                   con->deco_rect.width - mark_width - 2 * logical_px(2));
+                   deco_width - mark_width - 2 * title_padding);
 
     if (con->title_format != NULL) {
         I3STRING_FREE(title);
@@ -766,11 +827,8 @@ void x_push_node(Con *con) {
          * background and only afterwards change the window size. This reduces
          * flickering. */
 
-        /* As the pixmap only depends on the size and not on the position, it
-         * is enough to check if width/height have changed. Also, we don’t
-         * create a pixmap at all when the window is actually not visible
-         * (height == 0) or when it is not needed. */
-        bool has_rect_changed = (state->rect.width != rect.width || state->rect.height != rect.height);
+        bool has_rect_changed = (state->rect.x != rect.x || state->rect.y != rect.y ||
+                                 state->rect.width != rect.width || state->rect.height != rect.height);
 
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
@@ -1120,7 +1178,7 @@ void x_push_changes(Con *con) {
                      to_focus, focused, focused->name);
                 send_take_focus(to_focus, last_timestamp);
 
-                ewmh_update_active_window((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE));
+                change_ewmh_focus((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE), last_focused);
 
                 if (to_focus != last_focused && is_con_attached(focused))
                     ipc_send_window_event("focus", focused);
@@ -1139,7 +1197,7 @@ void x_push_changes(Con *con) {
                     xcb_change_window_attributes(conn, focused->window->id, XCB_CW_EVENT_MASK, values);
                 }
 
-                ewmh_update_active_window((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE));
+                change_ewmh_focus((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE), last_focused);
 
                 if (to_focus != XCB_NONE && to_focus != last_focused && focused->window != NULL && is_con_attached(focused))
                     ipc_send_window_event("focus", focused);
@@ -1154,7 +1212,8 @@ void x_push_changes(Con *con) {
          * root window in order to avoid an X11 fallback mechanism causing a ghosting effect (see #1378). */
         DLOG("Still no window focused, better set focus to the EWMH support window (%d)\n", ewmh_window);
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, ewmh_window, last_timestamp);
-        ewmh_update_active_window(XCB_WINDOW_NONE);
+        change_ewmh_focus(XCB_WINDOW_NONE, last_focused);
+
         focused_id = ewmh_window;
     }
 
@@ -1226,7 +1285,7 @@ void x_set_name(Con *con, const char *name) {
  * Set up the I3_SHMLOG_PATH atom.
  *
  */
-void update_shmlog_atom() {
+void update_shmlog_atom(void) {
     if (*shmlogname == '\0') {
         xcb_delete_property(conn, root, A_I3_SHMLOG_PATH);
     } else {

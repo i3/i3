@@ -77,7 +77,7 @@ for my $line (@lines) {
             ($line =~ /
                 ^\s*                  # skip leading whitespace
                 ([a-z_]+ \s* = \s*|)  # optional identifier
-                (.*?) -> \s*          # token 
+                (.*?) -> \s*          # token
                 (.*)                  # optional action
              /x);
 

@@ -107,7 +107,7 @@ stop_signal::
 	processing.
 	The default value (if none is specified) is SIGSTOP.
 cont_signal::
-	Specify to i3bar the signal (as an integer)to send to continue your
+	Specify to i3bar the signal (as an integer) to send to continue your
 	processing.
 	The default value (if none is specified) is SIGCONT.
 click_events::
@@ -118,7 +118,8 @@ click_events::
 
 full_text::
 	The +full_text+ will be displayed by i3bar on the status line. This is the
-	only required key.
+	only required key. If +full_text+ is an empty string, the block will be
+	skipped.
 short_text::
 	Where appropriate, the +short_text+ (string) entry should also be
 	provided. It will be used in case the status line needs to be shortened
@@ -242,6 +243,9 @@ relative_x, relative_y::
     of the block
 width, height::
     Width and height (in px) of the block
+modifiers::
+    An array of the modifiers active when the click occurred. The order in which
+    modifiers are listed is not guaranteed.
 
 *Example*:
 ------------------------------------------
@@ -249,6 +253,7 @@ width, height::
  "name": "ethernet",
  "instance": "eth0",
  "button": 1,
+ "modifiers": ["Shift", "Mod1"],
  "x": 1320,
  "y": 1400,
  "relative_x": 12,
