@@ -166,7 +166,7 @@ Exits i3.
 
 == FILES
 
-=== \~/.i3/config (or ~/.config/i3/config)
+=== \~/.config/i3/config (or ~/.i3/config)
 
 When starting, i3 looks for configuration files in the following order:
 
