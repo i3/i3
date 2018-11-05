@@ -355,20 +355,22 @@ static void x_draw_title_border(Con *con, struct deco_render_params *p) {
     assert(con->parent != NULL);
 
     Rect *dr = &(con->deco_rect);
-    adjacent_t borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
-    int deco_diff_l = borders_to_hide & ADJ_LEFT_SCREEN_EDGE ? 0 : con->current_border_width;
-    int deco_diff_r = borders_to_hide & ADJ_RIGHT_SCREEN_EDGE ? 0 : con->current_border_width;
-    if (con->parent->layout == L_TABBED ||
-        (con->parent->layout == L_STACKED && TAILQ_NEXT(con, nodes) != NULL)) {
-        deco_diff_l = 0;
-        deco_diff_r = 0;
-    }
 
+    /* Left */
+    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
+                        dr->x, dr->y, 1, dr->height);
+
+    /* Right */
+    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
+                        dr->x + dr->width - 1, dr->y, 1, dr->height);
+
+    /* Top */
     draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
                         dr->x, dr->y, dr->width, 1);
 
+    /* Bottom */
     draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
-                        dr->x + deco_diff_l, dr->y + dr->height - 1, dr->width - (deco_diff_l + deco_diff_r), 1);
+                        dr->x, dr->y + dr->height - 1, dr->width, 1);
 }
 
 static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p) {
@@ -388,18 +390,6 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
                             dr->y,
                             2 * logical_px(1),
                             dr->height);
-    }
-
-    /* Draw a 1px separator line before and after every tab, so that tabs can
-     * be easily distinguished. */
-    if (con->parent->layout == L_TABBED) {
-        /* Left side */
-        draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
-                            dr->x, dr->y, 1, dr->height);
-
-        /* Right side */
-        draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
-                            dr->x + dr->width - 1, dr->y, 1, dr->height);
     }
 
     /* Redraw the border. */
@@ -573,7 +563,7 @@ void x_draw_decoration(Con *con) {
     draw_util_rectangle(&(parent->frame_buffer), p->color->background,
                         con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
 
-    /* 5: draw two unconnected horizontal lines in border color */
+    /* 5: draw title border */
     x_draw_title_border(con, p);
 
     /* 6: draw the title */
