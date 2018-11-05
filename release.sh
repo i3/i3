@@ -155,6 +155,12 @@ git checkout ${RELEASE_BRANCH}
 cd ${TMPDIR}
 git clone --quiet ${STARTDIR}/../i3.github.io
 cd i3.github.io
+
+mkdir docs/${PREVIOUS_VERSION}
+tar cf - '--exclude=[0-9]\.[0-9e]*' docs | tar xf - --strip-components=1 -C docs/${PREVIOUS_VERSION}
+git add docs/${PREVIOUS_VERSION}
+git commit -a -m "save docs for ${PREVIOUS_VERSION}"
+
 cp ${TMPDIR}/i3/i3-${RELEASE_VERSION}.tar.bz2* downloads/
 git add downloads/i3-${RELEASE_VERSION}.tar.bz2*
 cp ${TMPDIR}/i3/RELEASE-NOTES-${RELEASE_VERSION} downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt
@@ -165,11 +171,6 @@ sed -i "s,The current stable version is .*$,The current stable version is ${RELE
 sed -i "s,<tbody>,<tbody>\n  <tr>\n    <td>${RELEASE_VERSION}</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.bz2\">i3-${RELEASE_VERSION}.tar.bz2</a></td>\n    <td>$(LC_ALL=en_US.UTF-8 ls -lh ../i3/i3-${RELEASE_VERSION}.tar.bz2 | awk -F " " {'print $5'} | sed 's/K$/ KiB/g' | sed 's/M$/ MiB/g')</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.bz2.asc\">signature</a></td>\n    <td>$(date +'%Y-%m-%d')</td>\n    <td><a href=\"/downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt\">release notes</a></td>\n  </tr>\n,g" downloads/index.html
 
 git commit -a -m "add ${RELEASE_VERSION} release"
-
-mkdir docs/${PREVIOUS_VERSION}
-tar cf - '--exclude=[0-9]\.[0-9e]*' docs | tar xf - --strip-components=1 -C docs/${PREVIOUS_VERSION}
-git add docs/${PREVIOUS_VERSION}
-git commit -a -m "save docs for ${PREVIOUS_VERSION}"
 
 for i in $(find _docs -maxdepth 1 -and -type f -and \! -regex ".*\.\(html\|man\)$" -and \! -name "Makefile")
 do
