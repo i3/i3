@@ -53,6 +53,7 @@ our @EXPORT = qw(
     events_for
     listen_for_binding
     is_net_wm_state_focused
+    cmp_tree
 );
 
 =head1 NAME
@@ -1083,6 +1084,229 @@ sub is_net_wm_state_focused {
 
     return 0;
 }
+
+=head2 cmp_tree([ $args ])
+
+Compares the tree layout before and after an operation inside a subtest.
+
+The following arguments can be passed:
+
+=over 4
+
+=item layout_before
+
+Required argument. The initial layout to be created. For example,
+'H[ V[ a* S[ b c ] d ] e ]' or 'V[a b] T[c d*]'.
+The layout will be converted to a JSON file which will be passed to i3's
+append_layout command.
+
+The syntax's rules, assertions and limitations are:
+
+=over 8
+
+=item 1.
+
+Upper case letters H, V, S, T mean horizontal, vertical, stacked and tabbed
+layout respectively. They must be followed by an opening square bracket and must
+be closed with a closing square bracket.
+Each of the non-leaf containers is marked with their corresponding letter
+followed by a number indicating the position of the container relative to other
+containers of the same type. For example, 'H[V[xxx] V[xxx] H[xxx]]' will mark
+the non-leaf containers as H1, V1, V2, H2.
+
+=item 2.
+
+Spaces are ignored.
+
+=item 3.
+
+Other alphanumeric characters mean a new window which uses the provided
+character for its class and name. Eg 'H[a b]' will open windows with classes 'a'
+and 'b' inside a horizontal split. Windows use a single character for their
+class, eg 'H[xxx]' will open 3 windows with class 'x'.
+
+=item 4.
+
+Asterisks after a window mean that the window must be focused after the layout
+is loaded. Currently, focusing non-leaf containers must be done manually, in the
+callback (C<cb>) function.
+
+=back
+
+=item cb
+
+Subroutine to be called after the layout provided by C<layout_before> is created
+but before the resulting layout (C<layout_after>) is checked.
+
+=item layout_after
+
+Required argument. The final layout in which the tree is expected to be after
+the callback is called. Uses the same syntax with C<layout_before>.
+For non-leaf containers, their layout (horizontal, vertical, stacked, tabbed)
+is compared with the corresponding letter (H, V, S, T).
+For leaf containers, their name is compared with the provided alphanumeric.
+
+=item ws
+
+The workspace in which the layout will be created. Will switch focus to it. If
+not provided, a new one is created.
+
+=item msg
+
+Message to prepend to the subtest's name. If not empty, it will be followed by ': '.
+
+=item dont_kill
+
+By default, all windows are killed before the C<layout_before> layout is loaded.
+Set to 1 to avoid this.
+
+=back
+
+=cut
+sub cmp_tree {
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+
+    my %args = @_;
+    my $ws = $args{ws};
+    if (defined($ws)) {
+        cmd "workspace $ws";
+    } else {
+        $ws = fresh_workspace;
+    }
+    my $msg = '';
+    if ($args{msg}) {
+        $msg = $args{msg} . ': ';
+    }
+    die unless $args{layout_before};
+    die unless $args{layout_after};
+
+    kill_all_windows unless $args{dont_kill};
+    my @windows = create_layout($args{layout_before});
+    Test::More::subtest $msg . $args{layout_before} . ' -> ' . $args{layout_after} => sub {
+        $args{cb}->(\@windows) if $args{cb};
+        verify_layout($args{layout_after}, $ws);
+    };
+
+    return @windows;
+}
+
+sub create_layout {
+    my $layout = shift;
+
+    my $focus;
+    my @windows = ();
+    my $r = '';
+    my $depth = 0;
+    my %layout_counts = (H => 0, V => 0, S => 0, T => 0);
+
+    foreach my $char (split('', $layout)) {
+        if ($char eq 'H') {
+            $r = $r . '{"layout": "splith",';
+            $r = $r . '"marks": ["H' . ++$layout_counts{H} . '"],';
+        } elsif ($char eq 'V') {
+            $r = $r . '{"layout": "splitv",';
+            $r = $r . '"marks": ["V' . ++$layout_counts{V} . '"],';
+        } elsif ($char eq 'S') {
+            $r = $r . '{"layout": "stacked",';
+            $r = $r . '"marks": ["S' . ++$layout_counts{S} . '"],';
+        } elsif ($char eq 'T') {
+            $r = $r . '{"layout": "tabbed",';
+            $r = $r . '"marks": ["T' . ++$layout_counts{T} . '"],';
+        } elsif ($char eq '[') {
+            $depth++;
+            $r = $r . '"nodes": [';
+        } elsif ($char eq ']') {
+            # End of nodes array: delete trailing comma.
+            chop $r;
+            # When we are at depth 0 we need to split using newlines, making
+            # multiple "JSON texts".
+            $depth--;
+            $r = $r . ']}' . ($depth == 0 ? "\n" : ',');
+        } elsif ($char eq ' ') {
+        } elsif ($char eq '*') {
+            $focus = $windows[$#windows];
+        } elsif ($char =~ /[[:alnum:]]/) {
+            push @windows, $char;
+
+            $r = $r . '{"swallows": [{';
+            $r = $r . '"class": "^' . "$char" . '$"';
+            $r = $r . '}]},';
+        } else {
+            die "Could not understand $char";
+        }
+    }
+
+    die "Invalid layout, depth is $depth > 0" unless $depth == 0;
+
+    Test::More::diag($r);
+    my ($fh, $tmpfile) = tempfile("layout-XXXXXX", UNLINK => 1);
+    print $fh "$r\n";
+    close($fh);
+
+    my $return = cmd "append_layout $tmpfile";
+    die 'Could not parse layout json file' unless $return->[0]->{success};
+
+    my @result_windows;
+    push @result_windows, open_window(wm_class => "$_", name => "$_") foreach @windows;
+    cmd '[class=' . $focus . '] focus' if $focus;
+
+    return @result_windows;
+}
+
+sub verify_layout {
+    my ($layout, $ws) = @_;
+
+    my $nodes = get_ws_content($ws);
+    my %counters;
+    my $depth = 0;
+    my $node;
+
+    foreach my $char (split('', $layout)) {
+        my $node_name;
+        my $node_layout;
+        if ($char eq 'H') {
+            $node_layout = 'splith';
+        } elsif ($char eq 'V') {
+            $node_layout = 'splitv';
+        } elsif ($char eq 'S') {
+            $node_layout = 'stacked';
+        } elsif ($char eq 'T') {
+            $node_layout = 'tabbed';
+        } elsif ($char eq '[') {
+            $depth++;
+            delete $counters{$depth};
+        } elsif ($char eq ']') {
+            $depth--;
+        } elsif ($char eq ' ') {
+        } elsif ($char eq '*') {
+            $tester->is_eq($node->{focused}, 1, 'Correct node focused');
+        } elsif ($char =~ /[[:alnum:]]/) {
+            $node_name = $char;
+        } else {
+            die "Could not understand $char";
+        }
+
+        if ($node_layout || $node_name) {
+            if (exists($counters{$depth})) {
+                $counters{$depth} = $counters{$depth} + 1;
+            } else {
+                $counters{$depth} = 0;
+            }
+
+            $node = $nodes->[$counters{0}];
+            for my $i (1 .. $depth) {
+                $node = $node->{nodes}->[$counters{$i}];
+            }
+
+            if ($node_layout) {
+                $tester->is_eq($node->{layout}, $node_layout, "Layouts match in depth $depth, node number " . $counters{$depth});
+            } else {
+                $tester->is_eq($node->{name}, $node_name, "Names match in depth $depth, node number " . $counters{$depth});
+            }
+        }
+    }
+}
+
 
 
 =head1 AUTHOR
