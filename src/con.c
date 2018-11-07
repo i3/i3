@@ -2333,11 +2333,6 @@ bool con_swap(Con *first, Con *second) {
         return false;
     }
 
-    if (con_is_floating(first) || con_is_floating(second)) {
-        ELOG("Floating windows cannot be swapped.\n");
-        return false;
-    }
-
     if (first == second) {
         DLOG("Swapping container %p with itself, nothing to do.\n", first);
         return false;
@@ -2348,132 +2343,80 @@ bool con_swap(Con *first, Con *second) {
         return false;
     }
 
-    Con *old_focus = focused;
-
-    Con *first_ws = con_get_workspace(first);
-    Con *second_ws = con_get_workspace(second);
-    Con *current_ws = con_get_workspace(old_focus);
-    const bool focused_within_first = (first == old_focus || con_has_parent(old_focus, first));
-    const bool focused_within_second = (second == old_focus || con_has_parent(old_focus, second));
-    fullscreen_mode_t first_fullscreen_mode = first->fullscreen_mode;
-    fullscreen_mode_t second_fullscreen_mode = second->fullscreen_mode;
-
-    if (first_fullscreen_mode != CF_NONE) {
-        con_disable_fullscreen(first);
-    }
-    if (second_fullscreen_mode != CF_NONE) {
-        con_disable_fullscreen(second);
+    Con *ws1 = con_get_workspace(first);
+    Con *ws2 = con_get_workspace(second);
+    Con *restore_focus = NULL;
+    if (ws1 == ws2 && ws1 == con_get_workspace(focused)) {
+        /* Preserve focus in the current workspace. */
+        restore_focus = focused;
+    } else if (first == focused || con_has_parent(focused, first)) {
+        restore_focus = second;
+    } else if (second == focused || con_has_parent(focused, second)) {
+        restore_focus = first;
     }
 
-    double first_percent = first->percent;
-    double second_percent = second->percent;
+#define SWAP_CONS_IN_TREE(headname, field)                            \
+    do {                                                              \
+        struct headname *head1 = &(first->parent->headname);          \
+        struct headname *head2 = &(second->parent->headname);         \
+        Con *first_prev = TAILQ_PREV(first, headname, field);         \
+        Con *second_prev = TAILQ_PREV(second, headname, field);       \
+        if (second_prev == first) {                                   \
+            TAILQ_SWAP(first, second, head1, field);                  \
+        } else if (first_prev == second) {                            \
+            TAILQ_SWAP(second, first, head1, field);                  \
+        } else {                                                      \
+            TAILQ_REMOVE(head1, first, field);                        \
+            TAILQ_REMOVE(head2, second, field);                       \
+            if (second_prev == NULL) {                                \
+                TAILQ_INSERT_HEAD(head2, first, field);               \
+            } else {                                                  \
+                TAILQ_INSERT_AFTER(head2, second_prev, first, field); \
+            }                                                         \
+            if (first_prev == NULL) {                                 \
+                TAILQ_INSERT_HEAD(head1, second, field);              \
+            } else {                                                  \
+                TAILQ_INSERT_AFTER(head1, first_prev, second, field); \
+            }                                                         \
+        }                                                             \
+    } while (0)
 
-    /* De- and reattaching the containers will insert them at the tail of the
-     * focus_heads. We will need to fix this. But we need to make sure first
-     * and second don't get in each other's way if they share the same parent,
-     * so we select the closest previous focus_head that isn't involved. */
-    Con *first_prev_focus_head = first;
-    while (first_prev_focus_head == first || first_prev_focus_head == second) {
-        first_prev_focus_head = TAILQ_PREV(first_prev_focus_head, focus_head, focused);
-    }
+    SWAP_CONS_IN_TREE(nodes_head, nodes);
+    SWAP_CONS_IN_TREE(focus_head, focused);
+    SWAP(first->parent, second->parent, Con *);
 
-    Con *second_prev_focus_head = second;
-    while (second_prev_focus_head == second || second_prev_focus_head == first) {
-        second_prev_focus_head = TAILQ_PREV(second_prev_focus_head, focus_head, focused);
-    }
-
-    /* We use a fake container to mark the spot of where the second container needs to go. */
-    Con *fake = con_new(NULL, NULL);
-    fake->layout = L_SPLITH;
-    _con_attach(fake, first->parent, first, true);
-
-    bool result = true;
-    /* Swap the containers. We set the ignore_focus flag here because after the
-     * container is attached, the focus order is not yet correct and would
-     * result in wrong windows being focused. */
-
-    /* Move first to second. */
-    result &= _con_move_to_con(first, second, false, false, false, true, false);
-    /* If swapping the containers didn't work we don't need to mess with the focus. */
-    if (!result) {
-        goto swap_end;
-    }
-
-    /* If we moved the container holding the focused window to another
-     * workspace we need to ensure the visible workspace has the focused
-     * container.
-     * We don't need to check this for the second container because we've only
-     * moved the first one at this point.*/
-    if (first_ws != second_ws && focused_within_first) {
-        con_activate(con_descend_focused(current_ws));
-    }
-
-    /* Move second to where first has been originally. */
-    result &= _con_move_to_con(second, fake, false, false, false, true, false);
-    if (!result) {
-        goto swap_end;
-    }
-
-    /* Swapping will have inserted the containers at the tail of their parents'
-     * focus head. We fix this now by putting them in the position of the focus
-     * head the container they swapped with was in. */
-    TAILQ_REMOVE(&(first->parent->focus_head), first, focused);
-    TAILQ_REMOVE(&(second->parent->focus_head), second, focused);
-
-    if (second_prev_focus_head == NULL) {
-        TAILQ_INSERT_HEAD(&(first->parent->focus_head), first, focused);
-    } else {
-        TAILQ_INSERT_AFTER(&(first->parent->focus_head), second_prev_focus_head, first, focused);
-    }
-
-    if (first_prev_focus_head == NULL) {
-        TAILQ_INSERT_HEAD(&(second->parent->focus_head), second, focused);
-    } else {
-        TAILQ_INSERT_AFTER(&(second->parent->focus_head), first_prev_focus_head, second, focused);
-    }
-
-    /* If the focus was within any of the swapped containers, do the following:
-     * - If swapping took place within a workspace, ensure the previously
-     *   focused container stays focused.
-     * - Otherwise, focus the container that has been swapped in.
-     *
-     * To understand why fixing the focus_head previously wasn't enough,
-     * consider the scenario
-     *   H[ V[ A X ] V[ Y B ] ]
-     * with B being focused, but X being the focus_head within its parent. If
-     * we swap A and B now, fixing the focus_head would focus X, but since B
-     * was the focused container before it should stay focused.
-     */
-    if (focused_within_first) {
-        if (first_ws == second_ws) {
-            con_activate(old_focus);
-        } else {
-            con_activate(con_descend_focused(second));
-        }
-    } else if (focused_within_second) {
-        if (first_ws == second_ws) {
-            con_activate(old_focus);
-        } else {
-            con_activate(con_descend_focused(first));
-        }
-    }
+    /* Floating nodes are children of CT_FLOATING_CONs, they are listed in
+     * nodes_head and focus_head like all other containers. Thus, we don't need
+     * to do anything special other than swapping the floating status and the
+     * relevant rects. */
+    SWAP(first->floating, second->floating, int);
+    SWAP(first->rect, second->rect, Rect);
+    SWAP(first->window_rect, second->window_rect, Rect);
 
     /* We need to copy each other's percentages to ensure that the geometry
-     * doesn't change during the swap. This needs to happen _before_ we close
-     * the fake container as closing the tree will recalculate percentages. */
-    first->percent = second_percent;
-    second->percent = first_percent;
-    fake->percent = 0.0;
+     * doesn't change during the swap. */
+    SWAP(first->percent, second->percent, double);
 
-    SWAP(first_fullscreen_mode, second_fullscreen_mode, fullscreen_mode_t);
-
-swap_end:
-    /* The two windows exchange their original fullscreen status */
-    if (first_fullscreen_mode != CF_NONE) {
-        con_enable_fullscreen(first, first_fullscreen_mode);
+    if (restore_focus) {
+        con_focus(restore_focus);
     }
-    if (second_fullscreen_mode != CF_NONE) {
-        con_enable_fullscreen(second, second_fullscreen_mode);
+
+    /* Update new parents' & workspaces' urgency. */
+    con_set_urgency(first, first->urgent);
+    con_set_urgency(second, second->urgent);
+
+    /* Exchange fullscreen modes, can't use SWAP because we need to call the
+     * correct functions. */
+    fullscreen_mode_t second_fullscreen_mode = second->fullscreen_mode;
+    if (first->fullscreen_mode == CF_NONE) {
+        con_disable_fullscreen(second);
+    } else {
+        con_enable_fullscreen(second, first->fullscreen_mode);
+    }
+    if (second_fullscreen_mode == CF_NONE) {
+        con_disable_fullscreen(first);
+    } else {
+        con_enable_fullscreen(first, second_fullscreen_mode);
     }
 
     /* We don't actually need this since percentages-wise we haven't changed
@@ -2482,11 +2425,8 @@ swap_end:
     con_fix_percent(first->parent);
     con_fix_percent(second->parent);
 
-    /* We can get rid of the fake container again now. */
-    con_close(fake, DONT_KILL_WINDOW);
-
     con_force_split_parents_redraw(first);
     con_force_split_parents_redraw(second);
 
-    return result;
+    return true;
 }
