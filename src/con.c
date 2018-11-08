@@ -2430,3 +2430,12 @@ bool con_swap(Con *first, Con *second) {
 
     return true;
 }
+
+/*
+ * Returns container's rect size depending on its orientation.
+ * i.e. its width when horizontal, its height when vertical.
+ *
+ */
+uint32_t con_rect_size_in_orientation(Con *con) {
+    return (con_orientation(con) == HORIZ ? con->rect.width : con->rect.height);
+}

@@ -533,3 +533,10 @@ i3String *con_parse_title_format(Con *con);
  *
  */
 bool con_swap(Con *first, Con *second);
+
+/**
+ * Returns given container's rect size depending on its orientation.
+ * i.e. its width when horizontal, its height when vertical.
+ *
+ */
+uint32_t con_rect_size_in_orientation(Con *con);
