@@ -248,6 +248,11 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
              * mapped. See https://bugs.i3wm.org/1617 */
             xcb_change_save_set(conn, XCB_SET_MODE_DELETE, con->window->id);
 
+            /* Stop receiving ShapeNotify events. */
+            if (shape_supported) {
+                xcb_shape_select_input(conn, con->window->id, false);
+            }
+
             /* Ignore X11 errors for the ReparentWindow request.
              * X11 Errors are returned when the window was already destroyed */
             add_ignore_event(cookie.sequence, 0);

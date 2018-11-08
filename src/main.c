@@ -89,6 +89,7 @@ struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignment
 /* We hope that those are supported and set them to true */
 bool xcursor_supported = true;
 bool xkb_supported = true;
+bool shape_supported = true;
 
 bool force_xinerama = false;
 
@@ -622,6 +623,9 @@ int main(int argc, char *argv[]) {
         xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
 
     const xcb_query_extension_reply_t *extreply;
+    xcb_prefetch_extension_data(conn, &xcb_xkb_id);
+    xcb_prefetch_extension_data(conn, &xcb_shape_id);
+
     extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
     xkb_supported = extreply->present;
     if (!extreply->present) {
@@ -681,6 +685,23 @@ int main(int argc, char *argv[]) {
 
         free(pcf_reply);
         xkb_base = extreply->first_event;
+    }
+
+    /* Check for Shape extension. We want to handle input shapes which is
+     * introduced in 1.1. */
+    extreply = xcb_get_extension_data(conn, &xcb_shape_id);
+    if (extreply->present) {
+        shape_base = extreply->first_event;
+        xcb_shape_query_version_cookie_t cookie = xcb_shape_query_version(conn);
+        xcb_shape_query_version_reply_t *version =
+            xcb_shape_query_version_reply(conn, cookie, NULL);
+        shape_supported = version && version->minor_version >= 1;
+        free(version);
+    } else {
+        shape_supported = false;
+    }
+    if (!shape_supported) {
+        DLOG("shape 1.1 is not present on this server\n");
     }
 
     restore_connect();
