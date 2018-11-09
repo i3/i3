@@ -94,7 +94,7 @@ static con_state *state_for_frame(xcb_window_t window) {
         return state;
 
     /* TODO: better error handling? */
-    ELOG("No state found\n");
+    ELOG("No state found for window 0x%08x\n", window);
     assert(false);
     return NULL;
 }
