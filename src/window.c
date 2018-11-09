@@ -74,8 +74,12 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     }
 
     i3string_free(win->name);
-    win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
-                                               xcb_get_property_value_length(prop));
+
+    /* Truncate the name at the first zero byte. See #3515. */
+    const int len = xcb_get_property_value_length(prop);
+    char *name = sstrndup(xcb_get_property_value(prop), len);
+    win->name = i3string_from_utf8(name);
+    free(name);
 
     Con *con = con_by_window_id(win->id);
     if (con != NULL && con->title_format != NULL) {
@@ -119,8 +123,10 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
     }
 
     i3string_free(win->name);
-    win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
-                                               xcb_get_property_value_length(prop));
+    const int len = xcb_get_property_value_length(prop);
+    char *name = sstrndup(xcb_get_property_value(prop), len);
+    win->name = i3string_from_utf8(name);
+    free(name);
 
     Con *con = con_by_window_id(win->id);
     if (con != NULL && con->title_format != NULL) {
