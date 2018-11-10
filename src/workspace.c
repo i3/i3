@@ -972,7 +972,11 @@ bool workspace_move_to_output(Con *ws, Output *output) {
     LOG("got output %p with content %p\n", output, content);
 
     Con *previously_visible_ws = TAILQ_FIRST(&(content->focus_head));
-    LOG("Previously visible workspace = %p / %s\n", previously_visible_ws, previously_visible_ws->name);
+    if (previously_visible_ws) {
+        DLOG("Previously visible workspace = %p / %s\n", previously_visible_ws, previously_visible_ws->name);
+    } else {
+        DLOG("No previously visible workspace on output.\n");
+    }
 
     bool workspace_was_visible = workspace_is_visible(ws);
     if (con_num_children(ws->parent) == 1) {
@@ -1028,6 +1032,10 @@ bool workspace_move_to_output(Con *ws, Output *output) {
     if (workspace_was_visible) {
         /* Focus the moved workspace on the destination output. */
         workspace_show(ws);
+    }
+
+    if (!previously_visible_ws) {
+        return true;
     }
 
     /* NB: We cannot simply work with previously_visible_ws since it might

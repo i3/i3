@@ -71,7 +71,7 @@ static void query_screens(xcb_connection_t *conn) {
             else
                 TAILQ_INSERT_TAIL(&outputs, s, outputs);
             output_init_con(s);
-            init_ws_for_output(s, output_get_content(s->con));
+            init_ws_for_output(s);
             num_screens++;
         }
 
@@ -98,7 +98,7 @@ static void use_root_output(xcb_connection_t *conn) {
     s->active = true;
     TAILQ_INSERT_TAIL(&outputs, s, outputs);
     output_init_con(s);
-    init_ws_for_output(s, output_get_content(s->con));
+    init_ws_for_output(s);
 }
 
 /*
