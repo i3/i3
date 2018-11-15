@@ -974,10 +974,12 @@ void randr_disable_output(Output *output) {
             }
         }
 
-        /* Restore focus after con_detach / con_attach */
-        DLOG("now focusing next = %p\n", next);
-        con_focus(next);
-        workspace_show(con_get_workspace(next));
+        /* Restore focus after con_detach / con_attach. next can be NULL, see #3523. */
+        if (next) {
+            DLOG("now focusing next = %p\n", next);
+            con_focus(next);
+            workspace_show(con_get_workspace(next));
+        }
 
         /* 3: move the dock clients to the first output */
         Con *child;
