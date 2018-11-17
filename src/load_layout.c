@@ -152,7 +152,7 @@ static int json_end_map(void *ctx) {
                 }
             }
 
-            floating_check_size(json_node);
+            floating_check_size(json_node, false);
         }
 
         if (num_marks > 0) {

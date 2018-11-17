@@ -71,6 +71,12 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
 void window_update_type(i3Window *window, xcb_get_property_reply_t *reply);
 
 /**
+ * Updates the WM_NORMAL_HINTS
+ *
+ */
+bool window_update_normal_hints(i3Window *win, xcb_get_property_reply_t *reply, xcb_get_geometry_reply_t *geom);
+
+/**
  * Updates the WM_HINTS (we only care about the input focus handling part).
  *
  */

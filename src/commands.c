@@ -467,7 +467,7 @@ static void cmd_resize_floating(I3_CMD, const char *way, const char *direction_s
     } else {
         floating_con->rect.width += px;
     }
-    floating_check_size(floating_con);
+    floating_check_size(floating_con, orientation == VERT);
 
     /* Did we actually resize anything or did the size constraints prevent us?
      * If we could not resize, exit now to not move the window. */
@@ -831,7 +831,7 @@ void cmd_append_layout(I3_CMD, const char *cpath) {
     // is not executed yet and will be batched with append_layout’s
     // needs_tree_render after the parser finished. We should check if that is
     // necessary at all.
-    render_con(croot, false);
+    render_con(croot);
 
     restore_open_placeholder_windows(parent);
 

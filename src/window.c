@@ -273,6 +273,127 @@ void window_update_type(i3Window *window, xcb_get_property_reply_t *reply) {
 }
 
 /*
+ * Updates the WM_NORMAL_HINTS
+ *
+ */
+bool window_update_normal_hints(i3Window *win, xcb_get_property_reply_t *reply, xcb_get_geometry_reply_t *geom) {
+    bool changed = false;
+    xcb_size_hints_t size_hints;
+
+    /* If the hints were already in this event, use them, if not, request them */
+    bool success;
+    if (reply != NULL) {
+        success = xcb_icccm_get_wm_size_hints_from_reply(&size_hints, reply);
+    } else {
+        success = xcb_icccm_get_wm_normal_hints_reply(conn, xcb_icccm_get_wm_normal_hints_unchecked(conn, win->id), &size_hints, NULL);
+    }
+    if (!success) {
+        DLOG("Could not get WM_NORMAL_HINTS\n");
+        return false;
+    }
+
+#define ASSIGN_IF_CHANGED(original, new) \
+    do {                                 \
+        if (original != new) {           \
+            original = new;              \
+            changed = true;              \
+        }                                \
+    } while (0)
+
+    if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE)) {
+        DLOG("Minimum size: %d (width) x %d (height)\n", size_hints.min_width, size_hints.min_height);
+
+        ASSIGN_IF_CHANGED(win->min_width, size_hints.min_width);
+        ASSIGN_IF_CHANGED(win->min_height, size_hints.min_height);
+    }
+
+    if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MAX_SIZE)) {
+        DLOG("Maximum size: %d (width) x %d (height)\n", size_hints.max_width, size_hints.max_height);
+
+        int max_width = max(0, size_hints.max_width);
+        int max_height = max(0, size_hints.max_height);
+
+        ASSIGN_IF_CHANGED(win->max_width, max_width);
+        ASSIGN_IF_CHANGED(win->max_height, max_height);
+    } else {
+        DLOG("Clearing maximum size \n");
+
+        ASSIGN_IF_CHANGED(win->max_width, 0);
+        ASSIGN_IF_CHANGED(win->max_height, 0);
+    }
+
+    if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_RESIZE_INC)) {
+        DLOG("Size increments: %d (width) x %d (height)\n", size_hints.width_inc, size_hints.height_inc);
+
+        if (size_hints.width_inc > 0 && size_hints.width_inc < 0xFFFF) {
+            ASSIGN_IF_CHANGED(win->width_increment, size_hints.width_inc);
+        } else {
+            ASSIGN_IF_CHANGED(win->width_increment, 0);
+        }
+
+        if (size_hints.height_inc > 0 && size_hints.height_inc < 0xFFFF) {
+            ASSIGN_IF_CHANGED(win->height_increment, size_hints.height_inc);
+        } else {
+            ASSIGN_IF_CHANGED(win->height_increment, 0);
+        }
+    } else {
+        DLOG("Clearing size increments\n");
+
+        ASSIGN_IF_CHANGED(win->width_increment, 0);
+        ASSIGN_IF_CHANGED(win->height_increment, 0);
+    }
+
+    /* The base width / height is the desired size of the window. */
+    if (size_hints.flags & XCB_ICCCM_SIZE_HINT_BASE_SIZE &&
+        (win->base_width >= 0) && (win->base_height >= 0)) {
+        DLOG("Base size: %d (width) x %d (height)\n", size_hints.base_width, size_hints.base_height);
+
+        ASSIGN_IF_CHANGED(win->base_width, size_hints.base_width);
+        ASSIGN_IF_CHANGED(win->base_height, size_hints.base_height);
+    } else {
+        DLOG("Clearing base size\n");
+
+        ASSIGN_IF_CHANGED(win->base_width, 0);
+        ASSIGN_IF_CHANGED(win->base_height, 0);
+    }
+
+    if (geom != NULL &&
+        (size_hints.flags & XCB_ICCCM_SIZE_HINT_US_POSITION || size_hints.flags & XCB_ICCCM_SIZE_HINT_P_POSITION) &&
+        (size_hints.flags & XCB_ICCCM_SIZE_HINT_US_SIZE || size_hints.flags & XCB_ICCCM_SIZE_HINT_P_SIZE)) {
+        DLOG("Setting geometry x=%d y=%d w=%d h=%d\n", size_hints.x, size_hints.y, size_hints.width, size_hints.height);
+        geom->x = size_hints.x;
+        geom->y = size_hints.y;
+        geom->width = size_hints.width;
+        geom->height = size_hints.height;
+    }
+
+    /* If no aspect ratio was set or if it was invalid, we ignore the hints */
+    if (size_hints.flags & XCB_ICCCM_SIZE_HINT_P_ASPECT &&
+        (size_hints.min_aspect_num >= 0) && (size_hints.min_aspect_den > 0) &&
+        (size_hints.max_aspect_num >= 0) && (size_hints.max_aspect_den > 0)) {
+        /* Convert numerator/denominator to a double */
+        double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
+        double max_aspect = (double)size_hints.max_aspect_num / size_hints.max_aspect_den;
+        DLOG("Aspect ratio set: minimum %f, maximum %f\n", min_aspect, max_aspect);
+        if (fabs(win->min_aspect_ratio - min_aspect) > DBL_EPSILON) {
+            win->min_aspect_ratio = min_aspect;
+            changed = true;
+        }
+        if (fabs(win->max_aspect_ratio - max_aspect) > DBL_EPSILON) {
+            win->max_aspect_ratio = max_aspect;
+            changed = true;
+        }
+    } else {
+        DLOG("Clearing aspect ratios\n");
+
+        ASSIGN_IF_CHANGED(win->min_aspect_ratio, 0.0);
+        ASSIGN_IF_CHANGED(win->max_aspect_ratio, 0.0);
+    }
+
+    return changed;
+}
+
+/*
  * Updates the WM_HINTS (we only care about the input focus handling part).
  *
  */
