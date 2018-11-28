@@ -892,7 +892,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
                                     XCB_CURRENT_TIME,
                                     XCB_GRAB_MODE_ASYNC, /* continue processing pointer events as normal */
                                     XCB_GRAB_MODE_ASYNC  /* keyboard mode */
-                                    );
+    );
 
     if ((keyb_reply = xcb_grab_keyboard_reply(conn, keyb_cookie, &error)) == NULL) {
         ELOG("Could not grab keyboard (error_code = %d)\n", error->error_code);
