@@ -20,6 +20,7 @@
 int randr_base = -1;
 int xkb_base = -1;
 int xkb_current_group;
+int shape_base = -1;
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -1395,6 +1396,27 @@ void handle_event(int type, xcb_generic_event_t *event) {
             xkb_current_group = state->group;
             ungrab_all_keys(conn);
             grab_all_keys(conn);
+        }
+
+        return;
+    }
+
+    if (shape_supported && type == shape_base + XCB_SHAPE_NOTIFY) {
+        xcb_shape_notify_event_t *shape = (xcb_shape_notify_event_t *)event;
+
+        DLOG("shape_notify_event for window 0x%08x, shape_kind = %d, shaped = %d\n",
+             shape->affected_window, shape->shape_kind, shape->shaped);
+
+        Con *con = con_by_window_id(shape->affected_window);
+        if (con == NULL) {
+            LOG("Not a managed window 0x%08x, ignoring shape_notify_event\n",
+                shape->affected_window);
+            return;
+        }
+
+        if (shape->shape_kind == XCB_SHAPE_SK_BOUNDING ||
+            shape->shape_kind == XCB_SHAPE_SK_INPUT) {
+            x_set_shape(con, shape->shape_kind, shape->shaped);
         }
 
         return;

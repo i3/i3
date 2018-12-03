@@ -91,7 +91,7 @@ AX_PTHREAD
 dnl Each prefix corresponds to a source tarball which users might have
 dnl downloaded in a newer version and would like to overwrite.
 PKG_CHECK_MODULES([LIBSN], [libstartup-notification-1.0])
-PKG_CHECK_MODULES([XCB], [xcb xcb-xkb xcb-xinerama xcb-randr])
+PKG_CHECK_MODULES([XCB], [xcb xcb-xkb xcb-xinerama xcb-randr xcb-shape])
 PKG_CHECK_MODULES([XCB_UTIL], [xcb-event xcb-util])
 PKG_CHECK_MODULES([XCB_UTIL_CURSOR], [xcb-cursor])
 PKG_CHECK_MODULES([XCB_UTIL_KEYSYMS], [xcb-keysyms])

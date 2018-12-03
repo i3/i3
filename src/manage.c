@@ -548,6 +548,23 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * cleanup) */
     xcb_change_save_set(conn, XCB_SET_MODE_INSERT, window);
 
+    if (shape_supported) {
+        /* Receive ShapeNotify events whenever the client altered its window
+         * shape. */
+        xcb_shape_select_input(conn, window, true);
+
+        /* Check if the window is shaped. Sadly, we can check only for the
+         * bounding shape, not for the input shape. */
+        xcb_shape_query_extents_cookie_t cookie =
+            xcb_shape_query_extents(conn, window);
+        xcb_shape_query_extents_reply_t *reply =
+            xcb_shape_query_extents_reply(conn, cookie, NULL);
+        if (reply != NULL && reply->bounding_shaped) {
+            cwindow->shaped = true;
+        }
+        FREE(reply);
+    }
+
     /* Check if any assignments match */
     run_assignments(cwindow);
 

@@ -51,6 +51,11 @@ typedef struct con_state {
     bool need_reparent;
     xcb_window_t old_frame;
 
+    /* The container was child of floating container during the previous call of
+     * x_push_node(). This is used to remove the shape when the container is no
+     * longer floating. */
+    bool was_floating;
+
     Rect rect;
     Rect window_rect;
 
@@ -94,7 +99,7 @@ static con_state *state_for_frame(xcb_window_t window) {
         return state;
 
     /* TODO: better error handling? */
-    ELOG("No state found\n");
+    ELOG("No state found for window 0x%08x\n", window);
     assert(false);
     return NULL;
 }
@@ -397,6 +402,58 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
 }
 
 /*
+ * Get rectangles representing the border around the child window. Some borders
+ * are adjacent to the screen-edge and thus not returned. Return value is the
+ * number of rectangles.
+ *
+ */
+static size_t x_get_border_rectangles(Con *con, xcb_rectangle_t rectangles[4]) {
+    size_t count = 0;
+    int border_style = con_border_style(con);
+
+    if (border_style != BS_NONE && con_is_leaf(con)) {
+        adjacent_t borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
+        Rect br = con_border_style_rect(con);
+
+        if (!(borders_to_hide & ADJ_LEFT_SCREEN_EDGE)) {
+            rectangles[count++] = (xcb_rectangle_t){
+                .x = 0,
+                .y = 0,
+                .width = br.x,
+                .height = con->rect.height,
+            };
+        }
+        if (!(borders_to_hide & ADJ_RIGHT_SCREEN_EDGE)) {
+            rectangles[count++] = (xcb_rectangle_t){
+                .x = con->rect.width + (br.width + br.x),
+                .y = 0,
+                .width = -(br.width + br.x),
+                .height = con->rect.height,
+            };
+        }
+        if (!(borders_to_hide & ADJ_LOWER_SCREEN_EDGE)) {
+            rectangles[count++] = (xcb_rectangle_t){
+                .x = br.x,
+                .y = con->rect.height + (br.height + br.y),
+                .width = con->rect.width + br.width,
+                .height = -(br.height + br.y),
+            };
+        }
+        /* pixel border have an additional line at the top */
+        if (border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
+            rectangles[count++] = (xcb_rectangle_t){
+                .x = br.x,
+                .y = 0,
+                .width = con->rect.width + br.width,
+                .height = br.y,
+            };
+        }
+    }
+
+    return count;
+}
+
+/*
  * Draws the decoration of the given container onto its parent.
  *
  */
@@ -497,37 +554,24 @@ void x_draw_decoration(Con *con) {
 
     /* 3: draw a rectangle in border color around the client */
     if (p->border_style != BS_NONE && p->con_is_leaf) {
-        /* We might hide some borders adjacent to the screen-edge */
-        adjacent_t borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
-        Rect br = con_border_style_rect(con);
-
-        /* These rectangles represent the border around the child window
-         * (left, bottom and right part). We don’t just fill the whole
-         * rectangle because some children are not freely resizable and we want
-         * their background color to "shine through". */
-        if (!(borders_to_hide & ADJ_LEFT_SCREEN_EDGE)) {
-            draw_util_rectangle(&(con->frame_buffer), p->color->child_border, 0, 0, br.x, r->height);
-        }
-        if (!(borders_to_hide & ADJ_RIGHT_SCREEN_EDGE)) {
-            draw_util_rectangle(&(con->frame_buffer),
-                                p->color->child_border, r->width + (br.width + br.x), 0,
-                                -(br.width + br.x), r->height);
-        }
-        if (!(borders_to_hide & ADJ_LOWER_SCREEN_EDGE)) {
-            draw_util_rectangle(&(con->frame_buffer),
-                                p->color->child_border, br.x, r->height + (br.height + br.y),
-                                r->width + br.width, -(br.height + br.y));
-        }
-        /* pixel border needs an additional line at the top */
-        if (p->border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
-            draw_util_rectangle(&(con->frame_buffer),
-                                p->color->child_border, br.x, 0, r->width + br.width, br.y);
+        /* Fill the border. We don’t just fill the whole rectangle because some
+         * children are not freely resizable and we want their background color
+         * to "shine through". */
+        xcb_rectangle_t rectangles[4];
+        size_t rectangles_count = x_get_border_rectangles(con, rectangles);
+        for (size_t i = 0; i < rectangles_count; i++) {
+            draw_util_rectangle(&(con->frame_buffer), p->color->child_border,
+                                rectangles[i].x,
+                                rectangles[i].y,
+                                rectangles[i].width,
+                                rectangles[i].height);
         }
 
         /* Highlight the side of the border at which the next window will be
          * opened if we are rendering a single window within a split container
          * (which is undistinguishable from a single window outside a split
          * container otherwise. */
+        Rect br = con_border_style_rect(con);
         if (TAILQ_NEXT(con, nodes) == NULL &&
             TAILQ_PREV(con, nodes_head, nodes) == NULL &&
             con->parent->type != CT_FLOATING_CON) {
@@ -731,6 +775,71 @@ static void set_hidden_state(Con *con) {
 }
 
 /*
+ * Set the container frame shape as the union of the window shape and the
+ * shape of the frame borders.
+ */
+static void x_shape_frame(Con *con, xcb_shape_sk_t shape_kind) {
+    assert(con->window);
+
+    xcb_shape_combine(conn, XCB_SHAPE_SO_SET, shape_kind, shape_kind,
+                      con->frame.id,
+                      con->window_rect.x + con->border_width,
+                      con->window_rect.y + con->border_width,
+                      con->window->id);
+    xcb_rectangle_t rectangles[4];
+    size_t rectangles_count = x_get_border_rectangles(con, rectangles);
+    if (rectangles_count) {
+        xcb_shape_rectangles(conn, XCB_SHAPE_SO_UNION, shape_kind,
+                             XCB_CLIP_ORDERING_UNSORTED, con->frame.id,
+                             0, 0, rectangles_count, rectangles);
+    }
+}
+
+/*
+ * Reset the container frame shape.
+ */
+static void x_unshape_frame(Con *con, xcb_shape_sk_t shape_kind) {
+    assert(con->window);
+
+    xcb_shape_mask(conn, XCB_SHAPE_SO_SET, shape_kind, con->frame.id, 0, 0, XCB_PIXMAP_NONE);
+}
+
+/*
+ * Shape or unshape container frame based on the con state.
+ */
+static void set_shape_state(Con *con, bool need_reshape) {
+    if (!shape_supported || con->window == NULL) {
+        return;
+    }
+
+    struct con_state *state;
+    if ((state = state_for_frame(con->frame.id)) == NULL) {
+        ELOG("window state for con %p not found\n", con);
+        return;
+    }
+
+    if (need_reshape && con_is_floating(con)) {
+        /* We need to reshape the window frame only if it already has shape. */
+        if (con->window->shaped) {
+            x_shape_frame(con, XCB_SHAPE_SK_BOUNDING);
+        }
+        if (con->window->input_shaped) {
+            x_shape_frame(con, XCB_SHAPE_SK_INPUT);
+        }
+    }
+
+    if (state->was_floating && !con_is_floating(con)) {
+        /* Remove the shape when container is no longer floating. */
+        if (con->window->shaped) {
+            x_unshape_frame(con, XCB_SHAPE_SK_BOUNDING);
+        }
+        if (con->window->input_shaped) {
+            x_unshape_frame(con, XCB_SHAPE_SK_INPUT);
+        }
+    }
+}
+
+/*
  * This function pushes the properties of each node of the layout tree to
  * X11 if they have changed (like the map state, position of the window, …).
  * It recursively traverses all children of the given node.
@@ -768,6 +877,8 @@ void x_push_node(Con *con) {
             con->mapped = false;
     }
 
+    bool need_reshape = false;
+
     /* reparent the child window (when the window was moved due to a sticky
      * container) */
     if (state->need_reparent && con->window != NULL) {
@@ -793,7 +904,18 @@ void x_push_node(Con *con) {
         con->ignore_unmap++;
         DLOG("ignore_unmap for reparenting of con %p (win 0x%08x) is now %d\n",
              con, con->window->id, con->ignore_unmap);
+
+        need_reshape = true;
     }
+
+    /* We need to update shape when window frame dimensions is updated. */
+    need_reshape |= state->rect.width != rect.width ||
+                    state->rect.height != rect.height ||
+                    state->window_rect.width != con->window_rect.width ||
+                    state->window_rect.height != con->window_rect.height;
+
+    /* We need to set shape when container becomes floating. */
+    need_reshape |= con_is_floating(con) && !state->was_floating;
 
     /* The pixmap of a borderless leaf container will not be used except
      * for the titlebar in a stack or tabs (issue #1013). */
@@ -898,6 +1020,8 @@ void x_push_node(Con *con) {
         fake_notify = true;
     }
 
+    set_shape_state(con, need_reshape);
+
     /* Map if map state changed, also ensure that the child window
      * is changed if we are mapped and there is a new, unmapped child window.
      * Unmaps are handled in x_push_node_unmaps(). */
@@ -941,6 +1065,7 @@ void x_push_node(Con *con) {
     }
 
     state->unmap_now = (state->mapped != con->mapped) && !con->mapped;
+    state->was_floating = con_is_floating(con);
 
     if (fake_notify) {
         DLOG("Sending fake configure notify\n");
@@ -1323,5 +1448,39 @@ void x_mask_event_mask(uint32_t mask) {
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
         if (state->mapped)
             xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
+    }
+}
+
+/*
+ * Enables or disables nonrectangular shape of the container frame.
+ */
+void x_set_shape(Con *con, xcb_shape_sk_t kind, bool enable) {
+    struct con_state *state;
+    if ((state = state_for_frame(con->frame.id)) == NULL) {
+        ELOG("window state for con %p not found\n", con);
+        return;
+    }
+
+    switch (kind) {
+        case XCB_SHAPE_SK_BOUNDING:
+            con->window->shaped = enable;
+            break;
+        case XCB_SHAPE_SK_INPUT:
+            con->window->input_shaped = enable;
+            break;
+        default:
+            ELOG("Received unknown shape event kind for con %p. This is a bug.\n",
+                 con);
+            return;
+    }
+
+    if (con_is_floating(con)) {
+        if (enable) {
+            x_shape_frame(con, kind);
+        } else {
+            x_unshape_frame(con, kind);
+        }
+
+        xcb_flush(conn);
     }
 }
