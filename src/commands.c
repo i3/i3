@@ -605,13 +605,17 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
                 const double ppt = (double)resize_ppt / 100.0;
                 if (!cmd_resize_tiling_width_height(current_match, cmd_output,
                                                     current->con, direction,
-                                                    resize_px, ppt))
+                                                    resize_px, ppt)) {
+                    yerror("Cannot resize.");
                     return;
+                }
             } else {
                 if (!cmd_resize_tiling_direction(current_match, cmd_output,
                                                  current->con, direction,
-                                                 resize_px, resize_ppt))
+                                                 resize_px, resize_ppt)) {
+                    yerror("Cannot resize.");
                     return;
+                }
             }
         }
     }
@@ -657,7 +661,7 @@ static bool resize_set_tiling(I3_CMD, Con *target, orientation_t resize_orientat
 void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, const char *mode_height) {
     DLOG("resizing to %ld %s x %ld %s\n", cwidth, mode_width, cheight, mode_height);
     if (cwidth < 0 || cheight < 0) {
-        ELOG("Resize failed: dimensions cannot be negative (was %ld %s x %ld %s)\n", cwidth, mode_width, cheight, mode_height);
+        yerror("Dimensions cannot be negative.");
         return;
     }
 
@@ -782,6 +786,7 @@ void cmd_append_layout(I3_CMD, const char *cpath) {
     char *buf = NULL;
     ssize_t len;
     if ((len = slurp(path, &buf)) < 0) {
+        yerror("Could not slurp \"%s\".", path);
         /* slurp already logged an error. */
         goto out;
     }
@@ -1513,7 +1518,7 @@ void cmd_layout(I3_CMD, const char *layout_str) {
 
     layout_t layout;
     if (!layout_from_name(layout_str, &layout)) {
-        ELOG("Unknown layout \"%s\", this is a mismatch between code and parser spec.\n", layout_str);
+        yerror("Unknown layout \"%s\", this is a mismatch between code and parser spec.", layout_str);
         return;
     }
 
