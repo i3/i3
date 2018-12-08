@@ -379,13 +379,6 @@ orientation_t con_orientation(Con *con);
 Con *con_next_focused(Con *con);
 
 /**
- * Get the next/previous container in the specified orientation. This may
- * travel up until it finds a container with suitable orientation.
- *
- */
-Con *con_get_next(Con *con, char way, orientation_t orientation);
-
-/**
  * Returns the focused con inside this client, descending the tree as far as
  * possible. This comes in handy when attaching a con to a workspace at the
  * currently focused position, for example.
