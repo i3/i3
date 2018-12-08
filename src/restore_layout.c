@@ -180,8 +180,8 @@ static void update_placeholder_contents(placeholder_state *state) {
     int y = (state->rect.height / 2) - (config.font.height / 2);
     draw_util_text(line, &(state->surface), foreground, background, x, y, text_width);
     i3string_free(line);
-    xcb_flush(conn);
-    xcb_aux_sync(conn);
+    xcb_flush(restore_conn);
+    xcb_aux_sync(restore_conn);
 }
 
 static void open_placeholder_window(Con *con) {
@@ -221,7 +221,7 @@ static void open_placeholder_window(Con *con) {
         state->con = con;
         state->rect = con->rect;
 
-        draw_util_surface_init(conn, &(state->surface), placeholder, get_visualtype(root_screen), state->rect.width, state->rect.height);
+        draw_util_surface_init(restore_conn, &(state->surface), placeholder, get_visualtype(root_screen), state->rect.width, state->rect.height);
         update_placeholder_contents(state);
         TAILQ_INSERT_TAIL(&state_head, state, state);
 
