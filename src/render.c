@@ -134,17 +134,17 @@ void render_con(Con *con) {
             x_raise_con(child);
             if ((child = TAILQ_FIRST(&(con->focus_head)))) {
                 /* By rendering the stacked container again, we handle the case
-             * that we have a non-leaf-container inside the stack. In that
-             * case, the children of the non-leaf-container need to be raised
-             * as well. */
+                 * that we have a non-leaf-container inside the stack. In that
+                 * case, the children of the non-leaf-container need to be
+                 * raised as well. */
                 render_con(child);
             }
 
             if (params.children != 1)
-                /* Raise the stack con itself. This will put the stack decoration on
-             * top of every stack window. That way, when a new window is opened in
-             * the stack, the old window will not obscure part of the decoration
-             * (it’s unmapped afterwards). */
+                /* Raise the stack con itself. This will put the stack
+                 * decoration on top of every stack window. That way, when a
+                 * new window is opened in the stack, the old window will not
+                 * obscure part of the decoration (it’s unmapped afterwards). */
                 x_raise_con(con);
         }
     }

@@ -439,7 +439,7 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *ur
  *
  */
 void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style) {
-/* This implementation simply mirrors Gnome's Metacity. Official
+    /* This implementation simply mirrors Gnome's Metacity. Official
      * documentation of this hint is nowhere to be found.
      * For more information see:
      * https://people.gnome.org/~tthurman/docs/metacity/xprops_8h-source.html
