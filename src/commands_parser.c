@@ -353,7 +353,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen) {
                 if (*walk == '\0' || *walk == ',' || *walk == ';') {
                     next_state(token);
                     token_handled = true;
-/* To make sure we start with an appropriate matching
+                    /* To make sure we start with an appropriate matching
                      * datastructure for commands which do *not* specify any
                      * criteria, we re-initialize the criteria system after
                      * every command. */

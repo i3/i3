@@ -1486,42 +1486,6 @@ Con *con_next_focused(Con *con) {
 }
 
 /*
- * Get the next/previous container in the specified orientation. This may
- * travel up until it finds a container with suitable orientation.
- *
- */
-Con *con_get_next(Con *con, char way, orientation_t orientation) {
-    DLOG("con_get_next(way=%c, orientation=%d)\n", way, orientation);
-    /* 1: get the first parent with the same orientation */
-    Con *cur = con;
-    while (con_orientation(cur->parent) != orientation) {
-        DLOG("need to go one level further up\n");
-        if (cur->parent->type == CT_WORKSPACE) {
-            LOG("that's a workspace, we can't go further up\n");
-            return NULL;
-        }
-        cur = cur->parent;
-    }
-
-    /* 2: chose next (or previous) */
-    Con *next;
-    if (way == 'n') {
-        next = TAILQ_NEXT(cur, nodes);
-        /* if we are at the end of the list, we need to wrap */
-        if (next == TAILQ_END(&(parent->nodes_head)))
-            return NULL;
-    } else {
-        next = TAILQ_PREV(cur, nodes_head, nodes);
-        /* if we are at the end of the list, we need to wrap */
-        if (next == TAILQ_END(&(cur->nodes_head)))
-            return NULL;
-    }
-    DLOG("next = %p\n", next);
-
-    return next;
-}
-
-/*
  * Returns the focused con inside this client, descending the tree as far as
  * possible. This comes in handy when attaching a con to a workspace at the
  * currently focused position, for example.

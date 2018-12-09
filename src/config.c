@@ -202,7 +202,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     /* Clear the old config or initialize the data structure */
     memset(&config, 0, sizeof(config));
 
-/* Initialize default colors */
+    /* Initialize default colors */
 #define INIT_COLOR(x, cborder, cbackground, ctext, cindicator) \
     do {                                                       \
         x.border = draw_util_hex_to_color(cborder);            \

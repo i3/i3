@@ -123,7 +123,7 @@ static bool binding_in_current_group(const Binding *bind) {
 }
 
 static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint32_t keycode) {
-/* Grab the key in all combinations */
+    /* Grab the key in all combinations */
 #define GRAB_KEY(modifier)                                                                       \
     do {                                                                                         \
         xcb_grab_key(conn, 0, root, modifier, keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC); \

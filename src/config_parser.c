@@ -409,7 +409,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
                 if (*walk == '\0' || *walk == '\n' || *walk == '\r') {
                     next_state(token);
                     token_handled = true;
-/* To make sure we start with an appropriate matching
+                    /* To make sure we start with an appropriate matching
                      * datastructure for commands which do *not* specify any
                      * criteria, we re-initialize the criteria system after
                      * every command. */
