@@ -420,6 +420,9 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
             else if (strcasecmp(buf, "changed") == 0)
                 json_node->scratchpad_state = SCRATCHPAD_CHANGED;
             free(buf);
+        } else if (strcasecmp(last_key, "previous_workspace_name") == 0) {
+            FREE(previous_workspace_name);
+            previous_workspace_name = sstrndup((const char *)val, len);
         }
     }
     return 1;
