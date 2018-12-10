@@ -2842,3 +2842,20 @@ and you are in multi-monitor mode (see <<multi_monitor>>).
 Because i3 is not a compositing window manager, there is no ability to
 display a window on two screens at the same time. Instead, your presentation
 software needs to do this job (that is, open a window on each screen).
+
+[[hidpi]]
+=== High-resolution displays (aka HIDPI displays)
+
+See https://wiki.archlinux.org/index.php/HiDPI for details on how to enable
+scaling in various parts of the Linux desktop. i3 will read the desired DPI from
+the `Xft.dpi` property. The property defaults to 96 DPI, so to achieve 200%
+scaling, you’d set `Xft.dpi: 192` in `~/.Xresources`.
+
+If you are a long-time i3 user who just got a new monitor, double-check that:
+
+* You are using a scalable font (starting with “pango:”) in your i3 config.
+
+* You are using a terminal emulator which supports scaling. You could
+  temporarily switch to gnome-terminal, which is known to support scaling out of
+  the box, until you figure out how to adjust the font size in your favorite
+  terminal emulator.
