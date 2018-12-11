@@ -11,9 +11,12 @@
 #include "all.h"
 #include "yajl_utils.h"
 
-/* Stores a copy of the name of the last used workspace for the workspace
- * back-and-forth switching. */
-static char *previous_workspace_name = NULL;
+/*
+ * Stores a copy of the name of the last used workspace for the workspace
+ * back-and-forth switching.
+ *
+ */
+char *previous_workspace_name = NULL;
 
 /* NULL-terminated list of workspace names (in order) extracted from
  * keybindings. */
