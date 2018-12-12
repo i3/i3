@@ -178,9 +178,7 @@ void insert_con_into(Con *con, Con *target, position_t position) {
  */
 static void attach_to_workspace(Con *con, Con *ws, direction_t direction) {
     con_detach(con);
-    con_fix_percent(con->parent);
-    CALL(con->parent, on_remove_child);
-
+    Con *old_parent = con->parent;
     con->parent = ws;
 
     if (direction == D_RIGHT || direction == D_DOWN) {
@@ -195,6 +193,9 @@ static void attach_to_workspace(Con *con, Con *ws, direction_t direction) {
      * does not make sense anyways. */
     con->percent = 0.0;
     con_fix_percent(ws);
+
+    con_fix_percent(old_parent);
+    CALL(old_parent, on_remove_child);
 }
 
 /*
