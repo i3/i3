@@ -913,7 +913,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             .event_y = y_root - (con->rect.y)};
         switch (direction) {
             case _NET_WM_MOVERESIZE_MOVE:
-                floating_drag_window(con->parent, &fake);
+                floating_drag_window(con->parent, &fake, false);
                 break;
             case _NET_WM_MOVERESIZE_SIZE_TOPLEFT ... _NET_WM_MOVERESIZE_SIZE_LEFT:
                 floating_resize_window(con->parent, false, &fake);

@@ -75,7 +75,7 @@ void floating_move_to_pointer(Con *con);
  * Calls the drag_pointer function with the drag_window callback
  *
  */
-void floating_drag_window(Con *con, const xcb_button_press_event_t *event);
+void floating_drag_window(Con *con, const xcb_button_press_event_t *event, bool use_threshold);
 
 /**
  * Called when the user clicked on a floating window while holding the

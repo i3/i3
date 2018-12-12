@@ -221,6 +221,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     Con *floatingcon = con_inside_floating(con);
     const bool proportional = (event->state & XCB_KEY_BUT_MASK_SHIFT) == XCB_KEY_BUT_MASK_SHIFT;
     const bool in_stacked = (con->parent->layout == L_STACKED || con->parent->layout == L_TABBED);
+    const bool was_focused = focused == con;
 
     /* 1: see if the user scrolled on the decoration of a stacked/tabbed con */
     if (in_stacked &&
@@ -258,7 +259,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     if (floatingcon != NULL && fs != con) {
         /* 4: floating_modifier plus left mouse button drags */
         if (mod_pressed && event->detail == XCB_BUTTON_CLICK_LEFT) {
-            floating_drag_window(floatingcon, event);
+            floating_drag_window(floatingcon, event, false);
             return 1;
         }
 
@@ -293,9 +294,8 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
 
         /* 6: dragging, if this was a click on a decoration (which did not lead
          * to a resize) */
-        if (!in_stacked && dest == CLICK_DECORATION &&
-            (event->detail == XCB_BUTTON_CLICK_LEFT)) {
-            floating_drag_window(floatingcon, event);
+        if (dest == CLICK_DECORATION && event->detail == XCB_BUTTON_CLICK_LEFT) {
+            floating_drag_window(floatingcon, event, !was_focused);
             return 1;
         }
 

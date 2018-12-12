@@ -582,7 +582,7 @@ DRAGGING_CB(drag_window_callback) {
  * Calls the drag_pointer function with the drag_window callback
  *
  */
-void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
+void floating_drag_window(Con *con, const xcb_button_press_event_t *event, bool use_threshold) {
     DLOG("floating_drag_window\n");
 
     /* Push changes before dragging, so that the window gets raised now and not
@@ -593,7 +593,7 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
     Rect initial_rect = con->rect;
 
     /* Drag the window */
-    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, XCURSOR_CURSOR_MOVE, false, drag_window_callback, NULL);
+    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, XCURSOR_CURSOR_MOVE, use_threshold, drag_window_callback, NULL);
 
     if (!con_exists(con)) {
         DLOG("The container has been closed in the meantime.\n");
