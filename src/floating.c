@@ -595,7 +595,7 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
     Rect initial_rect = con->rect;
 
     /* Drag the window */
-    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, XCURSOR_CURSOR_MOVE, drag_window_callback, event);
+    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, XCURSOR_CURSOR_MOVE, drag_window_callback, event);
 
     if (!con_exists(con)) {
         DLOG("The container has been closed in the meantime.\n");
@@ -711,7 +711,7 @@ void floating_resize_window(Con *con, const bool proportional,
     /* get the initial rect in case of revert/cancel */
     Rect initial_rect = con->rect;
 
-    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, cursor, resize_window_callback, &params);
+    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, cursor, resize_window_callback, &params);
 
     if (!con_exists(con)) {
         DLOG("The container has been closed in the meantime.\n");

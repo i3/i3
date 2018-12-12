@@ -51,5 +51,5 @@ typedef enum {
  *
  */
 drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
-                           xcb_window_t confine_to, border_t border, int cursor,
+                           xcb_window_t confine_to, int cursor,
                            callback_t callback, const void *extra);
