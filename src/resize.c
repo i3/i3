@@ -208,7 +208,7 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
     const struct callback_params params = {orientation, output, helpwin, &new_position};
 
     /* `drag_pointer' blocks until the drag is completed. */
-    drag_result_t drag_result = drag_pointer(NULL, event, grabwin, 0, resize_callback, &params);
+    drag_result_t drag_result = drag_pointer(NULL, event, grabwin, 0, false, resize_callback, &params);
 
     xcb_destroy_window(conn, helpwin);
     xcb_destroy_window(conn, grabwin);

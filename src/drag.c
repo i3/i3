@@ -20,15 +20,31 @@ struct drag_x11_cb {
      * drag of the resize handle. */
     Con *con;
 
+    /* The original event that initiated the drag. */
+    const xcb_button_press_event_t *event;
+
     /* The dimensions of con when the loop was started. */
     Rect old_rect;
 
     /* The callback to invoke after every pointer movement. */
     callback_t callback;
 
+    /* Drag distance threshold exceeded. If use_threshold is not set, then
+     * threshold_exceeded is always true. */
+    bool threshold_exceeded;
+
+    /* Cursor to set after the threshold is exceeded. */
+    xcb_cursor_t xcursor;
+
     /* User data pointer for callback. */
     const void *extra;
 };
+
+static bool threshold_exceeded(uint32_t x1, uint32_t y1,
+                               uint32_t x2, uint32_t y2) {
+    const uint32_t threshold = 9;
+    return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) > threshold * threshold;
+}
 
 static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
     xcb_motion_notify_event_t *last_motion_notify = NULL;
@@ -105,15 +121,29 @@ static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
         return true;
     }
 
+    if (!dragloop->threshold_exceeded &&
+        threshold_exceeded(last_motion_notify->root_x, last_motion_notify->root_y,
+                           dragloop->event->root_x, dragloop->event->root_y)) {
+        if (dragloop->xcursor != XCB_NONE) {
+            xcb_change_active_pointer_grab(
+                conn,
+                dragloop->xcursor,
+                XCB_CURRENT_TIME,
+                XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION);
+        }
+        dragloop->threshold_exceeded = true;
+    }
+
     /* Ensure that we are either dragging the resize handle (con is NULL) or that the
      * container still exists. The latter might not be true, e.g., if the window closed
      * for any reason while the user was dragging it. */
-    if (!dragloop->con || con_exists(dragloop->con)) {
+    if (dragloop->threshold_exceeded && (!dragloop->con || con_exists(dragloop->con))) {
         dragloop->callback(
             dragloop->con,
             &(dragloop->old_rect),
             last_motion_notify->root_x,
             last_motion_notify->root_y,
+            dragloop->event,
             dragloop->extra);
     }
     FREE(last_motion_notify);
@@ -133,12 +163,18 @@ static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
  * This function grabs your pointer and keyboard and lets you drag stuff around
  * (borders). Every time you move your mouse, an XCB_MOTION_NOTIFY event will
  * be received and the given callback will be called with the parameters
- * specified (client, border on which the click originally was), the original
- * rect of the client, the event and the new coordinates (x, y).
+ * specified (client, the original event), the original rect of the client,
+ * and the new coordinates (x, y).
+ *
+ * If use_threshold is set, dragging only starts after the user moves the
+ * pointer past a certain threshold. That is, the cursor will not be set and the
+ * callback will not be called until then.
  *
  */
-drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t confine_to,
-                           int cursor, callback_t callback, const void *extra) {
+drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
+                           xcb_window_t confine_to, int cursor,
+                           bool use_threshold, callback_t callback,
+                           const void *extra) {
     xcb_cursor_t xcursor = (cursor && xcursor_supported) ? xcursor_get_cursor(cursor) : XCB_NONE;
 
     /* Grab the pointer */
@@ -153,7 +189,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
                               XCB_GRAB_MODE_ASYNC,                                           /* pointer events should continue as normal */
                               XCB_GRAB_MODE_ASYNC,                                           /* keyboard mode */
                               confine_to,                                                    /* confine_to = in which window should the cursor stay */
-                              xcursor,                                                       /* possibly display a special cursor */
+                              use_threshold ? XCB_NONE : xcursor,                            /* possibly display a special cursor */
                               XCB_CURRENT_TIME);
 
     if ((reply = xcb_grab_pointer_reply(conn, cookie, &error)) == NULL) {
@@ -189,7 +225,10 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
     struct drag_x11_cb loop = {
         .result = DRAGGING,
         .con = con,
+        .event = event,
         .callback = callback,
+        .threshold_exceeded = !use_threshold,
+        .xcursor = xcursor,
         .extra = extra,
     };
     ev_prepare *prepare = &loop.prepare;

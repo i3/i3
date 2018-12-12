@@ -561,8 +561,6 @@ void floating_move_to_pointer(Con *con) {
 }
 
 DRAGGING_CB(drag_window_callback) {
-    const struct xcb_button_press_event_t *event = extra;
-
     /* Reposition the client correctly while moving */
     con->rect.x = old_rect->x + (new_x - event->root_x);
     con->rect.y = old_rect->y + (new_y - event->root_y);
@@ -595,7 +593,7 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
     Rect initial_rect = con->rect;
 
     /* Drag the window */
-    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, XCURSOR_CURSOR_MOVE, drag_window_callback, event);
+    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, XCURSOR_CURSOR_MOVE, false, drag_window_callback, NULL);
 
     if (!con_exists(con)) {
         DLOG("The container has been closed in the meantime.\n");
@@ -625,12 +623,10 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
 struct resize_window_callback_params {
     const border_t corner;
     const bool proportional;
-    const xcb_button_press_event_t *event;
 };
 
 DRAGGING_CB(resize_window_callback) {
     const struct resize_window_callback_params *params = extra;
-    const xcb_button_press_event_t *event = params->event;
     border_t corner = params->corner;
 
     int32_t dest_x = con->rect.x;
@@ -706,12 +702,12 @@ void floating_resize_window(Con *con, const bool proportional,
         cursor = (corner & BORDER_LEFT) ? XCURSOR_CURSOR_BOTTOM_LEFT_CORNER : XCURSOR_CURSOR_BOTTOM_RIGHT_CORNER;
     }
 
-    struct resize_window_callback_params params = {corner, proportional, event};
+    struct resize_window_callback_params params = {corner, proportional};
 
     /* get the initial rect in case of revert/cancel */
     Rect initial_rect = con->rect;
 
-    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, cursor, resize_window_callback, &params);
+    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, cursor, false, resize_window_callback, &params);
 
     if (!con_exists(con)) {
         DLOG("The container has been closed in the meantime.\n");
