@@ -44,11 +44,26 @@ sub focus_subtest {
     is($events[0]->{container}->{name}, $name, "$name focused");
 }
 
+sub kill_subtest {
+    my ($cmd, $name) = @_;
+
+    my $focus = AnyEvent->condvar;
+
+    my @events = events_for(
+	sub { cmd $cmd },
+	'window');
+
+    is(scalar @events, 1, 'Received 1 event');
+    is($events[0]->{change}, 'close', 'Close event received');
+    is($events[0]->{container}->{name}, $name, "$name closed");
+}
+
 subtest 'focus left (1)', \&focus_subtest, 'focus left', $win1->name;
 subtest 'focus left (2)', \&focus_subtest, 'focus left', $win0->name;
 subtest 'focus right (1)', \&focus_subtest, 'focus right', $win1->name;
 subtest 'focus right (2)', \&focus_subtest, 'focus right', $win2->name;
 subtest 'focus right (3)', \&focus_subtest, 'focus right', $win0->name;
 subtest 'focus left', \&focus_subtest, 'focus left', $win2->name;
+subtest 'kill doesn\'t produce focus event', \&kill_subtest, '[id=' . $win1->id . '] kill', $win1->name;
 
 done_testing;

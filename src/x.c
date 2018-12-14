@@ -276,7 +276,12 @@ static void _x_con_kill(Con *con) {
     free(state);
 
     /* Invalidate focused_id to correctly focus new windows with the same ID */
-    focused_id = last_focused = XCB_NONE;
+    if (con->frame.id == focused_id) {
+        focused_id = XCB_NONE;
+    }
+    if (con->frame.id == last_focused) {
+        last_focused = XCB_NONE;
+    }
 }
 
 /*
