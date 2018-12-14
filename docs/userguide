@@ -2416,8 +2416,9 @@ this mark or add it otherwise. Note that you may need to use this in
 combination with +--add+ (see below) as any other marks will otherwise be
 removed.
 
-By default, a window can only have one mark. You can use the +--add+ flag to
-put more than one mark on a window.
+The +--replace+ flag causes i3 to remove any existing marks, which is also the
+default behavior. You can use the +--add+ flag to put more than one mark on a
+window.
 
 Refer to <<show_marks>> if you don't want marks to be shown in the window decoration.
 
