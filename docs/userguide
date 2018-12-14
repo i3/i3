@@ -2428,6 +2428,21 @@ mark [--add|--replace] [--toggle] <identifier>
 unmark <identifier>
 ----------------------------------------------
 
+You can use +i3-input+ to prompt for a mark name, then use the +mark+
+and +focus+ commands to create and jump to custom marks:
+
+*Examples*:
+---------------------------------------
+# read 1 character and mark the current window with this character
+bindsym $mod+m exec i3-input -F 'mark %s' -l 1 -P 'Mark: '
+
+# read 1 character and go to the window with the character
+bindsym $mod+g exec i3-input -F '[con_mark="%s"] focus' -l 1 -P 'Goto: '
+---------------------------------------
+
+Alternatively, if you do not want to mess with +i3-input+, you could create
+separate bindings for a specific set of labels and then only use those labels:
+
 *Example (in a terminal)*:
 ---------------------------------------------------------
 # marks the focused container
@@ -2442,21 +2457,6 @@ unmark irssi
 # remove all marks on all firefox windows
 [class="(?i)firefox"] unmark
 ---------------------------------------------------------
-
-///////////////////////////////////////////////////////////////////
-TODO: make i3-input replace %s
-*Examples*:
----------------------------------------
-# Read 1 character and mark the current window with this character
-bindsym $mod+m exec i3-input -F 'mark %s' -l 1 -P 'Mark: '
-
-# Read 1 character and go to the window with the character
-bindsym $mod+g exec i3-input -F '[con_mark="%s"] focus' -l 1 -P 'Goto: '
----------------------------------------
-
-Alternatively, if you do not want to mess with +i3-input+, you could create
-separate bindings for a specific set of labels and then only use those labels.
-///////////////////////////////////////////////////////////////////
 
 [[pango_markup]]
 === Window title format
