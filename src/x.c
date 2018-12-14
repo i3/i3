@@ -1325,6 +1325,7 @@ void x_push_changes(Con *con) {
         change_ewmh_focus(XCB_WINDOW_NONE, last_focused);
 
         focused_id = ewmh_window;
+        last_focused = XCB_NONE;
     }
 
     xcb_flush(conn);
