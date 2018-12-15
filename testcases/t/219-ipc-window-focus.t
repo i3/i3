@@ -14,14 +14,20 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 
-use i3test;
+use i3test i3_config => <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+# fake-1 under fake-0 to not interfere with left/right wraping
+fake-outputs 1024x768+0+0,1024x768+0+1024
+workspace X output fake-1
+EOT
 
 ################################
 # Window focus event
 ################################
 
-cmd 'split h';
-
+my $ws = fresh_workspace(output => 0);
 my $win0 = open_window;
 my $win1 = open_window;
 my $win2 = open_window;
@@ -44,11 +50,52 @@ sub focus_subtest {
     is($events[0]->{container}->{name}, $name, "$name focused");
 }
 
+sub kill_subtest {
+    my ($cmd, $name) = @_;
+
+    my $focus = AnyEvent->condvar;
+
+    my @events = events_for(
+	sub { cmd $cmd },
+	'window');
+
+    is(scalar @events, 1, 'Received 1 event');
+    is($events[0]->{change}, 'close', 'Close event received');
+    is($events[0]->{container}->{name}, $name, "$name closed");
+}
+
 subtest 'focus left (1)', \&focus_subtest, 'focus left', $win1->name;
 subtest 'focus left (2)', \&focus_subtest, 'focus left', $win0->name;
 subtest 'focus right (1)', \&focus_subtest, 'focus right', $win1->name;
 subtest 'focus right (2)', \&focus_subtest, 'focus right', $win2->name;
 subtest 'focus right (3)', \&focus_subtest, 'focus right', $win0->name;
 subtest 'focus left', \&focus_subtest, 'focus left', $win2->name;
+subtest 'kill doesn\'t produce focus event', \&kill_subtest, '[id=' . $win1->id . '] kill', $win1->name;
+
+# See issue #3562. We need to switch to an existing workspace on the second
+# output to trigger the bug.
+cmd 'workspace X';
+subtest 'workspace focus', \&focus_subtest, "workspace $ws", $win2->name;
+
+sub scratchpad_subtest {
+    my ($cmd, $name) = @_;
+
+    my $focus = AnyEvent->condvar;
+
+    my @events = events_for(
+	sub { cmd $cmd },
+	'window');
+
+    is(scalar @events, 2, 'Received 2 events');
+    is($events[0]->{change}, 'move', 'Move event received');
+    is($events[0]->{container}->{nodes}->[0]->{name}, $name, "$name moved");
+    is($events[1]->{change}, 'focus', 'Focus event received');
+    is($events[1]->{container}->{name}, $name, "$name focused");
+}
+
+fresh_workspace;
+my $win = open_window;
+cmd 'move scratchpad';
+subtest 'scratchpad', \&scratchpad_subtest, '[id=' . $win->id . '] scratchpad show', $win->name;
 
 done_testing;
