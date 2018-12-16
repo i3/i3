@@ -907,8 +907,7 @@ bool floating_reposition(Con *con, Rect newrect) {
 
     /* Workspace change will already result in a tree_render. */
     if (!reassigned) {
-        render_con(con, false);
-        x_push_node(con);
+        tree_render();
     }
     return true;
 }
