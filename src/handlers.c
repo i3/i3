@@ -981,8 +981,7 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
         Con *floating = con_inside_floating(con);
         if (floating) {
             floating_check_size(con, false);
-            render_con(con);
-            x_push_changes(croot);
+            tree_render();
         }
     }
 
