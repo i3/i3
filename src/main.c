@@ -515,7 +515,7 @@ int main(int argc, char *argv[]) {
 
     conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn))
-        errx(EXIT_FAILURE, "Cannot open display\n");
+        errx(EXIT_FAILURE, "Cannot open display");
 
     sndisplay = sn_xcb_display_new(conn, NULL, NULL);
 

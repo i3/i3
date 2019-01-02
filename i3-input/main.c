@@ -435,7 +435,7 @@ int main(int argc, char *argv[]) {
     int screen;
     conn = xcb_connect(NULL, &screen);
     if (!conn || xcb_connection_has_error(conn))
-        die("Cannot open display\n");
+        die("Cannot open display");
 
     sockfd = ipc_connect(socket_path);
 

@@ -115,7 +115,7 @@ void restore_connect(void) {
 #ifdef I3_ASAN_ENABLED
         __lsan_do_leak_check();
 #endif
-        errx(EXIT_FAILURE, "Cannot open display\n");
+        errx(EXIT_FAILURE, "Cannot open display");
     }
 
     xcb_watcher = scalloc(1, sizeof(struct ev_io));
