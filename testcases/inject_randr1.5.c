@@ -402,7 +402,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (optind >= argc) {
-        errx(EXIT_FAILURE, "syntax: %s [options] <command>\n", argv[0]);
+        errx(EXIT_FAILURE, "syntax: %s [options] <command>", argv[0]);
     }
 
     int fd = socket(AF_LOCAL, SOCK_STREAM, 0);
