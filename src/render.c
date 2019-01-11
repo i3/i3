@@ -214,7 +214,7 @@ static void render_root(Con *con, Con *fullscreen) {
                  * fullscreen work correctly (ticket #564). Exception to the
                  * above rule: smart popup_during_fullscreen handling (popups
                  * belonging to the fullscreen app will be rendered). */
-                if (config.popup_during_fullscreen != PDF_SMART) {
+                if (config.popup_during_fullscreen != PDF_SMART || fullscreen->window == NULL) {
                     continue;
                 }
 
