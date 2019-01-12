@@ -35,7 +35,8 @@ typedef struct ipc_client {
      * event has been sent by i3. */
     bool first_tick_sent;
 
-    struct ev_io *callback;
+    struct ev_io *read_callback;
+    struct ev_io *write_callback;
     struct ev_timer *timeout;
     uint8_t *buffer;
     size_t buffer_size;
@@ -54,12 +55,12 @@ typedef struct ipc_client {
  * message_type is the type of the message as the sender specified it.
  *
  */
-typedef void (*handler_t)(int, uint8_t *, int, uint32_t, uint32_t);
+typedef void (*handler_t)(ipc_client *, uint8_t *, int, uint32_t, uint32_t);
 
 /* Macro to declare a callback */
-#define IPC_HANDLER(name)                                      \
-    static void handle_##name(int fd, uint8_t *message,        \
-                              int size, uint32_t message_size, \
+#define IPC_HANDLER(name)                                           \
+    static void handle_##name(ipc_client *client, uint8_t *message, \
+                              int size, uint32_t message_size,      \
                               uint32_t message_type)
 
 /**
