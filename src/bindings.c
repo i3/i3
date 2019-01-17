@@ -621,7 +621,7 @@ void switch_mode(const char *new_mode) {
     DLOG("Switching to mode %s\n", new_mode);
 
     SLIST_FOREACH(mode, &modes, modes) {
-        if (strcasecmp(mode->name, new_mode) != 0)
+        if (strcmp(mode->name, new_mode) != 0)
             continue;
 
         ungrab_all_keys(conn);
