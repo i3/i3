@@ -122,7 +122,7 @@ CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *ke
 }
 
 CFGFUN(enter_mode, const char *pango_markup, const char *modename) {
-    if (strcasecmp(modename, DEFAULT_BINDING_MODE) == 0) {
+    if (strcmp(modename, DEFAULT_BINDING_MODE) == 0) {
         ELOG("You cannot use the name %s for your mode\n", DEFAULT_BINDING_MODE);
         return;
     }
