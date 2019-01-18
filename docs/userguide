@@ -603,6 +603,9 @@ This option determines which border style new windows will have. The default is
 +normal+. Note that default_floating_border applies only to windows which are starting out as
 floating windows, e.g., dialog windows, but not windows that are floated later on.
 
+Setting border style to +pixel+ eliminates title bars. The border style +normal+ allows you to
+adjust edge border width while keeping your title bar.
+
 *Syntax*:
 ---------------------------------------------
 default_border normal|none|pixel
