@@ -986,7 +986,7 @@ bool workspace_move_to_output(Con *ws, Output *output) {
         LOG("Creating a new workspace to replace \"%s\" (last on its output).\n", ws->name);
 
         /* check if we can find a workspace assigned to this output */
-        bool used_assignment = false;
+        Con* new_workspace = NULL;
         struct Workspace_Assignment *assignment;
         TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
             if (!output_triggers_assignment(current_output, assignment)) {
@@ -999,18 +999,17 @@ bool workspace_move_to_output(Con *ws, Output *output) {
 
             /* so create the workspace referenced to by this assignment */
             LOG("Creating workspace from assignment %s.\n", assignment->name);
-            workspace_get(assignment->name, NULL);
-            used_assignment = true;
+            new_workspace = workspace_get(assignment->name, NULL);
             break;
         }
 
         /* if we couldn't create the workspace using an assignment, create
          * it on the output */
-        if (!used_assignment)
-            create_workspace_on_output(current_output, ws->parent);
+        if (new_workspace == NULL)
+            new_workspace = create_workspace_on_output(current_output, ws->parent);
 
         /* notify the IPC listeners */
-        ipc_send_workspace_event("init", ws, NULL);
+        ipc_send_workspace_event("init", new_workspace, NULL);
     }
     DLOG("Detaching\n");
 
