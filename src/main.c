@@ -161,13 +161,6 @@ void main_set_x11_cb(bool enable) {
  *
  */
 static void i3_exit(void) {
-/* We need ev >= 4 for the following code. Since it is not *that* important (it
- * only makes sure that there are no i3-nagbar instances left behind) we still
- * support old systems with libev 3. */
-#if EV_VERSION_MAJOR >= 4
-    ev_loop_destroy(main_loop);
-#endif
-
     if (*shmlogname != '\0') {
         fprintf(stderr, "Closing SHM log \"%s\"\n", shmlogname);
         fflush(stderr);
@@ -175,6 +168,18 @@ static void i3_exit(void) {
     }
     ipc_shutdown(SHUTDOWN_REASON_EXIT);
     unlink(config.ipc_socket_path);
+    xcb_disconnect(conn);
+
+/* We need ev >= 4 for the following code. Since it is not *that* important (it
+ * only makes sure that there are no i3-nagbar instances left behind) we still
+ * support old systems with libev 3. */
+#if EV_VERSION_MAJOR >= 4
+    ev_loop_destroy(main_loop);
+#endif
+
+#ifdef I3_ASAN_ENABLED
+    __lsan_do_leak_check();
+#endif
 }
 
 /*
