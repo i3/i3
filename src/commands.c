@@ -13,10 +13,6 @@
 #include <float.h>
 #include <stdarg.h>
 
-#ifdef I3_ASAN_ENABLED
-#include <sanitizer/lsan_interface.h>
-#endif
-
 #include "shmlog.h"
 
 // Macros to make the YAJL API a bit easier to use.
@@ -1567,12 +1563,6 @@ void cmd_layout_toggle(I3_CMD, const char *toggle_mode) {
  */
 void cmd_exit(I3_CMD) {
     LOG("Exiting due to user command.\n");
-#ifdef I3_ASAN_ENABLED
-    __lsan_do_leak_check();
-#endif
-    ipc_shutdown(SHUTDOWN_REASON_EXIT);
-    unlink(config.ipc_socket_path);
-    xcb_disconnect(conn);
     exit(0);
 
     /* unreached */
