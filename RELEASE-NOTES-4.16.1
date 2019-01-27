@@ -1,0 +1,35 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.16.1 │
+ └──────────────────────────────┘
+
+This is i3 v4.16.1. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+This is a bugfix release for v4.16.
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • Truncate wm_name utf8 strings to first zero byte
+    (fixes window title corruption)
+  • Apply title_align to non-leaf containers
+    Additionally, marks will now display for non-leaf containers.
+  • attach_to_workspace: set new parent before tree_render
+    (fixes a heap-use-after-free)
+  • Use ipc queue for all messages
+    (fixes an i3bar crash)
+  • Fix crash with popups when fullscreen is non-leaf
+  • Fix: render_con shows floating containers on wrong workspace
+
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  Orestis Floros
+
+-- Michael Stapelberg, 2019-01-27
