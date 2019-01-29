@@ -226,7 +226,7 @@ $(asciidoc_MANS): man/%.1: man/%.xml man/$(dirstamp)
 	$(AM_V_GEN) out='$@'; @PATH_XMLTO@ man -o "$${out%/*}" $<
 	@stamp='$@'; $(MKDIR_P) "$${stamp%/*}"
 
-man/%.xml: man/%.man man/asciidoc.conf man/$(dirstamp)
+man/.xml man/.man: man/asciidoc.conf man/$(dirstamp)
 	$(AM_V_GEN) @PATH_ASCIIDOC@ -d manpage -b docbook -f $(top_builddir)/man/asciidoc.conf -o $@ $<
 
 $(pod_MANS): man/%.1: % man/$(dirstamp)
