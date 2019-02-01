@@ -681,9 +681,11 @@ responded to.
 
 To get informed when certain things happen in i3, clients can subscribe to
 events. Events consist of a name (like "workspace") and an event reply type
-(like I3_IPC_EVENT_WORKSPACE). The events sent by i3 are in the same format
-as replies to specific commands. However, the highest bit of the message type
-is set to 1 to indicate that this is an event reply instead of a normal reply.
+(like I3_IPC_EVENT_WORKSPACE). Events sent by i3 follow a format similar to
+replies but with the highest bit of the message type set to 1 to indicate an
+event reply instead of a normal reply. Note that event types and reply types
+do not follow the same enumeration scheme (e.g. event type 0 corresponds to the
+workspace event however reply type 0 corresponds to the COMMAND reply).
 
 Caveat: As soon as you subscribe to an event, it is not guaranteed any longer
 that the requests to i3 are processed in order. This means, the following
