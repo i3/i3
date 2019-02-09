@@ -90,6 +90,15 @@ See the -m option for continuous monitoring.
 i3-msg is a sample implementation for a client using the unix socket IPC
 interface to i3.
 
+=== Exit status:
+
+0:
+if OK,
+1:
+if invalid syntax or unable to connect to ipc-socket
+2:
+if i3 returned an error processing your command(s)
+
 == EXAMPLES
 
 ------------------------------------------------

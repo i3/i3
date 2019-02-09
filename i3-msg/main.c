@@ -67,6 +67,7 @@ typedef struct reply_t {
     char *errorposition;
 } reply_t;
 
+static int exit_code = 0;
 static reply_t last_reply;
 
 static int reply_boolean_cb(void *params, int val) {
@@ -100,6 +101,7 @@ static int reply_end_map_cb(void *params) {
             fprintf(stderr, "ERROR:               %s\n", last_reply.errorposition);
         }
         fprintf(stderr, "ERROR: %s\n", last_reply.error);
+        exit_code = 2;
     }
     return 1;
 }
@@ -326,5 +328,5 @@ int main(int argc, char *argv[]) {
 
     close(sockfd);
 
-    return 0;
+    return exit_code;
 }
