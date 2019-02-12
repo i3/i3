@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
         if (root_atom_contents("I3_CONFIG_PATH", conn, screen) != NULL) {
-            fprintf(stderr, "i3-dump-log: ERROR: i3 is running, but SHM logging is not enabled. Enabling SHM log until cancelled\n\n");
+            fprintf(stderr, "i3-dump-log: i3 is running, but SHM logging is not enabled. Enabling SHM log now while i3-dump-log is running\n\n");
             ipcfd = ipc_connect(NULL);
             const char *enablecmd = "debuglog on; shmlog 5242880";
             if (ipc_send_message(ipcfd, strlen(enablecmd),
