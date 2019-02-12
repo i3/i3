@@ -31,7 +31,7 @@ run [ 'i3-dump-log' ],
     '>', \$stdout,
     '2>', \$stderr;
 
-like($stderr, qr#^i3-dump-log: ERROR: i3 is running, but SHM logging is not enabled\.#,
+like($stderr, qr#^i3-dump-log: i3 is running, but SHM logging is not enabled\.#,
     'shm logging not enabled');
 
 ################################################################################
@@ -73,7 +73,7 @@ run [ 'i3-dump-log' ],
     '>', \$stdout,
     '2>', \$stderr;
 
-like($stderr, qr#^i3-dump-log: ERROR: i3 is running, but SHM logging is not enabled\.#,
+like($stderr, qr#^i3-dump-log: i3 is running, but SHM logging is not enabled\.#,
     'shm logging not enabled');
 
 done_testing;
