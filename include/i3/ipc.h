@@ -71,6 +71,7 @@ typedef struct i3_ipc_header {
  *
  */
 #define I3_IPC_REPLY_TYPE_COMMAND 0
+#define I3_IPC_MESSAGE_TYPE_RUN_COMMAND 0
 #define I3_IPC_REPLY_TYPE_WORKSPACES 1
 #define I3_IPC_REPLY_TYPE_SUBSCRIBE 2
 #define I3_IPC_REPLY_TYPE_OUTPUTS 3

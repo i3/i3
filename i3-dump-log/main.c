@@ -50,7 +50,7 @@ static void sighandler(int signal) {
 static void disable_shmlog(void) {
     const char *disablecmd = "debuglog off; shmlog off";
     if (ipc_send_message(ipcfd, strlen(disablecmd),
-                         I3_IPC_MESSAGE_TYPE_COMMAND, (uint8_t *)disablecmd) != 0)
+                         I3_IPC_MESSAGE_TYPE_RUN_COMMAND, (uint8_t *)disablecmd) != 0)
         err(EXIT_FAILURE, "IPC send");
 
     /* Ensure the command was sent by waiting for the reply: */
@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
             ipcfd = ipc_connect(NULL);
             const char *enablecmd = "debuglog on; shmlog 5242880";
             if (ipc_send_message(ipcfd, strlen(enablecmd),
-                                 I3_IPC_MESSAGE_TYPE_COMMAND, (uint8_t *)enablecmd) != 0)
+                                 I3_IPC_MESSAGE_TYPE_RUN_COMMAND, (uint8_t *)enablecmd) != 0)
                 err(EXIT_FAILURE, "IPC send");
             /* By the time we receive a reply, I3_SHMLOG_PATH is set: */
             uint32_t reply_length = 0;
