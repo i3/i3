@@ -137,6 +137,12 @@ TICK (10)::
 The reply consists of a list of serialized maps for each command that was
 parsed. Each has the property +success (bool)+ and may also include a
 human-readable error message in the property +error (string)+.
+Note that when you send multiple commands, separated by semicolon,
+commands are parsed and executed one by one.
+This means that commands like +restart+ and +exit+ are special cases
+because after reading them, i3 will restart/shutdown and close sockets.
+Therefore, you should NOT try to read +success (bool)+ or +error (string)+
+status for them.
 
 *Example:*
 -------------------
