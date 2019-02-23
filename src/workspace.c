@@ -289,6 +289,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
     ws->workspace_layout = config.default_layout;
     _workspace_apply_default_orientation(ws);
 
+    ipc_send_workspace_event("init", ws, NULL);
     return ws;
 }
 
@@ -1004,13 +1005,11 @@ bool workspace_move_to_output(Con *ws, Output *output) {
             break;
         }
 
-        /* if we couldn't create the workspace using an assignment, create
-         * it on the output */
+        /* if we couldn't create the workspace using an assignment, create it on
+         * the output. Workspace init IPC events are sent either by
+         * workspace_get or create_workspace_on_output. */
         if (!used_assignment)
             create_workspace_on_output(current_output, ws->parent);
-
-        /* notify the IPC listeners */
-        ipc_send_workspace_event("init", ws, NULL);
     }
     DLOG("Detaching\n");
 

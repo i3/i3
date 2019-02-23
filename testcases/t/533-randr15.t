@@ -130,10 +130,16 @@ $tree = i3->get_tree->recv;
 is_deeply(\@outputs, [ '__i3', 'default' ], 'outputs are __i3 and default');
 
 SKIP: {
-    skip 'xrandr --setmonitor failed (xrandr too old?)', 1 unless
-        system(q|xrandr --setmonitor up2414q 3840/527x2160/296+1280+0 none|) == 0;
+    my @events = events_for(
+        sub {
+            skip 'xrandr --setmonitor failed (xrandr too old?)', 1
+              unless system(q|xrandr --setmonitor up2414q 3840/527x2160/296+1280+0 none|) == 0;
+        },
+        "workspace");
 
-    sync_with_i3;
+    my @init = grep { $_->{change} eq 'init' } @events;
+    is(scalar @init, 1, 'Received 1 workspace::init event');
+    is($init[0]->{current}->{output}, 'up2414q', 'Workspace initialized in up2414q');
 
     $tree = i3->get_tree->recv;
     @outputs = map { $_->{name} } @{$tree->{nodes}};
