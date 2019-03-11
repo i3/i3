@@ -481,6 +481,7 @@ static void cmd_resize_floating(I3_CMD, const char *way, const char *direction_s
     if (floating_con->scratchpad_state == SCRATCHPAD_FRESH) {
         floating_con->scratchpad_state = SCRATCHPAD_CHANGED;
     }
+    ipc_send_window_event("resize", floating_con);
 }
 
 static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *direction, int px, int ppt) {
@@ -567,7 +568,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *dir
         child->percent -= subtract_percent;
         LOG("child->percent after (%p) = %f\n", child, child->percent);
     }
-
+    ipc_send_window_event("resize", current);
     return true;
 }
 

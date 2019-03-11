@@ -145,6 +145,7 @@ bool resize_neighboring_cons(Con *first, Con *second, int px, int ppt) {
     first->percent = new_first_percent;
     second->percent = new_second_percent;
     con_fix_percent(parent);
+    ipc_send_window_event("resize", first);
     return true;
 }
 
