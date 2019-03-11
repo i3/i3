@@ -950,6 +950,7 @@ C::
 	* i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
 	* https://github.com/acrisci/i3ipc-glib
 C++::
+	* https://github.com/Iskustvo/i3-ipcpp[i3-ipc++]
 	* https://github.com/drmgc/i3ipcpp
 Go::
 	* https://github.com/mdirkse/i3ipc-go
