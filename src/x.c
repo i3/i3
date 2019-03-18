@@ -265,9 +265,11 @@ static void _x_con_kill(Con *con) {
         xcb_free_colormap(conn, con->colormap);
     }
 
-    draw_util_surface_free(conn, &(con->frame));
     draw_util_surface_free(conn, &(con->frame_buffer));
     xcb_free_pixmap(conn, con->frame_buffer.id);
+    con->frame_buffer.id = XCB_NONE;
+
+    draw_util_surface_free(conn, &(con->frame));
     state = state_for_frame(con->frame.id);
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_REMOVE(&old_state_head, state, old_state);
