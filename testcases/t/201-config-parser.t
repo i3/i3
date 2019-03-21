@@ -400,12 +400,18 @@ $config = <<'EOT';
 workspace 3 output VGA-1
 workspace "4: output" output VGA-2
 workspace bleh output LVDS1/I_1
+# See #3646
+workspace foo output a b c "a b c"
 EOT
 
 $expected = <<'EOT';
 cfg_workspace(3, VGA-1)
 cfg_workspace(4: output, VGA-2)
 cfg_workspace(bleh, LVDS1/I_1)
+cfg_workspace(foo, a)
+cfg_workspace((null), b)
+cfg_workspace((null), c)
+cfg_workspace((null), a b c)
 EOT
 
 is(parser_calls($config),
