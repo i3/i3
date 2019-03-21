@@ -101,6 +101,7 @@ PKG_CHECK_MODULES([XKBCOMMON], [xkbcommon xkbcommon-x11])
 PKG_CHECK_MODULES([YAJL], [yajl])
 PKG_CHECK_MODULES([LIBPCRE], [libpcre >= 8.10])
 PKG_CHECK_MODULES([PANGOCAIRO], [cairo >= 1.14.4 pangocairo])
+PKG_CHECK_MODULES([GLIBGOBJECT], [glib-2.0 gobject-2.0])
 
 # Checks for programs.
 AC_PROG_AWK

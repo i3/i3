@@ -277,6 +277,7 @@ i3_LDADD = \
 
 libi3_CFLAGS = \
 	$(AM_CFLAGS) \
+	$(GLIBGOBJECT_CFLAGS) \
 	$(XCB_CFLAGS) \
 	$(XCB_UTIL_CFLAGS) \
 	$(XCB_UTIL_XRM_CFLAGS) \
@@ -285,6 +286,7 @@ libi3_CFLAGS = \
 
 libi3_LIBS = \
 	$(top_builddir)/libi3.a \
+	$(GLIBGOBJECT_LIBS) \
 	$(XCB_LIBS) \
 	$(XCB_UTIL_LIBS) \
 	$(XCB_UTIL_XRM_LIBS) \
