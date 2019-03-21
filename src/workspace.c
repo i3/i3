@@ -969,6 +969,11 @@ void workspace_move_to_output(Con *ws, Output *output) {
     Con *content = output_get_content(output->con);
     DLOG("got output %p with content %p\n", output, content);
 
+    if (ws->parent == content) {
+        DLOG("Nothing to do, workspace already there\n");
+        return;
+    }
+
     Con *previously_visible_ws = TAILQ_FIRST(&(content->focus_head));
     if (previously_visible_ws) {
         DLOG("Previously visible workspace = %p / %s\n", previously_visible_ws, previously_visible_ws->name);
