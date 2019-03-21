@@ -1400,8 +1400,6 @@ void con_move_to_output(Con *con, Output *output, bool fix_coordinates) {
  */
 bool con_move_to_output_name(Con *con, const char *name, bool fix_coordinates) {
     Output *current_output = get_output_for_con(con);
-    assert(current_output != NULL);
-
     Output *output = get_output_from_string(current_output, name);
     if (output == NULL) {
         ELOG("Could not find output \"%s\"\n", name);

@@ -218,7 +218,6 @@ Con *workspace_encapsulate(Con *ws);
 
 /**
  * Move the given workspace to the specified output.
- * This returns true if and only if moving the workspace was successful.
  *
  */
-bool workspace_move_to_output(Con *ws, Output *output);
+void workspace_move_to_output(Con *ws, Output *output);

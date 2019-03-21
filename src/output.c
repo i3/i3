@@ -54,16 +54,8 @@ char *output_primary_name(Output *output) {
 
 Output *get_output_for_con(Con *con) {
     Con *output_con = con_get_output(con);
-    if (output_con == NULL) {
-        ELOG("Could not get the output container for con = %p.\n", con);
-        return NULL;
-    }
-
     Output *output = get_output_by_name(output_con->name, true);
-    if (output == NULL) {
-        ELOG("Could not get output from name \"%s\".\n", output_con->name);
-        return NULL;
-    }
+    assert(output != NULL);
 
     return output;
 }

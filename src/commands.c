@@ -1114,22 +1114,13 @@ void cmd_move_workspace_to_output(I3_CMD, const char *name) {
         }
 
         Output *current_output = get_output_for_con(ws);
-        if (current_output == NULL) {
-            yerror("Cannot get current output. This is a bug in i3.");
-            return;
-        }
-
         Output *target_output = get_output_from_string(current_output, name);
         if (!target_output) {
             yerror("Could not get output from string \"%s\"", name);
             return;
         }
 
-        bool success = workspace_move_to_output(ws, target_output);
-        if (!success) {
-            yerror("Failed to move workspace to output.");
-            return;
-        }
+        workspace_move_to_output(ws, target_output);
     }
 
     cmd_output->needs_tree_render = true;

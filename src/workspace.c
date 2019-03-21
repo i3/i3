@@ -961,17 +961,11 @@ Con *workspace_encapsulate(Con *ws) {
 
 /*
  * Move the given workspace to the specified output.
- * This returns true if and only if moving the workspace was successful.
  */
-bool workspace_move_to_output(Con *ws, Output *output) {
+void workspace_move_to_output(Con *ws, Output *output) {
     DLOG("Moving workspace %p / %s to output %p / \"%s\".\n", ws, ws->name, output, output_primary_name(output));
 
     Output *current_output = get_output_for_con(ws);
-    if (current_output == NULL) {
-        ELOG("Cannot get current output. This is a bug in i3.\n");
-        return false;
-    }
-
     Con *content = output_get_content(output->con);
     DLOG("got output %p with content %p\n", output, content);
 
@@ -1039,7 +1033,7 @@ bool workspace_move_to_output(Con *ws, Output *output) {
     }
 
     if (!previously_visible_ws) {
-        return true;
+        return;
     }
 
     /* NB: We cannot simply work with previously_visible_ws since it might have
@@ -1058,6 +1052,4 @@ bool workspace_move_to_output(Con *ws, Output *output) {
         CALL(previously_visible_ws, on_remove_child);
         break;
     }
-
-    return true;
 }
