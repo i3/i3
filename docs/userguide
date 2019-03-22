@@ -680,7 +680,8 @@ for_window [class="urxvt"] border pixel 1
 for_window [title="x200: ~/work"] floating enable
 ------------------------------------------------
 
-The valid criteria are the same as those for commands, see <<command_criteria>>.
+The valid criteria are the same as those for commands, see <<command_criteria>>. Only config
+directives with a command equivalent can be executed at runtime, see <<list_of_commands>>.
 
 [[no_focus]]
 === Don't focus window upon opening
@@ -1845,6 +1846,9 @@ tiling::
 The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
 information on how to use them.
+
+Note that config directives listed under <<configuring>> cannot be changed at runtime 
+unless they happen to have a command equivalent.
 
 [[exec]]
 === Executing applications (exec)
