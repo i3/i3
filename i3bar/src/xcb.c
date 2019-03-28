@@ -521,15 +521,16 @@ static void handle_button(xcb_button_press_event_t *event) {
                 if (i3string_get_num_bytes(text) == 0)
                     continue;
 
+                const uint32_t full_render_width = render->width + render->x_offset + render->x_append;
                 const int relative_x = statusline_x - last_block_x;
-                if (relative_x >= 0 && (uint32_t)relative_x <= render->width) {
+                if (relative_x >= 0 && (uint32_t)relative_x <= full_render_width) {
                     send_block_clicked(event->detail, block->name, block->instance,
-                                       event->root_x, event->root_y, relative_x, event->event_y, render->width, bar_height,
+                                       event->root_x, event->root_y, relative_x, event->event_y, full_render_width, bar_height,
                                        event->state);
                     return;
                 }
 
-                last_block_x += render->width + render->x_append + render->x_offset + block->sep_block_width;
+                last_block_x += full_render_width + block->sep_block_width;
             }
         }
     }
