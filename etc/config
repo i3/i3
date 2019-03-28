@@ -187,7 +187,8 @@ bar {
 # keysym-based config which used their favorite modifier (alt or windows)
 #
 # i3-config-wizard will not launch if there already is a config file
-# in ~/.i3/config.
+# in ~/.config/i3/config (or $XDG_CONFIG_HOME/i3/config if set) or
+# ~/.i3/config.
 #
 # Please remove the following exec line:
 #######################################################################
