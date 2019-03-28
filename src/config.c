@@ -69,6 +69,9 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
 /*
  * (Re-)loads the configuration file (sets useful defaults before).
  *
+ * If you specify override_configpath, only this path is used to look for a
+ * configuration file.
+ *
  */
 void load_configuration(xcb_connection_t *conn, const char *override_configpath, bool reload) {
     if (reload) {

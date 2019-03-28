@@ -415,7 +415,7 @@ struct tray_output_t {
 bool parse_configuration(const char *override_configpath, bool use_nagbar);
 
 /**
- * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
+ * (Re-)loads the configuration file (sets useful defaults before).
  *
  * If you specify override_configpath, only this path is used to look for a
  * configuration file.
@@ -435,14 +435,3 @@ void ungrab_all_keys(xcb_connection_t *conn);
  *
  */
 void update_barconfig(void);
-
-/**
- * Kills the configerror i3-nagbar process, if any.
- *
- * Called when reloading/restarting.
- *
- * If wait_for_it is set (restarting), this function will waitpid(), otherwise,
- * ev is assumed to handle it (reloading).
- *
- */
-void kill_configerror_nagbar(bool wait_for_it);
