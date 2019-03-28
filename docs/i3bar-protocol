@@ -221,7 +221,8 @@ An example of a block which uses all possible entries follows:
  "name": "ethernet",
  "instance": "eth0",
  "separator": true,
- "separator_block_width": 9
+ "separator_block_width": 9,
+ "markup": "none"
 }
 ------------------------------------------
 
