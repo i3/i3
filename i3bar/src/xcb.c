@@ -454,6 +454,61 @@ static bool execute_custom_command(xcb_keycode_t input_code, bool event_is_relea
     return false;
 }
 
+static void child_handle_button(xcb_button_press_event_t *event, i3_output *output, int32_t x) {
+    if (!child_want_click_events()) {
+        return;
+    }
+
+    const int tray_width = get_tray_width(output->trayclients);
+    /* Calculate the horizontal coordinate (x) of the start of the statusline by
+     * subtracting its width and the width of the tray from the bar width. */
+    const int offset = output->rect.w - output->statusline_width - tray_width - logical_px((tray_width > 0) * sb_hoff_px);
+    /* x of the click event relative to the start of the statusline. */
+    const uint32_t statusline_x = x - offset;
+
+    if (x < offset || statusline_x > (uint32_t)output->statusline_width) {
+        return;
+    }
+
+    /* x of the start of the current block relative to the statusline. */
+    uint32_t last_block_x = 0;
+    struct status_block *block;
+    TAILQ_FOREACH(block, &statusline_head, blocks) {
+        i3String *text;
+        struct status_block_render_desc *render;
+        if (output->statusline_short_text && block->short_text != NULL) {
+            text = block->short_text;
+            render = &block->short_render;
+        } else {
+            text = block->full_text;
+            render = &block->full_render;
+        }
+
+        if (i3string_get_num_bytes(text) == 0) {
+            continue;
+        }
+
+        /* Include the whole block in our calculations: when min_width is
+         * specified, we have to take padding width into account. */
+        const uint32_t full_render_width = render->width + render->x_offset + render->x_append;
+        /* x of the click event relative to the current block. */
+        const uint32_t relative_x = statusline_x - last_block_x;
+        if (relative_x <= full_render_width) {
+            send_block_clicked(event->detail, block->name, block->instance,
+                               event->root_x, event->root_y, relative_x,
+                               event->event_y, full_render_width, bar_height,
+                               event->state);
+            return;
+        }
+
+        last_block_x += full_render_width + block->sep_block_width;
+        if (last_block_x > statusline_x) {
+            /* Click was on a separator. */
+            return;
+        }
+    }
+}
+
 /*
  * Handle a button press event (i.e. a mouse click on one of our bars).
  * We determine, whether the click occurred on a workspace button or if the scroll-
@@ -479,10 +534,6 @@ static void handle_button(xcb_button_press_event_t *event) {
 
     /* During button release events, only check for custom commands. */
     const bool event_is_release = (event->response_type & ~0x80) == XCB_BUTTON_RELEASE;
-    if (event_is_release) {
-        execute_custom_command(event->detail, event_is_release);
-        return;
-    }
 
     int32_t x = event->event_x >= 0 ? event->event_x : 0;
     int workspace_width = 0;
@@ -499,44 +550,18 @@ static void handle_button(xcb_button_press_event_t *event) {
             workspace_width += logical_px(ws_spacing_px);
     }
 
-    if (x > workspace_width && child_want_click_events()) {
-        /* If the child asked for click events,
-         * check if a status block has been clicked. */
-        int tray_width = get_tray_width(walk->trayclients);
-        int last_block_x = 0;
-        int offset = walk->rect.w - walk->statusline_width - tray_width - logical_px((tray_width > 0) * sb_hoff_px);
-        int32_t statusline_x = x - offset;
-
-        if (statusline_x >= 0 && statusline_x < walk->statusline_width) {
-            struct status_block *block;
-
-            TAILQ_FOREACH(block, &statusline_head, blocks) {
-                i3String *text = block->full_text;
-                struct status_block_render_desc *render = &block->full_render;
-                if (walk->statusline_short_text && block->short_text != NULL) {
-                    text = block->short_text;
-                    render = &block->short_render;
-                }
-
-                if (i3string_get_num_bytes(text) == 0)
-                    continue;
-
-                const int relative_x = statusline_x - last_block_x;
-                if (relative_x >= 0 && (uint32_t)relative_x <= render->width) {
-                    send_block_clicked(event->detail, block->name, block->instance,
-                                       event->root_x, event->root_y, relative_x, event->event_y, render->width, bar_height,
-                                       event->state);
-                    return;
-                }
-
-                last_block_x += render->width + render->x_append + render->x_offset + block->sep_block_width;
-            }
+    if (x > workspace_width) {
+        if (!event_is_release) {
+            child_handle_button(event, walk, x);
         }
+        /* Return to avoid executing any other actions when a separator is
+         * clicked. */
+        return;
     }
 
     /* If a custom command was specified for this mouse button, it overrides
      * the default behavior. */
-    if (execute_custom_command(event->detail, event_is_release)) {
+    if (execute_custom_command(event->detail, event_is_release) || event_is_release) {
         return;
     }
 
