@@ -586,7 +586,7 @@ int main(int argc, char *argv[]) {
 #include "atoms.xmacro"
 #undef xmacro
 
-    load_configuration(conn, override_configpath, false);
+    load_configuration(override_configpath, false);
 
     if (config.ipc_socket_path == NULL) {
         /* Fall back to a file name in /tmp/ based on the PID */

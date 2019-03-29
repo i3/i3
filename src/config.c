@@ -73,7 +73,7 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
  * configuration file.
  *
  */
-void load_configuration(xcb_connection_t *conn, const char *override_configpath, bool reload) {
+void load_configuration(const char *override_configpath, bool reload) {
     if (reload) {
         /* If we are currently in a binding mode, we first revert to the
          * default since we have no guarantee that the current mode will even

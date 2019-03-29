@@ -421,7 +421,7 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar);
  * configuration file.
  *
  */
-void load_configuration(xcb_connection_t *conn, const char *override_configfile, bool reload);
+void load_configuration(const char *override_configfile, bool reload);
 
 /**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
