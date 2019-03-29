@@ -39,6 +39,126 @@ void update_barconfig(void) {
     }
 }
 
+static void free_configuration(void) {
+    assert(conn != NULL);
+
+    /* If we are currently in a binding mode, we first revert to the default
+     * since we have no guarantee that the current mode will even still exist
+     * after parsing the config again. See #2228. */
+    switch_mode("default");
+
+    /* First ungrab the keys */
+    ungrab_all_keys(conn);
+
+    struct Mode *mode;
+    while (!SLIST_EMPTY(&modes)) {
+        mode = SLIST_FIRST(&modes);
+        FREE(mode->name);
+
+        /* Clear the old binding list */
+        while (!TAILQ_EMPTY(mode->bindings)) {
+            Binding *bind = TAILQ_FIRST(mode->bindings);
+            TAILQ_REMOVE(mode->bindings, bind, bindings);
+            binding_free(bind);
+        }
+        FREE(mode->bindings);
+
+        SLIST_REMOVE(&modes, mode, Mode, modes);
+        FREE(mode);
+    }
+
+    while (!TAILQ_EMPTY(&assignments)) {
+        struct Assignment *assign = TAILQ_FIRST(&assignments);
+        if (assign->type == A_TO_WORKSPACE || assign->type == A_TO_WORKSPACE_NUMBER)
+            FREE(assign->dest.workspace);
+        else if (assign->type == A_COMMAND)
+            FREE(assign->dest.command);
+        else if (assign->type == A_TO_OUTPUT)
+            FREE(assign->dest.output);
+        match_free(&(assign->match));
+        TAILQ_REMOVE(&assignments, assign, assignments);
+        FREE(assign);
+    }
+
+    while (!TAILQ_EMPTY(&ws_assignments)) {
+        struct Workspace_Assignment *assign = TAILQ_FIRST(&ws_assignments);
+        FREE(assign->name);
+        FREE(assign->output);
+        TAILQ_REMOVE(&ws_assignments, assign, ws_assignments);
+        FREE(assign);
+    }
+
+    /* Clear bar configs */
+    Barconfig *barconfig;
+    while (!TAILQ_EMPTY(&barconfigs)) {
+        barconfig = TAILQ_FIRST(&barconfigs);
+        FREE(barconfig->id);
+        for (int c = 0; c < barconfig->num_outputs; c++)
+            free(barconfig->outputs[c]);
+
+        while (!TAILQ_EMPTY(&(barconfig->bar_bindings))) {
+            struct Barbinding *binding = TAILQ_FIRST(&(barconfig->bar_bindings));
+            FREE(binding->command);
+            TAILQ_REMOVE(&(barconfig->bar_bindings), binding, bindings);
+            FREE(binding);
+        }
+
+        while (!TAILQ_EMPTY(&(barconfig->tray_outputs))) {
+            struct tray_output_t *tray_output = TAILQ_FIRST(&(barconfig->tray_outputs));
+            FREE(tray_output->output);
+            TAILQ_REMOVE(&(barconfig->tray_outputs), tray_output, tray_outputs);
+            FREE(tray_output);
+        }
+
+        FREE(barconfig->outputs);
+        FREE(barconfig->socket_path);
+        FREE(barconfig->status_command);
+        FREE(barconfig->i3bar_command);
+        FREE(barconfig->font);
+        FREE(barconfig->colors.background);
+        FREE(barconfig->colors.statusline);
+        FREE(barconfig->colors.separator);
+        FREE(barconfig->colors.focused_background);
+        FREE(barconfig->colors.focused_statusline);
+        FREE(barconfig->colors.focused_separator);
+        FREE(barconfig->colors.focused_workspace_border);
+        FREE(barconfig->colors.focused_workspace_bg);
+        FREE(barconfig->colors.focused_workspace_text);
+        FREE(barconfig->colors.active_workspace_border);
+        FREE(barconfig->colors.active_workspace_bg);
+        FREE(barconfig->colors.active_workspace_text);
+        FREE(barconfig->colors.inactive_workspace_border);
+        FREE(barconfig->colors.inactive_workspace_bg);
+        FREE(barconfig->colors.inactive_workspace_text);
+        FREE(barconfig->colors.urgent_workspace_border);
+        FREE(barconfig->colors.urgent_workspace_bg);
+        FREE(barconfig->colors.urgent_workspace_text);
+        FREE(barconfig->colors.binding_mode_border);
+        FREE(barconfig->colors.binding_mode_bg);
+        FREE(barconfig->colors.binding_mode_text);
+        TAILQ_REMOVE(&barconfigs, barconfig, configs);
+        FREE(barconfig);
+    }
+
+    Con *con;
+    TAILQ_FOREACH(con, &all_cons, all_cons) {
+        /* Assignments changed, previously ran assignments are invalid. */
+        if (con->window) {
+            con->window->nr_assignments = 0;
+            FREE(con->window->ran_assignments);
+        }
+        /* Invalidate pixmap caches in case font or colors changed. */
+        FREE(con->deco_render_params);
+    }
+
+    /* Get rid of the current font */
+    free_font();
+
+    free(config.ipc_socket_path);
+    free(config.restart_state_path);
+    free(config.fake_outputs);
+}
+
 /*
  * Finds the configuration file to use (either the one specified by
  * override_configpath), the user’s one or the system default) and calls
@@ -75,121 +195,7 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar) {
  */
 void load_configuration(const char *override_configpath, bool reload) {
     if (reload) {
-        /* If we are currently in a binding mode, we first revert to the
-         * default since we have no guarantee that the current mode will even
-         * still exist after parsing the config again. See #2228. */
-        switch_mode("default");
-
-        /* First ungrab the keys */
-        ungrab_all_keys(conn);
-
-        struct Mode *mode;
-        while (!SLIST_EMPTY(&modes)) {
-            mode = SLIST_FIRST(&modes);
-            FREE(mode->name);
-
-            /* Clear the old binding list */
-            while (!TAILQ_EMPTY(mode->bindings)) {
-                Binding *bind = TAILQ_FIRST(mode->bindings);
-                TAILQ_REMOVE(mode->bindings, bind, bindings);
-                binding_free(bind);
-            }
-            FREE(mode->bindings);
-
-            SLIST_REMOVE(&modes, mode, Mode, modes);
-            FREE(mode);
-        }
-
-        while (!TAILQ_EMPTY(&assignments)) {
-            struct Assignment *assign = TAILQ_FIRST(&assignments);
-            if (assign->type == A_TO_WORKSPACE || assign->type == A_TO_WORKSPACE_NUMBER)
-                FREE(assign->dest.workspace);
-            else if (assign->type == A_COMMAND)
-                FREE(assign->dest.command);
-            else if (assign->type == A_TO_OUTPUT)
-                FREE(assign->dest.output);
-            match_free(&(assign->match));
-            TAILQ_REMOVE(&assignments, assign, assignments);
-            FREE(assign);
-        }
-
-        while (!TAILQ_EMPTY(&ws_assignments)) {
-            struct Workspace_Assignment *assign = TAILQ_FIRST(&ws_assignments);
-            FREE(assign->name);
-            FREE(assign->output);
-            TAILQ_REMOVE(&ws_assignments, assign, ws_assignments);
-            FREE(assign);
-        }
-
-        /* Clear bar configs */
-        Barconfig *barconfig;
-        while (!TAILQ_EMPTY(&barconfigs)) {
-            barconfig = TAILQ_FIRST(&barconfigs);
-            FREE(barconfig->id);
-            for (int c = 0; c < barconfig->num_outputs; c++)
-                free(barconfig->outputs[c]);
-
-            while (!TAILQ_EMPTY(&(barconfig->bar_bindings))) {
-                struct Barbinding *binding = TAILQ_FIRST(&(barconfig->bar_bindings));
-                FREE(binding->command);
-                TAILQ_REMOVE(&(barconfig->bar_bindings), binding, bindings);
-                FREE(binding);
-            }
-
-            while (!TAILQ_EMPTY(&(barconfig->tray_outputs))) {
-                struct tray_output_t *tray_output = TAILQ_FIRST(&(barconfig->tray_outputs));
-                FREE(tray_output->output);
-                TAILQ_REMOVE(&(barconfig->tray_outputs), tray_output, tray_outputs);
-                FREE(tray_output);
-            }
-
-            FREE(barconfig->outputs);
-            FREE(barconfig->socket_path);
-            FREE(barconfig->status_command);
-            FREE(barconfig->i3bar_command);
-            FREE(barconfig->font);
-            FREE(barconfig->colors.background);
-            FREE(barconfig->colors.statusline);
-            FREE(barconfig->colors.separator);
-            FREE(barconfig->colors.focused_background);
-            FREE(barconfig->colors.focused_statusline);
-            FREE(barconfig->colors.focused_separator);
-            FREE(barconfig->colors.focused_workspace_border);
-            FREE(barconfig->colors.focused_workspace_bg);
-            FREE(barconfig->colors.focused_workspace_text);
-            FREE(barconfig->colors.active_workspace_border);
-            FREE(barconfig->colors.active_workspace_bg);
-            FREE(barconfig->colors.active_workspace_text);
-            FREE(barconfig->colors.inactive_workspace_border);
-            FREE(barconfig->colors.inactive_workspace_bg);
-            FREE(barconfig->colors.inactive_workspace_text);
-            FREE(barconfig->colors.urgent_workspace_border);
-            FREE(barconfig->colors.urgent_workspace_bg);
-            FREE(barconfig->colors.urgent_workspace_text);
-            FREE(barconfig->colors.binding_mode_border);
-            FREE(barconfig->colors.binding_mode_bg);
-            FREE(barconfig->colors.binding_mode_text);
-            TAILQ_REMOVE(&barconfigs, barconfig, configs);
-            FREE(barconfig);
-        }
-
-        Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            /* Assignments changed, previously ran assignments are invalid. */
-            if (con->window) {
-                con->window->nr_assignments = 0;
-                FREE(con->window->ran_assignments);
-            }
-            /* Invalidate pixmap caches in case font or colors changed. */
-            FREE(con->deco_render_params);
-        }
-
-        /* Get rid of the current font */
-        free_font();
-
-        free(config.ipc_socket_path);
-        free(config.restart_state_path);
-        free(config.fake_outputs);
+        free_configuration();
     }
 
     SLIST_INIT(&modes);
