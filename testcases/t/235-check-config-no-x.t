@@ -59,4 +59,33 @@ EOT
 is($ret, 0, "exit code == 0");
 is($out, "", 'valid config file');
 
+################################################################################
+# 3: test duplicate keybindings
+################################################################################
+
+$cfg = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+bindsym Shift+a nop 1
+bindsym Shift+a nop 2
+EOT
+
+($ret, $out) = check_config($cfg);
+is($ret, 1, "exit code == 1");
+like($out, qr/ERROR: *Duplicate keybinding in config file/, 'duplicate keybindings');
+
+################################################################################
+# 4: test no duplicate keybindings
+################################################################################
+
+$cfg = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+bindsym Shift+a nop 1
+EOT
+
+($ret, $out) = check_config($cfg);
+is($ret, 0, "exit code == 0");
+is($out, "", 'valid config file');
+
 done_testing;

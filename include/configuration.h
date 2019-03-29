@@ -400,19 +400,11 @@ struct tray_output_t {
     tray_outputs;
 };
 
-/**
- * Finds the configuration file to use (either the one specified by
- * override_configpath), the user’s one or the system default) and calls
- * parse_file().
- *
- * If you specify override_configpath, only this path is used to look for a
- * configuration file.
- *
- * If use_nagbar is false, don't try to start i3-nagbar but log the errors to
- * stdout/stderr instead.
- *
- */
-bool parse_configuration(const char *override_configpath, bool use_nagbar);
+typedef enum {
+    C_VALIDATE,
+    C_LOAD,
+    C_RELOAD,
+} config_load_t;
 
 /**
  * (Re-)loads the configuration file (sets useful defaults before).
@@ -420,8 +412,12 @@ bool parse_configuration(const char *override_configpath, bool use_nagbar);
  * If you specify override_configpath, only this path is used to look for a
  * configuration file.
  *
+ * load_type specifies the type of loading: C_VALIDATE is used to only verify
+ * the correctness of the config file (used with the flag -C). C_LOAD will load
+ * the config for normal use and display errors in the nagbar. C_RELOAD will
+ * also clear the previous config.
  */
-void load_configuration(const char *override_configfile, bool reload);
+bool load_configuration(const char *override_configfile, config_load_t load_type);
 
 /**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a

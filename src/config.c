@@ -160,41 +160,19 @@ static void free_configuration(void) {
 }
 
 /*
- * Finds the configuration file to use (either the one specified by
- * override_configpath), the user’s one or the system default) and calls
- * parse_file().
- *
- */
-bool parse_configuration(const char *override_configpath, bool use_nagbar) {
-    char *path = get_config_path(override_configpath, true);
-    if (path == NULL) {
-        die("Unable to find the configuration file (looked at "
-            "$XDG_CONFIG_HOME/i3/config, ~/.i3/config, $XDG_CONFIG_DIRS/i3/config "
-            "and " SYSCONFDIR "/i3/config)");
-    }
-
-    LOG("Parsing configfile %s\n", path);
-    FREE(current_configpath);
-    current_configpath = path;
-
-    /* initialize default bindings if we're just validating the config file */
-    if (!use_nagbar && bindings == NULL) {
-        bindings = scalloc(1, sizeof(struct bindings_head));
-        TAILQ_INIT(bindings);
-    }
-
-    return parse_file(path, use_nagbar);
-}
-
-/*
  * (Re-)loads the configuration file (sets useful defaults before).
  *
  * If you specify override_configpath, only this path is used to look for a
  * configuration file.
  *
+ * load_type specifies the type of loading: C_VALIDATE is used to only verify
+ * the correctness of the config file (used with the flag -C). C_LOAD will load
+ * the config for normal use and display errors in the nagbar. C_RELOAD will
+ * also clear the previous config.
+ *
  */
-void load_configuration(const char *override_configpath, bool reload) {
-    if (reload) {
+bool load_configuration(const char *override_configpath, config_load_t load_type) {
+    if (load_type == C_RELOAD) {
         free_configuration();
     }
 
@@ -250,24 +228,32 @@ void load_configuration(const char *override_configpath, bool reload) {
 
     config.focus_wrapping = FOCUS_WRAPPING_ON;
 
-    parse_configuration(override_configpath, true);
-
-    if (reload) {
-        translate_keysyms();
-        grab_all_keys(conn);
-        regrab_all_buttons(conn);
+    FREE(current_configpath);
+    current_configpath = get_config_path(override_configpath, true);
+    if (current_configpath == NULL) {
+        die("Unable to find the configuration file (looked at "
+            "$XDG_CONFIG_HOME/i3/config, ~/.i3/config, $XDG_CONFIG_DIRS/i3/config "
+            "and " SYSCONFDIR "/i3/config)");
     }
+    LOG("Parsing configfile %s\n", current_configpath);
+    const bool result = parse_file(current_configpath, load_type != C_VALIDATE);
 
-    if (config.font.type == FONT_TYPE_NONE) {
+    if (config.font.type == FONT_TYPE_NONE && load_type != C_VALIDATE) {
         ELOG("You did not specify required configuration option \"font\"\n");
         config.font = load_font("fixed", true);
         set_font(&config.font);
     }
 
-    /* Redraw the currently visible decorations on reload, so that
-     * the possibly new drawing parameters changed. */
-    if (reload) {
+    if (load_type == C_RELOAD) {
+        translate_keysyms();
+        grab_all_keys(conn);
+        regrab_all_buttons(conn);
+
+        /* Redraw the currently visible decorations on reload, so that the
+         * possibly new drawing parameters changed. */
         x_deco_recurse(croot);
         xcb_flush(conn);
     }
+
+    return result;
 }

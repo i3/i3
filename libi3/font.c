@@ -163,6 +163,7 @@ i3Font load_font(const char *pattern, const bool fallback) {
 
     i3Font font;
     font.type = FONT_TYPE_NONE;
+    font.pattern = NULL;
 
     /* No XCB connction, return early because we're just validating the
      * configuration file. */
