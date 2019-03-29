@@ -454,19 +454,12 @@ static bool execute_custom_command(xcb_keycode_t input_code, bool event_is_relea
     return false;
 }
 
-static void child_handle_button(xcb_button_press_event_t *event, i3_output *output, int32_t x) {
+static void child_handle_button(xcb_button_press_event_t *event, i3_output *output, uint32_t statusline_x) {
     if (!child_want_click_events()) {
         return;
     }
 
-    const int tray_width = get_tray_width(output->trayclients);
-    /* Calculate the horizontal coordinate (x) of the start of the statusline by
-     * subtracting its width and the width of the tray from the bar width. */
-    const int offset = output->rect.w - output->statusline_width - tray_width - logical_px((tray_width > 0) * sb_hoff_px);
-    /* x of the click event relative to the start of the statusline. */
-    const uint32_t statusline_x = x - offset;
-
-    if (x < offset || statusline_x > (uint32_t)output->statusline_width) {
+    if (statusline_x > (uint32_t)output->statusline_width) {
         return;
     }
 
@@ -551,12 +544,26 @@ static void handle_button(xcb_button_press_event_t *event) {
     }
 
     if (x > workspace_width) {
-        if (!event_is_release) {
-            child_handle_button(event, walk, x);
+        const int tray_width = get_tray_width(walk->trayclients);
+        /* Calculate the horizontal coordinate (x) of the start of the
+         * statusline by subtracting its width and the width of the tray from
+         * the bar width. */
+        const int offset = walk->rect.w - walk->statusline_width -
+                           tray_width - logical_px((tray_width > 0) * sb_hoff_px);
+        if (x >= offset) {
+            /* Click was after the start of the statusline, return to avoid
+             * executing any other actions even if a click event is not
+             * produced eventually. */
+
+            if (!event_is_release) {
+                /* x of the click event relative to the start of the
+                 * statusline. */
+                const uint32_t statusline_x = x - offset;
+                child_handle_button(event, walk, statusline_x);
+            }
+
+            return;
         }
-        /* Return to avoid executing any other actions when a separator is
-         * clicked. */
-        return;
     }
 
     /* If a custom command was specified for this mouse button, it overrides
