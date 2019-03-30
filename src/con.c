@@ -539,7 +539,6 @@ bool con_is_internal(Con *con) {
  */
 bool con_is_floating(Con *con) {
     assert(con != NULL);
-    DLOG("checking if con %p is floating\n", con);
     return (con->floating >= FLOATING_AUTO_ON);
 }
 
