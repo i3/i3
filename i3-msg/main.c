@@ -77,8 +77,8 @@ static int reply_boolean_cb(void *params, int val) {
 }
 
 static int reply_string_cb(void *params, const unsigned char *val, size_t len) {
-    char *str = scalloc(len + 1, 1);
-    strncpy(str, (const char *)val, len);
+    char *str = sstrndup((const char *)val, len);
+
     if (strcmp(last_key, "error") == 0)
         last_reply.error = str;
     else if (strcmp(last_key, "input") == 0)
@@ -108,8 +108,7 @@ static int reply_end_map_cb(void *params) {
 
 static int reply_map_key_cb(void *params, const unsigned char *keyVal, size_t keyLen) {
     free(last_key);
-    last_key = scalloc(keyLen + 1, 1);
-    strncpy(last_key, (const char *)keyVal, keyLen);
+    last_key = sstrndup((const char *)keyVal, keyLen);
     return 1;
 }
 
@@ -128,8 +127,7 @@ static yajl_callbacks reply_callbacks = {
 static char *config_last_key = NULL;
 
 static int config_string_cb(void *params, const unsigned char *val, size_t len) {
-    char *str = scalloc(len + 1, 1);
-    strncpy(str, (const char *)val, len);
+    char *str = sstrndup((const char *)val, len);
     if (strcmp(config_last_key, "config") == 0) {
         fprintf(stdout, "%s", str);
     }
@@ -146,8 +144,7 @@ static int config_end_map_cb(void *params) {
 }
 
 static int config_map_key_cb(void *params, const unsigned char *keyVal, size_t keyLen) {
-    config_last_key = scalloc(keyLen + 1, 1);
-    strncpy(config_last_key, (const char *)keyVal, keyLen);
+    config_last_key = sstrndup((const char *)keyVal, keyLen);
     return 1;
 }
 

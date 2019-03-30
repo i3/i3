@@ -215,12 +215,11 @@ void ipc_shutdown(shutdown_reason_t reason) {
 IPC_HANDLER(run_command) {
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
-    char *command = scalloc(message_size + 1, 1);
-    strncpy(command, (const char *)message, message_size);
+    char *command = sstrndup((const char *)message, message_size);
     LOG("IPC: received: *%s*\n", command);
     yajl_gen gen = yajl_gen_alloc(NULL);
 
-    CommandResult *result = parse_command((const char *)command, gen);
+    CommandResult *result = parse_command(command, gen);
     free(command);
 
     if (result->needs_tree_render)
