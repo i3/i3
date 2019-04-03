@@ -80,6 +80,8 @@ void restore_geometry(void) {
  */
 void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cookie,
                    bool needs_to_be_mapped) {
+    DLOG("window 0x%08x\n", window);
+
     xcb_drawable_t d = {window};
     xcb_get_geometry_cookie_t geomc;
     xcb_get_geometry_reply_t *geom;
@@ -162,8 +164,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     motif_wm_hints_cookie = GET_PROPERTY(A__MOTIF_WM_HINTS, 5 * sizeof(uint64_t));
     wm_user_time_cookie = GET_PROPERTY(A__NET_WM_USER_TIME, UINT32_MAX);
     wm_desktop_cookie = GET_PROPERTY(A__NET_WM_DESKTOP, UINT32_MAX);
-
-    DLOG("Managing window 0x%08x\n", window);
 
     i3Window *cwindow = scalloc(1, sizeof(i3Window));
     cwindow->id = window;

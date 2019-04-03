@@ -51,14 +51,10 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool bef
     LOG("WM_CLASS changed to %s (instance), %s (class)\n",
         win->class_instance, win->class_class);
 
-    if (before_mgmt) {
-        free(prop);
-        return;
-    }
-
-    run_assignments(win);
-
     free(prop);
+    if (!before_mgmt) {
+        run_assignments(win);
+    }
 }
 
 /*
@@ -92,14 +88,10 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
 
     win->uses_net_wm_name = true;
 
-    if (before_mgmt) {
-        free(prop);
-        return;
-    }
-
-    run_assignments(win);
-
     free(prop);
+    if (!before_mgmt) {
+        run_assignments(win);
+    }
 }
 
 /*
@@ -141,14 +133,10 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
 
     win->name_x_changed = true;
 
-    if (before_mgmt) {
-        free(prop);
-        return;
-    }
-
-    run_assignments(win);
-
     free(prop);
+    if (!before_mgmt) {
+        run_assignments(win);
+    }
 }
 
 /*
@@ -244,14 +232,10 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     win->role = new_role;
     LOG("WM_WINDOW_ROLE changed to \"%s\"\n", win->role);
 
-    if (before_mgmt) {
-        free(prop);
-        return;
-    }
-
-    run_assignments(win);
-
     free(prop);
+    if (!before_mgmt) {
+        run_assignments(win);
+    }
 }
 
 /*
