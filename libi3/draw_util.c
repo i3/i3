@@ -23,7 +23,7 @@ static void draw_util_set_source_color(surface_t *surface, color_t color);
 
 #define RETURN_UNLESS_SURFACE_INITIALIZED(surface)                               \
     do {                                                                         \
-        if ((surface)->id == XCB_NONE) {                                         \
+        if ((surface)->id == XCB_NONE || ! (surface)->cr) {                      \
             ELOG("Surface %p is not initialized, skipping drawing.\n", surface); \
             return;                                                              \
         }                                                                        \
