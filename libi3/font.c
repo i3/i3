@@ -436,6 +436,7 @@ static int xcb_query_text_width(const xcb_char2b_t *text, size_t text_len) {
          * a crash. Plus, the user will see the error in their log. */
         fprintf(stderr, "Could not get text extents (X error code %d)\n",
                 error->error_code);
+        free(error);
         return savedFont->specific.xcb.info->max_bounds.character_width * text_len;
     }
 
