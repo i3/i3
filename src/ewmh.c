@@ -24,10 +24,15 @@ xcb_window_t ewmh_window;
  *
  */
 void ewmh_update_current_desktop(void) {
+    static uint32_t old_idx = NET_WM_DESKTOP_NONE;
     const uint32_t idx = ewmh_get_workspace_index(focused);
-    if (idx != NET_WM_DESKTOP_NONE) {
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &idx);
+
+    if (idx == old_idx || idx == NET_WM_DESKTOP_NONE) {
+        return;
     }
+    old_idx = idx;
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &idx);
 }
 
 /*
@@ -36,11 +41,17 @@ void ewmh_update_current_desktop(void) {
  */
 void ewmh_update_number_of_desktops(void) {
     Con *output, *ws;
+    static uint32_t old_idx = 0;
     uint32_t idx = 0;
 
     FOREACH_NONINTERNAL {
         idx++;
     };
+
+    if (idx == old_idx) {
+        return;
+    }
+    old_idx = idx;
 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
                         A__NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1, &idx);
