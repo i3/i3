@@ -39,7 +39,7 @@ void ewmh_update_current_desktop(void) {
  * Updates _NET_NUMBER_OF_DESKTOPS which we interpret as the number of
  * noninternal workspaces.
  */
-void ewmh_update_number_of_desktops(void) {
+static void ewmh_update_number_of_desktops(void) {
     Con *output, *ws;
     static uint32_t old_idx = 0;
     uint32_t idx = 0;
@@ -61,7 +61,7 @@ void ewmh_update_number_of_desktops(void) {
  * Updates _NET_DESKTOP_NAMES: "The names of all virtual desktops. This is a
  * list of NULL-terminated strings in UTF-8 encoding"
  */
-void ewmh_update_desktop_names(void) {
+static void ewmh_update_desktop_names(void) {
     Con *output, *ws;
     int msg_length = 0;
 
@@ -88,7 +88,7 @@ void ewmh_update_desktop_names(void) {
  * Updates _NET_DESKTOP_VIEWPORT, which is an array of pairs of cardinals that
  * define the top left corner of each desktop's viewport.
  */
-void ewmh_update_desktop_viewport(void) {
+static void ewmh_update_desktop_viewport(void) {
     Con *output, *ws;
     int num_desktops = 0;
     /* count number of desktops */
@@ -107,6 +107,18 @@ void ewmh_update_desktop_viewport(void) {
 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
                         A__NET_DESKTOP_VIEWPORT, XCB_ATOM_CARDINAL, 32, current_position, &viewports);
+}
+
+/*
+ * Updates all the EWMH desktop properties.
+ *
+ */
+void ewmh_update_desktop_properties(void) {
+    ewmh_update_number_of_desktops();
+    ewmh_update_desktop_viewport();
+    ewmh_update_current_desktop();
+    ewmh_update_desktop_names();
+    ewmh_update_wm_desktop();
 }
 
 static void ewmh_update_wm_desktop_recursively(Con *con, const uint32_t desktop) {

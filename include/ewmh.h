@@ -12,6 +12,12 @@
 #include <config.h>
 
 /**
+ * Updates all the EWMH desktop properties.
+ *
+ */
+void ewmh_update_desktop_properties(void);
+
+/**
  * Updates _NET_CURRENT_DESKTOP with the current desktop number.
  *
  * EWMH: The index of the current desktop. This is always an integer between 0
@@ -19,24 +25,6 @@
  *
  */
 void ewmh_update_current_desktop(void);
-
-/**
- * Updates _NET_NUMBER_OF_DESKTOPS which we interpret as the number of
- * noninternal workspaces.
- */
-void ewmh_update_number_of_desktops(void);
-
-/**
- * Updates _NET_DESKTOP_NAMES: "The names of all virtual desktops. This is a
- * list of NULL-terminated strings in UTF-8 encoding"
- */
-void ewmh_update_desktop_names(void);
-
-/**
- * Updates _NET_DESKTOP_VIEWPORT, which is an array of pairs of cardinals that
- * define the top left corner of each desktop's viewport.
- */
-void ewmh_update_desktop_viewport(void);
 
 /**
  * Updates _NET_WM_DESKTOP for all windows.
