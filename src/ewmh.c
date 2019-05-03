@@ -11,6 +11,11 @@
 
 xcb_window_t ewmh_window;
 
+#define FOREACH_NONINTERNAL                                             \
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)                  \
+    TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) \
+    if (!con_is_internal(ws))
+
 /*
  * Updates _NET_CURRENT_DESKTOP with the current desktop number.
  *
@@ -19,28 +24,34 @@ xcb_window_t ewmh_window;
  *
  */
 void ewmh_update_current_desktop(void) {
+    static uint32_t old_idx = NET_WM_DESKTOP_NONE;
     const uint32_t idx = ewmh_get_workspace_index(focused);
-    if (idx != NET_WM_DESKTOP_NONE) {
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &idx);
+
+    if (idx == old_idx || idx == NET_WM_DESKTOP_NONE) {
+        return;
     }
+    old_idx = idx;
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &idx);
 }
 
 /*
  * Updates _NET_NUMBER_OF_DESKTOPS which we interpret as the number of
  * noninternal workspaces.
  */
-void ewmh_update_number_of_desktops(void) {
-    Con *output;
+static void ewmh_update_number_of_desktops(void) {
+    Con *output, *ws;
+    static uint32_t old_idx = 0;
     uint32_t idx = 0;
 
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        Con *ws;
-        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
-            if (STARTS_WITH(ws->name, "__"))
-                continue;
-            ++idx;
-        }
+    FOREACH_NONINTERNAL {
+        idx++;
+    };
+
+    if (idx == old_idx) {
+        return;
     }
+    old_idx = idx;
 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
                         A__NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1, &idx);
@@ -50,33 +61,22 @@ void ewmh_update_number_of_desktops(void) {
  * Updates _NET_DESKTOP_NAMES: "The names of all virtual desktops. This is a
  * list of NULL-terminated strings in UTF-8 encoding"
  */
-void ewmh_update_desktop_names(void) {
-    Con *output;
+static void ewmh_update_desktop_names(void) {
+    Con *output, *ws;
     int msg_length = 0;
 
     /* count the size of the property message to set */
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        Con *ws;
-        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
-            if (STARTS_WITH(ws->name, "__"))
-                continue;
-            msg_length += strlen(ws->name) + 1;
-        }
-    }
+    FOREACH_NONINTERNAL {
+        msg_length += strlen(ws->name) + 1;
+    };
 
     char desktop_names[msg_length];
     int current_position = 0;
 
     /* fill the buffer with the names of the i3 workspaces */
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        Con *ws;
-        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
-            if (STARTS_WITH(ws->name, "__"))
-                continue;
-
-            for (size_t i = 0; i < strlen(ws->name) + 1; i++) {
-                desktop_names[current_position++] = ws->name[i];
-            }
+    FOREACH_NONINTERNAL {
+        for (size_t i = 0; i < strlen(ws->name) + 1; i++) {
+            desktop_names[current_position++] = ws->name[i];
         }
     }
 
@@ -88,37 +88,37 @@ void ewmh_update_desktop_names(void) {
  * Updates _NET_DESKTOP_VIEWPORT, which is an array of pairs of cardinals that
  * define the top left corner of each desktop's viewport.
  */
-void ewmh_update_desktop_viewport(void) {
-    Con *output;
+static void ewmh_update_desktop_viewport(void) {
+    Con *output, *ws;
     int num_desktops = 0;
     /* count number of desktops */
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        Con *ws;
-        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
-            if (STARTS_WITH(ws->name, "__"))
-                continue;
-
-            num_desktops++;
-        }
+    FOREACH_NONINTERNAL {
+        num_desktops++;
     }
 
     uint32_t viewports[num_desktops * 2];
 
     int current_position = 0;
     /* fill the viewport buffer */
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        Con *ws;
-        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
-            if (STARTS_WITH(ws->name, "__"))
-                continue;
-
-            viewports[current_position++] = output->rect.x;
-            viewports[current_position++] = output->rect.y;
-        }
+    FOREACH_NONINTERNAL {
+        viewports[current_position++] = output->rect.x;
+        viewports[current_position++] = output->rect.y;
     }
 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
                         A__NET_DESKTOP_VIEWPORT, XCB_ATOM_CARDINAL, 32, current_position, &viewports);
+}
+
+/*
+ * Updates all the EWMH desktop properties.
+ *
+ */
+void ewmh_update_desktop_properties(void) {
+    ewmh_update_number_of_desktops();
+    ewmh_update_desktop_viewport();
+    ewmh_update_current_desktop();
+    ewmh_update_desktop_names();
+    ewmh_update_wm_desktop();
 }
 
 static void ewmh_update_wm_desktop_recursively(Con *con, const uint32_t desktop) {
@@ -354,18 +354,12 @@ Con *ewmh_get_workspace_by_index(uint32_t idx) {
 
     uint32_t current_index = 0;
 
-    Con *output;
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        Con *workspace;
-        TAILQ_FOREACH(workspace, &(output_get_content(output)->nodes_head), nodes) {
-            if (con_is_internal(workspace))
-                continue;
-
-            if (current_index == idx)
-                return workspace;
-
-            ++current_index;
+    Con *output, *ws;
+    FOREACH_NONINTERNAL {
+        if (current_index == idx) {
+            return ws;
         }
+        current_index++;
     }
 
     return NULL;
@@ -381,19 +375,14 @@ Con *ewmh_get_workspace_by_index(uint32_t idx) {
 uint32_t ewmh_get_workspace_index(Con *con) {
     uint32_t index = 0;
 
-    Con *workspace = con_get_workspace(con);
-    Con *output;
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        Con *current;
-        TAILQ_FOREACH(current, &(output_get_content(output)->nodes_head), nodes) {
-            if (con_is_internal(current))
-                continue;
-
-            if (current == workspace)
-                return index;
-
-            ++index;
+    Con *target_workspace = con_get_workspace(con);
+    Con *output, *ws;
+    FOREACH_NONINTERNAL {
+        if (ws == target_workspace) {
+            return index;
         }
+
+        index++;
     }
 
     return NET_WM_DESKTOP_NONE;

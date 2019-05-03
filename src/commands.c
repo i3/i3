@@ -2002,9 +2002,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
     cmd_output->needs_tree_render = true;
     ysuccess(true);
 
-    ewmh_update_desktop_names();
-    ewmh_update_desktop_viewport();
-    ewmh_update_current_desktop();
+    ewmh_update_desktop_properties();
 
     startup_sequence_rename_workspace(old_name_copy, new_name);
     free(old_name_copy);

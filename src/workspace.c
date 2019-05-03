@@ -161,10 +161,7 @@ Con *workspace_get(const char *num, bool *created) {
         con_attach(workspace, content, false);
 
         ipc_send_workspace_event("init", workspace, NULL);
-        ewmh_update_number_of_desktops();
-        ewmh_update_desktop_names();
-        ewmh_update_desktop_viewport();
-        ewmh_update_wm_desktop();
+        ewmh_update_desktop_properties();
         if (created != NULL)
             *created = true;
     } else if (created != NULL) {
@@ -520,10 +517,7 @@ void workspace_show(Con *workspace) {
                 old_focus = NULL;
             }
 
-            ewmh_update_number_of_desktops();
-            ewmh_update_desktop_names();
-            ewmh_update_desktop_viewport();
-            ewmh_update_wm_desktop();
+            ewmh_update_desktop_properties();
         }
     }
 

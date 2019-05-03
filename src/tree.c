@@ -300,10 +300,8 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
     x_con_kill(con);
 
     if (ws == con) {
-        DLOG("Closing a workspace container, updating EWMH atoms\n");
-        ewmh_update_number_of_desktops();
-        ewmh_update_desktop_names();
-        ewmh_update_wm_desktop();
+        DLOG("Closing workspace container %s, updating EWMH atoms\n", ws->name);
+        ewmh_update_desktop_properties();
     }
 
     con_free(con);
