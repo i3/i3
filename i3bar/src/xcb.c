@@ -455,10 +455,6 @@ static bool execute_custom_command(xcb_keycode_t input_code, bool event_is_relea
 }
 
 static void child_handle_button(xcb_button_press_event_t *event, i3_output *output, uint32_t statusline_x) {
-    if (!child_want_click_events()) {
-        return;
-    }
-
     if (statusline_x > (uint32_t)output->statusline_width) {
         return;
     }
@@ -543,7 +539,7 @@ static void handle_button(xcb_button_press_event_t *event) {
             workspace_width += logical_px(ws_spacing_px);
     }
 
-    if (x > workspace_width) {
+    if (child_want_click_events() && x > workspace_width) {
         const int tray_width = get_tray_width(walk->trayclients);
         /* Calculate the horizontal coordinate (x) of the start of the
          * statusline by subtracting its width and the width of the tray from
