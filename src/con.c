@@ -2385,6 +2385,8 @@ bool con_swap(Con *first, Con *second) {
     con_fix_percent(first->parent);
     con_fix_percent(second->parent);
 
+    FREE(first->deco_render_params);
+    FREE(second->deco_render_params);
     con_force_split_parents_redraw(first);
     con_force_split_parents_redraw(second);
 
