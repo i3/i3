@@ -657,7 +657,7 @@ hide_edge_borders vertical
 [[for_window]]
 === Arbitrary commands for specific windows (for_window)
 
-With the +for_window+ command, you can let i3 execute any command when it
+With the +for_window+ directive, you can let i3 execute any command when it
 encounters a specific window. This can be used to set windows to floating or to
 change their border style, for example.
 
