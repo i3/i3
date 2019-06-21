@@ -176,6 +176,12 @@ static int stdin_start_map(void *context) {
     else
         ctx->block.sep_block_width = logical_px(8) + separator_symbol_width;
 
+    /* By default we draw all four borders if a border is set. */
+    ctx->block.border_top = 1;
+    ctx->block.border_right = 1;
+    ctx->block.border_bottom = 1;
+    ctx->block.border_left = 1;
+
     return 1;
 }
 
@@ -260,6 +266,22 @@ static int stdin_integer(void *context, long long val) {
     }
     if (strcasecmp(ctx->last_map_key, "separator_block_width") == 0) {
         ctx->block.sep_block_width = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "border_top") == 0) {
+        ctx->block.border_top = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "border_right") == 0) {
+        ctx->block.border_right = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "border_bottom") == 0) {
+        ctx->block.border_bottom = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "border_left") == 0) {
+        ctx->block.border_left = (uint32_t)val;
         return 1;
     }
 

@@ -213,7 +213,7 @@ static uint32_t predict_statusline_length(bool use_short_text) {
 
         render->width = predict_text_width(text);
         if (block->border)
-            render->width += logical_px(2);
+            render->width += logical_px(block->border_left + block->border_right);
 
         /* Compute offset and append for text aligment in min_width. */
         if (block->min_width <= render->width) {
@@ -287,8 +287,8 @@ static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focu
 
         color_t bg_color = bar_color;
 
-        int border_width = (block->border) ? logical_px(1) : 0;
         int full_render_width = render->width + render->x_offset + render->x_append;
+        int has_border = block->border ? 1 : 0;
         if (block->border || block->background || block->urgent) {
             /* Let's determine the colors first. */
             color_t border_color = bar_color;
@@ -310,15 +310,16 @@ static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focu
 
             /* Draw the background. */
             draw_util_rectangle(&output->statusline_buffer, bg_color,
-                                x + border_width,
-                                logical_px(1) + border_width,
-                                full_render_width - 2 * border_width,
-                                bar_height - 2 * border_width - logical_px(2));
+                                x + has_border * logical_px(block->border_left),
+                                logical_px(1) + has_border * logical_px(block->border_top),
+                                full_render_width - has_border * logical_px(block->border_right + block->border_left),
+                                bar_height - has_border * logical_px(block->border_bottom + block->border_top) - logical_px(2));
         }
 
         draw_util_text(text, &output->statusline_buffer, fg_color, bg_color,
-                       x + render->x_offset + border_width, logical_px(ws_voff_px),
-                       render->width - 2 * border_width);
+                       x + render->x_offset + has_border * logical_px(block->border_left),
+                       bar_height / 2 - font.height / 2,
+                       render->width - has_border * logical_px(block->border_left + block->border_right));
         x += full_render_width;
 
         /* If this is not the last block, draw a separator. */
