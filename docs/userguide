@@ -1744,6 +1744,26 @@ bar {
 }
 --------------------------------------
 
+=== Transparency
+
+i3bar can support transparency by passing the +--transparency+ flag in the
+configuration:
+
+*Syntax*:
+--------------------------------------
+bar {
+    i3bar_command i3bar --transparency
+}
+--------------------------------------
+
+In the i3bar color configuration and i3bar status block color attribute you can
+then use colors in the RGBA format, i.e. the last two (hexadecimal) digits
+specify the opacity. For example, +#00000000+ will be completely transparent,
+while +#000000FF+ will be a fully opaque black (the same as +#000000+).
+
+Please note that due to the way the tray specification works, enabling this
+flag will cause all tray icons to have a transparent background.
+
 [[list_of_commands]]
 == List of commands
 

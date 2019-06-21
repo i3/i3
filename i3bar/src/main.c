@@ -56,13 +56,14 @@ static char *expand_path(char *path) {
 }
 
 static void print_usage(char *elf_name) {
-    printf("Usage: %s -b bar_id [-s sock_path] [-h] [-v]\n", elf_name);
+    printf("Usage: %s -b bar_id [-s sock_path] [-t] [-h] [-v]\n", elf_name);
     printf("\n");
-    printf("-b, --bar_id  <bar_id>\tBar ID for which to get the configuration\n");
-    printf("-s, --socket  <sock_path>\tConnect to i3 via <sock_path>\n");
-    printf("-h, --help    Display this help message and exit\n");
-    printf("-v, --version Display version number and exit\n");
-    printf("-V, --verbose Enable verbose mode\n");
+    printf("-b, --bar_id       <bar_id>\tBar ID for which to get the configuration\n");
+    printf("-s, --socket       <sock_path>\tConnect to i3 via <sock_path>\n");
+    printf("-t, --transparency Enable transparency (RGBA colors)\n");
+    printf("-h, --help         Display this help message and exit\n");
+    printf("-v, --version      Display version number and exit\n");
+    printf("-V, --verbose      Enable verbose mode\n");
     printf("\n");
     printf(" PLEASE NOTE that i3bar will be automatically started by i3\n"
            " as soon as there is a 'bar' configuration block in your\n"
@@ -105,12 +106,13 @@ int main(int argc, char **argv) {
     static struct option long_opt[] = {
         {"socket", required_argument, 0, 's'},
         {"bar_id", required_argument, 0, 'b'},
+        {"transparency", no_argument, 0, 't'},
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'v'},
         {"verbose", no_argument, 0, 'V'},
         {NULL, 0, 0, 0}};
 
-    while ((opt = getopt_long(argc, argv, "b:s:hvV", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "b:s:thvV", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
@@ -121,6 +123,9 @@ int main(int argc, char **argv) {
                 break;
             case 'b':
                 config.bar_id = sstrdup(optarg);
+                break;
+            case 't':
+                config.transparency = true;
                 break;
             case 'V':
                 config.verbose = true;
