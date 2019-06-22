@@ -141,6 +141,18 @@ background::
 	Overrides the background color for this particular block.
 border::
 	Overrides the border color for this particular block.
+border_top::
+        Defines the width (in pixels) of the top border of this block. Defaults
+        to 1.
+border_right::
+        Defines the width (in pixels) of the right border of this block. Defaults
+        to 1.
+border_bottom::
+        Defines the width (in pixels) of the bottom border of this block. Defaults
+        to 1.
+border_left::
+        Defines the width (in pixels) of the left border of this block. Defaults
+        to 1.
 min_width::
 	The minimum width (in pixels) of the block. If the content of the
 	+full_text+ key take less space than the specified min_width, the block
@@ -215,6 +227,10 @@ An example of a block which uses all possible entries follows:
  "color": "#00ff00",
  "background": "#1c1c1c",
  "border": "#ee0000",
+ "border_top": 1,
+ "border_right": 0,
+ "border_bottom": 3,
+ "border_left": 1,
  "min_width": 300,
  "align": "right",
  "urgent": false,
