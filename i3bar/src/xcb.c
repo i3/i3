@@ -1197,7 +1197,21 @@ char *init_xcb_early(void) {
 
     depth = root_screen->root_depth;
     colormap = root_screen->default_colormap;
-    visual_type = get_visualtype(root_screen);
+    visual_type = config.transparency ? xcb_aux_find_visual_by_attrs(root_screen, -1, 32) : NULL;
+    if (visual_type != NULL) {
+        depth = xcb_aux_get_depth_of_visual(root_screen, visual_type->visual_id);
+        colormap = xcb_generate_id(xcb_connection);
+        xcb_void_cookie_t cm_cookie = xcb_create_colormap_checked(xcb_connection,
+                                                                  XCB_COLORMAP_ALLOC_NONE,
+                                                                  colormap,
+                                                                  xcb_root,
+                                                                  visual_type->visual_id);
+        if (xcb_request_failed(cm_cookie, "Could not allocate colormap")) {
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        visual_type = get_visualtype(root_screen);
+    }
 
     xcb_cursor_context_t *cursor_ctx;
     if (xcb_cursor_context_new(conn, root_screen, &cursor_ctx) == 0) {
