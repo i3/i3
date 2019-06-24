@@ -1625,6 +1625,35 @@ bar {
 }
 ------------------------
 
+=== Minimal width for workspace buttons
+
+By default, the width a workspace button is determined by the width of the text
+showing the workspace name. If the name is too short (say, one letter), then the
+workspace button may look too small.
+
+This option specifies the minimum width for workspace buttons. If the name of
+a workspace is too short to cover the button, an additional padding is added on
+both sides of the button so that the text is centered.
+
+The default value of zero means that no additional padding is added.
+
+The setting also applies to the current binding mode indicator.
+
+Note that the specified pixels refer to logical pixels, which may translate
+into more pixels on HiDPI displays.
+
+*Syntax*:
+------------------------
+workspace_min_width <px> [px]
+------------------------
+
+*Example*:
+------------------------
+bar {
+    workspace_min_width 40
+}
+------------------------
+
 === Strip workspace numbers/name
 
 Specifies whether workspace numbers should be displayed within the workspace
