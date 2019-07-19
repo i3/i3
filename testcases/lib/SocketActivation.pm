@@ -135,7 +135,7 @@ sub activate_i3 {
             # We overwrite LISTEN_PID with the correct process ID to make
             # socket activation work (LISTEN_PID has to match getpid(),
             # otherwise the LISTEN_FDS will be treated as a left-over).
-            $cmd = qq|strace -fF -s2048 -v -o "$out" -- | .
+            $cmd = qq|strace -fvy -s2048 -o "$out" -- | .
                      'sh -c "export LISTEN_PID=\$\$; ' . $cmd . '"';
         }
 
