@@ -110,6 +110,12 @@ The following reply types are implemented:
 
 COMMAND (0)::
 	Confirmation/Error code for the RUN_COMMAND message.
++
+Note that when sending the `restart` command, you will get a reply once
+the restart completed. All IPC connection state (e.g. subscriptions)
+will reset, and libraries must be able to cope with it. One way of
+achieving that is to close the connection, if the library already
+supports transparent reconnects.
 WORKSPACES (1)::
 	Reply to the GET_WORKSPACES message.
 SUBSCRIBE (2)::

@@ -73,6 +73,16 @@ typedef void (*handler_t)(ipc_client *, uint8_t *, int, uint32_t, uint32_t);
 void ipc_new_client(EV_P_ struct ev_io *w, int revents);
 
 /**
+ * ipc_new_client_on_fd() only sets up the event handler
+ * for activity on the new connection and inserts the file descriptor into
+ * the list of clients.
+ *
+ * This variant is useful for the inherited IPC connection when restarting.
+ *
+ */
+ipc_client *ipc_new_client_on_fd(EV_P_ int fd);
+
+/**
  * Creates the UNIX domain socket at the given path, sets it to non-blocking
  * mode, bind()s and listen()s on it.
  *
@@ -95,10 +105,13 @@ typedef enum {
 } shutdown_reason_t;
 
 /**
- * Calls shutdown() on each socket and closes it.
+ * Calls shutdown() on each socket and closes it. This function is to be called
+ * when exiting or restarting only!
+ *
+ * exempt_fd is never closed. Set to -1 to close all fds.
  *
  */
-void ipc_shutdown(shutdown_reason_t reason);
+void ipc_shutdown(shutdown_reason_t reason, int exempt_fd);
 
 void dump_node(yajl_gen gen, Con *con, bool inplace_restart);
 
@@ -136,3 +149,8 @@ void ipc_send_binding_event(const char *event_type, Binding *bind);
   * socket.
   */
 void ipc_set_kill_timeout(ev_tstamp new);
+
+/**
+ * Sends a restart reply to the IPC client on the specified fd.
+ */
+void ipc_confirm_restart(ipc_client *client);

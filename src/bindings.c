@@ -824,7 +824,7 @@ CommandResult *run_binding(Binding *bind, Con *con) {
         sasprintf(&command, "[con_id=\"%p\"] %s", con, bind->command);
 
     Binding *bind_cp = binding_copy(bind);
-    CommandResult *result = parse_command(command, NULL);
+    CommandResult *result = parse_command(command, NULL, NULL);
     free(command);
 
     if (result->needs_tree_render)

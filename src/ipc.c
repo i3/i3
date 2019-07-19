@@ -33,6 +33,9 @@ all_clients = TAILQ_HEAD_INITIALIZER(all_clients);
  */
 static void set_nonblock(int sockfd) {
     int flags = fcntl(sockfd, F_GETFL, 0);
+    if (flags & O_NONBLOCK) {
+        return;
+    }
     flags |= O_NONBLOCK;
     if (fcntl(sockfd, F_SETFL, flags) < 0)
         err(-1, "Could not set O_NONBLOCK");
@@ -125,9 +128,11 @@ static void ipc_send_client_message(ipc_client *client, size_t size, const uint3
     }
 }
 
-static void free_ipc_client(ipc_client *client) {
-    DLOG("Disconnecting client on fd %d\n", client->fd);
-    close(client->fd);
+static void free_ipc_client(ipc_client *client, int exempt_fd) {
+    if (client->fd != exempt_fd) {
+        DLOG("Disconnecting client on fd %d\n", client->fd);
+        close(client->fd);
+    }
 
     ev_io_stop(main_loop, client->read_callback);
     FREE(client->read_callback);
@@ -195,15 +200,19 @@ static void ipc_send_shutdown_event(shutdown_reason_t reason) {
  * Calls shutdown() on each socket and closes it. This function is to be called
  * when exiting or restarting only!
  *
+ * exempt_fd is never closed. Set to -1 to close all fds.
+ *
  */
-void ipc_shutdown(shutdown_reason_t reason) {
+void ipc_shutdown(shutdown_reason_t reason, int exempt_fd) {
     ipc_send_shutdown_event(reason);
 
     ipc_client *current;
     while (!TAILQ_EMPTY(&all_clients)) {
         current = TAILQ_FIRST(&all_clients);
-        shutdown(current->fd, SHUT_RDWR);
-        free_ipc_client(current);
+        if (current->fd != exempt_fd) {
+            shutdown(current->fd, SHUT_RDWR);
+        }
+        free_ipc_client(current, exempt_fd);
     }
 }
 
@@ -219,7 +228,7 @@ IPC_HANDLER(run_command) {
     LOG("IPC: received: *%s*\n", command);
     yajl_gen gen = yajl_gen_alloc(NULL);
 
-    CommandResult *result = parse_command(command, gen);
+    CommandResult *result = parse_command(command, gen, client);
     free(command);
 
     if (result->needs_tree_render)
@@ -1339,7 +1348,7 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
 
         /* If not, there was some kind of error. We don’t bother and close the
          * connection. Delete the client from the list of clients. */
-        free_ipc_client(client);
+        free_ipc_client(client, -1);
         FREE(message);
         return;
     }
@@ -1397,7 +1406,7 @@ end:
         ELOG("client %p on fd %d timed out, killing\n", client, client->fd);
     }
 
-    free_ipc_client(client);
+    free_ipc_client(client, -1);
 }
 
 static void ipc_socket_writeable_cb(EV_P_ ev_io *w, int revents) {
@@ -1431,6 +1440,18 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
     /* Close this file descriptor on exec() */
     (void)fcntl(fd, F_SETFD, FD_CLOEXEC);
 
+    ipc_new_client_on_fd(EV_A_ fd);
+}
+
+/*
+ * ipc_new_client_on_fd() only sets up the event handler
+ * for activity on the new connection and inserts the file descriptor into
+ * the list of clients.
+ *
+ * This variant is useful for the inherited IPC connection when restarting.
+ *
+ */
+ipc_client *ipc_new_client_on_fd(EV_P_ int fd) {
     set_nonblock(fd);
 
     ipc_client *client = scalloc(1, sizeof(ipc_client));
@@ -1445,8 +1466,9 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
     client->write_callback->data = client;
     ev_io_init(client->write_callback, ipc_socket_writeable_cb, fd, EV_WRITE);
 
-    DLOG("IPC: new client connected on fd %d\n", w->fd);
+    DLOG("IPC: new client connected on fd %d\n", fd);
     TAILQ_INSERT_TAIL(&all_clients, client, clients);
+    return client;
 }
 
 /*
@@ -1626,4 +1648,16 @@ void ipc_send_binding_event(const char *event_type, Binding *bind) {
 
     y(free);
     setlocale(LC_NUMERIC, "");
+}
+
+/*
+ * Sends a restart reply to the IPC client on the specified fd.
+ */
+void ipc_confirm_restart(ipc_client *client) {
+    DLOG("ipc_confirm_restart(fd %d)\n", client->fd);
+    static const char *reply = "{\"success\":true}";
+    ipc_send_client_message(
+        client, strlen(reply), I3_IPC_REPLY_TYPE_COMMAND,
+        (const uint8_t *)reply);
+    ipc_push_pending(client);
 }

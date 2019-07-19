@@ -287,7 +287,7 @@ void i3_restart(bool forget_layout) {
 
     restore_geometry();
 
-    ipc_shutdown(SHUTDOWN_REASON_RESTART);
+    ipc_shutdown(SHUTDOWN_REASON_RESTART, -1);
 
     LOG("restarting \"%s\"...\n", start_argv[0]);
     /* make sure -a is in the argument list or add it */
@@ -465,7 +465,7 @@ void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it) {
  * if the number could be parsed.
  */
 bool parse_long(const char *str, long *out, int base) {
-    char *end;
+    char *end = NULL;
     long result = strtol(str, &end, base);
     if (result == LONG_MIN || result == LONG_MAX || result < 0 || (end != NULL && *end != '\0')) {
         *out = result;

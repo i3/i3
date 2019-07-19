@@ -48,7 +48,7 @@ void run_assignments(i3Window *window) {
         DLOG("matching assignment, execute command %s\n", current->dest.command);
         char *full_command;
         sasprintf(&full_command, "[id=\"%d\"] %s", window->id, current->dest.command);
-        CommandResult *result = parse_command(full_command, NULL);
+        CommandResult *result = parse_command(full_command, NULL, NULL);
         free(full_command);
 
         if (result->needs_tree_render)
