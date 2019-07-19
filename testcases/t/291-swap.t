@@ -43,6 +43,7 @@ sub fullscreen_windows {
 
 sub cmp_floating_rect {
     my ($window, $rect, $prefix) = @_;
+    sync_with_i3;
     my ($absolute, $top) = $window->rect;
 
     is($absolute->{width}, $rect->[2], "$prefix: width matches");
