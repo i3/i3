@@ -166,7 +166,7 @@ static void i3_exit(void) {
         fflush(stderr);
         shm_unlink(shmlogname);
     }
-    ipc_shutdown(SHUTDOWN_REASON_EXIT);
+    ipc_shutdown(SHUTDOWN_REASON_EXIT, -1);
     unlink(config.ipc_socket_path);
     xcb_disconnect(conn);
 
@@ -234,6 +234,20 @@ static void setup_term_handlers(void) {
          * the main loop. */
         ev_unref(main_loop);
     }
+}
+
+static int parse_restart_fd(void) {
+    const char *restart_fd = getenv("_I3_RESTART_FD");
+    if (restart_fd == NULL) {
+        return -1;
+    }
+
+    long int fd = -1;
+    if (!parse_long(restart_fd, &fd, 10)) {
+        ELOG("Malformed _I3_RESTART_FD \"%s\"\n", restart_fd);
+        return -1;
+    }
+    return fd;
 }
 
 int main(int argc, char *argv[]) {
@@ -844,6 +858,15 @@ int main(int argc, char *argv[]) {
             struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
             ev_io_init(ipc_io, ipc_new_client, fd, EV_READ);
             ev_io_start(main_loop, ipc_io);
+        }
+    }
+
+    {
+        const int restart_fd = parse_restart_fd();
+        if (restart_fd != -1) {
+            DLOG("serving restart fd %d", restart_fd);
+            ipc_client *client = ipc_new_client_on_fd(main_loop, restart_fd);
+            ipc_confirm_restart(client);
         }
     }
 
