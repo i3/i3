@@ -105,28 +105,28 @@ set $ws9 "9"
 set $ws10 "10"
 
 # switch to workspace
-bindcode $mod+10 workspace $ws1
-bindcode $mod+11 workspace $ws2
-bindcode $mod+12 workspace $ws3
-bindcode $mod+13 workspace $ws4
-bindcode $mod+14 workspace $ws5
-bindcode $mod+15 workspace $ws6
-bindcode $mod+16 workspace $ws7
-bindcode $mod+17 workspace $ws8
-bindcode $mod+18 workspace $ws9
-bindcode $mod+19 workspace $ws10
+bindcode $mod+10 workspace number $ws1
+bindcode $mod+11 workspace number $ws2
+bindcode $mod+12 workspace number $ws3
+bindcode $mod+13 workspace number $ws4
+bindcode $mod+14 workspace number $ws5
+bindcode $mod+15 workspace number $ws6
+bindcode $mod+16 workspace number $ws7
+bindcode $mod+17 workspace number $ws8
+bindcode $mod+18 workspace number $ws9
+bindcode $mod+19 workspace number $ws10
 
 # move focused container to workspace
-bindcode $mod+Shift+10 move container to workspace $ws1
-bindcode $mod+Shift+11 move container to workspace $ws2
-bindcode $mod+Shift+12 move container to workspace $ws3
-bindcode $mod+Shift+13 move container to workspace $ws4
-bindcode $mod+Shift+14 move container to workspace $ws5
-bindcode $mod+Shift+15 move container to workspace $ws6
-bindcode $mod+Shift+16 move container to workspace $ws7
-bindcode $mod+Shift+17 move container to workspace $ws8
-bindcode $mod+Shift+18 move container to workspace $ws9
-bindcode $mod+Shift+19 move container to workspace $ws10
+bindcode $mod+Shift+10 move container to workspace number $ws1
+bindcode $mod+Shift+11 move container to workspace number $ws2
+bindcode $mod+Shift+12 move container to workspace number $ws3
+bindcode $mod+Shift+13 move container to workspace number $ws4
+bindcode $mod+Shift+14 move container to workspace number $ws5
+bindcode $mod+Shift+15 move container to workspace number $ws6
+bindcode $mod+Shift+16 move container to workspace number $ws7
+bindcode $mod+Shift+17 move container to workspace number $ws8
+bindcode $mod+Shift+18 move container to workspace number $ws9
+bindcode $mod+Shift+19 move container to workspace number $ws10
 
 # reload the configuration file
 bindcode $mod+Shift+54 reload
