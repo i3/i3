@@ -1655,7 +1655,7 @@ void ipc_send_binding_event(const char *event_type, Binding *bind) {
  */
 void ipc_confirm_restart(ipc_client *client) {
     DLOG("ipc_confirm_restart(fd %d)\n", client->fd);
-    static const char *reply = "{\"success\":true}";
+    static const char *reply = "[{\"success\":true}]";
     ipc_send_client_message(
         client, strlen(reply), I3_IPC_REPLY_TYPE_COMMAND,
         (const uint8_t *)reply);
