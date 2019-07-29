@@ -30,8 +30,9 @@ EOT
 sub workspace_init_subtest {
     my $cmd = shift;
     my $num_events = shift;
-    my @events = events_for(sub { cmd $cmd }, 'workspace');
 
+    sync_with_i3;
+    my @events = events_for(sub { cmd $cmd }, 'workspace');
     my @init = grep { $_->{change} eq 'init' } @events;
     my $len = scalar @init;
     is($len, $num_events, "Received $num_events workspace::init event");
