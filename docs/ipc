@@ -111,12 +111,6 @@ The following reply types are implemented:
 
 COMMAND (0)::
 	Confirmation/Error code for the RUN_COMMAND message.
-+
-Note that when sending the `restart` command, you will get a reply once
-the restart completed. All IPC connection state (e.g. subscriptions)
-will reset, and libraries must be able to cope with it. One way of
-achieving that is to close the connection, if the library already
-supports transparent reconnects.
 WORKSPACES (1)::
 	Reply to the GET_WORKSPACES message.
 SUBSCRIBE (2)::
@@ -144,6 +138,20 @@ TICK (10)::
 The reply consists of a list of serialized maps for each command that was
 parsed. Each has the property +success (bool)+ and may also include a
 human-readable error message in the property +error (string)+.
+
+NOTE: When sending the `restart` command, you will get a singular reply once the
+restart completed. All IPC connection states (e.g. subscriptions) will reset and
+all but one socket will be closed. Libraries must be able to cope with this by
+aligning their internal states. It is also recommended that libraries close
+the last remaining socket(one which replied to `restart` command) to achieve
+the full reset.
+
+NOTE: It is easiest to always send the `restart` command alone: due to i3’s
+state reset, the reply messages of preceding commands are lost, and following
+commands will not be executed.
+
+NOTE: When processing the `exit` command, i3 will immediately exit without
+sending a reply. Expect the socket to be shut down.
 
 *Example:*
 -------------------
@@ -777,7 +785,7 @@ This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change ("focus", "init",
 "empty", "urgent", "reload", "rename", "restored", "move"). A
 +current (object)+ property will be present with the affected workspace
-whenever the type of event affects a workspace (otherwise, it will be +null).
+whenever the type of event affects a workspace (otherwise, it will be +null+).
 
 When the change is "focus", an +old (object)+ property will be present with the
 previous workspace.  When the first switch occurs (when i3 focuses the
