@@ -400,28 +400,24 @@ struct tray_output_t {
     tray_outputs;
 };
 
-/**
- * Finds the configuration file to use (either the one specified by
- * override_configpath), the user’s one or the system default) and calls
- * parse_file().
- *
- * If you specify override_configpath, only this path is used to look for a
- * configuration file.
- *
- * If use_nagbar is false, don't try to start i3-nagbar but log the errors to
- * stdout/stderr instead.
- *
- */
-bool parse_configuration(const char *override_configpath, bool use_nagbar);
+typedef enum {
+    C_VALIDATE,
+    C_LOAD,
+    C_RELOAD,
+} config_load_t;
 
 /**
- * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
+ * (Re-)loads the configuration file (sets useful defaults before).
  *
  * If you specify override_configpath, only this path is used to look for a
  * configuration file.
  *
+ * load_type specifies the type of loading: C_VALIDATE is used to only verify
+ * the correctness of the config file (used with the flag -C). C_LOAD will load
+ * the config for normal use and display errors in the nagbar. C_RELOAD will
+ * also clear the previous config.
  */
-void load_configuration(xcb_connection_t *conn, const char *override_configfile, bool reload);
+bool load_configuration(const char *override_configfile, config_load_t load_type);
 
 /**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
@@ -435,14 +431,3 @@ void ungrab_all_keys(xcb_connection_t *conn);
  *
  */
 void update_barconfig(void);
-
-/**
- * Kills the configerror i3-nagbar process, if any.
- *
- * Called when reloading/restarting.
- *
- * If wait_for_it is set (restarting), this function will waitpid(), otherwise,
- * ev is assumed to handle it (reloading).
- *
- */
-void kill_configerror_nagbar(bool wait_for_it);

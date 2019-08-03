@@ -302,12 +302,6 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         goto done;
     }
 
-    if (in_stacked) {
-        /* for stacked/tabbed cons, the resizing applies to the parent
-         * container */
-        con = con->parent;
-    }
-
     /* 7: floating modifier pressed, initiate a resize */
     if (dest == CLICK_INSIDE && mod_pressed && event->detail == XCB_BUTTON_CLICK_RIGHT) {
         if (floating_mod_on_tiled_client(con, event))

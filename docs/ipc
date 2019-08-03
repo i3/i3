@@ -80,7 +80,8 @@ Or, as a hexdump:
 ------------------------------------------------------------------------------
 
 To generate and send such a message, you could use the following code in Perl:
-------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 sub format_ipc_command {
     my ($msg) = @_;
     my $len;
@@ -90,7 +91,7 @@ sub format_ipc_command {
 }
 
 $sock->write(format_ipc_command("exit"));
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 == Receiving replies from i3
 
@@ -137,6 +138,20 @@ TICK (10)::
 The reply consists of a list of serialized maps for each command that was
 parsed. Each has the property +success (bool)+ and may also include a
 human-readable error message in the property +error (string)+.
+
+NOTE: When sending the `restart` command, you will get a singular reply once the
+restart completed. All IPC connection states (e.g. subscriptions) will reset and
+all but one socket will be closed. Libraries must be able to cope with this by
+aligning their internal states. It is also recommended that libraries close
+the last remaining socket(one which replied to `restart` command) to achieve
+the full reset.
+
+NOTE: It is easiest to always send the `restart` command alone: due to i3’s
+state reset, the reply messages of preceding commands are lost, and following
+commands will not be executed.
+
+NOTE: When processing the `exit` command, i3 will immediately exit without
+sending a reply. Expect the socket to be shut down.
 
 *Example:*
 -------------------
@@ -484,7 +499,7 @@ JSON dump:
    }
  ]
 }
-------------------------
+-----------------------
 
 [[_marks_reply]]
 === MARKS reply
@@ -681,9 +696,11 @@ responded to.
 
 To get informed when certain things happen in i3, clients can subscribe to
 events. Events consist of a name (like "workspace") and an event reply type
-(like I3_IPC_EVENT_WORKSPACE). The events sent by i3 are in the same format
-as replies to specific commands. However, the highest bit of the message type
-is set to 1 to indicate that this is an event reply instead of a normal reply.
+(like I3_IPC_EVENT_WORKSPACE). Events sent by i3 follow a format similar to
+replies but with the highest bit of the message type set to 1 to indicate an
+event reply instead of a normal reply. Note that event types and reply types
+do not follow the same enumeration scheme (e.g. event type 0 corresponds to the
+workspace event however reply type 0 corresponds to the COMMAND reply).
 
 Caveat: As soon as you subscribe to an event, it is not guaranteed any longer
 that the requests to i3 are processed in order. This means, the following
@@ -768,7 +785,7 @@ This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change ("focus", "init",
 "empty", "urgent", "reload", "rename", "restored", "move"). A
 +current (object)+ property will be present with the affected workspace
-whenever the type of event affects a workspace (otherwise, it will be +null).
+whenever the type of event affects a workspace (otherwise, it will be +null+).
 
 When the change is "focus", an +old (object)+ property will be present with the
 previous workspace.  When the first switch occurs (when i3 focuses the
@@ -948,6 +965,7 @@ C::
 	* i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
 	* https://github.com/acrisci/i3ipc-glib
 C++::
+	* https://github.com/Iskustvo/i3-ipcpp[i3-ipc++]
 	* https://github.com/drmgc/i3ipcpp
 Go::
 	* https://github.com/mdirkse/i3ipc-go

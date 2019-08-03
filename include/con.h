@@ -379,13 +379,6 @@ orientation_t con_orientation(Con *con);
 Con *con_next_focused(Con *con);
 
 /**
- * Get the next/previous container in the specified orientation. This may
- * travel up until it finds a container with suitable orientation.
- *
- */
-Con *con_get_next(Con *con, char way, orientation_t orientation);
-
-/**
  * Returns the focused con inside this client, descending the tree as far as
  * possible. This comes in handy when attaching a con to a workspace at the
  * currently focused position, for example.
@@ -533,3 +526,10 @@ i3String *con_parse_title_format(Con *con);
  *
  */
 bool con_swap(Con *first, Con *second);
+
+/**
+ * Returns given container's rect size depending on its orientation.
+ * i.e. its width when horizontal, its height when vertical.
+ *
+ */
+uint32_t con_rect_size_in_orientation(Con *con);

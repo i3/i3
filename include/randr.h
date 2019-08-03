@@ -48,7 +48,7 @@ void output_init_con(Output *output);
  * • Create the first unused workspace.
  *
  */
-void init_ws_for_output(Output *output, Con *content);
+void init_ws_for_output(Output *output);
 
 /**
  * Initializes the specified output, assigning the specified workspace to it.

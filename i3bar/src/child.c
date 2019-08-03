@@ -35,6 +35,7 @@ i3bar_child child;
 
 /* stdin- and SIGCHLD-watchers */
 ev_io *stdin_io;
+int stdin_fd;
 ev_child *child_sig;
 
 /* JSON parser for stdin */
@@ -175,6 +176,12 @@ static int stdin_start_map(void *context) {
     else
         ctx->block.sep_block_width = logical_px(8) + separator_symbol_width;
 
+    /* By default we draw all four borders if a border is set. */
+    ctx->block.border_top = 1;
+    ctx->block.border_right = 1;
+    ctx->block.border_bottom = 1;
+    ctx->block.border_left = 1;
+
     return 1;
 }
 
@@ -259,6 +266,22 @@ static int stdin_integer(void *context, long long val) {
     }
     if (strcasecmp(ctx->last_map_key, "separator_block_width") == 0) {
         ctx->block.sep_block_width = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "border_top") == 0) {
+        ctx->block.border_top = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "border_right") == 0) {
+        ctx->block.border_right = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "border_bottom") == 0) {
+        ctx->block.border_bottom = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "border_left") == 0) {
+        ctx->block.border_left = (uint32_t)val;
         return 1;
     }
 
@@ -450,7 +473,7 @@ static void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int rev
     }
     free(buffer);
     ev_io_stop(main_loop, stdin_io);
-    ev_io_init(stdin_io, &stdin_io_cb, STDIN_FILENO, EV_READ);
+    ev_io_init(stdin_io, &stdin_io_cb, stdin_fd, EV_READ);
     ev_io_start(main_loop, stdin_io);
 }
 
@@ -562,17 +585,17 @@ void start_child(char *command) {
             close(pipe_in[1]);
             close(pipe_out[0]);
 
-            dup2(pipe_in[0], STDIN_FILENO);
+            stdin_fd = pipe_in[0];
             child_stdin = pipe_out[1];
 
             break;
     }
 
     /* We set O_NONBLOCK because blocking is evil in event-driven software */
-    fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
+    fcntl(stdin_fd, F_SETFL, O_NONBLOCK);
 
     stdin_io = smalloc(sizeof(ev_io));
-    ev_io_init(stdin_io, &stdin_io_first_line_cb, STDIN_FILENO, EV_READ);
+    ev_io_init(stdin_io, &stdin_io_first_line_cb, stdin_fd, EV_READ);
     ev_io_start(main_loop, stdin_io);
 
     /* We must cleanup, if the child unexpectedly terminates */

@@ -822,7 +822,7 @@ int main(int argc, char *argv[]) {
     int screen;
     if ((conn = xcb_connect(NULL, &screen)) == NULL ||
         xcb_connection_has_error(conn))
-        errx(1, "Cannot open display\n");
+        errx(1, "Cannot open display");
 
     if (xkb_x11_setup_xkb_extension(conn,
                                     XKB_X11_MIN_MAJOR_XKB_VERSION,
@@ -859,7 +859,7 @@ int main(int argc, char *argv[]) {
     root = root_screen->root;
 
     if (!(modmap_reply = xcb_get_modifier_mapping_reply(conn, modmap_cookie, NULL)))
-        errx(EXIT_FAILURE, "Could not get modifier mapping\n");
+        errx(EXIT_FAILURE, "Could not get modifier mapping");
 
     xcb_numlock_mask = get_mod_mask_for(XCB_NUM_LOCK, symbols, modmap_reply);
 
@@ -899,7 +899,7 @@ int main(int argc, char *argv[]) {
     do {                                                                                   \
         xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name##_cookie, NULL); \
         if (!reply)                                                                        \
-            errx(EXIT_FAILURE, "Could not get atom " #name "\n");                          \
+            errx(EXIT_FAILURE, "Could not get atom " #name);                               \
                                                                                            \
         A_##name = reply->atom;                                                            \
         free(reply);                                                                       \

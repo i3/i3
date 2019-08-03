@@ -86,4 +86,33 @@ is(focused_output, 'fake-1', 'focus on second output');
 cmd 'focus output fake-0';
 is(focused_output, 'fake-0', 'focus on first output');
 
+################################################################################
+# use 'focus output' with command criteria and verify that i3 does not crash
+# when they don't match any window
+################################################################################
+
+is(focused_output, 'fake-0', 'focus on first output');
+
+cmd '[con_mark=doesnotexist] focus output right';
+does_i3_live;
+is(focused_output, 'fake-0', 'focus remained on first output');
+
+################################################################################
+# use 'focus output' with command criteria and verify that focus gets changed
+# appropriately
+################################################################################
+
+is(focused_output, 'fake-0', 'focus on first output');
+
+my $window = open_window;
+
+cmd 'focus output right';
+is(focused_output, 'fake-1', 'focus on second output');
+
+cmd '[id= . ' . $window->id . '] focus output right';
+is(focused_output, 'fake-1', 'focus on second output after command with criteria');
+
+cmd 'focus output right';
+is(focused_output, 'fake-0', 'focus on first output after command without criteria');
+
 done_testing;

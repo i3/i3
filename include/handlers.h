@@ -16,6 +16,7 @@
 
 extern int randr_base;
 extern int xkb_base;
+extern int shape_base;
 
 /**
  * Adds the given sequence to the list of events which are ignored.

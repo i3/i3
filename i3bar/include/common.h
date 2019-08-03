@@ -61,6 +61,10 @@ struct status_block {
 
     bool urgent;
     bool no_separator;
+    uint32_t border_top;
+    uint32_t border_right;
+    uint32_t border_bottom;
+    uint32_t border_left;
     bool pango_markup;
 
     /* The amount of pixels necessary to render a separater after the block. */

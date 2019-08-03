@@ -181,6 +181,7 @@ static struct CommandResultIR command_output;
 static void next_state(const cmdp_token *token) {
     if (token->next_state == __CALL) {
         subcommand_output.json_gen = command_output.json_gen;
+        subcommand_output.client = command_output.client;
         subcommand_output.needs_tree_render = false;
         GENERATED_call(token->extra.call_identifier, &subcommand_output);
         state = subcommand_output.next_state;
@@ -261,10 +262,12 @@ char *parse_string(const char **walk, bool as_word) {
  *
  * Free the returned CommandResult with command_result_free().
  */
-CommandResult *parse_command(const char *input, yajl_gen gen) {
+CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client) {
     DLOG("COMMAND: *%s*\n", input);
     state = INITIAL;
     CommandResult *result = scalloc(1, sizeof(CommandResult));
+
+    command_output.client = client;
 
     /* A YAJL JSON generator used for formatting replies. */
     command_output.json_gen = gen;
@@ -353,7 +356,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen) {
                 if (*walk == '\0' || *walk == ',' || *walk == ';') {
                     next_state(token);
                     token_handled = true;
-/* To make sure we start with an appropriate matching
+                    /* To make sure we start with an appropriate matching
                      * datastructure for commands which do *not* specify any
                      * criteria, we re-initialize the criteria system after
                      * every command. */
@@ -499,7 +502,7 @@ int main(int argc, char *argv[]) {
     }
     yajl_gen gen = yajl_gen_alloc(NULL);
 
-    CommandResult *result = parse_command(argv[1], gen);
+    CommandResult *result = parse_command(argv[1], gen, NULL);
 
     command_result_free(result);
 

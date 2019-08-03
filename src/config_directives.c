@@ -122,7 +122,7 @@ CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *ke
 }
 
 CFGFUN(enter_mode, const char *pango_markup, const char *modename) {
-    if (strcasecmp(modename, DEFAULT_BINDING_MODE) == 0) {
+    if (strcmp(modename, DEFAULT_BINDING_MODE) == 0) {
         ELOG("You cannot use the name %s for your mode\n", DEFAULT_BINDING_MODE);
         return;
     }
@@ -334,30 +334,41 @@ CFGFUN(show_marks, const char *value) {
     config.show_marks = eval_boolstr(value);
 }
 
-CFGFUN(workspace, const char *workspace, const char *outputs) {
-    DLOG("Assigning workspace \"%s\" to outputs \"%s\"\n", workspace, outputs);
-    /* Check for earlier assignments of the same workspace so that we
-     * don’t have assignments of a single workspace to different
-     * outputs */
+static char *current_workspace = NULL;
+
+CFGFUN(workspace, const char *workspace, const char *output) {
     struct Workspace_Assignment *assignment;
-    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-        if (strcasecmp(assignment->name, workspace) == 0) {
-            ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
-                 workspace);
+
+    /* When a new workspace line is encountered, for the first output word,
+     * $workspace from the config.spec is non-NULL. Afterwards, the parser calls
+     * clear_stack() because of the call line. Thus, we have to preserve the
+     * workspace string. */
+    if (workspace) {
+        FREE(current_workspace);
+
+        TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+            if (strcasecmp(assignment->name, workspace) == 0) {
+                ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
+                     workspace);
+                return;
+            }
+        }
+
+        current_workspace = sstrdup(workspace);
+    } else {
+        if (!current_workspace) {
+            DLOG("Both workspace and current_workspace are NULL, assuming we had an error before\n");
             return;
         }
+        workspace = current_workspace;
     }
 
-    char *buf = sstrdup(outputs);
-    char *output = strtok(buf, " ");
-    while (output != NULL) {
-        assignment = scalloc(1, sizeof(struct Workspace_Assignment));
-        assignment->name = sstrdup(workspace);
-        assignment->output = sstrdup(output);
-        TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
-        output = strtok(NULL, " ");
-    }
-    free(buf);
+    DLOG("Assigning workspace \"%s\" to output \"%s\"\n", workspace, output);
+
+    assignment = scalloc(1, sizeof(struct Workspace_Assignment));
+    assignment->name = sstrdup(workspace);
+    assignment->output = sstrdup(output);
+    TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
 }
 
 CFGFUN(ipc_socket, const char *path) {

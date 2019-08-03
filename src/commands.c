@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include <float.h>
 #include <stdarg.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "shmlog.h"
 
@@ -463,7 +465,7 @@ static void cmd_resize_floating(I3_CMD, const char *way, const char *direction_s
     } else {
         floating_con->rect.width += px;
     }
-    floating_check_size(floating_con);
+    floating_check_size(floating_con, orientation == VERT);
 
     /* Did we actually resize anything or did the size constraints prevent us?
      * If we could not resize, exit now to not move the window. */
@@ -533,8 +535,9 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *dir
     if (ppt != 0.0) {
         new_current_percent = current->percent + ppt;
     } else {
-        new_current_percent = px_resize_to_percent(current, px);
-        ppt = new_current_percent - current->percent;
+        /* Convert px change to change in percentages */
+        ppt = (double)px / (double)con_rect_size_in_orientation(current->parent);
+        new_current_percent = current->percent + ppt;
     }
     subtract_percent = ppt / (children - 1);
     if (ppt < 0.0 && new_current_percent < percent_for_1px(current)) {
@@ -600,13 +603,17 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
                 const double ppt = (double)resize_ppt / 100.0;
                 if (!cmd_resize_tiling_width_height(current_match, cmd_output,
                                                     current->con, direction,
-                                                    resize_px, ppt))
+                                                    resize_px, ppt)) {
+                    yerror("Cannot resize.");
                     return;
+                }
             } else {
                 if (!cmd_resize_tiling_direction(current_match, cmd_output,
                                                  current->con, direction,
-                                                 resize_px, resize_ppt))
+                                                 resize_px, resize_ppt)) {
+                    yerror("Cannot resize.");
                     return;
+                }
             }
         }
     }
@@ -652,7 +659,7 @@ static bool resize_set_tiling(I3_CMD, Con *target, orientation_t resize_orientat
 void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, const char *mode_height) {
     DLOG("resizing to %ld %s x %ld %s\n", cwidth, mode_width, cheight, mode_height);
     if (cwidth < 0 || cheight < 0) {
-        ELOG("Resize failed: dimensions cannot be negative (was %ld %s x %ld %s)\n", cwidth, mode_width, cheight, mode_height);
+        yerror("Dimensions cannot be negative.");
         return;
     }
 
@@ -777,6 +784,7 @@ void cmd_append_layout(I3_CMD, const char *cpath) {
     char *buf = NULL;
     ssize_t len;
     if ((len = slurp(path, &buf)) < 0) {
+        yerror("Could not slurp \"%s\".", path);
         /* slurp already logged an error. */
         goto out;
     }
@@ -826,7 +834,7 @@ void cmd_append_layout(I3_CMD, const char *cpath) {
     // is not executed yet and will be batched with append_layout’s
     // needs_tree_render after the parser finished. We should check if that is
     // necessary at all.
-    render_con(croot, false);
+    render_con(croot);
 
     restore_open_placeholder_windows(parent);
 
@@ -1108,22 +1116,13 @@ void cmd_move_workspace_to_output(I3_CMD, const char *name) {
         }
 
         Output *current_output = get_output_for_con(ws);
-        if (current_output == NULL) {
-            yerror("Cannot get current output. This is a bug in i3.");
-            return;
-        }
-
         Output *target_output = get_output_from_string(current_output, name);
         if (!target_output) {
             yerror("Could not get output from string \"%s\"", name);
             return;
         }
 
-        bool success = workspace_move_to_output(ws, target_output);
-        if (!success) {
-            yerror("Failed to move workspace to output.");
-            return;
-        }
+        workspace_move_to_output(ws, target_output);
     }
 
     cmd_output->needs_tree_render = true;
@@ -1508,7 +1507,7 @@ void cmd_layout(I3_CMD, const char *layout_str) {
 
     layout_t layout;
     if (!layout_from_name(layout_str, &layout)) {
-        ELOG("Unknown layout \"%s\", this is a mismatch between code and parser spec.\n", layout_str);
+        yerror("Unknown layout \"%s\", this is a mismatch between code and parser spec.", layout_str);
         return;
     }
 
@@ -1576,7 +1575,7 @@ void cmd_reload(I3_CMD) {
     LOG("reloading\n");
     kill_nagbar(&config_error_nagbar_pid, false);
     kill_nagbar(&command_error_nagbar_pid, false);
-    load_configuration(conn, NULL, true);
+    load_configuration(NULL, C_RELOAD);
     x_set_i3_atoms();
     /* Send an IPC event just in case the ws names have changed */
     ipc_send_workspace_event("reload", NULL, NULL);
@@ -1593,15 +1592,27 @@ void cmd_reload(I3_CMD) {
  */
 void cmd_restart(I3_CMD) {
     LOG("restarting i3\n");
-    ipc_shutdown(SHUTDOWN_REASON_RESTART);
+    int exempt_fd = -1;
+    if (cmd_output->client != NULL) {
+        exempt_fd = cmd_output->client->fd;
+        LOG("Carrying file descriptor %d across restart\n", exempt_fd);
+        int flags;
+        if ((flags = fcntl(exempt_fd, F_GETFD)) < 0 ||
+            fcntl(exempt_fd, F_SETFD, flags & ~FD_CLOEXEC) < 0) {
+            ELOG("Could not disable FD_CLOEXEC on fd %d\n", exempt_fd);
+        }
+        char *fdstr = NULL;
+        sasprintf(&fdstr, "%d", exempt_fd);
+        setenv("_I3_RESTART_FD", fdstr, 1);
+    }
+    ipc_shutdown(SHUTDOWN_REASON_RESTART, exempt_fd);
     unlink(config.ipc_socket_path);
     /* We need to call this manually since atexit handlers don’t get called
      * when exec()ing */
     purge_zerobyte_logfile();
     i3_restart(false);
-
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    /* unreached */
+    assert(false);
 }
 
 /*
@@ -1629,24 +1640,18 @@ void cmd_open(I3_CMD) {
  *
  */
 void cmd_focus_output(I3_CMD, const char *name) {
-    owindow *current;
-
-    DLOG("name = %s\n", name);
-
     HANDLE_EMPTY_MATCH;
 
-    /* get the output */
-    Output *current_output = NULL;
-    Output *output;
+    if (TAILQ_EMPTY(&owindows)) {
+        ysuccess(true);
+        return;
+    }
 
-    TAILQ_FOREACH(current, &owindows, owindows)
-    current_output = get_output_for_con(current->con);
-    assert(current_output != NULL);
-
-    output = get_output_from_string(current_output, name);
+    Output *current_output = get_output_for_con(TAILQ_FIRST(&owindows)->con);
+    Output *output = get_output_from_string(current_output, name);
 
     if (!output) {
-        yerror("No such output found.");
+        yerror("Output %s not found.", name);
         return;
     }
 
@@ -1661,7 +1666,6 @@ void cmd_focus_output(I3_CMD, const char *name) {
     workspace_show(ws);
 
     cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
     ysuccess(true);
 }
 
@@ -2012,9 +2016,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
     cmd_output->needs_tree_render = true;
     ysuccess(true);
 
-    ewmh_update_desktop_names();
-    ewmh_update_desktop_viewport();
-    ewmh_update_current_desktop();
+    ewmh_update_desktop_properties();
 
     startup_sequence_rename_workspace(old_name_copy, new_name);
     free(old_name_copy);

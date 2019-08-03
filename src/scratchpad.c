@@ -121,8 +121,8 @@ bool scratchpad_show(Con *con) {
             DLOG("Found an unfocused scratchpad window on this workspace\n");
             DLOG("Focusing it: %p\n", walk_con);
             /* use con_descend_tiling_focused to get the last focused
-                 * window inside this scratch container in order to
-                 * keep the focus the same within this container */
+             * window inside this scratch container in order to
+             * keep the focus the same within this container */
             con_activate(con_descend_tiling_focused(walk_con));
             return true;
         }
@@ -196,7 +196,7 @@ bool scratchpad_show(Con *con) {
         Con *output = con_get_output(con);
         con->rect.width = output->rect.width * 0.5;
         con->rect.height = output->rect.height * 0.75;
-        floating_check_size(con);
+        floating_check_size(con, false);
         floating_center(con, con_get_workspace(con)->rect);
     }
 

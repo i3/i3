@@ -15,6 +15,6 @@ docker build --pull --no-cache --rm -t=${BASENAME} -f ${DOCKERFILE} .
 # the login+push step when the variable isn’t set.
 if [ -n "${DOCKER_PASS}" ]
 then
-	docker login -e ${DOCKER_EMAIL} -u ${DOCKER_USER} -p ${DOCKER_PASS}
+	docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}
 	docker push ${BASENAME}
 fi

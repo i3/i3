@@ -101,11 +101,19 @@ is_deeply(\@actual_names, \@expected_names);
 # Kill first window to close a workspace.
 cmd '[id="' . $second->id . '"] kill';
 
-is(get_current_desktop, 2, '_NET_CURRENT_DESKTOP should be updated');
+is(get_current_desktop, 1, '_NET_CURRENT_DESKTOP should be updated');
 is(get_num_of_desktops, 2, '_NET_NUMBER_OF_DESKTOPS should be updated');
 my @actual_names = get_desktop_names;
 my @expected_names = ('0', '2');
 is_deeply(\@actual_names, \@expected_names, '_NET_DESKTOP_NAMES should be updated');
 
+# Rename workspace to reorder them.
+cmd 'rename workspace 0 to 5';
+
+is(get_current_desktop, 0, '_NET_CURRENT_DESKTOP should be updated');
+is(get_num_of_desktops, 2, '_NET_NUMBER_OF_DESKTOPS should remain the same');
+my @actual_names = get_desktop_names;
+my @expected_names = ('2', '5');
+is_deeply(\@actual_names, \@expected_names, '_NET_DESKTOP_NAMES should be updated');
 
 done_testing;

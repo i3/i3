@@ -94,12 +94,17 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event);
 void floating_resize_window(Con *con, const bool proportional, const xcb_button_press_event_t *event);
 
 /**
- * Called when a floating window is created or resized.
- * This function resizes the window if its size is higher or lower than the
- * configured maximum/minimum size, respectively.
+ * Called when a floating window is created or resized.  This function resizes
+ * the window if its size is higher or lower than the configured maximum/minimum
+ * size, respectively or when adjustments are needed to conform to the
+ * configured size increments or aspect ratio limits.
+ *
+ * When prefer_height is true and the window needs to be resized because of the
+ * configured aspect ratio, the width is adjusted first, preserving the previous
+ * height.
  *
  */
-void floating_check_size(Con *floating_con);
+void floating_check_size(Con *floating_con, bool prefer_height);
 
 /**
  * This is the return value of a drag operation like drag_pointer.
@@ -152,7 +157,7 @@ bool floating_reposition(Con *con, Rect newrect);
  * window's size hints.
  *
  */
-void floating_resize(Con *floating_con, int x, int y);
+void floating_resize(Con *floating_con, uint32_t x, uint32_t y);
 
 /**
  * Fixes the coordinates of the floating window whenever the window gets

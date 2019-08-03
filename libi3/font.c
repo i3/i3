@@ -163,6 +163,7 @@ i3Font load_font(const char *pattern, const bool fallback) {
 
     i3Font font;
     font.type = FONT_TYPE_NONE;
+    font.pattern = NULL;
 
     /* No XCB connction, return early because we're just validating the
      * configuration file. */
@@ -435,6 +436,7 @@ static int xcb_query_text_width(const xcb_char2b_t *text, size_t text_len) {
          * a crash. Plus, the user will see the error in their log. */
         fprintf(stderr, "Could not get text extents (X error code %d)\n",
                 error->error_code);
+        free(error);
         return savedFont->specific.xcb.info->max_bounds.character_width * text_len;
     }
 

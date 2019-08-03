@@ -118,7 +118,7 @@ EXTRA_DIST = \
 	I3_VERSION \
 	LICENSE \
 	PACKAGE-MAINTAINER \
-	RELEASE-NOTES-4.16.1 \
+	RELEASE-NOTES-4.17 \
 	generate-command-parser.pl \
 	parser-specs/commands.spec \
 	parser-specs/config.spec \
@@ -277,6 +277,7 @@ i3_LDADD = \
 
 libi3_CFLAGS = \
 	$(AM_CFLAGS) \
+	$(GLIBGOBJECT_CFLAGS) \
 	$(XCB_CFLAGS) \
 	$(XCB_UTIL_CFLAGS) \
 	$(XCB_UTIL_XRM_CFLAGS) \
@@ -285,6 +286,7 @@ libi3_CFLAGS = \
 
 libi3_LIBS = \
 	$(top_builddir)/libi3.a \
+	$(GLIBGOBJECT_LIBS) \
 	$(XCB_LIBS) \
 	$(XCB_UTIL_LIBS) \
 	$(XCB_UTIL_XRM_LIBS) \

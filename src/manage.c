@@ -80,6 +80,8 @@ void restore_geometry(void) {
  */
 void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cookie,
                    bool needs_to_be_mapped) {
+    DLOG("window 0x%08x\n", window);
+
     xcb_drawable_t d = {window};
     xcb_get_geometry_cookie_t geomc;
     xcb_get_geometry_reply_t *geom;
@@ -163,8 +165,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     wm_user_time_cookie = GET_PROPERTY(A__NET_WM_USER_TIME, UINT32_MAX);
     wm_desktop_cookie = GET_PROPERTY(A__NET_WM_DESKTOP, UINT32_MAX);
 
-    DLOG("Managing window 0x%08x\n", window);
-
     i3Window *cwindow = scalloc(1, sizeof(i3Window));
     cwindow->id = window;
     cwindow->depth = get_visual_depth(attr->visual);
@@ -185,9 +185,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_hints(cwindow, xcb_get_property_reply(conn, wm_hints_cookie, NULL), &urgency_hint);
     border_style_t motif_border_style = BS_NORMAL;
     window_update_motif_hints(cwindow, xcb_get_property_reply(conn, motif_wm_hints_cookie, NULL), &motif_border_style);
-    xcb_size_hints_t wm_size_hints;
-    if (!xcb_icccm_get_wm_size_hints_reply(conn, wm_normal_hints_cookie, &wm_size_hints, NULL))
-        memset(&wm_size_hints, '\0', sizeof(xcb_size_hints_t));
+    window_update_normal_hints(cwindow, xcb_get_property_reply(conn, wm_normal_hints_cookie, NULL), geom);
     xcb_get_property_reply_t *type_reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
     xcb_get_property_reply_t *state_reply = xcb_get_property_reply(conn, state_cookie, NULL);
 
@@ -437,10 +435,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_TOOLBAR) ||
         xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_SPLASH) ||
         xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_MODAL) ||
-        (wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MAX_SIZE &&
-         wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE &&
-         wm_size_hints.min_height == wm_size_hints.max_height &&
-         wm_size_hints.min_width == wm_size_hints.max_width)) {
+        (cwindow->max_width > 0 && cwindow->max_height > 0 &&
+         cwindow->min_height == cwindow->max_height &&
+         cwindow->min_width == cwindow->max_width)) {
         LOG("This window is a dialog window, setting floating\n");
         want_floating = true;
     }
@@ -499,29 +496,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (cwindow->dock)
         want_floating = false;
 
-    /* Plasma windows set their geometry in WM_SIZE_HINTS. */
-    if ((wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_US_POSITION || wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_POSITION) &&
-        (wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_US_SIZE || wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_SIZE)) {
-        DLOG("We are setting geometry according to wm_size_hints x=%d y=%d w=%d h=%d\n",
-             wm_size_hints.x, wm_size_hints.y, wm_size_hints.width, wm_size_hints.height);
-        geom->x = wm_size_hints.x;
-        geom->y = wm_size_hints.y;
-        geom->width = wm_size_hints.width;
-        geom->height = wm_size_hints.height;
-    }
-
-    if (wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE) {
-        DLOG("Window specifies minimum size %d x %d\n", wm_size_hints.min_width, wm_size_hints.min_height);
-        nc->window->min_width = wm_size_hints.min_width;
-        nc->window->min_height = wm_size_hints.min_height;
-    }
-
-    if (wm_size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MAX_SIZE) {
-        DLOG("Window specifies maximum size %d x %d\n", wm_size_hints.max_width, wm_size_hints.max_height);
-        nc->window->max_width = wm_size_hints.max_width;
-        nc->window->max_height = wm_size_hints.max_height;
-    }
-
     /* Store the requested geometry. The width/height gets raised to at least
      * 75x50 when entering floating mode, which is the minimum size for a
      * window to be useful (smaller windows are usually overlays/toolbars/…
@@ -574,6 +548,23 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * cleanup) */
     xcb_change_save_set(conn, XCB_SET_MODE_INSERT, window);
 
+    if (shape_supported) {
+        /* Receive ShapeNotify events whenever the client altered its window
+         * shape. */
+        xcb_shape_select_input(conn, window, true);
+
+        /* Check if the window is shaped. Sadly, we can check only for the
+         * bounding shape, not for the input shape. */
+        xcb_shape_query_extents_cookie_t cookie =
+            xcb_shape_query_extents(conn, window);
+        xcb_shape_query_extents_reply_t *reply =
+            xcb_shape_query_extents_reply(conn, cookie, NULL);
+        if (reply != NULL && reply->bounding_shaped) {
+            cwindow->shaped = true;
+        }
+        FREE(reply);
+    }
+
     /* Check if any assignments match */
     run_assignments(cwindow);
 
@@ -595,13 +586,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
          * workspace at all. However, just calling render_con() on the
          * workspace isn’t enough either — it needs the rect. */
         ws->rect = ws->parent->rect;
-        render_con(ws, true);
+        render_con(ws);
         /* Disable setting focus, otherwise we’d move focus to an invisible
          * workspace, which we generally prevent (e.g. in
          * con_move_to_workspace). */
         set_focus = false;
     }
-    render_con(croot, false);
+    render_con(croot);
 
     /* Send an event about window creation */
     ipc_send_window_event("new", nc);

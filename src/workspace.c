@@ -11,9 +11,12 @@
 #include "all.h"
 #include "yajl_utils.h"
 
-/* Stores a copy of the name of the last used workspace for the workspace
- * back-and-forth switching. */
-static char *previous_workspace_name = NULL;
+/*
+ * Stores a copy of the name of the last used workspace for the workspace
+ * back-and-forth switching.
+ *
+ */
+char *previous_workspace_name = NULL;
 
 /* NULL-terminated list of workspace names (in order) extracted from
  * keybindings. */
@@ -158,10 +161,7 @@ Con *workspace_get(const char *num, bool *created) {
         con_attach(workspace, content, false);
 
         ipc_send_workspace_event("init", workspace, NULL);
-        ewmh_update_number_of_desktops();
-        ewmh_update_desktop_names();
-        ewmh_update_desktop_viewport();
-        ewmh_update_wm_desktop();
+        ewmh_update_desktop_properties();
         if (created != NULL)
             *created = true;
     } else if (created != NULL) {
@@ -286,6 +286,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
     ws->workspace_layout = config.default_layout;
     _workspace_apply_default_orientation(ws);
 
+    ipc_send_workspace_event("init", ws, NULL);
     return ws;
 }
 
@@ -516,10 +517,7 @@ void workspace_show(Con *workspace) {
                 old_focus = NULL;
             }
 
-            ewmh_update_number_of_desktops();
-            ewmh_update_desktop_names();
-            ewmh_update_desktop_viewport();
-            ewmh_update_wm_desktop();
+            ewmh_update_desktop_properties();
         }
     }
 
@@ -957,26 +955,29 @@ Con *workspace_encapsulate(Con *ws) {
 
 /*
  * Move the given workspace to the specified output.
- * This returns true if and only if moving the workspace was successful.
  */
-bool workspace_move_to_output(Con *ws, Output *output) {
-    LOG("Trying to move workspace %p / %s to output %p / \"%s\".\n", ws, ws->name, output, output_primary_name(output));
+void workspace_move_to_output(Con *ws, Output *output) {
+    DLOG("Moving workspace %p / %s to output %p / \"%s\".\n", ws, ws->name, output, output_primary_name(output));
 
     Output *current_output = get_output_for_con(ws);
-    if (current_output == NULL) {
-        ELOG("Cannot get current output. This is a bug in i3.\n");
-        return false;
+    Con *content = output_get_content(output->con);
+    DLOG("got output %p with content %p\n", output, content);
+
+    if (ws->parent == content) {
+        DLOG("Nothing to do, workspace already there\n");
+        return;
     }
 
-    Con *content = output_get_content(output->con);
-    LOG("got output %p with content %p\n", output, content);
-
     Con *previously_visible_ws = TAILQ_FIRST(&(content->focus_head));
-    LOG("Previously visible workspace = %p / %s\n", previously_visible_ws, previously_visible_ws->name);
+    if (previously_visible_ws) {
+        DLOG("Previously visible workspace = %p / %s\n", previously_visible_ws, previously_visible_ws->name);
+    } else {
+        DLOG("No previously visible workspace on output.\n");
+    }
 
     bool workspace_was_visible = workspace_is_visible(ws);
     if (con_num_children(ws->parent) == 1) {
-        LOG("Creating a new workspace to replace \"%s\" (last on its output).\n", ws->name);
+        DLOG("Creating a new workspace to replace \"%s\" (last on its output).\n", ws->name);
 
         /* check if we can find a workspace assigned to this output */
         bool used_assignment = false;
@@ -991,19 +992,18 @@ bool workspace_move_to_output(Con *ws, Output *output) {
             }
 
             /* so create the workspace referenced to by this assignment */
-            LOG("Creating workspace from assignment %s.\n", assignment->name);
+            DLOG("Creating workspace from assignment %s.\n", assignment->name);
             workspace_get(assignment->name, NULL);
             used_assignment = true;
             break;
         }
 
-        /* if we couldn't create the workspace using an assignment, create
-         * it on the output */
-        if (!used_assignment)
+        /* if we couldn't create the workspace using an assignment, create it on
+         * the output. Workspace init IPC events are sent either by
+         * workspace_get or create_workspace_on_output. */
+        if (!used_assignment) {
             create_workspace_on_output(current_output, ws->parent);
-
-        /* notify the IPC listeners */
-        ipc_send_workspace_event("init", ws, NULL);
+        }
     }
     DLOG("Detaching\n");
 
@@ -1011,18 +1011,19 @@ bool workspace_move_to_output(Con *ws, Output *output) {
     Con *old_content = ws->parent;
     con_detach(ws);
     if (workspace_was_visible) {
-        /* The workspace which we just detached was visible, so focus
-         * the next one in the focus-stack. */
+        /* The workspace which we just detached was visible, so focus the next
+         * one in the focus-stack. */
         Con *focus_ws = TAILQ_FIRST(&(old_content->focus_head));
-        LOG("workspace was visible, focusing %p / %s now\n", focus_ws, focus_ws->name);
+        DLOG("workspace was visible, focusing %p / %s now\n", focus_ws, focus_ws->name);
         workspace_show(focus_ws);
     }
     con_attach(ws, content, false);
 
     /* fix the coordinates of the floating containers */
     Con *floating_con;
-    TAILQ_FOREACH(floating_con, &(ws->floating_head), floating_windows)
-    floating_fix_coordinates(floating_con, &(old_content->rect), &(content->rect));
+    TAILQ_FOREACH(floating_con, &(ws->floating_head), floating_windows) {
+        floating_fix_coordinates(floating_con, &(old_content->rect), &(content->rect));
+    }
 
     ipc_send_workspace_event("move", ws, NULL);
     if (workspace_was_visible) {
@@ -1030,21 +1031,24 @@ bool workspace_move_to_output(Con *ws, Output *output) {
         workspace_show(ws);
     }
 
-    /* NB: We cannot simply work with previously_visible_ws since it might
-     * have been cleaned up by workspace_show() already, depending on the
-     * focus order/number of other workspaces on the output.
-     * Instead, we loop through the available workspaces and only work with
-     * previously_visible_ws if we still find it. */
+    if (!previously_visible_ws) {
+        return;
+    }
+
+    /* NB: We cannot simply work with previously_visible_ws since it might have
+     * been cleaned up by workspace_show() already, depending on the focus
+     * order/number of other workspaces on the output. Instead, we loop through
+     * the available workspaces and only work with previously_visible_ws if we
+     * still find it. */
     TAILQ_FOREACH(ws, &(content->nodes_head), nodes) {
-        if (ws != previously_visible_ws)
+        if (ws != previously_visible_ws) {
             continue;
+        }
 
         /* Call the on_remove_child callback of the workspace which previously
-         * was visible on the destination output. Since it is no longer
-         * visible, it might need to get cleaned up. */
+         * was visible on the destination output. Since it is no longer visible,
+         * it might need to get cleaned up. */
         CALL(previously_visible_ws, on_remove_child);
         break;
     }
-
-    return true;
 }

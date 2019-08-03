@@ -603,6 +603,9 @@ This option determines which border style new windows will have. The default is
 +normal+. Note that default_floating_border applies only to windows which are starting out as
 floating windows, e.g., dialog windows, but not windows that are floated later on.
 
+Setting border style to +pixel+ eliminates title bars. The border style +normal+ allows you to
+adjust edge border width while keeping your title bar.
+
 *Syntax*:
 ---------------------------------------------
 default_border normal|none|pixel
@@ -654,7 +657,7 @@ hide_edge_borders vertical
 [[for_window]]
 === Arbitrary commands for specific windows (for_window)
 
-With the +for_window+ command, you can let i3 execute any command when it
+With the +for_window+ directive, you can let i3 execute any command when it
 encounters a specific window. This can be used to set windows to floating or to
 change their border style, for example.
 
@@ -677,7 +680,8 @@ for_window [class="urxvt"] border pixel 1
 for_window [title="x200: ~/work"] floating enable
 ------------------------------------------------
 
-The valid criteria are the same as those for commands, see <<command_criteria>>.
+The valid criteria are the same as those for commands, see <<command_criteria>>. Only config
+directives with a command equivalent can be executed at runtime, see <<list_of_commands>>.
 
 [[no_focus]]
 === Don't focus window upon opening
@@ -816,7 +820,8 @@ assign [class="^URxvt$"] → work
 # Assign to the workspace with number 2, regardless of name
 assign [class="^URxvt$"] → number 2
 
-# You can also specify a number + name. If the workspace with number 2 exists, assign will skip the text part.
+# You can also specify a number + name. If the workspace with number 2 exists,
+# assign will skip the text part.
 assign [class="^URxvt$"] → number "2: work"
 
 # Start urxvt -name irssi
@@ -1627,14 +1632,16 @@ buttons. This is useful if you want to have a named workspace that stays in
 order on the bar according to its number without displaying the number prefix.
 
 When +strip_workspace_numbers+ is set to +yes+, any workspace that has a name of
-the form "[n]:[NAME]" will display only the name. You could use this, for
+the form "[n][:][NAME]" will display only the name. You could use this, for
 instance, to display Roman numerals rather than digits by naming your
 workspaces to "1:I", "2:II", "3:III", "4:IV", ...
 
 When +strip_workspace_name+ is set to +yes+, any workspace that has a name of
-the form "[n]:[NAME]" will display only the number.
+the form "[n][:][NAME]" will display only the number.
 
-The default is to display the full name within the workspace button.
+The default is to display the full name within the workspace button. Be aware
+that the colon in the workspace name is optional, so `[n][NAME]` will also 
+have the the workspace name and number stripped correctly. 
 
 *Syntax*:
 ------------------------------
@@ -1736,6 +1743,26 @@ bar {
     }
 }
 --------------------------------------
+
+=== Transparency
+
+i3bar can support transparency by passing the +--transparency+ flag in the
+configuration:
+
+*Syntax*:
+--------------------------------------
+bar {
+    i3bar_command i3bar --transparency
+}
+--------------------------------------
+
+In the i3bar color configuration and i3bar status block color attribute you can
+then use colors in the RGBA format, i.e. the last two (hexadecimal) digits
+specify the opacity. For example, +#00000000+ will be completely transparent,
+while +#000000FF+ will be a fully opaque black (the same as +#000000+).
+
+Please note that due to the way the tray specification works, enabling this
+flag will cause all tray icons to have a transparent background.
 
 [[list_of_commands]]
 == List of commands
@@ -1839,6 +1866,9 @@ tiling::
 The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
 information on how to use them.
+
+Note that config directives listed under <<configuring>> cannot be changed at runtime 
+unless they happen to have a command equivalent.
 
 [[exec]]
 === Executing applications (exec)
@@ -2105,8 +2135,7 @@ using one of the following methods:
 +mark+:: A container with the specified mark, see <<vim_like_marks>>.
 
 Note that swapping does not work with all containers. Most notably, swapping
-floating containers or containers that have a parent-child relationship to one
-another does not work.
+containers that have a parent-child relationship to one another does not work.
 
 *Syntax*:
 ----------------------------------------
@@ -2414,8 +2443,9 @@ this mark or add it otherwise. Note that you may need to use this in
 combination with +--add+ (see below) as any other marks will otherwise be
 removed.
 
-By default, a window can only have one mark. You can use the +--add+ flag to
-put more than one mark on a window.
+The +--replace+ flag causes i3 to remove any existing marks, which is also the
+default behavior. You can use the +--add+ flag to put more than one mark on a
+window.
 
 Refer to <<show_marks>> if you don't want marks to be shown in the window decoration.
 
@@ -2425,6 +2455,21 @@ mark [--add|--replace] [--toggle] <identifier>
 [con_mark="identifier"] focus
 unmark <identifier>
 ----------------------------------------------
+
+You can use +i3-input+ to prompt for a mark name, then use the +mark+
+and +focus+ commands to create and jump to custom marks:
+
+*Examples*:
+---------------------------------------
+# read 1 character and mark the current window with this character
+bindsym $mod+m exec i3-input -F 'mark %s' -l 1 -P 'Mark: '
+
+# read 1 character and go to the window with the character
+bindsym $mod+g exec i3-input -F '[con_mark="%s"] focus' -l 1 -P 'Goto: '
+---------------------------------------
+
+Alternatively, if you do not want to mess with +i3-input+, you could create
+separate bindings for a specific set of labels and then only use those labels:
 
 *Example (in a terminal)*:
 ---------------------------------------------------------
@@ -2440,21 +2485,6 @@ unmark irssi
 # remove all marks on all firefox windows
 [class="(?i)firefox"] unmark
 ---------------------------------------------------------
-
-///////////////////////////////////////////////////////////////////
-TODO: make i3-input replace %s
-*Examples*:
----------------------------------------
-# Read 1 character and mark the current window with this character
-bindsym $mod+m exec i3-input -F 'mark %s' -l 1 -P 'Mark: '
-
-# Read 1 character and go to the window with the character
-bindsym $mod+g exec i3-input -F '[con_mark="%s"] focus' -l 1 -P 'Goto: '
----------------------------------------
-
-Alternatively, if you do not want to mess with +i3-input+, you could create
-separate bindings for a specific set of labels and then only use those labels.
-///////////////////////////////////////////////////////////////////
 
 [[pango_markup]]
 === Window title format
@@ -2840,3 +2870,20 @@ and you are in multi-monitor mode (see <<multi_monitor>>).
 Because i3 is not a compositing window manager, there is no ability to
 display a window on two screens at the same time. Instead, your presentation
 software needs to do this job (that is, open a window on each screen).
+
+[[hidpi]]
+=== High-resolution displays (aka HIDPI displays)
+
+See https://wiki.archlinux.org/index.php/HiDPI for details on how to enable
+scaling in various parts of the Linux desktop. i3 will read the desired DPI from
+the `Xft.dpi` property. The property defaults to 96 DPI, so to achieve 200%
+scaling, you’d set `Xft.dpi: 192` in `~/.Xresources`.
+
+If you are a long-time i3 user who just got a new monitor, double-check that:
+
+* You are using a scalable font (starting with “pango:”) in your i3 config.
+
+* You are using a terminal emulator which supports scaling. You could
+  temporarily switch to gnome-terminal, which is known to support scaling out of
+  the box, until you figure out how to adjust the font size in your favorite
+  terminal emulator.

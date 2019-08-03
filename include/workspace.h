@@ -25,6 +25,13 @@
 #define NET_WM_DESKTOP_ALL 0xFFFFFFFF
 
 /**
+ * Stores a copy of the name of the last used workspace for the workspace
+ * back-and-forth switching.
+ *
+ */
+extern char *previous_workspace_name;
+
+/**
  * Returns the workspace with the given name or NULL if such a workspace does
  * not exist.
  *
@@ -211,7 +218,6 @@ Con *workspace_encapsulate(Con *ws);
 
 /**
  * Move the given workspace to the specified output.
- * This returns true if and only if moving the workspace was successful.
  *
  */
-bool workspace_move_to_output(Con *ws, Output *output);
+void workspace_move_to_output(Con *ws, Output *output);

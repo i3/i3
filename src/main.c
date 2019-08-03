@@ -89,6 +89,7 @@ struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignment
 /* We hope that those are supported and set them to true */
 bool xcursor_supported = true;
 bool xkb_supported = true;
+bool shape_supported = true;
 
 bool force_xinerama = false;
 
@@ -165,7 +166,7 @@ static void i3_exit(void) {
         fflush(stderr);
         shm_unlink(shmlogname);
     }
-    ipc_shutdown(SHUTDOWN_REASON_EXIT);
+    ipc_shutdown(SHUTDOWN_REASON_EXIT, -1);
     unlink(config.ipc_socket_path);
     xcb_disconnect(conn);
 
@@ -233,6 +234,20 @@ static void setup_term_handlers(void) {
          * the main loop. */
         ev_unref(main_loop);
     }
+}
+
+static int parse_restart_fd(void) {
+    const char *restart_fd = getenv("_I3_RESTART_FD");
+    if (restart_fd == NULL) {
+        return -1;
+    }
+
+    long int fd = -1;
+    if (!parse_long(restart_fd, &fd, 10)) {
+        ELOG("Malformed _I3_RESTART_FD \"%s\"\n", restart_fd);
+        return -1;
+    }
+    return fd;
 }
 
 int main(int argc, char *argv[]) {
@@ -419,7 +434,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (only_check_config) {
-        exit(parse_configuration(override_configpath, false) ? 0 : 1);
+        exit(load_configuration(override_configpath, C_VALIDATE) ? 0 : 1);
     }
 
     /* If the user passes more arguments, we act like i3-msg would: Just send
@@ -519,7 +534,7 @@ int main(int argc, char *argv[]) {
 
     conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn))
-        errx(EXIT_FAILURE, "Cannot open display\n");
+        errx(EXIT_FAILURE, "Cannot open display");
 
     sndisplay = sn_xcb_display_new(conn, NULL, NULL);
 
@@ -533,7 +548,7 @@ int main(int argc, char *argv[]) {
     root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
 
-/* Place requests for the atoms we need as soon as possible */
+    /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
 #include "atoms.xmacro"
@@ -571,7 +586,7 @@ int main(int argc, char *argv[]) {
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
     xcb_query_pointer_cookie_t pointercookie = xcb_query_pointer(conn, root);
 
-/* Setup NetWM atoms */
+    /* Setup NetWM atoms */
 #define xmacro(name)                                                                       \
     do {                                                                                   \
         xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name##_cookie, NULL); \
@@ -585,7 +600,7 @@ int main(int argc, char *argv[]) {
 #include "atoms.xmacro"
 #undef xmacro
 
-    load_configuration(conn, override_configpath, false);
+    load_configuration(override_configpath, C_LOAD);
 
     if (config.ipc_socket_path == NULL) {
         /* Fall back to a file name in /tmp/ based on the PID */
@@ -627,6 +642,9 @@ int main(int argc, char *argv[]) {
         xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
 
     const xcb_query_extension_reply_t *extreply;
+    xcb_prefetch_extension_data(conn, &xcb_xkb_id);
+    xcb_prefetch_extension_data(conn, &xcb_shape_id);
+
     extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
     xkb_supported = extreply->present;
     if (!extreply->present) {
@@ -686,6 +704,23 @@ int main(int argc, char *argv[]) {
 
         free(pcf_reply);
         xkb_base = extreply->first_event;
+    }
+
+    /* Check for Shape extension. We want to handle input shapes which is
+     * introduced in 1.1. */
+    extreply = xcb_get_extension_data(conn, &xcb_shape_id);
+    if (extreply->present) {
+        shape_base = extreply->first_event;
+        xcb_shape_query_version_cookie_t cookie = xcb_shape_query_version(conn);
+        xcb_shape_query_version_reply_t *version =
+            xcb_shape_query_version_reply(conn, cookie, NULL);
+        shape_supported = version && version->minor_version >= 1;
+        free(version);
+    } else {
+        shape_supported = false;
+    }
+    if (!shape_supported) {
+        DLOG("shape 1.1 is not present on this server\n");
     }
 
     restore_connect();
@@ -826,15 +861,21 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    {
+        const int restart_fd = parse_restart_fd();
+        if (restart_fd != -1) {
+            DLOG("serving restart fd %d", restart_fd);
+            ipc_client *client = ipc_new_client_on_fd(main_loop, restart_fd);
+            ipc_confirm_restart(client);
+        }
+    }
+
     /* Set up i3 specific atoms like I3_SOCKET_PATH and I3_CONFIG_PATH */
     x_set_i3_atoms();
     ewmh_update_workarea();
 
     /* Set the ewmh desktop properties. */
-    ewmh_update_current_desktop();
-    ewmh_update_number_of_desktops();
-    ewmh_update_desktop_names();
-    ewmh_update_desktop_viewport();
+    ewmh_update_desktop_properties();
 
     struct ev_io *xcb_watcher = scalloc(1, sizeof(struct ev_io));
     xcb_prepare = scalloc(1, sizeof(struct ev_prepare));

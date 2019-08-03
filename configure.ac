@@ -2,7 +2,7 @@
 # Run autoreconf -fi to generate a configure script from this file.
 
 AC_PREREQ([2.69])
-AC_INIT([i3], [4.16.1], [https://github.com/i3/i3/issues])
+AC_INIT([i3], [4.17], [https://github.com/i3/i3/issues])
 # For AX_EXTEND_SRCDIR
 AX_ENABLE_BUILDDIR
 AM_INIT_AUTOMAKE([foreign subdir-objects -Wall no-dist-gzip dist-bzip2])
@@ -32,7 +32,7 @@ AX_EXTEND_SRCDIR
 AS_IF([test -d ${srcdir}/.git],
       [
         VERSION="$(git -C ${srcdir} describe --tags --abbrev=0)"
-        I3_VERSION="$(git -C ${srcdir} describe --tags --always) ($(git -C ${srcdir} log --pretty=format:%cd --date=short -n1), branch \\\"$(git -C ${srcdir} describe --tags --always --all | sed s:heads/::)\\\")"
+        I3_VERSION="$(git -C ${srcdir} describe --tags --always) ($(git -C ${srcdir} rev-list --format=%cd --date=short -n1 $(git rev-parse HEAD) | tail -n1), branch \\\"$(git -C ${srcdir} describe --tags --always --all | sed s:heads/::)\\\")"
         # Mirrors what libi3/is_debug_build.c does:
         is_release=$(test $(echo "${I3_VERSION}" | cut -d '(' -f 1 | wc -m) -lt 10 && echo yes || echo no)
       ],
@@ -91,7 +91,7 @@ AX_PTHREAD
 dnl Each prefix corresponds to a source tarball which users might have
 dnl downloaded in a newer version and would like to overwrite.
 PKG_CHECK_MODULES([LIBSN], [libstartup-notification-1.0])
-PKG_CHECK_MODULES([XCB], [xcb xcb-xkb xcb-xinerama xcb-randr])
+PKG_CHECK_MODULES([XCB], [xcb xcb-xkb xcb-xinerama xcb-randr xcb-shape])
 PKG_CHECK_MODULES([XCB_UTIL], [xcb-event xcb-util])
 PKG_CHECK_MODULES([XCB_UTIL_CURSOR], [xcb-cursor])
 PKG_CHECK_MODULES([XCB_UTIL_KEYSYMS], [xcb-keysyms])
@@ -101,6 +101,7 @@ PKG_CHECK_MODULES([XKBCOMMON], [xkbcommon xkbcommon-x11])
 PKG_CHECK_MODULES([YAJL], [yajl])
 PKG_CHECK_MODULES([LIBPCRE], [libpcre >= 8.10])
 PKG_CHECK_MODULES([PANGOCAIRO], [cairo >= 1.14.4 pangocairo])
+PKG_CHECK_MODULES([GLIBGOBJECT], [glib-2.0 gobject-2.0])
 
 # Checks for programs.
 AC_PROG_AWK

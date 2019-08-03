@@ -482,7 +482,13 @@ struct Window {
     int max_height;
 
     /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
-    double aspect_ratio;
+    double min_aspect_ratio;
+    double max_aspect_ratio;
+
+    /** The window has a nonrectangular shape. */
+    bool shaped;
+    /** The window has a nonrectangular input shape. */
+    bool input_shaped;
 };
 
 /**

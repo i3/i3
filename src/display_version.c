@@ -55,6 +55,13 @@ static yajl_callbacks version_callbacks = {
  *
  */
 void display_running_version(void) {
+    if (getenv("DISPLAY") == NULL) {
+        fprintf(stderr, "\nYour DISPLAY environment variable is not set.\n");
+        fprintf(stderr, "Are you running i3 via SSH or on a virtual console?\n");
+        fprintf(stderr, "Try DISPLAY=:0 i3 --moreversion\n");
+        exit(EXIT_FAILURE);
+    }
+
     char *pid_from_atom = root_atom_contents("I3_PID", conn, conn_screen);
     if (pid_from_atom == NULL) {
         /* If I3_PID is not set, the running version is older than 4.2-200. */

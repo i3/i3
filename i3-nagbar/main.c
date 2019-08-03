@@ -418,7 +418,7 @@ int main(int argc, char *argv[]) {
     int screens;
     if ((conn = xcb_connect(NULL, &screens)) == NULL ||
         xcb_connection_has_error(conn))
-        die("Cannot open display\n");
+        die("Cannot open display");
 
 /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
@@ -512,7 +512,7 @@ int main(int argc, char *argv[]) {
     do {                                                                                   \
         xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name##_cookie, NULL); \
         if (!reply)                                                                        \
-            die("Could not get atom " #name "\n");                                         \
+            die("Could not get atom " #name);                                              \
                                                                                            \
         A_##name = reply->atom;                                                            \
         free(reply);                                                                       \

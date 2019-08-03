@@ -69,32 +69,41 @@ xcb_char2b_t *convert_utf8_to_ucs2(char *input, size_t *real_strlen) {
     xcb_char2b_t *buffer = smalloc(buffer_size);
 
     /* We need to use an additional pointer, because iconv() modifies it */
-    size_t output_size = buffer_size;
+    size_t output_bytes_left = buffer_size;
     xcb_char2b_t *output = buffer;
 
     if (ucs2_conversion_descriptor == (iconv_t)-1) {
-        /* Get a new conversion descriptor */
-        ucs2_conversion_descriptor = iconv_open("UCS-2BE", "UTF-8");
-        if (ucs2_conversion_descriptor == (iconv_t)-1)
+        /* Get a new conversion descriptor. //IGNORE is a GNU suffix that makes
+         * iconv to silently discard characters that cannot be represented in
+         * the target character set. */
+        ucs2_conversion_descriptor = iconv_open("UCS-2BE//IGNORE", "UTF-8");
+        if (ucs2_conversion_descriptor == (iconv_t)-1) {
+            ucs2_conversion_descriptor = iconv_open("UCS-2BE", "UTF-8");
+        }
+        if (ucs2_conversion_descriptor == (iconv_t)-1) {
             err(EXIT_FAILURE, "Error opening the conversion context");
+        }
     } else {
         /* Reset the existing conversion descriptor */
         iconv(ucs2_conversion_descriptor, NULL, NULL, NULL, NULL);
     }
 
     /* Do the conversion */
-    size_t rc = iconv(ucs2_conversion_descriptor, &input, &input_size, (char **)&output, &output_size);
+    size_t rc = iconv(ucs2_conversion_descriptor, &input, &input_size,
+                      (char **)&output, &output_bytes_left);
     if (rc == (size_t)-1) {
+        /* Conversion will only be partial. */
         perror("Converting to UCS-2 failed");
-        free(buffer);
-        if (real_strlen != NULL)
-            *real_strlen = 0;
-        return NULL;
     }
 
+    /* If no bytes where converted, this is equivalent to freeing buffer. */
+    buffer_size -= output_bytes_left;
+    buffer = srealloc(buffer, buffer_size);
+
     /* Return the resulting string's length */
-    if (real_strlen != NULL)
-        *real_strlen = (buffer_size - output_size) / sizeof(xcb_char2b_t);
+    if (real_strlen != NULL) {
+        *real_strlen = buffer_size / sizeof(xcb_char2b_t);
+    }
 
     return buffer;
 }

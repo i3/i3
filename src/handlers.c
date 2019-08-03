@@ -20,6 +20,7 @@
 int randr_base = -1;
 int xkb_base = -1;
 int xkb_current_group;
+int shape_base = -1;
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -974,132 +975,14 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
         return false;
     }
 
-    xcb_size_hints_t size_hints;
+    bool changed = window_update_normal_hints(con->window, reply, NULL);
 
-    /* If the hints were already in this event, use them, if not, request them */
-    if (reply != NULL) {
-        xcb_icccm_get_wm_size_hints_from_reply(&size_hints, reply);
-    } else {
-        xcb_icccm_get_wm_normal_hints_reply(conn, xcb_icccm_get_wm_normal_hints_unchecked(conn, con->window->id), &size_hints, NULL);
-    }
-
-    int win_width = con->window_rect.width;
-    int win_height = con->window_rect.height;
-
-    if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE)) {
-        DLOG("Minimum size: %d (width) x %d (height)\n", size_hints.min_width, size_hints.min_height);
-
-        con->window->min_width = size_hints.min_width;
-        con->window->min_height = size_hints.min_height;
-    }
-
-    if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MAX_SIZE)) {
-        DLOG("Maximum size: %d (width) x %d (height)\n", size_hints.max_width, size_hints.max_height);
-
-        con->window->max_width = size_hints.max_width;
-        con->window->max_height = size_hints.max_height;
-    }
-
-    if (con_is_floating(con)) {
-        win_width = MAX(win_width, con->window->min_width);
-        win_height = MAX(win_height, con->window->min_height);
-        win_width = MIN(win_width, con->window->max_width);
-        win_height = MIN(win_height, con->window->max_height);
-    }
-
-    bool changed = false;
-    if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_RESIZE_INC)) {
-        if (size_hints.width_inc > 0 && size_hints.width_inc < 0xFFFF) {
-            if (con->window->width_increment != size_hints.width_inc) {
-                con->window->width_increment = size_hints.width_inc;
-                changed = true;
-            }
-        }
-
-        if (size_hints.height_inc > 0 && size_hints.height_inc < 0xFFFF) {
-            if (con->window->height_increment != size_hints.height_inc) {
-                con->window->height_increment = size_hints.height_inc;
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            DLOG("resize increments changed\n");
-        }
-    }
-
-    bool has_base_size = false;
-    int base_width = 0;
-    int base_height = 0;
-
-    /* The base width / height is the desired size of the window. */
-    if (size_hints.flags & XCB_ICCCM_SIZE_HINT_BASE_SIZE) {
-        base_width = size_hints.base_width;
-        base_height = size_hints.base_height;
-        has_base_size = true;
-    }
-
-    /* If the window didn't specify a base size, the ICCCM tells us to fall
-     * back to the minimum size instead, if available. */
-    if (!has_base_size && size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE) {
-        base_width = size_hints.min_width;
-        base_height = size_hints.min_height;
-    }
-
-    // TODO XXX Should we only do this is the base size is > 0?
-    if (base_width != con->window->base_width || base_height != con->window->base_height) {
-        con->window->base_width = base_width;
-        con->window->base_height = base_height;
-
-        DLOG("client's base_height changed to %d\n", base_height);
-        DLOG("client's base_width changed to %d\n", base_width);
-        changed = true;
-    }
-
-    /* If no aspect ratio was set or if it was invalid, we ignore the hints */
-    if (!(size_hints.flags & XCB_ICCCM_SIZE_HINT_P_ASPECT) ||
-        (size_hints.min_aspect_num <= 0) ||
-        (size_hints.min_aspect_den <= 0)) {
-        goto render_and_return;
-    }
-
-    /* The ICCCM says to subtract the base size from the window size for aspect
-     * ratio calculations. However, unlike determining the base size itself we
-     * must not fall back to using the minimum size in this case according to
-     * the ICCCM. */
-    double width = win_width - base_width * has_base_size;
-    double height = win_height - base_height * has_base_size;
-
-    /* Convert numerator/denominator to a double */
-    double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
-    double max_aspect = (double)size_hints.max_aspect_num / size_hints.max_aspect_den;
-
-    DLOG("Aspect ratio set: minimum %f, maximum %f\n", min_aspect, max_aspect);
-    DLOG("width = %f, height = %f\n", width, height);
-
-    /* Sanity checks, this is user-input, in a way */
-    if (max_aspect <= 0 || min_aspect <= 0 || height == 0 || (width / height) <= 0) {
-        goto render_and_return;
-    }
-
-    /* Check if we need to set proportional_* variables using the correct ratio */
-    double aspect_ratio = 0.0;
-    if ((width / height) < min_aspect) {
-        aspect_ratio = min_aspect;
-    } else if ((width / height) > max_aspect) {
-        aspect_ratio = max_aspect;
-    } else {
-        goto render_and_return;
-    }
-
-    if (fabs(con->window->aspect_ratio - aspect_ratio) > DBL_EPSILON) {
-        con->window->aspect_ratio = aspect_ratio;
-        changed = true;
-    }
-
-render_and_return:
     if (changed) {
-        tree_render();
+        Con *floating = con_inside_floating(con);
+        if (floating) {
+            floating_check_size(con, false);
+            tree_render();
+        }
     }
 
     FREE(reply);
@@ -1512,6 +1395,27 @@ void handle_event(int type, xcb_generic_event_t *event) {
             xkb_current_group = state->group;
             ungrab_all_keys(conn);
             grab_all_keys(conn);
+        }
+
+        return;
+    }
+
+    if (shape_supported && type == shape_base + XCB_SHAPE_NOTIFY) {
+        xcb_shape_notify_event_t *shape = (xcb_shape_notify_event_t *)event;
+
+        DLOG("shape_notify_event for window 0x%08x, shape_kind = %d, shaped = %d\n",
+             shape->affected_window, shape->shape_kind, shape->shaped);
+
+        Con *con = con_by_window_id(shape->affected_window);
+        if (con == NULL) {
+            LOG("Not a managed window 0x%08x, ignoring shape_notify_event\n",
+                shape->affected_window);
+            return;
+        }
+
+        if (shape->shape_kind == XCB_SHAPE_SK_BOUNDING ||
+            shape->shape_kind == XCB_SHAPE_SK_INPUT) {
+            x_set_shape(con, shape->shape_kind, shape->shaped);
         }
 
         return;

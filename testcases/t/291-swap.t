@@ -16,19 +16,42 @@
 #
 # Tests the swap command.
 # Ticket: #917
-use i3test i3_config => <<EOT;
+use i3test i3_autostart => 0;
+
+my $config = <<EOT;
 # i3 config file (v4)
 font font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 for_window[class="mark_A"] mark A
 for_window[class="mark_B"] mark B
 EOT
+my $pid = launch_with_config($config);
 
 my ($ws, $ws1, $ws2, $ws3);
 my ($node, $nodes, $expected_focus, $A, $B, $F);
 my ($result);
 my @fullscreen_permutations = ([], ["A"], ["B"], ["A", "B"]);
+my $rect_A = [ 100, 100, 100, 100 ];
+my $rect_B = [ 200, 200, 200, 200 ];
 my @urgent;
+
+sub fullscreen_windows {
+    my $ws = shift if @_;
+
+    scalar grep { $_->{fullscreen_mode} != 0 } @{get_ws_content($ws)}
+}
+
+sub cmp_floating_rect {
+    my ($window, $rect, $prefix) = @_;
+    sync_with_i3;
+    my ($absolute, $top) = $window->rect;
+
+    is($absolute->{width}, $rect->[2], "$prefix: width matches");
+    is($absolute->{height}, $rect->[3], "$prefix: height matches");
+
+    is($top->{x}, $rect->[0], "$prefix: x matches");
+    is($top->{y}, $rect->[1], "$prefix: y matches");
+}
 
 ###############################################################################
 # Invalid con_id should not crash i3
@@ -261,7 +284,6 @@ sync_with_i3;
 
 cmd '[con_mark=B] swap container with mark A';
 
-sync_with_i3;
 does_i3_live;
 
 $nodes = get_ws_content($ws1);
@@ -503,6 +525,142 @@ cmp_float($nodes->[1]->{nodes}->[0]->{percent}, 0.75, 'A has 75% height');
 kill_all_windows;
 
 ###############################################################################
+# Swap floating windows in the same workspace. Check that they exchange rects.
+###############################################################################
+$ws = fresh_workspace;
+
+$A = open_floating_window(wm_class => 'mark_A', rect => $rect_A);
+$B = open_floating_window(wm_class => 'mark_B', rect => $rect_B);
+
+cmd '[con_mark=B] swap container with mark A';
+cmp_floating_rect($A, $rect_B, 'A got B\'s rect');
+cmp_floating_rect($B, $rect_A, 'B got A\'s rect');
+
+kill_all_windows;
+
+###############################################################################
+# Swap a fullscreen floating and a normal floating window.
+###############################################################################
+$ws1 = fresh_workspace;
+$A = open_floating_window(wm_class => 'mark_A', rect => $rect_A, fullscreen => 1);
+$ws2 = fresh_workspace;
+$B = open_floating_window(wm_class => 'mark_B', rect => $rect_B);
+
+cmd '[con_mark=B] swap container with mark A';
+
+cmp_floating_rect($A, $rect_B, 'A got B\'s rect');
+
+$nodes = get_ws($ws1);
+$node = $nodes->{floating_nodes}->[0]->{nodes}->[0];
+is($node->{window}, $B->{id}, 'B is on the first workspace');
+is($node->{fullscreen_mode}, 1, 'B is now fullscreened');
+
+$nodes = get_ws($ws2);
+$node = $nodes->{floating_nodes}->[0]->{nodes}->[0];
+is($node->{window}, $A->{id}, 'A is on the second workspace');
+is($node->{fullscreen_mode}, 0, 'A is not fullscreened anymore');
+
+kill_all_windows;
+
+###############################################################################
+# Swap a floating window which is in a workspace that has another, regular
+# window with a regular window in another workspace. A & B focused.
+#
+# Before:
+# +-----------+
+# |         F |
+# |   +---+   |
+# |   | A |   |
+# |   +---+   |
+# |           |
+# +-----------+
+#
+# +-----------+
+# |           |
+# |           |
+# |     B     |
+# |           |
+# |           |
+# +-----------+
+#
+# After: Same as above but A <-> B. A & B focused.
+###############################################################################
+$ws1 = fresh_workspace;
+open_window;
+$A = open_floating_window(wm_class => 'mark_A', rect => $rect_A);
+$ws2 = fresh_workspace;
+$B = open_window(wm_class => 'mark_B');
+$expected_focus = get_focused($ws2);
+
+cmd '[con_mark=B] swap container with mark A';
+
+$nodes = get_ws($ws1);
+$node = $nodes->{floating_nodes}->[0]->{nodes}->[0];
+is($node->{window}, $B->{id}, 'B is floating on the first workspace');
+is(get_focused($ws1), $expected_focus, 'B is focused');
+cmp_floating_rect($B, $rect_A, 'B got A\'s rect');
+
+$nodes = get_ws_content($ws2);
+$node = $nodes->[0];
+is($node->{window}, $A->{id}, 'A is on the second workspace');
+
+kill_all_windows;
+
+###################################################################
+# Test that swapping a floating window maintains the correct
+# floating order.
+###################################################################
+$ws = fresh_workspace;
+$A = open_floating_window(wm_class => 'mark_A', rect => $rect_A);
+$B = open_window(wm_class => 'mark_B');
+$F = open_floating_window;
+$expected_focus = get_focused($ws);
+
+cmd '[con_mark=B] swap container with mark A';
+
+$nodes = get_ws($ws);
+
+$node = $nodes->{floating_nodes}->[0]->{nodes}->[0];
+is($node->{window}, $B->{id}, 'B is floating, bottom');
+cmp_floating_rect($B, $rect_A, 'B got A\'s rect');
+
+$node = $nodes->{floating_nodes}->[1]->{nodes}->[0];
+is($node->{window}, $F->{id}, 'F is floating, top');
+is(get_focused($ws), $expected_focus, 'F still focused');
+
+$node = $nodes->{nodes}->[0];
+is($node->{window}, $A->{id}, 'A is tiling');
+
+kill_all_windows;
+
+###############################################################################
+# Swap a sticky, floating container A and a floating fullscreen container B.
+# A should remain sticky and floating and should be fullscreened.
+###############################################################################
+$ws1 = fresh_workspace;
+open_window;
+$A = open_floating_window(wm_class => 'mark_A', rect => $rect_A);
+$expected_focus = get_focused($ws1);
+cmd 'sticky enable';
+$B = open_floating_window(wm_class => 'mark_B', rect => $rect_B);
+cmd 'fullscreen enable';
+
+cmd '[con_mark=B] swap container with mark A';
+
+is(@{get_ws($ws1)->{floating_nodes}}, 2, '2 fullscreen containers on first workspace');
+is(get_focused($ws1), $expected_focus, 'A is focused');
+
+$ws2 = fresh_workspace;
+cmd 'fullscreen disable';
+cmp_floating_rect($A, $rect_B, 'A got B\'s rect');
+is(@{get_ws($ws2)->{floating_nodes}}, 1, 'only A in new workspace');
+
+cmd "workspace $ws1"; # TODO: Why does rect check fails without switching workspaces?
+cmp_floating_rect($B, $rect_A, 'B got A\'s rect');
+
+kill_all_windows;
+
+###############################################################################
 # Swapping containers moves the urgency hint correctly.
 ###############################################################################
 
@@ -526,6 +684,64 @@ is(@urgent, 0, 'A is not marked urgent');
 is(get_ws($ws2)->{urgent}, 0, 'the second workspace is not marked urgent');
 
 kill_all_windows;
+
+###############################################################################
+# Swapping an urgent container from another workspace with the focused
+# container removes the urgency hint from both the container and the previous
+# workspace.
+###############################################################################
+
+$ws2 = fresh_workspace;
+$B = open_window(wm_class => 'mark_B');
+$ws1 = fresh_workspace;
+$A = open_window(wm_class => 'mark_A');
+
+$B->add_hint('urgency');
+sync_with_i3;
+
+cmd '[con_mark=B] swap container with mark A';
+
+@urgent = grep { $_->{urgent} } @{get_ws_content($ws1)};
+is(@urgent, 0, 'B is not marked urgent');
+is(get_ws($ws1)->{urgent}, 0, 'the first workspace is not marked urgent');
+
+@urgent = grep { $_->{urgent} } @{get_ws_content($ws2)};
+is(@urgent, 0, 'A is not marked urgent');
+is(get_ws($ws2)->{urgent}, 0, 'the second workspace is not marked urgent');
+
+kill_all_windows;
+
+exit_gracefully($pid);
+
+###############################################################################
+# Test that swapping with workspace_layout doesn't crash i3.
+# See issue #3280.
+###############################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+workspace_layout stacking
+EOT
+$pid = launch_with_config($config);
+
+$ws = fresh_workspace;
+open_window;
+open_window;
+$B = open_window;
+
+cmd 'move right';
+cmd 'focus left, focus parent, mark a';
+cmd 'focus right';
+cmd 'swap with mark a';
+
+does_i3_live;
+
+$nodes = get_ws_content($ws);
+is($nodes->[0]->{window}, $B->{id}, 'B is on the left');
+
+exit_gracefully($pid);
 
 ###############################################################################
 

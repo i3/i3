@@ -413,8 +413,7 @@ int sd_booted(void) {
 
     struct stat a, b;
 
-    /* We simply test whether the systemd cgroup hierarchy is
-         * mounted */
+    /* We simply test whether the systemd cgroup hierarchy is mounted */
 
     if (lstat("/sys/fs/cgroup", &a) < 0)
         return 0;

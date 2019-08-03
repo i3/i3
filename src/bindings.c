@@ -123,7 +123,7 @@ static bool binding_in_current_group(const Binding *bind) {
 }
 
 static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint32_t keycode) {
-/* Grab the key in all combinations */
+    /* Grab the key in all combinations */
 #define GRAB_KEY(modifier)                                                                       \
     do {                                                                                         \
         xcb_grab_key(conn, 0, root, modifier, keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC); \
@@ -621,7 +621,7 @@ void switch_mode(const char *new_mode) {
     DLOG("Switching to mode %s\n", new_mode);
 
     SLIST_FOREACH(mode, &modes, modes) {
-        if (strcasecmp(mode->name, new_mode) != 0)
+        if (strcmp(mode->name, new_mode) != 0)
             continue;
 
         ungrab_all_keys(conn);
@@ -824,7 +824,7 @@ CommandResult *run_binding(Binding *bind, Con *con) {
         sasprintf(&command, "[con_id=\"%p\"] %s", con, bind->command);
 
     Binding *bind_cp = binding_copy(bind);
-    CommandResult *result = parse_command(command, NULL);
+    CommandResult *result = parse_command(command, NULL, NULL);
     free(command);
 
     if (result->needs_tree_render)
