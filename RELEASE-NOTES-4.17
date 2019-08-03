@@ -1,0 +1,96 @@
+
+ ┌────────────────────────────┐
+ │ Release notes for i3 v4.17 │
+ └────────────────────────────┘
+
+This is i3 v4.17. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+This release contains a number of assorted fixes and improvements across pretty
+much all individual components of i3.
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.17        │
+ └────────────────────────────┘
+
+  • config: make binding modes case-sensitive
+  • default config: mention ~/.config/i3/config
+  • default config: start xss-lock, nm-applet, pactl (volume keys)
+  • docs/userguide: update syntax in strip_workspace_*
+  • docs/userguide: add a section about hidpi displays
+  • docs/userguide: document mark --replace
+  • docs/userguide: uncomment and update mark section example
+  • docs/userguide: point out differences of normal/pixel title bars
+  • docs/userguide: clarify which config directives can be used at runtime
+  • docs/userguide: for_window is a directive, not a command
+  • docs/ipc: clarify event/reply types
+  • docs/ipc: mention new i3-ipc++ C++ library
+  • docs/ipc: clarify restart/exit behavior
+  • docs/i3bar-protocol: add markup
+  • man/i3.man: fix config file search order
+  • ipc: make restart command send a reply once restart completed
+  • ipc: use queue for all messages
+    fixes i3bar issues when switching between workspaces with many windows
+  • i3-dump-log: clarify log message
+  • i3-msg: exit with status code 2 when i3 returns an error
+  • render left and right borders of titles in stacked mode
+  • make swap work with floating windows, fix swap crash
+  • switch to clang-format-6.0
+  • add input and bounding shapes support
+    (e.g. for the https://github.com/phw/peek screen recorder)
+  • preserve back_and_forth across restarts
+  • allow partial UTF-8 to UCS-2 conversion for better handling of
+    title bar content which cannot be represented (e.g. emoji)
+    when using bitmap pixel fonts
+  • check for duplicate key bindings in i3 -C
+  • i3bar: support transparency via --transparency flag (RGBA)
+  • i3bar: support for user-defined border widths
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • build: correctly depend on glib (for g_utf8_make_valid)
+  • build: fix build when git is configured to show signatures
+  • ipc: report correct workspace in init event after workspace move
+  • ipc: send missing window:focus event
+  • i3bar: correctly recognize click events with text alignment
+  • i3bar: fix running without fd 0  
+  • i3bar: correctly handle button presses on separator
+  • i3 --moreversion: warn when $DISPLAY is unset
+  • i3bar: support disabling click events
+  • release.sh: persist correct version number in docs
+  • accept output names containing spaces (e.g. in assignment)
+  • fix cursor resizing positioning
+  • fix aspect ratio issues (e.g. with mpv)
+  • fix brief focus flicker when renaming workspaces
+  • fix crash when canceling i3 via ctrl+c
+  • fix heap-use-after-free, memory leak
+  • fix focus bugs in enabling/disabling RandR outputs
+  • fix crash with popups when fullscreen is non-leaf
+  • fix crash when moving a second window to mark
+  • fix crash with programs with splash screen
+  • fix atoms when closing inactive workspace
+  • apply title_align to non-leaf containers
+  • layout loading: correctly mark non-leaf containers
+  • truncate wm_name utf8 strings to first zero byte
+    (makes window titles work with buggy clients)
+  • fix crash in workspace moving
+  • export I3SOCK environment variable (again)
+  • fix hanging flaky testcase by using the correct X11 connection
+  • resize: add missing error replies
+  • don’t pop up floating windows on the wrong workspace
+  • remove extra \n from errx and die calls
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  aksel, Albert Safin, Alejandro Angulo, Christopher Hasse, Connor E, Hamish
+  Macdonald, Ingo Bürk, Iskustvo, Jeffrey Huxen, Jeremy Klotz, Jonathan
+  Woodlief, lasers, Morten Linderud, nejni-marji, Nguyễn Thái Ngọc Duy, Nils
+  ANDRÉ-CHANG, Oliver Kraitschy, Orestis Floros, TAL, Vladimir Panteleev
+
+-- Michael Stapelberg, 2019-08-03
