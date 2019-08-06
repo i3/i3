@@ -174,13 +174,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     FREE(buttons);
 
     /* update as much information as possible so far (some replies may be NULL) */
-    window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL), true);
-    window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL), true);
-    window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL), true);
+    window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL));
+    window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL));
+    window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL));
     window_update_leader(cwindow, xcb_get_property_reply(conn, leader_cookie, NULL));
     window_update_transient_for(cwindow, xcb_get_property_reply(conn, transient_cookie, NULL));
     window_update_strut_partial(cwindow, xcb_get_property_reply(conn, strut_cookie, NULL));
-    window_update_role(cwindow, xcb_get_property_reply(conn, role_cookie, NULL), true);
+    window_update_role(cwindow, xcb_get_property_reply(conn, role_cookie, NULL));
     bool urgency_hint;
     window_update_hints(cwindow, xcb_get_property_reply(conn, wm_hints_cookie, NULL), &urgency_hint);
     border_style_t motif_border_style = BS_NORMAL;
@@ -594,6 +594,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     }
     render_con(croot);
 
+    cwindow->managed_since = time(NULL);
+
     /* Send an event about window creation */
     ipc_send_window_event("new", nc);
 
@@ -669,4 +671,100 @@ geom_out:
     free(geom);
 out:
     free(attr);
+}
+
+/*
+ * Remanages a window: performs a swallow check and runs assignments.
+ * Returns con for the window regardless if it updated.
+ *
+ */
+Con *remanage_window(Con *con) {
+    Match *match;
+    Con *nc = con_for_window(croot, con->window, &match);
+    if (nc == NULL || nc->window == con->window) {
+        run_assignments(con->window);
+        return con;
+    }
+    if (nc->window->managed_since > con->window->managed_since) {
+        run_assignments(con->window);
+        return con;
+    }
+
+    if (!restore_kill_placeholder(nc->window->id)) {
+        DLOG("Uh?! Container without a placeholder, but with a window, has swallowed this managed window?!\n");
+    } else {
+        /* Remove all match criteria, the first swallowed window wins. */
+        while (!TAILQ_EMPTY(&(nc->swallow_head))) {
+            Match *first = TAILQ_FIRST(&(nc->swallow_head));
+            TAILQ_REMOVE(&(nc->swallow_head), first, matches);
+            match_free(first);
+            free(first);
+        }
+    }
+    window_free(nc->window);
+
+    xcb_window_t old_frame = XCB_NONE;
+    /* Match frame and window depth. This is needed because X will refuse to reparent a
+     * window whose background is ParentRelative under a window with a different depth. */
+    if (nc->depth != con->window->depth) {
+        old_frame = nc->frame.id;
+        nc->depth = con->window->depth;
+        x_con_reframe(nc);
+    }
+    nc->window = con->window;
+    con->window = NULL;
+
+    x_reparent_child(nc, con);
+
+    bool moved_workpaces = (con_get_workspace(nc) != con_get_workspace(con));
+
+    /* Merge container specific data that should move with window */
+    if (con->title_format) {
+        FREE(nc->title_format);
+        nc->title_format = con->title_format;
+        con->title_format = NULL;
+    }
+    if (con->sticky_group) {
+        FREE(nc->sticky_group);
+        nc->sticky_group = con->sticky_group;
+        con->sticky_group = NULL;
+    }
+    con_set_urgency(nc, con->urgent);
+    mark_t *mark;
+    TAILQ_FOREACH(mark, &(con->marks_head), marks) {
+        TAILQ_INSERT_TAIL(&(nc->marks_head), mark, marks);
+        ipc_send_window_event("mark", nc);
+    }
+    nc->mark_changed = (TAILQ_FIRST(&(con->marks_head)) != NULL);
+    TAILQ_INIT(&(con->marks_head));
+
+    tree_close_internal(con, DONT_KILL_WINDOW, false);
+
+    /* Destroy the old frame if we had to reframe the container. This needs to be done
+     * after rendering in order to prevent the background from flickering in its place. */
+    if (old_frame != XCB_NONE) {
+        xcb_destroy_window(conn, old_frame);
+    }
+
+    run_assignments(nc->window);
+
+    if (moved_workpaces) {
+        /* If the window is associated with a startup sequence, delete it so
+         * child windows won't be created on the old workspace. */
+        struct Startup_Sequence *sequence;
+        xcb_get_property_cookie_t cookie;
+        xcb_get_property_reply_t *startup_id_reply;
+
+        cookie = xcb_get_property(conn, false, nc->window->id,
+                                  A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
+        startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
+
+        sequence = startup_sequence_get(nc->window, startup_id_reply, true);
+        if (sequence != NULL)
+            startup_sequence_delete(sequence);
+
+        ewmh_update_wm_desktop();
+    }
+
+    return nc;
 }
