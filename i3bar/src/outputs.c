@@ -46,7 +46,11 @@ static int outputs_boolean_cb(void *params_, int val) {
     struct outputs_json_params *params = (struct outputs_json_params *)params_;
 
     if (!strcmp(params->cur_key, "active")) {
-        params->outputs_walk->active = val;
+        bool changed = params->outputs_walk->active != (bool)val;
+        if (changed) {
+            params->outputs_walk->active = val;
+            stop_or_cont_child();
+        }
         FREE(params->cur_key);
         return 1;
     }

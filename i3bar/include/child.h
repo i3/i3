@@ -76,6 +76,13 @@ void stop_child(void);
 void cont_child(void);
 
 /*
+ * Send a SIGSTOP or SIGCONT as necessary in response to a change in
+ * window visibility or output activity.
+ *
+ */
+void stop_or_cont_child(void);
+
+/*
  * Whether or not the child want click events
  *
  */

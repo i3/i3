@@ -731,6 +731,21 @@ void cont_child(void) {
 }
 
 /*
+ * Send a SIGSTOP or SIGCONT as necessary in response to a change in
+ * window visibility or output activity.
+ *
+ */
+void stop_or_cont_child(void) {
+    i3_output *output;
+    SLIST_FOREACH(output, outputs, slist) {
+        if (output->active && output->visible) {
+            cont_child();
+            return;
+        }
+    }
+    stop_child();
+}
+/*
  * Whether or not the child want click events
  *
  */

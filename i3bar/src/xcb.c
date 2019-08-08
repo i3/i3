@@ -657,29 +657,17 @@ static void handle_button(xcb_button_press_event_t *event) {
  */
 static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
     bool visible = (event->state != XCB_VISIBILITY_FULLY_OBSCURED);
-    int num_visible = 0;
     i3_output *output;
 
     SLIST_FOREACH(output, outputs, slist) {
-        if (!output->active) {
-            continue;
-        }
         if (output->bar.id == event->window) {
-            if (output->visible == visible) {
-                return;
+            bool changed = output->visible != visible;
+            if (changed) {
+                output->visible = visible;
+                stop_or_cont_child();
             }
-            output->visible = visible;
+            return;
         }
-        num_visible += output->visible;
-    }
-
-    if (num_visible == 0) {
-        stop_child();
-    } else if (num_visible == visible) {
-        /* Wake the child only when transitioning from 0 to 1 visible bar.
-         * We cannot transition from 0 to 2 or more visible bars at once since
-         * visibility events are delivered to each window separately */
-        cont_child();
     }
 }
 
