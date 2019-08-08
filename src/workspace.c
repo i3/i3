@@ -983,11 +983,15 @@ void workspace_move_to_output(Con *ws, Output *output) {
         bool used_assignment = false;
         struct Workspace_Assignment *assignment;
         TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+            bool attached;
+            int num;
             if (!output_triggers_assignment(current_output, assignment)) {
                 continue;
             }
-            /* check if this workspace is already attached to the tree */
-            if (get_existing_workspace_by_name(assignment->name) != NULL) {
+            /* check if this workspace's name or num is already attached to the tree */
+            num = ws_name_to_number(assignment->name);
+            attached = ((num == -1) ? get_existing_workspace_by_name(assignment->name) : get_existing_workspace_by_num(num)) != NULL;
+            if (attached) {
                 continue;
             }
 
