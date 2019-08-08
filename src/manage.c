@@ -18,7 +18,7 @@
  * window whose background is ParentRelative under a window with a different depth.
  *
  */
-xcb_window_t _match_depth(i3Window *win, Con *con) {
+static xcb_window_t _match_depth(i3Window *win, Con *con) {
     xcb_window_t old_frame = XCB_NONE;
     if (con->depth != win->depth) {
         old_frame = con->frame.id;
@@ -32,7 +32,7 @@ xcb_window_t _match_depth(i3Window *win, Con *con) {
  * Remove all match criteria, the first swallowed window wins. 
  *
  */
-void _remove_matches(Con *con) {
+static void _remove_matches(Con *con) {
     while (!TAILQ_EMPTY(&(con->swallow_head))) {
         Match *first = TAILQ_FIRST(&(con->swallow_head));
         TAILQ_REMOVE(&(con->swallow_head), first, matches);
