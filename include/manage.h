@@ -38,7 +38,7 @@ void manage_window(xcb_window_t window,
                    xcb_get_window_attributes_cookie_t cookie,
                    bool needs_to_be_mapped);
 
-/*
+/**
  * Remanages a window: performs a swallow check and runs assignments.
  * Returns con for the window regardless if it updated.
  *
