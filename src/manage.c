@@ -14,6 +14,34 @@
 #include <yajl/yajl_gen.h>
 
 /*
+ * Match frame and window depth. This is needed because X will refuse to reparent a
+ * window whose background is ParentRelative under a window with a different depth.
+ *
+ */
+xcb_window_t _match_depth(i3Window *win, Con *con) {
+    xcb_window_t old_frame = XCB_NONE;
+    if (con->depth != win->depth) {
+        old_frame = con->frame.id;
+        con->depth = win->depth;
+        x_con_reframe(con);
+    }
+    return old_frame;
+}
+
+/*
+ * Remove all match criteria, the first swallowed window wins. 
+ *
+ */
+void _remove_matches(Con *con) {
+    while (!TAILQ_EMPTY(&(con->swallow_head))) {
+        Match *first = TAILQ_FIRST(&(con->swallow_head));
+        TAILQ_REMOVE(&(con->swallow_head), first, matches);
+        match_free(first);
+        free(first);
+    }
+}
+
+/*
  * Go through all existing windows (if the window manager is restarted) and manage them
  *
  */
@@ -341,24 +369,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             DLOG("Uh?! Container without a placeholder, but with a window, has swallowed this to-be-managed window?!\n");
         } else {
             /* Remove remaining criteria, the first swallowed window wins. */
-            while (!TAILQ_EMPTY(&(nc->swallow_head))) {
-                Match *first = TAILQ_FIRST(&(nc->swallow_head));
-                TAILQ_REMOVE(&(nc->swallow_head), first, matches);
-                match_free(first);
-                free(first);
-            }
+            _remove_matches(nc);
         }
     }
-    xcb_window_t old_frame = XCB_NONE;
+    xcb_window_t old_frame;
     if (nc->window != cwindow && nc->window != NULL) {
         window_free(nc->window);
-        /* Match frame and window depth. This is needed because X will refuse to reparent a
-         * window whose background is ParentRelative under a window with a different depth. */
-        if (nc->depth != cwindow->depth) {
-            old_frame = nc->frame.id;
-            nc->depth = cwindow->depth;
-            x_con_reframe(nc);
-        }
+        old_frame = _match_depth(cwindow, nc);
     }
     nc->window = cwindow;
     x_reinit(nc);
@@ -693,24 +710,11 @@ Con *remanage_window(Con *con) {
     if (!restore_kill_placeholder(nc->window->id)) {
         DLOG("Uh?! Container without a placeholder, but with a window, has swallowed this managed window?!\n");
     } else {
-        /* Remove all match criteria, the first swallowed window wins. */
-        while (!TAILQ_EMPTY(&(nc->swallow_head))) {
-            Match *first = TAILQ_FIRST(&(nc->swallow_head));
-            TAILQ_REMOVE(&(nc->swallow_head), first, matches);
-            match_free(first);
-            free(first);
-        }
+        _remove_matches(nc);
     }
     window_free(nc->window);
 
-    xcb_window_t old_frame = XCB_NONE;
-    /* Match frame and window depth. This is needed because X will refuse to reparent a
-     * window whose background is ParentRelative under a window with a different depth. */
-    if (nc->depth != con->window->depth) {
-        old_frame = nc->frame.id;
-        nc->depth = con->window->depth;
-        x_con_reframe(nc);
-    }
+    xcb_window_t old_frame = _match_depth(con->window, nc);
     nc->window = con->window;
     con->window = NULL;
 
