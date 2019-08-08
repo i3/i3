@@ -733,6 +733,7 @@ Con *remanage_window(Con *con) {
         nc->sticky_group = con->sticky_group;
         con->sticky_group = NULL;
     }
+    nc->sticky = con->sticky;
     con_set_urgency(nc, con->urgent);
     mark_t *mark;
     TAILQ_FOREACH(mark, &(con->marks_head), marks) {
