@@ -718,35 +718,12 @@ Con *remanage_window(Con *con) {
     window_free(nc->window);
 
     xcb_window_t old_frame = _match_depth(con->window, nc);
-    nc->window = con->window;
-    con->window = NULL;
 
     x_reparent_child(nc, con);
 
     bool moved_workpaces = (con_get_workspace(nc) != con_get_workspace(con));
 
-    /* Merge container specific data that should move with window */
-    if (con->title_format) {
-        FREE(nc->title_format);
-        nc->title_format = con->title_format;
-        con->title_format = NULL;
-    }
-    if (con->sticky_group) {
-        FREE(nc->sticky_group);
-        nc->sticky_group = con->sticky_group;
-        con->sticky_group = NULL;
-    }
-    nc->sticky = con->sticky;
-    con_set_urgency(nc, con->urgent);
-    mark_t *mark;
-    TAILQ_FOREACH(mark, &(con->marks_head), marks) {
-        TAILQ_INSERT_TAIL(&(nc->marks_head), mark, marks);
-        ipc_send_window_event("mark", nc);
-    }
-    nc->mark_changed = (TAILQ_FIRST(&(con->marks_head)) != NULL);
-    TAILQ_INIT(&(con->marks_head));
-
-    tree_close_internal(con, DONT_KILL_WINDOW, false);
+    con_merge_into(con, nc);
 
     /* Destroy the old frame if we had to reframe the container. This needs to be done
      * after rendering in order to prevent the background from flickering in its place. */
