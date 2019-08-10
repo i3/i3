@@ -702,6 +702,9 @@ Con *remanage_window(Con *con) {
         run_assignments(con->window);
         return con;
     }
+    /* Make sure the placeholder that wants to swallow this window didn't spawn
+     * after the window to follow current behavior: adding a placeholder won't
+     * swallow windows currently managed. */
     if (nc->window->managed_since > con->window->managed_since) {
         run_assignments(con->window);
         return con;
