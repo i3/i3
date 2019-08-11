@@ -372,7 +372,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             _remove_matches(nc);
         }
     }
-    xcb_window_t old_frame;
+    xcb_window_t old_frame = XCB_NONE;
     if (nc->window != cwindow && nc->window != NULL) {
         window_free(nc->window);
         old_frame = _match_depth(cwindow, nc);
