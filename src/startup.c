@@ -370,7 +370,7 @@ char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *
  * Deletes the startup sequence for a window if it exists.
  *
  */
-void startup_sequence_delete_by_window(i3Window* win) {
+void startup_sequence_delete_by_window(i3Window *win) {
     struct Startup_Sequence *sequence;
     xcb_get_property_cookie_t cookie;
     xcb_get_property_reply_t *startup_id_reply;
