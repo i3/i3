@@ -736,17 +736,7 @@ Con *remanage_window(Con *con) {
     if (moved_workpaces) {
         /* If the window is associated with a startup sequence, delete it so
          * child windows won't be created on the old workspace. */
-        struct Startup_Sequence *sequence;
-        xcb_get_property_cookie_t cookie;
-        xcb_get_property_reply_t *startup_id_reply;
-
-        cookie = xcb_get_property(conn, false, nc->window->id,
-                                  A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
-        startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
-
-        sequence = startup_sequence_get(nc->window, startup_id_reply, true);
-        if (sequence != NULL)
-            startup_sequence_delete(sequence);
+        startup_sequence_delete_by_window(nc->window);
 
         ewmh_update_wm_desktop();
     }
