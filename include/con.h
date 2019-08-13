@@ -533,3 +533,11 @@ bool con_swap(Con *first, Con *second);
  *
  */
 uint32_t con_rect_size_in_orientation(Con *con);
+
+/**
+ * Merges container specific data that should move with the window (e.g. marks,
+ * title format, and the window itself) into another container, and closes the
+ * old container.
+ *
+ */
+void con_merge_into(Con *old, Con *new);

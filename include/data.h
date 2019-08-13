@@ -489,6 +489,10 @@ struct Window {
     bool shaped;
     /** The window has a nonrectangular input shape. */
     bool input_shaped;
+
+    /* Time when the window became managed. Used to determine whether a window
+     * should be swallowed after initial management. */
+    time_t managed_since;
 };
 
 /**

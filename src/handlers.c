@@ -565,7 +565,9 @@ static bool handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t
 
     char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
 
-    window_update_name(con->window, prop, false);
+    window_update_name(con->window, prop);
+
+    con = remanage_window(con);
 
     x_push_changes(croot);
 
@@ -590,7 +592,9 @@ static bool handle_windowname_change_legacy(void *data, xcb_connection_t *conn, 
 
     char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
 
-    window_update_name_legacy(con->window, prop, false);
+    window_update_name_legacy(con->window, prop);
+
+    con = remanage_window(con);
 
     x_push_changes(croot);
 
@@ -612,7 +616,9 @@ static bool handle_windowrole_change(void *data, xcb_connection_t *conn, uint8_t
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;
 
-    window_update_role(con->window, prop, false);
+    window_update_role(con->window, prop);
+
+    con = remanage_window(con);
 
     return true;
 }
@@ -1158,7 +1164,9 @@ static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t stat
             return false;
     }
 
-    window_update_class(con->window, prop, false);
+    window_update_class(con->window, prop);
+
+    con = remanage_window(con);
 
     return true;
 }

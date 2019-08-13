@@ -22,14 +22,14 @@ void window_free(i3Window *win);
  * given window.
  *
  */
-void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt);
+void window_update_class(i3Window *win, xcb_get_property_reply_t *prop);
 
 /**
  * Updates the name by using _NET_WM_NAME (encoded in UTF-8) for the given
  * window. Further updates using window_update_name_legacy will be ignored.
  *
  */
-void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt);
+void window_update_name(i3Window *win, xcb_get_property_reply_t *prop);
 
 /**
  * Updates the name by using WM_NAME (encoded in COMPOUND_TEXT). We do not
@@ -38,7 +38,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
  * window_update_name()).
  *
  */
-void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt);
+void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop);
 
 /**
  * Updates the CLIENT_LEADER (logical parent window).
@@ -62,7 +62,7 @@ void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop);
  * Updates the WM_WINDOW_ROLE
  *
  */
-void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt);
+void window_update_role(i3Window *win, xcb_get_property_reply_t *prop);
 
 /**
  * Updates the _NET_WM_WINDOW_TYPE property.
