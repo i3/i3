@@ -380,6 +380,7 @@ void startup_sequence_delete_by_window(i3Window *win) {
     startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
 
     sequence = startup_sequence_get(win, startup_id_reply, true);
-    if (sequence != NULL)
+    if (sequence != NULL) {
         startup_sequence_delete(sequence);
+    }
 }
