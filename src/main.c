@@ -813,12 +813,13 @@ int main(int argc, char *argv[]) {
         if (!output) {
             ELOG("ERROR: No screen at (%d, %d), starting on the first screen\n",
                  pointerreply->root_x, pointerreply->root_y);
-            output = get_first_output();
         }
-
-        con_activate(con_descend_focused(output_get_content(output->con)));
-        free(pointerreply);
     }
+    if (!output) {
+        output = get_first_output();
+    }
+    con_activate(con_descend_focused(output_get_content(output->con)));
+    free(pointerreply);
 
     tree_render();
 

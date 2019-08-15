@@ -70,11 +70,22 @@ Output *get_output_by_name(const char *name, const bool require_active) {
  *
  */
 Output *get_first_output(void) {
-    Output *output;
+    Output *output, *result = NULL;
 
-    TAILQ_FOREACH(output, &outputs, outputs)
-    if (output->active)
-        return output;
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (output->active) {
+            if (output->primary) {
+                return output;
+            }
+            if (!result) {
+                result = output;
+            }
+        }
+    }
+
+    if (result) {
+        return result;
+    }
 
     die("No usable outputs available.\n");
 }
