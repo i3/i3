@@ -321,6 +321,18 @@ free_resources:
     return result;
 }
 
+static int count_commas(const char *color_string) {
+    int count = 0;
+
+    for (const char *cur = color_string; *cur; cur++) {
+        if (*cur == ',') {
+            count++;
+        }
+    }
+
+    return count;
+}
+
 int main(int argc, char *argv[]) {
     /* The following lines are a terribly horrible kludge. Because terminal
      * emulators have different ways of interpreting the -e command line
@@ -360,7 +372,10 @@ int main(int argc, char *argv[]) {
     char *pattern = sstrdup("pango:monospace 8");
     int o, option_index = 0;
     enum { TYPE_ERROR = 0,
-           TYPE_WARNING = 1 } bar_type = TYPE_ERROR;
+           TYPE_WARNING = 1,
+           TYPE_CUSTOM = 2 } bar_type = TYPE_ERROR;
+    char *color_string = sstrdup("#680a0a,#900000,#ffffff,#d92424,#470909");
+    char custom_color = 0;
 
     static struct option long_options[] = {
         {"version", no_argument, 0, 'v'},
@@ -370,9 +385,10 @@ int main(int argc, char *argv[]) {
         {"help", no_argument, 0, 'h'},
         {"message", required_argument, 0, 'm'},
         {"type", required_argument, 0, 't'},
+        {"color", required_argument, 0, 'c'},
         {0, 0, 0, 0}};
 
-    char *options_string = "b:B:f:m:t:vh";
+    char *options_string = "b:B:f:m:t:c:vh";
 
     prompt = i3string_from_utf8("Please do not run this program.");
 
@@ -390,11 +406,20 @@ int main(int argc, char *argv[]) {
                 prompt = i3string_from_utf8(optarg);
                 break;
             case 't':
-                bar_type = (strcasecmp(optarg, "warning") == 0 ? TYPE_WARNING : TYPE_ERROR);
+                if (strcasecmp(optarg, "warning") == 0) {
+                    bar_type = TYPE_WARNING;
+                } else if (strcasecmp(optarg, "custom") == 0) {
+                    bar_type = TYPE_CUSTOM;
+                }
+                break;
+            case 'c':
+                FREE(color_string);
+                color_string = sstrdup(optarg);
+                custom_color = 1;
                 break;
             case 'h':
                 printf("i3-nagbar " I3_VERSION "\n");
-                printf("i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
+                printf("i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t custom|warning|error] [-c <color>] [-f <font>] [-v]\n");
                 return 0;
             case 'b':
             case 'B':
@@ -434,6 +459,10 @@ int main(int argc, char *argv[]) {
     root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
+    if (custom_color && bar_type != TYPE_CUSTOM) {
+        fprintf(stderr, "Custom color only works with -t custom\n");
+    }
+
     if (bar_type == TYPE_ERROR) {
         /* Red theme for error messages */
         color_button_background = draw_util_hex_to_color("#680a0a");
@@ -441,13 +470,40 @@ int main(int argc, char *argv[]) {
         color_text = draw_util_hex_to_color("#ffffff");
         color_border = draw_util_hex_to_color("#d92424");
         color_border_bottom = draw_util_hex_to_color("#470909");
-    } else {
+    } else if (bar_type == TYPE_WARNING) {
         /* Yellowish theme for warnings */
         color_button_background = draw_util_hex_to_color("#ffc100");
         color_background = draw_util_hex_to_color("#ffa8000");
         color_text = draw_util_hex_to_color("#000000");
         color_border = draw_util_hex_to_color("#ab7100");
         color_border_bottom = draw_util_hex_to_color("#ab7100");
+    } else {
+        if (count_commas(color_string) != 4 || color_string[strlen(color_string) - 1] == ',') {
+            fprintf(stderr, "Invalid color string %s\n", color_string);
+            exit(1);
+        }
+
+        char *dup, *saveptr, *tok;
+        const char *delim = ",";
+
+        dup = sstrdup(color_string);
+
+        tok = strtok_r(dup, delim, &saveptr);
+        color_button_background = draw_util_hex_to_color(tok);
+
+        tok = strtok_r(NULL, delim, &saveptr);
+        color_background = draw_util_hex_to_color(tok);
+
+        tok = strtok_r(NULL, delim, &saveptr);
+        color_text = draw_util_hex_to_color(tok);
+
+        tok = strtok_r(NULL, delim, &saveptr);
+        color_border = draw_util_hex_to_color(tok);
+
+        tok = strtok_r(NULL, delim, &saveptr);
+        color_border_bottom = draw_util_hex_to_color(tok);
+
+        FREE(dup);
     }
 
     init_dpi();
@@ -611,6 +667,7 @@ int main(int argc, char *argv[]) {
     }
 
     FREE(pattern);
+    FREE(color_string);
     draw_util_surface_free(conn, &bar);
 
     return 0;
