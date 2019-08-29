@@ -9,7 +9,7 @@ i3-nagbar - displays an error bar on top of your screen
 
 == SYNOPSIS
 
-i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t warning|error] [-f <font>] [-v]
+i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t custom|warning|error] [-c color] [-f <font>] [-v]
 
 == OPTIONS
 
@@ -20,8 +20,15 @@ Display version number and exit.
 Display a short help-message and exit.
 
 *-t, --type* 'type'::
-Display either a warning or error message. This only changes the color scheme
-for the i3-nagbar. Default: error.
+Display either custom, warning or error message. This only changes the color scheme
+for the i3-nagbar. Custom allows you to modify the color scheme. Default: error.
+
+*-c, --color* 'color'::
+Set the color scheme for the message. Only has effects if 'type' is custom. Format
+of color are five comma separated hexadecimal values of the form #rrggbb[aa]. The alpha
+part is optional, if omitted it defaults to ff. The order of the color values
+is button background, background, text, border and border bottom.
+Default is the same as for error: #680a0a,#900000,#ffffff,#d92424,#470909.
 
 *-m, --message* 'message'::
 Display 'message' as text on the left of the i3-nagbar.
