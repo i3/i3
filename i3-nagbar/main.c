@@ -321,16 +321,13 @@ free_resources:
     return result;
 }
 
-static int count_commas(const char *color_string) {
-    int count = 0;
-
-    for (const char *cur = color_string; *cur; cur++) {
-        if (*cur == ',') {
-            count++;
-        }
+static color_t safe_draw_util_hex_to_color(const char *color) {
+    if (color == NULL) {
+        fprintf(stderr, "Invalid color string\n");
+        exit(1);
     }
 
-    return count;
+    return draw_util_hex_to_color(color);
 }
 
 int main(int argc, char *argv[]) {
@@ -478,30 +475,25 @@ int main(int argc, char *argv[]) {
         color_border = draw_util_hex_to_color("#ab7100");
         color_border_bottom = draw_util_hex_to_color("#ab7100");
     } else {
-        if (count_commas(color_string) != 4 || color_string[strlen(color_string) - 1] == ',') {
-            fprintf(stderr, "Invalid color string %s\n", color_string);
-            exit(1);
-        }
-
         char *dup, *saveptr, *tok;
         const char *delim = ",";
 
         dup = sstrdup(color_string);
 
         tok = strtok_r(dup, delim, &saveptr);
-        color_button_background = draw_util_hex_to_color(tok);
+        color_button_background = safe_draw_util_hex_to_color(tok);
 
         tok = strtok_r(NULL, delim, &saveptr);
-        color_background = draw_util_hex_to_color(tok);
+        color_background = safe_draw_util_hex_to_color(tok);
 
         tok = strtok_r(NULL, delim, &saveptr);
-        color_text = draw_util_hex_to_color(tok);
+        color_text = safe_draw_util_hex_to_color(tok);
 
         tok = strtok_r(NULL, delim, &saveptr);
-        color_border = draw_util_hex_to_color(tok);
+        color_border = safe_draw_util_hex_to_color(tok);
 
         tok = strtok_r(NULL, delim, &saveptr);
-        color_border_bottom = draw_util_hex_to_color(tok);
+        color_border_bottom = safe_draw_util_hex_to_color(tok);
 
         FREE(dup);
     }
