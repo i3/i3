@@ -159,7 +159,7 @@ struct Rect {
     uint32_t y;
     uint32_t width;
     uint32_t height;
-} __attribute__((packed));
+};
 
 /**
  * Stores the reserved pixels on each screen edge read from a

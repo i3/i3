@@ -469,7 +469,7 @@ static void cmd_resize_floating(I3_CMD, const char *way, const char *direction_s
 
     /* Did we actually resize anything or did the size constraints prevent us?
      * If we could not resize, exit now to not move the window. */
-    if (memcmp(&old_rect, &(floating_con->rect), sizeof(Rect)) == 0) {
+    if (rect_equals(old_rect, floating_con->rect)) {
         return;
     }
 
