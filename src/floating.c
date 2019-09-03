@@ -322,11 +322,10 @@ void floating_enable(Con *con, bool automatic) {
 
     DLOG("Original rect: (%d, %d) with %d x %d\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
     DLOG("Geometry = (%d, %d) with %d x %d\n", con->geometry.x, con->geometry.y, con->geometry.width, con->geometry.height);
-    Rect zero = {0, 0, 0, 0};
     nc->rect = con->geometry;
     /* If the geometry was not set (split containers), we need to determine a
      * sensible one by combining the geometry of all children */
-    if (memcmp(&(nc->rect), &zero, sizeof(Rect)) == 0) {
+    if (rect_equals(nc->rect, (Rect){0, 0, 0, 0})) {
         DLOG("Geometry not set, combining children\n");
         Con *child;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes) {

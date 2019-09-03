@@ -53,6 +53,10 @@ Rect rect_sub(Rect a, Rect b) {
                   a.height - b.height};
 }
 
+bool rect_equals(Rect a, Rect b) {
+    return a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height;
+}
+
 /*
  * Returns true if the name consists of only digits.
  *

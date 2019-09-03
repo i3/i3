@@ -279,7 +279,7 @@ void scratchpad_fix_resolution(void) {
 
     Rect new_rect = __i3_output->rect;
 
-    if (memcmp(&old_rect, &new_rect, sizeof(Rect)) == 0) {
+    if (rect_equals(new_rect, old_rect)) {
         DLOG("Scratchpad size unchanged.\n");
         return;
     }
