@@ -357,6 +357,14 @@ focus (array of integer)::
 	order. Traversing the tree by following the first entry in this array
 	will result in eventually reaching the one node with +focused+ set to
 	true.
+fullscreen_mode (integer)::
+	Whether this container is in fullscreen state or not.
+    Possible values are
+        +0+ (no fullscreen),
+        +1+ (fullscreened on output) or
+        +2+ (fullscreened globally).
+    Note that all workspaces are considered fullscreened on their respective output.
+
 nodes (array of node)::
 	The tiling (i.e. non-floating) child containers of this node.
 floating_nodes (array of node)::
