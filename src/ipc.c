@@ -528,6 +528,36 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     else
         y(null);
 
+    ystr("window_type");
+    if (con->window) {
+        if (con->window->window_type == A__NET_WM_WINDOW_TYPE_NORMAL) {
+            ystr("normal");
+        } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_DOCK) {
+            ystr("dock");
+        } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_DIALOG) {
+            ystr("dialog");
+        } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_UTILITY) {
+            ystr("utility");
+        } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_TOOLBAR) {
+            ystr("toolbar");
+        } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_SPLASH) {
+            ystr("splash");
+        } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_MENU) {
+            ystr("menu");
+        } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU) {
+            ystr("dropdown_menu");
+        } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_POPUP_MENU) {
+            ystr("popup_menu");
+        } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_TOOLTIP) {
+            ystr("tooltip");
+        } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_NOTIFICATION) {
+            ystr("notification");
+        } else {
+            ystr("unknown");
+        }
+    } else
+        y(null);
+
     if (con->window && !inplace_restart) {
         /* Window properties are useless to preserve when restarting because
          * they will be queried again anyway. However, for i3-save-tree(1),

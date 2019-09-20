@@ -53,6 +53,7 @@ my $expected = {
     name => 'root',
     orientation => $ignore,
     type => 'root',
+    window_type => undef,
     id => $ignore,
     rect => $ignore,
     deco_rect => $ignore,
