@@ -64,6 +64,33 @@ void render_con(Con *con) {
         inset->width -= (2 * con->border_width);
         inset->height -= (2 * con->border_width);
 
+        /* Aspect ratio for floating windows is managed in floating_check_size.
+         * The behaviour differs for tiling containers because the new
+         * dimensions must always be smaller than the original dimensions so
+         * that the window fits in the container. */
+        const double min_ar = con->window->min_aspect_ratio;
+        const double max_ar = con->window->max_aspect_ratio;
+        if (!con_is_floating(con) && con->fullscreen_mode == CF_NONE && (min_ar > 0 || max_ar > 0)) {
+            const double width = inset->width;
+            const double height = inset->height;
+            const double ar = aspect_ratio(min_ar, max_ar, width, height);
+            if (ar > 0) {
+                /* Maintain one dimension and change the other to match aspect
+                 * ratio. Also, x and y are adjusted to center the window. */
+                const double new_height = round(width / ar);
+                if (new_height > height) {
+                    /* new_width <= width always:
+                     * if w / a > h then w > h * a for a > 0 */
+                    const double new_width = round(height * ar);
+                    inset->x += round((width - new_width) / 2);
+                    inset->width = new_width;
+                } else {
+                    inset->y += round((height - new_height) / 2);
+                    inset->height = new_height;
+                }
+            }
+        }
+
         /* NB: We used to respect resize increment size hints for tiling
          * windows up until commit 0db93d9 here. However, since all terminal
          * emulators cope with ignoring the size hints in a better way than we

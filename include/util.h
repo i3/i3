@@ -181,3 +181,10 @@ ssize_t slurp(const char *path, char **buf);
  *
  */
 orientation_t orientation_from_direction(direction_t direction);
+
+/**
+ * Returns the new aspect ratio if the given boundaries are valid and the
+ * width/height ratio lies outside it. Otherwise, returns -1.0.
+ *
+ */
+double aspect_ratio(double min_ar, double max_ar, double width, double height);

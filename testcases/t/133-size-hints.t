@@ -100,4 +100,24 @@ cmp_ar(2, 'Window resized, aspect ratio changed to maximum 2.0');
 cmd 'resize set 100 400';
 cmp_ar(0.5, 'Window resized, aspect ratio changed to minimum 0.5');
 
+################################################################################
+# Test aspect ratio with tiling windows
+################################################################################
+
+fresh_workspace;
+$win = open_with_aspect(900, 900, 125, 100);
+cmp_ar(1.00, 'Floating window opened with aspect ratio 1.00');
+
+cmd 'floating disable';
+cmp_ar(1.25, 'Tiling window with max aspect ratio 1.25');
+
+open_window;
+open_window;
+open_window;
+open_window;
+cmp_ar(1, 'New tiling windows reduced aspect ratio of window to minimum 1.0');
+
+cmd 'layout splitv';
+cmp_ar(1.25, 'Tiling window kept max aspect ratio 1.25');
+
 done_testing;
