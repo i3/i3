@@ -197,18 +197,27 @@ void extract_workspace_names_from_bindings(void) {
         while (*target == ' ' || *target == '\t')
             target++;
         /* We check if this is the workspace
-         * next/prev/next_on_output/prev_on_output/back_and_forth/number command.
+         * next/prev/next_on_output/prev_on_output/back_and_forth command.
          * Beware: The workspace names "next", "prev", "next_on_output",
-         * "prev_on_output", "number", "back_and_forth" and "current" are OK,
+         * "prev_on_output", "back_and_forth" and "current" are OK,
          * so we check before stripping the double quotes */
         if (strncasecmp(target, "next", strlen("next")) == 0 ||
             strncasecmp(target, "prev", strlen("prev")) == 0 ||
             strncasecmp(target, "next_on_output", strlen("next_on_output")) == 0 ||
             strncasecmp(target, "prev_on_output", strlen("prev_on_output")) == 0 ||
-            strncasecmp(target, "number", strlen("number")) == 0 ||
             strncasecmp(target, "back_and_forth", strlen("back_and_forth")) == 0 ||
             strncasecmp(target, "current", strlen("current")) == 0)
             continue;
+        if (strncasecmp(target, "--no-auto-back-and-forth", strlen("--no-auto-back-and-forth")) == 0) {
+            target += strlen("--no-auto-back-and-forth");
+            while (*target == ' ' || *target == '\t')
+                target++;
+        }
+        if (strncasecmp(target, "number", strlen("number")) == 0) {
+            target += strlen("number");
+            while (*target == ' ' || *target == '\t')
+                target++;
+        }
         char *target_name = parse_string(&target, false);
         if (target_name == NULL)
             continue;
