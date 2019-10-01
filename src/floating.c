@@ -371,6 +371,7 @@ void floating_enable(Con *con, bool automatic) {
     if (nc->rect.x == 0 && nc->rect.y == 0) {
         Con *leader;
         if (con->window && con->window->leader != XCB_NONE &&
+            con->window->id != con->window->leader &&
             (leader = con_by_window_id(con->window->leader)) != NULL) {
             DLOG("Centering above leader\n");
             floating_center(nc, leader->rect);
