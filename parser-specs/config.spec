@@ -468,6 +468,7 @@ state BAR:
   'separator_symbol'       -> BAR_SEPARATOR_SYMBOL
   'binding_mode_indicator' -> BAR_BINDING_MODE_INDICATOR
   'workspace_buttons'      -> BAR_WORKSPACE_BUTTONS
+  'workspace_min_width'    -> BAR_WORKSPACE_MIN_WIDTH
   'strip_workspace_numbers' -> BAR_STRIP_WORKSPACE_NUMBERS
   'strip_workspace_name' -> BAR_STRIP_WORKSPACE_NAME
   'verbose'                -> BAR_VERBOSE
@@ -571,6 +572,16 @@ state BAR_BINDING_MODE_INDICATOR:
 state BAR_WORKSPACE_BUTTONS:
   value = word
       -> call cfg_bar_workspace_buttons($value); BAR
+
+state BAR_WORKSPACE_MIN_WIDTH:
+  width = number
+      -> BAR_WORKSPACE_MIN_WIDTH_PX
+
+state BAR_WORKSPACE_MIN_WIDTH_PX:
+  'px'
+      ->
+  end
+      -> call cfg_bar_workspace_min_width(&width); BAR
 
 state BAR_STRIP_WORKSPACE_NUMBERS:
   value = word

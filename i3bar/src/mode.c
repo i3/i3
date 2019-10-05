@@ -81,7 +81,7 @@ static int mode_end_map_cb(void *params_) {
     params->mode->name = i3string_from_utf8(params->name);
     i3string_set_markup(params->mode->name, params->pango_markup);
     /* Save its rendered width */
-    params->mode->width = predict_text_width(params->mode->name);
+    params->mode->name_width = predict_text_width(params->mode->name);
 
     DLOG("Got mode change: %s\n", i3string_as_utf8(params->mode->name));
     FREE(params->cur_key);

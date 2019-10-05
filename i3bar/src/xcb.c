@@ -500,6 +500,15 @@ static void child_handle_button(xcb_button_press_event_t *event, i3_output *outp
 }
 
 /*
+ * Predict the width of a workspace button or the current binding mode indicator.
+ *
+ */
+static int predict_button_width(int name_width) {
+    return MAX(name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
+               logical_px(config.ws_min_width));
+}
+
+/*
  * Handle a button press event (i.e. a mouse click on one of our bars).
  * We determine, whether the click occurred on a workspace button or if the scroll-
  * wheel was used and change the workspace appropriately
@@ -530,7 +539,7 @@ static void handle_button(xcb_button_press_event_t *event) {
     i3_ws *cur_ws = NULL, *clicked_ws = NULL, *ws_walk;
 
     TAILQ_FOREACH(ws_walk, walk->workspaces, tailq) {
-        int w = 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + ws_walk->name_width;
+        int w = predict_button_width(ws_walk->name_width);
         if (x >= workspace_width && x <= workspace_width + w)
             clicked_ws = ws_walk;
         if (ws_walk->visible)
@@ -1910,6 +1919,25 @@ void reconfig_windows(bool redraw_bars) {
 }
 
 /*
+ * Draw the button for a workspace or the current binding mode indicator.
+ *
+ */
+static void draw_button(surface_t *surface, color_t fg_color, color_t bg_color, color_t border_color,
+                        int x, int width, int text_width, i3String *text) {
+    int height = font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1);
+
+    /* Draw the border of the button. */
+    draw_util_rectangle(surface, border_color, x, logical_px(1), width, height);
+
+    /* Draw the inside of the button. */
+    draw_util_rectangle(surface, bg_color, x + logical_px(1), 2 * logical_px(1),
+                        width - 2 * logical_px(1), height - 2 * logical_px(1));
+
+    draw_util_text(text, surface, fg_color, bg_color, x + (width - text_width) / 2,
+                   logical_px(ws_voff_px), text_width);
+}
+
+/*
  * Render the bars, with buttons and statusline
  *
  */
@@ -1964,26 +1992,11 @@ void draw_bars(bool unhide) {
                     unhide = true;
                 }
 
-                /* Draw the border of the button. */
-                draw_util_rectangle(&(outputs_walk->buffer), border_color,
-                                    workspace_width,
-                                    logical_px(1),
-                                    ws_walk->name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
-                                    font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
+                int w = predict_button_width(ws_walk->name_width);
+                draw_button(&(outputs_walk->buffer), fg_color, bg_color, border_color,
+                            workspace_width, w, ws_walk->name_width, ws_walk->name);
 
-                /* Draw the inside of the button. */
-                draw_util_rectangle(&(outputs_walk->buffer), bg_color,
-                                    workspace_width + logical_px(1),
-                                    2 * logical_px(1),
-                                    ws_walk->name_width + 2 * logical_px(ws_hoff_px),
-                                    font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
-
-                draw_util_text(ws_walk->name, &(outputs_walk->buffer), fg_color, bg_color,
-                               workspace_width + logical_px(ws_hoff_px) + logical_px(1),
-                               logical_px(ws_voff_px),
-                               ws_walk->name_width);
-
-                workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + ws_walk->name_width;
+                workspace_width += w;
                 if (TAILQ_NEXT(ws_walk, tailq) != NULL)
                     workspace_width += logical_px(ws_spacing_px);
             }
@@ -1992,28 +2005,12 @@ void draw_bars(bool unhide) {
         if (binding.name && !config.disable_binding_mode_indicator) {
             workspace_width += logical_px(ws_spacing_px);
 
-            color_t fg_color = colors.binding_mode_fg;
-            color_t bg_color = colors.binding_mode_bg;
-
-            draw_util_rectangle(&(outputs_walk->buffer), colors.binding_mode_border,
-                                workspace_width,
-                                logical_px(1),
-                                binding.width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
-                                font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1));
-
-            draw_util_rectangle(&(outputs_walk->buffer), bg_color,
-                                workspace_width + logical_px(1),
-                                2 * logical_px(1),
-                                binding.width + 2 * logical_px(ws_hoff_px),
-                                font.height + 2 * logical_px(ws_voff_px) - 4 * logical_px(1));
-
-            draw_util_text(binding.name, &(outputs_walk->buffer), fg_color, bg_color,
-                           workspace_width + logical_px(ws_hoff_px) + logical_px(1),
-                           logical_px(ws_voff_px),
-                           binding.width);
+            int w = predict_button_width(binding.name_width);
+            draw_button(&(outputs_walk->buffer), colors.binding_mode_fg, colors.binding_mode_bg,
+                        colors.binding_mode_border, workspace_width, w, binding.name_width, binding.name);
 
             unhide = true;
-            workspace_width += 2 * logical_px(ws_hoff_px) + 2 * logical_px(1) + binding.width;
+            workspace_width += w;
         }
 
         if (!TAILQ_EMPTY(&statusline_head)) {

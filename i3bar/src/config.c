@@ -345,6 +345,12 @@ static int config_integer_cb(void *params_, long long val) {
         return 1;
     }
 
+    if (!strcmp(cur_key, "workspace_min_width")) {
+        DLOG("workspace_min_width = %lld\n", val);
+        config.ws_min_width = val;
+        return 1;
+    }
+
     return 0;
 }
 
