@@ -361,6 +361,7 @@ does_i3_live;
 ###############################################################################
 # Given 'S' and 'M' where 'M' is a workspace and 'S' is on a different
 # workspace, then 'S' ends up as a tiling container on 'M'.
+# See issue: #2003
 ###############################################################################
 
 fresh_workspace;

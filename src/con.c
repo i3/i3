@@ -1312,8 +1312,8 @@ bool con_move_to_mark(Con *con, const char *mark) {
         return true;
     }
 
-    if (target->type == CT_WORKSPACE) {
-        DLOG("target container is a workspace, simply moving the container there.\n");
+    if (target->type == CT_WORKSPACE && con_is_leaf(target)) {
+        DLOG("target container is an empty workspace, simply moving the container there.\n");
         con_move_to_workspace(con, target, true, false, false);
         return true;
     }
