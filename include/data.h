@@ -144,8 +144,6 @@ typedef enum {
 
 /**
  * Stores a rectangle, for example the size of a window, the child window etc.
- * It needs to be packed so that the compiler will not add any padding bytes.
- * (it is used in src/ewmh.c for example)
  *
  * Note that x and y can contain signed values in some cases (for example when
  * used for the coordinates of a window, which can be set outside of the
