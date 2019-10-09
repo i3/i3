@@ -503,6 +503,7 @@ i3_SOURCES = \
 	include/con.h \
 	include/data.h \
 	include/display_version.h \
+	include/drag.h \
 	include/ewmh.h \
 	include/fake_outputs.h \
 	include/floating.h \
@@ -548,6 +549,7 @@ i3_SOURCES = \
 	src/config_directives.c \
 	src/config_parser.c \
 	src/display_version.c \
+	src/drag.c \
 	src/ewmh.c \
 	src/fake_outputs.c \
 	src/floating.c \
