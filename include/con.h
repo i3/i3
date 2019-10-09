@@ -46,6 +46,13 @@ void con_focus(Con *con);
 void con_activate(Con *con);
 
 /**
+ * Activates the container like in con_activate but removes fullscreen
+ * restrictions and properly warps the pointer if needed.
+ *
+ */
+void con_activate_unblock(Con *con);
+
+/**
  * Closes the given container.
  *
  */
