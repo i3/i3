@@ -2013,6 +2013,13 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
         con_focus(previously_focused);
     }
 
+    /* Let back-and-forth work after renaming the previous workspace.
+     * See #3694. */
+    if (previous_workspace_name && !strcmp(previous_workspace_name, old_name_copy)) {
+        FREE(previous_workspace_name);
+        previous_workspace_name = sstrdup(new_name);
+    }
+
     cmd_output->needs_tree_render = true;
     ysuccess(true);
 

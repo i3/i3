@@ -171,6 +171,53 @@ cmd 'restart';
 cmd 'workspace back_and_forth';
 is(focused_ws, '5: foo', 'workspace 5 focused after restart');
 
+################################################################################
+# Check BAF switching to renamed workspace.
+# Issue: #3694
+################################################################################
+
+kill_all_windows;
+cmd 'workspace --no-auto-back-and-forth 1';
+open_window;
+cmd 'workspace --no-auto-back-and-forth 2';
+
+cmd 'rename workspace 1 to 3';
+cmd 'workspace back_and_forth';
+is(focused_ws, '3', 'workspace 3 focused after rename');
+
+################################################################################
+# Check BAF switching to renamed and then closed workspace.
+# Issue: #3694
+################################################################################
+
+kill_all_windows;
+cmd 'workspace --no-auto-back-and-forth 1';
+$first_win = open_window;
+cmd 'workspace --no-auto-back-and-forth 2';
+
+cmd 'rename workspace 1 to 3';
+cmd '[id="' . $first_win->id . '"] kill';
+
+cmd 'workspace back_and_forth';
+is(focused_ws, '3', 'workspace 3 focused after renaming and destroying');
+
+################################################################################
+# See if renaming current workspace doesn't affect BAF switching to another
+# renamed workspace.
+# Issue: #3694
+################################################################################
+
+kill_all_windows;
+cmd 'workspace --no-auto-back-and-forth 1';
+$first_win = open_window;
+cmd 'workspace --no-auto-back-and-forth 2';
+
+cmd 'rename workspace 1 to 3';
+cmd 'rename workspace 2 to 4';
+
+cmd 'workspace back_and_forth';
+is(focused_ws, '3', 'workspace 3 focused after renaming');
+
 exit_gracefully($pid);
 
 done_testing;
