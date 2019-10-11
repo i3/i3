@@ -706,7 +706,8 @@ static int strcasecmp_nullable(const char *a, const char *b) {
 }
 
 /*
- * Sort trayclients in descending order
+ * Comparison function to sort trayclients in ascending alphanumeric order
+ * according to their class.
  *
  */
 static int reorder_trayclients_cmp(const void *_a, const void *_b) {
