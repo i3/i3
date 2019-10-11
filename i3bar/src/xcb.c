@@ -692,6 +692,31 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
     }
 }
 
+static int strcasecmp_nullable(const char *a, const char *b) {
+    if (a == b) {
+        return 0;
+    }
+    if (a == NULL) {
+        return -1;
+    }
+    if (b == NULL) {
+        return 1;
+    }
+    return strcasecmp(a, b);
+}
+
+/*
+ * Sort trayclients in descending order
+ *
+ */
+static int reorder_trayclients_cmp(const void *_a, const void *_b) {
+    trayclient *a = *((trayclient **)_a);
+    trayclient *b = *((trayclient **)_b);
+
+    int result = strcasecmp_nullable(a->class_class, b->class_class);
+    return result != 0 ? result : strcasecmp_nullable(a->class_instance, b->class_instance);
+}
+
 /*
  * Adjusts the size of the tray window and alignment of the tray clients by
  * configuring their respective x coordinates. To be called when mapping or
@@ -699,27 +724,106 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
  *
  */
 static void configure_trayclients(void) {
-    trayclient *trayclient;
     i3_output *output;
     SLIST_FOREACH(output, outputs, slist) {
-        if (!output->active)
+        if (!output->active) {
             continue;
+        }
 
-        int clients = 0;
-        TAILQ_FOREACH_REVERSE(trayclient, output->trayclients, tc_head, tailq) {
-            if (!trayclient->mapped)
-                continue;
-            clients++;
+        int count = 0;
+        trayclient *client;
+        TAILQ_FOREACH(client, output->trayclients, tailq) {
+            if (client->mapped) {
+                count++;
+            }
+        }
 
-            DLOG("Configuring tray window %08x to x=%d\n",
-                 trayclient->win, output->rect.w - (clients * (icon_size + logical_px(config.tray_padding))));
-            uint32_t x = output->rect.w - (clients * (icon_size + logical_px(config.tray_padding)));
+        int idx = 0;
+        trayclient **trayclients = smalloc(count * sizeof(trayclient *));
+        TAILQ_FOREACH(client, output->trayclients, tailq) {
+            if (client->mapped) {
+                trayclients[idx++] = client;
+            }
+        }
+
+        qsort(trayclients, count, sizeof(trayclient *), reorder_trayclients_cmp);
+
+        uint32_t x = output->rect.w;
+        for (idx = count; idx > 0; idx--) {
+            x -= icon_size + logical_px(config.tray_padding);
+
+            DLOG("Configuring tray window %08x to x=%d\n", trayclients[idx - 1]->win, x);
             xcb_configure_window(xcb_connection,
-                                 trayclient->win,
+                                 trayclients[idx - 1]->win,
                                  XCB_CONFIG_WINDOW_X,
                                  &x);
         }
+
+        free(trayclients);
     }
+}
+
+static trayclient *trayclient_and_output_from_window(xcb_window_t win, i3_output **output) {
+    i3_output *o_walk;
+    SLIST_FOREACH(o_walk, outputs, slist) {
+        if (!o_walk->active) {
+            continue;
+        }
+
+        trayclient *client;
+        TAILQ_FOREACH(client, o_walk->trayclients, tailq) {
+            if (client->win == win) {
+                if (output) {
+                    *output = o_walk;
+                }
+                return client;
+            }
+        }
+    }
+    return NULL;
+}
+
+static trayclient *trayclient_from_window(xcb_window_t win) {
+    return trayclient_and_output_from_window(win, NULL);
+}
+
+static void trayclient_update_class(trayclient *client) {
+    xcb_get_property_reply_t *prop = xcb_get_property_reply(
+        conn,
+        xcb_get_property_unchecked(
+            xcb_connection,
+            false,
+            client->win,
+            XCB_ATOM_WM_CLASS,
+            XCB_ATOM_STRING,
+            0,
+            32),
+        NULL);
+    if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+        DLOG("WM_CLASS not set.\n");
+        free(prop);
+        return;
+    }
+
+    /* We cannot use asprintf here since this property contains two
+     * null-terminated strings (for compatibility reasons). Instead, we
+     * use strdup() on both strings */
+    const size_t prop_length = xcb_get_property_value_length(prop);
+    char *new_class = xcb_get_property_value(prop);
+    const size_t class_class_index = strnlen(new_class, prop_length) + 1;
+
+    free(client->class_instance);
+    free(client->class_class);
+
+    client->class_instance = sstrndup(new_class, prop_length);
+    if (class_class_index < prop_length) {
+        client->class_class = sstrndup(new_class + class_class_index, prop_length - class_class_index);
+    } else {
+        client->class_class = NULL;
+    }
+    DLOG("WM_CLASS changed to %s (instance), %s (class)\n", client->class_instance, client->class_class);
+
+    free(prop);
 }
 
 /*
@@ -852,11 +956,12 @@ static void handle_client_message(xcb_client_message_event_t *event) {
              * exits/crashes. */
             xcb_change_save_set(xcb_connection, XCB_SET_MODE_INSERT, client);
 
-            trayclient *tc = smalloc(sizeof(trayclient));
+            trayclient *tc = scalloc(1, sizeof(trayclient));
             tc->win = client;
             tc->xe_version = xe_version;
             tc->mapped = false;
             TAILQ_INSERT_TAIL(output_for_tray->trayclients, tc, tailq);
+            trayclient_update_class(tc);
 
             if (map_it) {
                 DLOG("Mapping dock client\n");
@@ -884,27 +989,20 @@ static void handle_client_message(xcb_client_message_event_t *event) {
 static void handle_destroy_notify(xcb_destroy_notify_event_t *event) {
     DLOG("DestroyNotify for window = %08x, event = %08x\n", event->window, event->event);
 
-    i3_output *walk;
-    SLIST_FOREACH(walk, outputs, slist) {
-        if (!walk->active)
-            continue;
-        DLOG("checking output %s\n", walk->name);
-        trayclient *trayclient;
-        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
-            if (trayclient->win != event->window) {
-                continue;
-            }
-
-            DLOG("Removing tray client with window ID %08x\n", event->window);
-            TAILQ_REMOVE(walk->trayclients, trayclient, tailq);
-            FREE(trayclient);
-
-            /* Trigger an update, we now have more space for the statusline */
-            configure_trayclients();
-            draw_bars(false);
-            return;
-        }
+    i3_output *output;
+    trayclient *client = trayclient_and_output_from_window(event->window, &output);
+    if (!client) {
+        DLOG("WARNING: Could not find corresponding tray window.\n");
+        return;
     }
+
+    DLOG("Removing tray client with window ID %08x\n", event->window);
+    TAILQ_REMOVE(output->trayclients, client, tailq);
+    FREE(client);
+
+    /* Trigger an update, we now have more space for the statusline */
+    configure_trayclients();
+    draw_bars(false);
 }
 
 /*
@@ -915,25 +1013,18 @@ static void handle_destroy_notify(xcb_destroy_notify_event_t *event) {
 static void handle_map_notify(xcb_map_notify_event_t *event) {
     DLOG("MapNotify for window = %08x, event = %08x\n", event->window, event->event);
 
-    i3_output *walk;
-    SLIST_FOREACH(walk, outputs, slist) {
-        if (!walk->active)
-            continue;
-        DLOG("checking output %s\n", walk->name);
-        trayclient *trayclient;
-        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
-            if (trayclient->win != event->window)
-                continue;
-
-            DLOG("Tray client mapped (window ID %08x). Adjusting tray.\n", event->window);
-            trayclient->mapped = true;
-
-            /* Trigger an update, we now have more space for the statusline */
-            configure_trayclients();
-            draw_bars(false);
-            return;
-        }
+    trayclient *client = trayclient_from_window(event->window);
+    if (!client) {
+        DLOG("WARNING: Could not find corresponding tray window.\n");
+        return;
     }
+
+    DLOG("Tray client mapped (window ID %08x). Adjusting tray.\n", event->window);
+    client->mapped = true;
+
+    /* Trigger an update, we now have one extra tray client. */
+    configure_trayclients();
+    draw_bars(false);
 }
 /*
  * Handles UnmapNotify events. These events happen when a tray client hides its
@@ -943,62 +1034,41 @@ static void handle_map_notify(xcb_map_notify_event_t *event) {
 static void handle_unmap_notify(xcb_unmap_notify_event_t *event) {
     DLOG("UnmapNotify for window = %08x, event = %08x\n", event->window, event->event);
 
-    i3_output *walk;
-    SLIST_FOREACH(walk, outputs, slist) {
-        if (!walk->active)
-            continue;
-        DLOG("checking output %s\n", walk->name);
-        trayclient *trayclient;
-        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
-            if (trayclient->win != event->window)
-                continue;
-
-            DLOG("Tray client unmapped (window ID %08x). Adjusting tray.\n", event->window);
-            trayclient->mapped = false;
-
-            /* Trigger an update, we now have more space for the statusline */
-            configure_trayclients();
-            draw_bars(false);
-            return;
-        }
+    trayclient *client = trayclient_from_window(event->window);
+    if (!client) {
+        DLOG("WARNING: Could not find corresponding tray window.\n");
+        return;
     }
+
+    DLOG("Tray client unmapped (window ID %08x). Adjusting tray.\n", event->window);
+    client->mapped = false;
+
+    /* Trigger an update, we now have more space for the statusline */
+    configure_trayclients();
+    draw_bars(false);
 }
 
 /*
- * Handle PropertyNotify messages. Currently only the _XEMBED_INFO property is
- * handled, which tells us whether a dock client should be mapped or unmapped.
+ * Handle PropertyNotify messages.
  *
  */
 static void handle_property_notify(xcb_property_notify_event_t *event) {
     DLOG("PropertyNotify\n");
     if (event->atom == atoms[_XEMBED_INFO] &&
         event->state == XCB_PROPERTY_NEW_VALUE) {
+        /* _XEMBED_INFO property tells us whether a dock client should be mapped or unmapped. */
         DLOG("xembed_info updated\n");
-        trayclient *trayclient = NULL, *walk;
-        i3_output *o_walk;
-        SLIST_FOREACH(o_walk, outputs, slist) {
-            if (!o_walk->active)
-                continue;
 
-            TAILQ_FOREACH(walk, o_walk->trayclients, tailq) {
-                if (walk->win != event->window)
-                    continue;
-                trayclient = walk;
-                break;
-            }
-
-            if (trayclient)
-                break;
-        }
-        if (!trayclient) {
-            ELOG("PropertyNotify received for unknown window %08x\n",
-                 event->window);
+        trayclient *client = trayclient_from_window(event->window);
+        if (!client) {
+            ELOG("PropertyNotify received for unknown window %08x\n", event->window);
             return;
         }
+
         xcb_get_property_cookie_t xembedc;
         xembedc = xcb_get_property_unchecked(xcb_connection,
                                              0,
-                                             trayclient->win,
+                                             client->win,
                                              atoms[_XEMBED_INFO],
                                              XCB_GET_PROPERTY_TYPE_ANY,
                                              0,
@@ -1018,14 +1088,19 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
         DLOG("xembed flags = %d\n", xembed[1]);
         bool map_it = ((xembed[1] & XEMBED_MAPPED) == XEMBED_MAPPED);
         DLOG("map state now %d\n", map_it);
-        if (trayclient->mapped && !map_it) {
+        if (client->mapped && !map_it) {
             /* need to unmap the window */
-            xcb_unmap_window(xcb_connection, trayclient->win);
-        } else if (!trayclient->mapped && map_it) {
+            xcb_unmap_window(xcb_connection, client->win);
+        } else if (!client->mapped && map_it) {
             /* need to map the window */
-            xcb_map_window(xcb_connection, trayclient->win);
+            xcb_map_window(xcb_connection, client->win);
         }
         free(xembedr);
+    } else if (event->atom == XCB_ATOM_WM_CLASS) {
+        trayclient *client = trayclient_from_window(event->window);
+        if (client) {
+            trayclient_update_class(client);
+        }
     }
 }
 
@@ -1543,6 +1618,9 @@ void kick_tray_clients(i3_output *output) {
                             xcb_root,
                             0,
                             0);
+
+        free(trayclient->class_class);
+        free(trayclient->class_instance);
 
         /* We remove the trayclient right here. We might receive an UnmapNotify
          * event afterwards, but better safe than sorry. */
