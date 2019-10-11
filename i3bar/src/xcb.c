@@ -722,6 +722,30 @@ static void configure_trayclients(void) {
     }
 }
 
+static trayclient *trayclient_and_output_from_window(xcb_window_t win, i3_output **output) {
+    i3_output *o_walk;
+    SLIST_FOREACH(o_walk, outputs, slist) {
+        if (!o_walk->active) {
+            continue;
+        }
+
+        trayclient *client;
+        TAILQ_FOREACH(client, o_walk->trayclients, tailq) {
+            if (client->win == win) {
+                if (output) {
+                    *output = o_walk;
+                }
+                return client;
+            }
+        }
+    }
+    return NULL;
+}
+
+static trayclient *trayclient_from_window(xcb_window_t win) {
+    return trayclient_and_output_from_window(win, NULL);
+}
+
 /*
  * Handles ClientMessages (messages sent from another client directly to us).
  *
@@ -884,27 +908,20 @@ static void handle_client_message(xcb_client_message_event_t *event) {
 static void handle_destroy_notify(xcb_destroy_notify_event_t *event) {
     DLOG("DestroyNotify for window = %08x, event = %08x\n", event->window, event->event);
 
-    i3_output *walk;
-    SLIST_FOREACH(walk, outputs, slist) {
-        if (!walk->active)
-            continue;
-        DLOG("checking output %s\n", walk->name);
-        trayclient *trayclient;
-        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
-            if (trayclient->win != event->window) {
-                continue;
-            }
-
-            DLOG("Removing tray client with window ID %08x\n", event->window);
-            TAILQ_REMOVE(walk->trayclients, trayclient, tailq);
-            FREE(trayclient);
-
-            /* Trigger an update, we now have more space for the statusline */
-            configure_trayclients();
-            draw_bars(false);
-            return;
-        }
+    i3_output *output;
+    trayclient *client = trayclient_and_output_from_window(event->window, &output);
+    if (!client) {
+        DLOG("WARNING: Could not find corresponding tray window.\n");
+        return;
     }
+
+    DLOG("Removing tray client with window ID %08x\n", event->window);
+    TAILQ_REMOVE(output->trayclients, client, tailq);
+    FREE(client);
+
+    /* Trigger an update, we now have more space for the statusline */
+    configure_trayclients();
+    draw_bars(false);
 }
 
 /*
@@ -915,25 +932,18 @@ static void handle_destroy_notify(xcb_destroy_notify_event_t *event) {
 static void handle_map_notify(xcb_map_notify_event_t *event) {
     DLOG("MapNotify for window = %08x, event = %08x\n", event->window, event->event);
 
-    i3_output *walk;
-    SLIST_FOREACH(walk, outputs, slist) {
-        if (!walk->active)
-            continue;
-        DLOG("checking output %s\n", walk->name);
-        trayclient *trayclient;
-        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
-            if (trayclient->win != event->window)
-                continue;
-
-            DLOG("Tray client mapped (window ID %08x). Adjusting tray.\n", event->window);
-            trayclient->mapped = true;
-
-            /* Trigger an update, we now have more space for the statusline */
-            configure_trayclients();
-            draw_bars(false);
-            return;
-        }
+    trayclient *client = trayclient_from_window(event->window);
+    if (!client) {
+        DLOG("WARNING: Could not find corresponding tray window.\n");
+        return;
     }
+
+    DLOG("Tray client mapped (window ID %08x). Adjusting tray.\n", event->window);
+    client->mapped = true;
+
+    /* Trigger an update, we now have one extra tray client. */
+    configure_trayclients();
+    draw_bars(false);
 }
 /*
  * Handles UnmapNotify events. These events happen when a tray client hides its
@@ -943,25 +953,18 @@ static void handle_map_notify(xcb_map_notify_event_t *event) {
 static void handle_unmap_notify(xcb_unmap_notify_event_t *event) {
     DLOG("UnmapNotify for window = %08x, event = %08x\n", event->window, event->event);
 
-    i3_output *walk;
-    SLIST_FOREACH(walk, outputs, slist) {
-        if (!walk->active)
-            continue;
-        DLOG("checking output %s\n", walk->name);
-        trayclient *trayclient;
-        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
-            if (trayclient->win != event->window)
-                continue;
-
-            DLOG("Tray client unmapped (window ID %08x). Adjusting tray.\n", event->window);
-            trayclient->mapped = false;
-
-            /* Trigger an update, we now have more space for the statusline */
-            configure_trayclients();
-            draw_bars(false);
-            return;
-        }
+    trayclient *client = trayclient_from_window(event->window);
+    if (!client) {
+        DLOG("WARNING: Could not find corresponding tray window.\n");
+        return;
     }
+
+    DLOG("Tray client unmapped (window ID %08x). Adjusting tray.\n", event->window);
+    client->mapped = false;
+
+    /* Trigger an update, we now have more space for the statusline */
+    configure_trayclients();
+    draw_bars(false);
 }
 
 /*
@@ -974,31 +977,16 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
     if (event->atom == atoms[_XEMBED_INFO] &&
         event->state == XCB_PROPERTY_NEW_VALUE) {
         DLOG("xembed_info updated\n");
-        trayclient *trayclient = NULL, *walk;
-        i3_output *o_walk;
-        SLIST_FOREACH(o_walk, outputs, slist) {
-            if (!o_walk->active)
-                continue;
-
-            TAILQ_FOREACH(walk, o_walk->trayclients, tailq) {
-                if (walk->win != event->window)
-                    continue;
-                trayclient = walk;
-                break;
-            }
-
-            if (trayclient)
-                break;
-        }
-        if (!trayclient) {
-            ELOG("PropertyNotify received for unknown window %08x\n",
-                 event->window);
+        trayclient *client = trayclient_from_window(event->window);
+        if (!client) {
+            ELOG("PropertyNotify received for unknown window %08x\n", event->window);
             return;
         }
+
         xcb_get_property_cookie_t xembedc;
         xembedc = xcb_get_property_unchecked(xcb_connection,
                                              0,
-                                             trayclient->win,
+                                             client->win,
                                              atoms[_XEMBED_INFO],
                                              XCB_GET_PROPERTY_TYPE_ANY,
                                              0,
@@ -1018,12 +1006,12 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
         DLOG("xembed flags = %d\n", xembed[1]);
         bool map_it = ((xembed[1] & XEMBED_MAPPED) == XEMBED_MAPPED);
         DLOG("map state now %d\n", map_it);
-        if (trayclient->mapped && !map_it) {
+        if (client->mapped && !map_it) {
             /* need to unmap the window */
-            xcb_unmap_window(xcb_connection, trayclient->win);
-        } else if (!trayclient->mapped && map_it) {
+            xcb_unmap_window(xcb_connection, client->win);
+        } else if (!client->mapped && map_it) {
             /* need to map the window */
-            xcb_map_window(xcb_connection, trayclient->win);
+            xcb_map_window(xcb_connection, client->win);
         }
         free(xembedr);
     }
