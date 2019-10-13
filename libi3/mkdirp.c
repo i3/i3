@@ -12,12 +12,11 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#ifndef HAVE_mkdirp
 /*
  * Emulates mkdir -p (creates any missing folders)
  *
  */
-
-#if !defined(__sun)
 int mkdirp(const char *path, mode_t mode) {
     if (mkdir(path, mode) == 0)
         return 0;
