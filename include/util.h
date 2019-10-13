@@ -124,17 +124,6 @@ bool path_exists(const char *path);
  */
 void i3_restart(bool forget_layout);
 
-#if defined(__OpenBSD__) || defined(__APPLE__)
-
-/**
- * Taken from FreeBSD
- * Find the first occurrence of the byte string s in byte string l.
- *
- */
-void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);
-
-#endif
-
 /**
  * Escapes the given string if a pango font is currently used.
  * If the string has to be escaped, the input string will be free'd.
