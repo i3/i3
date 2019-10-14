@@ -295,15 +295,19 @@ static xcb_rectangle_t get_window_position(void) {
         xcb_randr_get_output_info_reply(conn,
                                         xcb_randr_get_output_info(conn, primary->output, res->config_timestamp),
                                         NULL);
-    if (output == NULL || output->crtc == XCB_NONE)
+    if (output == NULL || output->crtc == XCB_NONE) {
+        LOG("Could not query primary screen.\n");
         goto free_resources;
+    }
 
     xcb_randr_get_crtc_info_reply_t *crtc =
         xcb_randr_get_crtc_info_reply(conn,
                                       xcb_randr_get_crtc_info(conn, output->crtc, res->config_timestamp),
                                       NULL);
-    if (crtc == NULL)
+    if (crtc == NULL) {
+        LOG("Could not get CRTC.\n");
         goto free_resources;
+    }
 
     LOG("Found primary output on position x = %i / y = %i / w = %i / h = %i.\n",
         crtc->x, crtc->y, crtc->width, crtc->height);
