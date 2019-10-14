@@ -196,6 +196,48 @@ provided by the i3 https://github.com/i3/i3/blob/next/etc/config.keycodes[defaul
 
 Floating windows are always on top of tiling windows.
 
+=== Moving tiling containers with the mouse
+
+Since i3 4.21, it's possible to drag tiling containers using the mouse. The
+drag can be initiated either by dragging the window's titlebar or by pressing
+the <<floating_modifier>> and dragging the container while holding the
+left-click button.
+
+Once the drag is initiated and the cursor has left the original container, drop
+indicators are created according to the position of the cursor relatively to
+the target container. These indicators help you understand what the resulting
+<<tree>> layout is going to be after you release the mouse button.
+
+The possible drop positions are:
+
+Drop on container::
+    This happens when the mouse is relatively near the center of a container.
+    If the mouse is released, the result is exactly as if you had run the
+    +move container to mark+ command. See <<move_to_mark>>.
+Drop as sibling::
+    This happens when the mouse is relatively near the edge of a container. If
+    the mouse is released, the dragged container will become a sibling of the
+    target container, placed left/right/up/down according to the position of
+    the indicator.
+    This might or might not create a new v-split or h-split according to the
+    previous layout of the target container. For example, if the target
+    container is in an h-split and you drop the dragged container below it, the
+    new layout will have to be a v-split.
+Drop to parent::
+    This happens when the mouse is relatively near the edge of a container (but
+    even closer to the border in comparison to the sibling case above) *and* if
+    that edge is also the parent container's edge. For example, if three
+    containers are in a horizontal layout then edges where this can happen is
+    the left edge of the left container, the right edge of the right container
+    and all bottom and top edges of all three containers.
+    If the mouse is released, the container is first dropped as a sibling to
+    the target container, like in the case above, and then is moved
+    directionally like with the +move left|right|down|up+ command. See
+    <<move_direction>>.
+
+The color of the indicator matches the +client.focused+ setting. See <<client_colors>>.
+
+[[tree]]
 == Tree
 
 i3 stores all information about the X11 outputs, workspaces and layout of the
@@ -1041,6 +1083,7 @@ workspace 5 output VGA1 LVDS1
 workspace "2: vim" output VGA1
 ---------------------------
 
+[[client_colors]]
 === Changing colors
 
 You can change all colors which i3 uses to draw the window decorations.
@@ -2253,6 +2296,7 @@ Note that you might not have a primary output configured yet. To do so, run:
 xrandr --output <output> --primary
 -------------------------
 
+[[move_direction]]
 === Moving containers
 
 Use the +move+ command to move a container.
@@ -2537,6 +2581,7 @@ Note that you might not have a primary output configured yet. To do so, run:
 xrandr --output <output> --primary
 -------------------------
 
+[[move_to_mark]]
 === Moving containers/windows to marks
 
 To move a container to another container with a specific mark (see <<vim_like_marks>>),
