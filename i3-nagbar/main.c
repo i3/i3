@@ -384,10 +384,11 @@ int main(int argc, char *argv[]) {
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (o) {
             case 'v':
+                free(pattern);
                 printf("i3-nagbar " I3_VERSION "\n");
                 return 0;
             case 'f':
-                FREE(pattern);
+                free(pattern);
                 pattern = sstrdup(optarg);
                 break;
             case 'm':
@@ -398,6 +399,7 @@ int main(int argc, char *argv[]) {
                 bar_type = (strcasecmp(optarg, "warning") == 0 ? TYPE_WARNING : TYPE_ERROR);
                 break;
             case 'h':
+                free(pattern);
                 printf("i3-nagbar " I3_VERSION "\n");
                 printf("i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
                 return 0;
