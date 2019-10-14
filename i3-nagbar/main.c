@@ -87,7 +87,7 @@ void verboselog(char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
-    vfprintf(stdout, fmt, args);
+    vfprintf(stderr, fmt, args);
     va_end(args);
 }
 
@@ -282,11 +282,12 @@ static xcb_rectangle_t get_window_position(void) {
     xcb_randr_get_screen_resources_current_reply_t *res = NULL;
 
     if ((primary = xcb_randr_get_output_primary_reply(conn, pcookie, NULL)) == NULL) {
-        DLOG("Could not determine the primary output.\n");
+        LOG("Could not determine the primary output.\n");
         goto free_resources;
     }
 
     if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
+        LOG("Could not query screen resources.\n");
         goto free_resources;
     }
 
@@ -304,10 +305,10 @@ static xcb_rectangle_t get_window_position(void) {
     if (crtc == NULL)
         goto free_resources;
 
-    DLOG("Found primary output on position x = %i / y = %i / w = %i / h = %i.\n",
-         crtc->x, crtc->y, crtc->width, crtc->height);
+    LOG("Found primary output on position x = %i / y = %i / w = %i / h = %i.\n",
+        crtc->x, crtc->y, crtc->width, crtc->height);
     if (crtc->width == 0 || crtc->height == 0) {
-        DLOG("Primary output is not active, ignoring it.\n");
+        LOG("Primary output is not active, ignoring it.\n");
         goto free_resources;
     }
 
