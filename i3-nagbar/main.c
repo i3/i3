@@ -87,7 +87,7 @@ void verboselog(char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
-    vfprintf(stdout, fmt, args);
+    vfprintf(stderr, fmt, args);
     va_end(args);
 }
 
@@ -282,11 +282,12 @@ static xcb_rectangle_t get_window_position(void) {
     xcb_randr_get_screen_resources_current_reply_t *res = NULL;
 
     if ((primary = xcb_randr_get_output_primary_reply(conn, pcookie, NULL)) == NULL) {
-        DLOG("Could not determine the primary output.\n");
+        LOG("Could not determine the primary output.\n");
         goto free_resources;
     }
 
     if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
+        LOG("Could not query screen resources.\n");
         goto free_resources;
     }
 
@@ -294,20 +295,24 @@ static xcb_rectangle_t get_window_position(void) {
         xcb_randr_get_output_info_reply(conn,
                                         xcb_randr_get_output_info(conn, primary->output, res->config_timestamp),
                                         NULL);
-    if (output == NULL || output->crtc == XCB_NONE)
+    if (output == NULL || output->crtc == XCB_NONE) {
+        LOG("Could not query primary screen.\n");
         goto free_resources;
+    }
 
     xcb_randr_get_crtc_info_reply_t *crtc =
         xcb_randr_get_crtc_info_reply(conn,
                                       xcb_randr_get_crtc_info(conn, output->crtc, res->config_timestamp),
                                       NULL);
-    if (crtc == NULL)
+    if (crtc == NULL) {
+        LOG("Could not get CRTC.\n");
         goto free_resources;
+    }
 
-    DLOG("Found primary output on position x = %i / y = %i / w = %i / h = %i.\n",
-         crtc->x, crtc->y, crtc->width, crtc->height);
+    LOG("Found primary output on position x = %i / y = %i / w = %i / h = %i.\n",
+        crtc->x, crtc->y, crtc->width, crtc->height);
     if (crtc->width == 0 || crtc->height == 0) {
-        DLOG("Primary output is not active, ignoring it.\n");
+        LOG("Primary output is not active, ignoring it.\n");
         goto free_resources;
     }
 
@@ -379,10 +384,11 @@ int main(int argc, char *argv[]) {
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (o) {
             case 'v':
+                free(pattern);
                 printf("i3-nagbar " I3_VERSION "\n");
                 return 0;
             case 'f':
-                FREE(pattern);
+                free(pattern);
                 pattern = sstrdup(optarg);
                 break;
             case 'm':
@@ -393,6 +399,7 @@ int main(int argc, char *argv[]) {
                 bar_type = (strcasecmp(optarg, "warning") == 0 ? TYPE_WARNING : TYPE_ERROR);
                 break;
             case 'h':
+                free(pattern);
                 printf("i3-nagbar " I3_VERSION "\n");
                 printf("i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t warning|error] [-f <font>] [-v]\n");
                 return 0;
