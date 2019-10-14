@@ -518,3 +518,19 @@ ssize_t slurp(const char *path, char **buf) {
 orientation_t orientation_from_direction(direction_t direction) {
     return (direction == D_LEFT || direction == D_RIGHT) ? HORIZ : VERT;
 }
+
+/*
+ * Returns the new aspect ratio if the given boundaries are valid and the
+ * width/height ratio lies outside it. Otherwise, returns -1.0.
+ *
+ */
+double aspect_ratio(double min_ar, double max_ar, double width, double height) {
+    const double ar = width / height;
+    if (min_ar > 0 && ar < min_ar) {
+        return min_ar;
+    } else if (max_ar > 0 && ar > max_ar) {
+        return max_ar;
+    } else {
+        return -1.0;
+    }
+}

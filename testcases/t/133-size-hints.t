@@ -25,6 +25,8 @@ floating_minimum_size -1 x -1
 floating_maximum_size -1 x -1
 EOT
 
+my $win;
+
 sub open_with_aspect {
     my ($min_num, $min_den, $max_num, $max_den) = @_;
     open_floating_window(
@@ -40,39 +42,39 @@ sub open_with_aspect {
         });
 }
 
+sub cmp_ar {
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+
+    my ($target, $msg) = @_;
+    my $rect = $win->rect;
+    my $ar = $rect->width / $rect->height;
+    cmp_float($ar, $target, $msg);
+
+    return $rect;
+}
+
 ################################################################################
 # Test aspect ratio set exactly to 2.0
 ################################################################################
 
 fresh_workspace;
-my $win = open_with_aspect(600, 300, 600, 300);
-
-my $rect = $win->rect;
-my $ar = $rect->width / $rect->height;
-cmp_float($ar, 2, 'Window set to floating with aspect ratio 2.0');
+$win = open_with_aspect(600, 300, 600, 300);
+cmp_ar(2, 'Window set to floating with aspect ratio 2.0');
 
 cmd 'resize set 100';
-$rect = $win->rect;
-$ar = $rect->width / $rect->height;
-cmp_float($ar, 2, 'Window resized with aspect ratio kept to 2.0');
+cmp_ar(2, 'Window resized with aspect ratio kept to 2.0');
 
 cmd 'resize set 400 100';
-$rect = $win->rect;
-$ar = $rect->width / $rect->height;
-cmp_float($ar, 2, 'Window resized with aspect ratio kept to 2.0');
+cmp_ar(2, 'Window resized with aspect ratio kept to 2.0');
 
 # Also check that it is possible to resize by height only
 cmd 'resize set height 400';
-$rect = $win->rect;
-$ar = $rect->width / $rect->height;
+my $rect = cmp_ar(2, 'Window resized with aspect ratio kept to 2.0');
 is($rect->height, 400, 'Window height is 400px');
-cmp_float($ar, 2, 'Window resized with aspect ratio kept to 2.0');
 
 cmd 'resize grow height 10';
-$rect = $win->rect;
-$ar = $rect->width / $rect->height;
+$rect = cmp_ar(2, 'Window resized with aspect ratio kept to 2.0');
 is($rect->height, 410, 'Window grew by 10px');
-cmp_float($ar, 2, 'Window resized with aspect ratio kept to 2.0');
 
 ################################################################################
 # Test aspect ratio between 0.5 and 2.0
@@ -80,33 +82,42 @@ cmp_float($ar, 2, 'Window resized with aspect ratio kept to 2.0');
 
 fresh_workspace;
 $win = open_with_aspect(1, 2, 2, 1);
-
-$rect = $win->rect;
-$ar = $rect->width / $rect->height;
-cmp_float($ar, 1, 'Window set to floating with aspect ratio 1.0');
+cmp_ar(1, 'Window set to floating with aspect ratio 1.0');
 
 cmd 'resize set 200';
-$rect = $win->rect;
-$ar = $rect->width / $rect->height;
+$rect = cmp_ar(2, 'Window resized, aspect ratio changed to 2.0');
 is($rect->width, 200, 'Window width is 200px');
 is($rect->height, 100, 'Window height stayed 100px');
-cmp_float($ar, 2, 'Window resized, aspect ratio changed to 2.0');
 
 cmd 'resize set 100 200';
-$rect = $win->rect;
-$ar = $rect->width / $rect->height;
+$rect = cmp_ar(0.5, 'Window resized, aspect ratio changed to 0.5');
 is($rect->width, 100, 'Window width is 100px');
 is($rect->height, 200, 'Window height is 200px');
-cmp_float($ar, 0.5, 'Window resized, aspect ratio changed to 0.5');
 
 cmd 'resize set 500';
-$rect = $win->rect;
-$ar = $rect->width / $rect->height;
-cmp_float($ar, 2, 'Window resized, aspect ratio changed to maximum 2.0');
+cmp_ar(2, 'Window resized, aspect ratio changed to maximum 2.0');
 
 cmd 'resize set 100 400';
-$rect = $win->rect;
-$ar = $rect->width / $rect->height;
-cmp_float($ar, 0.5, 'Window resized, aspect ratio changed to minimum 0.5');
+cmp_ar(0.5, 'Window resized, aspect ratio changed to minimum 0.5');
+
+################################################################################
+# Test aspect ratio with tiling windows
+################################################################################
+
+fresh_workspace;
+$win = open_with_aspect(900, 900, 125, 100);
+cmp_ar(1.00, 'Floating window opened with aspect ratio 1.00');
+
+cmd 'floating disable';
+cmp_ar(1.25, 'Tiling window with max aspect ratio 1.25');
+
+open_window;
+open_window;
+open_window;
+open_window;
+cmp_ar(1, 'New tiling windows reduced aspect ratio of window to minimum 1.0');
+
+cmd 'layout splitv';
+cmp_ar(1.25, 'Tiling window kept max aspect ratio 1.25');
 
 done_testing;
