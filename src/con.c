@@ -1195,7 +1195,7 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
     /* 1: save the container which is going to be focused after the current
      * container is moved away */
     Con *focus_next = NULL;
-    if (!ignore_focus && source_ws == current_ws) {
+    if (!ignore_focus && source_ws == current_ws && target_ws != source_ws) {
         focus_next = con_descend_focused(source_ws);
         if (focus_next == con || con_has_parent(focus_next, con)) {
             focus_next = con_next_focused(con);

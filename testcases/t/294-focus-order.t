@@ -280,4 +280,33 @@ cmd '[id=' . $windows[0]->id . '] kill';
 kill_and_confirm_focus($windows[2]->id, 'window 2 focused after tiling killed');
 kill_and_confirm_focus($windows[3]->id, 'window 3 focused after tiling killed');
 
+######################################################################
+# cmp_tree tests
+######################################################################
+
+cmp_tree(
+    msg => 'Basic test',
+    layout_before => 'S[a b] V[c d T[e f g*]]',
+    layout_after => ' ',
+    cb => sub {
+        @windows = reverse @{$_[0]};
+        confirm_focus('focus order');
+    });
+
+cmp_tree(
+    msg => 'Focused container that is moved to mark keeps focus',
+    layout_before => 'S[a b] V[2 3 T[4 5* 6]]',
+    layout_after => 'S[a b*]',
+    cb => sub {
+        cmd '[class=' . $_[0][3]->id . '] mark 3';
+        cmd 'move to mark 3';
+
+        $windows[0] = $_[0][5];
+        $windows[1] = $_[0][6];
+        $windows[2] = $_[0][4];
+        $windows[3] = $_[0][3];
+        $windows[4] = $_[0][2];
+        confirm_focus('focus order');
+    });
+
 done_testing;
