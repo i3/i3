@@ -1508,9 +1508,11 @@ void cmd_move_direction(I3_CMD, const char *direction_str, long move_px) {
         }
     }
 
-    /* the move command should not disturb focus */
-    if (focused != initially_focused)
+    /* The move command should not disturb focus. con_exists is called because
+     * tree_move calls tree_flatten. */
+    if (focused != initially_focused && con_exists(initially_focused)) {
         con_activate(initially_focused);
+    }
 
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
