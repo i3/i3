@@ -35,9 +35,13 @@ my $bottom = open_window;
 # end sleeping for half a second to make sure i3 reacted
 #
 sub focus_after {
-    my $msg = shift;
+    my ($msg, $win_id) = @_;
 
-    cmd $msg;
+    if (defined($win_id)) {
+        cmd "[id=$win_id] $msg";
+    } else {
+        cmd $msg;
+    }
     return $x->input_focus;
 }
 
@@ -48,6 +52,14 @@ $focus = focus_after('focus up');
 is($focus, $mid->id, "Middle window focused");
 
 $focus = focus_after('focus up');
+is($focus, $top->id, "Top window focused");
+
+# Same using command criteria
+$focus = focus_after('focus up', $bottom->id);
+is($focus, $mid->id, "Middle window focused");
+
+cmd 'focus down';
+$focus = focus_after('focus up', $mid->id);
 is($focus, $top->id, "Top window focused");
 
 #####################################################################

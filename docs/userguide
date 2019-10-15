@@ -1105,9 +1105,14 @@ If you want the focus to *always* wrap and you are aware of using +focus
 parent+ to switch to different containers, you can instead set +focus_wrapping+
 to the value +force+.
 
+To restrict focus inside the current workspace set +focus_wrapping+ to the
+value +workspace+. You will need to use +focus parent+ until a workspace is
+selected to switch to a different workspace using the focus commands (the
++workspace+ command will still work as expected).
+
 *Syntax*:
 ---------------------------
-focus_wrapping yes|no|force
+focus_wrapping yes|no|force|workspace
 
 # Legacy syntax, equivalent to "focus_wrapping force"
 force_focus_wrapping yes
@@ -2053,6 +2058,12 @@ parent::
 child::
 	The opposite of +focus parent+, sets the focus to the last focused
 	child container.
+next|prev::
+	Automatically sets focus to the adjacent container. If +sibling+ is
+	specified, the command will focus the exact sibling container,
+	including non-leaf containers like split containers. Otherwise, it is
+	an automatic version of +focus left|right|up|down+ in the orientation
+	of the parent container.
 floating::
 	Sets focus to the last focused floating container.
 tiling::
@@ -2068,6 +2079,7 @@ output::
 <criteria> focus
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
+focus next|prev [sibling]
 focus output left|right|up|down|primary|<output>
 ----------------------------------------------
 

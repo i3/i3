@@ -268,6 +268,8 @@ CFGFUN(disable_randr15, const char *value) {
 CFGFUN(focus_wrapping, const char *value) {
     if (strcmp(value, "force") == 0) {
         config.focus_wrapping = FOCUS_WRAPPING_FORCE;
+    } else if (strcmp(value, "workspace") == 0) {
+        config.focus_wrapping = FOCUS_WRAPPING_WORKSPACE;
     } else if (eval_boolstr(value)) {
         config.focus_wrapping = FOCUS_WRAPPING_ON;
     } else {

@@ -183,6 +183,12 @@ void cmd_exec(I3_CMD, const char *nosn, const char *command);
 void cmd_focus_direction(I3_CMD, const char *direction);
 
 /**
+ * Implementation of 'focus next|prev sibling'
+ *
+ */
+void cmd_focus_sibling(I3_CMD, const char *direction);
+
+/**
  * Implementation of 'focus tiling|floating|mode_toggle'.
  *
  */
