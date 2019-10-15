@@ -492,6 +492,11 @@ void floating_raise_con(Con *con) {
  *
  */
 bool floating_maybe_reassign_ws(Con *con) {
+    if (con_is_internal(con_get_workspace(con))) {
+        DLOG("Con in an internal workspace\n");
+        return false;
+    }
+
     Output *output = get_output_from_rect(con->rect);
 
     if (!output) {
