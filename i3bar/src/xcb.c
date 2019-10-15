@@ -999,6 +999,8 @@ static void handle_destroy_notify(xcb_destroy_notify_event_t *event) {
 
     DLOG("Removing tray client with window ID %08x\n", event->window);
     TAILQ_REMOVE(output->trayclients, client, tailq);
+    free(client->class_class);
+    free(client->class_instance);
     FREE(client);
 
     /* Trigger an update, we now have more space for the statusline */
