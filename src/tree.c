@@ -229,7 +229,7 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
             xcb_change_window_attributes(conn, con->window->id,
                                          XCB_CW_EVENT_MASK, (uint32_t[]){XCB_NONE});
             xcb_unmap_window(conn, con->window->id);
-            cookie = xcb_reparent_window(conn, con->window->id, root, 0, 0);
+            cookie = xcb_reparent_window(conn, con->window->id, root, con->rect.x, con->rect.y);
 
             /* Ignore X11 errors for the ReparentWindow request.
              * X11 Errors are returned when the window was already destroyed */
