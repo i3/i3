@@ -698,7 +698,7 @@ out:
 Con *remanage_window(Con *con) {
     Match *match;
     Con *nc = con_for_window(croot, con->window, &match);
-    if (nc == NULL || nc->window == con->window) {
+    if (nc == NULL || nc->window == NULL || nc->window == con->window) {
         run_assignments(con->window);
         return con;
     }
