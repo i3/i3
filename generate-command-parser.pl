@@ -218,6 +218,8 @@ for my $state (@keys) {
             # quote of the literal. We can do strdup(literal + 1); then :).
             $token_name =~ s/'$//;
         }
+        # Escape double quotes:
+        $token_name =~ s,",\\",g;
         my $next_state = $token->{next_state};
         if ($next_state =~ /^call /) {
             ($call_identifier) = ($next_state =~ /^call ([0-9]+)$/);

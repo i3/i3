@@ -1900,8 +1900,18 @@ con_id::
 	to match only the currently focused window.
 floating::
 	Only matches floating windows. This criterion requires no value.
+floating_from::
+	Like +floating+ but this criterion takes two possible values: "auto"
+	and "user". With "auto", only windows that were automatically opened as
+	floating are matched. With "user", only windows that the user made
+	floating are matched.
 tiling::
 	Only matches tiling windows. This criterion requires no value.
+tiling_from::
+	Like +tiling+ but this criterion takes two possible values: "auto" and
+	"user". With "auto", only windows that were automatically opened as
+	tiling are matched. With "user", only windows that the user made tiling
+	are matched.
 
 The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for

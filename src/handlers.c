@@ -842,6 +842,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             DLOG("The window was requested to be visible on all workspaces, making it sticky and floating.\n");
 
             floating_enable(con, false);
+            con->floating = FLOATING_AUTO_ON;
 
             con->sticky = true;
             ewmh_update_sticky(con->window->id, true);
@@ -1156,6 +1157,25 @@ static bool handle_strut_partial_change(Con *con, xcb_get_property_reply_t *prop
     return true;
 }
 
+/*
+ * Handles the _I3_FLOATING_WINDOW property to properly run assignments for
+ * floating window changes.
+ *
+ * This is needed to correctly run the assignments after changes in floating
+ * windows which are triggered by user commands (floating enable | disable). In
+ * that case, we can't call run_assignments because it will modify the parser
+ * state when it needs to parse the user-specified action, breaking the parser
+ * state for the original command.
+ *
+ */
+static bool handle_i3_floating(Con *con, xcb_get_property_reply_t *prop) {
+    DLOG("floating change for con %p\n", con);
+
+    remanage_window(con);
+
+    return true;
+}
+
 /* Returns false if the event could not be processed (e.g. the window could not
  * be found), true otherwise */
 typedef bool (*cb_property_handler_t)(Con *con, xcb_get_property_reply_t *property);
@@ -1177,6 +1197,7 @@ static struct property_handler_t property_handlers[] = {
     {0, 128, handle_class_change},
     {0, UINT_MAX, handle_strut_partial_change},
     {0, UINT_MAX, handle_window_type},
+    {0, UINT_MAX, handle_i3_floating},
     {0, 5 * sizeof(uint64_t), handle_motif_hints_change}};
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
@@ -1198,7 +1219,8 @@ void property_handlers_init(void) {
     property_handlers[7].atom = XCB_ATOM_WM_CLASS;
     property_handlers[8].atom = A__NET_WM_STRUT_PARTIAL;
     property_handlers[9].atom = A__NET_WM_WINDOW_TYPE;
-    property_handlers[10].atom = A__MOTIF_WM_HINTS;
+    property_handlers[10].atom = A_I3_FLOATING_WINDOW;
+    property_handlers[11].atom = A__MOTIF_WM_HINTS;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {

@@ -530,7 +530,11 @@ struct Match {
     } dock;
     xcb_window_t id;
     enum { WM_ANY = 0,
+           WM_TILING_AUTO,
+           WM_TILING_USER,
            WM_TILING,
+           WM_FLOATING_AUTO,
+           WM_FLOATING_USER,
            WM_FLOATING } window_mode;
     Con *con_id;
 
