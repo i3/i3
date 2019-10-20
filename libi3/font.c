@@ -323,7 +323,7 @@ bool font_is_pango(void) {
 static int predict_text_width_xcb(const xcb_char2b_t *text, size_t text_len);
 
 static void draw_text_xcb(const xcb_char2b_t *text, size_t text_len, xcb_drawable_t drawable,
-                          xcb_gcontext_t gc, int x, int y, int max_width) {
+                          xcb_gcontext_t gc, int x, int y) {
     /* X11 coordinates for fonts start at the baseline */
     int pos_y = y + savedFont->specific.xcb.info->font_ascent;
 
@@ -372,7 +372,7 @@ void draw_text(i3String *text, xcb_drawable_t drawable, xcb_gcontext_t gc,
             return;
         case FONT_TYPE_XCB:
             draw_text_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text),
-                          drawable, gc, x, y, max_width);
+                          drawable, gc, x, y);
             break;
         case FONT_TYPE_PANGO:
             /* Render the text using Pango */
