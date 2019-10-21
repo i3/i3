@@ -426,7 +426,7 @@ static direction_t parse_direction(const char *str) {
     }
 }
 
-static void cmd_resize_floating(I3_CMD, const char *way, const char *direction_str, Con *floating_con, int px) {
+static void cmd_resize_floating(I3_CMD, const char *direction_str, Con *floating_con, int px) {
     Rect old_rect = floating_con->rect;
     Con *focused_con = con_descend_focused(floating_con);
 
@@ -596,7 +596,7 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
 
         Con *floating_con;
         if ((floating_con = con_inside_floating(current->con))) {
-            cmd_resize_floating(current_match, cmd_output, way, direction, floating_con, resize_px);
+            cmd_resize_floating(current_match, cmd_output, direction, floating_con, resize_px);
         } else {
             if (strcmp(direction, "width") == 0 ||
                 strcmp(direction, "height") == 0) {
@@ -1089,7 +1089,7 @@ void cmd_floating(I3_CMD, const char *floating_mode) {
             if (strcmp(floating_mode, "enable") == 0) {
                 floating_enable(current->con, false);
             } else {
-                floating_disable(current->con, false);
+                floating_disable(current->con);
             }
         }
     }

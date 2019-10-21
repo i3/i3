@@ -32,7 +32,7 @@ void floating_enable(Con *con, bool automatic);
  * to its old parent.
  *
  */
-void floating_disable(Con *con, bool automatic);
+void floating_disable(Con *con);
 
 /**
  * Calls floating_enable() for tiling containers and floating_disable() for

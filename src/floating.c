@@ -421,7 +421,7 @@ void floating_enable(Con *con, bool automatic) {
     ipc_send_window_event("floating", con);
 }
 
-void floating_disable(Con *con, bool automatic) {
+void floating_disable(Con *con) {
     if (!con_is_floating(con)) {
         LOG("Container isn't floating, not doing anything.\n");
         return;
@@ -469,7 +469,7 @@ void toggle_floating_mode(Con *con, bool automatic) {
     if (con_is_floating(con)) {
         LOG("already floating, re-setting to tiling\n");
 
-        floating_disable(con, automatic);
+        floating_disable(con);
         return;
     }
 
