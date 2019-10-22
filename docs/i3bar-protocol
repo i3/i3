@@ -189,7 +189,7 @@ separator_block_width::
 	is 9 pixels), since the separator line is drawn in the middle.
 markup::
 	A string that indicates how the text of the block should be parsed. Set to
-	+"pango"+ to use https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup].
+	+"pango"+ to use https://developer.gnome.org/pango/stable/pango-Markup.html[Pango markup].
 	Set to +"none"+ to not use any markup (default). Pango markup only works
 	if you use a pango font.
 
