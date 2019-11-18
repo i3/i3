@@ -428,11 +428,6 @@ i3_config_wizard_i3_config_wizard_LDADD = \
 	$(XCB_UTIL_KEYSYMS_LIBS) \
 	$(XKBCOMMON_LIBS)
 
-i3_config_wizard_i3_config_wizard_SOURCES = \
-	i3-config-wizard/atoms.xmacro \
-	i3-config-wizard/main.c \
-	i3-config-wizard/xcb.h
-
 test_inject_randr15_CPPFLAGS = \
 	$(AM_CPPFLAGS)
 
@@ -483,6 +478,13 @@ config_parser_SOURCES = \
 	parser/GENERATED_config_enums.h \
 	parser/GENERATED_config_tokens.h \
 	parser/GENERATED_config_call.h
+
+i3_config_wizard_i3_config_wizard_SOURCES = \
+	$(command_parser_SOURCES) \
+	$(config_parser_SOURCES) \
+	i3-config-wizard/atoms.xmacro \
+	i3-config-wizard/main.c \
+	i3-config-wizard/xcb.h
 
 i3_SOURCES = \
 	$(command_parser_SOURCES) \
