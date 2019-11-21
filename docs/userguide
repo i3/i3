@@ -1985,6 +1985,7 @@ bindsym $mod+h split horizontal
 bindsym $mod+t split toggle
 -------------------------------
 
+[[manipulating_layout]]
 === Manipulating layout
 
 Use +layout toggle split+, +layout stacking+, +layout tabbed+, +layout splitv+
