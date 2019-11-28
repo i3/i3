@@ -12,7 +12,7 @@ use v5.10;
 use autodie;
 use lib 'testcases/lib';
 use i3test::Util qw(slurp);
-use Lintian::Check qw(check_spelling);
+use Lintian::Spelling qw(check_spelling);
 
 # Lintian complains if we don’t set a vendor.
 use Lintian::Data;
