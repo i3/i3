@@ -350,6 +350,8 @@ urgent (bool)::
 	workspace) has the urgency hint set, directly or indirectly. All parent
 	containers up until the workspace container will be marked urgent if they
 	have at least one urgent child.
+marks (array of string)::
+	List of marks assigned to container
 focused (bool)::
 	Whether this container is currently focused.
 focus (array of integer)::
