@@ -270,6 +270,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     DLOG("Initial geometry: (%d, %d, %d, %d)\n", geom->x, geom->y, geom->width, geom->height);
 
     /* See if any container swallows this new window */
+    cwindow->swallowed = false;
     Match *match = NULL;
     Con *nc = con_for_window(search_at, cwindow, &match);
     const bool match_from_restart_mode = (match && match->restart_mode);
@@ -358,6 +359,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             match_free(match);
             FREE(match);
         }
+
+        cwindow->swallowed = true;
     }
 
     DLOG("new container = %p\n", nc);
@@ -695,6 +698,11 @@ out:
  *
  */
 Con *remanage_window(Con *con) {
+    /* Make sure this windows hasn't already been swallowed. */
+    if (con->window->swallowed) {
+        run_assignments(con->window);
+        return con;
+    }
     Match *match;
     Con *nc = con_for_window(croot, con->window, &match);
     if (nc == NULL || nc->window == NULL || nc->window == con->window) {
@@ -740,5 +748,6 @@ Con *remanage_window(Con *con) {
         ewmh_update_wm_desktop();
     }
 
+    nc->window->swallowed = true;
     return nc;
 }

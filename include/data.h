@@ -476,6 +476,9 @@ struct Window {
     /* Time when the window became managed. Used to determine whether a window
      * should be swallowed after initial management. */
     time_t managed_since;
+
+    /* The window has been swallowed. */
+    bool swallowed;
 };
 
 /**
