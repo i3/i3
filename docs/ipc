@@ -164,6 +164,10 @@ sending a reply. Expect the socket to be shut down.
 The reply consists of a serialized list of workspaces. Each workspace has the
 following properties:
 
+id (integer)::
+	The internal ID (actually a C pointer value) of this container. Do not
+	make any assumptions about it. You can use it to (re-)identify and
+	address containers when talking to i3.
 num (integer)::
 	The logical number of the workspace. Corresponds to the command
 	to switch to this workspace. For named workspaces, this will be -1.
