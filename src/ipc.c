@@ -906,6 +906,9 @@ IPC_HANDLER(get_workspaces) {
             assert(ws->type == CT_WORKSPACE);
             y(map_open);
 
+            ystr("id");
+            y(integer, (uintptr_t)ws);
+
             ystr("num");
             y(integer, ws->num);
 

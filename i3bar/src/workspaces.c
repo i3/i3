@@ -61,6 +61,12 @@ static int workspaces_boolean_cb(void *params_, int val) {
 static int workspaces_integer_cb(void *params_, long long val) {
     struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
 
+    if (!strcmp(params->cur_key, "id")) {
+        params->workspaces_walk->id = val;
+        FREE(params->cur_key);
+        return 1;
+    }
+
     if (!strcmp(params->cur_key, "num")) {
         params->workspaces_walk->num = (int)val;
         FREE(params->cur_key);

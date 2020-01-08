@@ -30,6 +30,7 @@ void parse_workspaces_json(char *json);
 void free_workspaces(void);
 
 struct i3_ws {
+    uintptr_t id;             /* Workspace ID - C pointer to a workspace container */
     int num;                  /* The internal number of the ws */
     char *canonical_name;     /* The true name of the ws according to the ipc */
     i3String *name;           /* The name of the ws that is displayed on the bar */
