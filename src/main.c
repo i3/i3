@@ -434,7 +434,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (only_check_config) {
-        exit(load_configuration(override_configpath, C_VALIDATE) ? 0 : 1);
+        exit(load_configuration(override_configpath, C_VALIDATE) ? EXIT_SUCCESS : EXIT_FAILURE);
     }
 
     /* If the user passes more arguments, we act like i3-msg would: Just send

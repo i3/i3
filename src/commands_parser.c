@@ -106,7 +106,7 @@ static void push_string(const char *identifier, char *str) {
     fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
                     "in the code, or a new command which contains more than "
                     "10 identified tokens.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 // TODO move to a common util
@@ -128,7 +128,7 @@ static void push_long(const char *identifier, long num) {
     fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
                     "in the code, or a new command which contains more than "
                     "10 identified tokens.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 // TODO move to a common util

@@ -195,7 +195,7 @@ void start_application(const char *command, bool no_startup_id) {
             execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
             /* not reached */
         }
-        _exit(0);
+        _exit(EXIT_SUCCESS);
     }
     wait(0);
 
