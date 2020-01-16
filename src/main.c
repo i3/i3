@@ -429,7 +429,7 @@ int main(int argc, char *argv[]) {
                                 "\ti3 floating toggle\n"
                                 "\ti3 kill window\n"
                                 "\n");
-                exit(EXIT_FAILURE);
+                exit(opt == 'h' ? EXIT_SUCCESS : EXIT_FAILURE);
         }
     }
 
