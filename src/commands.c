@@ -1582,7 +1582,7 @@ void cmd_layout_toggle(I3_CMD, const char *toggle_mode) {
  */
 void cmd_exit(I3_CMD) {
     LOG("Exiting due to user command.\n");
-    exit(0);
+    exit(EXIT_SUCCESS);
 
     /* unreached */
 }

@@ -163,7 +163,7 @@ void exec_i3_utility(char *name, char *argv[]) {
     char buffer[BUFSIZ];
     if (readlink("/proc/self/exe", buffer, BUFSIZ) == -1) {
         warn("could not read /proc/self/exe");
-        _exit(1);
+        _exit(EXIT_FAILURE);
     }
     dir = dirname(buffer);
     sasprintf(&migratepath, "%s/%s", dir, name);

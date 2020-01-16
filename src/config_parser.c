@@ -126,7 +126,7 @@ static void push_string(const char *identifier, const char *str) {
     fprintf(stderr, "BUG: config_parser stack full. This means either a bug "
                     "in the code, or a new command which contains more than "
                     "10 identified tokens.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 static void push_long(const char *identifier, long num) {
@@ -146,7 +146,7 @@ static void push_long(const char *identifier, long num) {
     fprintf(stderr, "BUG: config_parser stack full. This means either a bug "
                     "in the code, or a new command which contains more than "
                     "10 identified tokens.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 static const char *get_string(const char *identifier) {

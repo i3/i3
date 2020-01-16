@@ -441,7 +441,7 @@ static void handle_screen_change(xcb_generic_event_t *e) {
     xcb_get_geometry_reply_t *reply = xcb_get_geometry_reply(conn, cookie, NULL);
     if (reply == NULL) {
         ELOG("Could not get geometry of the root window, exiting\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     DLOG("root geometry reply: (%d, %d) %d x %d\n", reply->x, reply->y, reply->width, reply->height);
 

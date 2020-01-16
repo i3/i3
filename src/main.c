@@ -429,12 +429,12 @@ int main(int argc, char *argv[]) {
                                 "\ti3 floating toggle\n"
                                 "\ti3 kill window\n"
                                 "\n");
-                exit(EXIT_FAILURE);
+                exit(opt == 'h' ? EXIT_SUCCESS : EXIT_FAILURE);
         }
     }
 
     if (only_check_config) {
-        exit(load_configuration(override_configpath, C_VALIDATE) ? 0 : 1);
+        exit(load_configuration(override_configpath, C_VALIDATE) ? EXIT_SUCCESS : EXIT_FAILURE);
     }
 
     /* If the user passes more arguments, we act like i3-msg would: Just send
