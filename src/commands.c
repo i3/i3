@@ -1226,7 +1226,7 @@ void cmd_exec(I3_CMD, const char *nosn, const char *command) {
         start_application(command, no_startup_id);
     }
 
-    ysuccess(count > 0);
+    ysuccess(true);
 }
 
 #define CMD_FOCUS_WARN_CHILDREN                                                        \
