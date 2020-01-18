@@ -57,7 +57,7 @@ delete $fds{2};
 
 # Filter out the fd which is caused by ls calling readdir().
 for my $fd (keys %fds) {
-    delete $fds{$fd} if $fds{$fd} =~ m,^/proc/\d+/fd$,;
+    delete $fds{$fd} if $fds{$fd} =~ m,^(/proc/\d+/fd|/var/lib/sss/mc/(group|passwd))$,;
 }
 
 is(scalar keys %fds, 0, 'No file descriptors leaked');
