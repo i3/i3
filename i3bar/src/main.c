@@ -17,6 +17,8 @@
 #include <getopt.h>
 #include <glob.h>
 
+struct ev_loop *main_loop;
+
 /*
  * Having verboselog(), errorlog() and debuglog() is necessary when using libi3.
  *

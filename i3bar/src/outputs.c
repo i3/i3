@@ -252,6 +252,7 @@ static yajl_callbacks outputs_callbacks = {
     .yajl_end_map = outputs_end_map_cb,
 };
 
+struct outputs_head *outputs;
 /*
  * Initiate the outputs list
  *
