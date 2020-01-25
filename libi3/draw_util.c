@@ -16,7 +16,7 @@
 #include <cairo/cairo-xcb.h>
 
 /* The default visual_type to use if none is specified when creating the surface. Must be defined globally. */
-xcb_visualtype_t *visual_type;
+extern xcb_visualtype_t *visual_type;
 
 /* Forward declarations */
 static void draw_util_set_source_color(surface_t *surface, color_t color);
