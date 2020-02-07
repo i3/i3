@@ -349,6 +349,10 @@ window (integer)::
 	X11-related tools display (usually in hex).
 window_properties (map)::
 	X11 window properties title, instance, class, window_role and transient_for.
+window_type (string)::
+	The window type (_NET_WM_WINDOW_TYPE). Possible values are undefined, normal,
+	dialog, utility, toolbar, splash, menu, dropdown_menu, popup_menu, tooltip and
+	notification.
 urgent (bool)::
 	Whether this container (window, split container, floating container or
 	workspace) has the urgency hint set, directly or indirectly. All parent
