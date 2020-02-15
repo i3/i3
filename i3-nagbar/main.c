@@ -8,8 +8,6 @@
  * when the user has an error in their configuration file.
  *
  */
-#include "libi3.h"
-
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -31,6 +29,9 @@
 #include <xcb/xcb_event.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_cursor.h>
+
+xcb_visualtype_t *visual_type = NULL;
+#include "libi3.h"
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launchee.h>

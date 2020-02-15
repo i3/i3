@@ -74,7 +74,7 @@ typedef struct config_t {
            S_SHOW = 1 } hidden_state;
 } config_t;
 
-config_t config;
+extern config_t config;
 
 /**
  * Start parsing the received bar configuration JSON string

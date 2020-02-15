@@ -93,6 +93,11 @@ bool shape_supported = true;
 
 bool force_xinerama = false;
 
+/* Define all atoms as global variables */
+#define xmacro(atom) xcb_atom_t A_##atom;
+#include "atoms.xmacro"
+#undef xmacro
+
 /*
  * This callback is only a dummy, see xcb_prepare_cb.
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop

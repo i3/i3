@@ -19,6 +19,7 @@
 
 #include <X11/Xlib.h>
 
+config_t config;
 static char *cur_key;
 static bool parsing_bindings;
 static bool parsing_tray_outputs;

@@ -14,8 +14,6 @@
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
-xcb_window_t ewmh_window;
-
 /* Stores the X11 window ID of the currently focused window */
 xcb_window_t focused_id = XCB_NONE;
 

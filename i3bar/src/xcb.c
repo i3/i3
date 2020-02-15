@@ -140,6 +140,9 @@ static const int tray_loff_px = 2;
 /* Vertical offset between the bar and a separator */
 static const int sep_voff_px = 4;
 
+/* Cached width of the custom separator if one was set */
+int separator_symbol_width;
+
 int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
     xcb_generic_error_t *err;
     if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
