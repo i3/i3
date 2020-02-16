@@ -84,8 +84,11 @@ AC_SEARCH_LIBS([ev_run], [ev], , [AC_MSG_FAILURE([cannot find the required ev_ru
 
 AC_SEARCH_LIBS([shm_open], [rt], [], [], [-pthread])
 
-AC_SEARCH_LIBS([iconv_open], [iconv], ,
-AC_SEARCH_LIBS([libiconv_open], [iconv], , [AC_MSG_FAILURE([cannot find the required iconv_open() function despite trying to link with -liconv])]))
+AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <iconv.h>], [iconv_open(0, 0)])], ,
+  [LIBS="-liconv $LIBS"
+   AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <iconv.h>], [iconv_open(0, 0)])], ,
+     [AC_MSG_FAILURE([cannot find the required iconv_open() function despite trying to link with -liconv])])]
+)
 
 AX_PTHREAD
 
