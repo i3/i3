@@ -1,0 +1,71 @@
+
+ ┌────────────────────────────┐
+ │ Release notes for i3 v4.18 │
+ └────────────────────────────┘
+
+This is i3 v4.18. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.18        │
+ └────────────────────────────┘
+
+  • docs/ipc: document fullscreen_mode in GET_TREE reply
+  • docs/ipc: document marks field in GET_TREE reply
+  • docs/ipc: document window_type in GET_TREE reply
+  • docs/ipc: improve documentation for window_properties
+  • docs/userguide: clarify commands/config directive wording
+  • layout saving: remanage window after property updates (e.g. titles)
+  • get_first_output: prefer primary output (e.g. when moving disabled outputs)
+  • ipc: add window_type to nodes
+  • ipc: add container id to nodes
+  • allow dragging active titles for all container types (e.g. floating+tabbed)
+  • allow dragging inactive titles after a 10px threshold
+  • make tray icon order deterministic (sorted by class/instance)
+  • implement focus next|prev
+  • implement focus next|prev sibling
+  • implement focus_wrapping workspace
+  • exit with exit code 0 on --help
+  • exec command: respect command criteria
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • build: fix lcov support
+  • build: use AC_REPLACE_FUNCS, drop bundled memmem
+  • build: fix building with -fno-common (for gcc 10)
+  • build: configure: deal with git worktree checkouts, where .git is a file
+  • docs/userguide: fix link to pango markup
+  • docs/userguide: add missing manipulating_layout anchor
+  • docs/userguide: fix IPC socket location
+  • i3-nagbar: make debug log visible
+  • i3-nagbar: fix small memory leaks
+  • i3bar: fix small memory leaks
+  • move workspace to output: don’t create duplicate numbered workspace
+  • correctly select output when pointer query fails
+  • fix moving windows to scratchpad when using marks
+  • fix startup workspace selection when workspace command uses options
+  • do not try to center floating window on itself (fixes xterm placement)
+  • fix “move window to <mark>” when target is a workspace
+  • correctly activate windows behind a fullscreen window
+  • fix back-and-forth after renaming workspaces
+  • keep focus when moving container to marked workspace
+  • do not show scratchpad windows upon move to position command
+  • reparent windows to their current position when unmanaging
+    (fixes dock clients unexpectedly moving to different output)
+  • fix crash when moving containers
+  • scratchpad_move: un-fullscreen correct container
+  • avoid crash when nc->window is NULL
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  acheronfail, Albert Safin, Antoine, Benjamin Dopplinger, Brian Ashworth,
+  Damien Cassou, Daniele Varrazzo, David Shen, Erwin J. van Eijk, Ingo Bürk,
+  Iskustvo, izzel, Konst Mayer, Orestis Floros, Yury Ignatev
+
+-- Michael Stapelberg, 2020-02-17
