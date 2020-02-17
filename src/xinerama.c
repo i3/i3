@@ -84,7 +84,7 @@ static void query_screens(xcb_connection_t *conn) {
 
     if (num_screens == 0) {
         ELOG("No screens found. Please fix your setup. i3 will exit now.\n");
-        exit(0);
+        exit(EXIT_SUCCESS);
     }
 }
 

@@ -93,6 +93,11 @@ bool shape_supported = true;
 
 bool force_xinerama = false;
 
+/* Define all atoms as global variables */
+#define xmacro(atom) xcb_atom_t A_##atom;
+#include "atoms.xmacro"
+#undef xmacro
+
 /*
  * This callback is only a dummy, see xcb_prepare_cb.
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
@@ -429,12 +434,12 @@ int main(int argc, char *argv[]) {
                                 "\ti3 floating toggle\n"
                                 "\ti3 kill window\n"
                                 "\n");
-                exit(EXIT_FAILURE);
+                exit(opt == 'h' ? EXIT_SUCCESS : EXIT_FAILURE);
         }
     }
 
     if (only_check_config) {
-        exit(load_configuration(override_configpath, C_VALIDATE) ? 0 : 1);
+        exit(load_configuration(override_configpath, C_VALIDATE) ? EXIT_SUCCESS : EXIT_FAILURE);
     }
 
     /* If the user passes more arguments, we act like i3-msg would: Just send
@@ -813,12 +818,13 @@ int main(int argc, char *argv[]) {
         if (!output) {
             ELOG("ERROR: No screen at (%d, %d), starting on the first screen\n",
                  pointerreply->root_x, pointerreply->root_y);
-            output = get_first_output();
         }
-
-        con_activate(con_descend_focused(output_get_content(output->con)));
-        free(pointerreply);
     }
+    if (!output) {
+        output = get_first_output();
+    }
+    con_activate(con_descend_focused(output_get_content(output->con)));
+    free(pointerreply);
 
     tree_render();
 

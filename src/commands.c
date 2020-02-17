@@ -426,7 +426,7 @@ static direction_t parse_direction(const char *str) {
     }
 }
 
-static void cmd_resize_floating(I3_CMD, const char *way, const char *direction_str, Con *floating_con, int px) {
+static void cmd_resize_floating(I3_CMD, const char *direction_str, Con *floating_con, int px) {
     Rect old_rect = floating_con->rect;
     Con *focused_con = con_descend_focused(floating_con);
 
@@ -469,7 +469,7 @@ static void cmd_resize_floating(I3_CMD, const char *way, const char *direction_s
 
     /* Did we actually resize anything or did the size constraints prevent us?
      * If we could not resize, exit now to not move the window. */
-    if (memcmp(&old_rect, &(floating_con->rect), sizeof(Rect)) == 0) {
+    if (rect_equals(old_rect, floating_con->rect)) {
         return;
     }
 
@@ -596,7 +596,7 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
 
         Con *floating_con;
         if ((floating_con = con_inside_floating(current->con))) {
-            cmd_resize_floating(current_match, cmd_output, way, direction, floating_con, resize_px);
+            cmd_resize_floating(current_match, cmd_output, direction, floating_con, resize_px);
         } else {
             if (strcmp(direction, "width") == 0 ||
                 strcmp(direction, "height") == 0) {
@@ -1089,7 +1089,7 @@ void cmd_floating(I3_CMD, const char *floating_mode) {
             if (strcmp(floating_mode, "enable") == 0) {
                 floating_enable(current->con, false);
             } else {
-                floating_disable(current->con, false);
+                floating_disable(current->con);
             }
         }
     }
@@ -1207,30 +1207,74 @@ void cmd_kill(I3_CMD, const char *kill_mode_str) {
 void cmd_exec(I3_CMD, const char *nosn, const char *command) {
     bool no_startup_id = (nosn != NULL);
 
-    DLOG("should execute %s, no_startup_id = %d\n", command, no_startup_id);
-    start_application(command, no_startup_id);
+    HANDLE_EMPTY_MATCH;
+
+    int count = 0;
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        count++;
+    }
+
+    if (count > 1) {
+        LOG("WARNING: Your criteria for the exec command match %d containers, "
+            "so the command will execute this many times.\n",
+            count);
+    }
+
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        DLOG("should execute %s, no_startup_id = %d\n", command, no_startup_id);
+        start_application(command, no_startup_id);
+    }
 
     ysuccess(true);
 }
 
+#define CMD_FOCUS_WARN_CHILDREN                                                        \
+    do {                                                                               \
+        int count = 0;                                                                 \
+        owindow *current;                                                              \
+        TAILQ_FOREACH(current, &owindows, owindows) {                                  \
+            count++;                                                                   \
+        }                                                                              \
+                                                                                       \
+        if (count > 1) {                                                               \
+            LOG("WARNING: Your criteria for the focus command matches %d containers, " \
+                "while only exactly one container can be focused at a time.\n",        \
+                count);                                                                \
+        }                                                                              \
+    } while (0)
+
 /*
- * Implementation of 'focus left|right|up|down'.
+ * Implementation of 'focus left|right|up|down|next|prev'.
  *
  */
-void cmd_focus_direction(I3_CMD, const char *direction) {
-    switch (parse_direction(direction)) {
-        case D_LEFT:
-            tree_next('p', HORIZ);
-            break;
-        case D_RIGHT:
-            tree_next('n', HORIZ);
-            break;
-        case D_UP:
-            tree_next('p', VERT);
-            break;
-        case D_DOWN:
-            tree_next('n', VERT);
-            break;
+void cmd_focus_direction(I3_CMD, const char *direction_str) {
+    HANDLE_EMPTY_MATCH;
+    CMD_FOCUS_WARN_CHILDREN;
+
+    direction_t direction;
+    position_t position;
+    bool auto_direction = true;
+    if (strcmp(direction_str, "prev") == 0) {
+        position = BEFORE;
+    } else if (strcmp(direction_str, "next") == 0) {
+        position = AFTER;
+    } else {
+        auto_direction = false;
+        direction = parse_direction(direction_str);
+    }
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        Con *ws = con_get_workspace(current->con);
+        if (!ws || con_is_internal(ws)) {
+            continue;
+        }
+        if (auto_direction) {
+            orientation_t o = con_orientation(current->con->parent);
+            direction = direction_from_orientation_position(o, position);
+        }
+        tree_next(current->con, direction);
     }
 
     cmd_output->needs_tree_render = true;
@@ -1239,17 +1283,29 @@ void cmd_focus_direction(I3_CMD, const char *direction) {
 }
 
 /*
- * Focus a container and disable any other fullscreen container not permitting the focus.
+ * Implementation of 'focus next|prev sibling'
  *
  */
-static void cmd_focus_force_focus(Con *con) {
-    /* Disable fullscreen container in workspace with container to be focused. */
-    Con *ws = con_get_workspace(con);
-    Con *fullscreen_on_ws = con_get_fullscreen_covering_ws(ws);
-    if (fullscreen_on_ws && fullscreen_on_ws != con && !con_has_parent(con, fullscreen_on_ws)) {
-        con_disable_fullscreen(fullscreen_on_ws);
+void cmd_focus_sibling(I3_CMD, const char *direction_str) {
+    HANDLE_EMPTY_MATCH;
+    CMD_FOCUS_WARN_CHILDREN;
+
+    const position_t direction = (STARTS_WITH(direction_str, "prev")) ? BEFORE : AFTER;
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        Con *ws = con_get_workspace(current->con);
+        if (!ws || con_is_internal(ws)) {
+            continue;
+        }
+        Con *next = get_tree_next_sibling(current->con, direction);
+        if (next) {
+            con_activate(next);
+        }
     }
-    con_activate(con);
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
 }
 
 /*
@@ -1276,7 +1332,7 @@ void cmd_focus_window_mode(I3_CMD, const char *window_mode) {
             (!to_floating && current->type == CT_FLOATING_CON))
             continue;
 
-        cmd_focus_force_focus(con_descend_focused(current));
+        con_activate_unblock(con_descend_focused(current));
         success = true;
         break;
     }
@@ -1329,12 +1385,15 @@ void cmd_focus(I3_CMD) {
         ELOG("Example: [class=\"urxvt\" title=\"irssi\"] focus\n");
 
         yerror("You have to specify which window/container should be focused");
-
+        return;
+    } else if (TAILQ_EMPTY(&owindows)) {
+        yerror("No window matches given criteria");
         return;
     }
 
+    CMD_FOCUS_WARN_CHILDREN;
+
     Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
-    int count = 0;
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
         Con *ws = con_get_workspace(current->con);
@@ -1346,43 +1405,18 @@ void cmd_focus(I3_CMD) {
         /* In case this is a scratchpad window, call scratchpad_show(). */
         if (ws == __i3_scratch) {
             scratchpad_show(current->con);
-            count++;
             /* While for the normal focus case we can change focus multiple
              * times and only a single window ends up focused, we could show
              * multiple scratchpad windows. So, rather break here. */
             break;
         }
 
-        /* If the container is not on the current workspace,
-         * workspace_show() will switch to a different workspace and (if
-         * enabled) trigger a mouse pointer warp to the currently focused
-         * container (!) on the target workspace.
-         *
-         * Therefore, before calling workspace_show(), we make sure that
-         * 'current' will be focused on the workspace. However, we cannot
-         * just con_focus(current) because then the pointer will not be
-         * warped at all (the code thinks we are already there).
-         *
-         * So we focus 'current' to make it the currently focused window of
-         * the target workspace, then revert focus. */
-        Con *currently_focused = focused;
-        cmd_focus_force_focus(current->con);
-        con_activate(currently_focused);
-
-        /* Now switch to the workspace, then focus */
-        workspace_show(ws);
         LOG("focusing %p / %s\n", current->con, current->con->name);
-        con_activate(current->con);
-        count++;
+        con_activate_unblock(current->con);
     }
 
-    if (count > 1)
-        LOG("WARNING: Your criteria for the focus command matches %d containers, "
-            "while only exactly one container can be focused at a time.\n",
-            count);
-
     cmd_output->needs_tree_render = true;
-    ysuccess(count > 0);
+    ysuccess(true);
 }
 
 /*
@@ -1490,9 +1524,11 @@ void cmd_move_direction(I3_CMD, const char *direction_str, long move_px) {
         }
     }
 
-    /* the move command should not disturb focus */
-    if (focused != initially_focused)
+    /* The move command should not disturb focus. con_exists is called because
+     * tree_move calls tree_flatten. */
+    if (focused != initially_focused && con_exists(initially_focused)) {
         con_activate(initially_focused);
+    }
 
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
@@ -1562,7 +1598,7 @@ void cmd_layout_toggle(I3_CMD, const char *toggle_mode) {
  */
 void cmd_exit(I3_CMD) {
     LOG("Exiting due to user command.\n");
-    exit(0);
+    exit(EXIT_SUCCESS);
 
     /* unreached */
 }
@@ -2011,6 +2047,13 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
         /* Restore the previous focus since con_attach messes with the focus. */
         workspace_show(con_get_workspace(previously_focused));
         con_focus(previously_focused);
+    }
+
+    /* Let back-and-forth work after renaming the previous workspace.
+     * See #3694. */
+    if (previous_workspace_name && !strcmp(previous_workspace_name, old_name_copy)) {
+        FREE(previous_workspace_name);
+        previous_workspace_name = sstrdup(new_name);
     }
 
     cmd_output->needs_tree_render = true;

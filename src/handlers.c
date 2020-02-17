@@ -412,7 +412,7 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
         if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(workspace))) {
             DLOG("Focusing con = %p\n", con);
             workspace_show(workspace);
-            con_activate(con);
+            con_activate_unblock(con);
             tree_render();
         } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(workspace))) {
             DLOG("Marking con = %p urgent\n", con);
@@ -441,7 +441,7 @@ static void handle_screen_change(xcb_generic_event_t *e) {
     xcb_get_geometry_reply_t *reply = xcb_get_geometry_reply(conn, cookie, NULL);
     if (reply == NULL) {
         ELOG("Could not get geometry of the root window, exiting\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     DLOG("root geometry reply: (%d, %d) %d x %d\n", reply->x, reply->y, reply->width, reply->height);
 
@@ -565,7 +565,9 @@ static bool handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t
 
     char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
 
-    window_update_name(con->window, prop, false);
+    window_update_name(con->window, prop);
+
+    con = remanage_window(con);
 
     x_push_changes(croot);
 
@@ -590,7 +592,9 @@ static bool handle_windowname_change_legacy(void *data, xcb_connection_t *conn, 
 
     char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
 
-    window_update_name_legacy(con->window, prop, false);
+    window_update_name_legacy(con->window, prop);
+
+    con = remanage_window(con);
 
     x_push_changes(croot);
 
@@ -612,7 +616,9 @@ static bool handle_windowrole_change(void *data, xcb_connection_t *conn, uint8_t
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;
 
-    window_update_role(con->window, prop, false);
+    window_update_role(con->window, prop);
+
+    con = remanage_window(con);
 
     return true;
 }
@@ -752,7 +758,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 workspace_show(ws);
                 /* Re-set focus, even if unchanged from i3’s perspective. */
                 focused_id = XCB_NONE;
-                con_activate(con);
+                con_activate_unblock(con);
             }
         } else {
             /* Request is from an application. */
@@ -763,8 +769,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
 
             if (config.focus_on_window_activation == FOWA_FOCUS || (config.focus_on_window_activation == FOWA_SMART && workspace_is_visible(ws))) {
                 DLOG("Focusing con = %p\n", con);
-                workspace_show(ws);
-                con_activate(con);
+                con_activate_unblock(con);
             } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(ws))) {
                 DLOG("Marking con = %p urgent\n", con);
                 con_set_urgency(con, true);
@@ -907,7 +912,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             .event_y = y_root - (con->rect.y)};
         switch (direction) {
             case _NET_WM_MOVERESIZE_MOVE:
-                floating_drag_window(con->parent, &fake);
+                floating_drag_window(con->parent, &fake, false);
                 break;
             case _NET_WM_MOVERESIZE_SIZE_TOPLEFT ... _NET_WM_MOVERESIZE_SIZE_LEFT:
                 floating_resize_window(con->parent, false, &fake);
@@ -1109,14 +1114,8 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
 
     DLOG("focus is different / refocusing floating window: updating decorations\n");
 
-    /* Get the currently focused workspace to check if the focus change also
-     * involves changing workspaces. If so, we need to call workspace_show() to
-     * correctly update state and send the IPC event. */
-    Con *ws = con_get_workspace(con);
-    if (ws != con_get_workspace(focused))
-        workspace_show(ws);
+    con_activate_unblock(con);
 
-    con_activate(con);
     /* We update focused_id because we don’t need to set focus again */
     focused_id = event->event;
     tree_render();
@@ -1158,7 +1157,9 @@ static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t stat
             return false;
     }
 
-    window_update_class(con->window, prop, false);
+    window_update_class(con->window, prop);
+
+    con = remanage_window(con);
 
     return true;
 }

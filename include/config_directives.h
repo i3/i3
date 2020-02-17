@@ -97,6 +97,7 @@ CFGFUN(bar_color_single, const char *colorclass, const char *color);
 CFGFUN(bar_status_command, const char *command);
 CFGFUN(bar_binding_mode_indicator, const char *value);
 CFGFUN(bar_workspace_buttons, const char *value);
+CFGFUN(bar_workspace_min_width, const long width);
 CFGFUN(bar_strip_workspace_numbers, const char *value);
 CFGFUN(bar_strip_workspace_name, const char *value);
 CFGFUN(bar_start);

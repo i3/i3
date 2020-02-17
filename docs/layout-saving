@@ -261,27 +261,3 @@ container:
     ]
 }
 --------------------------------------------------------------------------------
-
-=== Placeholders using window title matches don't swallow the window
-
-If you use the +title+ attribute to match a window and find that it doesn't
-work or only works sometimes, the reason might be that the application sets the
-title only after making the window visible. This will be especially true for
-programs running inside terminal emulators, e.g., +urxvt -e irssi+ when
-matching on +title: "irssi"+.
-
-One way to deal with this is to not rely on the title, but instead use, e.g.,
-the +instance+ attribute and running the program to set this window instance to
-that value:
-
---------------------------------------------------------------------------------
-# Run irssi via
-# urxvt -name "irssi-container" -e irssi
-
-"swallows": [
-    {
-        "class": "URxvt",
-        "instance": "irssi-container"
-    }
-]
---------------------------------------------------------------------------------

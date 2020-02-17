@@ -64,6 +64,7 @@ int max(int a, int b);
 bool rect_contains(Rect rect, uint32_t x, uint32_t y);
 Rect rect_add(Rect a, Rect b);
 Rect rect_sub(Rect a, Rect b);
+bool rect_equals(Rect a, Rect b);
 
 /**
  * Returns true if the name consists of only digits.
@@ -123,17 +124,6 @@ bool path_exists(const char *path);
  */
 void i3_restart(bool forget_layout);
 
-#if defined(__OpenBSD__) || defined(__APPLE__)
-
-/**
- * Taken from FreeBSD
- * Find the first occurrence of the byte string s in byte string l.
- *
- */
-void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);
-
-#endif
-
 /**
  * Escapes the given string if a pango font is currently used.
  * If the string has to be escaped, the input string will be free'd.
@@ -180,3 +170,15 @@ ssize_t slurp(const char *path, char **buf);
  *
  */
 orientation_t orientation_from_direction(direction_t direction);
+
+/**
+ * Convert a direction to its corresponding position.
+ *
+ */
+position_t position_from_direction(direction_t direction);
+
+/**
+ * Convert orientation and position to the corresponding direction.
+ *
+ */
+direction_t direction_from_orientation_position(orientation_t orientation, position_t position);

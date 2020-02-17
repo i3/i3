@@ -150,6 +150,22 @@ send_net_active_window($scratch->id, 'pager');
 is($x->input_focus, $scratch->id, 'scratchpad window is shown');
 
 ################################################################################
+# Send a _NET_ACTIVE_WINDOW ClientMessage for a window behind a fullscreen
+# window
+################################################################################
+
+$ws1 = fresh_workspace;
+$win1 = open_window;
+$win2 = open_window;
+cmd 'fullscreen enable';
+is_num_fullscreen($ws1, 1, '1 fullscreen window in workspace');
+
+send_net_active_window($win1->id);
+
+is($x->input_focus, $win1->id, 'window behind fullscreen window is now focused');
+is_num_fullscreen($ws1, 0, 'no fullscreen windows in workspace');
+
+################################################################################
 # Verify that the _NET_ACTIVE_WINDOW property is updated on the root window
 # correctly.
 ################################################################################

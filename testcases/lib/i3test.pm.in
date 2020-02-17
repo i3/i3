@@ -1230,7 +1230,7 @@ sub create_layout {
 
             $r = $r . '{"swallows": [{';
             $r = $r . '"class": "^' . "$char" . '$"';
-            $r = $r . '}]},';
+            $r = $r . '}]}' . ($depth == 0 ? "\n" : ',');
         } else {
             die "Could not understand $char";
         }

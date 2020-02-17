@@ -237,17 +237,16 @@ static void move_to_output_directed(Con *con, direction_t direction) {
     /* force re-painting the indicators */
     FREE(con->deco_render_params);
 
-    tree_flatten(croot);
     ipc_send_window_event("move", con);
+    tree_flatten(croot);
     ewmh_update_wm_desktop();
 }
 
 /*
- * Moves the given container in the given direction (D_LEFT, D_RIGHT,
- * D_UP, D_DOWN).
+ * Moves the given container in the given direction
  *
  */
-void tree_move(Con *con, int direction) {
+void tree_move(Con *con, direction_t direction) {
     position_t position;
     Con *target;
 
@@ -283,7 +282,7 @@ void tree_move(Con *con, int direction) {
         if (!same_orientation) {
             if (con_is_floating(con)) {
                 /* this is a floating con, we just disable floating */
-                floating_disable(con, true);
+                floating_disable(con);
                 return;
             }
             if (con_inside_floating(con)) {
@@ -385,7 +384,7 @@ end:
     /* force re-painting the indicators */
     FREE(con->deco_render_params);
 
-    tree_flatten(croot);
     ipc_send_window_event("move", con);
+    tree_flatten(croot);
     ewmh_update_wm_desktop();
 }

@@ -14,8 +14,6 @@
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
-xcb_window_t ewmh_window;
-
 /* Stores the X11 window ID of the currently focused window */
 xcb_window_t focused_id = XCB_NONE;
 
@@ -251,8 +249,7 @@ void x_move_win(Con *src, Con *dest) {
     state_dest->con = state_src->con;
     state_src->con = NULL;
 
-    Rect zero = {0, 0, 0, 0};
-    if (memcmp(&(state_dest->window_rect), &(zero), sizeof(Rect)) == 0) {
+    if (rect_equals(state_dest->window_rect, (Rect){0, 0, 0, 0})) {
         memcpy(&(state_dest->window_rect), &(state_src->window_rect), sizeof(Rect));
         DLOG("COPYING RECT\n");
     }
@@ -929,7 +926,7 @@ void x_push_node(Con *con) {
     bool fake_notify = false;
     /* Set new position if rect changed (and if height > 0) or if the pixmap
      * needs to be recreated */
-    if ((is_pixmap_needed && con->frame_buffer.id == XCB_NONE) || (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0 &&
+    if ((is_pixmap_needed && con->frame_buffer.id == XCB_NONE) || (!rect_equals(state->rect, rect) &&
                                                                    rect.height > 0)) {
         /* We first create the new pixmap, then render to it, set it as the
          * background and only afterwards change the window size. This reduces
@@ -1008,7 +1005,7 @@ void x_push_node(Con *con) {
 
     /* dito, but for child windows */
     if (con->window != NULL &&
-        memcmp(&(state->window_rect), &(con->window_rect), sizeof(Rect)) != 0) {
+        !rect_equals(state->window_rect, con->window_rect)) {
         DLOG("setting window rect (%d, %d, %d, %d)\n",
              con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
         xcb_set_window_rect(conn, con->window->id, con->window_rect);

@@ -68,6 +68,7 @@
     } while (0)
 
 #include "xcb.h"
+xcb_visualtype_t *visual_type = NULL;
 #include "libi3.h"
 
 #define TEXT_PADDING logical_px(4)

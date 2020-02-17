@@ -164,6 +164,10 @@ sending a reply. Expect the socket to be shut down.
 The reply consists of a serialized list of workspaces. Each workspace has the
 following properties:
 
+id (integer)::
+	The internal ID (actually a C pointer value) of this container. Do not
+	make any assumptions about it. You can use it to (re-)identify and
+	address containers when talking to i3.
 num (integer)::
 	The logical number of the workspace. Corresponds to the command
 	to switch to this workspace. For named workspaces, this will be -1.
@@ -344,12 +348,19 @@ window (integer)::
 	containers. This ID corresponds to what xwininfo(1) and other
 	X11-related tools display (usually in hex).
 window_properties (map)::
-	X11 window properties title, instance, class, window_role and transient_for.
+	This optional field contains all available X11 window properties from the
+	following list: *title*, *instance*, *class*, *window_role* and *transient_for*.
+window_type (string)::
+	The window type (_NET_WM_WINDOW_TYPE). Possible values are undefined, normal,
+	dialog, utility, toolbar, splash, menu, dropdown_menu, popup_menu, tooltip and
+	notification.
 urgent (bool)::
 	Whether this container (window, split container, floating container or
 	workspace) has the urgency hint set, directly or indirectly. All parent
 	containers up until the workspace container will be marked urgent if they
 	have at least one urgent child.
+marks (array of string)::
+	List of marks assigned to container
 focused (bool)::
 	Whether this container is currently focused.
 focus (array of integer)::
@@ -357,6 +368,14 @@ focus (array of integer)::
 	order. Traversing the tree by following the first entry in this array
 	will result in eventually reaching the one node with +focused+ set to
 	true.
+fullscreen_mode (integer)::
+	Whether this container is in fullscreen state or not.
+    Possible values are
+        +0+ (no fullscreen),
+        +1+ (fullscreened on output) or
+        +2+ (fullscreened globally).
+    Note that all workspaces are considered fullscreened on their respective output.
+
 nodes (array of node)::
 	The tiling (i.e. non-floating) child containers of this node.
 floating_nodes (array of node)::

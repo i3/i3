@@ -680,8 +680,8 @@ for_window [class="urxvt"] border pixel 1
 for_window [title="x200: ~/work"] floating enable
 ------------------------------------------------
 
-The valid criteria are the same as those for commands, see <<command_criteria>>. Only config
-directives with a command equivalent can be executed at runtime, see <<list_of_commands>>.
+The valid criteria are the same as those for commands, see <<command_criteria>>. Only
+commands can be executed at runtime, not config directives, see <<list_of_commands>>.
 
 [[no_focus]]
 === Don't focus window upon opening
@@ -1005,7 +1005,8 @@ programs to get information from i3, such as the current workspaces
 (to display a workspace bar), and to control i3.
 
 The IPC socket is enabled by default and will be created in
-+/tmp/i3-%u.XXXXXX/ipc-socket.%p+ where +%u+ is your UNIX username, +%p+ is
++$XDG_RUNTIME_DIR/i3/ipc-socket.%p+ if the directory is available, falling back
+to +/tmp/i3-%u.XXXXXX/ipc-socket.%p+, where +%u+ is your UNIX username, +%p+ is
 the PID of i3 and XXXXXX is a string of random characters from the portable
 filename character set (see mkdtemp(3)).
 
@@ -1105,9 +1106,14 @@ If you want the focus to *always* wrap and you are aware of using +focus
 parent+ to switch to different containers, you can instead set +focus_wrapping+
 to the value +force+.
 
+To restrict focus inside the current workspace set +focus_wrapping+ to the
+value +workspace+. You will need to use +focus parent+ until a workspace is
+selected to switch to a different workspace using the focus commands (the
++workspace+ command will still work as expected).
+
 *Syntax*:
 ---------------------------
-focus_wrapping yes|no|force
+focus_wrapping yes|no|force|workspace
 
 # Legacy syntax, equivalent to "focus_wrapping force"
 force_focus_wrapping yes
@@ -1625,6 +1631,35 @@ bar {
 }
 ------------------------
 
+=== Minimal width for workspace buttons
+
+By default, the width a workspace button is determined by the width of the text
+showing the workspace name. If the name is too short (say, one letter), then the
+workspace button may look too small.
+
+This option specifies the minimum width for workspace buttons. If the name of
+a workspace is too short to cover the button, an additional padding is added on
+both sides of the button so that the text is centered.
+
+The default value of zero means that no additional padding is added.
+
+The setting also applies to the current binding mode indicator.
+
+Note that the specified pixels refer to logical pixels, which may translate
+into more pixels on HiDPI displays.
+
+*Syntax*:
+------------------------
+workspace_min_width <px> [px]
+------------------------
+
+*Example*:
+------------------------
+bar {
+    workspace_min_width 40
+}
+------------------------
+
 === Strip workspace numbers/name
 
 Specifies whether workspace numbers should be displayed within the workspace
@@ -1867,9 +1902,6 @@ The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
 information on how to use them.
 
-Note that config directives listed under <<configuring>> cannot be changed at runtime 
-unless they happen to have a command equivalent.
-
 [[exec]]
 === Executing applications (exec)
 
@@ -1954,6 +1986,7 @@ bindsym $mod+h split horizontal
 bindsym $mod+t split toggle
 -------------------------------
 
+[[manipulating_layout]]
 === Manipulating layout
 
 Use +layout toggle split+, +layout stacking+, +layout tabbed+, +layout splitv+
@@ -2024,6 +2057,12 @@ parent::
 child::
 	The opposite of +focus parent+, sets the focus to the last focused
 	child container.
+next|prev::
+	Automatically sets focus to the adjacent container. If +sibling+ is
+	specified, the command will focus the exact sibling container,
+	including non-leaf containers like split containers. Otherwise, it is
+	an automatic version of +focus left|right|up|down+ in the orientation
+	of the parent container.
 floating::
 	Sets focus to the last focused floating container.
 tiling::
@@ -2039,6 +2078,7 @@ output::
 <criteria> focus
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
+focus next|prev [sibling]
 focus output left|right|up|down|primary|<output>
 ----------------------------------------------
 
@@ -2198,7 +2238,7 @@ See <<move_to_outputs>> for how to move a container/workspace to a different
 RandR output.
 
 Workspace names are parsed as
-https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup]
+https://developer.gnome.org/pango/stable/pango-Markup.html[Pango markup]
 by i3bar.
 
 [[back_and_forth]]
@@ -2492,7 +2532,7 @@ unmark irssi
 By default, i3 will simply print the X11 window title. Using +title_format+,
 this can be customized by setting the format to the desired output. This
 directive supports
-https://developer.gnome.org/pango/stable/PangoMarkupFormat.html[Pango markup]
+https://developer.gnome.org/pango/stable/pango-Markup.html[Pango markup]
 and the following placeholders which will be replaced:
 
 +%title+::

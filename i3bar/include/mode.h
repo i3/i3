@@ -18,7 +18,7 @@
 /* Name of current binding mode and its render width */
 struct mode {
     i3String *name;
-    int width;
+    int name_width;
 };
 
 typedef struct mode mode;

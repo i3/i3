@@ -14,6 +14,34 @@
 #include <yajl/yajl_gen.h>
 
 /*
+ * Match frame and window depth. This is needed because X will refuse to reparent a
+ * window whose background is ParentRelative under a window with a different depth.
+ *
+ */
+static xcb_window_t _match_depth(i3Window *win, Con *con) {
+    xcb_window_t old_frame = XCB_NONE;
+    if (con->depth != win->depth) {
+        old_frame = con->frame.id;
+        con->depth = win->depth;
+        x_con_reframe(con);
+    }
+    return old_frame;
+}
+
+/*
+ * Remove all match criteria, the first swallowed window wins. 
+ *
+ */
+static void _remove_matches(Con *con) {
+    while (!TAILQ_EMPTY(&(con->swallow_head))) {
+        Match *first = TAILQ_FIRST(&(con->swallow_head));
+        TAILQ_REMOVE(&(con->swallow_head), first, matches);
+        match_free(first);
+        free(first);
+    }
+}
+
+/*
  * Go through all existing windows (if the window manager is restarted) and manage them
  *
  */
@@ -174,13 +202,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     FREE(buttons);
 
     /* update as much information as possible so far (some replies may be NULL) */
-    window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL), true);
-    window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL), true);
-    window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL), true);
+    window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL));
+    window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL));
+    window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL));
     window_update_leader(cwindow, xcb_get_property_reply(conn, leader_cookie, NULL));
     window_update_transient_for(cwindow, xcb_get_property_reply(conn, transient_cookie, NULL));
     window_update_strut_partial(cwindow, xcb_get_property_reply(conn, strut_cookie, NULL));
-    window_update_role(cwindow, xcb_get_property_reply(conn, role_cookie, NULL), true);
+    window_update_role(cwindow, xcb_get_property_reply(conn, role_cookie, NULL));
     bool urgency_hint;
     window_update_hints(cwindow, xcb_get_property_reply(conn, wm_hints_cookie, NULL), &urgency_hint);
     border_style_t motif_border_style = BS_NORMAL;
@@ -341,24 +369,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             DLOG("Uh?! Container without a placeholder, but with a window, has swallowed this to-be-managed window?!\n");
         } else {
             /* Remove remaining criteria, the first swallowed window wins. */
-            while (!TAILQ_EMPTY(&(nc->swallow_head))) {
-                Match *first = TAILQ_FIRST(&(nc->swallow_head));
-                TAILQ_REMOVE(&(nc->swallow_head), first, matches);
-                match_free(first);
-                free(first);
-            }
+            _remove_matches(nc);
         }
     }
     xcb_window_t old_frame = XCB_NONE;
     if (nc->window != cwindow && nc->window != NULL) {
         window_free(nc->window);
-        /* Match frame and window depth. This is needed because X will refuse to reparent a
-         * window whose background is ParentRelative under a window with a different depth. */
-        if (nc->depth != cwindow->depth) {
-            old_frame = nc->frame.id;
-            nc->depth = cwindow->depth;
-            x_con_reframe(nc);
-        }
+        old_frame = _match_depth(cwindow, nc);
     }
     nc->window = cwindow;
     x_reinit(nc);
@@ -594,6 +611,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     }
     render_con(croot);
 
+    cwindow->managed_since = time(NULL);
+
     /* Send an event about window creation */
     ipc_send_window_event("new", nc);
 
@@ -669,4 +688,58 @@ geom_out:
     free(geom);
 out:
     free(attr);
+}
+
+/*
+ * Remanages a window: performs a swallow check and runs assignments.
+ * Returns con for the window regardless if it updated.
+ *
+ */
+Con *remanage_window(Con *con) {
+    Match *match;
+    Con *nc = con_for_window(croot, con->window, &match);
+    if (nc == NULL || nc->window == NULL || nc->window == con->window) {
+        run_assignments(con->window);
+        return con;
+    }
+    /* Make sure the placeholder that wants to swallow this window didn't spawn
+     * after the window to follow current behavior: adding a placeholder won't
+     * swallow windows currently managed. */
+    if (nc->window->managed_since > con->window->managed_since) {
+        run_assignments(con->window);
+        return con;
+    }
+
+    if (!restore_kill_placeholder(nc->window->id)) {
+        DLOG("Uh?! Container without a placeholder, but with a window, has swallowed this managed window?!\n");
+    } else {
+        _remove_matches(nc);
+    }
+    window_free(nc->window);
+
+    xcb_window_t old_frame = _match_depth(con->window, nc);
+
+    x_reparent_child(nc, con);
+
+    bool moved_workpaces = (con_get_workspace(nc) != con_get_workspace(con));
+
+    con_merge_into(con, nc);
+
+    /* Destroy the old frame if we had to reframe the container. This needs to be done
+     * after rendering in order to prevent the background from flickering in its place. */
+    if (old_frame != XCB_NONE) {
+        xcb_destroy_window(conn, old_frame);
+    }
+
+    run_assignments(nc->window);
+
+    if (moved_workpaces) {
+        /* If the window is associated with a startup sequence, delete it so
+         * child windows won't be created on the old workspace. */
+        startup_sequence_delete_by_window(nc->window);
+
+        ewmh_update_wm_desktop();
+    }
+
+    return nc;
 }

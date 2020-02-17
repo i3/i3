@@ -341,8 +341,7 @@ gchar *g_utf8_make_valid(const gchar *str, gssize len);
  */
 uint32_t get_colorpixel(const char *hex) __attribute__((const));
 
-#if defined(__APPLE__)
-
+#ifndef HAVE_strndup
 /**
  * Taken from FreeBSD
  * Returns a pointer to a new string which is a duplicate of the
@@ -350,7 +349,6 @@ uint32_t get_colorpixel(const char *hex) __attribute__((const));
  *
  */
 char *strndup(const char *str, size_t n);
-
 #endif
 
 /**
@@ -528,7 +526,7 @@ char *resolve_tilde(const char *path);
  */
 char *get_config_path(const char *override_configpath, bool use_system_paths);
 
-#if !defined(__sun)
+#ifndef HAVE_mkdirp
 /**
  * Emulates mkdir -p (creates any missing folders)
  *

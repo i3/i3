@@ -53,6 +53,10 @@ Rect rect_sub(Rect a, Rect b) {
                   a.height - b.height};
 }
 
+bool rect_equals(Rect a, Rect b) {
+    return a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height;
+}
+
 /*
  * Returns true if the name consists of only digits.
  *
@@ -159,7 +163,7 @@ void exec_i3_utility(char *name, char *argv[]) {
     char buffer[BUFSIZ];
     if (readlink("/proc/self/exe", buffer, BUFSIZ) == -1) {
         warn("could not read /proc/self/exe");
-        _exit(1);
+        _exit(EXIT_FAILURE);
     }
     dir = dirname(buffer);
     sasprintf(&migratepath, "%s/%s", dir, name);
@@ -307,42 +311,6 @@ void i3_restart(bool forget_layout) {
 
     /* not reached */
 }
-
-#if defined(__OpenBSD__) || defined(__APPLE__)
-
-/*
- * Taken from FreeBSD
- * Find the first occurrence of the byte string s in byte string l.
- *
- */
-void *memmem(const void *l, size_t l_len, const void *s, size_t s_len) {
-    register char *cur, *last;
-    const char *cl = (const char *)l;
-    const char *cs = (const char *)s;
-
-    /* we need something to compare */
-    if (l_len == 0 || s_len == 0)
-        return NULL;
-
-    /* "s" must be smaller or equal to "l" */
-    if (l_len < s_len)
-        return NULL;
-
-    /* special case where s_len == 1 */
-    if (s_len == 1)
-        return memchr(l, (int)*cs, l_len);
-
-    /* the last position where its possible to find "s" in "l" */
-    last = (char *)cl + l_len - s_len;
-
-    for (cur = (char *)cl; cur <= last; cur++)
-        if (cur[0] == cs[0] && memcmp(cur, cs, s_len) == 0)
-            return cur;
-
-    return NULL;
-}
-
-#endif
 
 /*
  * Escapes the given string if a pango font is currently used.
@@ -513,4 +481,24 @@ ssize_t slurp(const char *path, char **buf) {
  */
 orientation_t orientation_from_direction(direction_t direction) {
     return (direction == D_LEFT || direction == D_RIGHT) ? HORIZ : VERT;
+}
+
+/*
+ * Convert a direction to its corresponding position.
+ *
+ */
+position_t position_from_direction(direction_t direction) {
+    return (direction == D_LEFT || direction == D_UP) ? BEFORE : AFTER;
+}
+
+/*
+ * Convert orientation and position to the corresponding direction.
+ *
+ */
+direction_t direction_from_orientation_position(orientation_t orientation, position_t position) {
+    if (orientation == HORIZ) {
+        return position == BEFORE ? D_LEFT : D_RIGHT;
+    } else {
+        return position == BEFORE ? D_UP : D_DOWN;
+    }
 }

@@ -26,7 +26,7 @@ typedef enum { CLICK_BORDER = 0,
  * then calls resize_graphical_handler().
  *
  */
-static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press_event_t *event) {
+static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press_event_t *event, bool use_threshold) {
     DLOG("border = %d, con = %p\n", border, con);
     Con *second = NULL;
     Con *first = con;
@@ -64,7 +64,7 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
 
     const orientation_t orientation = ((border == BORDER_LEFT || border == BORDER_RIGHT) ? HORIZ : VERT);
 
-    resize_graphical_handler(first, second, orientation, event);
+    resize_graphical_handler(first, second, orientation, event, use_threshold);
 
     DLOG("After resize handler, rendering\n");
     tree_render();
@@ -94,22 +94,22 @@ static bool floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *eve
     if (to_right < to_left &&
         to_right < to_top &&
         to_right < to_bottom)
-        return tiling_resize_for_border(con, BORDER_RIGHT, event);
+        return tiling_resize_for_border(con, BORDER_RIGHT, event, false);
 
     if (to_left < to_right &&
         to_left < to_top &&
         to_left < to_bottom)
-        return tiling_resize_for_border(con, BORDER_LEFT, event);
+        return tiling_resize_for_border(con, BORDER_LEFT, event, false);
 
     if (to_top < to_right &&
         to_top < to_left &&
         to_top < to_bottom)
-        return tiling_resize_for_border(con, BORDER_TOP, event);
+        return tiling_resize_for_border(con, BORDER_TOP, event, false);
 
     if (to_bottom < to_right &&
         to_bottom < to_left &&
         to_bottom < to_top)
-        return tiling_resize_for_border(con, BORDER_BOTTOM, event);
+        return tiling_resize_for_border(con, BORDER_BOTTOM, event, false);
 
     return false;
 }
@@ -118,45 +118,26 @@ static bool floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *eve
  * Finds out which border was clicked on and calls tiling_resize_for_border().
  *
  */
-static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click_destination_t dest) {
+static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click_destination_t dest, bool use_threshold) {
     /* check if this was a click on the window border (and on which one) */
     Rect bsr = con_border_style_rect(con);
     DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x\n",
          event->event_x, event->event_y, con, event->event);
     DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
     if (dest == CLICK_DECORATION) {
-        /* The user clicked on a window decoration. We ignore the following case:
-         * The container is a h-split, tabbed or stacked container with > 1
-         * window. Decorations will end up next to each other and the user
-         * expects to switch to a window by clicking on its decoration. */
-
-        /* Since the container might either be the child *or* already a split
-         * container (in the case of a nested split container), we need to make
-         * sure that we are dealing with the split container here. */
-        Con *check_con = con;
-        if (con_is_leaf(check_con) && check_con->parent->type == CT_CON)
-            check_con = check_con->parent;
-
-        if ((check_con->layout == L_STACKED ||
-             check_con->layout == L_TABBED ||
-             con_orientation(check_con) == HORIZ) &&
-            con_num_children(check_con) > 1) {
-            DLOG("Not handling this resize, this container has > 1 child.\n");
-            return false;
-        }
-        return tiling_resize_for_border(con, BORDER_TOP, event);
+        return tiling_resize_for_border(con, BORDER_TOP, event, use_threshold);
     }
 
     if (event->event_x >= 0 && event->event_x <= (int32_t)bsr.x &&
         event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height))
-        return tiling_resize_for_border(con, BORDER_LEFT, event);
+        return tiling_resize_for_border(con, BORDER_LEFT, event, false);
 
     if (event->event_x >= (int32_t)(con->window_rect.x + con->window_rect.width) &&
         event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height))
-        return tiling_resize_for_border(con, BORDER_RIGHT, event);
+        return tiling_resize_for_border(con, BORDER_RIGHT, event, false);
 
     if (event->event_y >= (int32_t)(con->window_rect.y + con->window_rect.height))
-        return tiling_resize_for_border(con, BORDER_BOTTOM, event);
+        return tiling_resize_for_border(con, BORDER_BOTTOM, event, false);
 
     return false;
 }
@@ -221,6 +202,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     Con *floatingcon = con_inside_floating(con);
     const bool proportional = (event->state & XCB_KEY_BUT_MASK_SHIFT) == XCB_KEY_BUT_MASK_SHIFT;
     const bool in_stacked = (con->parent->layout == L_STACKED || con->parent->layout == L_TABBED);
+    const bool was_focused = focused == con;
 
     /* 1: see if the user scrolled on the decoration of a stacked/tabbed con */
     if (in_stacked &&
@@ -230,21 +212,13 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
          event->detail == XCB_BUTTON_SCROLL_LEFT ||
          event->detail == XCB_BUTTON_SCROLL_RIGHT)) {
         DLOG("Scrolling on a window decoration\n");
-        orientation_t orientation = con_orientation(con->parent);
         /* Use the focused child of the tabbed / stacked container, not the
          * container the user scrolled on. */
-        Con *focused = con->parent;
-        focused = TAILQ_FIRST(&(focused->focus_head));
-        con_activate(con_descend_focused(focused));
-        /* To prevent scrolling from going outside the container (see ticket
-         * #557), we first check if scrolling is possible at all. */
-        bool scroll_prev_possible = (TAILQ_PREV(focused, nodes_head, nodes) != NULL);
-        bool scroll_next_possible = (TAILQ_NEXT(focused, nodes) != NULL);
-        if ((event->detail == XCB_BUTTON_SCROLL_UP || event->detail == XCB_BUTTON_SCROLL_LEFT) && scroll_prev_possible) {
-            tree_next('p', orientation);
-        } else if ((event->detail == XCB_BUTTON_SCROLL_DOWN || event->detail == XCB_BUTTON_SCROLL_RIGHT) && scroll_next_possible) {
-            tree_next('n', orientation);
-        }
+        Con *current = TAILQ_FIRST(&(con->parent->focus_head));
+        const position_t direction =
+            (event->detail == XCB_BUTTON_SCROLL_UP || event->detail == XCB_BUTTON_SCROLL_LEFT) ? BEFORE : AFTER;
+        Con *next = get_tree_next_sibling(current, direction);
+        con_activate(con_descend_focused(next ? next : current));
 
         goto done;
     }
@@ -258,7 +232,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     if (floatingcon != NULL && fs != con) {
         /* 4: floating_modifier plus left mouse button drags */
         if (mod_pressed && event->detail == XCB_BUTTON_CLICK_LEFT) {
-            floating_drag_window(floatingcon, event);
+            floating_drag_window(floatingcon, event, false);
             return 1;
         }
 
@@ -275,7 +249,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
             is_left_or_right_click) {
             /* try tiling resize, but continue if it doesn’t work */
             DLOG("tiling resize with fallback\n");
-            if (tiling_resize(con, event, dest))
+            if (tiling_resize(con, event, dest, !was_focused))
                 goto done;
         }
 
@@ -293,9 +267,8 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
 
         /* 6: dragging, if this was a click on a decoration (which did not lead
          * to a resize) */
-        if (!in_stacked && dest == CLICK_DECORATION &&
-            (event->detail == XCB_BUTTON_CLICK_LEFT)) {
-            floating_drag_window(floatingcon, event);
+        if (dest == CLICK_DECORATION && event->detail == XCB_BUTTON_CLICK_LEFT) {
+            floating_drag_window(floatingcon, event, !was_focused);
             return 1;
         }
 
@@ -311,7 +284,11 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     else if ((dest == CLICK_BORDER || dest == CLICK_DECORATION) &&
              is_left_or_right_click) {
         DLOG("Trying to resize (tiling)\n");
-        tiling_resize(con, event, dest);
+        /* Since we updated the tree (con_activate() above), we need to
+         * re-render the tree before returning to the event loop (drag_pointer()
+         * inside tiling_resize() runs its own event-loop). */
+        tree_render();
+        tiling_resize(con, event, dest, dest == CLICK_DECORATION && !was_focused);
     }
 
 done:

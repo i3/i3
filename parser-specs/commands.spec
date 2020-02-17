@@ -146,6 +146,8 @@ state WORKSPACE_NUMBER:
 state FOCUS:
   direction = 'left', 'right', 'up', 'down'
       -> call cmd_focus_direction($direction)
+  direction = 'prev', 'next'
+      -> FOCUS_AUTO
   'output'
       -> FOCUS_OUTPUT
   window_mode = 'tiling', 'floating', 'mode_toggle'
@@ -154,6 +156,12 @@ state FOCUS:
       -> call cmd_focus_level($level)
   end
       -> call cmd_focus()
+
+state FOCUS_AUTO:
+  'sibling'
+      -> call cmd_focus_sibling($direction)
+  end
+      -> call cmd_focus_direction($direction)
 
 state FOCUS_OUTPUT:
   output = string

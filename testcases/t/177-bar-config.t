@@ -63,6 +63,7 @@ my $bar_config = $i3->get_bar_config($bar_id)->recv;
 is($bar_config->{status_command}, 'i3status --foo', 'status_command correct');
 ok(!$bar_config->{verbose}, 'verbose off by default');
 ok($bar_config->{workspace_buttons}, 'workspace buttons enabled per default');
+is($bar_config->{workspace_min_width}, 0, 'workspace_min_width ok');
 ok($bar_config->{binding_mode_indicator}, 'mode indicator enabled per default');
 is($bar_config->{mode}, 'dock', 'dock mode by default');
 is($bar_config->{position}, 'bottom', 'position bottom by default');
@@ -102,6 +103,7 @@ bar {
     mode dock
     font Terminus
     workspace_buttons no
+    workspace_min_width 30
     binding_mode_indicator no
     verbose yes
     socket_path /tmp/foobar
@@ -134,6 +136,7 @@ $bar_config = $i3->get_bar_config($bar_id)->recv;
 is($bar_config->{status_command}, 'i3status --bar', 'status_command correct');
 ok($bar_config->{verbose}, 'verbose on');
 ok(!$bar_config->{workspace_buttons}, 'workspace buttons disabled');
+is($bar_config->{workspace_min_width}, 30, 'workspace_min_width ok');
 ok(!$bar_config->{binding_mode_indicator}, 'mode indicator disabled');
 is($bar_config->{mode}, 'dock', 'dock mode');
 is($bar_config->{position}, 'top', 'position top');

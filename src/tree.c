@@ -229,7 +229,7 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
             xcb_change_window_attributes(conn, con->window->id,
                                          XCB_CW_EVENT_MASK, (uint32_t[]){XCB_NONE});
             xcb_unmap_window(conn, con->window->id);
-            cookie = xcb_reparent_window(conn, con->window->id, root, 0, 0);
+            cookie = xcb_reparent_window(conn, con->window->id, root, con->rect.x, con->rect.y);
 
             /* Ignore X11 errors for the ReparentWindow request.
              * X11 Errors are returned when the window was already destroyed */
@@ -462,170 +462,175 @@ void tree_render(void) {
     DLOG("-- END RENDERING --\n");
 }
 
+static Con *get_tree_next_workspace(Con *con, direction_t direction) {
+    if (con_get_fullscreen_con(con, CF_GLOBAL)) {
+        DLOG("Cannot change workspace while in global fullscreen mode.\n");
+        return NULL;
+    }
+
+    Output *current_output = get_output_containing(con->rect.x, con->rect.y);
+    if (!current_output) {
+        return NULL;
+    }
+    DLOG("Current output is %s\n", output_primary_name(current_output));
+
+    Output *next_output = get_output_next(direction, current_output, CLOSEST_OUTPUT);
+    if (!next_output) {
+        return NULL;
+    }
+    DLOG("Next output is %s\n", output_primary_name(next_output));
+
+    /* Find visible workspace on next output */
+    Con *workspace = NULL;
+    GREP_FIRST(workspace, output_get_content(next_output->con), workspace_is_visible(child));
+    return workspace;
+}
+
 /*
- * Recursive function to walk the tree until a con can be found to focus.
+ * Returns the next / previous container to focus in the given direction. Does
+ * not modify focus and ensures focus restrictions for fullscreen containers
+ * are respected.
  *
  */
-static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap) {
-    /* When dealing with fullscreen containers, it's necessary to go up to the
-     * workspace level, because 'focus $dir' will start at the con's real
-     * position in the tree, and it may not be possible to get to the edge
-     * normally due to fullscreen focusing restrictions. */
-    if (con->fullscreen_mode == CF_OUTPUT && con->type != CT_WORKSPACE)
-        con = con_get_workspace(con);
+static Con *get_tree_next(Con *con, direction_t direction) {
+    const bool previous = position_from_direction(direction) == BEFORE;
+    const orientation_t orientation = orientation_from_direction(direction);
 
-    /* Stop recursing at workspaces after attempting to switch to next
-     * workspace if possible. */
+    Con *first_wrap = NULL;
+
     if (con->type == CT_WORKSPACE) {
-        if (con_get_fullscreen_con(con, CF_GLOBAL)) {
-            DLOG("Cannot change workspace while in global fullscreen mode.\n");
-            return false;
+        /* Special case for FOCUS_WRAPPING_WORKSPACE: allow the focus to leave
+         * the workspace only when a workspace is selected. */
+        goto handle_workspace;
+    }
+
+    while (con->type != CT_WORKSPACE) {
+        if (con->fullscreen_mode == CF_OUTPUT) {
+            /* We've reached a fullscreen container. Directional focus should
+             * now operate on the workspace level. */
+            con = con_get_workspace(con);
+            break;
+        } else if (con->fullscreen_mode == CF_GLOBAL) {
+            /* Focus changes should happen only inside the children of a global
+             * fullscreen container. */
+            return first_wrap;
         }
-        Output *current_output = get_output_containing(con->rect.x, con->rect.y);
-        Output *next_output;
 
-        if (!current_output)
-            return false;
-        DLOG("Current output is %s\n", output_primary_name(current_output));
+        Con *const parent = con->parent;
+        if (con->type == CT_FLOATING_CON) {
+            if (orientation != HORIZ) {
+                /* up/down does not change floating containers */
+                return NULL;
+            }
 
-        /* Try to find next output */
-        direction_t direction;
-        if (way == 'n' && orientation == HORIZ)
-            direction = D_RIGHT;
-        else if (way == 'p' && orientation == HORIZ)
-            direction = D_LEFT;
-        else if (way == 'n' && orientation == VERT)
-            direction = D_DOWN;
-        else if (way == 'p' && orientation == VERT)
-            direction = D_UP;
-        else
-            return false;
+            /* left/right focuses the previous/next floating container */
+            Con *next = previous ? TAILQ_PREV(con, floating_head, floating_windows)
+                                 : TAILQ_NEXT(con, floating_windows);
+            /* If there is no next/previous container, wrap */
+            if (!next) {
+                next = previous ? TAILQ_LAST(&(parent->floating_head), floating_head)
+                                : TAILQ_FIRST(&(parent->floating_head));
+            }
+            /* Our parent does not list us in floating heads? */
+            assert(next);
 
-        next_output = get_output_next(direction, current_output, CLOSEST_OUTPUT);
-        if (!next_output)
-            return false;
-        DLOG("Next output is %s\n", output_primary_name(next_output));
+            return next;
+        }
 
-        /* Find visible workspace on next output */
-        Con *workspace = NULL;
-        GREP_FIRST(workspace, output_get_content(next_output->con), workspace_is_visible(child));
+        if (con_num_children(parent) > 1 && con_orientation(parent) == orientation) {
+            Con *const next = previous ? TAILQ_PREV(con, nodes_head, nodes)
+                                       : TAILQ_NEXT(con, nodes);
+            if (next && con_fullscreen_permits_focusing(next)) {
+                return next;
+            }
 
+            Con *const wrap = previous ? TAILQ_LAST(&(parent->nodes_head), nodes_head)
+                                       : TAILQ_FIRST(&(parent->nodes_head));
+            switch (config.focus_wrapping) {
+                case FOCUS_WRAPPING_OFF:
+                    break;
+                case FOCUS_WRAPPING_WORKSPACE:
+                case FOCUS_WRAPPING_ON:
+                    if (!first_wrap && con_fullscreen_permits_focusing(wrap)) {
+                        first_wrap = wrap;
+                    }
+                    break;
+                case FOCUS_WRAPPING_FORCE:
+                    /* 'force' should always return to ensure focus doesn't
+                     * leave the parent. */
+                    if (next) {
+                        return NULL; /* blocked by fullscreen */
+                    }
+                    return con_fullscreen_permits_focusing(wrap) ? wrap : NULL;
+            }
+        }
+
+        con = parent;
+    }
+
+    assert(con->type == CT_WORKSPACE);
+    if (config.focus_wrapping == FOCUS_WRAPPING_WORKSPACE) {
+        return first_wrap;
+    }
+
+handle_workspace:;
+    Con *workspace = get_tree_next_workspace(con, direction);
+    return workspace ? workspace : first_wrap;
+}
+
+/*
+ * Changes focus in the given direction
+ *
+ */
+void tree_next(Con *con, direction_t direction) {
+    Con *next = get_tree_next(con, direction);
+    if (!next) {
+        return;
+    }
+    if (next->type == CT_WORKSPACE) {
         /* Show next workspace and focus appropriate container if possible. */
-        if (!workspace)
-            return false;
-
         /* Use descend_focused first to give higher priority to floating or
          * tiling fullscreen containers. */
-        Con *focus = con_descend_focused(workspace);
+        Con *focus = con_descend_focused(next);
         if (focus->fullscreen_mode == CF_NONE) {
-            Con *focus_tiling = con_descend_tiling_focused(workspace);
+            Con *focus_tiling = con_descend_tiling_focused(next);
             /* If descend_tiling returned a workspace then focus is either a
              * floating container or the same workspace. */
-            if (focus_tiling != workspace) {
+            if (focus_tiling != next) {
                 focus = focus_tiling;
             }
         }
 
-        workspace_show(workspace);
+        workspace_show(next);
         con_activate(focus);
         x_set_warp_to(&(focus->rect));
-        return true;
-    }
-
-    Con *parent = con->parent;
-
-    if (con->type == CT_FLOATING_CON) {
-        if (orientation != HORIZ)
-            return false;
-
-        /* left/right focuses the previous/next floating container */
-        Con *next;
-        if (way == 'n')
-            next = TAILQ_NEXT(con, floating_windows);
-        else
-            next = TAILQ_PREV(con, floating_head, floating_windows);
-
-        /* If there is no next/previous container, wrap */
-        if (!next) {
-            if (way == 'n')
-                next = TAILQ_FIRST(&(parent->floating_head));
-            else
-                next = TAILQ_LAST(&(parent->floating_head), floating_head);
-        }
-
-        /* Still no next/previous container? bail out */
-        if (!next)
-            return false;
-
-        /* Raise the floating window on top of other windows preserving
-         * relative stack order */
+        return;
+    } else if (next->type == CT_FLOATING_CON) {
+        /* Raise the floating window on top of other windows preserving relative
+         * stack order */
+        Con *parent = next->parent;
         while (TAILQ_LAST(&(parent->floating_head), floating_head) != next) {
             Con *last = TAILQ_LAST(&(parent->floating_head), floating_head);
             TAILQ_REMOVE(&(parent->floating_head), last, floating_windows);
             TAILQ_INSERT_HEAD(&(parent->floating_head), last, floating_windows);
         }
-
-        con_activate(con_descend_focused(next));
-        return true;
     }
 
-    /* If the orientation does not match or there is no other con to focus, we
-     * need to go higher in the hierarchy */
-    if (con_orientation(parent) != orientation ||
-        con_num_children(parent) == 1)
-        return _tree_next(parent, way, orientation, wrap);
-
-    Con *current = TAILQ_FIRST(&(parent->focus_head));
-    /* TODO: when can the following happen (except for floating windows, which
-     * are handled above)? */
-    if (TAILQ_EMPTY(&(parent->nodes_head))) {
-        DLOG("nothing to focus\n");
-        return false;
-    }
-
-    Con *next;
-    if (way == 'n')
-        next = TAILQ_NEXT(current, nodes);
-    else
-        next = TAILQ_PREV(current, nodes_head, nodes);
-
-    if (!next) {
-        if (config.focus_wrapping != FOCUS_WRAPPING_FORCE) {
-            /* If there is no next/previous container, we check if we can focus one
-             * when going higher (without wrapping, though). If so, we are done, if
-             * not, we wrap */
-            if (_tree_next(parent, way, orientation, false))
-                return true;
-
-            if (!wrap)
-                return false;
-        }
-
-        if (way == 'n')
-            next = TAILQ_FIRST(&(parent->nodes_head));
-        else
-            next = TAILQ_LAST(&(parent->nodes_head), nodes_head);
-    }
-
-    /* Don't violate fullscreen focus restrictions. */
-    if (!con_fullscreen_permits_focusing(next))
-        return false;
-
-    /* 3: focus choice comes in here. at the moment we will go down
-     * until we find a window */
-    /* TODO: check for window, atm we only go down as far as possible */
+    workspace_show(con_get_workspace(next));
     con_activate(con_descend_focused(next));
-    return true;
 }
 
 /*
- * Changes focus in the given way (next/previous) and given orientation
- * (horizontal/vertical).
+ * Get the previous / next sibling
  *
  */
-void tree_next(char way, orientation_t orientation) {
-    _tree_next(focused, way, orientation,
-               config.focus_wrapping != FOCUS_WRAPPING_OFF);
+Con *get_tree_next_sibling(Con *con, position_t direction) {
+    Con *to_focus = (direction == BEFORE ? TAILQ_PREV(con, nodes_head, nodes)
+                                         : TAILQ_NEXT(con, nodes));
+    if (to_focus && con_fullscreen_permits_focusing(to_focus)) {
+        return to_focus;
+    }
+    return NULL;
 }
 
 /*

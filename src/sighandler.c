@@ -119,7 +119,7 @@ static int sighandler_backtrace(void) {
             NULL};
         execvp(args[0], args);
         DLOG("Failed to exec GDB\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     int status = 0;
 

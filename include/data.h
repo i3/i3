@@ -59,6 +59,8 @@ typedef enum { D_LEFT,
 typedef enum { NO_ORIENTATION = 0,
                HORIZ,
                VERT } orientation_t;
+typedef enum { BEFORE,
+               AFTER } position_t;
 typedef enum { BS_NORMAL = 0,
                BS_NONE = 1,
                BS_PIXEL = 2 } border_style_t;
@@ -139,13 +141,12 @@ typedef enum {
 typedef enum {
     FOCUS_WRAPPING_OFF = 0,
     FOCUS_WRAPPING_ON = 1,
-    FOCUS_WRAPPING_FORCE = 2
+    FOCUS_WRAPPING_FORCE = 2,
+    FOCUS_WRAPPING_WORKSPACE = 3
 } focus_wrapping_t;
 
 /**
  * Stores a rectangle, for example the size of a window, the child window etc.
- * It needs to be packed so that the compiler will not add any padding bytes.
- * (it is used in src/ewmh.c for example)
  *
  * Note that x and y can contain signed values in some cases (for example when
  * used for the coordinates of a window, which can be set outside of the
@@ -159,7 +160,7 @@ struct Rect {
     uint32_t y;
     uint32_t width;
     uint32_t height;
-} __attribute__((packed));
+};
 
 /**
  * Stores the reserved pixels on each screen edge read from a
@@ -489,6 +490,10 @@ struct Window {
     bool shaped;
     /** The window has a nonrectangular input shape. */
     bool input_shaped;
+
+    /* Time when the window became managed. Used to determine whether a window
+     * should be swallowed after initial management. */
+    time_t managed_since;
 };
 
 /**

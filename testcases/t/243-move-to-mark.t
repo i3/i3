@@ -24,6 +24,7 @@ use i3test;
 
 my ($A, $B, $S, $M, $F, $source_ws, $target_ws, $ws);
 my ($nodes, $focus);
+my $__i3_scratch;
 my $cmd_result;
 
 my $_NET_WM_STATE_REMOVE = 0;
@@ -360,6 +361,7 @@ does_i3_live;
 ###############################################################################
 # Given 'S' and 'M' where 'M' is a workspace and 'S' is on a different
 # workspace, then 'S' ends up as a tiling container on 'M'.
+# See issue: #2003
 ###############################################################################
 
 fresh_workspace;
@@ -400,6 +402,29 @@ sync_with_i3;
 is(@{$nodes}, 2, 'there is a window and a container with the contents of the original workspace');
 is($nodes->[0]->{window}, $M->{id}, 'M remains the first window');
 is(@{get_ws($target_ws)->{floating_nodes}}, 1, 'target workspace has the floating container');
+
+###############################################################################
+# Given 'S' and 'M', where 'S' is a container and 'M' is a container hidden in
+# the scratchpad, then move 'S' to the scratchpad
+###############################################################################
+
+$ws = fresh_workspace;
+$S = open_window;
+cmd 'mark S';
+$M = open_window;
+cmd 'mark target';
+cmd 'move container to scratchpad';
+
+cmd '[con_mark=S] move container to mark target';
+sync_with_i3;
+
+($nodes, $focus) = get_ws_content($ws);
+is(@{$nodes}, 0, 'there are no tiling windows on the workspace');
+is(@{get_ws($ws)->{floating_nodes}}, 0, 'there are no floating containers on the workspace');
+
+$__i3_scratch = get_ws('__i3_scratch');
+is(@{$__i3_scratch->{nodes}}, 0, 'there are no tiling windows on the scratchpad workspace');
+is(@{$__i3_scratch->{floating_nodes}}, 2, 'there are two floating containers in the scratchpad');
 
 ###############################################################################
 

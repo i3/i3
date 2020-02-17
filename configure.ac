@@ -2,7 +2,7 @@
 # Run autoreconf -fi to generate a configure script from this file.
 
 AC_PREREQ([2.69])
-AC_INIT([i3], [4.17.1], [https://github.com/i3/i3/issues])
+AC_INIT([i3], [4.18], [https://github.com/i3/i3/issues])
 # For AX_EXTEND_SRCDIR
 AX_ENABLE_BUILDDIR
 AM_INIT_AUTOMAKE([foreign subdir-objects -Wall no-dist-gzip dist-bzip2])
@@ -29,7 +29,7 @@ AS_VAR_IF([_cv_gnu_make_command], [""], [AC_MSG_ERROR([the i3 Makefile.am requir
 
 AX_EXTEND_SRCDIR
 
-AS_IF([test -d ${srcdir}/.git],
+AS_IF([test -e ${srcdir}/.git],
       [
         VERSION="$(git -C ${srcdir} describe --tags --abbrev=0)"
         I3_VERSION="$(git -C ${srcdir} describe --tags --always) ($(git -C ${srcdir} rev-list --format=%cd --date=short -n1 $(git rev-parse HEAD) | tail -n1), branch \\\"$(git -C ${srcdir} describe --tags --always --all | sed s:heads/::)\\\")"
@@ -72,7 +72,8 @@ AC_CHECK_TYPES([mode_t, off_t, pid_t, size_t, ssize_t], , [AC_MSG_FAILURE([canno
 AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_STRNLEN
-AC_CHECK_FUNCS([atexit dup2 ftruncate getcwd gettimeofday localtime_r memchr memset mkdir rmdir setlocale socket strcasecmp strchr strdup strerror strncasecmp strndup strrchr strspn strstr strtol strtoul], , [AC_MSG_FAILURE([cannot find the $ac_func function, which i3 requires])])
+AC_CHECK_FUNCS([atexit dup2 ftruncate getcwd gettimeofday localtime_r memchr memset mkdir rmdir setlocale socket strcasecmp strchr strdup strerror strncasecmp strrchr strspn strstr strtol strtoul], , [AC_MSG_FAILURE([cannot find the $ac_func function, which i3 requires])])
+AC_REPLACE_FUNCS([mkdirp strndup])
 
 # Checks for libraries.
 
@@ -83,8 +84,11 @@ AC_SEARCH_LIBS([ev_run], [ev], , [AC_MSG_FAILURE([cannot find the required ev_ru
 
 AC_SEARCH_LIBS([shm_open], [rt], [], [], [-pthread])
 
-AC_SEARCH_LIBS([iconv_open], [iconv], ,
-AC_SEARCH_LIBS([libiconv_open], [iconv], , [AC_MSG_FAILURE([cannot find the required iconv_open() function despite trying to link with -liconv])]))
+AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <iconv.h>], [iconv_open(0, 0)])], ,
+  [LIBS="-liconv $LIBS"
+   AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <iconv.h>], [iconv_open(0, 0)])], ,
+     [AC_MSG_FAILURE([cannot find the required iconv_open() function despite trying to link with -liconv])])]
+)
 
 AX_PTHREAD
 

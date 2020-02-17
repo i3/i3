@@ -21,12 +21,32 @@ struct callback_params {
     Con *output;
     xcb_window_t helpwin;
     uint32_t *new_position;
+    bool *threshold_exceeded;
 };
 
 DRAGGING_CB(resize_callback) {
     const struct callback_params *params = extra;
     Con *output = params->output;
     DLOG("new x = %d, y = %d\n", new_x, new_y);
+
+    if (!*params->threshold_exceeded) {
+        xcb_map_window(conn, params->helpwin);
+        /* Warp pointer in the same way as resize_graphical_handler() would do
+         * if threshold wasn't enabled, but also take into account travelled
+         * distance. */
+        if (params->orientation == HORIZ) {
+            xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
+                             *params->new_position + new_x - event->root_x,
+                             new_y);
+        } else {
+            xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
+                             new_x,
+                             *params->new_position + new_y - event->root_y);
+        }
+        *params->threshold_exceeded = true;
+        return;
+    }
+
     if (params->orientation == HORIZ) {
         /* Check if the new coordinates are within screen boundaries */
         if (new_x > (output->rect.x + output->rect.width - 25) ||
@@ -148,7 +168,9 @@ bool resize_neighboring_cons(Con *first, Con *second, int px, int ppt) {
     return true;
 }
 
-void resize_graphical_handler(Con *first, Con *second, orientation_t orientation, const xcb_button_press_event_t *event) {
+void resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
+                              const xcb_button_press_event_t *event,
+                              bool use_threshold) {
     Con *output = con_get_output(first);
     DLOG("x = %d, width = %d\n", output->rect.x, output->rect.width);
 
@@ -179,14 +201,10 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
         helprect.width = logical_px(2);
         helprect.height = second->rect.height;
         initial_position = second->rect.x;
-        xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
-                         second->rect.x, event->root_y);
     } else {
         helprect.width = second->rect.width;
         helprect.height = logical_px(2);
         initial_position = second->rect.y;
-        xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
-                         event->root_x, second->rect.y);
     }
 
     mask = XCB_CW_BACK_PIXEL;
@@ -196,7 +214,18 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
     values[1] = 1;
 
     xcb_window_t helpwin = create_window(conn, helprect, XCB_COPY_FROM_PARENT, XCB_COPY_FROM_PARENT,
-                                         XCB_WINDOW_CLASS_INPUT_OUTPUT, (orientation == HORIZ ? XCURSOR_CURSOR_RESIZE_HORIZONTAL : XCURSOR_CURSOR_RESIZE_VERTICAL), true, mask, values);
+                                         XCB_WINDOW_CLASS_INPUT_OUTPUT, (orientation == HORIZ ? XCURSOR_CURSOR_RESIZE_HORIZONTAL : XCURSOR_CURSOR_RESIZE_VERTICAL), false, mask, values);
+
+    if (!use_threshold) {
+        xcb_map_window(conn, helpwin);
+        if (orientation == HORIZ) {
+            xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
+                             second->rect.x, event->root_y);
+        } else {
+            xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
+                             event->root_x, second->rect.y);
+        }
+    }
 
     xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
 
@@ -205,10 +234,12 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
     /* `new_position' will be updated by the `resize_callback'. */
     new_position = initial_position;
 
-    const struct callback_params params = {orientation, output, helpwin, &new_position};
+    bool threshold_exceeded = !use_threshold;
+
+    const struct callback_params params = {orientation, output, helpwin, &new_position, &threshold_exceeded};
 
     /* `drag_pointer' blocks until the drag is completed. */
-    drag_result_t drag_result = drag_pointer(NULL, event, grabwin, BORDER_TOP, 0, resize_callback, &params);
+    drag_result_t drag_result = drag_pointer(NULL, event, grabwin, 0, use_threshold, resize_callback, &params);
 
     xcb_destroy_window(conn, helpwin);
     xcb_destroy_window(conn, grabwin);

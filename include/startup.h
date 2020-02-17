@@ -69,3 +69,9 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
  *
  */
 char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply);
+
+/**
+ * Deletes the startup sequence for a window if it exists.
+ *
+ */
+void startup_sequence_delete_by_window(i3Window *win);

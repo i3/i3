@@ -56,7 +56,7 @@
                          XCB_EVENT_MASK_FOCUS_CHANGE |                                                \
                          XCB_EVENT_MASK_ENTER_WINDOW)
 
-#define xmacro(atom) xcb_atom_t A_##atom;
+#define xmacro(atom) extern xcb_atom_t A_##atom;
 #include "atoms.xmacro"
 #undef xmacro
 

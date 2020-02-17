@@ -325,6 +325,9 @@ struct Barconfig {
      * zero. */
     bool hide_workspace_buttons;
 
+    /** The minimal width for workspace buttons. */
+    int workspace_min_width;
+
     /** Strip workspace numbers? Configuration option is
      * 'strip_workspace_numbers yes'. */
     bool strip_workspace_numbers;

@@ -532,5 +532,21 @@ is(scalar @{get_ws_content($ws)}, 0, 'no window in workspace');
 cmd 'scratchpad show';
 is($x->input_focus, $window->id, 'scratchpad window shown');
 
+################################################################################
+# 19: move position commands do not show scratchpad window
+# See issue #3832
+################################################################################
+
+kill_all_windows;
+
+fresh_workspace;
+$first = open_window;
+$second = open_window;
+
+cmd '[id=' . $first->id . '] move to scratchpad, move position 100 100';
+is ($x->input_focus, $second->id, 'moving scratchpad window does not show it');
+cmd '[id=' . $first->id . '] move position center';
+is ($x->input_focus, $second->id, 'centering scratchpad window does not show it');
+
 
 done_testing;

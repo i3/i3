@@ -268,6 +268,8 @@ CFGFUN(disable_randr15, const char *value) {
 CFGFUN(focus_wrapping, const char *value) {
     if (strcmp(value, "force") == 0) {
         config.focus_wrapping = FOCUS_WRAPPING_FORCE;
+    } else if (strcmp(value, "workspace") == 0) {
+        config.focus_wrapping = FOCUS_WRAPPING_WORKSPACE;
     } else if (eval_boolstr(value)) {
         config.focus_wrapping = FOCUS_WRAPPING_ON;
     } else {
@@ -644,6 +646,10 @@ CFGFUN(bar_binding_mode_indicator, const char *value) {
 
 CFGFUN(bar_workspace_buttons, const char *value) {
     current_bar->hide_workspace_buttons = !eval_boolstr(value);
+}
+
+CFGFUN(bar_workspace_min_width, const long width) {
+    current_bar->workspace_min_width = width;
 }
 
 CFGFUN(bar_strip_workspace_numbers, const char *value) {

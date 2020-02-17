@@ -19,10 +19,9 @@
 use i3test i3_autostart => 0;
 
 my $first_lines = <<'EOT';
-set $workspace1 workspace number 1
 set $workspace0 workspace eggs
 
-bindsym Mod4+1 $workspace1
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
 # Intentionally don't add a trailing newline for the last line since this is
