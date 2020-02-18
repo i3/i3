@@ -433,6 +433,9 @@ i3_config_wizard_i3_config_wizard_SOURCES = \
 	i3-config-wizard/main.c \
 	i3-config-wizard/xcb.h
 
+i3_config_wizard_i3_config_wizard_DEPENDENCIES = \
+	$(config_parser_SOURCES)
+
 test_inject_randr15_CPPFLAGS = \
 	$(AM_CPPFLAGS)
 
