@@ -34,7 +34,7 @@ void ungrab_all_keys(xcb_connection_t *conn) {
  */
 void update_barconfig(void) {
     Barconfig *current;
-    TAILQ_FOREACH(current, &barconfigs, configs) {
+    TAILQ_FOREACH (current, &barconfigs, configs) {
         ipc_send_barconfig_update_event(current);
     }
 }
@@ -141,7 +141,7 @@ static void free_configuration(void) {
     }
 
     Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons) {
+    TAILQ_FOREACH (con, &all_cons, all_cons) {
         /* Assignments changed, previously ran assignments are invalid. */
         if (con->window) {
             con->window->nr_assignments = 0;

@@ -83,16 +83,16 @@ void restore_geometry(void) {
     DLOG("Restoring geometry\n");
 
     Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons)
-    if (con->window) {
-        DLOG("Re-adding X11 border of %d px\n", con->border_width);
-        con->window_rect.width += (2 * con->border_width);
-        con->window_rect.height += (2 * con->border_width);
-        xcb_set_window_rect(conn, con->window->id, con->window_rect);
-        DLOG("placing window %08x at %d %d\n", con->window->id, con->rect.x, con->rect.y);
-        xcb_reparent_window(conn, con->window->id, root,
-                            con->rect.x, con->rect.y);
-    }
+    TAILQ_FOREACH (con, &all_cons, all_cons)
+        if (con->window) {
+            DLOG("Re-adding X11 border of %d px\n", con->border_width);
+            con->window_rect.width += (2 * con->border_width);
+            con->window_rect.height += (2 * con->border_width);
+            xcb_set_window_rect(conn, con->window->id, con->window_rect);
+            DLOG("placing window %08x at %d %d\n", con->window->id, con->rect.x, con->rect.y);
+            xcb_reparent_window(conn, con->window->id, root,
+                                con->rect.x, con->rect.y);
+        }
 
     /* Strictly speaking, this line doesn’t really belong here, but since we
      * are syncing, let’s un-register as a window manager first */

@@ -144,7 +144,7 @@ static int json_end_map(void *ctx) {
             if (rect_equals(json_node->rect, (Rect){0, 0, 0, 0})) {
                 DLOG("Geometry not set, combining children\n");
                 Con *child;
-                TAILQ_FOREACH(child, &(json_node->nodes_head), nodes) {
+                TAILQ_FOREACH (child, &(json_node->nodes_head), nodes) {
                     DLOG("child geometry: %d x %d\n", child->geometry.width, child->geometry.height);
                     json_node->rect.width += child->geometry.width;
                     json_node->rect.height = max(json_node->rect.height, child->geometry.height);
@@ -204,10 +204,10 @@ static int json_end_array(void *ctx) {
     if (parsing_focus) {
         /* Clear the list of focus mappings */
         struct focus_mapping *mapping;
-        TAILQ_FOREACH_REVERSE(mapping, &focus_mappings, focus_mappings_head, focus_mappings) {
+        TAILQ_FOREACH_REVERSE (mapping, &focus_mappings, focus_mappings_head, focus_mappings) {
             LOG("focus (reverse) %d\n", mapping->old_id);
             Con *con;
-            TAILQ_FOREACH(con, &(json_node->focus_head), focused) {
+            TAILQ_FOREACH (con, &(json_node->focus_head), focused) {
                 if (con->old_id != mapping->old_id)
                     continue;
                 LOG("got it! %p\n", con);
