@@ -28,15 +28,15 @@
 
 #define NODES_FOREACH(head)                                                    \
     for (Con *child = (Con *)-1; (child == (Con *)-1) && ((child = 0), true);) \
-    TAILQ_FOREACH(child, &((head)->nodes_head), nodes)
+        TAILQ_FOREACH (child, &((head)->nodes_head), nodes)
 
 #define NODES_FOREACH_REVERSE(head)                                            \
     for (Con *child = (Con *)-1; (child == (Con *)-1) && ((child = 0), true);) \
-    TAILQ_FOREACH_REVERSE(child, &((head)->nodes_head), nodes_head, nodes)
+        TAILQ_FOREACH_REVERSE (child, &((head)->nodes_head), nodes_head, nodes)
 
 /* greps the ->nodes of the given head and returns the first node that matches the given condition */
 #define GREP_FIRST(dest, head, condition) \
-    NODES_FOREACH(head) {                 \
+    NODES_FOREACH (head) {                \
         if (!(condition))                 \
             continue;                     \
                                           \
@@ -65,6 +65,7 @@ bool rect_contains(Rect rect, uint32_t x, uint32_t y);
 Rect rect_add(Rect a, Rect b);
 Rect rect_sub(Rect a, Rect b);
 bool rect_equals(Rect a, Rect b);
+Rect rect_sanitize_dimensions(Rect rect);
 
 /**
  * Returns true if the name consists of only digits.

@@ -91,7 +91,7 @@ void insert_con_into(Con *con, Con *target, position_t position) {
     } else {
         /* Look at the focus stack order of the children of the lowest common ancestor. */
         Con *current;
-        TAILQ_FOREACH(current, &(lca->focus_head), focused) {
+        TAILQ_FOREACH (current, &(lca->focus_head), focused) {
             if (current == con_ancestor || current == target_ancestor) {
                 break;
             }

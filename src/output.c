@@ -16,9 +16,11 @@
 Con *output_get_content(Con *output) {
     Con *child;
 
-    TAILQ_FOREACH(child, &(output->nodes_head), nodes)
-    if (child->type == CT_CON)
-        return child;
+    TAILQ_FOREACH (child, &(output->nodes_head), nodes) {
+        if (child->type == CT_CON) {
+            return child;
+        }
+    }
 
     return NULL;
 }
@@ -74,7 +76,7 @@ Output *get_output_for_con(Con *con) {
  */
 void output_push_sticky_windows(Con *old_focus) {
     Con *output;
-    TAILQ_FOREACH(output, &(croot->focus_head), focused) {
+    TAILQ_FOREACH (output, &(croot->focus_head), focused) {
         Con *workspace, *visible_ws = NULL;
         GREP_FIRST(visible_ws, output_get_content(output), workspace_is_visible(child));
 

@@ -8,8 +8,6 @@
  *                  to i3.
  *
  */
-#include "libi3.h"
-
 #include <stdio.h>
 #include <sys/types.h>
 #include <stdlib.h>
@@ -26,6 +24,9 @@
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_keysyms.h>
+
+xcb_visualtype_t *visual_type = NULL;
+#include "libi3.h"
 
 #include <X11/keysym.h>
 

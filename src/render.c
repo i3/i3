@@ -64,6 +64,8 @@ void render_con(Con *con) {
         inset->width -= (2 * con->border_width);
         inset->height -= (2 * con->border_width);
 
+        *inset = rect_sanitize_dimensions(*inset);
+
         /* NB: We used to respect resize increment size hints for tiling
          * windows up until commit 0db93d9 here. However, since all terminal
          * emulators cope with ignoring the size hints in a better way than we
@@ -108,7 +110,7 @@ void render_con(Con *con) {
         render_root(con, fullscreen);
     } else {
         Con *child;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
             assert(params.children > 0);
 
             if (con->layout == L_SPLITH || con->layout == L_SPLITV) {
@@ -121,6 +123,8 @@ void render_con(Con *con) {
                 render_con_dockarea(con, child, &params);
             }
 
+            child->rect = rect_sanitize_dimensions(child->rect);
+
             DLOG("child at (%d, %d) with (%d x %d)\n",
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
             x_raise_con(child);
@@ -130,8 +134,9 @@ void render_con(Con *con) {
 
         /* in a stacking or tabbed container, we ensure the focused client is raised */
         if (con->layout == L_STACKED || con->layout == L_TABBED) {
-            TAILQ_FOREACH_REVERSE(child, &(con->focus_head), focus_head, focused)
-            x_raise_con(child);
+            TAILQ_FOREACH_REVERSE (child, &(con->focus_head), focus_head, focused) {
+                x_raise_con(child);
+            }
             if ((child = TAILQ_FIRST(&(con->focus_head)))) {
                 /* By rendering the stacked container again, we handle the case
                  * that we have a non-leaf-container inside the stack. In that
@@ -164,7 +169,7 @@ static int *precalculate_sizes(Con *con, render_params *p) {
     Con *child;
     int i = 0, assigned = 0;
     int total = con_rect_size_in_orientation(con);
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         double percentage = child->percent > 0.0 ? child->percent : 1.0 / p->children;
         assigned += sizes[i++] = lround(percentage * total);
     }
@@ -185,7 +190,7 @@ static int *precalculate_sizes(Con *con, render_params *p) {
 static void render_root(Con *con, Con *fullscreen) {
     Con *output;
     if (!fullscreen) {
-        TAILQ_FOREACH(output, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (output, &(con->nodes_head), nodes) {
             render_con(output);
         }
     }
@@ -195,7 +200,7 @@ static void render_root(Con *con, Con *fullscreen) {
      * all times. This is important when the user places floating
      * windows/containers so that they overlap on another output. */
     DLOG("Rendering floating windows:\n");
-    TAILQ_FOREACH(output, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (output, &(con->nodes_head), nodes) {
         if (con_is_internal(output))
             continue;
         /* Get the active workspace of that output */
@@ -207,7 +212,7 @@ static void render_root(Con *con, Con *fullscreen) {
         Con *workspace = TAILQ_FIRST(&(content->focus_head));
         Con *fullscreen = con_get_fullscreen_covering_ws(workspace);
         Con *child;
-        TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
+        TAILQ_FOREACH (child, &(workspace->floating_head), floating_windows) {
             if (fullscreen != NULL) {
                 /* Don’t render floating windows when there is a fullscreen
                  * window on that workspace. Necessary to make floating
@@ -272,7 +277,7 @@ static void render_output(Con *con) {
     /* Find the content container and ensure that there is exactly one. Also
      * check for any non-CT_DOCKAREA clients. */
     Con *content = NULL;
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         if (child->type == CT_CON) {
             if (content != NULL) {
                 DLOG("More than one CT_CON on output container\n");
@@ -308,19 +313,20 @@ static void render_output(Con *con) {
 
     /* First pass: determine the height of all CT_DOCKAREAs (the sum of their
      * children) and figure out how many pixels we have left for the rest */
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         if (child->type != CT_DOCKAREA)
             continue;
 
         child->rect.height = 0;
-        TAILQ_FOREACH(dockchild, &(child->nodes_head), nodes)
-        child->rect.height += dockchild->geometry.height;
+        TAILQ_FOREACH (dockchild, &(child->nodes_head), nodes) {
+            child->rect.height += dockchild->geometry.height;
+        }
 
         height -= child->rect.height;
     }
 
     /* Second pass: Set the widths/heights */
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         if (child->type == CT_CON) {
             child->rect.x = x;
             child->rect.y = y;

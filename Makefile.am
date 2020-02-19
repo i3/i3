@@ -118,7 +118,7 @@ EXTRA_DIST = \
 	I3_VERSION \
 	LICENSE \
 	PACKAGE-MAINTAINER \
-	RELEASE-NOTES-4.17.1 \
+	RELEASE-NOTES-4.18 \
 	generate-command-parser.pl \
 	parser-specs/commands.spec \
 	parser-specs/config.spec \
@@ -432,6 +432,9 @@ i3_config_wizard_i3_config_wizard_SOURCES = \
 	i3-config-wizard/atoms.xmacro \
 	i3-config-wizard/main.c \
 	i3-config-wizard/xcb.h
+
+i3_config_wizard_i3_config_wizard_DEPENDENCIES = \
+	$(config_parser_SOURCES)
 
 test_inject_randr15_CPPFLAGS = \
 	$(AM_CPPFLAGS)

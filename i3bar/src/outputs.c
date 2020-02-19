@@ -252,6 +252,7 @@ static yajl_callbacks outputs_callbacks = {
     .yajl_end_map = outputs_end_map_cb,
 };
 
+struct outputs_head *outputs;
 /*
  * Initiate the outputs list
  *
@@ -303,7 +304,7 @@ void free_outputs(void) {
     if (outputs == NULL) {
         return;
     }
-    SLIST_FOREACH(outputs_walk, outputs, slist) {
+    SLIST_FOREACH (outputs_walk, outputs, slist) {
         destroy_window(outputs_walk);
         if (outputs_walk->trayclients != NULL && !TAILQ_EMPTY(outputs_walk->trayclients)) {
             FREE_TAILQ(outputs_walk->trayclients, trayclient);
@@ -322,7 +323,7 @@ i3_output *get_output_by_name(char *name) {
     if (name == NULL) {
         return NULL;
     }
-    SLIST_FOREACH(walk, outputs, slist) {
+    SLIST_FOREACH (walk, outputs, slist) {
         if (!strcmp(walk->name, name)) {
             break;
         }
@@ -337,7 +338,7 @@ i3_output *get_output_by_name(char *name) {
  */
 bool output_has_focus(i3_output *output) {
     i3_ws *ws_walk;
-    TAILQ_FOREACH(ws_walk, output->workspaces, tailq) {
+    TAILQ_FOREACH (ws_walk, output->workspaces, tailq) {
         if (ws_walk->focused) {
             return true;
         }

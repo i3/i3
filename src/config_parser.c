@@ -820,7 +820,7 @@ void start_config_error_nagbar(const char *configpath, bool has_errors) {
  */
 static void upsert_variable(struct variables_head *variables, char *key, char *value) {
     struct Variable *current;
-    SLIST_FOREACH(current, variables, variables) {
+    SLIST_FOREACH (current, variables, variables) {
         if (strcmp(current->key, key) != 0) {
             continue;
         }
@@ -838,7 +838,7 @@ static void upsert_variable(struct variables_head *variables, char *key, char *v
     new->value = sstrdup(value);
     /* ensure that the correct variable is matched in case of one being
      * the prefix of another */
-    SLIST_FOREACH(test, variables, variables) {
+    SLIST_FOREACH (test, variables, variables) {
         if (strlen(new->key) >= strlen(test->key))
             break;
         loc = test;
@@ -1013,7 +1013,7 @@ bool parse_file(const char *f, bool use_nagbar) {
      * variables (otherwise we will count them twice, which is bad when
      * 'extra' is negative) */
     char *bufcopy = sstrdup(buf);
-    SLIST_FOREACH(current, &variables, variables) {
+    SLIST_FOREACH (current, &variables, variables) {
         int extra = (strlen(current->value) - strlen(current->key));
         char *next;
         for (next = bufcopy;
@@ -1033,11 +1033,12 @@ bool parse_file(const char *f, bool use_nagbar) {
     destwalk = new;
     while (walk < (buf + stbuf.st_size)) {
         /* Find the next variable */
-        SLIST_FOREACH(current, &variables, variables)
-        current->next_match = strcasestr(walk, current->key);
+        SLIST_FOREACH (current, &variables, variables) {
+            current->next_match = strcasestr(walk, current->key);
+        }
         nearest = NULL;
         int distance = stbuf.st_size;
-        SLIST_FOREACH(current, &variables, variables) {
+        SLIST_FOREACH (current, &variables, variables) {
             if (current->next_match == NULL)
                 continue;
             if ((current->next_match - walk) < distance) {

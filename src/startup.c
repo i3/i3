@@ -36,7 +36,7 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
     DLOG("Timeout for startup sequence %s\n", id);
 
     struct Startup_Sequence *current, *sequence = NULL;
-    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+    TAILQ_FOREACH (current, &startup_sequences, sequences) {
         if (strcmp(current->id, id) != 0)
             continue;
 
@@ -220,7 +220,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
     /* Get the corresponding internal startup sequence */
     const char *id = sn_startup_sequence_get_id(snsequence);
     struct Startup_Sequence *current, *sequence = NULL;
-    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+    TAILQ_FOREACH (current, &startup_sequences, sequences) {
         if (strcmp(current->id, id) != 0)
             continue;
 
@@ -264,7 +264,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
  */
 void startup_sequence_rename_workspace(const char *old_name, const char *new_name) {
     struct Startup_Sequence *current;
-    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+    TAILQ_FOREACH (current, &startup_sequences, sequences) {
         if (strcmp(current->workspace, old_name) != 0)
             continue;
         DLOG("Renaming workspace \"%s\" to \"%s\" in startup sequence %s.\n",
@@ -320,7 +320,7 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
     sasprintf(&startup_id, "%.*s", xcb_get_property_value_length(startup_id_reply),
               (char *)xcb_get_property_value(startup_id_reply));
     struct Startup_Sequence *current, *sequence = NULL;
-    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+    TAILQ_FOREACH (current, &startup_sequences, sequences) {
         if (strcmp(current->id, startup_id) != 0)
             continue;
 
