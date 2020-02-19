@@ -388,8 +388,9 @@ static void workspace_reassign_sticky(Con *con) {
         LOG("re-assigned window from src %p to dest %p\n", src, current);
     }
 
-    TAILQ_FOREACH (current, &(con->floating_head), floating_windows)
+    TAILQ_FOREACH (current, &(con->floating_head), floating_windows) {
         workspace_reassign_sticky(current);
+    }
 }
 
 /*
@@ -828,13 +829,17 @@ Con *workspace_back_and_forth_get(void) {
 
 static bool get_urgency_flag(Con *con) {
     Con *child;
-    TAILQ_FOREACH (child, &(con->nodes_head), nodes)
-        if (child->urgent || get_urgency_flag(child))
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+        if (child->urgent || get_urgency_flag(child)) {
             return true;
+        }
+    }
 
-    TAILQ_FOREACH (child, &(con->floating_head), floating_windows)
-        if (child->urgent || get_urgency_flag(child))
+    TAILQ_FOREACH (child, &(con->floating_head), floating_windows) {
+        if (child->urgent || get_urgency_flag(child)) {
             return true;
+        }
+    }
 
     return false;
 }

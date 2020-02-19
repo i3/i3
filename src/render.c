@@ -130,8 +130,9 @@ void render_con(Con *con) {
 
         /* in a stacking or tabbed container, we ensure the focused client is raised */
         if (con->layout == L_STACKED || con->layout == L_TABBED) {
-            TAILQ_FOREACH_REVERSE (child, &(con->focus_head), focus_head, focused)
+            TAILQ_FOREACH_REVERSE (child, &(con->focus_head), focus_head, focused) {
                 x_raise_con(child);
+            }
             if ((child = TAILQ_FIRST(&(con->focus_head)))) {
                 /* By rendering the stacked container again, we handle the case
                  * that we have a non-leaf-container inside the stack. In that
@@ -313,8 +314,9 @@ static void render_output(Con *con) {
             continue;
 
         child->rect.height = 0;
-        TAILQ_FOREACH (dockchild, &(child->nodes_head), nodes)
+        TAILQ_FOREACH (dockchild, &(child->nodes_head), nodes) {
             child->rect.height += dockchild->geometry.height;
+        }
 
         height -= child->rect.height;
     }

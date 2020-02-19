@@ -32,9 +32,11 @@ static bool has_randr_1_5 = false;
  */
 static Output *get_output_by_id(xcb_randr_output_t id) {
     Output *output;
-    TAILQ_FOREACH (output, &outputs, outputs)
-        if (output->id == id)
+    TAILQ_FOREACH (output, &outputs, outputs) {
+        if (output->id == id) {
             return output;
+        }
+    }
 
     return NULL;
 }

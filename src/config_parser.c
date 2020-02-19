@@ -1033,8 +1033,9 @@ bool parse_file(const char *f, bool use_nagbar) {
     destwalk = new;
     while (walk < (buf + stbuf.st_size)) {
         /* Find the next variable */
-        SLIST_FOREACH (current, &variables, variables)
+        SLIST_FOREACH (current, &variables, variables) {
             current->next_match = strcasestr(walk, current->key);
+        }
         nearest = NULL;
         int distance = stbuf.st_size;
         SLIST_FOREACH (current, &variables, variables) {

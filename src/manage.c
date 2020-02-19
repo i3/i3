@@ -83,7 +83,7 @@ void restore_geometry(void) {
     DLOG("Restoring geometry\n");
 
     Con *con;
-    TAILQ_FOREACH (con, &all_cons, all_cons)
+    TAILQ_FOREACH (con, &all_cons, all_cons) {
         if (con->window) {
             DLOG("Re-adding X11 border of %d px\n", con->border_width);
             con->window_rect.width += (2 * con->border_width);
@@ -93,6 +93,7 @@ void restore_geometry(void) {
             xcb_reparent_window(conn, con->window->id, root,
                                 con->rect.x, con->rect.y);
         }
+    }
 
     /* Strictly speaking, this line doesn’t really belong here, but since we
      * are syncing, let’s un-register as a window manager first */

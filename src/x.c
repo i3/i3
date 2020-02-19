@@ -92,9 +92,11 @@ initial_mapping_head =
  */
 static con_state *state_for_frame(xcb_window_t window) {
     con_state *state;
-    CIRCLEQ_FOREACH (state, &state_head, state)
-        if (state->id == window)
+    CIRCLEQ_FOREACH (state, &state_head, state) {
+        if (state->id == window) {
             return state;
+        }
+    }
 
     /* TODO: better error handling? */
     ELOG("No state found for window 0x%08x\n", window);
@@ -726,11 +728,13 @@ void x_deco_recurse(Con *con) {
     con_state *state = state_for_frame(con->frame.id);
 
     if (!leaf) {
-        TAILQ_FOREACH (current, &(con->nodes_head), nodes)
+        TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
             x_deco_recurse(current);
+        }
 
-        TAILQ_FOREACH (current, &(con->floating_head), floating_windows)
+        TAILQ_FOREACH (current, &(con->floating_head), floating_windows) {
             x_deco_recurse(current);
+        }
 
         if (state->mapped) {
             draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
@@ -1116,11 +1120,13 @@ static void x_push_node_unmaps(Con *con) {
     }
 
     /* handle all children and floating windows of this node */
-    TAILQ_FOREACH (current, &(con->nodes_head), nodes)
+    TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
         x_push_node_unmaps(current);
+    }
 
-    TAILQ_FOREACH (current, &(con->floating_head), floating_windows)
+    TAILQ_FOREACH (current, &(con->floating_head), floating_windows) {
         x_push_node_unmaps(current);
+    }
 }
 
 /*
@@ -1178,9 +1184,11 @@ void x_push_changes(Con *con) {
     /* count first, necessary to (re)allocate memory for the bottom-to-top
      * stack afterwards */
     int cnt = 0;
-    CIRCLEQ_FOREACH_REVERSE (state, &state_head, state)
-        if (con_has_managed_window(state->con))
+    CIRCLEQ_FOREACH_REVERSE (state, &state_head, state) {
+        if (con_has_managed_window(state->con)) {
             cnt++;
+        }
+    }
 
     /* The bottom-to-top window stack of all windows which are managed by i3.
      * Used for x_get_window_stack(). */

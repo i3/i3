@@ -646,9 +646,11 @@ bool con_has_parent(Con *con, Con *parent) {
  */
 Con *con_by_window_id(xcb_window_t window) {
     Con *con;
-    TAILQ_FOREACH (con, &all_cons, all_cons)
-        if (con->window != NULL && con->window->id == window)
+    TAILQ_FOREACH (con, &all_cons, all_cons) {
+        if (con->window != NULL && con->window->id == window) {
             return con;
+        }
+    }
     return NULL;
 }
 
@@ -684,9 +686,11 @@ bool con_exists(Con *con) {
  */
 Con *con_by_frame_id(xcb_window_t frame) {
     Con *con;
-    TAILQ_FOREACH (con, &all_cons, all_cons)
-        if (con->frame.id == frame)
+    TAILQ_FOREACH (con, &all_cons, all_cons) {
+        if (con->frame.id == frame) {
             return con;
+        }
+    }
     return NULL;
 }
 
@@ -923,8 +927,9 @@ int con_num_children(Con *con) {
     Con *child;
     int children = 0;
 
-    TAILQ_FOREACH (child, &(con->nodes_head), nodes)
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         children++;
+    }
 
     return children;
 }
