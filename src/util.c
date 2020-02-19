@@ -53,6 +53,12 @@ Rect rect_sub(Rect a, Rect b) {
                   a.height - b.height};
 }
 
+Rect rect_sanitize_dimensions(Rect rect) {
+    rect.width = (int32_t)rect.width <= 0 ? 1 : rect.width;
+    rect.height = (int32_t)rect.height <= 0 ? 1 : rect.height;
+    return rect;
+}
+
 bool rect_equals(Rect a, Rect b) {
     return a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height;
 }

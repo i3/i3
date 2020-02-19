@@ -160,7 +160,7 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     layout_t layout = (enter_child ? con->parent->layout : con->layout);
     if (layout == L_DEFAULT) {
         Con *child;
-        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH_REVERSE (child, &(con->nodes_head), nodes_head, nodes) {
             if (rect_contains(child->deco_rect, event->event_x, event->event_y)) {
                 LOG("using child %p / %s instead!\n", child, child->name);
                 con = child;
@@ -217,7 +217,7 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
 
     /* see over which rect the user is */
     Con *current;
-    TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH_REVERSE (current, &(con->nodes_head), nodes_head, nodes) {
         if (!rect_contains(current->deco_rect, event->event_x, event->event_y))
             continue;
 

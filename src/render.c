@@ -64,6 +64,8 @@ void render_con(Con *con) {
         inset->width -= (2 * con->border_width);
         inset->height -= (2 * con->border_width);
 
+        *inset = rect_sanitize_dimensions(*inset);
+
         /* NB: We used to respect resize increment size hints for tiling
          * windows up until commit 0db93d9 here. However, since all terminal
          * emulators cope with ignoring the size hints in a better way than we
@@ -120,6 +122,8 @@ void render_con(Con *con) {
             } else if (con->layout == L_DOCKAREA) {
                 render_con_dockarea(con, child, &params);
             }
+
+            child->rect = rect_sanitize_dimensions(child->rect);
 
             DLOG("child at (%d, %d) with (%d x %d)\n",
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
