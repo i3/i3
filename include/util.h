@@ -65,6 +65,7 @@ bool rect_contains(Rect rect, uint32_t x, uint32_t y);
 Rect rect_add(Rect a, Rect b);
 Rect rect_sub(Rect a, Rect b);
 bool rect_equals(Rect a, Rect b);
+Rect rect_sanitize_dimensions(Rect rect);
 
 /**
  * Returns true if the name consists of only digits.
