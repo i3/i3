@@ -785,9 +785,9 @@ int main(int argc, char *argv[]) {
      * and restarting i3. See #2326. */
     if (layout_path != NULL && randr_base > -1) {
         Con *con;
-        TAILQ_FOREACH(con, &(croot->nodes_head), nodes) {
+        TAILQ_FOREACH (con, &(croot->nodes_head), nodes) {
             Output *output;
-            TAILQ_FOREACH(output, &outputs, outputs) {
+            TAILQ_FOREACH (output, &outputs, outputs) {
                 if (output->active || strcmp(con->name, output_primary_name(output)) != 0)
                     continue;
 
@@ -1010,7 +1010,7 @@ int main(int argc, char *argv[]) {
 
     /* Start i3bar processes for all configured bars */
     Barconfig *barconfig;
-    TAILQ_FOREACH(barconfig, &barconfigs, configs) {
+    TAILQ_FOREACH (barconfig, &barconfigs, configs) {
         char *command = NULL;
         sasprintf(&command, "%s %s --bar_id=%s --socket=\"%s\"",
                   barconfig->i3bar_command ? barconfig->i3bar_command : "exec i3bar",

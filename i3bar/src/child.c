@@ -90,7 +90,7 @@ static void clear_statusline(struct statusline_head *head, bool free_resources) 
 
 static void copy_statusline(struct statusline_head *from, struct statusline_head *to) {
     struct status_block *current;
-    TAILQ_FOREACH(current, from, blocks) {
+    TAILQ_FOREACH (current, from, blocks) {
         struct status_block *new_block = smalloc(sizeof(struct status_block));
         memcpy(new_block, current, sizeof(struct status_block));
         TAILQ_INSERT_TAIL(to, new_block, blocks);
@@ -330,7 +330,7 @@ static int stdin_end_array(void *context) {
 
     DLOG("dumping statusline:\n");
     struct status_block *current;
-    TAILQ_FOREACH(current, &statusline_head, blocks) {
+    TAILQ_FOREACH (current, &statusline_head, blocks) {
         DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
         DLOG("short_text = %s\n", (current->short_text == NULL ? NULL : i3string_as_utf8(current->short_text)));
         DLOG("color = %s\n", current->color);
