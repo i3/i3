@@ -1201,7 +1201,7 @@ force_display_urgency_hint 500 ms
 === Focus on window activation
 
 If a window is activated, e.g., via +google-chrome www.google.com+, it may request
-to take focus. Since this may not preferable, different reactions can be configured.
+to take focus. Since this may not be preferable, different reactions can be configured.
 
 Note that this may not affect windows that are being opened. To prevent new windows
 from being focused, see <<no_focus>>.
