@@ -91,7 +91,7 @@ char *get_exe_path(const char *argv0) {
         free(destpath);
         sasprintf(&destpath, "%s/%s", component, argv0);
         /* Of course this is not 100% equivalent to actually exec()ing the
-		 * binary, but meh. */
+         * binary, but meh. */
         if (access(destpath, X_OK) == 0) {
             free(path);
             free(tmp);

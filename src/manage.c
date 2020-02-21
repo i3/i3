@@ -29,7 +29,7 @@ static xcb_window_t _match_depth(i3Window *win, Con *con) {
 }
 
 /*
- * Remove all match criteria, the first swallowed window wins. 
+ * Remove all match criteria, the first swallowed window wins.
  *
  */
 static void _remove_matches(Con *con) {

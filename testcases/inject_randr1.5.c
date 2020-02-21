@@ -59,7 +59,7 @@ struct connstate {
     ev_io *clientw;
 
     /* serverw is a libev watcher for the connection to X11 which we initiated
-	 * on behalf of the client. */
+     * on behalf of the client. */
     ev_io *serverw;
 
     /* sequence is the client-side sequence number counter. In X11’s wire
