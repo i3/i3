@@ -114,7 +114,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
 
         if ((config.strip_ws_numbers || config.strip_ws_name) && params->workspaces_walk->num >= 0) {
             /* Special case: strip off the workspace number/name */
-            static char ws_num[10];
+            static char ws_num[32];
 
             snprintf(ws_num, sizeof(ws_num), "%d", params->workspaces_walk->num);
 

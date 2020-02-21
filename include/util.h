@@ -86,7 +86,7 @@ bool layout_from_name(const char *layout_str, layout_t *out);
  * interpreted as a "named workspace".
  *
  */
-long ws_name_to_number(const char *name);
+int ws_name_to_number(const char *name);
 
 /**
  * Updates *destination with new_value and returns true if it was changed or false
