@@ -246,8 +246,8 @@ int main(int argc, char *argv[]) {
     sigaction(SIGINT, &action, NULL);
 
     /* Since pthread_cond_wait() expects a mutex, we need to provide one.
-         * To not lock i3 (that’s bad, mhkay?) we just define one outside of
-         * the shared memory. */
+     * To not lock i3 (that’s bad, mhkay?) we just define one outside of
+     * the shared memory. */
     pthread_mutex_t dummy_mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_lock(&dummy_mutex);
     while (!interrupted) {

@@ -130,6 +130,21 @@ $ws = get_ws("aa: $tmp");
 ok(defined($ws), "workspace aa: $tmp was created");
 is($ws->{num}, -1, 'workspace number is -1');
 
+cmd "workspace -42: $tmp";
+$ws = get_ws("-42: $tmp");
+ok(defined($ws), "workspace -42: $tmp was created");
+is($ws->{num}, -1, 'negative workspace number is ignored');
+
+cmd "workspace 2147483647: $tmp";
+$ws = get_ws("2147483647: $tmp");
+ok(defined($ws), "workspace 2147483647: $tmp was created");
+is($ws->{num}, 2147483647, 'workspace number is 2147483647');
+
+cmd "workspace 2147483648: $tmp";
+$ws = get_ws("2147483648: $tmp");
+ok(defined($ws), "workspace 2147483648: $tmp was created");
+is($ws->{num}, -1, 'workspace number past the limit is ignored');
+
 ################################################################################
 # Check that we can go to workspace "4: foo" with the command
 # "workspace number 4".

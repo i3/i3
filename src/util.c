@@ -109,14 +109,12 @@ bool layout_from_name(const char *layout_str, layout_t *out) {
  * interpreted as a "named workspace".
  *
  */
-long ws_name_to_number(const char *name) {
+int ws_name_to_number(const char *name) {
     /* positive integers and zero are interpreted as numbers */
     char *endptr = NULL;
-    long parsed_num = strtol(name, &endptr, 10);
-    if (parsed_num == LONG_MIN ||
-        parsed_num == LONG_MAX ||
-        parsed_num < 0 ||
-        endptr == name) {
+    errno = 0;
+    long long parsed_num = strtoll(name, &endptr, 10);
+    if (errno != 0 || parsed_num > INT32_MAX || parsed_num < 0 || endptr == name) {
         parsed_num = -1;
     }
 
