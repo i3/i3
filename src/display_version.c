@@ -98,7 +98,8 @@ void display_running_version(void) {
     if (state != yajl_status_ok)
         errx(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
 
-    printf("\rRunning i3 version: %s (pid %s)\n", human_readable_version, pid_from_atom);
+    printf("\r\x1b[K");
+    printf("Running i3 version: %s (pid %s)\n", human_readable_version, pid_from_atom);
 
     if (loaded_config_file_name) {
         struct stat sb;
