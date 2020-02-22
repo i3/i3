@@ -35,6 +35,14 @@ dist_i3conf_DATA = \
 	etc/config \
 	etc/config.keycodes
 
+I3STATUS_INSTALL_NAME = $(shell echo i3status | sed '@program_transform_name@')
+
+etc/config: etc/$(dirstamp)
+	$(AM_V_GEN) sed "s,status_command i3status,status_command $(I3STATUS_INSTALL_NAME),g" $(top_srcdir)/etc/config > etc/config
+
+etc/config.keycodes: etc/$(dirstamp)
+	$(AM_V_GEN) sed "s,status_command i3status,status_command $(I3STATUS_INSTALL_NAME),g" $(top_srcdir)/etc/config.keycodes > etc/config.keycodes
+
 applicationsdir = $(datarootdir)/applications
 xsessionsdir = $(datarootdir)/xsessions
 dist_applications_DATA = \
@@ -146,7 +154,8 @@ dirstamp = .dirstamp
 dirstamps = \
 	docs/$(dirstamp) \
 	man/$(dirstamp) \
-	parser/$(dirstamp)
+	parser/$(dirstamp) \
+	etc/$(dirstamp)
 DISTCLEANFILES = $(dirstamps)
 
 $(dirstamps):
