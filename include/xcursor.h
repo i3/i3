@@ -28,7 +28,6 @@ enum xcursor_cursor_t {
 
 void xcursor_load_cursors(void);
 xcb_cursor_t xcursor_get_cursor(enum xcursor_cursor_t c);
-int xcursor_get_xcb_cursor(enum xcursor_cursor_t c);
 
 /**
  * Sets the cursor of the root window to the 'pointer' cursor.

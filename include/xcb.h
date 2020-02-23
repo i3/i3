@@ -18,13 +18,6 @@
 #define _NET_WM_STATE_ADD 1
 #define _NET_WM_STATE_TOGGLE 2
 
-/** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
- * constant for that. */
-#define XCB_CURSOR_LEFT_PTR 68
-#define XCB_CURSOR_SB_H_DOUBLE_ARROW 108
-#define XCB_CURSOR_SB_V_DOUBLE_ARROW 116
-#define XCB_CURSOR_WATCH 150
-
 /* from X11/keysymdef.h */
 #define XCB_NUM_LOCK 0xff7f
 
@@ -100,14 +93,6 @@ xcb_atom_t xcb_get_preferred_window_type(xcb_get_property_reply_t *reply);
  *
  */
 bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom);
-
-/**
- * Set the cursor of the root window to the given cursor id.
- * This function should only be used if xcursor_supported == false.
- * Otherwise, use xcursor_set_root_cursor().
- *
- */
-void xcb_set_root_cursor(int cursor);
 
 /**
  * Get depth of visual specified by visualid

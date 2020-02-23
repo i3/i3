@@ -38,10 +38,6 @@ xcb_visualtype_t *visual_type = NULL;
 
 #include "i3-nagbar.h"
 
-/** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
- * constant for that. */
-#define XCB_CURSOR_LEFT_PTR 68
-
 #define MSG_PADDING logical_px(8)
 #define BTN_PADDING logical_px(3)
 #define BTN_BORDER logical_px(3)
@@ -469,24 +465,12 @@ int main(int argc, char *argv[]) {
 
     xcb_rectangle_t win_pos = get_window_position();
 
-    xcb_cursor_t cursor;
     xcb_cursor_context_t *cursor_ctx;
-    if (xcb_cursor_context_new(conn, root_screen, &cursor_ctx) == 0) {
-        cursor = xcb_cursor_load_cursor(cursor_ctx, "left_ptr");
-        xcb_cursor_context_free(cursor_ctx);
-    } else {
-        cursor = xcb_generate_id(conn);
-        i3Font cursor_font = load_font("cursor", false);
-        xcb_create_glyph_cursor(
-            conn,
-            cursor,
-            cursor_font.specific.xcb.id,
-            cursor_font.specific.xcb.id,
-            XCB_CURSOR_LEFT_PTR,
-            XCB_CURSOR_LEFT_PTR + 1,
-            0, 0, 0,
-            65535, 65535, 65535);
+    if (xcb_cursor_context_new(conn, root_screen, &cursor_ctx) < 0) {
+        errx(EXIT_FAILURE, "Cannot allocate xcursor context");
     }
+    xcb_cursor_t cursor = xcb_cursor_load_cursor(cursor_ctx, "left_ptr");
+    xcb_cursor_context_free(cursor_ctx);
 
     /* Open an input window */
     win = xcb_generate_id(conn);

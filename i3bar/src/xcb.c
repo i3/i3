@@ -36,10 +36,6 @@
 
 #include "libi3.h"
 
-/** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
- * constant for that. */
-#define XCB_CURSOR_LEFT_PTR 68
-
 /* We save the atoms in an easy to access array, indexed by an enum */
 enum {
 #define ATOM_DO(name) name,
@@ -1305,22 +1301,11 @@ char *init_xcb_early(void) {
     }
 
     xcb_cursor_context_t *cursor_ctx;
-    if (xcb_cursor_context_new(conn, root_screen, &cursor_ctx) == 0) {
-        cursor = xcb_cursor_load_cursor(cursor_ctx, "left_ptr");
-        xcb_cursor_context_free(cursor_ctx);
-    } else {
-        cursor = xcb_generate_id(xcb_connection);
-        i3Font cursor_font = load_font("cursor", false);
-        xcb_create_glyph_cursor(
-            xcb_connection,
-            cursor,
-            cursor_font.specific.xcb.id,
-            cursor_font.specific.xcb.id,
-            XCB_CURSOR_LEFT_PTR,
-            XCB_CURSOR_LEFT_PTR + 1,
-            0, 0, 0,
-            65535, 65535, 65535);
+    if (xcb_cursor_context_new(conn, root_screen, &cursor_ctx) < 0) {
+        errx(EXIT_FAILURE, "Cannot allocate xcursor context");
     }
+    cursor = xcb_cursor_load_cursor(cursor_ctx, "left_ptr");
+    xcb_cursor_context_free(cursor_ctx);
 
     /* The various watchers to communicate with xcb */
     xcb_io = smalloc(sizeof(ev_io));
