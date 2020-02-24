@@ -87,7 +87,6 @@ struct assignments_head assignments = TAILQ_HEAD_INITIALIZER(assignments);
 struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignments);
 
 /* We hope that those are supported and set them to true */
-bool xcursor_supported = true;
 bool xkb_supported = true;
 bool shape_supported = true;
 
@@ -641,10 +640,7 @@ int main(int argc, char *argv[]) {
 
     /* Set a cursor for the root window (otherwise the root window will show no
        cursor until the first client is launched). */
-    if (xcursor_supported)
-        xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
-    else
-        xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
+    xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
 
     const xcb_query_extension_reply_t *extreply;
     xcb_prefetch_extension_data(conn, &xcb_xkb_id);

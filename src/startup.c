@@ -201,10 +201,7 @@ void start_application(const char *command, bool no_startup_id) {
 
     if (!no_startup_id) {
         /* Change the pointer of the root window to indicate progress */
-        if (xcursor_supported)
-            xcursor_set_root_cursor(XCURSOR_CURSOR_WATCH);
-        else
-            xcb_set_root_cursor(XCURSOR_CURSOR_WATCH);
+        xcursor_set_root_cursor(XCURSOR_CURSOR_WATCH);
     }
 }
 
@@ -246,10 +243,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
             if (_prune_startup_sequences() == 0) {
                 DLOG("No more startup sequences running, changing root window cursor to default pointer.\n");
                 /* Change the pointer of the root window to indicate progress */
-                if (xcursor_supported)
-                    xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
-                else
-                    xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
+                xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
             }
             break;
         default:
