@@ -77,12 +77,10 @@ struct status_block {
     char *name;
     char *instance;
 
-    TAILQ_ENTRY(status_block)
-    blocks;
+    TAILQ_ENTRY(status_block) blocks;
 };
 
-extern TAILQ_HEAD(statusline_head, status_block)
-    statusline_head;
+extern TAILQ_HEAD(statusline_head, status_block) statusline_head;
 
 #include "child.h"
 #include "ipc.h"

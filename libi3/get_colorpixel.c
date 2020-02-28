@@ -15,12 +15,10 @@ struct Colorpixel {
     char hex[8];
     uint32_t pixel;
 
-    SLIST_ENTRY(Colorpixel)
-    colorpixels;
+    SLIST_ENTRY(Colorpixel) colorpixels;
 };
 
-SLIST_HEAD(colorpixel_head, Colorpixel)
-colorpixels;
+SLIST_HEAD(colorpixel_head, Colorpixel) colorpixels;
 
 /*
  * Returns the colorpixel to use for the given hex color (think of HTML).

@@ -129,9 +129,7 @@ static Con *maybe_auto_back_and_forth_workspace(Con *workspace) {
  */
 typedef struct owindow {
     Con *con;
-
-    TAILQ_ENTRY(owindow)
-    owindows;
+    TAILQ_ENTRY(owindow) owindows;
 } owindow;
 
 typedef TAILQ_HEAD(owindows_head, owindow) owindows_head;

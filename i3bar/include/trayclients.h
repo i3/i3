@@ -21,6 +21,5 @@ struct trayclient {
     char *class_class;
     char *class_instance;
 
-    TAILQ_ENTRY(trayclient)
-    tailq; /* Pointer for the TAILQ-Macro */
+    TAILQ_ENTRY(trayclient) tailq; /* Pointer for the TAILQ-Macro */
 };

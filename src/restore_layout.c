@@ -29,8 +29,7 @@ typedef struct placeholder_state {
     /** The drawable surface */
     surface_t surface;
 
-    TAILQ_ENTRY(placeholder_state)
-    state;
+    TAILQ_ENTRY(placeholder_state) state;
 } placeholder_state;
 
 static TAILQ_HEAD(state_head, placeholder_state) state_head =
