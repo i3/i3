@@ -353,7 +353,7 @@ int main(int argc, char *argv[]) {
         unlink(argv[0]);
         cmd = sstrdup(argv[0]);
         *(cmd + argv0_len - strlen(".nagbar_cmd")) = '\0';
-        execl("/bin/sh", "/bin/sh", cmd, NULL);
+        execl(_PATH_BSHELL, _PATH_BSHELL, cmd, NULL);
         err(EXIT_FAILURE, "execv(/bin/sh, /bin/sh, %s)", cmd);
     }
 
