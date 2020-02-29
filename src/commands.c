@@ -1245,10 +1245,10 @@ void cmd_exec(I3_CMD, const char *nosn, const char *command) {
     } while (0)
 
 /*
- * Implementation of 'focus left|right|up|down|next|prev'.
+ * Implementation of 'focus left|right|up|down|next|prev normal|surface'.
  *
  */
-void cmd_focus_direction(I3_CMD, const char *direction_str) {
+void cmd_focus_direction(I3_CMD, const char *direction_str, const char *mode) {
     HANDLE_EMPTY_MATCH;
     CMD_FOCUS_WARN_CHILDREN;
 
@@ -1274,7 +1274,14 @@ void cmd_focus_direction(I3_CMD, const char *direction_str) {
             orientation_t o = con_orientation(current->con->parent);
             direction = direction_from_orientation_position(o, position);
         }
-        tree_next(current->con, direction);
+        if (strcmp(mode, "normal") == 0) {
+            tree_next(current->con, direction);
+        } else if (strcmp(mode, "surface") == 0) {
+            tree_next_surface(current->con, direction);
+        } else {
+            yerror("Unknown focus mode: %s.", mode);
+            return;
+        }
     }
 
     cmd_output->needs_tree_render = true;

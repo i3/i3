@@ -138,15 +138,14 @@ state WORKSPACE_NUMBER:
   workspace = string
       -> call cmd_workspace_number($workspace, $no_auto_back_and_forth)
 
-# focus left|right|up|down
+# focus left|right|up|down|next|prev [surface]
+# focus next|prev sibling
 # focus output <output>
 # focus tiling|floating|mode_toggle
 # focus parent|child
 # focus
 state FOCUS:
-  direction = 'left', 'right', 'up', 'down'
-      -> call cmd_focus_direction($direction)
-  direction = 'prev', 'next'
+  direction = 'left', 'right', 'up', 'down', 'prev', 'next'
       -> FOCUS_AUTO
   'output'
       -> FOCUS_OUTPUT
@@ -160,8 +159,10 @@ state FOCUS:
 state FOCUS_AUTO:
   'sibling'
       -> call cmd_focus_sibling($direction)
+  'surface'
+      -> call cmd_focus_direction($direction, "surface")
   end
-      -> call cmd_focus_direction($direction)
+      -> call cmd_focus_direction($direction, "normal")
 
 state FOCUS_OUTPUT:
   output = string

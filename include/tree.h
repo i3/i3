@@ -65,6 +65,13 @@ void tree_render(void);
 void tree_next(Con *con, direction_t direction);
 
 /**
+ * Changes focus in the given direction, subject to the constraint that the
+ * next container is not hidden
+ *
+ */
+void tree_next_surface(Con *con, direction_t direction);
+
+/**
  * Get the previous / next sibling
  *
  */

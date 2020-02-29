@@ -623,6 +623,20 @@ void tree_next(Con *con, direction_t direction) {
 }
 
 /*
+ * Changes focus in the given direction, subject to the constraint that the
+ * next container is not hidden
+ *
+ */
+void tree_next_surface(Con *con, direction_t direction) {
+    Con *next = con;
+    do {
+        con = next;
+        next = get_tree_next(con, direction);
+    } while (con_is_hidden(next));
+    tree_next(con, direction);
+}
+
+/*
  * Get the previous / next sibling
  *
  */

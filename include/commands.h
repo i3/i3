@@ -180,7 +180,7 @@ void cmd_exec(I3_CMD, const char *nosn, const char *command);
  * Implementation of 'focus left|right|up|down'.
  *
  */
-void cmd_focus_direction(I3_CMD, const char *direction);
+void cmd_focus_direction(I3_CMD, const char *direction, const char *mode);
 
 /**
  * Implementation of 'focus next|prev sibling'
