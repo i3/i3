@@ -350,7 +350,7 @@ int main(int argc, char *argv[]) {
         cmd = sstrdup(argv[0]);
         *(cmd + argv0_len - strlen(".nagbar_cmd")) = '\0';
         execl(_PATH_BSHELL, _PATH_BSHELL, cmd, NULL);
-        err(EXIT_FAILURE, "execv(/bin/sh, /bin/sh, %s)", cmd);
+        err(EXIT_FAILURE, "execl(%s, %s, %s)", _PATH_BSHELL, _PATH_BSHELL, cmd);
     }
 
     argv0 = argv[0];
