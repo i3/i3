@@ -35,8 +35,6 @@ xcb_visualtype_t *visual_type = NULL;
 #include "i3-input.h"
 
 #define MAX_WIDTH logical_px(500)
-#define BORDER logical_px(2)
-#define PADDING logical_px(2)
 
 /* IPC format string. %s will be replaced with what the user entered, then
  * the command will be sent to i3 */
@@ -57,6 +55,13 @@ static int limit;
 xcb_window_t root;
 xcb_connection_t *conn;
 xcb_screen_t *root_screen;
+struct frame_options {
+    int border;
+    int padding;
+    color_t border_color;
+    color_t fg_color;
+    color_t bg_color;
+};
 
 /*
  * Having verboselog(), errorlog() and debuglog() is necessary when using libi3.
@@ -109,30 +114,26 @@ static uint8_t *concat_strings(char **glyphs, int max) {
  * be called from the code with event == NULL or from X with event != NULL.
  *
  */
-static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t *event) {
+static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t *event, struct frame_options *frameopts) {
     printf("expose!\n");
 
-    color_t border_color = draw_util_hex_to_color("#FF0000");
-    color_t fg_color = draw_util_hex_to_color("#FFFFFF");
-    color_t bg_color = draw_util_hex_to_color("#000000");
-
-    int text_offset = BORDER + PADDING;
+    int text_offset = frameopts->border + frameopts->padding;
 
     /* draw border */
-    draw_util_rectangle(&surface, border_color, 0, 0, surface.width, surface.height);
+    draw_util_rectangle(&surface, frameopts->border_color, 0, 0, surface.width, surface.height);
 
     /* draw background */
-    draw_util_rectangle(&surface, bg_color, BORDER, BORDER, surface.width - 2 * BORDER, surface.height - 2 * BORDER);
+    draw_util_rectangle(&surface, frameopts->bg_color, frameopts->border, frameopts->border, surface.width - 2 * frameopts->border, surface.height - 2 * frameopts->border);
 
     /* draw the prompt … */
     if (prompt != NULL) {
-        draw_util_text(prompt, &surface, fg_color, bg_color, text_offset, text_offset, MAX_WIDTH - text_offset);
+        draw_util_text(prompt, &surface, frameopts->fg_color, frameopts->bg_color, text_offset, text_offset, MAX_WIDTH - text_offset);
     }
 
     /* … and the text */
     if (input_position > 0) {
         i3String *input = i3string_from_ucs2(glyphs_ucs, input_position);
-        draw_util_text(input, &surface, fg_color, bg_color, text_offset + prompt_offset, text_offset, MAX_WIDTH - text_offset);
+        draw_util_text(input, &surface, frameopts->fg_color, frameopts->bg_color, text_offset + prompt_offset, text_offset, MAX_WIDTH - text_offset);
         i3string_free(input);
     }
 
@@ -208,7 +209,7 @@ static void finish_input(void) {
  * command to i3).
  *
  */
-static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
+static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event, struct frame_options *frameopts) {
     printf("Keypress %d, state raw = %d\n", event->detail, event->state);
 
     // TODO: port the input handling code from i3lock once libxkbcommon ≥ 0.5.0
@@ -241,7 +242,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         input_position--;
         free(glyphs_utf8[input_position]);
 
-        handle_expose(NULL, conn, NULL);
+        handle_expose(NULL, conn, NULL, frameopts);
         return 1;
     }
     if (sym == XK_Escape) {
@@ -285,12 +286,12 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     if (input_position == limit)
         finish_input();
 
-    handle_expose(NULL, conn, NULL);
+    handle_expose(NULL, conn, NULL, frameopts);
     return 1;
 }
 
-static xcb_rectangle_t get_window_position(void) {
-    xcb_rectangle_t result = (xcb_rectangle_t){logical_px(50), logical_px(50), MAX_WIDTH, font.height + 2 * BORDER + 2 * PADDING};
+static xcb_rectangle_t get_window_position(struct frame_options *frameopts) {
+    xcb_rectangle_t result = (xcb_rectangle_t){logical_px(50), logical_px(50), MAX_WIDTH, font.height + 2 * frameopts->border + 2 * frameopts->padding};
 
     xcb_get_property_reply_t *supporting_wm_reply = NULL;
     xcb_get_input_focus_reply_t *input_focus = NULL;
@@ -378,6 +379,13 @@ int main(int argc, char *argv[]) {
     char *pattern = sstrdup("pango:monospace 8");
     int o, option_index = 0;
 
+    struct frame_options *frameopts = &(struct frame_options){
+        .border_color = draw_util_hex_to_color("#FF0000"),
+        .fg_color = draw_util_hex_to_color("#FFFFFF"),
+        .bg_color = draw_util_hex_to_color("#000000"),
+        .border = 2,
+        .padding = 2};
+
     static struct option long_options[] = {
         {"socket", required_argument, 0, 's'},
         {"version", no_argument, 0, 'v'},
@@ -386,10 +394,15 @@ int main(int argc, char *argv[]) {
         {"prefix", required_argument, 0, 'p'},
         {"format", required_argument, 0, 'F'},
         {"font", required_argument, 0, 'f'},
+        {"fg-color", required_argument, 0, 'C'},
+        {"bg-color", required_argument, 0, 'B'},
+        {"border-color", required_argument, 0, 'W'},
+        {"border", required_argument, 0, 'b'},
+        {"padding", required_argument, 0, 'S'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}};
 
-    char *options_string = "s:p:P:f:l:F:vh";
+    char *options_string = "s:p:P:f:l:F:C:B:W:b:S:vh";
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (o) {
@@ -417,13 +430,28 @@ int main(int argc, char *argv[]) {
                 FREE(pattern);
                 pattern = sstrdup(optarg);
                 break;
+            case 'C':
+                frameopts->fg_color = draw_util_hex_to_color(optarg);
+                break;
+            case 'B':
+                frameopts->bg_color = draw_util_hex_to_color(optarg);
+                break;
+            case 'W':
+                frameopts->border_color = draw_util_hex_to_color(optarg);
+                break;
+            case 'b':
+                frameopts->border = logical_px(atoi(optarg));
+                break;
+            case 'S':
+                frameopts->padding = logical_px(atoi(optarg));
+                break;
             case 'F':
                 FREE(format);
                 format = sstrdup(optarg);
                 break;
             case 'h':
                 printf("i3-input " I3_VERSION "\n");
-                printf("i3-input [-s <socket>] [-F <format>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]\n");
+                printf("i3-input [-s <socket>] [-F <format>] [-l <limit>] [-P <prompt>] [-f <font>] [-C <fg-color>] [-B <bg-color>] [-W <border-color>] [-S <padding>] [-b <border>] [-v]\n");
                 printf("\n");
                 printf("Example:\n");
                 printf("    i3-input -F 'workspace \"%%s\"' -P 'Switch to workspace: '\n");
@@ -452,7 +480,7 @@ int main(int argc, char *argv[]) {
     if (prompt != NULL)
         prompt_offset = predict_text_width(prompt);
 
-    const xcb_rectangle_t win_pos = get_window_position();
+    const xcb_rectangle_t win_pos = get_window_position(frameopts);
 
     /* Open an input window */
     win = xcb_generate_id(conn);
@@ -512,7 +540,7 @@ int main(int argc, char *argv[]) {
 
         switch (type) {
             case XCB_KEY_PRESS:
-                handle_key_press(NULL, conn, (xcb_key_press_event_t *)event);
+                handle_key_press(NULL, conn, (xcb_key_press_event_t *)event, frameopts);
                 break;
 
             case XCB_KEY_RELEASE:
@@ -521,7 +549,7 @@ int main(int argc, char *argv[]) {
 
             case XCB_EXPOSE:
                 if (((xcb_expose_event_t *)event)->count == 0) {
-                    handle_expose(NULL, conn, (xcb_expose_event_t *)event);
+                    handle_expose(NULL, conn, (xcb_expose_event_t *)event, frameopts);
                 }
 
                 break;
@@ -530,6 +558,7 @@ int main(int argc, char *argv[]) {
         free(event);
     }
 
+    FREE(frameopts);
     draw_util_surface_free(conn, &surface);
     return 0;
 }
