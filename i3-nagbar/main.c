@@ -104,10 +104,6 @@ void debuglog(char *fmt, ...) {
  * fork to avoid zombie processes. As the started application’s parent exits
  * (immediately), the application is reparented to init (process-id 1), which
  * correctly handles children, so we don’t have to do it :-).
- *
- * The shell is determined by looking for the SHELL environment variable. If it
- * does not exist, /bin/sh is used.
- *
  */
 static void start_application(const char *command) {
     printf("executing: %s\n", command);

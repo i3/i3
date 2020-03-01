@@ -528,7 +528,7 @@ static void child_write_output(void) {
 
 /*
  * Start a child process with the specified command and reroute stdin.
- * We actually start a $SHELL to execute the command so we don't have to care
+ * We actually start a shell to execute the command so we don't have to care
  * about arguments and such.
  *
  * If `command' is NULL, such as in the case when no `status_command' is given
