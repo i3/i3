@@ -169,7 +169,7 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
         warn("Could not fdopen() temporary script to store the nagbar command");
         return;
     }
-    fprintf(script, "#!/bin/sh\nrm %s\n%s", script_path, button->action);
+    fprintf(script, "#!%s\nrm %s\n%s", _PATH_BSHELL, script_path, button->action);
     /* Also closes fd */
     fclose(script);
 
@@ -350,7 +350,7 @@ int main(int argc, char *argv[]) {
         cmd = sstrdup(argv[0]);
         *(cmd + argv0_len - strlen(".nagbar_cmd")) = '\0';
         execl(_PATH_BSHELL, _PATH_BSHELL, cmd, NULL);
-        err(EXIT_FAILURE, "execv(/bin/sh, /bin/sh, %s)", cmd);
+        err(EXIT_FAILURE, "execl(%s, %s, %s)", _PATH_BSHELL, _PATH_BSHELL, cmd);
     }
 
     argv0 = argv[0];
