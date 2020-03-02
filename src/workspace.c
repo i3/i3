@@ -1044,6 +1044,9 @@ void workspace_move_to_output(Con *ws, Output *output) {
         workspace_show(ws);
     }
 
+    tree_flatten(croot);
+    ewmh_update_wm_desktop();
+
     if (!previously_visible_ws) {
         return;
     }
