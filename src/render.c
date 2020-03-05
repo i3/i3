@@ -424,7 +424,7 @@ static void render_con_tabbed(Con *con, Con *child, render_params *p, int i) {
     /* Since the tab width may be something like 31,6 px per tab, we
      * let the last tab have all the extra space (0,6 * children). */
     if (i == (p->children - 1)) {
-        child->deco_rect.width += (child->rect.width - (child->deco_rect.x + child->deco_rect.width));
+        child->deco_rect.width = child->rect.width - child->deco_rect.x;
     }
 
     if (p->children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
