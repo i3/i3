@@ -410,17 +410,13 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("urgent");
     y(bool, con->urgent);
 
-    if (!TAILQ_EMPTY(&(con->marks_head))) {
-        ystr("marks");
-        y(array_open);
-
-        mark_t *mark;
-        TAILQ_FOREACH (mark, &(con->marks_head), marks) {
-            ystr(mark->name);
-        }
-
-        y(array_close);
+    ystr("marks");
+    y(array_open);
+    mark_t *mark;
+    TAILQ_FOREACH (mark, &(con->marks_head), marks) {
+        ystr(mark->name);
     }
+    y(array_close);
 
     ystr("focused");
     y(bool, (con == focused));
