@@ -30,6 +30,7 @@ state INITIAL:
   'open' -> call cmd_open()
   'fullscreen' -> FULLSCREEN
   'sticky' -> STICKY
+  'bisect' -> BISECT
   'split' -> SPLIT
   'floating' -> FLOATING
   'mark' -> MARK
@@ -206,6 +207,11 @@ state STICKY:
 state SPLIT:
   direction = 'horizontal', 'vertical', 'toggle', 'v', 'h', 't'
       -> call cmd_split($direction)
+
+# bisect v|h|vertical|horizontal
+state BISECT:
+  direction = 'horizontal', 'vertical', 'v', 'h'
+      -> call cmd_bisect($direction)
 
 # floating enable|disable|toggle
 state FLOATING:

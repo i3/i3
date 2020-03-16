@@ -159,6 +159,12 @@ void cmd_floating(I3_CMD, const char *floating_mode);
 void cmd_move_workspace_to_output(I3_CMD, const char *name);
 
 /**
+ * Implementation of 'bisect v|h|vertical|horizontal'.
+ *
+ */
+void cmd_bisect(I3_CMD, const char *direction);
+
+/**
  * Implementation of 'split v|h|t|vertical|horizontal|toggle'.
  *
  */

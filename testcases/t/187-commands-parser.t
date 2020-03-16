@@ -161,6 +161,7 @@ is(parser_calls('unknown_literal'),
        open
        fullscreen
        sticky
+       bisect
        split
        floating
        mark

@@ -1130,6 +1130,82 @@ void cmd_move_workspace_to_output(I3_CMD, const char *name) {
 }
 
 /*
+ * Implementation of 'bisect v|h|vertical|horizontal'.
+ *
+ */
+void cmd_bisect(I3_CMD, const char *direction) {
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    LOG("bisecting in direction %c\n", direction[0]);
+    TAILQ_FOREACH (current, &owindows, owindows) {
+        if (con_is_docked(current->con)) {
+            ELOG("Cannot bisect a docked container, skipping.\n");
+            continue;
+        }
+        if (current->con->type == CT_WORKSPACE) {
+            ELOG("Bisecting only works on tabbed/stacked layouts, this is a workspace\n");
+            continue;
+        }
+
+        Con *parent = current->con->parent;
+        int num_children = con_num_children(parent);
+        if (num_children < 2) {
+            ELOG("Bisecting only works on tabbed/stacked layouts with more than one child\n");
+            continue;
+        }
+        if (parent->layout != L_TABBED && parent->layout != L_STACKED) {
+            ELOG("Bisecting only works on tabbed/stacked layouts, this is neither\n");
+            continue;
+        }
+
+        DLOG("bisecting: %p / %s\n", current->con, current->con->name);
+
+        /* create two new containers, same layout as parent (tabbed or stacked) */
+        Con *new_con_for_others = con_new(NULL, NULL);
+        Con *new_con_for_focused = con_new(NULL, NULL);
+
+        new_con_for_others->parent = parent;
+        new_con_for_others->layout = parent->layout;
+        new_con_for_others->last_split_layout = parent->last_split_layout;
+        new_con_for_others->percent = 0.5;
+
+        new_con_for_focused->parent = parent;
+        new_con_for_focused->layout = parent->layout;
+        new_con_for_focused->last_split_layout = parent->last_split_layout;
+        new_con_for_focused->percent = 0.5;
+
+        /* move the existing cons of the current parent into the two new cons */
+        DLOG("Moving cons\n");
+        Con *child;
+        while (!TAILQ_EMPTY(&(parent->nodes_head))) {
+            child = TAILQ_FIRST(&(parent->nodes_head));
+            con_detach(child);
+            if (child == current->con) {
+                con_attach(child, new_con_for_focused, true);
+                child->percent = 1.0;
+            } else {
+                con_attach(child, new_con_for_others, true);
+                child->percent = 1.0 / (num_children - 1.0);
+            }
+        }
+
+        DLOG("attaching containers\n");
+        con_attach(new_con_for_others, parent, false);
+        con_attach(new_con_for_focused, parent, false);
+
+        tree_flatten(croot);
+
+        DLOG("setting layout for parent\n");
+        con_set_layout(new_con_for_focused, (direction[0] == 'v' ? L_SPLITH : L_SPLITV));
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'split v|h|t|vertical|horizontal|toggle'.
  *
  */
