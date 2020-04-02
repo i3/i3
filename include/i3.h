@@ -62,6 +62,7 @@ extern TAILQ_HEAD(autostarts_head, Autostart) autostarts;
 extern TAILQ_HEAD(autostarts_always_head, Autostart) autostarts_always;
 extern TAILQ_HEAD(ws_assignments_head, Workspace_Assignment) ws_assignments;
 extern TAILQ_HEAD(assignments_head, Assignment) assignments;
+extern TAILQ_HEAD(layers_head, Layer) layers;
 extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;
 
 /* Color depth, visual id and colormap to use when creating windows and

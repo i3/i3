@@ -230,6 +230,8 @@ void parse_workspaces_json(char *json) {
      * JSON in chunks */
     struct workspaces_json_params params;
 
+    DLOG("TEST: json %s", json);
+
     free_workspaces();
 
     params.workspaces_walk = NULL;

@@ -48,6 +48,7 @@ state INITIAL:
   'title_align'                            -> TITLE_ALIGN
   'show_marks'                             -> SHOW_MARKS
   'workspace'                              -> WORKSPACE
+  'layer'                                  -> LAYER
   'ipc_socket', 'ipc-socket'               -> IPC_SOCKET
   'ipc_kill_timeout'                       -> IPC_KILL_TIMEOUT
   'restart_state'                          -> RESTART_STATE
@@ -284,6 +285,21 @@ state WORKSPACE_OUTPUT_WORD:
       -> call cfg_workspace($workspace, $output); WORKSPACE_OUTPUT_WORD
   end
       -> INITIAL
+
+# layer <name> <from> <to>
+state LAYER:
+  layer_name = word
+    -> LAYER_FROM
+
+state LAYER_FROM:
+  layer_from = number
+    -> LAYER_TO
+
+state LAYER_TO:
+  layer_to = number
+    -> call cfg_layer($layer_name, &layer_from, &layer_to); LAYER_TO
+  end
+    -> INITIAL
 
 # ipc-socket <path>
 state IPC_SOCKET:

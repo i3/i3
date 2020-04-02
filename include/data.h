@@ -213,6 +213,15 @@ struct Workspace_Assignment {
     ws_assignments;
 };
 
+struct Layer {
+    char *name;
+  long from;
+  long to;
+
+    TAILQ_ENTRY(Layer)
+    layers;
+};
+
 struct Ignore_Event {
     int sequence;
     int response_type;
@@ -646,6 +655,10 @@ struct Con {
     /** the workspace number, if this Con is of type CT_WORKSPACE and the
      * workspace is not a named workspace (for named workspaces, num == -1) */
     int num;
+
+  /** The layer_name, if this Con is of type CT_WORKSPACE. layer_name
+      == NULL if it is on the default layer. */
+  char *layer_name;
 
     struct Con *parent;
 

@@ -112,3 +112,6 @@ typedef struct i3_ipc_header {
 
 /** The tick event will be sent upon a tick IPC message */
 #define I3_IPC_EVENT_TICK (I3_IPC_EVENT_MASK | 7)
+
+/** The layer event will be triggered upon layer changes */
+#define I3_IPC_EVENT_LAYER (I3_IPC_EVENT_MASK | 8)

@@ -86,6 +86,9 @@ struct assignments_head assignments = TAILQ_HEAD_INITIALIZER(assignments);
  * output) */
 struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignments);
 
+/* The list of layer-lines */
+struct layers_head layers = TAILQ_HEAD_INITIALIZER(layers);
+
 /* We hope that those are supported and set them to true */
 bool xkb_supported = true;
 bool shape_supported = true;

@@ -25,6 +25,7 @@ state INITIAL:
   'layout' -> LAYOUT
   'append_layout' -> APPEND_LAYOUT
   'workspace' -> WORKSPACE
+  'layer' -> LAYER
   'focus' -> FOCUS
   'kill' -> KILL
   'open' -> call cmd_open()
@@ -133,6 +134,17 @@ state WORKSPACE:
       -> WORKSPACE_NUMBER
   workspace = string 
       -> call cmd_workspace_name($workspace, $no_auto_back_and_forth)
+
+state WORKSPACE_NUMBER:
+  workspace = string
+      -> call cmd_workspace_number($workspace, $no_auto_back_and_forth)
+
+
+# layer <name>
+state LAYER:
+  layer = string 
+      -> call cmd_layer_name($layer)
+
 
 state WORKSPACE_NUMBER:
   workspace = string

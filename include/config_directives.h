@@ -71,6 +71,7 @@ CFGFUN(color_single, const char *colorclass, const char *color);
 CFGFUN(floating_modifier, const char *modifiers);
 CFGFUN(default_border, const char *windowtype, const char *border, const long width);
 CFGFUN(workspace, const char *workspace, const char *output);
+CFGFUN(layer, const char *name, const long from, const long to);
 CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command);
 
 CFGFUN(enter_mode, const char *pango_markup, const char *mode);

@@ -160,6 +160,16 @@ static void got_mode_event(char *event) {
 }
 
 /*
+ * Called, when a layer event arrives
+ *
+ */
+static void got_layer_event(char *event) {
+    DLOG("TEST: Got layer event!\n");
+    parse_layer_json(event);
+    draw_bars(false);
+}
+
+/*
  * Called, when a barconfig_update event arrives (i.e. i3 changed the bar hidden_state or mode)
  *
  */
@@ -202,11 +212,15 @@ static void got_bar_config_update(char *event) {
 
 /* Data structure to easily call the event handlers later */
 handler_t event_handlers[] = {
-    &got_workspace_event,
-    &got_output_event,
-    &got_mode_event,
-    NULL,
-    &got_bar_config_update,
+  &got_workspace_event,      /* I3_IPC_EVENT_WORKSPACE */
+  &got_output_event,         /* I3_IPC_EVENT_OUTPUT */           
+  &got_mode_event,           /* I3_IPC_EVENT_MODE */             
+  NULL,                      /* I3_IPC_EVENT_WINDOW */           
+  &got_bar_config_update,    /* I3_IPC_EVENT_BARCONFIG_UPDATE */ 
+  NULL,                      /* I3_IPC_EVENT_BINDING */          
+  NULL,                      /* I3_IPC_EVENT_SHUTDOWN */         
+  NULL,                      /* I3_IPC_EVENT_TICK */             
+  &got_layer_event           /* I3_IPC_EVENT_LAYER */            
 };
 
 /*
@@ -356,6 +370,6 @@ void subscribe_events(void) {
     if (config.disable_ws) {
         i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"output\", \"mode\", \"barconfig_update\" ]");
     } else {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"workspace\", \"output\", \"mode\", \"barconfig_update\" ]");
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"workspace\", \"output\", \"mode\", \"barconfig_update\", \"layer\" ]");
     }
 }

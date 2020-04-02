@@ -143,3 +143,9 @@ void redraw_bars(void);
  *
  */
 void set_current_mode(struct mode *mode);
+
+/*
+ * Set the current layer
+ *
+ */
+void set_current_layer(layer *current);

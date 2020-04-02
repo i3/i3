@@ -91,6 +91,7 @@ extern TAILQ_HEAD(statusline_head, status_block)
 #include "util.h"
 #include "workspaces.h"
 #include "mode.h"
+#include "layer.h"
 #include "trayclients.h"
 #include "xcb.h"
 #include "configuration.h"

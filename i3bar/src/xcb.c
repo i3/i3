@@ -88,6 +88,13 @@ static mode binding;
 /* Indicates whether a new binding mode was recently activated */
 bool activated_mode = false;
 
+/* The current layer */
+static layer current_layer;
+
+/* Indicates whether a new layer was recently activated */
+bool activated_layer = false;
+
+
 /* The output in which the tray should be displayed. */
 static i3_output *output_for_tray;
 
@@ -114,6 +121,9 @@ struct xcb_colors_t {
     color_t binding_mode_bg;
     color_t binding_mode_fg;
     color_t binding_mode_border;
+    color_t layer_bg;
+    color_t layer_fg;
+    color_t layer_border;
 };
 struct xcb_colors_t colors;
 
@@ -418,6 +428,9 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(focus_ws_fg, "#FFFFFF");
     PARSE_COLOR(focus_ws_bg, "#285577");
     PARSE_COLOR(focus_ws_border, "#4c7899");
+    colors.layer_fg = draw_util_hex_to_color("#000000");
+    colors.layer_bg = draw_util_hex_to_color("#ADFF2F");
+    colors.layer_border = draw_util_hex_to_color("#9ACD32");
 #undef PARSE_COLOR
 
 #define PARSE_COLOR_FALLBACK(name, fallback)                                                         \
@@ -2082,6 +2095,17 @@ void draw_bars(bool unhide) {
             workspace_width += w;
         }
 
+        if (current_layer.name) {
+            workspace_width += logical_px(ws_spacing_px);
+
+            int w = predict_button_width(current_layer.name_width);
+            draw_button(&(outputs_walk->buffer), colors.layer_fg, colors.layer_bg,
+                        colors.layer_border, workspace_width, w, current_layer.name_width, current_layer.name);
+
+            unhide = true;
+            workspace_width += w;
+        }
+
         if (!TAILQ_EMPTY(&statusline_head)) {
             DLOG("Printing statusline!\n");
 
@@ -2149,4 +2173,20 @@ void set_current_mode(struct mode *current) {
     I3STRING_FREE(binding.name);
     binding = *current;
     activated_mode = binding.name != NULL;
+}
+
+
+/*
+ * Set the current layer
+ *
+ */
+void set_current_layer(layer *current) {
+  // free the old layer name
+  I3STRING_FREE(current_layer.name);
+  if (!current->name) {
+    DLOG("TEST: set_current_layer: default\n");
+  } else {
+    DLOG("TEST: set_current_layer: %s\n", i3string_as_utf8(current->name));
+  }
+  current_layer = *current;
 }

@@ -315,6 +315,12 @@ void cmd_title_format(I3_CMD, const char *format);
 void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name);
 
 /**
+ * Implementation of 'layer <name>'
+ *
+ */
+void cmd_layer_name(I3_CMD, const char *layer_name);
+
+/**
  * Implementation of 'bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]'
  *
  */
