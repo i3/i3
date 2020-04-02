@@ -17,10 +17,10 @@
 
 /* Name of current binding mode and its render width */
 struct layer {
-  i3String *name;
-  int name_width;
-  long long from;
-  long long to;
+    i3String *name;
+    int name_width;
+    long long from;
+    long long to;
 };
 
 typedef struct layer layer;

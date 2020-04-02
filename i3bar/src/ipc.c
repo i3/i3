@@ -212,15 +212,15 @@ static void got_bar_config_update(char *event) {
 
 /* Data structure to easily call the event handlers later */
 handler_t event_handlers[] = {
-  &got_workspace_event,      /* I3_IPC_EVENT_WORKSPACE */
-  &got_output_event,         /* I3_IPC_EVENT_OUTPUT */           
-  &got_mode_event,           /* I3_IPC_EVENT_MODE */             
-  NULL,                      /* I3_IPC_EVENT_WINDOW */           
-  &got_bar_config_update,    /* I3_IPC_EVENT_BARCONFIG_UPDATE */ 
-  NULL,                      /* I3_IPC_EVENT_BINDING */          
-  NULL,                      /* I3_IPC_EVENT_SHUTDOWN */         
-  NULL,                      /* I3_IPC_EVENT_TICK */             
-  &got_layer_event           /* I3_IPC_EVENT_LAYER */            
+    &got_workspace_event,   /* I3_IPC_EVENT_WORKSPACE */
+    &got_output_event,      /* I3_IPC_EVENT_OUTPUT */
+    &got_mode_event,        /* I3_IPC_EVENT_MODE */
+    NULL,                   /* I3_IPC_EVENT_WINDOW */
+    &got_bar_config_update, /* I3_IPC_EVENT_BARCONFIG_UPDATE */
+    NULL,                   /* I3_IPC_EVENT_BINDING */
+    NULL,                   /* I3_IPC_EVENT_SHUTDOWN */
+    NULL,                   /* I3_IPC_EVENT_TICK */
+    &got_layer_event        /* I3_IPC_EVENT_LAYER */
 };
 
 /*

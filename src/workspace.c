@@ -42,7 +42,6 @@ Con *get_existing_workspace_by_name(const char *name) {
  *
  */
 Con *get_existing_workspace_by_num(int num) {
-  DLOG("TEST: get_existing_workspace_by_num %d\n", num);
     Con *output, *workspace = NULL;
     TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
         GREP_FIRST(workspace, output_get_content(output), child->num == num);

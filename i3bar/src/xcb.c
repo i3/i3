@@ -94,7 +94,6 @@ static layer current_layer;
 /* Indicates whether a new layer was recently activated */
 bool activated_layer = false;
 
-
 /* The output in which the tray should be displayed. */
 static i3_output *output_for_tray;
 
@@ -2175,18 +2174,17 @@ void set_current_mode(struct mode *current) {
     activated_mode = binding.name != NULL;
 }
 
-
 /*
  * Set the current layer
  *
  */
 void set_current_layer(layer *current) {
-  // free the old layer name
-  I3STRING_FREE(current_layer.name);
-  if (!current->name) {
-    DLOG("TEST: set_current_layer: default\n");
-  } else {
-    DLOG("TEST: set_current_layer: %s\n", i3string_as_utf8(current->name));
-  }
-  current_layer = *current;
+    // free the old layer name
+    I3STRING_FREE(current_layer.name);
+    if (!current->name) {
+        DLOG("TEST: set_current_layer: default\n");
+    } else {
+        DLOG("TEST: set_current_layer: %s\n", i3string_as_utf8(current->name));
+    }
+    current_layer = *current;
 }

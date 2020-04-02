@@ -215,8 +215,8 @@ struct Workspace_Assignment {
 
 struct Layer {
     char *name;
-  long from;
-  long to;
+    long from;
+    long to;
 
     TAILQ_ENTRY(Layer)
     layers;
@@ -656,9 +656,9 @@ struct Con {
      * workspace is not a named workspace (for named workspaces, num == -1) */
     int num;
 
-  /** The layer_name, if this Con is of type CT_WORKSPACE. layer_name
+    /** The layer_name, if this Con is of type CT_WORKSPACE. layer_name
       == NULL if it is on the default layer. */
-  char *layer_name;
+    char *layer_name;
 
     struct Con *parent;
 

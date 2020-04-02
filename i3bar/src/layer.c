@@ -31,19 +31,18 @@ static int layer_string_cb(void *params_, const unsigned char *val, size_t len) 
     struct layer_json_params *params = (struct layer_json_params *)params_;
 
     if (!strcmp(params->cur_key, "name")) {
-      char *temp_str;
-      sasprintf(&temp_str, "%.*s", len, val);
-      params->layer->name = i3string_from_utf8(temp_str);
-      FREE(temp_str);
-      
-      FREE(params->cur_key);
-      return 1;
+        char *temp_str;
+        sasprintf(&temp_str, "%.*s", len, val);
+        params->layer->name = i3string_from_utf8(temp_str);
+        FREE(temp_str);
+
+        FREE(params->cur_key);
+        return 1;
     }
 
     FREE(params->cur_key);
     return 0;
 }
-
 
 /*
  * Parse a key.
@@ -69,17 +68,17 @@ static int layer_end_map_cb(void *params_) {
 }
 
 static int layer_integer_cb(void *params_, long long val) {
-  struct layer_json_params *params = (struct layer_json_params *)params_;
+    struct layer_json_params *params = (struct layer_json_params *)params_;
 
-  if (!strcmp(params->cur_key, "from")) {
-    params->layer->from = val;
-    return 1;
-  } else if (!strcmp(params->cur_key, "to")) {
-    params->layer->to = val;
-    return 1;
-  }
-    
-  return 0;
+    if (!strcmp(params->cur_key, "from")) {
+        params->layer->from = val;
+        return 1;
+    } else if (!strcmp(params->cur_key, "to")) {
+        params->layer->to = val;
+        return 1;
+    }
+
+    return 0;
 }
 
 /* A datastructure to pass all these callbacks to yajl */
@@ -89,7 +88,6 @@ static yajl_callbacks mode_callbacks = {
     .yajl_map_key = layer_map_key_cb,
     .yajl_end_map = layer_end_map_cb,
 };
-
 
 /*
  * Start parsing the received JSON string
