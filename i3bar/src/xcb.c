@@ -2083,23 +2083,23 @@ void draw_bars(bool unhide) {
             }
         }
 
-        if (binding.name && !config.disable_binding_mode_indicator) {
-            workspace_width += logical_px(ws_spacing_px);
-
-            int w = predict_button_width(binding.name_width);
-            draw_button(&(outputs_walk->buffer), colors.binding_mode_fg, colors.binding_mode_bg,
-                        colors.binding_mode_border, workspace_width, w, binding.name_width, binding.name);
-
-            unhide = true;
-            workspace_width += w;
-        }
-
         if (current_layer.name) {
             workspace_width += logical_px(ws_spacing_px);
 
             int w = predict_button_width(current_layer.name_width);
             draw_button(&(outputs_walk->buffer), colors.layer_fg, colors.layer_bg,
                         colors.layer_border, workspace_width, w, current_layer.name_width, current_layer.name);
+
+            unhide = true;
+            workspace_width += w;
+        }
+
+        if (binding.name && !config.disable_binding_mode_indicator) {
+            workspace_width += logical_px(ws_spacing_px);
+
+            int w = predict_button_width(binding.name_width);
+            draw_button(&(outputs_walk->buffer), colors.binding_mode_fg, colors.binding_mode_bg,
+                        colors.binding_mode_border, workspace_width, w, binding.name_width, binding.name);
 
             unhide = true;
             workspace_width += w;
