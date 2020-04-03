@@ -404,7 +404,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *no_
             // the switch has to be mapped to the default layer -> subtract from
             parsed_num -= current_layer->from - 1;
         }
-        DLOG("TEST: layer \"%s\": mapping %ld to %ld\n", current_layer->name, old_num, parsed_num);
+        DLOG("layer \"%s\": mapping %ld to %ld\n", current_layer->name, old_num, parsed_num);
     }
 
     Con *ws = get_existing_workspace_by_num(parsed_num);
@@ -929,7 +929,7 @@ void cmd_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_a
             // the switch has to be mapped to the default layer -> subtract from
             parsed_num -= current_layer->from - 1;
         }
-        DLOG("TEST: layer \"%s\": mapping %ld to %ld\n", current_layer->name, old_num, parsed_num);
+        DLOG("layer \"%s\": mapping %ld to %ld\n", current_layer->name, old_num, parsed_num);
     }
 
     Con *workspace = get_existing_workspace_by_num(parsed_num);
@@ -2213,7 +2213,7 @@ static void switch_layer(struct Layer *layer) {
 void cmd_layer_name(I3_CMD, const char *layer_name) {
     if (!strcmp(layer_name, "default")) {
         switch_layer(NULL);
-        DLOG("TEST: switched to layer \"default\"\n");
+        DLOG("Switched to layer \"default\"\n");
         ysuccess(true);
         return;
     }
@@ -2227,12 +2227,11 @@ void cmd_layer_name(I3_CMD, const char *layer_name) {
     }
 
     if (layer_found != NULL) {
-        DLOG("TEST: layer \"%s\" found: %ld - %ld!\n", layer_found->name, layer_found->from, layer_found->to);
         switch_layer(layer_found);
         ysuccess(true);
         return;
     } else {
-        DLOG("TEST: layer \"%s\" not found!\n", layer_name);
+        DLOG("Layer \"%s\" not found!\n", layer_name);
         ysuccess(false);
         return;
     }

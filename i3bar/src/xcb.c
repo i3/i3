@@ -2219,10 +2219,5 @@ void set_current_mode(struct mode *current) {
 void set_current_layer(layer *current) {
     // free the old layer name
     I3STRING_FREE(current_layer.name);
-    if (!current->name) {
-        DLOG("TEST: set_current_layer: default\n");
-    } else {
-        DLOG("TEST: set_current_layer: %s\n", i3string_as_utf8(current->name));
-    }
     current_layer = *current;
 }

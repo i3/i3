@@ -164,7 +164,7 @@ static void got_mode_event(char *event) {
  *
  */
 static void got_layer_event(char *event) {
-    DLOG("TEST: Got layer event!\n");
+    DLOG("Got layer event!\n");
     parse_layer_json(event);
     draw_bars(false);
 }
