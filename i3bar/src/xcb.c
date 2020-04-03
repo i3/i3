@@ -123,6 +123,15 @@ struct xcb_colors_t {
     color_t layer_bg;
     color_t layer_fg;
     color_t layer_border;
+    color_t layer_focus_bg;
+    color_t layer_focus_fg;
+    color_t layer_focus_border;
+    color_t layer_active_bg;
+    color_t layer_active_fg;
+    color_t layer_active_border;
+    color_t layer_inactive_bg;
+    color_t layer_inactive_fg;
+    color_t layer_inactive_border;
 };
 struct xcb_colors_t colors;
 
@@ -430,6 +439,15 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     colors.layer_fg = draw_util_hex_to_color("#000000");
     colors.layer_bg = draw_util_hex_to_color("#ADFF2F");
     colors.layer_border = draw_util_hex_to_color("#9ACD32");
+    colors.layer_focus_fg = draw_util_hex_to_color("#FFFFFF");
+    colors.layer_focus_bg = draw_util_hex_to_color("#36772F");
+    colors.layer_focus_border = draw_util_hex_to_color("#2F6729");
+    colors.layer_active_fg = draw_util_hex_to_color("#FFFFFF");
+    colors.layer_active_bg = draw_util_hex_to_color("#779D72");
+    colors.layer_active_border = draw_util_hex_to_color("#35492C");
+    colors.layer_inactive_fg = draw_util_hex_to_color("#BEBEBE");
+    colors.layer_inactive_bg = draw_util_hex_to_color("#779D72");
+    colors.layer_inactive_border = draw_util_hex_to_color("#35492C");
 #undef PARSE_COLOR
 
 #define PARSE_COLOR_FALLBACK(name, fallback)                                                         \
@@ -2054,15 +2072,35 @@ void draw_bars(bool unhide) {
                 color_t fg_color = colors.inactive_ws_fg;
                 color_t bg_color = colors.inactive_ws_bg;
                 color_t border_color = colors.inactive_ws_border;
+
+                int is_layer = current_layer.name && ws_walk->num >= current_layer.from && ws_walk->num <= current_layer.to;
+                if (is_layer) {
+                    fg_color = colors.layer_inactive_fg;
+                    bg_color = colors.layer_inactive_bg;
+                    border_color = colors.layer_inactive_border;
+                }
+
                 if (ws_walk->visible) {
                     if (!ws_walk->focused) {
-                        fg_color = colors.active_ws_fg;
-                        bg_color = colors.active_ws_bg;
-                        border_color = colors.active_ws_border;
+                        if (!is_layer) {
+                            fg_color = colors.active_ws_fg;
+                            bg_color = colors.active_ws_bg;
+                            border_color = colors.active_ws_border;
+                        } else {
+                            fg_color = colors.layer_active_fg;
+                            bg_color = colors.layer_active_bg;
+                            border_color = colors.layer_active_border;
+                        }
                     } else {
-                        fg_color = colors.focus_ws_fg;
-                        bg_color = colors.focus_ws_bg;
-                        border_color = colors.focus_ws_border;
+                        if (!is_layer) {
+                            fg_color = colors.focus_ws_fg;
+                            bg_color = colors.focus_ws_bg;
+                            border_color = colors.focus_ws_border;
+                        } else {
+                            fg_color = colors.layer_focus_fg;
+                            bg_color = colors.layer_focus_bg;
+                            border_color = colors.layer_focus_border;
+                        }
                     }
                 }
                 if (ws_walk->urgent) {
