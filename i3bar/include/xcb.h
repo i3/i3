@@ -48,6 +48,18 @@ struct xcb_color_strings_t {
     char *binding_mode_bg;
     char *binding_mode_fg;
     char *binding_mode_border;
+    char *layer_bg;
+    char *layer_fg;
+    char *layer_border;
+    char *focus_ws_layer_bg;
+    char *focus_ws_layer_fg;
+    char *focus_ws_layer_border;
+    char *active_ws_layer_bg;
+    char *active_ws_layer_fg;
+    char *active_ws_layer_border;
+    char *inactive_ws_layer_bg;
+    char *inactive_ws_layer_fg;
+    char *inactive_ws_layer_border;
 };
 
 typedef struct xcb_colors_t xcb_colors_t;

@@ -255,6 +255,18 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
     COLOR(binding_mode_border, binding_mode_border);
     COLOR(binding_mode_bg, binding_mode_bg);
     COLOR(binding_mode_text, binding_mode_fg);
+    COLOR(layer_bg, layer_bg);
+    COLOR(layer_text, layer_fg);
+    COLOR(layer_border, layer_border);
+    COLOR(focus_ws_layer_bg, focus_ws_layer_bg);
+    COLOR(focus_ws_layer_text, focus_ws_layer_fg);
+    COLOR(focus_ws_layer_border, focus_ws_layer_border);
+    COLOR(active_ws_layer_bg, active_ws_layer_bg);
+    COLOR(active_ws_layer_text, active_ws_layer_fg);
+    COLOR(active_ws_layer_border, active_ws_layer_border);
+    COLOR(inactive_ws_layer_bg, inactive_ws_layer_bg);
+    COLOR(inactive_ws_layer_text, inactive_ws_layer_fg);
+    COLOR(inactive_ws_layer_border, inactive_ws_layer_border);
 
     printf("got unexpected string %.*s for cur_key = %s\n", len, val, cur_key);
 
@@ -423,5 +435,18 @@ void free_colors(struct xcb_color_strings_t *colors) {
     FREE_COLOR(binding_mode_fg);
     FREE_COLOR(binding_mode_bg);
     FREE_COLOR(binding_mode_border);
+    FREE_COLOR(layer_bg);
+    FREE_COLOR(layer_fg);
+    FREE_COLOR(layer_border);
+    FREE_COLOR(focus_ws_layer_bg);
+    FREE_COLOR(focus_ws_layer_fg);
+    FREE_COLOR(focus_ws_layer_border);
+    FREE_COLOR(active_ws_layer_bg);
+    FREE_COLOR(active_ws_layer_fg);
+    FREE_COLOR(active_ws_layer_border);
+    FREE_COLOR(inactive_ws_layer_bg);
+    FREE_COLOR(inactive_ws_layer_fg);
+    FREE_COLOR(inactive_ws_layer_border);
+
 #undef FREE_COLOR
 }

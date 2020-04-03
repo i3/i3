@@ -123,15 +123,15 @@ struct xcb_colors_t {
     color_t layer_bg;
     color_t layer_fg;
     color_t layer_border;
-    color_t layer_focus_bg;
-    color_t layer_focus_fg;
-    color_t layer_focus_border;
-    color_t layer_active_bg;
-    color_t layer_active_fg;
-    color_t layer_active_border;
-    color_t layer_inactive_bg;
-    color_t layer_inactive_fg;
-    color_t layer_inactive_border;
+    color_t focus_ws_layer_bg;
+    color_t focus_ws_layer_fg;
+    color_t focus_ws_layer_border;
+    color_t active_ws_layer_bg;
+    color_t active_ws_layer_fg;
+    color_t active_ws_layer_border;
+    color_t inactive_ws_layer_bg;
+    color_t inactive_ws_layer_fg;
+    color_t inactive_ws_layer_border;
 };
 struct xcb_colors_t colors;
 
@@ -436,18 +436,18 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(focus_ws_fg, "#FFFFFF");
     PARSE_COLOR(focus_ws_bg, "#285577");
     PARSE_COLOR(focus_ws_border, "#4c7899");
-    colors.layer_fg = draw_util_hex_to_color("#000000");
-    colors.layer_bg = draw_util_hex_to_color("#ADFF2F");
-    colors.layer_border = draw_util_hex_to_color("#9ACD32");
-    colors.layer_focus_fg = draw_util_hex_to_color("#FFFFFF");
-    colors.layer_focus_bg = draw_util_hex_to_color("#36772F");
-    colors.layer_focus_border = draw_util_hex_to_color("#2F6729");
-    colors.layer_active_fg = draw_util_hex_to_color("#FFFFFF");
-    colors.layer_active_bg = draw_util_hex_to_color("#779D72");
-    colors.layer_active_border = draw_util_hex_to_color("#35492C");
-    colors.layer_inactive_fg = draw_util_hex_to_color("#BEBEBE");
-    colors.layer_inactive_bg = draw_util_hex_to_color("#779D72");
-    colors.layer_inactive_border = draw_util_hex_to_color("#35492C");
+    PARSE_COLOR(layer_fg, "#000000");
+    PARSE_COLOR(layer_bg, "#ADFF2F");
+    PARSE_COLOR(layer_border, "#9ACD32");
+    PARSE_COLOR(focus_ws_layer_fg, "#FFFFFF");
+    PARSE_COLOR(focus_ws_layer_bg, "#36772F");
+    PARSE_COLOR(focus_ws_layer_border, "#2F6729");
+    PARSE_COLOR(active_ws_layer_fg, "#FFFFFF");
+    PARSE_COLOR(active_ws_layer_bg, "#779D72");
+    PARSE_COLOR(active_ws_layer_border, "#35492C");
+    PARSE_COLOR(inactive_ws_layer_fg, "#BEBEBE");
+    PARSE_COLOR(inactive_ws_layer_bg, "#779D72");
+    PARSE_COLOR(inactive_ws_layer_border, "#35492C");
 #undef PARSE_COLOR
 
 #define PARSE_COLOR_FALLBACK(name, fallback)                                                         \
@@ -2075,9 +2075,9 @@ void draw_bars(bool unhide) {
 
                 int is_layer = current_layer.name && ws_walk->num >= current_layer.from && ws_walk->num <= current_layer.to;
                 if (is_layer) {
-                    fg_color = colors.layer_inactive_fg;
-                    bg_color = colors.layer_inactive_bg;
-                    border_color = colors.layer_inactive_border;
+                    fg_color = colors.inactive_ws_layer_fg;
+                    bg_color = colors.inactive_ws_layer_bg;
+                    border_color = colors.inactive_ws_layer_border;
                 }
 
                 if (ws_walk->visible) {
@@ -2087,9 +2087,9 @@ void draw_bars(bool unhide) {
                             bg_color = colors.active_ws_bg;
                             border_color = colors.active_ws_border;
                         } else {
-                            fg_color = colors.layer_active_fg;
-                            bg_color = colors.layer_active_bg;
-                            border_color = colors.layer_active_border;
+                            fg_color = colors.active_ws_layer_fg;
+                            bg_color = colors.active_ws_layer_bg;
+                            border_color = colors.active_ws_layer_border;
                         }
                     } else {
                         if (!is_layer) {
@@ -2097,9 +2097,9 @@ void draw_bars(bool unhide) {
                             bg_color = colors.focus_ws_bg;
                             border_color = colors.focus_ws_border;
                         } else {
-                            fg_color = colors.layer_focus_fg;
-                            bg_color = colors.layer_focus_bg;
-                            border_color = colors.layer_focus_border;
+                            fg_color = colors.focus_ws_layer_fg;
+                            bg_color = colors.focus_ws_layer_bg;
+                            border_color = colors.focus_ws_layer_border;
                         }
                     }
                 }
