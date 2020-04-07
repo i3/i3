@@ -1409,6 +1409,11 @@ button4::
     Scroll wheel up.
 button5::
     Scroll wheel down.
+button6::
+    Scroll wheel right.
+button7::
+    Scroll wheel left.
+    
 
 Please note that the old +wheel_up_cmd+ and +wheel_down_cmd+ commands are deprecated
 and will be removed in a future release. We strongly recommend using the more general
