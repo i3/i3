@@ -191,6 +191,7 @@ state CRITERIA:
   ctype = 'title'         -> CRITERION
   ctype = 'urgent'        -> CRITERION
   ctype = 'workspace'     -> CRITERION
+  ctype = 'machine'     -> CRITERION
   ctype = 'floating_from' -> CRITERION_FROM
   ctype = 'tiling_from'   -> CRITERION_FROM
   ctype = 'tiling', 'floating'

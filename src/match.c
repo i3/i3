@@ -47,6 +47,7 @@ bool match_is_empty(Match *match) {
             match->instance == NULL &&
             match->window_role == NULL &&
             match->workspace == NULL &&
+            match->machine == NULL &&
             match->urgent == U_DONTCHECK &&
             match->id == XCB_NONE &&
             match->window_type == UINT32_MAX &&
@@ -129,6 +130,8 @@ bool match_matches_window(Match *match, i3Window *window) {
             return false;
         }
     }
+
+    CHECK_WINDOW_FIELD(machine, machine, str);
 
     Con *con = NULL;
     if (match->urgent == U_LATEST) {
@@ -273,6 +276,7 @@ void match_free(Match *match) {
     regex_free(match->mark);
     regex_free(match->window_role);
     regex_free(match->workspace);
+    regex_free(match->machine);
 }
 
 /*
@@ -387,6 +391,12 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
     if (strcmp(ctype, "workspace") == 0) {
         regex_free(match->workspace);
         match->workspace = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "machine") == 0) {
+        regex_free(match->machine);
+        match->machine = regex_new(cvalue);
         return;
     }
 
