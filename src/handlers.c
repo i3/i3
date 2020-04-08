@@ -1002,8 +1002,6 @@ static bool handle_hints(xcb_window_t window, xcb_get_property_reply_t *reply) {
     }
 
     bool urgency_hint;
-    if (reply == NULL)
-        reply = xcb_get_property_reply(conn, xcb_icccm_get_wm_hints(conn, window), NULL);
     window_update_hints(con->window, reply, &urgency_hint);
     con_set_urgency(con, urgency_hint);
     tree_render();
@@ -1026,13 +1024,6 @@ static bool handle_transient_for(xcb_window_t window, xcb_get_property_reply_t *
         return false;
     }
 
-    if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, XCB_ATOM_WM_TRANSIENT_FOR, XCB_ATOM_WINDOW, 0, 32),
-                                      NULL);
-        if (prop == NULL)
-            return false;
-    }
-
     window_update_transient_for(con->window, prop);
 
     return true;
@@ -1047,13 +1038,6 @@ static bool handle_clientleader_change(xcb_window_t window, xcb_get_property_rep
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;
-
-    if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, A_WM_CLIENT_LEADER, XCB_ATOM_WINDOW, 0, 32),
-                                      NULL);
-        if (prop == NULL)
-            return false;
-    }
 
     window_update_leader(con->window, prop);
 
@@ -1141,14 +1125,6 @@ static bool handle_class_change(xcb_window_t window, xcb_get_property_reply_t *p
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;
 
-    if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 0, 32),
-                                      NULL);
-
-        if (prop == NULL)
-            return false;
-    }
-
     window_update_class(con->window, prop);
 
     con = remanage_window(con);
@@ -1164,14 +1140,6 @@ static bool handle_motif_hints_change(xcb_window_t window, xcb_get_property_repl
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;
-
-    if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, A__MOTIF_WM_HINTS, XCB_GET_PROPERTY_TYPE_ANY, 0, 5 * sizeof(uint64_t)),
-                                      NULL);
-
-        if (prop == NULL)
-            return false;
-    }
 
     border_style_t motif_border_style;
     window_update_motif_hints(con->window, prop, &motif_border_style);
@@ -1196,23 +1164,6 @@ static bool handle_strut_partial_change(xcb_window_t window, xcb_get_property_re
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL) {
         return false;
-    }
-
-    if (prop == NULL) {
-        xcb_generic_error_t *err = NULL;
-        xcb_get_property_cookie_t strut_cookie = xcb_get_property(conn, false, window, A__NET_WM_STRUT_PARTIAL,
-                                                                  XCB_GET_PROPERTY_TYPE_ANY, 0, UINT32_MAX);
-        prop = xcb_get_property_reply(conn, strut_cookie, &err);
-
-        if (err != NULL) {
-            DLOG("got error when getting strut partial property: %d\n", err->error_code);
-            free(err);
-            return false;
-        }
-
-        if (prop == NULL) {
-            return false;
-        }
     }
 
     DLOG("That is con %p / %s\n", con, con->name);
