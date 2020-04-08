@@ -1265,6 +1265,7 @@ void property_handlers_init(void) {
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
     struct property_handler_t *handler = NULL;
     xcb_get_property_reply_t *propr = NULL;
+    xcb_generic_error_t *err = NULL;
 
     for (size_t c = 0; c < NUM_HANDLERS; c++) {
         if (property_handlers[c].atom != atom)
@@ -1281,7 +1282,12 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
 
     if (state != XCB_PROPERTY_DELETE) {
         xcb_get_property_cookie_t cookie = xcb_get_property(conn, 0, window, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, handler->long_len);
-        propr = xcb_get_property_reply(conn, cookie, 0);
+        propr = xcb_get_property_reply(conn, cookie, &err);
+        if (err != NULL) {
+            DLOG("got error %d when getting property of atom %d\n", err->error_code, atom);
+            FREE(err);
+            return;
+        }
     }
 
     /* the handler will free() the reply unless it returns false */
