@@ -69,4 +69,16 @@ cmp_tree(
         cmd 'focus parent, focus next sibling';
     });
 
+# See #3997
+cmd 'workspace 2';
+open_window;
+cmd 'workspace 1';
+open_window;
+cmd 'focus parent, focus parent, focus next sibling, focus prev sibling';
+does_i3_live;
+is(focused_ws, '1', 'Back and forth between workspaces');
+
+cmd 'focus parent, focus parent, focus next sibling';
+is(focused_ws, '2', "Workspace 2 focused with 'focus next sibling'");
+
 done_testing;
