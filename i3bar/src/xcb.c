@@ -677,9 +677,6 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
             continue;
         }
         if (output->bar.id == event->window) {
-            if (output->visible == visible) {
-                return;
-            }
             output->visible = visible;
         }
         num_visible += output->visible;
@@ -687,10 +684,7 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
 
     if (num_visible == 0) {
         stop_child();
-    } else if (num_visible == visible) {
-        /* Wake the child only when transitioning from 0 to 1 visible bar.
-         * We cannot transition from 0 to 2 or more visible bars at once since
-         * visibility events are delivered to each window separately */
+    } else {
         cont_child();
     }
 }
