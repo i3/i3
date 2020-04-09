@@ -48,7 +48,11 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
 
     bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
     if (!res) {
-        LOG("No second container in this direction found.\n");
+        DLOG("No second container in this direction found.\n");
+        return false;
+    }
+    if (first->fullscreen_mode != second->fullscreen_mode) {
+        DLOG("Avoiding resize between containers with different fullscreen modes, %d != %d\n", first->fullscreen_mode, second->fullscreen_mode);
         return false;
     }
 
