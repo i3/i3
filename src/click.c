@@ -275,11 +275,6 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         goto done;
     }
 
-    if (fs) {
-        /* Fullscreen container exists, avoid resizes */
-        goto done;
-    }
-
     /* 7: floating modifier pressed, initiate a resize */
     if (dest == CLICK_INSIDE && mod_pressed && event->detail == XCB_BUTTON_CLICK_RIGHT) {
         if (floating_mod_on_tiled_client(con, event))
