@@ -151,7 +151,7 @@ static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click
  * functions for resizing/dragging.
  *
  */
-static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod_pressed, const click_destination_t dest) {
+static void route_click(Con *con, xcb_button_press_event_t *event, const bool mod_pressed, const click_destination_t dest) {
     DLOG("--> click properties: mod = %d, destination = %d\n", mod_pressed, dest);
     DLOG("--> OUTCOME = %p\n", con);
     DLOG("type = %d, name = %s\n", con->type, con->name);
@@ -178,7 +178,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
             xcb_flush(conn);
 
             command_result_free(result);
-            return 0;
+            return;
         }
     }
 
@@ -237,7 +237,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         /* 4: floating_modifier plus left mouse button drags */
         if (mod_pressed && event->detail == XCB_BUTTON_CLICK_LEFT) {
             floating_drag_window(floatingcon, event, false);
-            return 1;
+            return;
         }
 
         /*  5: resize (floating) if this was a (left or right) click on the
@@ -246,7 +246,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         if (mod_pressed && event->detail == XCB_BUTTON_CLICK_RIGHT) {
             DLOG("floating resize due to floatingmodifier\n");
             floating_resize_window(floatingcon, proportional, event);
-            return 1;
+            return;
         }
 
         if (!in_stacked && dest == CLICK_DECORATION &&
@@ -260,20 +260,20 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         if (dest == CLICK_DECORATION && event->detail == XCB_BUTTON_CLICK_RIGHT) {
             DLOG("floating resize due to decoration right click\n");
             floating_resize_window(floatingcon, proportional, event);
-            return 1;
+            return;
         }
 
         if (dest == CLICK_BORDER && is_left_or_right_click) {
             DLOG("floating resize due to border click\n");
             floating_resize_window(floatingcon, proportional, event);
-            return 1;
+            return;
         }
 
         /* 6: dragging, if this was a click on a decoration (which did not lead
          * to a resize) */
         if (dest == CLICK_DECORATION && event->detail == XCB_BUTTON_CLICK_LEFT) {
             floating_drag_window(floatingcon, event, !was_focused);
-            return 1;
+            return;
         }
 
         goto done;
@@ -284,7 +284,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         floating_mod_on_tiled_client(con, event);
         /* Avoid propagating events to clients, since the user expects
          * $mod + click to be handled by i3. */
-        return 1;
+        return;
     }
     /* 8: otherwise, check for border/decoration clicks and resize */
     else if ((dest == CLICK_BORDER || dest == CLICK_DECORATION) &&
@@ -301,8 +301,6 @@ done:
     xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
     xcb_flush(conn);
     tree_render();
-
-    return 0;
 }
 
 /*
@@ -313,7 +311,7 @@ done:
  * Then, route_click is called on the appropriate con.
  *
  */
-int handle_button_press(xcb_button_press_event_t *event) {
+void handle_button_press(xcb_button_press_event_t *event) {
     Con *con;
     DLOG("Button %d (state %d) %s on window 0x%08x (child 0x%08x) at (%d, %d) (root %d, %d)\n",
          event->detail, event->state, (event->response_type == XCB_BUTTON_PRESS ? "press" : "release"),
@@ -325,8 +323,10 @@ int handle_button_press(xcb_button_press_event_t *event) {
     const uint32_t mod = (config.floating_modifier & 0xFFFF);
     const bool mod_pressed = (mod != 0 && (event->state & mod) == mod);
     DLOG("floating_mod = %d, detail = %d\n", mod_pressed, event->detail);
-    if ((con = con_by_window_id(event->event)))
-        return route_click(con, event, mod_pressed, CLICK_INSIDE);
+    if ((con = con_by_window_id(event->event))) {
+        route_click(con, event, mod_pressed, CLICK_INSIDE);
+        return;
+    }
 
     if (!(con = con_by_frame_id(event->event))) {
         /* Run bindings on the root window as well, see #2097. We only run it
@@ -354,15 +354,15 @@ int handle_button_press(xcb_button_press_event_t *event) {
                     workspace_show(ws);
                     tree_render();
                 }
-                return 1;
+                return;
             }
-            return 0;
+            return;
         }
 
         ELOG("Clicked into unknown window?!\n");
         xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
         xcb_flush(conn);
-        return 0;
+        return;
     }
 
     /* Check if the click was on the decoration of a child */
@@ -371,13 +371,15 @@ int handle_button_press(xcb_button_press_event_t *event) {
         if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
             continue;
 
-        return route_click(child, event, mod_pressed, CLICK_DECORATION);
+        route_click(child, event, mod_pressed, CLICK_DECORATION);
+        return;
     }
 
     if (event->child != XCB_NONE) {
         DLOG("event->child not XCB_NONE, so this is an event which originated from a click into the application, but the application did not handle it.\n");
-        return route_click(con, event, mod_pressed, CLICK_INSIDE);
+        route_click(con, event, mod_pressed, CLICK_INSIDE);
+        return;
     }
 
-    return route_click(con, event, mod_pressed, CLICK_BORDER);
+    route_click(con, event, mod_pressed, CLICK_BORDER);
 }
