@@ -629,3 +629,16 @@ CLEANFILES = \
 	i3-command-parser.stamp \
 	i3-config-parser.stamp \
 	anyevent-i3.stamp
+
+################################################################################
+# Language Server support
+################################################################################
+
+# Recursively run make through https://github.com/rizsotto/Bear,
+# which generates a compile_commands.json file in the source directory.
+# This is useful for running e.g. the clangd or ccls language servers:
+# https://clang.llvm.org/extra/clangd/
+# https://github.com/MaskRay/ccls/wiki
+.PHONY: bear
+bear: clean
+	bear -o $(top_srcdir)/compile_commands.json $(MAKE) $(MAKEFLAGS)
