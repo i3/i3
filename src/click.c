@@ -160,9 +160,6 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
     if (con->parent->type == CT_DOCKAREA)
         goto done;
 
-    const bool is_left_or_right_click = (event->detail == XCB_BUTTON_CLICK_LEFT ||
-                                         event->detail == XCB_BUTTON_CLICK_RIGHT);
-
     /* if the user has bound an action to this click, it should override the
      * default behavior. */
     if (dest == CLICK_DECORATION || dest == CLICK_INSIDE || dest == CLICK_BORDER) {
@@ -207,14 +204,16 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
     const bool proportional = (event->state & XCB_KEY_BUT_MASK_SHIFT) == XCB_KEY_BUT_MASK_SHIFT;
     const bool in_stacked = (con->parent->layout == L_STACKED || con->parent->layout == L_TABBED);
     const bool was_focused = focused == con;
+    const bool is_left_click = (event->detail == XCB_BUTTON_CLICK_LEFT);
+    const bool is_right_click = (event->detail == XCB_BUTTON_CLICK_RIGHT);
+    const bool is_left_or_right_click = (is_left_click || is_right_click);
+    const bool is_scroll = (event->detail == XCB_BUTTON_SCROLL_UP ||
+                            event->detail == XCB_BUTTON_SCROLL_DOWN ||
+                            event->detail == XCB_BUTTON_SCROLL_LEFT ||
+                            event->detail == XCB_BUTTON_SCROLL_RIGHT);
 
     /* 1: see if the user scrolled on the decoration of a stacked/tabbed con */
-    if (in_stacked &&
-        dest == CLICK_DECORATION &&
-        (event->detail == XCB_BUTTON_SCROLL_UP ||
-         event->detail == XCB_BUTTON_SCROLL_DOWN ||
-         event->detail == XCB_BUTTON_SCROLL_LEFT ||
-         event->detail == XCB_BUTTON_SCROLL_RIGHT)) {
+    if (in_stacked && dest == CLICK_DECORATION && is_scroll) {
         DLOG("Scrolling on a window decoration\n");
         /* Use the focused child of the tabbed / stacked container, not the
          * container the user scrolled on. */
@@ -235,7 +234,7 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
     Con *fs = con_get_fullscreen_covering_ws(ws);
     if (floatingcon != NULL && fs != con) {
         /* 4: floating_modifier plus left mouse button drags */
-        if (mod_pressed && event->detail == XCB_BUTTON_CLICK_LEFT) {
+        if (mod_pressed && is_left_click) {
             floating_drag_window(floatingcon, event, false);
             return;
         }
@@ -243,7 +242,7 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
         /*  5: resize (floating) if this was a (left or right) click on the
          * left/right/bottom border, or a right click on the decoration.
          * also try resizing (tiling) if possible */
-        if (mod_pressed && event->detail == XCB_BUTTON_CLICK_RIGHT) {
+        if (mod_pressed && is_right_click) {
             DLOG("floating resize due to floatingmodifier\n");
             floating_resize_window(floatingcon, proportional, event);
             return;
@@ -257,7 +256,7 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
                 goto done;
         }
 
-        if (dest == CLICK_DECORATION && event->detail == XCB_BUTTON_CLICK_RIGHT) {
+        if (dest == CLICK_DECORATION && is_right_click) {
             DLOG("floating resize due to decoration right click\n");
             floating_resize_window(floatingcon, proportional, event);
             return;
@@ -271,7 +270,7 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
 
         /* 6: dragging, if this was a click on a decoration (which did not lead
          * to a resize) */
-        if (dest == CLICK_DECORATION && event->detail == XCB_BUTTON_CLICK_LEFT) {
+        if (dest == CLICK_DECORATION && is_left_click) {
             floating_drag_window(floatingcon, event, !was_focused);
             return;
         }
@@ -280,7 +279,7 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
     }
 
     /* 7: floating modifier pressed, initiate a resize */
-    if (dest == CLICK_INSIDE && mod_pressed && event->detail == XCB_BUTTON_CLICK_RIGHT) {
+    if (dest == CLICK_INSIDE && mod_pressed && is_right_click) {
         floating_mod_on_tiled_client(con, event);
         /* Avoid propagating events to clients, since the user expects
          * $mod + click to be handled by i3. */
