@@ -138,7 +138,7 @@ bool scratchpad_show(Con *con) {
             floating->scratchpad_state != SCRATCHPAD_NONE) {
             DLOG("Found a visible scratchpad window on another workspace,\n");
             DLOG("moving it to this workspace: con = %p\n", walk_con);
-            con_move_to_workspace(walk_con, focused_ws, true, false, false);
+            con_move_to_workspace(floating, focused_ws, true, false, false);
             con_activate(con_descend_focused(walk_con));
             return true;
         }
