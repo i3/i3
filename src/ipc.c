@@ -224,7 +224,7 @@ IPC_HANDLER(run_command) {
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
     char *command = sstrndup((const char *)message, message_size);
-    LOG("IPC: received: *%s*\n", command);
+    LOG("IPC: received: *%.4000s*\n", command);
     yajl_gen gen = yajl_gen_alloc(NULL);
 
     CommandResult *result = parse_command(command, gen, client);
