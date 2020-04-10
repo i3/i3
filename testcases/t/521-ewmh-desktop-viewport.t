@@ -50,7 +50,10 @@ sub get_desktop_viewport {
     return unpack ("L$len", $reply->{value});
 }
 
-# initialize the workspaces
+################################################################################
+# Initialize the workspaces
+################################################################################
+
 cmd 'workspace 1';
 cmd 'workspace 0';
 
@@ -59,6 +62,10 @@ my @desktop_viewport = get_desktop_viewport;
 
 is_deeply(\@desktop_viewport, \@expected_viewport,
     '_NET_DESKTOP_VIEWPORT should be an array of x/y coordinate pairs for the upper left corner of the respective outputs of the workspaces');
+
+################################################################################
+# Create workspace
+################################################################################
 
 cmd 'workspace 0';
 open_window;
@@ -70,6 +77,10 @@ cmd 'workspace 3';
 is_deeply(\@desktop_viewport, \@expected_viewport,
     'it should be updated when a new workspace appears');
 
+################################################################################
+# Rename workspace
+################################################################################
+
 cmd 'rename workspace 3 to 2';
 
 @expected_viewport = (0, 0, 0, 0, 1024, 0);
@@ -78,6 +89,10 @@ cmd 'rename workspace 3 to 2';
 is_deeply(\@desktop_viewport, \@expected_viewport,
     'it should stay up to date when a workspace is renamed');
 
+################################################################################
+# Empty workspace
+################################################################################
+
 cmd 'workspace 0';
 
 @expected_viewport = (0, 0, 1024, 0);
@@ -85,5 +100,21 @@ cmd 'workspace 0';
 
 is_deeply(\@desktop_viewport, \@expected_viewport,
     'it should be updated when a workspace is emptied');
+
+################################################################################
+# Move workspace
+# See #4001
+################################################################################
+
+# Keep workspace 1 open to have 3 workspaces in total
+cmd 'workspace 1';
+open_window;
+cmd 'workspace 0, move workspace to output right';
+@expected_viewport = (0, 0, 1024, 0, 1024, 0);
+@desktop_viewport = get_desktop_viewport;
+is_deeply(\@desktop_viewport, \@expected_viewport,
+    'it should be updated when a workspace is moved');
+
+################################################################################
 
 done_testing;
