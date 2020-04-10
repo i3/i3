@@ -92,11 +92,9 @@ bool match_matches_window(Match *match, i3Window *window) {
 #define CHECK_WINDOW_FIELD(match_field, window_field, type)                                       \
     do {                                                                                          \
         if (match->match_field != NULL) {                                                         \
-            if (window->window_field == NULL) {                                                   \
-                return false;                                                                     \
-            }                                                                                     \
-                                                                                                  \
-            const char *window_field_str = GET_FIELD_##type(window->window_field);                \
+            const char *window_field_str = window->window_field == NULL                           \
+                                               ? ""                                               \
+                                               : GET_FIELD_##type(window->window_field);          \
             if (strcmp(match->match_field->pattern, "__focused__") == 0 &&                        \
                 focused && focused->window && focused->window->window_field &&                    \
                 strcmp(window_field_str, GET_FIELD_##type(focused->window->window_field)) == 0) { \
