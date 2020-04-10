@@ -162,21 +162,18 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
 
     /* if the user has bound an action to this click, it should override the
      * default behavior. */
-    if (dest == CLICK_DECORATION || dest == CLICK_INSIDE || dest == CLICK_BORDER) {
-        Binding *bind = get_binding_from_xcb_event((xcb_generic_event_t *)event);
+    Binding *bind = get_binding_from_xcb_event((xcb_generic_event_t *)event);
+    if (bind && ((dest == CLICK_DECORATION && !bind->exclude_titlebar) ||
+                 (dest == CLICK_INSIDE && bind->whole_window) ||
+                 (dest == CLICK_BORDER && bind->border))) {
+        CommandResult *result = run_binding(bind, con);
 
-        if (bind != NULL && ((dest == CLICK_DECORATION && !bind->exclude_titlebar) ||
-                             (dest == CLICK_INSIDE && bind->whole_window) ||
-                             (dest == CLICK_BORDER && bind->border))) {
-            CommandResult *result = run_binding(bind, con);
+        /* ASYNC_POINTER eats the event */
+        xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, event->time);
+        xcb_flush(conn);
 
-            /* ASYNC_POINTER eats the event */
-            xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, event->time);
-            xcb_flush(conn);
-
-            command_result_free(result);
-            return;
-        }
+        command_result_free(result);
+        return;
     }
 
     /* There is no default behavior for button release events so we are done. */
