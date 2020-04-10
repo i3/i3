@@ -217,8 +217,7 @@ void ipc_shutdown(shutdown_reason_t reason, int exempt_fd) {
 }
 
 /*
- * Executes the command and returns whether it could be successfully parsed
- * or not (at the moment, always returns true).
+ * Executes the given command.
  *
  */
 IPC_HANDLER(run_command) {
