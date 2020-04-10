@@ -194,6 +194,11 @@ static int stdin_map_key(void *context, const unsigned char *key, size_t len) {
 
 static int stdin_boolean(void *context, int val) {
     parser_ctx *ctx = context;
+
+    if (!ctx->last_map_key) {
+        return 0;
+    }
+
     if (strcasecmp(ctx->last_map_key, "urgent") == 0) {
         ctx->block.urgent = val;
         return 1;
@@ -208,6 +213,11 @@ static int stdin_boolean(void *context, int val) {
 
 static int stdin_string(void *context, const unsigned char *val, size_t len) {
     parser_ctx *ctx = context;
+
+    if (!ctx->last_map_key) {
+        return 0;
+    }
+
     if (strcasecmp(ctx->last_map_key, "full_text") == 0) {
         ctx->block.full_text = i3string_from_markup_with_length((const char *)val, len);
         return 1;
@@ -260,6 +270,11 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
 
 static int stdin_integer(void *context, long long val) {
     parser_ctx *ctx = context;
+
+    if (!ctx->last_map_key) {
+        return 0;
+    }
+
     if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
         ctx->block.min_width = (uint32_t)val;
         return 1;
