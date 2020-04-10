@@ -558,12 +558,7 @@ static bool window_name_changed(i3Window *window, char *old_name) {
  * Called when a window changes its title
  *
  */
-static bool handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
-                                     xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
-        return false;
-
+static bool handle_windowname_change(Con *con, xcb_get_property_reply_t *prop) {
     char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
 
     window_update_name(con->window, prop);
@@ -585,12 +580,7 @@ static bool handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t
  * window_update_name_legacy().
  *
  */
-static bool handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t state,
-                                            xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
-        return false;
-
+static bool handle_windowname_change_legacy(Con *con, xcb_get_property_reply_t *prop) {
     char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
 
     window_update_name_legacy(con->window, prop);
@@ -611,12 +601,7 @@ static bool handle_windowname_change_legacy(void *data, xcb_connection_t *conn, 
  * Called when a window changes its WM_WINDOW_ROLE.
  *
  */
-static bool handle_windowrole_change(void *data, xcb_connection_t *conn, uint8_t state,
-                                     xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
-        return false;
-
+static bool handle_windowrole_change(Con *con, xcb_get_property_reply_t *prop) {
     window_update_role(con->window, prop);
 
     con = remanage_window(con);
@@ -956,12 +941,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
     }
 }
 
-static bool handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                               xcb_atom_t atom, xcb_get_property_reply_t *reply) {
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
-        return false;
-
+static bool handle_window_type(Con *con, xcb_get_property_reply_t *reply) {
     window_update_type(con->window, reply);
     return true;
 }
@@ -973,14 +953,7 @@ static bool handle_window_type(void *data, xcb_connection_t *conn, uint8_t state
  * See ICCCM 4.1.2.3 for more details
  *
  */
-static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                                xcb_atom_t name, xcb_get_property_reply_t *reply) {
-    Con *con = con_by_window_id(window);
-    if (con == NULL) {
-        DLOG("Received WM_NORMAL_HINTS for unknown client\n");
-        return false;
-    }
-
+static bool handle_normal_hints(Con *con, xcb_get_property_reply_t *reply) {
     bool changed = window_update_normal_hints(con->window, reply, NULL);
 
     if (changed) {
@@ -999,21 +972,11 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
  * Handles the WM_HINTS property for extracting the urgency state of the window.
  *
  */
-static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
-    Con *con = con_by_window_id(window);
-    if (con == NULL) {
-        DLOG("Received WM_HINTS for unknown client\n");
-        return false;
-    }
-
+static bool handle_hints(Con *con, xcb_get_property_reply_t *reply) {
     bool urgency_hint;
-    if (reply == NULL)
-        reply = xcb_get_property_reply(conn, xcb_icccm_get_wm_hints(conn, window), NULL);
     window_update_hints(con->window, reply, &urgency_hint);
     con_set_urgency(con, urgency_hint);
     tree_render();
-
     return true;
 }
 
@@ -1024,24 +987,8 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
  * See ICCCM 4.1.2.6 for more details
  *
  */
-static bool handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                                 xcb_atom_t name, xcb_get_property_reply_t *prop) {
-    Con *con;
-
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL) {
-        DLOG("No such window\n");
-        return false;
-    }
-
-    if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, XCB_ATOM_WM_TRANSIENT_FOR, XCB_ATOM_WINDOW, 0, 32),
-                                      NULL);
-        if (prop == NULL)
-            return false;
-    }
-
+static bool handle_transient_for(Con *con, xcb_get_property_reply_t *prop) {
     window_update_transient_for(con->window, prop);
-
     return true;
 }
 
@@ -1050,21 +997,8 @@ static bool handle_transient_for(void *data, xcb_connection_t *conn, uint8_t sta
  * toolwindow (or similar) and to which window it belongs (logical parent).
  *
  */
-static bool handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                                       xcb_atom_t name, xcb_get_property_reply_t *prop) {
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
-        return false;
-
-    if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, A_WM_CLIENT_LEADER, XCB_ATOM_WINDOW, 0, 32),
-                                      NULL);
-        if (prop == NULL)
-            return false;
-    }
-
+static bool handle_clientleader_change(Con *con, xcb_get_property_reply_t *prop) {
     window_update_leader(con->window, prop);
-
     return true;
 }
 
@@ -1144,24 +1078,9 @@ static void handle_configure_notify(xcb_configure_notify_event_t *event) {
  * Handles the WM_CLASS property for assignments and criteria selection.
  *
  */
-static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                                xcb_atom_t name, xcb_get_property_reply_t *prop) {
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
-        return false;
-
-    if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 0, 32),
-                                      NULL);
-
-        if (prop == NULL)
-            return false;
-    }
-
+static bool handle_class_change(Con *con, xcb_get_property_reply_t *prop) {
     window_update_class(con->window, prop);
-
     con = remanage_window(con);
-
     return true;
 }
 
@@ -1169,20 +1088,7 @@ static bool handle_class_change(void *data, xcb_connection_t *conn, uint8_t stat
  * Handles the _MOTIF_WM_HINTS property of specifing window deocration settings.
  *
  */
-static bool handle_motif_hints_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                                      xcb_atom_t name, xcb_get_property_reply_t *prop) {
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
-        return false;
-
-    if (prop == NULL) {
-        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn, false, window, A__MOTIF_WM_HINTS, XCB_GET_PROPERTY_TYPE_ANY, 0, 5 * sizeof(uint64_t)),
-                                      NULL);
-
-        if (prop == NULL)
-            return false;
-    }
-
+static bool handle_motif_hints_change(Con *con, xcb_get_property_reply_t *prop) {
     border_style_t motif_border_style;
     window_update_motif_hints(con->window, prop, &motif_border_style);
 
@@ -1200,34 +1106,7 @@ static bool handle_motif_hints_change(void *data, xcb_connection_t *conn, uint8_
  * Handles the _NET_WM_STRUT_PARTIAL property for allocating space for dock clients.
  *
  */
-static bool handle_strut_partial_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                                        xcb_atom_t name, xcb_get_property_reply_t *prop) {
-    DLOG("strut partial change for window 0x%08x\n", window);
-
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL) {
-        return false;
-    }
-
-    if (prop == NULL) {
-        xcb_generic_error_t *err = NULL;
-        xcb_get_property_cookie_t strut_cookie = xcb_get_property(conn, false, window, A__NET_WM_STRUT_PARTIAL,
-                                                                  XCB_GET_PROPERTY_TYPE_ANY, 0, UINT32_MAX);
-        prop = xcb_get_property_reply(conn, strut_cookie, &err);
-
-        if (err != NULL) {
-            DLOG("got error when getting strut partial property: %d\n", err->error_code);
-            free(err);
-            return false;
-        }
-
-        if (prop == NULL) {
-            return false;
-        }
-    }
-
-    DLOG("That is con %p / %s\n", con, con->name);
-
+static bool handle_strut_partial_change(Con *con, xcb_get_property_reply_t *prop) {
     window_update_strut_partial(con->window, prop);
 
     /* we only handle this change for dock clients */
@@ -1279,7 +1158,7 @@ static bool handle_strut_partial_change(void *data, xcb_connection_t *conn, uint
 
 /* Returns false if the event could not be processed (e.g. the window could not
  * be found), true otherwise */
-typedef bool (*cb_property_handler_t)(void *data, xcb_connection_t *c, uint8_t state, xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *property);
+typedef bool (*cb_property_handler_t)(Con *con, xcb_get_property_reply_t *property);
 
 struct property_handler_t {
     xcb_atom_t atom;
@@ -1325,6 +1204,8 @@ void property_handlers_init(void) {
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
     struct property_handler_t *handler = NULL;
     xcb_get_property_reply_t *propr = NULL;
+    xcb_generic_error_t *err = NULL;
+    Con *con;
 
     for (size_t c = 0; c < NUM_HANDLERS; c++) {
         if (property_handlers[c].atom != atom)
@@ -1339,13 +1220,23 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
         return;
     }
 
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL) {
+        DLOG("Received property for atom %d for unknown client\n", atom);
+        return;
+    }
+
     if (state != XCB_PROPERTY_DELETE) {
         xcb_get_property_cookie_t cookie = xcb_get_property(conn, 0, window, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, handler->long_len);
-        propr = xcb_get_property_reply(conn, cookie, 0);
+        propr = xcb_get_property_reply(conn, cookie, &err);
+        if (err != NULL) {
+            DLOG("got error %d when getting property of atom %d\n", err->error_code, atom);
+            FREE(err);
+            return;
+        }
     }
 
     /* the handler will free() the reply unless it returns false */
-    if (!handler->cb(NULL, conn, state, window, atom, propr))
+    if (!handler->cb(con, propr))
         FREE(propr);
 }
 
