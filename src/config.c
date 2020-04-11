@@ -28,17 +28,6 @@ void ungrab_all_keys(xcb_connection_t *conn) {
     xcb_ungrab_key(conn, XCB_GRAB_ANY, root, XCB_BUTTON_MASK_ANY);
 }
 
-/*
- * Sends the current bar configuration as an event to all barconfig_update listeners.
- *
- */
-void update_barconfig(void) {
-    Barconfig *current;
-    TAILQ_FOREACH (current, &barconfigs, configs) {
-        ipc_send_barconfig_update_event(current);
-    }
-}
-
 static void free_configuration(void) {
     assert(conn != NULL);
 

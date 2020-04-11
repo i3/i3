@@ -460,15 +460,17 @@ state BAR:
       -> BAR_MODE
 
 state BAR_HIDDEN_STATE:
-  bar_value = 'hide', 'show', 'toggle'
-      -> BAR_W_ID
-
-state BAR_MODE:
-  bar_value = 'dock', 'hide', 'invisible', 'toggle'
-      -> BAR_W_ID
-
-state BAR_W_ID:
+  bar_hidden_state = 'hide', 'show', 'toggle'
+      ->
   bar_id = word
       ->
   end
-      -> call cmd_bar($bar_type, $bar_value, $bar_id)
+      -> call cmd_bar_hidden_state($bar_hidden_state, $bar_id)
+
+state BAR_MODE:
+  bar_value = 'dock', 'hide', 'invisible', 'toggle'
+      ->
+  bar_id = word
+      ->
+  end
+      -> call cmd_bar_mode($bar_value, $bar_id)
