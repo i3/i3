@@ -263,7 +263,7 @@ char *parse_string(const char **walk, bool as_word) {
  * Free the returned CommandResult with command_result_free().
  */
 CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client) {
-    DLOG("COMMAND: *%s*\n", input);
+    DLOG("COMMAND: *%.4000s*\n", input);
     state = INITIAL;
     CommandResult *result = scalloc(1, sizeof(CommandResult));
 
