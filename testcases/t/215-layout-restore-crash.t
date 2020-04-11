@@ -212,7 +212,7 @@ subtest 'issue 2755' => sub {
 EOT
     $fh->flush;
     $reply = cmd "append_layout $filename";
-    ok(!$reply->[0]->{success}, 'IPC reply indicated success');
+    ok(!$reply->[0]->{success}, 'IPC reply did not indicate success');
 
     does_i3_live;
 
@@ -276,5 +276,49 @@ does_i3_live;
 
 close($fh);
 
+################################################################################
+# Issue with floating key being set, without proper parent
+# See #3901
+################################################################################
+subtest 'issue 3901' => sub {
+    kill_all_windows;
+    $ws = fresh_workspace;
+    is(scalar @{get_ws($ws)->{floating_nodes}}, 0, 'No floating nodes yet');
+
+    ($fh, $filename) = tempfile(UNLINK => 1);
+    print $fh <<'EOT';
+// vim:ts=4:sw=4:et
+{
+    "border": "pixel",
+    "current_border_width": 1,
+    "floating": "auto_on", // crashes: user_on, auto_on, no crash: user_off, auto_off
+    "geometry": {
+       "height": 400,
+       "width": 300,
+       "x": 820,
+       "y": 350
+    },
+    "name": "Click me to crash",
+    "percent": 0.5, // still crashes if this field is absent
+    "swallows": [
+       {
+       "class": "^this doesn't matter as long as it doesn't match a new window$"
+       }
+    ],
+    "type": "con"
+}
+
+EOT
+    $fh->flush;
+    $reply = cmd "append_layout $filename";
+    ok($reply->[0]->{success}, 'IPC reply indicated success');
+
+    cmd '[floating] focus';
+    is(scalar @{get_ws($ws)->{floating_nodes}}, 1, 'one floating node on this ws');
+
+    does_i3_live;
+
+    close($fh);
+};
 
 done_testing;
