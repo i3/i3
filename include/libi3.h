@@ -182,6 +182,12 @@ ssize_t writeall_nonblock(int fd, const void *buf, size_t count);
 ssize_t swrite(int fd, const void *buf, size_t count);
 
 /**
+ * Like strcasecmp but considers the case where either string is NULL.
+ *
+ */
+int strcasecmp_nullable(const char *a, const char *b);
+
+/**
  * Build an i3String from an UTF-8 encoded string.
  * Returns the newly-allocated i3String.
  *

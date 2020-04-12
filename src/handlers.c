@@ -1147,9 +1147,7 @@ static bool handle_strut_partial_change(Con *con, xcb_get_property_reply_t *prop
 
     /* attach the dock to the dock area */
     con_detach(con);
-    con->parent = dockarea;
-    TAILQ_INSERT_HEAD(&(dockarea->focus_head), con, focused);
-    TAILQ_INSERT_HEAD(&(dockarea->nodes_head), con, nodes);
+    con_attach(con, dockarea, true);
 
     tree_render();
 

@@ -685,19 +685,6 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
     }
 }
 
-static int strcasecmp_nullable(const char *a, const char *b) {
-    if (a == b) {
-        return 0;
-    }
-    if (a == NULL) {
-        return -1;
-    }
-    if (b == NULL) {
-        return 1;
-    }
-    return strcasecmp(a, b);
-}
-
 /*
  * Comparison function to sort trayclients in ascending alphanumeric order
  * according to their class.

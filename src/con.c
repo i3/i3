@@ -132,6 +132,30 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
         goto add_to_focus_head;
     }
 
+    if (parent->type == CT_DOCKAREA) {
+        /* Insert dock client, sorting alphanumerically by class and then
+         * instance name. This makes dock client order deterministic. As a side
+         * effect, bars without a custom bar id will be sorted according to
+         * their declaration order in the config file. See #3491. */
+        current = NULL;
+        TAILQ_FOREACH (loop, nodes_head, nodes) {
+            int result = strcasecmp_nullable(con->window->class_class, loop->window->class_class);
+            if (result == 0) {
+                result = strcasecmp_nullable(con->window->class_instance, loop->window->class_instance);
+            }
+            if (result < 0) {
+                current = loop;
+                break;
+            }
+        }
+        if (current) {
+            TAILQ_INSERT_BEFORE(loop, con, nodes);
+        } else {
+            TAILQ_INSERT_TAIL(nodes_head, con, nodes);
+        }
+        goto add_to_focus_head;
+    }
+
     if (con->type == CT_FLOATING_CON) {
         DLOG("Inserting into floating containers\n");
         TAILQ_INSERT_TAIL(&(parent->floating_head), con, floating_windows);
