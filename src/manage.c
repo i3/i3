@@ -538,6 +538,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         bool automatic_border = (motif_border_style == BS_NORMAL);
 
         floating_enable(nc, automatic_border);
+        nc->floating = FLOATING_AUTO_ON;
     }
 
     /* explicitly set the border width to the default */
