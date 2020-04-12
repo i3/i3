@@ -12,78 +12,16 @@
 #include <time.h>
 
 /*
- * Finds the correct pair of first/second cons between the resize will take
- * place according to the passed border position (top, left, right, bottom),
- * then calls resize_graphical_handler().
- *
- */
-static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press_event_t *event, bool use_threshold, bool both) {
-    DLOG("border = %d, con = %p\n", border, con);
-
-    Con *first_h = NULL;
-    Con *first_v = NULL;
-    Con *second_h = NULL;
-    Con *second_v = NULL;
-
-    if (border & BORDER_LEFT) {
-        first_h = con;
-        resize_find_tiling_participants(&first_h, &second_h, D_LEFT, false);
-        /* The first container should always be in front of the second container */
-        SWAP(first_h, second_h, Con *);
-    } else if (border & BORDER_RIGHT) {
-        first_h = con;
-        resize_find_tiling_participants(&first_h, &second_h, D_RIGHT, false);
-    }
-    if (border & BORDER_TOP) {
-        first_v = con;
-        resize_find_tiling_participants(&first_v, &second_v, D_UP, false);
-        /* The first container should always be in front of the second container */
-        SWAP(first_v, second_v, Con *);
-    } else if (border & BORDER_BOTTOM) {
-        first_v = con;
-        resize_find_tiling_participants(&first_v, &second_v, D_DOWN, false);
-    }
-
-    if (first_h != NULL && first_h->fullscreen_mode != second_h->fullscreen_mode) {
-        DLOG("Avoiding horisontal resize between containers with different fullscreen modes, %d != %d\n",
-             first_h->fullscreen_mode, second_h->fullscreen_mode);
-        first_h = second_h = NULL;
-    }
-    if (first_v != NULL && first_v->fullscreen_mode != second_v->fullscreen_mode) {
-        DLOG("Avoiding vertical resize between containers with different fullscreen modes, %d != %d\n",
-             first_v->fullscreen_mode, second_v->fullscreen_mode);
-        first_v = second_v = NULL;
-    }
-
-    if (!first_h && !first_v) {
-        DLOG("No directions to resize found.\n");
-        return false;
-    }
-
-    border &=
-        (first_v ? BORDER_TOP | BORDER_BOTTOM : 0) |
-        (first_h ? BORDER_LEFT | BORDER_RIGHT : 0);
-
-    resize_graphical_handler(event, resize_cursor(border, both), use_threshold,
-                             con_get_output(con), first_h, first_v, second_h, second_v);
-
-    return true;
-}
-
-/*
  * Called when the user clicks using the floating_modifier, but the client is in
  * tiling layout.
  *
  */
 static void floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *event) {
-    border_t border = resize_get_borders_mod(event->event_x, event->event_y,
-                                             con->window_rect.width, con->window_rect.height);
-    bool done = tiling_resize_for_border(con, border, event, false, false);
-    if (!done) {
-        /* Just grab the cursor and do nothing. */
-        resize_graphical_handler(event, XCURSOR_CURSOR_NOT_ALLOWED, false,
-                                 con_get_output(con), NULL, NULL, NULL, NULL);
-    }
+    resize_direction_t dir = get_resize_direction(con, event->root_x, event->root_y, CLICK_INSIDE);
+    resize_params_t params;
+    dir = resize_find_tiling_participants_two_axes(con, dir, &params);
+    enum xcursor_cursor_t cursor = xcursor_type_for_resize_direction(dir, true);
+    resize_graphical_handler(event, cursor, false, &params);
 }
 
 /*
@@ -91,8 +29,15 @@ static void floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *eve
  *
  */
 static bool tiling_resize(Con *con, xcb_button_press_event_t *event, click_destination_t dest, bool use_threshold) {
-    border_t border = resize_get_borders_sides(con, event->root_x, event->root_y, dest);
-    return tiling_resize_for_border(con, border, event, use_threshold, true);
+    resize_direction_t dir = get_resize_direction(con, event->root_x, event->root_y, dest);
+    resize_params_t params;
+    dir = resize_find_tiling_participants_two_axes(con, dir, &params);
+    if (dir == RD_NONE) {
+        return false;
+    }
+    enum xcursor_cursor_t cursor = xcursor_type_for_resize_direction(dir, false);
+    resize_graphical_handler(event, cursor, use_threshold, &params);
+    return true;
 }
 
 /*
