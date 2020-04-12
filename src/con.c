@@ -116,14 +116,14 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
                 /* we need to insert the container at the beginning */
                 TAILQ_INSERT_HEAD(nodes_head, con, nodes);
             } else {
-                while (current->num != -1 && con->num > current->num) {
+                while (current->num != -1 && con->num >= current->num) {
                     current = TAILQ_NEXT(current, nodes);
                     if (current == TAILQ_END(nodes_head)) {
                         current = NULL;
                         break;
                     }
                 }
-                /* we need to insert con after current, if current is not NULL */
+                /* we need to insert con before current, if current is not NULL */
                 if (current) {
                     TAILQ_INSERT_BEFORE(current, con, nodes);
                 } else {
