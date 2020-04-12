@@ -143,6 +143,7 @@ find(
             $desktops{$relative} = $File::Find::name;
         },
         no_chdir => 1,
+        follow_fast => 1,
     },
     @searchdirs
 );
