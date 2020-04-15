@@ -685,19 +685,6 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
     }
 }
 
-static int strcasecmp_nullable(const char *a, const char *b) {
-    if (a == b) {
-        return 0;
-    }
-    if (a == NULL) {
-        return -1;
-    }
-    if (b == NULL) {
-        return 1;
-    }
-    return strcasecmp(a, b);
-}
-
 /*
  * Comparison function to sort trayclients in ascending alphanumeric order
  * according to their class.
@@ -1816,6 +1803,8 @@ void reconfig_windows(bool redraw_bars) {
                                                                       bar_height);
 
             /* Set the WM_CLASS and WM_NAME (we don't need UTF-8) atoms */
+            char *class;
+            int len = sasprintf(&class, "%s%ci3bar%c", config.bar_id, 0, 0);
             xcb_void_cookie_t class_cookie;
             class_cookie = xcb_change_property(xcb_connection,
                                                XCB_PROP_MODE_REPLACE,
@@ -1823,8 +1812,8 @@ void reconfig_windows(bool redraw_bars) {
                                                XCB_ATOM_WM_CLASS,
                                                XCB_ATOM_STRING,
                                                8,
-                                               (strlen("i3bar") + 1) * 2,
-                                               "i3bar\0i3bar\0");
+                                               len,
+                                               class);
 
             char *name;
             sasprintf(&name, "i3bar for output %s", walk->name);
