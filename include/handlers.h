@@ -47,22 +47,3 @@ void handle_event(int type, xcb_generic_event_t *event);
  *
  */
 void property_handlers_init(void);
-
-#if 0
-/**
- * Configuration notifies are only handled because we need to set up ignore
- * for the following enter notify events
- *
- */
-int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event);
-#endif
-
-#if 0
-/**
- * Handles _NET_WM_WINDOW_TYPE changes
- *
- */
-int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state,
-                       xcb_window_t window, xcb_atom_t atom,
-                       xcb_get_property_reply_t *property);
-#endif

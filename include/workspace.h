@@ -136,51 +136,6 @@ void workspace_back_and_forth(void);
  */
 Con *workspace_back_and_forth_get(void);
 
-#if 0
-/**
- * Assigns the given workspace to the given screen by correctly updating its
- * state and reconfiguring all the clients on this workspace.
- *
- * This is called when initializing a screen and when re-assigning it to a
- * different screen which just got available (if you configured it to be on
- * screen 1 and you just plugged in screen 1).
- *
- */
-void workspace_assign_to(Workspace *ws, Output *screen, bool hide_it);
-
-/**
- * Initializes the given workspace if it is not already initialized. The given
- * screen is to be understood as a fallback, if the workspace itself either
- * was not assigned to a particular screen or cannot be placed there because
- * the screen is not attached at the moment.
- *
- */
-void workspace_initialize(Workspace *ws, Output *screen, bool recheck);
-
-/**
- * Gets the first unused workspace for the given screen, taking into account
- * the preferred_screen setting of every workspace (workspace assignments).
- *
- */
-Workspace *get_first_workspace_for_output(Output *screen);
-
-/**
- * Unmaps all clients (and stack windows) of the given workspace.
- *
- * This needs to be called separately when temporarily rendering a workspace
- * which is not the active workspace to force reconfiguration of all clients,
- * like in src/xinerama.c when re-assigning a workspace to another screen.
- *
- */
-void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws);
-
-/**
- * Maps all clients (and stack windows) of the given workspace.
- *
- */
-void workspace_map_clients(xcb_connection_t *conn, Workspace *ws);
-#endif
-
 /**
  * Goes through all clients on the given workspace and updates the workspace’s
  * urgent flag accordingly.
