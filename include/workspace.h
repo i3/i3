@@ -57,11 +57,8 @@ bool output_triggers_assignment(Output *output, struct Workspace_Assignment *ass
  * creating the workspace if necessary (by allocating the necessary amount of
  * memory and initializing the data structures correctly).
  *
- * If created is not NULL, *created will be set to whether or not the
- * workspace has just been created.
- *
  */
-Con *workspace_get(const char *num, bool *created);
+Con *workspace_get(const char *num);
 
 /**
  * Extracts workspace names from keybindings (e.g. “web” from “bindsym $mod+1

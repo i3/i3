@@ -727,7 +727,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             return;
         }
 
-        if (con_is_internal(ws) && ws != workspace_get("__i3_scratch", NULL)) {
+        if (con_is_internal(ws) && ws != workspace_get("__i3_scratch")) {
             DLOG("Workspace is internal but not scratchpad, ignoring _NET_ACTIVE_WINDOW\n");
             return;
         }

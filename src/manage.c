@@ -291,7 +291,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             /* A_TO_WORKSPACE type assignment or fallback from A_TO_WORKSPACE_NUMBER
              * when the target workspace number does not exist yet. */
             if (!assigned_ws) {
-                assigned_ws = workspace_get(assignment->dest.workspace, NULL);
+                assigned_ws = workspace_get(assignment->dest.workspace);
             }
 
             nc = con_descend_tiling_focused(assigned_ws);
@@ -322,7 +322,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         } else if (startup_ws) {
             /* If it was started on a specific workspace, we want to open it there. */
             DLOG("Using workspace on which this application was started (%s)\n", startup_ws);
-            nc = con_descend_tiling_focused(workspace_get(startup_ws, NULL));
+            nc = con_descend_tiling_focused(workspace_get(startup_ws));
             DLOG("focused on ws %s: %p / %s\n", startup_ws, nc, nc->name);
             if (nc->type == CT_WORKSPACE)
                 nc = tree_open_con(nc, cwindow);
