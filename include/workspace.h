@@ -46,6 +46,19 @@ Con *get_existing_workspace_by_name(const char *name);
 Con *get_existing_workspace_by_num(int num);
 
 /**
+ * Returns the first output that is assigned to a workspace specified by the
+ * given name or number. Returns NULL if no such output exists.
+ *
+ * If an assignment matches by number but there is an assignment later that
+ * matches by name, the second one is preferred.
+ * The order of the 'ws_assignments' queue is respected: if multiple
+ * assignments match the criteria, the first one is returned.
+ * 'name' is ignored when NULL, 'parsed_num' is ignored when it is -1.
+ *
+ */
+Con *get_assigned_output(const char *name, long parsed_num);
+
+/**
  * Returns true if the first output assigned to a workspace with the given
  * workspace assignment is the same as the given output.
  *

@@ -72,21 +72,22 @@ static void _workspace_apply_default_orientation(Con *ws) {
 
 /*
  * Returns the first output that is assigned to a workspace specified by the
- * given name or number or NULL if no such output exists. If there is a
- * workspace with a matching name and another workspace with a matching number,
- * the output assigned to the first one is returned.
- * The order of the 'ws_assignments' queue is respected: if multiple assignments
- * match the specified workspace, the first one is returned.
- * If 'name' is NULL it will be ignored.
- * If 'parsed_num' is -1 it will be ignored.
+ * given name or number. Returns NULL if no such output exists.
+ *
+ * If an assignment matches by number but there is an assignment later that
+ * matches by name, the second one is preferred.
+ * The order of the 'ws_assignments' queue is respected: if multiple
+ * assignments match the criteria, the first one is returned.
+ * 'name' is ignored when NULL, 'parsed_num' is ignored when it is -1.
  *
  */
-static Con *get_assigned_output(const char *name, long parsed_num) {
+Con *get_assigned_output(const char *name, long parsed_num) {
     Con *output = NULL;
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
         if (name && strcmp(assignment->name, name) == 0) {
-            DLOG("Found workspace name assignment to output \"%s\"\n", assignment->output);
+            DLOG("Found workspace name=\"%s\" assignment to output \"%s\"\n",
+                 name, assignment->output);
             Output *assigned_by_name = get_output_by_name(assignment->output, true);
             if (assigned_by_name) {
                 /* When the name matches exactly, skip numbered assignments. */
@@ -96,7 +97,8 @@ static Con *get_assigned_output(const char *name, long parsed_num) {
                    parsed_num != -1 &&
                    name_is_digits(assignment->name) &&
                    ws_name_to_number(assignment->name) == parsed_num) {
-            DLOG("Found workspace number assignment to output \"%s\"\n", assignment->output);
+            DLOG("Found workspace number=%ld assignment to output \"%s\"\n",
+                 parsed_num, assignment->output);
             Output *assigned_by_num = get_output_by_name(assignment->output, true);
             if (assigned_by_num) {
                 output = assigned_by_num->con;
