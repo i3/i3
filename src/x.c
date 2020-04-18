@@ -590,11 +590,6 @@ void x_draw_decoration(Con *con) {
         }
     }
 
-    /* if this is a borderless/1pixel window, we don’t need to render the
-     * decoration. */
-    if (p->border_style != BS_NORMAL)
-        goto copy_pixmaps;
-
     /* If the parent hasn't been set up yet, skip the decoration rendering
      * for now. */
     if (parent->frame_buffer.id == XCB_NONE)
@@ -607,6 +602,11 @@ void x_draw_decoration(Con *con) {
         draw_util_clear_surface(&(con->parent->frame_buffer), COLOR_TRANSPARENT);
         FREE(con->parent->deco_render_params);
     }
+
+    /* if this is a borderless/1pixel window, we don’t need to render the
+     * decoration. */
+    if (p->border_style != BS_NORMAL)
+        goto copy_pixmaps;
 
     /* 4: paint the bar */
     draw_util_rectangle(&(parent->frame_buffer), p->color->background,
