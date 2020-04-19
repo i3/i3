@@ -20,15 +20,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <xcb/xcb_keysyms.h>
-#include <yajl/yajl_common.h>
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
-#include <yajl/yajl_version.h>
 
 /* Global variables for child_*() */
 i3bar_child child;

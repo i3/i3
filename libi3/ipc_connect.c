@@ -12,9 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <sys/un.h>
-#include <unistd.h>
 
 /*
  * Connects to the i3 IPC socket and returns the file descriptor for the

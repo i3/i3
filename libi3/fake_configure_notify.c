@@ -7,7 +7,6 @@
  */
 #include "libi3.h"
 
-#include <stdbool.h>
 #include <stdlib.h>
 
 #include <xcb/xcb.h>

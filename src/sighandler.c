@@ -7,13 +7,8 @@
  */
 #include "all.h"
 
-#include <ev.h>
-#include <iconv.h>
 #include <signal.h>
 #include <sys/wait.h>
-
-#include <X11/keysym.h>
-#include <xcb/xcb_event.h>
 
 typedef struct dialog_t {
     xcb_window_t id;

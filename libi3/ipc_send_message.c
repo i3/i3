@@ -7,13 +7,8 @@
  */
 #include "libi3.h"
 
-#include <err.h>
-#include <errno.h>
 #include <i3/ipc.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 /*
  * Formats a message (payload) of the given size and type and sends it to i3 via

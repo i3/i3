@@ -7,15 +7,10 @@
  */
 #include "libi3.h"
 
-#include <assert.h>
 #include <err.h>
 #include <pwd.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 /*

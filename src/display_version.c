@@ -11,11 +11,6 @@
 #include "all.h"
 
 #include <fcntl.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <sys/wait.h>
 #include <time.h>
 
 static bool human_readable_key, loaded_config_file_name_key;

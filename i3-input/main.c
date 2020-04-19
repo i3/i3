@@ -8,10 +8,7 @@
  *                  to i3.
  *
  */
-#include <err.h>
-#include <errno.h>
 #include <getopt.h>
-#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -22,7 +19,6 @@
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-#include <xcb/xcb_event.h>
 #include <xcb/xcb_keysyms.h>
 
 xcb_visualtype_t *visual_type = NULL;

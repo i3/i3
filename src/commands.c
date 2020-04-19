@@ -11,8 +11,6 @@
 #include "shmlog.h"
 
 #include <fcntl.h>
-#include <float.h>
-#include <stdarg.h>
 #include <stdint.h>
 #include <unistd.h>
 

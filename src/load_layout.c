@@ -10,10 +10,7 @@
  */
 #include "all.h"
 
-#include <yajl/yajl_common.h>
-#include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
-#include <yajl/yajl_version.h>
 
 /* TODO: refactor the whole parsing thing */
 

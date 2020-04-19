@@ -9,11 +9,7 @@
  */
 #include "all.h"
 
-#include <math.h>
 #include <time.h>
-
-#include <X11/XKBlib.h>
-#include <xcb/xcb_icccm.h>
 
 typedef enum { CLICK_BORDER = 0,
                CLICK_DECORATION = 1,

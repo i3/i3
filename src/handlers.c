@@ -10,7 +10,6 @@
  */
 #include "all.h"
 
-#include <float.h>
 #include <sys/time.h>
 #include <time.h>
 

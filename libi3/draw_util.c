@@ -8,8 +8,6 @@
  */
 #include "libi3.h"
 
-#include <cairo/cairo-xcb.h>
-#include <err.h>
 #include <stdlib.h>
 #include <string.h>
 

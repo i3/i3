@@ -10,6 +10,8 @@
  */
 #include <config.h>
 
+#include "libi3.h"
+
 #if defined(__FreeBSD__)
 #include <sys/param.h>
 #endif
@@ -23,17 +25,12 @@
 #define _WITH_GETLINE
 #endif
 
-#include <assert.h>
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
-#include <glob.h>
 #include <limits.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -68,7 +65,6 @@
 
 #include "xcb.h"
 xcb_visualtype_t *visual_type = NULL;
-#include "libi3.h"
 
 #define TEXT_PADDING logical_px(4)
 #define WIN_POS_X logical_px(490)

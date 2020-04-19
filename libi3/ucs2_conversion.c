@@ -8,7 +8,6 @@
 #include "libi3.h"
 
 #include <err.h>
-#include <errno.h>
 #include <iconv.h>
 #include <stdlib.h>
 #include <string.h>

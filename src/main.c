@@ -13,6 +13,7 @@
 #include <ev.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <signal.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/socket.h>

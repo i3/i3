@@ -7,7 +7,6 @@
  */
 #include "common.h"
 
-#include <errno.h>
 #include <ev.h>
 #include <getopt.h>
 #include <glob.h>
@@ -15,7 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 struct ev_loop *main_loop;
 
