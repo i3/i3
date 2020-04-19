@@ -10,16 +10,17 @@
  */
 #include "all.h"
 
-#include <sys/wait.h>
 #include <stdarg.h>
+#include <sys/wait.h>
 #if defined(__OpenBSD__)
 #include <sys/cdefs.h>
 #endif
-#include <fcntl.h>
-#include <pwd.h>
-#include <yajl/yajl_version.h>
-#include <libgen.h>
 #include <ctype.h>
+#include <fcntl.h>
+#include <libgen.h>
+#include <pwd.h>
+
+#include <yajl/yajl_version.h>
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>

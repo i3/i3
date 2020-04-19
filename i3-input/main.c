@@ -8,17 +8,17 @@
  *                  to i3.
  *
  */
-#include <stdio.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
 #include <err.h>
-#include <stdint.h>
+#include <errno.h>
 #include <getopt.h>
 #include <limits.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -26,13 +26,11 @@
 #include <xcb/xcb_keysyms.h>
 
 xcb_visualtype_t *visual_type = NULL;
+#include "i3-input.h"
+#include "keysym2ucs.h"
 #include "libi3.h"
 
 #include <X11/keysym.h>
-
-#include "keysym2ucs.h"
-
-#include "i3-input.h"
 
 #define MAX_WIDTH logical_px(500)
 #define BORDER logical_px(2)

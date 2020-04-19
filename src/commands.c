@@ -8,14 +8,13 @@
  *
  */
 #include "all.h"
+#include "shmlog.h"
 
-#include <stdint.h>
+#include <fcntl.h>
 #include <float.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <unistd.h>
-#include <fcntl.h>
-
-#include "shmlog.h"
 
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) (cmd_output->json_gen != NULL ? yajl_gen_##x(cmd_output->json_gen, ##__VA_ARGS__) : 0)

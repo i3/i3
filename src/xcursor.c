@@ -9,13 +9,13 @@
  */
 #include <config.h>
 
-#include <assert.h>
-#include <err.h>
-#include <xcb/xcb_cursor.h>
-
 #include "i3.h"
 #include "xcb.h"
-#include "xcursor.h"
+
+#include <assert.h>
+#include <err.h>
+
+#include <xcb/xcb_cursor.h>
 
 static xcb_cursor_context_t *ctx;
 static xcb_cursor_t cursors[XCURSOR_CURSOR_MAX];

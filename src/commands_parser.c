@@ -25,12 +25,12 @@
  */
 #include "all.h"
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) (command_output.json_gen != NULL ? yajl_gen_##x(command_output.json_gen, ##__VA_ARGS__) : 0)

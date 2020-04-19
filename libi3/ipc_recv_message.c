@@ -7,15 +7,14 @@
  */
 #include "libi3.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <unistd.h>
 #include <errno.h>
-#include <inttypes.h>
-
 #include <i3/ipc.h>
+#include <inttypes.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 /*
  * Reads a message from the given socket file descriptor and stores its length

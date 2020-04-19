@@ -7,16 +7,17 @@
  * ipc.c: UNIX domain socket IPC (initialization, client handling, protocol).
  *
  */
-#include "all.h"
 
+#include "all.h"
 #include "yajl_utils.h"
 
+#include <ev.h>
+#include <fcntl.h>
+#include <libgen.h>
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <fcntl.h>
-#include <libgen.h>
-#include <ev.h>
+
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
 

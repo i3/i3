@@ -9,26 +9,26 @@
  */
 #include <config.h>
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <unistd.h>
+#include "i3.h"
+#include "libi3.h"
+#include "log.h"
+#include "shmlog.h"
+#include "util.h"
+
+#include <errno.h>
 #include <fcntl.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <errno.h>
+#include <sys/time.h>
+#include <unistd.h>
 #if !defined(__OpenBSD__)
 #include <pthread.h>
 #endif
-
-#include "util.h"
-#include "log.h"
-#include "i3.h"
-#include "libi3.h"
-#include "shmlog.h"
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>

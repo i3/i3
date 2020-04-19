@@ -7,8 +7,8 @@
  */
 #include "libi3.h"
 
-#include <sys/types.h>
 #include <string.h>
+#include <sys/types.h>
 
 #ifndef HAVE_strndup
 /*

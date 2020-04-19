@@ -8,16 +8,15 @@
 #include "libi3.h"
 
 #include <assert.h>
+#include <err.h>
+#include <pwd.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <err.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <pwd.h>
 #include <unistd.h>
-#include <err.h>
 
 /*
  * Returns the name of a temporary file with the specified prefix.

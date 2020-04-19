@@ -7,13 +7,13 @@
  */
 #include "libi3.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <unistd.h>
-#include <stdio.h>
 #include <err.h>
 #include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 /*
  * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of

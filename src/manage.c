@@ -8,7 +8,6 @@
  *
  */
 #include "all.h"
-
 #include "yajl_utils.h"
 
 #include <yajl/yajl_gen.h>

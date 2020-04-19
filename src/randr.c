@@ -12,6 +12,7 @@
 #include "all.h"
 
 #include <time.h>
+
 #include <xcb/randr.h>
 
 /* Pointer to the result of the query for primary output */

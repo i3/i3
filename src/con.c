@@ -10,7 +10,6 @@
  *
  */
 #include "all.h"
-
 #include "yajl_utils.h"
 
 static void con_on_remove_child(Con *con);

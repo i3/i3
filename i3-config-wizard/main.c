@@ -23,37 +23,36 @@
 #define _WITH_GETLINE
 #endif
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-#include <err.h>
-#include <stdint.h>
-#include <getopt.h>
-#include <limits.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <glob.h>
 #include <assert.h>
+#include <ctype.h>
+#include <err.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <glob.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_keysyms.h>
-
-#include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-x11.h>
+#include <xkbcommon/xkbcommon.h>
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launchee.h>
 
+#include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
-#include <X11/XKBlib.h>
 
 /* We need SYSCONFDIR for the path to the keycode config template, so raise an
  * error if it’s not defined for whatever reason */

@@ -9,26 +9,25 @@
  */
 #include "common.h"
 
-#include <xcb/xcb.h>
-#include <xcb/xkb.h>
-#include <xcb/xproto.h>
-#include <xcb/xcb_aux.h>
-#include <xcb/xcb_cursor.h>
-
+#include <err.h>
+#include <errno.h>
+#include <ev.h>
+#include <fcntl.h>
+#include <i3/ipc.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <string.h>
-#include <i3/ipc.h>
-#include <ev.h>
-#include <errno.h>
-#include <limits.h>
-#include <err.h>
+#include <unistd.h>
 
-#include <X11/Xlib.h>
 #include <X11/XKBlib.h>
+#include <X11/Xlib.h>
 #include <X11/extensions/XKB.h>
+#include <xcb/xcb.h>
+#include <xcb/xcb_aux.h>
+#include <xcb/xcb_cursor.h>
+#include <xcb/xkb.h>
+#include <xcb/xproto.h>
 
 #ifdef I3_ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>

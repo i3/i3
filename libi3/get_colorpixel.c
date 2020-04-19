@@ -6,12 +6,11 @@
  *
  */
 #include "libi3.h"
-
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-
 #include "queue.h"
+
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 struct Colorpixel {
     char hex[8];
     uint32_t pixel;

@@ -16,27 +16,25 @@
  */
 #include "libi3.h"
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
 #include <err.h>
-#include <stdint.h>
+#include <errno.h>
 #include <getopt.h>
+#include <i3/ipc.h>
 #include <limits.h>
-
-#include <yajl/yajl_parse.h>
-#include <yajl/yajl_version.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-
-#include <i3/ipc.h>
+#include <yajl/yajl_parse.h>
+#include <yajl/yajl_version.h>
 
 /*
  * Having verboselog() and errorlog() is necessary when using libi3.

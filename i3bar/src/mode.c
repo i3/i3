@@ -9,10 +9,11 @@
  */
 #include "common.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
 

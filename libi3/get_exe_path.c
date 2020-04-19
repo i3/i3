@@ -7,12 +7,12 @@
  */
 #include "libi3.h"
 
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include <limits.h>
-#include <stdlib.h>
 #include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 /*
  * This function returns the absolute path to the executable it is running in.

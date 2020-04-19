@@ -7,8 +7,8 @@
  */
 #include "libi3.h"
 
-#include <string.h>
 #include <stdbool.h>
+#include <string.h>
 
 /*
  * Returns true if this version of i3 is a debug build (anything which is not a

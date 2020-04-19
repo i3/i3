@@ -7,8 +7,8 @@
  */
 #include "libi3.h"
 
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifndef CS_STARTS_WITH

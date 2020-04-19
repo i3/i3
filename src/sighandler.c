@@ -12,9 +12,8 @@
 #include <signal.h>
 #include <sys/wait.h>
 
-#include <xcb/xcb_event.h>
-
 #include <X11/keysym.h>
+#include <xcb/xcb_event.h>
 
 typedef struct dialog_t {
     xcb_window_t id;

@@ -8,35 +8,35 @@
  * when the user has an error in their configuration file.
  *
  */
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
 #include <err.h>
-#include <stdint.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <limits.h>
-#include <fcntl.h>
 #include <paths.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
+#include <xcb/randr.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-#include <xcb/xcb_event.h>
-#include <xcb/randr.h>
 #include <xcb/xcb_cursor.h>
+#include <xcb/xcb_event.h>
 
 xcb_visualtype_t *visual_type = NULL;
 #include "libi3.h"
 
 #define SN_API_NOT_YET_FROZEN 1
-#include <libsn/sn-launchee.h>
-
 #include "i3-nagbar.h"
+
+#include <libsn/sn-launchee.h>
 
 #define MSG_PADDING logical_px(8)
 #define BTN_PADDING logical_px(3)

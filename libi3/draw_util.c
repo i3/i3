@@ -8,12 +8,13 @@
  */
 #include "libi3.h"
 
-#include <stdlib.h>
+#include <cairo/cairo-xcb.h>
 #include <err.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-#include <cairo/cairo-xcb.h>
 
 /* The default visual_type to use if none is specified when creating the surface. Must be defined globally. */
 extern xcb_visualtype_t *visual_type;

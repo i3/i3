@@ -9,15 +9,15 @@
  */
 #include "common.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
 #include <i3/ipc.h>
-#include <yajl/yajl_parse.h>
-#include <yajl/yajl_version.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <X11/Xlib.h>
+#include <yajl/yajl_parse.h>
+#include <yajl/yajl_version.h>
 
 config_t config;
 static char *cur_key;
