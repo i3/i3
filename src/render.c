@@ -10,6 +10,8 @@
  */
 #include "all.h"
 
+#include <math.h>
+
 /* Forward declarations */
 static int *precalculate_sizes(Con *con, render_params *p);
 static void render_root(Con *con, Con *fullscreen);

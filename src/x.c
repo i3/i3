@@ -10,6 +10,8 @@
  */
 #include "all.h"
 
+#include <unistd.h>
+
 #ifndef MAX
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif

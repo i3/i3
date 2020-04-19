@@ -8,6 +8,8 @@
  */
 #include "all.h"
 
+#include <math.h>
+
 #include <xkbcommon/xkbcommon-x11.h>
 #include <xkbcommon/xkbcommon.h>
 

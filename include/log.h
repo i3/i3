@@ -11,9 +11,6 @@
 
 #include <config.h>
 
-#include <stdarg.h>
-#include <stdbool.h>
-
 /* We will include libi3.h which define its own version of LOG, ELOG.
  * We want *our* version, so we undef the libi3 one. */
 #if defined(LOG)

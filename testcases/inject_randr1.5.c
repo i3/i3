@@ -16,6 +16,7 @@
 
 #include <ev.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <libgen.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
@@ -25,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 static void uds_connection_cb(EV_P_ ev_io *w, int revents);
 static void read_client_setup_request_cb(EV_P_ ev_io *w, int revents);

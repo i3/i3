@@ -12,6 +12,7 @@
 
 #include <fcntl.h>
 #include <time.h>
+#include <unistd.h>
 
 static bool human_readable_key, loaded_config_file_name_key;
 static char *human_readable_version, *loaded_config_file_name;

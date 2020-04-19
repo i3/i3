@@ -9,8 +9,7 @@
  */
 #include <config.h>
 
-#include "i3.h"
-#include "xcb.h"
+#include "all.h"
 
 #include <assert.h>
 #include <err.h>

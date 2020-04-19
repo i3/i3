@@ -9,13 +9,10 @@
  */
 #pragma once
 
-#include "libi3.h"
-
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
 
 #include <xcb/randr.h>
-#include <stdbool.h>
 #include <pcre.h>
 #include <sys/time.h>
 

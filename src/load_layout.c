@@ -10,6 +10,8 @@
  */
 #include "all.h"
 
+#include <locale.h>
+
 #include <yajl/yajl_parse.h>
 
 /* TODO: refactor the whole parsing thing */

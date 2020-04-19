@@ -9,6 +9,7 @@
 
 #include <signal.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 typedef struct dialog_t {
     xcb_window_t id;

@@ -10,13 +10,16 @@
  */
 #include "all.h"
 
+#include <ctype.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <libgen.h>
+#include <locale.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #if defined(__OpenBSD__)
 #include <sys/cdefs.h>
 #endif
-#include <ctype.h>
-#include <fcntl.h>
-#include <libgen.h>
 
 int min(int a, int b) {
     return (a < b ? a : b);

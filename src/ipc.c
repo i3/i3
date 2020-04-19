@@ -14,9 +14,11 @@
 #include <ev.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <locale.h>
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <unistd.h>
 
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>

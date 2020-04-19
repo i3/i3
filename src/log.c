@@ -9,11 +9,8 @@
  */
 #include <config.h>
 
-#include "i3.h"
-#include "libi3.h"
-#include "log.h"
+#include "all.h"
 #include "shmlog.h"
-#include "util.h"
 
 #include <errno.h>
 #include <fcntl.h>
