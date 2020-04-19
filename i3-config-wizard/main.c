@@ -9,6 +9,7 @@
  *
  */
 #include <config.h>
+#include "libi3.h"
 
 #include "libi3.h"
 

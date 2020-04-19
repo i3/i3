@@ -379,7 +379,6 @@ i3_nagbar_i3_nagbar_LDADD = \
 
 i3_nagbar_i3_nagbar_SOURCES = \
 	i3-nagbar/atoms.xmacro \
-	i3-nagbar/i3-nagbar.h \
 	i3-nagbar/main.c
 
 i3bar_i3bar_CPPFLAGS = \
