@@ -69,11 +69,9 @@ cp build/i3-${RELEASE_VERSION}.tar.bz2 .
 
 echo "Differences in the release tarball file lists:"
 
-diff -u \
+diff --color -u \
 	<(tar tf ../i3-${PREVIOUS_VERSION}.tar.bz2 | sed "s,i3-${PREVIOUS_VERSION}/,,g" | sort) \
-	<(tar tf    i3-${RELEASE_VERSION}.tar.bz2  | sed "s,i3-${RELEASE_VERSION}/,,g"  | sort) \
-	| colordiff
-
+	<(tar tf    i3-${RELEASE_VERSION}.tar.bz2  | sed "s,i3-${RELEASE_VERSION}/,,g"  | sort)
 
 gpg --armor -b i3-${RELEASE_VERSION}.tar.bz2
 
