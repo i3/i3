@@ -128,7 +128,7 @@ RUN dpkg-buildpackage -S -sa -j8
 EOT
 
 CONTAINER_NAME=$(echo "i3-${TMPDIR}" | sed 's,/,,g')
-docker build -t i3 .
+docker build --no-cache -t i3 .
 for file in $(docker run --name "${CONTAINER_NAME}" i3 /bin/sh -c "ls /usr/src/i3*_${RELEASE_VERSION}*")
 do
 	docker cp "${CONTAINER_NAME}:${file}" ${TMPDIR}/debian/
