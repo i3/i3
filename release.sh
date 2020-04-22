@@ -1,8 +1,8 @@
 #!/bin/zsh
 # This script is used to prepare a new release of i3.
 
-export RELEASE_VERSION="4.17"
-export PREVIOUS_VERSION="4.16"
+export RELEASE_VERSION="4.19"
+export PREVIOUS_VERSION="4.18"
 export RELEASE_BRANCH="next"
 
 if [ ! -e "../i3.github.io" ]
@@ -69,11 +69,9 @@ cp build/i3-${RELEASE_VERSION}.tar.bz2 .
 
 echo "Differences in the release tarball file lists:"
 
-diff -u \
+diff --color -u \
 	<(tar tf ../i3-${PREVIOUS_VERSION}.tar.bz2 | sed "s,i3-${PREVIOUS_VERSION}/,,g" | sort) \
-	<(tar tf    i3-${RELEASE_VERSION}.tar.bz2  | sed "s,i3-${RELEASE_VERSION}/,,g"  | sort) \
-	| colordiff
-
+	<(tar tf    i3-${RELEASE_VERSION}.tar.bz2  | sed "s,i3-${RELEASE_VERSION}/,,g"  | sort)
 
 gpg --armor -b i3-${RELEASE_VERSION}.tar.bz2
 
@@ -130,7 +128,7 @@ RUN dpkg-buildpackage -S -sa -j8
 EOT
 
 CONTAINER_NAME=$(echo "i3-${TMPDIR}" | sed 's,/,,g')
-docker build -t i3 .
+docker build --no-cache -t i3 .
 for file in $(docker run --name "${CONTAINER_NAME}" i3 /bin/sh -c "ls /usr/src/i3*_${RELEASE_VERSION}*")
 do
 	docker cp "${CONTAINER_NAME}:${file}" ${TMPDIR}/debian/
