@@ -1,0 +1,32 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.18.1 │
+ └──────────────────────────────┘
+
+This is i3 v4.18.1. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+This is a bugfix release for v4.18.
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • Move parent nodes in scratchpad correctly
+  • i3bar: Call cont_child() more liberally
+  • Fix load_layout crash when floating node doesn't have CT_FLOATING_CON parent
+  • Fix SEGFAULT when i3bar receives invalid input
+  • Revert "floating_reposition: avoid extra tree_render"
+  • Call tree_render if floating move changes workspace
+  • Update EWMH properties on workspace move
+  • cmd_focus_sibling: Fix crash on workspace level
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  Heman Gandhi, Orestis Floros
+
+-- Michael Stapelberg, 2020-04-22
