@@ -1,0 +1,29 @@
+#!/bin/sh -e
+scope=$1
+shift 2>&- ||:
+automarks=${*:-a b c d e f g h i j k l m n o p q r s t u v w x y z A B C D E F G H I J K L M N O P Q R S T U V W X Y Z}
+
+i3-msg -t get_tree \
+| jq \
+--arg scope "$scope" \
+--arg v0 "${0##*/}" \
+--argjson workspace "$(i3-msg -t get_workspaces | jq '.[]|select(.focused)|.id')" \
+--arg automarks "$automarks" \
+-r '
+[
+	[if $scope == "workspace" then
+		..|select(.id? == $workspace)|
+		..|select(.window? and .name and .floating != "user_on" and (.marks | length) == 0)|
+		"[id=\(.window)]"
+	elif $scope == "" or $scope == "window" then
+		"[]"
+	else
+		"Usage: \($v0) {workspace|window} [MARK...]\n"|halt_error(1)
+	end],
+	[([..|.marks?|select(.)]|flatten) as $winmarks |
+	$automarks|split(" ")|.[]|select(IN($winmarks[])|not)]
+]|transpose|map("\(.[0] // empty) mark \(.[1] // empty)")|join(";")
+' | {
+	read -r msg
+	i3-msg "$msg" >&-
+}
