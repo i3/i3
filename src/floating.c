@@ -221,22 +221,22 @@ void floating_check_size(Con *floating_con, bool prefer_height) {
     }
 }
 
-void floating_enable(Con *con, bool automatic) {
+bool floating_enable(Con *con, bool automatic) {
     bool set_focus = (con == focused);
 
     if (con_is_docked(con)) {
         LOG("Container is a dock window, not enabling floating mode.\n");
-        return;
+        return false;
     }
 
     if (con_is_floating(con)) {
         LOG("Container is already in floating mode, not doing anything.\n");
-        return;
+        return false;
     }
 
     if (con->type == CT_WORKSPACE) {
         LOG("Container is a workspace, not enabling floating mode.\n");
-        return;
+        return false;
     }
 
     Con *focus_head_placeholder = NULL;
@@ -419,6 +419,7 @@ void floating_enable(Con *con, bool automatic) {
 
     floating_set_hint_atom(nc, true);
     ipc_send_window_event("floating", con);
+    return true;
 }
 
 void floating_disable(Con *con) {
