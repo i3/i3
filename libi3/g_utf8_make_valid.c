@@ -19,8 +19,8 @@
 
 #include "libi3.h"
 
-#include <string.h>
 #include <glib.h>
+#include <string.h>
 
 /* Copied from:
  * https://gitlab.gnome.org/GNOME/glib/blob/f928dfdf57bf92c883b53b16d7a9d49add504f52/glib/gutf8.c#L1752-1815 */

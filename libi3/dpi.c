@@ -9,6 +9,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+
 #include <xcb/xcb_xrm.h>
 
 static long dpi;

@@ -10,25 +10,21 @@
 #include "common.h"
 #include "yajl_utils.h"
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <fcntl.h>
-#include <string.h>
-#include <errno.h>
 #include <err.h>
+#include <errno.h>
 #include <ev.h>
-#include <yajl/yajl_common.h>
-#include <yajl/yajl_parse.h>
-#include <yajl/yajl_version.h>
-#include <yajl/yajl_gen.h>
+#include <fcntl.h>
 #include <paths.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
-#include <xcb/xcb_keysyms.h>
+#include <yajl/yajl_gen.h>
+#include <yajl/yajl_parse.h>
 
 /* Global variables for child_*() */
 i3bar_child child;

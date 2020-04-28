@@ -8,14 +8,12 @@
 #include "libi3.h"
 
 #include <assert.h>
+#include <cairo/cairo-xcb.h>
+#include <err.h>
+#include <pango/pangocairo.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <err.h>
-
-#include <cairo/cairo-xcb.h>
-#include <pango/pangocairo.h>
 
 static const i3Font *savedFont = NULL;
 

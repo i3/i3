@@ -7,12 +7,9 @@
  */
 #include "libi3.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-#include <limits.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>

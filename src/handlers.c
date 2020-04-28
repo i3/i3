@@ -10,9 +10,9 @@
  */
 #include "all.h"
 
-#include <time.h>
-#include <float.h>
 #include <sys/time.h>
+#include <time.h>
+
 #include <xcb/randr.h>
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-monitor.h>

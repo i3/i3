@@ -8,35 +8,32 @@
  * when the user has an error in their configuration file.
  *
  */
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
+#include <config.h>
+
+#include "libi3.h"
+
 #include <err.h>
-#include <stdint.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <limits.h>
-#include <fcntl.h>
 #include <paths.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
+#include <xcb/randr.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-#include <xcb/xcb_event.h>
-#include <xcb/randr.h>
 #include <xcb/xcb_cursor.h>
 
 xcb_visualtype_t *visual_type = NULL;
-#include "libi3.h"
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launchee.h>
-
-#include "i3-nagbar.h"
 
 #define MSG_PADDING logical_px(8)
 #define BTN_PADDING logical_px(3)
@@ -44,6 +41,12 @@ xcb_visualtype_t *visual_type = NULL;
 #define BTN_GAP logical_px(20)
 #define CLOSE_BTN_GAP logical_px(15)
 #define BAR_BORDER logical_px(2)
+
+#define xmacro(atom) xcb_atom_t A_##atom;
+#include "atoms.xmacro"
+#undef xmacro
+
+#define die(...) errx(EXIT_FAILURE, __VA_ARGS__);
 
 static char *argv0 = NULL;
 
@@ -314,8 +317,8 @@ static xcb_rectangle_t get_window_position(void) {
     goto free_resources;
 
 free_resources:
-    FREE(res);
-    FREE(primary);
+    free(res);
+    free(primary);
     return result;
 }
 
@@ -598,7 +601,7 @@ int main(int argc, char *argv[]) {
         free(event);
     }
 
-    FREE(pattern);
+    free(pattern);
     draw_util_surface_free(conn, &bar);
 
     return 0;

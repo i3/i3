@@ -9,10 +9,6 @@
  */
 #include "all.h"
 
-#include "yajl_utils.h"
-
-#include <yajl/yajl_gen.h>
-
 /*
  * Match frame and window depth. This is needed because X will refuse to reparent a
  * window whose background is ParentRelative under a window with a different depth.

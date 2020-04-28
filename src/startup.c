@@ -11,12 +11,12 @@
  *
  */
 #include "all.h"
-
 #include "sd-daemon.h"
 
+#include <paths.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <paths.h>
+#include <unistd.h>
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>

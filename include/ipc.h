@@ -12,7 +12,6 @@
 #include <config.h>
 
 #include <ev.h>
-#include <stdbool.h>
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
 

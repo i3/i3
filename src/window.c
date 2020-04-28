@@ -9,6 +9,8 @@
  */
 #include "all.h"
 
+#include <math.h>
+
 /*
  * Frees an i3Window and all its members.
  *
