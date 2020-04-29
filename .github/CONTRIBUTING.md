@@ -26,6 +26,12 @@ Note that bug reports and feature requests for related projects should be filed 
 * Use the `next` branch for developing and sending your pull request.
 * Use `clang-format` to format your code.
 * Run the [testsuite](https://i3wm.org/docs/testsuite.html)
+* If your changes should be reported on the next release's changelog, also
+  update the [RELEASE-notes-next](../RELEASE-notes-next) file in the root
+  folder. Example of changes that should be reported are bug fixes present in
+  the latest stable version of i3 and new enhancements. Example of changes that
+  should not be reported are minor code improvements, documentation, regression
+  and fixes for bugs that were introduced in the `next` branch.
 
 ## Finding something to do
 
