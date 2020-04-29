@@ -10,10 +10,25 @@ strongly encouraged to upgrade.
  │ Changes in i3 v4.19        │
  └────────────────────────────┘
 
-  • REPLACE ME
+  • configure: respect --program-suffix
+  • use exec to avoid leaving useless shell process
+  • ipc: always include the marks property (even if empty)
+  • introduce “tiling_from” and ”floating_from” criteria
+  • make dock client order deterministic (sorted by class/instance) as a
+    side effect, i3bars without an explicit bar-id will be sorted according
+    to their definition order in the config file
 
  ┌────────────────────────────┐
  │ Bugfixes                   │
  └────────────────────────────┘
 
-  • REPLACE ME
+  • ensure client windows have a size of at least 1px after resize
+  • correctly handle overlapping decorations
+  • limit workspace numbers within 0..INT32_MAX
+  • fix a bug with tiling resize inside floating container
+  • i3-nagbar: Use _PATH_BSHELL to ensure using a bourne shell
+  • do not propagate $mod+right click to fullscreen clients
+  • do not try to resize fullscreen and non-fullscreen windows
+  • do not focus floating windows changing workspace with ConfigureNotify
+  • i3-dmenu-desktop: Support symlinks in search path
+  • build: correctly provide auxiliary functions when needed
