@@ -25,7 +25,7 @@ typedef enum { BORDER_LEFT = (1 << 0),
  * floating_windows list of the workspace.
  *
  */
-void floating_enable(Con *con, bool automatic);
+bool floating_enable(Con *con, bool automatic);
 
 /**
  * Disables floating mode for the given container by re-attaching the container
