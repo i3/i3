@@ -347,7 +347,7 @@ gchar *g_utf8_make_valid(const gchar *str, gssize len);
  */
 uint32_t get_colorpixel(const char *hex) __attribute__((const));
 
-#ifndef HAVE_strndup
+#ifndef HAVE_STRNDUP
 /**
  * Taken from FreeBSD
  * Returns a pointer to a new string which is a duplicate of the
@@ -532,7 +532,7 @@ char *resolve_tilde(const char *path);
  */
 char *get_config_path(const char *override_configpath, bool use_system_paths);
 
-#ifndef HAVE_mkdirp
+#ifndef HAVE_MKDIRP
 /**
  * Emulates mkdir -p (creates any missing folders)
  *

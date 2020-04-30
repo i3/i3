@@ -9,7 +9,7 @@
 
 #include <string.h>
 
-#ifndef HAVE_strndup
+#ifndef HAVE_STRNDUP
 /*
  * Taken from FreeBSD
  * Returns a pointer to a new string which is a duplicate of the

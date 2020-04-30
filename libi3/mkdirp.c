@@ -12,7 +12,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#ifndef HAVE_mkdirp
+#ifndef HAVE_MKDIRP
 /*
  * Emulates mkdir -p (creates any missing folders)
  *
