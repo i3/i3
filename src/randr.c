@@ -1023,6 +1023,7 @@ void randr_query_outputs(void) {
     }
 
     /* render_layout flushes */
+    ewmh_update_desktop_properties();
     tree_render();
 
     FREE(primary);
