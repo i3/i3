@@ -2318,11 +2318,11 @@ i3String *con_parse_title_format(Con *con) {
     char *formatted_str = format_placeholders(con->title_format, &placeholders[0], num);
     i3String *formatted = i3string_from_utf8(formatted_str);
     i3string_set_markup(formatted, pango_markup);
-    FREE(formatted_str);
 
-    for (size_t i = 0; i < num; i++) {
-        FREE(placeholders[i].value);
-    }
+    free(formatted_str);
+    free(title);
+    free(class);
+    free(instance);
 
     return formatted;
 }
