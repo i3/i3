@@ -23,31 +23,28 @@ Here’s a memory refresher:
 
 === Build system features
 
-* We use the AX_ENABLE_BUILDDIR macro to enforce builds happening in a separate
-  directory. This is a prerequisite for the AX_EXTEND_SRCDIR macro and building
+* We use the +AX_ENABLE_BUILDDIR+ macro to enforce builds happening in a separate
+  directory. This is a prerequisite for the +AX_EXTEND_SRCDIR+ macro and building
   in a separate directory is common practice anyway. In case this causes any
   trouble when packaging i3 for your distribution, please open an issue.
 
-* “make check” runs the i3 testsuite. See docs/testsuite for details.
+* +make check+ runs the i3 testsuite. See docs/testsuite for details.
 
-* “make distcheck” (runs testsuite on “make dist” result, tiny bit quicker
+* +make distcheck+ (runs testsuite on +make dist+ result, tiny bit quicker
   feedback cycle than waiting for the travis build to catch the issue).
 
-* “make uninstall” (occasionally requested by users who compile from source)
+* +make uninstall+ (occasionally requested by users who compile from source)
 
-* “make” will build manpages/docs by default if the tools are installed.
+* +make+ will build manpages/docs by default if the tools are installed.
   Conversely, manpages/docs are not tried to be built for users who don’t want
   to install all these dependencies to get started hacking on i3.
 
 * non-release builds will enable address sanitizer by default. Use the
-  --disable-sanitizers configure option to turn off all sanitizers, and see
-  --help for available sanitizers.
+  +--disable-sanitizers+ configure option to turn off all sanitizers, and see
+  +--help+ for available sanitizers.
 
-* Support for pre-compiled headers (PCH) has been dropped for now in the
-  interest of simplicity. If you need support for PCH, please open an issue.
-
-* Coverage reports are now generated using “make check-code-coverage”, which
-  requires specifying --enable-code-coverage when calling configure.
+* Coverage reports are now generated using +make check-code-coverage+, which
+  requires specifying +--enable-code-coverage+ when calling configure.
 
 == Using git / sending patches
 
@@ -106,9 +103,9 @@ In the case of i3, the tasks (and order of them) are the following:
   the first client of X) and manage them (reparent them, create window
   decorations, etc.)
 . When new windows are created, manage them
-. Handle the client’s `_WM_STATE` property, but only `_WM_STATE_FULLSCREEN` and
-  `_NET_WM_STATE_DEMANDS_ATTENTION`
-. Handle the client’s `WM_NAME` property
+. Handle the client’s +_WM_STATE+ property, but only +_WM_STATE_FULLSCREEN+ and
+  +_NET_WM_STATE_DEMANDS_ATTENTION+
+. Handle the client’s +WM_NAME+ property
 . Handle the client’s size hints to display them proportionally
 . Handle the client’s urgency hint
 . Handle enter notifications (focus follows mouse)
@@ -363,12 +360,12 @@ of the layout tree, they cannot have any children.
 
 i3 makes heavy use of the list macros defined in BSD operating systems. To
 ensure that the operating system on which i3 is compiled has all the expected
-features, i3 comes with `include/queue.h`. On BSD systems, you can use man
-`queue(3)`. On Linux, you have to use google (or read the source).
+features, i3 comes with +include/queue.h+. On BSD systems, you can use +man
+queue(3)+. On Linux, you have to use google (or read the source).
 
 The lists used are +SLIST+ (single linked lists), +CIRCLEQ+ (circular
 queues) and +TAILQ+ (tail queues). Usually, only forward traversal is necessary,
-so an `SLIST` works fine. If inserting elements at arbitrary positions or at
+so an +SLIST+ works fine. If inserting elements at arbitrary positions or at
 the end of a list is necessary, a +TAILQ+ is used instead. However, for the
 windows inside a container, a +CIRCLEQ+ is necessary to go from the currently
 selected window to the window above/below.
@@ -378,10 +375,10 @@ selected window to the window above/below.
 There is a row of standard variables used in many events. The following names
 should be chosen for those:
 
- * ``conn'' is the xcb_connection_t
- * ``event'' is the event of the particular type
- * ``con'' names a container
- * ``current'' is a loop variable when using +TAILQ_FOREACH+ etc.
+ * +conn+ is the xcb_connection_t
+ * +event+ is the event of the particular type
+ * +con+ names a container
+ * +current+ is a loop variable when using +TAILQ_FOREACH+ etc.
 
 == Startup (src/mainx.c, main())
 
@@ -430,7 +427,7 @@ The bound command is parsed by the cmdparse lexer/parser, see +parse_cmd+ in
 
 == Manage windows (src/main.c, manage_window() and reparent_window())
 
-`manage_window()` does some checks to decide whether the window should be
++manage_window()+ does some checks to decide whether the window should be
 managed at all:
 
  * Windows have to be mapped, that is, visible on screen
@@ -438,18 +435,18 @@ managed at all:
    not be managed by a window manager
 
 Afterwards, i3 gets the initial geometry and reparents the window (see
-`reparent_window()`) if it wasn’t already managed.
++reparent_window()+) if it wasn’t already managed.
 
 Reparenting means that for each window which is reparented, a new window,
 slightly larger than the original one, is created. The original window is then
 reparented to the bigger one (called "frame").
 
-After reparenting, the window type (`_NET_WM_WINDOW_TYPE`) is checked to see
-whether this window is a dock (`_NET_WM_WINDOW_TYPE_DOCK`), like dzen2 for
+After reparenting, the window type (+_NET_WM_WINDOW_TYPE+) is checked to see
+whether this window is a dock (+_NET_WM_WINDOW_TYPE_DOCK+), like dzen2 for
 example. Docks are handled differently, they don’t have decorations and are not
 assigned to a specific container. Instead, they are positioned at the bottom
 or top of the screen (in the appropriate dock area containers). To get the
-height which needs to be reserved for the window, the `_NET_WM_STRUT_PARTIAL`
+height which needs to be reserved for the window, the +_NET_WM_STRUT_PARTIAL+
 property is used.
 
 Furthermore, the list of assignments (to other workspaces, which may be on
@@ -460,10 +457,10 @@ target workspace is not visible, the window will not be mapped.
 == What happens when an application is started?
 
 i3 does not care about applications. All it notices is when new windows are
-mapped (see `src/handlers.c`, `handle_map_request()`). The window is then
+mapped (see +src/handlers.c+, +handle_map_request()+). The window is then
 reparented (see section "Manage windows").
 
-After reparenting the window, `render_tree()` is called which renders the
+After reparenting the window, +render_tree()+ is called which renders the
 internal layout table. The new window has been placed in the currently focused
 container and therefore the new window and the old windows (if any) need to be
 moved/resized so that the currently active layout (default/stacking/tabbed mode)
@@ -482,7 +479,7 @@ can reconfigure themselves).
 Only the _NET_WM_STATE_FULLSCREEN and _NET_WM_STATE_DEMANDS_ATTENTION atoms
 are handled.
 
-The former calls ``toggle_fullscreen()'' for the specific client which just
+The former calls +toggle_fullscreen()+ for the specific client which just
 configures the client to use the whole screen on which it currently is.
 Also, it is set as fullscreen_client for the i3Screen.
 
@@ -539,7 +536,7 @@ container) to the bottom.
 
 === Rendering the root container
 
-The i3 root container (`con->type == CT_ROOT`) represents the X11 root window.
+The i3 root container (+con->type == CT_ROOT+) represents the X11 root window.
 It contains one child container for every output (like LVDS1, VGA1, …), which
 is available on your computer.
 
@@ -558,7 +555,7 @@ only called for the global fullscreen window.
 
 === Rendering an output
 
-Output containers (`con->layout == L_OUTPUT`) represent a hardware output like
+Output containers (+con->layout == L_OUTPUT+) represent a hardware output like
 LVDS1, VGA1, etc. An output container has three children (at the moment): One
 content container (having workspaces as children) and the top/bottom dock area
 containers.
@@ -566,7 +563,7 @@ containers.
 The rendering happens in the function +render_l_output()+ in the following
 steps:
 
-1. Find the content container (`con->type == CT_CON`)
+1. Find the content container (+con->type == CT_CON+)
 2. Get the currently visible workspace (+con_get_fullscreen_con(content,
    CF_OUTPUT)+).
 3. If there is a fullscreened window on that workspace, directly render it and
@@ -574,22 +571,22 @@ steps:
 4. Sum up the space used by all the dock windows (they have a variable height
    only).
 5. Set the workspace rects (x/y/width/height) based on the position of the
-   output (stored in `con->rect`) and the usable space
-   (`con->rect.{width,height}` without the space used for dock windows).
+   output (stored in +con->rect+) and the usable space
+   (+con->rect.{width,height}+ without the space used for dock windows).
 6. Recursively raise and render the output’s child containers (meaning dock
    area containers and the content container).
 
 === Rendering a workspace or split container
 
 From here on, there really is no difference anymore. All containers are of
-`con->type == CT_CON` (whether workspace or split container) and some of them
-have a `con->window`, meaning they represent an actual window instead of a
++con->type == CT_CON+ (whether workspace or split container) and some of them
+have a +con->window+, meaning they represent an actual window instead of a
 split container.
 
 ==== Default layout
 
 In default layout, containers are placed horizontally or vertically next to
-each other (depending on the `con->orientation`). If a child is a leaf node (as
+each other (depending on the +con->orientation+). If a child is a leaf node (as
 opposed to a split container) and has border style "normal", appropriate space
 will be reserved for its window decoration.
 
@@ -835,8 +832,8 @@ workspace <direction>::
 	the beginning. +
 
 NOTE: Note that you can specify multiple literals in the same line. This has
-	exactly the same effect as if you specified `direction =
-	'next_on_output' -> call cmd_workspace($direction)` and so forth. +
+	exactly the same effect as if you specified +direction =
+	'next_on_output' -> call cmd_workspace($direction)+ and so forth. +
 
 NOTE: Also note that the order of literals is important here: If 'next' were
 	ordered before 'next_on_output', then 'next_on_output' would never
@@ -1020,11 +1017,11 @@ Without much ado, here is the list of cases which need to be considered:
 
 == Gotchas
 
-* Forgetting to call `xcb_flush(conn);` after sending a request. This usually
+* Forgetting to call +xcb_flush(conn);+ after sending a request. This usually
   leads to code which looks like it works fine but which does not work under
   certain conditions.
 
-* Forgetting to call `floating_fix_coordinates(con, old_rect, new_rect)` after
+* Forgetting to call +floating_fix_coordinates(con, old_rect, new_rect)+ after
   moving workspaces across outputs. Coordinates for floating containers are
   not relative to workspace boundaries, so you must correct their coordinates
   or those containers will show up in the wrong workspace or not at all.
