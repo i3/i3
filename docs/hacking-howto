@@ -113,11 +113,11 @@ will be discussed.
 
 === Tiling window managers
 
-Traditionally, there are two approaches to managing windows: The most common
-one nowadays is floating, which means the user can freely move/resize the
-windows. The other approach is called tiling, which means that your window
-manager distributes windows to use as much space as possible while not
-overlapping each other.
+Traditionally, there are two approaches to managing windows: The most common one
+nowadays is stacking (or floating, using i3's terminology), which means the user
+can freely move/resize the windows, potentially overlapping them. The other
+approach is called tiling, which means that the window manager distributes
+windows to use as much space as possible while not overlapping each other.
 
 The idea behind tiling is that you should not need to waste your time
 moving/resizing windows while you usually want to get some work done. After
