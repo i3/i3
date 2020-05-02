@@ -8,6 +8,19 @@ touching i3’s source code. It should contain all important information to help
 you understand why things are like they are. If it does not mention something
 you find necessary, please do not hesitate to contact me.
 
+++++
+<div style="background-color:red; color:white; padding:20px;">
+<strong style="color:white;">WARNING!</strong>
+<p>
+++++
+This document is not 100% up to date. Specifically, everything up to and
+including <<data_structures>> has been updated recently. The rest might contain
+outdated information.
+++++
+</p>
+</div>
+++++
+
 == Building i3
 
 You can build i3 like you build any other software package which uses autotools.
@@ -246,6 +259,7 @@ A file containing all X11 atoms which i3 uses. This file will be included
 various times (for defining, requesting and receiving the atoms), each time
 with a different definition of xmacro().
 
+[[data_structures]]
 == Data structures
 
 See +include/data.h+ for documented data structures. The most important ones are
