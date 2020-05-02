@@ -151,63 +151,67 @@ example.
 
 == Files
 
-include/atoms.xmacro::
-A file containing all X11 atoms which i3 uses. This file will be included
-various times (for defining, requesting and receiving the atoms), each time
-with a different definition of xmacro().
+i3's source code is in the +src+ folder while header files reside in +include+.
+Other tools such as i3bar and i3-nagbar have their own folders. i3 and its tools
+share an internal library called ``libi3'' which also has its own folder.
+
+The following list gives an overview of the codebase, explaining the
+functionality of the most important, core source code files. Other files in the
+tree that are not mentioned here implement specific functionalities: for example,
++src/scratchpad.c+ is obviously about the scratchpad functionality.
 
 include/data.h::
-Contains data definitions used by nearly all files. You really need to read
-this first.
+Contains data definitions used by nearly all files.
 
 include/*.h::
 Contains forward definitions for all public functions, as well as
 doxygen-compatible comments (so if you want to get a bit more of the big
 picture, either browse all header files or use doxygen if you prefer that).
 
-src/config_parser.c::
-Contains a custom configuration parser. See src/command_parser.c for rationale
- on why we use a custom parser.
-
-src/click.c::
-Contains all functions which handle mouse button clicks (right mouse button
-clicks initiate resizing and thus are relatively complex).
-
-src/command_parser.c::
-Contains a hand-written parser to parse commands (commands are what
-you bind on keys and what you can send to i3 using the IPC interface, like
-'move left' or 'workspace 4').
+src/config_directives.c::
+src/commands.c::
+Contain the definitions for all high-level config and command directives. These
+are excellent places to start with a top-to-bottom approach to understand
+specific i3 behavior. For example, if you want to investigate a bug that happens
+for the +move to mark+ command, you can use gdb to pause in
++cmd_move_con_to_mark+ and then work your way from there, stepping into
+lower-level functions.
 
 src/con.c::
-Contains all functions which deal with containers directly (creating
-containers, searching containers, getting specific properties from containers,
-…).
+Contains all functions which deal with containers directly (creating containers,
+searching containers, getting specific properties from containers, …). Contains
+abstractions and auxiliary functions necessary to work with the container
+structure which is used in almost all parts of the codebase.
 
-src/config.c::
-Contains all functions handling the configuration file (calling the parser
-src/config_parser.c) with the correct path, switching key bindings mode).
+src/tree.c::
+Contains functions which deal with the tree abstraction. However, be aware that
++src/con.c+ also contains functions that heavily interact with the tree
+structure. Some functions that are included in +str/tree.c+ are those that handle
+opening and closing containers in the tree, finding the container that should be
+focused next and flattening the tree. See also +src/move.c+ for other
+move-specific functions that interact with the tree, which were moved into their
+own file because they are so long.
 
-src/ewmh.c::
-Functions to get/set certain EWMH properties easily.
-
-src/floating.c::
-Contains functions for floating mode (mostly resizing/dragging).
+src/workspace.c::
+Contains functions which deal with workspaces. Includes code that creates new
+workspaces, shows existing ones and deals with workspace assignments.
 
 src/handlers.c::
 Contains all handlers for all kinds of X events (new window title, new hints,
-unmapping, key presses, button presses, …).
+unmapping, key presses, button presses, …). This is a very important file to
+understand how i3 interacts with changes to its environment.
 
-src/ipc.c::
-Contains code for the IPC interface.
+src/command_parser.c::
+src/config_parser.c::
+Contain a hand-written parser to parse commands and configuration (commands are what
+you bind on keys and what you can send to i3 using the IPC interface, like
++move left+ or +workspace 4+). +src/config.c+ is responsible for calling the
+configuration parser.
 
-src/load_layout.c::
-Contains code for loading layouts from JSON files.
-
-src/log.c::
-Contains the logging functions.
-
-src/main.c::
-Initializes the window manager.
+src/click.c::
+src/resize.c::
+Contain functions which handle mouse button clicks (right mouse button
+clicks initiate resizing and thus are relatively complex).
 
 src/manage.c::
 Looks at existing or new windows and decides whether to manage them. If so, it
@@ -216,62 +220,32 @@ reparents the window and inserts it into our data structures.
 src/match.c::
 A "match" is a data structure which acts like a mask or expression to match
 certain windows or not. For example, when using commands, you can specify a
-command like this: [title="*Firefox*"] kill. The title member of the match
+command like this: +[title="*Firefox*"] kill+. The title member of the match
 data structure will then be filled and i3 will check each window using
-match_matches_window() to find the windows affected by this command.
-
-src/move.c::
-Contains code to move a container in a specific direction.
-
-src/output.c::
-Functions to handle CT_OUTPUT cons.
++match_matches_window()+ to find the windows affected by this command.
 
 src/randr.c::
 The RandR API is used to get (and re-query) the configured outputs (monitors,
-…).
+…). Legacy Xinerama support resides in +src/xinerama.c+.
 
 src/render.c::
 Renders the tree data structure by assigning coordinates to every node. These
 values will later be pushed to X11 in +src/x.c+.
 
-src/resize.c::
-Contains the functions to resize containers.
-
-src/restore_layout.c::
-Everything for restored containers that is not pure state parsing (which can be
-found in load_layout.c).
-
 src/sighandler.c::
 Handles +SIGSEGV+, +SIGABRT+ and +SIGFPE+ by showing a dialog that i3 crashed.
-You can chose to let it dump core, to restart it in-place or to restart it
-in-place but forget about the layout.
-
-src/tree.c::
-Contains functions which open or close containers in the tree, change focus or
-cleanup ("flatten") the tree. See also +src/move.c+ for another similar
-function, which was moved into its own file because it is so long.
-
-src/util.c::
-Contains useful functions which are not really dependent on anything.
+You can choose to let it dump core and restart i3 in-place (either trying to
+preserve layout or forget about it).
 
 src/window.c::
 Handlers to update X11 window properties like +WM_CLASS+, +_NET_WM_NAME+,
 +CLIENT_LEADER+, etc.
 
-src/workspace.c::
-Contains all functions related to workspaces (displaying, hiding, renaming…)
+include/atoms.xmacro::
+A file containing all X11 atoms which i3 uses. This file will be included
+various times (for defining, requesting and receiving the atoms), each time
+with a different definition of xmacro().
 
-src/x.c::
-Transfers our in-memory tree (see +src/render.c+) to X11.
-
-src/xcb.c::
-Contains wrappers to use xcb more easily.
-
-src/xcursor.c::
-XCursor functions (for cursor themes).
-
-src/xinerama.c::
-Legacy support for Xinerama. See +src/randr.c+ for the preferred API.
 
 == Data structures
 
