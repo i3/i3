@@ -192,6 +192,8 @@ bar {
         status_command i3status
 }
 
+no_focus [window_type="notification"]
+
 #######################################################################
 # automatically start i3-config-wizard to offer the user to create a
 # keysym-based config which used their favorite modifier (alt or windows)
