@@ -19,7 +19,7 @@ RUN echo 'APT::Acquire::Retries "5";' > /etc/apt/apt.conf.d/80retry
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     dpkg-dev devscripts git equivs \
-    clang clang-format-6.0 \
+    build-essential clang clang-format-6.0 \
     lintian && \
     rm -rf /var/lib/apt/lists/*
 
