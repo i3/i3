@@ -32,3 +32,4 @@ strongly encouraged to upgrade.
   • do not focus floating windows changing workspace with ConfigureNotify
   • i3-dmenu-desktop: Support symlinks in search path
   • build: correctly provide auxiliary functions when needed
+  • build: fix issues with parallel build
