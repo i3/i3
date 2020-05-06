@@ -34,3 +34,4 @@ strongly encouraged to upgrade.
   • i3-dmenu-desktop: Support symlinks in search path
   • build: correctly provide auxiliary functions when needed
   • build: fix issues with parallel build
+  • set _NET_DESKTOP_VIEWPORT after randr changes
