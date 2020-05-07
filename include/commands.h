@@ -315,10 +315,16 @@ void cmd_title_format(I3_CMD, const char *format);
 void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name);
 
 /**
- * Implementation of 'bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]'
+ * Implementation of 'bar mode dock|hide|invisible|toggle [<bar_id>]'
  *
  */
-void cmd_bar(I3_CMD, const char *bar_type, const char *bar_value, const char *bar_id);
+void cmd_bar_mode(I3_CMD, const char *bar_mode, const char *bar_id);
+
+/**
+ * Implementation of 'bar hidden_state hide|show|toggle [<bar_id>]'
+ *
+ */
+void cmd_bar_hidden_state(I3_CMD, const char *bar_hidden_state, const char *bar_id);
 
 /**
  * Implementation of 'shmlog <size>|toggle|on|off'

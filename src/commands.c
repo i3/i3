@@ -1621,8 +1621,11 @@ void cmd_reload(I3_CMD) {
     x_set_i3_atoms();
     /* Send an IPC event just in case the ws names have changed */
     ipc_send_workspace_event("reload", NULL, NULL);
-    /* Send an update event for the barconfig just in case it has changed */
-    update_barconfig();
+    /* Send an update event for each barconfig just in case it has changed */
+    Barconfig *current;
+    TAILQ_FOREACH (current, &barconfigs, configs) {
+        ipc_send_barconfig_update_event(current);
+    }
 
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
@@ -2075,7 +2078,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
  * Implementation of 'bar mode dock|hide|invisible|toggle [<bar_id>]'
  *
  */
-static bool cmd_bar_mode(const char *bar_mode, const char *bar_id) {
+void cmd_bar_mode(I3_CMD, const char *bar_mode, const char *bar_id) {
     int mode = M_DOCK;
     bool toggle = false;
     if (strcmp(bar_mode, "dock") == 0)
@@ -2088,39 +2091,38 @@ static bool cmd_bar_mode(const char *bar_mode, const char *bar_id) {
         toggle = true;
     else {
         ELOG("Unknown bar mode \"%s\", this is a mismatch between code and parser spec.\n", bar_mode);
-        return false;
+        assert(false);
     }
 
-    bool changed_sth = false;
     Barconfig *current = NULL;
     TAILQ_FOREACH (current, &barconfigs, configs) {
-        if (bar_id && strcmp(current->id, bar_id) != 0)
+        if (strcmp(current->id, bar_id) != 0) {
             continue;
+        }
 
-        if (toggle)
+        if (toggle) {
             mode = (current->mode + 1) % 2;
+        }
 
-        DLOG("Changing bar mode of bar_id '%s' to '%s (%d)'\n", current->id, bar_mode, mode);
-        current->mode = mode;
-        changed_sth = true;
+        DLOG("Changing bar mode of bar_id '%s' from '%d' to '%s (%d)'\n",
+             current->id, current->mode, bar_mode, mode);
+        if ((int)current->mode != mode) {
+            current->mode = mode;
+            ipc_send_barconfig_update_event(current);
+        }
 
-        if (bar_id)
-            break;
+        ysuccess(true);
+        return;
     }
 
-    if (bar_id && !changed_sth) {
-        DLOG("Changing bar mode of bar_id %s failed, bar_id not found.\n", bar_id);
-        return false;
-    }
-
-    return true;
+    yerror("Changing bar mode of bar_id %s failed, bar_id not found.\n", bar_id);
 }
 
 /*
  * Implementation of 'bar hidden_state hide|show|toggle [<bar_id>]'
  *
  */
-static bool cmd_bar_hidden_state(const char *bar_hidden_state, const char *bar_id) {
+void cmd_bar_hidden_state(I3_CMD, const char *bar_hidden_state, const char *bar_id) {
     int hidden_state = S_SHOW;
     bool toggle = false;
     if (strcmp(bar_hidden_state, "hide") == 0)
@@ -2131,54 +2133,31 @@ static bool cmd_bar_hidden_state(const char *bar_hidden_state, const char *bar_i
         toggle = true;
     else {
         ELOG("Unknown bar state \"%s\", this is a mismatch between code and parser spec.\n", bar_hidden_state);
-        return false;
+        assert(false);
     }
 
-    bool changed_sth = false;
     Barconfig *current = NULL;
     TAILQ_FOREACH (current, &barconfigs, configs) {
-        if (bar_id && strcmp(current->id, bar_id) != 0)
+        if (strcmp(current->id, bar_id) != 0) {
             continue;
+        }
 
-        if (toggle)
+        if (toggle) {
             hidden_state = (current->hidden_state + 1) % 2;
+        }
 
-        DLOG("Changing bar hidden_state of bar_id '%s' to '%s (%d)'\n", current->id, bar_hidden_state, hidden_state);
-        current->hidden_state = hidden_state;
-        changed_sth = true;
+        DLOG("Changing bar hidden_state of bar_id '%s' from '%d' to '%s (%d)'\n",
+             current->id, current->hidden_state, bar_hidden_state, hidden_state);
+        if ((int)current->hidden_state != hidden_state) {
+            current->hidden_state = hidden_state;
+            ipc_send_barconfig_update_event(current);
+        }
 
-        if (bar_id)
-            break;
-    }
-
-    if (bar_id && !changed_sth) {
-        DLOG("Changing bar hidden_state of bar_id %s failed, bar_id not found.\n", bar_id);
-        return false;
-    }
-
-    return true;
-}
-
-/*
- * Implementation of 'bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]'
- *
- */
-void cmd_bar(I3_CMD, const char *bar_type, const char *bar_value, const char *bar_id) {
-    bool ret;
-    if (strcmp(bar_type, "mode") == 0)
-        ret = cmd_bar_mode(bar_value, bar_id);
-    else if (strcmp(bar_type, "hidden_state") == 0)
-        ret = cmd_bar_hidden_state(bar_value, bar_id);
-    else {
-        ELOG("Unknown bar option type \"%s\", this is a mismatch between code and parser spec.\n", bar_type);
-        ret = false;
-    }
-
-    ysuccess(ret);
-    if (!ret)
+        ysuccess(true);
         return;
+    }
 
-    update_barconfig();
+    yerror("Changing bar hidden_state of bar_id %s failed, bar_id not found.\n", bar_id);
 }
 
 /*

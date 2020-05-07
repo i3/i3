@@ -17,6 +17,7 @@ strongly encouraged to upgrade.
   • make dock client order deterministic (sorted by class/instance) as a
     side effect, i3bars without an explicit bar-id will be sorted according
     to their definition order in the config file
+  • update i3bar config when necessary (reduces redraws on bar mode changes)
   • mention rofi in default config file
 
  ┌────────────────────────────┐
