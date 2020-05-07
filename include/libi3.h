@@ -543,9 +543,9 @@ int mkdirp(const char *path, mode_t mode);
 /** Helper structure for usage in format_placeholders(). */
 typedef struct placeholder_t {
     /* The placeholder to be replaced, e.g., "%title". */
-    char *name;
+    const char *name;
     /* The value this placeholder should be replaced with. */
-    char *value;
+    const char *value;
 } placeholder_t;
 
 /**

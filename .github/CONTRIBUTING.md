@@ -38,4 +38,4 @@ Note that bug reports and feature requests for related projects should be filed 
 * Find a [reproducible bug](https://github.com/i3/i3/issues?utf8=%E2%9C%93&q=is%3Aopen+label%3Areproducible+label%3Abug+) from the issue tracker. These issues have been reviewed and confirmed by a project contributor.
 * Find an [accepted enhancement](https://github.com/i3/i3/issues?utf8=%E2%9C%93&q=is%3Aopen+label%3Aaccepted+label%3Aenhancement) from the issue tracker. These have been approved and are ok to start working on.
 
-There's a very good [overview of the codebase](https://i3wm.org/docs/hacking-howto.html) available to get you started.
+There's an [overview of the codebase](https://i3wm.org/docs/hacking-howto.html) available to get you started.

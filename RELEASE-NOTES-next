@@ -18,6 +18,7 @@ strongly encouraged to upgrade.
     side effect, i3bars without an explicit bar-id will be sorted according
     to their definition order in the config file
   • update i3bar config when necessary (reduces redraws on bar mode changes)
+  • mention rofi in default config file
 
  ┌────────────────────────────┐
  │ Bugfixes                   │
@@ -33,3 +34,5 @@ strongly encouraged to upgrade.
   • do not focus floating windows changing workspace with ConfigureNotify
   • i3-dmenu-desktop: Support symlinks in search path
   • build: correctly provide auxiliary functions when needed
+  • build: fix issues with parallel build
+  • set _NET_DESKTOP_VIEWPORT after randr changes

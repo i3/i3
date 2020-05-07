@@ -47,10 +47,11 @@ bindcode $mod+Shift+24 kill
 
 # start dmenu (a program launcher)
 bindcode $mod+40 exec dmenu_run
-# There also is the (new) i3-dmenu-desktop which only displays applications
-# shipping a .desktop file. It is a wrapper around dmenu, so you need that
-# installed.
-# bindsym $mod+d exec --no-startup-id i3-dmenu-desktop
+# A more modern dmenu replacement is rofi:
+# bindcode $mod+40 exec rofi -modi drun,run -show drun
+# There also is i3-dmenu-desktop which only displays applications shipping a
+# .desktop file. It is a wrapper around dmenu, so you need that installed.
+bindcode $mod+40 exec --no-startup-id i3-dmenu-desktop
 
 # change focus
 bindcode $mod+44 focus left
