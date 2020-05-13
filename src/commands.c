@@ -2094,9 +2094,14 @@ void cmd_bar_mode(I3_CMD, const char *bar_mode, const char *bar_id) {
         assert(false);
     }
 
+    if (TAILQ_EMPTY(&barconfigs)) {
+        yerror("No bars found\n");
+        return;
+    }
+
     Barconfig *current = NULL;
     TAILQ_FOREACH (current, &barconfigs, configs) {
-        if (strcmp(current->id, bar_id) != 0) {
+        if (bar_id && strcmp(current->id, bar_id) != 0) {
             continue;
         }
 
@@ -2111,11 +2116,21 @@ void cmd_bar_mode(I3_CMD, const char *bar_mode, const char *bar_id) {
             ipc_send_barconfig_update_event(current);
         }
 
-        ysuccess(true);
-        return;
+        if (bar_id) {
+            /* We are looking for a specific bar and we found it */
+            ysuccess(true);
+            return;
+        }
     }
 
-    yerror("Changing bar mode of bar_id %s failed, bar_id not found.\n", bar_id);
+    if (bar_id) {
+        /* We are looking for a specific bar and we did not find it */
+        yerror("Changing bar mode of bar_id %s failed, bar_id not found.\n", bar_id);
+    } else {
+        /* We have already handled the case of no bars, so we must have
+         * updated all active bars now. */
+        ysuccess(true);
+    }
 }
 
 /*
@@ -2136,9 +2151,14 @@ void cmd_bar_hidden_state(I3_CMD, const char *bar_hidden_state, const char *bar_
         assert(false);
     }
 
+    if (TAILQ_EMPTY(&barconfigs)) {
+        yerror("No bars found\n");
+        return;
+    }
+
     Barconfig *current = NULL;
     TAILQ_FOREACH (current, &barconfigs, configs) {
-        if (strcmp(current->id, bar_id) != 0) {
+        if (bar_id && strcmp(current->id, bar_id) != 0) {
             continue;
         }
 
@@ -2153,11 +2173,21 @@ void cmd_bar_hidden_state(I3_CMD, const char *bar_hidden_state, const char *bar_
             ipc_send_barconfig_update_event(current);
         }
 
-        ysuccess(true);
-        return;
+        if (bar_id) {
+            /* We are looking for a specific bar and we found it */
+            ysuccess(true);
+            return;
+        }
     }
 
-    yerror("Changing bar hidden_state of bar_id %s failed, bar_id not found.\n", bar_id);
+    if (bar_id) {
+        /* We are looking for a specific bar and we did not find it */
+        yerror("Changing bar hidden_state of bar_id %s failed, bar_id not found.\n", bar_id);
+    } else {
+        /* We have already handled the case of no bars, so we must have
+         * updated all active bars now. */
+        ysuccess(true);
+    }
 }
 
 /*
