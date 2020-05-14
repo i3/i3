@@ -48,11 +48,11 @@ Output *get_output_by_name(const char *name, const bool require_active) {
     Output *output;
     bool get_primary = (strcasecmp("primary", name) == 0);
     TAILQ_FOREACH(output, &outputs, outputs) {
-        if (output->primary && get_primary) {
-            return output;
-        }
         if (require_active && !output->active) {
             continue;
+        }
+        if (output->primary && get_primary) {
+            return output;
         }
         struct output_name *output_name;
         SLIST_FOREACH(output_name, &output->names_head, names) {
