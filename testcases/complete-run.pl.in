@@ -18,7 +18,7 @@ use Time::HiRes qw(time);
 use IO::Handle;
 
 # these are shipped with the testsuite
-use lib qw(@abs_top_builddir@/testcases/lib @abs_top_srcdir@/testcases/lib @abs_top_srcdir@/AnyEvent-I3/blib/lib);
+use lib qw(@abs_top_builddir@/testcases/lib @abs_top_srcdir@/testcases/lib @abs_top_builddir@/AnyEvent-I3/blib/lib);
 use i3test::Util qw(slurp);
 use StartXServer;
 use StatusLine;
