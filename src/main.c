@@ -31,6 +31,9 @@
 
 #include "sd-daemon.h"
 
+#include "i3-atoms_NET_SUPPORTED.xmacro.h"
+#include "i3-atoms_rest.xmacro.h"
+
 /* The original value of RLIMIT_CORE when i3 was started. We need to restore
  * this before starting any other process, since we set RLIMIT_CORE to
  * RLIM_INFINITY for i3 debugging versions. */
@@ -98,7 +101,8 @@ bool force_xinerama = false;
 
 /* Define all atoms as global variables */
 #define xmacro(atom) xcb_atom_t A_##atom;
-#include "atoms.xmacro"
+I3_NET_SUPPORTED_ATOMS_XMACRO
+I3_REST_ATOMS_XMACRO
 #undef xmacro
 
 /*
@@ -559,7 +563,8 @@ int main(int argc, char *argv[]) {
     /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-#include "atoms.xmacro"
+    I3_NET_SUPPORTED_ATOMS_XMACRO
+    I3_REST_ATOMS_XMACRO
 #undef xmacro
 
     root_depth = root_screen->root_depth;
@@ -605,7 +610,8 @@ int main(int argc, char *argv[]) {
         A_##name = reply->atom;                                                            \
         free(reply);                                                                       \
     } while (0);
-#include "atoms.xmacro"
+    I3_NET_SUPPORTED_ATOMS_XMACRO
+    I3_REST_ATOMS_XMACRO
 #undef xmacro
 
     load_configuration(override_configpath, C_LOAD);

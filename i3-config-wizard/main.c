@@ -51,6 +51,8 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 
+#include "i3-config-wizard-atoms.xmacro.h"
+
 /* We need SYSCONFDIR for the path to the keycode config template, so raise an
  * error if it’s not defined for whatever reason */
 #ifndef SYSCONFDIR
@@ -843,7 +845,7 @@ int main(int argc, char *argv[]) {
 /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-#include "atoms.xmacro"
+    CONFIG_WIZARD_ATOMS_XMACRO
 #undef xmacro
 
     /* Init startup notification. */
@@ -900,7 +902,7 @@ int main(int argc, char *argv[]) {
         A_##name = reply->atom;                                                            \
         free(reply);                                                                       \
     } while (0);
-#include "atoms.xmacro"
+    CONFIG_WIZARD_ATOMS_XMACRO
 #undef xmacro
 
     /* Set dock mode */

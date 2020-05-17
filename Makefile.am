@@ -378,7 +378,7 @@ i3_nagbar_i3_nagbar_LDADD = \
 	$(XCB_UTIL_CURSOR_LIBS)
 
 i3_nagbar_i3_nagbar_SOURCES = \
-	i3-nagbar/atoms.xmacro \
+	i3-nagbar/i3-nagbar-atoms.xmacro.h \
 	i3-nagbar/main.c
 
 i3bar_i3bar_CPPFLAGS = \
@@ -437,7 +437,7 @@ i3_config_wizard_i3_config_wizard_LDADD = \
 	$(XKBCOMMON_LIBS)
 
 i3_config_wizard_i3_config_wizard_SOURCES = \
-	i3-config-wizard/atoms.xmacro \
+	i3-config-wizard/i3-config-wizard-atoms.xmacro.h \
 	i3-config-wizard/main.c \
 	i3-config-wizard/xcb.h
 
@@ -500,9 +500,8 @@ BUILT_SOURCES = $(command_parser_SOURCES) $(config_parser_SOURCES)
 i3_SOURCES = \
 	include/all.h \
 	include/assignments.h \
-	include/atoms_NET_SUPPORTED.xmacro \
-	include/atoms_rest.xmacro \
-	include/atoms.xmacro \
+	include/i3-atoms_NET_SUPPORTED.xmacro.h \
+	include/i3-atoms_rest.xmacro.h \
 	include/bindings.h \
 	include/click.h \
 	include/cmdparse.h \
