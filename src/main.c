@@ -376,6 +376,11 @@ int main(int argc, char *argv[]) {
                     char *socket_path = root_atom_contents("I3_SOCKET_PATH", NULL, 0);
                     if (socket_path) {
                         printf("%s\n", socket_path);
+                        /* With -O2 (i.e. the buildtype=debugoptimized meson
+                         * option, which we set by default), gcc 9.2.1 optimizes
+                         * away socket_path at this point, resulting in a Leak
+                         * Sanitizer report. An explicit free helps: */
+                        free(socket_path);
                         exit(EXIT_SUCCESS);
                     }
 
