@@ -7,7 +7,7 @@ use v5.10;
 
 use Test::More;
 use i3test::Util qw(get_socket_path);
-use lib qw(@abs_top_srcdir@/AnyEvent-I3/blib/lib);
+use lib qw(@abs_top_builddir@/AnyEvent-I3/blib/lib);
 use AnyEvent::I3;
 use ExtUtils::PkgConfig;
 
