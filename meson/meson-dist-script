@@ -1,0 +1,36 @@
+#!/bin/sh
+
+set -eu
+
+cd "${MESON_DIST_ROOT}"
+
+# Delete everything we do not want to have in the release tarballs:
+rm -rf \
+   contrib/banner.svg \
+   contrib/show-download-count.sh \
+   contrib/sticker-7x5cm-stickma.tif.lzma \
+   contrib/sticker_stickma_black.svg \
+   debian/ \
+   docs/GPN-2009-06-27/ \
+   docs/NoName-2009-03-12/ \
+   docs/slides-2012-01-25/ \
+   docs/slides-2012-03-16/ \
+   testcases/.gitignore \
+   travis/ \
+   .clang-format \
+   .editorconfig \
+   i3bar/.gitignore \
+   .travis.yml \
+   logo.svg \
+   README.md \
+   RELEASE-NOTES-next \
+   release.sh
+
+mkdir build
+cd build
+meson .. -Dprefix=/usr -Ddocs=true -Dmans=true
+ninja
+cp *.1 ../man/
+cp *.html ../docs/
+cd ..
+rm -rf build

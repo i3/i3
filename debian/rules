@@ -22,4 +22,4 @@ override_dh_builddeb:
 	dh_builddeb -- -Zgzip
 
 %:
-	dh $@ --parallel --builddirectory=build --with=autoreconf
+	dh $@ --buildsystem=meson+ninja
