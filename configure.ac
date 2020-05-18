@@ -5,7 +5,7 @@ AC_PREREQ([2.69])
 AC_INIT([i3], [4.18.1], [https://github.com/i3/i3/issues])
 # For AX_EXTEND_SRCDIR
 AX_ENABLE_BUILDDIR
-AM_INIT_AUTOMAKE([foreign subdir-objects -Wall no-dist-gzip dist-bzip2])
+AM_INIT_AUTOMAKE([foreign -Wall no-dist-gzip dist-bzip2])
 # Default to silent rules, use V=1 to get verbose compilation output.
 AM_SILENT_RULES([yes])
 # Make it possible to disable maintainer mode to disable re-generation of build
