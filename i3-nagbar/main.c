@@ -35,6 +35,8 @@ xcb_visualtype_t *visual_type = NULL;
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launchee.h>
 
+#include "i3-nagbar-atoms.xmacro.h"
+
 #define MSG_PADDING logical_px(8)
 #define BTN_PADDING logical_px(3)
 #define BTN_BORDER logical_px(3)
@@ -43,7 +45,7 @@ xcb_visualtype_t *visual_type = NULL;
 #define BAR_BORDER logical_px(2)
 
 #define xmacro(atom) xcb_atom_t A_##atom;
-#include "atoms.xmacro"
+NAGBAR_ATOMS_XMACRO
 #undef xmacro
 
 #define die(...) errx(EXIT_FAILURE, __VA_ARGS__);
@@ -426,7 +428,7 @@ int main(int argc, char *argv[]) {
 /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-#include "atoms.xmacro"
+    NAGBAR_ATOMS_XMACRO
 #undef xmacro
 
     /* Init startup notification. */
@@ -508,7 +510,7 @@ int main(int argc, char *argv[]) {
         A_##name = reply->atom;                                                            \
         free(reply);                                                                       \
     } while (0);
-#include "atoms.xmacro"
+    NAGBAR_ATOMS_XMACRO
 #undef xmacro
 
     /* Set dock mode */

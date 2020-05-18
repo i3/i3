@@ -254,7 +254,7 @@ src/window.c::
 Handlers to update X11 window properties like +WM_CLASS+, +_NET_WM_NAME+,
 +CLIENT_LEADER+, etc.
 
-include/atoms.xmacro::
+include/*.xmacro.*::
 A file containing all X11 atoms which i3 uses. This file will be included
 various times (for defining, requesting and receiving the atoms), each time
 with a different definition of xmacro().
