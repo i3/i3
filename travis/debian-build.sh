@@ -5,7 +5,7 @@ set -x
 
 DEST=$1
 
-cd build
+cd distbuild
 # unpack dist tarball
 mkdir -p "${DEST}"
 tar xf meson-dist/*.tar.xz -C "${DEST}" --strip-components=1
