@@ -123,6 +123,22 @@ if get_option('docs')
       install_dir: docdir,
     )
   endforeach
+
+else
+  install_data(
+    [
+      'docs/hacking-howto.html',
+      'docs/userguide.html',
+      'docs/ipc.html',
+      'docs/multi-monitor.html',
+      'docs/wsbar.html',
+      'docs/testsuite.html',
+      'docs/i3bar-protocol.html',
+      'docs/layout-saving.html',
+      'docs/debugging.html',
+    ],
+    install_dir: docdir,
+  )
 endif
 
 install_data(
@@ -159,6 +175,8 @@ endif
 ################################################################################
 # manpages
 ################################################################################
+
+man1 = join_paths(get_option('mandir'), 'man1')
 
 if get_option('mans')
   asciidoc = find_program('asciidoc')
@@ -218,7 +236,7 @@ if get_option('mans')
       # https://github.com/mesonbuild/meson/issues/4981#issuecomment-467084867
       # https://github.com/mesonbuild/meson/issues/1550#issuecomment-370164307
       install: true,
-      install_dir: join_paths(get_option('mandir'), 'man1'),
+      install_dir: man1,
     )
   endforeach
 
@@ -241,9 +259,29 @@ if get_option('mans')
       # https://github.com/mesonbuild/meson/issues/4981#issuecomment-467084867
       # https://github.com/mesonbuild/meson/issues/1550#issuecomment-370164307
       install: true,
-      install_dir: join_paths(get_option('mandir'), 'man1'),
+      install_dir: man1,
     )
   endforeach
+
+else
+  install_data(
+    [
+      'man/i3.1',
+      'man/i3bar.1',
+      'man/i3-msg.1',
+      'man/i3-input.1',
+      'man/i3-nagbar.1',
+      'man/i3-config-wizard.1',
+      'man/i3-migrate-config-to-v4.1',
+      'man/i3-sensible-editor.1',
+      'man/i3-sensible-pager.1',
+      'man/i3-sensible-terminal.1',
+      'man/i3-dump-log.1',
+      'man/i3-dmenu-desktop.1',
+      'man/i3-save-tree.1',
+    ],
+    install_dir: man1,
+  )
 endif
 
 if meson.version().version_compare('>=0.53')
