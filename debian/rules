@@ -22,4 +22,4 @@ override_dh_builddeb:
 	dh_builddeb -- -Zgzip
 
 %:
-	dh $@ --buildsystem=meson+ninja
+	dh $@ --buildsystem=meson
