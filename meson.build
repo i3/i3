@@ -71,6 +71,11 @@ config_h = declare_dependency(
 # docs generation
 ################################################################################
 
+docdir = get_option('docdir')
+if docdir == ''
+  docdir = join_paths(get_option('datadir'), 'doc', 'i3')
+endif
+
 if get_option('docs')
   asciidoc = find_program('asciidoc')
   doc_toc_inputs = [
@@ -96,7 +101,7 @@ if get_option('docs')
         '@INPUT@',
       ],
       install: true,
-      install_dir: join_paths(get_option('datadir'), 'doc', 'i3'),
+      install_dir: docdir,
     )
   endforeach
 
@@ -115,7 +120,7 @@ if get_option('docs')
         '@INPUT@',
       ],
       install: true,
-      install_dir: join_paths(get_option('datadir'), 'doc', 'i3'),
+      install_dir: docdir,
     )
   endforeach
 endif
