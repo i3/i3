@@ -13,6 +13,11 @@ override_dh_strip:
 override_dh_auto_test:
 	# TODO: enable tests
 
+# TODO(autotools-removal): remove this override:
+override_dh_autoreconf:
+	# Not needed with meson, but not a no-op either until we get rid of the
+	# autotools files.
+
 override_dh_auto_configure:
 	# Set -Ddocdir; the default is /usr/share/doc/i3
 	dh_auto_configure -- -Ddocdir=/usr/share/doc/i3-wm
