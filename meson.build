@@ -125,20 +125,22 @@ if get_option('docs')
   endforeach
 
 else
-  install_data(
-    [
-      'docs/hacking-howto.html',
-      'docs/userguide.html',
-      'docs/ipc.html',
-      'docs/multi-monitor.html',
-      'docs/wsbar.html',
-      'docs/testsuite.html',
-      'docs/i3bar-protocol.html',
-      'docs/layout-saving.html',
-      'docs/debugging.html',
-    ],
-    install_dir: docdir,
-  )
+  if run_command('[', '-f', 'docs/hacking-howto.html', ']').returncode() == 0
+    install_data(
+      [
+	'docs/hacking-howto.html',
+	'docs/userguide.html',
+	'docs/ipc.html',
+	'docs/multi-monitor.html',
+	'docs/wsbar.html',
+	'docs/testsuite.html',
+	'docs/i3bar-protocol.html',
+	'docs/layout-saving.html',
+	'docs/debugging.html',
+      ],
+      install_dir: docdir,
+    )
+  endif
 endif
 
 install_data(
@@ -264,24 +266,26 @@ if get_option('mans')
   endforeach
 
 else
-  install_data(
-    [
-      'man/i3.1',
-      'man/i3bar.1',
-      'man/i3-msg.1',
-      'man/i3-input.1',
-      'man/i3-nagbar.1',
-      'man/i3-config-wizard.1',
-      'man/i3-migrate-config-to-v4.1',
-      'man/i3-sensible-editor.1',
-      'man/i3-sensible-pager.1',
-      'man/i3-sensible-terminal.1',
-      'man/i3-dump-log.1',
-      'man/i3-dmenu-desktop.1',
-      'man/i3-save-tree.1',
-    ],
-    install_dir: man1,
-  )
+  if run_command('[', '-f', 'man/i3.1', ']').returncode() == 0
+    install_data(
+      [
+	'man/i3.1',
+	'man/i3bar.1',
+	'man/i3-msg.1',
+	'man/i3-input.1',
+	'man/i3-nagbar.1',
+	'man/i3-config-wizard.1',
+	'man/i3-migrate-config-to-v4.1',
+	'man/i3-sensible-editor.1',
+	'man/i3-sensible-pager.1',
+	'man/i3-sensible-terminal.1',
+	'man/i3-dump-log.1',
+	'man/i3-dmenu-desktop.1',
+	'man/i3-save-tree.1',
+      ],
+      install_dir: man1,
+    )
+  endif
 endif
 
 if meson.version().version_compare('>=0.53')
