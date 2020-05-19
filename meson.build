@@ -125,6 +125,33 @@ if get_option('docs')
   endforeach
 endif
 
+install_data(
+  [
+    'docs/bigpicture.png',
+    'docs/single_terminal.png',
+    'docs/snapping.png',
+    'docs/two_columns.png',
+    'docs/two_terminals.png',
+    'docs/modes.png',
+    'docs/wsbar.png',
+    'docs/keyboard-layer1.png',
+    'docs/keyboard-layer2.png',
+    'docs/i3-sync-working.png',
+    'docs/i3-sync.png',
+    'docs/tree-layout1.png',
+    'docs/tree-layout2.png',
+    'docs/tree-shot1.png',
+    'docs/tree-shot2.png',
+    'docs/tree-shot3.png',
+    'docs/tree-shot4.png',
+    'docs/refcard.html',
+    'docs/refcard_style.css',
+    'docs/logo-30.png',
+    'docs/layout-saving-1.png',
+  ],
+  install_dir: docdir,
+)
+
 if meson.version().version_compare('>=0.53')
   summary('build docs (-Ddocs)', get_option('docs'))
 endif
