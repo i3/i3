@@ -6,6 +6,12 @@
 This is i3 v4.19. This version is considered stable. All users of i3 are
 strongly encouraged to upgrade.
 
+In this release, we switched from the autotools build system to the meson build
+system (https://mesonbuild.com/). Check https://github.com/i3/i3/issues/4086 for
+details. If this causes problems for you, you can revert the commit which
+removed autotools from the tree: we tried our best to keep both build systems
+working. Please reach out to us in that case!
+
  ┌────────────────────────────┐
  │ Changes in i3 v4.19        │
  └────────────────────────────┘
