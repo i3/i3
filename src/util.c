@@ -353,19 +353,6 @@ static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
 }
 
 /*
- * Cleanup handler. Will be called when i3 exits. Kills i3-nagbar with signal
- * SIGKILL (9) to make sure there are no left-over i3-nagbar processes.
- *
- */
-static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
-    pid_t *nagbar_pid = (pid_t *)watcher->data;
-    if (*nagbar_pid != -1) {
-        LOG("Sending SIGKILL (%d) to i3-nagbar with PID %d\n", SIGKILL, *nagbar_pid);
-        kill(*nagbar_pid, SIGKILL);
-    }
-}
-
-/*
  * Starts an i3-nagbar instance with the given parameters. Takes care of
  * handling SIGCHLD and killing i3-nagbar when i3 exits.
  *
@@ -397,13 +384,6 @@ void start_nagbar(pid_t *nagbar_pid, char *argv[]) {
     ev_child_init(child, &nagbar_exited, *nagbar_pid, 0);
     child->data = nagbar_pid;
     ev_child_start(main_loop, child);
-
-    /* install a cleanup watcher (will be called when i3 exits and i3-nagbar is
-     * still running) */
-    ev_cleanup *cleanup = smalloc(sizeof(ev_cleanup));
-    ev_cleanup_init(cleanup, nagbar_cleanup);
-    cleanup->data = nagbar_pid;
-    ev_cleanup_start(main_loop, cleanup);
 }
 
 /*

@@ -182,6 +182,10 @@ static void i3_exit(void) {
     unlink(config.ipc_socket_path);
     xcb_disconnect(conn);
 
+    /* If a nagbar is active, kill it */
+    kill_nagbar(config_error_nagbar_pid, false);
+    kill_nagbar(command_error_nagbar_pid, false);
+
 /* We need ev >= 4 for the following code. Since it is not *that* important (it
  * only makes sure that there are no i3-nagbar instances left behind) we still
  * support old systems with libev 3. */
