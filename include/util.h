@@ -143,13 +143,13 @@ char *pango_escape_markup(char *input);
 void start_nagbar(pid_t *nagbar_pid, char *argv[]);
 
 /**
- * Kills the i3-nagbar process, if *nagbar_pid != -1.
+ * Kills the i3-nagbar process, if nagbar_pid != -1.
  *
  * If wait_for_it is set (restarting i3), this function will waitpid(),
  * otherwise, ev is assumed to handle it (reloading).
  *
  */
-void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it);
+void kill_nagbar(pid_t nagbar_pid, bool wait_for_it);
 
 /**
  * Converts a string into a long using strtol().
