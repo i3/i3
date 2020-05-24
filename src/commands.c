@@ -1615,8 +1615,8 @@ void cmd_exit(I3_CMD) {
  */
 void cmd_reload(I3_CMD) {
     LOG("reloading\n");
-    kill_nagbar(&config_error_nagbar_pid, false);
-    kill_nagbar(&command_error_nagbar_pid, false);
+    kill_nagbar(config_error_nagbar_pid, false);
+    kill_nagbar(command_error_nagbar_pid, false);
     load_configuration(NULL, C_RELOAD);
     x_set_i3_atoms();
     /* Send an IPC event just in case the ws names have changed */

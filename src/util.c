@@ -287,8 +287,8 @@ static char *store_restart_layout(void) {
 void i3_restart(bool forget_layout) {
     char *restart_filename = forget_layout ? NULL : store_restart_layout();
 
-    kill_nagbar(&config_error_nagbar_pid, true);
-    kill_nagbar(&command_error_nagbar_pid, true);
+    kill_nagbar(config_error_nagbar_pid, true);
+    kill_nagbar(command_error_nagbar_pid, true);
 
     restore_geometry();
 
@@ -405,17 +405,17 @@ void start_nagbar(pid_t *nagbar_pid, char *argv[]) {
 }
 
 /*
- * Kills the i3-nagbar process, if *nagbar_pid != -1.
+ * Kills the i3-nagbar process, if nagbar_pid != -1.
  *
  * If wait_for_it is set (restarting i3), this function will waitpid(),
  * otherwise, ev is assumed to handle it (reloading).
  *
  */
-void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it) {
-    if (*nagbar_pid == -1)
+void kill_nagbar(pid_t nagbar_pid, bool wait_for_it) {
+    if (nagbar_pid == -1)
         return;
 
-    if (kill(*nagbar_pid, SIGTERM) == -1)
+    if (kill(nagbar_pid, SIGTERM) == -1)
         warn("kill(configerror_nagbar) failed");
 
     if (!wait_for_it)
@@ -425,7 +425,7 @@ void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it) {
      * exec(), our old pid is no longer watched. So, ev won’t handle SIGCHLD
      * for us and we would end up with a <defunct> process. Therefore we
      * waitpid() here. */
-    waitpid(*nagbar_pid, NULL, 0);
+    waitpid(nagbar_pid, NULL, 0);
 }
 
 /*
