@@ -1615,8 +1615,16 @@ void cmd_exit(I3_CMD) {
  */
 void cmd_reload(I3_CMD) {
     LOG("reloading\n");
+
     kill_nagbar(config_error_nagbar_pid, false);
     kill_nagbar(command_error_nagbar_pid, false);
+    /* start_nagbar() will refuse to start a new process if the passed pid is
+     * set. This will happen when our child watcher is triggered by libev when
+     * the loop re-starts. However, config errors might be detected before
+     * that since we will read the config right now with load_configuration.
+     * See #4104. */
+    config_error_nagbar_pid = command_error_nagbar_pid = -1;
+
     load_configuration(NULL, C_RELOAD);
     x_set_i3_atoms();
     /* Send an IPC event just in case the ws names have changed */

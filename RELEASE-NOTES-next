@@ -42,3 +42,4 @@ working. Please reach out to us in that case!
   • build: correctly provide auxiliary functions when needed
   • build: fix issues with parallel build
   • set _NET_DESKTOP_VIEWPORT after randr changes
+  • fix a bug with i3-nagbar not starting after it has already started once

@@ -336,18 +336,20 @@ char *pango_escape_markup(char *input) {
 static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
     ev_child_stop(EV_A_ watcher);
 
-    if (!WIFEXITED(watcher->rstatus)) {
-        ELOG("ERROR: i3-nagbar did not exit normally.\n");
-        return;
-    }
-
     int exitcode = WEXITSTATUS(watcher->rstatus);
-    DLOG("i3-nagbar process exited with status %d\n", exitcode);
-    if (exitcode == 2) {
-        ELOG("ERROR: i3-nagbar could not be found. Is it correctly installed on your system?\n");
+    if (!WIFEXITED(watcher->rstatus)) {
+        ELOG("i3-nagbar (%d) did not exit normally. This is not an error if the config was reloaded while a nagbar was active.\n", watcher->pid);
+    } else if (exitcode != 0) {
+        ELOG("i3-nagbar (%d) process exited with status %d\n", watcher->pid, exitcode);
+    } else {
+        DLOG("i3-nagbar (%d) process exited with status %d\n", watcher->pid, exitcode);
     }
 
-    *((pid_t *)watcher->data) = -1;
+    pid_t *nagbar_pid = watcher->data;
+    if (*nagbar_pid == watcher->pid) {
+        /* Only reset if the watched nagbar is the active nagbar */
+        *nagbar_pid = -1;
+    }
 }
 
 /*
