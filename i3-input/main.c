@@ -367,9 +367,8 @@ free_resources:
 }
 
 int main(int argc, char *argv[]) {
-    format = sstrdup("%s");
     char *socket_path = NULL;
-    char *pattern = sstrdup("pango:monospace 8");
+    char *pattern = NULL;
     int o, option_index = 0;
 
     static struct option long_options[] = {
@@ -424,6 +423,9 @@ int main(int argc, char *argv[]) {
                 return 0;
         }
     }
+    if (!format) {
+        format = "%s";
+    }
 
     printf("using format \"%s\"\n", format);
 
@@ -440,7 +442,7 @@ int main(int argc, char *argv[]) {
     symbols = xcb_key_symbols_alloc(conn);
 
     init_dpi();
-    font = load_font(pattern, true);
+    font = load_font(pattern ? pattern : "pango:monospace 8", true);
     set_font(&font);
 
     if (prompt != NULL)
