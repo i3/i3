@@ -1350,9 +1350,11 @@ mode). The modifier key can be configured using the +modifier+ option.
 The mode option can be changed during runtime through the +bar mode+ command.
 On reload the mode will be reverted to its configured value.
 
-The hide mode maximizes screen space that can be used for actual windows. Also,
-i3bar sends the +SIGSTOP+ and +SIGCONT+ signals to the statusline process to
-save battery power.
+The hide mode maximizes screen space that can be used for actual windows. When
+the bar is hidden, i3bar sends the +SIGSTOP+ and +SIGCONT+ signals to the
++status_command+ process in order to conserve battery power. This feature can
+be disabled by the +status_command+ process by setting the appropriate values
+in its JSON header message.
 
 Invisible mode allows to permanently maximize screen space, as the bar is never
 shown. Thus, you can configure i3bar to not disturb you by popping up because
