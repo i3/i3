@@ -172,8 +172,8 @@ num (integer)::
 	The logical number of the workspace. Corresponds to the command
 	to switch to this workspace. For named workspaces, this will be -1.
 name (string)::
-	The name of this workspace (by default num+1), as changed by the
-	user. Encoded in UTF-8.
+	The name of this workspace if changed by the user, otherwise defaults
+	to the string representation of the +num+ field). Encoded in UTF-8.
 visible (boolean)::
 	Whether this workspace is currently visible on an output (multiple
 	workspaces can be visible at the same time).
