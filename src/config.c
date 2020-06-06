@@ -174,6 +174,7 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     SLIST_INSERT_HEAD(&modes, default_mode, modes);
 
     bindings = default_mode->bindings;
+    current_binding_mode = default_mode->name;
 
     /* Clear the old config or initialize the data structure */
     memset(&config, 0, sizeof(config));

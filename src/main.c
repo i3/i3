@@ -79,6 +79,7 @@ const int default_shmlog_size = 25 * 1024 * 1024;
 
 /* The list of key bindings */
 struct bindings_head *bindings;
+const char *current_binding_mode = NULL;
 
 /* The list of exec-lines */
 struct autostarts_head autostarts = TAILQ_HEAD_INITIALIZER(autostarts);
