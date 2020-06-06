@@ -611,6 +611,9 @@ complete_run = custom_target(
   output: ['complete-run.pl'],
   capture: true,
   command: replace_dirs,
+  # build this target when running e.g. ninja or ninja test.
+  # This is required for older meson versions (< 0.46.0).
+  build_by_default: true,
 )
 i3test_pm = custom_target(
   'i3test-pm',
@@ -618,6 +621,9 @@ i3test_pm = custom_target(
   output: ['i3test.pm'],
   capture: true,
   command: replace_dirs,
+  # build this target when running e.g. ninja or ninja test.
+  # This is required for older meson versions (< 0.46.0).
+  build_by_default: true,
 )
 
 if get_option('docs')
@@ -694,9 +700,8 @@ if meson.version().version_compare('>=0.46.0')
     perl,
     args: [complete_run],
     depends: [
-      # i3test.pm is generated at meson configure time,
-      # so no explicit dependency is required.
       anyevent_i3,
+      i3test_pm,
     ],
   )
 else
