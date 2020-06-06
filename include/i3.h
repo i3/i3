@@ -58,6 +58,7 @@ extern char **start_argv;
 extern Display *xlibdpy, *xkbdpy;
 extern int xkb_current_group;
 extern TAILQ_HEAD(bindings_head, Binding) * bindings;
+extern const char *current_binding_mode;
 extern TAILQ_HEAD(autostarts_head, Autostart) autostarts;
 extern TAILQ_HEAD(autostarts_always_head, Autostart) autostarts_always;
 extern TAILQ_HEAD(ws_assignments_head, Workspace_Assignment) ws_assignments;

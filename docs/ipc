@@ -66,6 +66,7 @@ to do that).
 | 9 | +GET_CONFIG+ | <<_config_reply,CONFIG>> | Returns the last loaded i3 config.
 | 10 | +SEND_TICK+ | <<_tick_reply,TICK>> | Sends a tick event with the specified payload.
 | 11 | +SYNC+ | <<_sync_reply,SYNC>> | Sends an i3 sync event with the specified random value to the specified window.
+| 12 | +GET_BINDING_STATE+ | <<_binding_state_reply,BINDING_STATE>> | Request the current binding state, e.g. the currently active binding mode name.
 |======================================================
 
 So, a typical message could look like this:
@@ -131,6 +132,8 @@ GET_CONFIG (9)::
 	Reply to the GET_CONFIG message.
 TICK (10)::
 	Reply to the SEND_TICK message.
+GET_BINDING_STATE (12)::
+	Reply to the GET_BINDING_STATE message.
 
 [[_command_reply]]
 === COMMAND reply
@@ -707,6 +710,17 @@ responded to.
 *Example:*
 -------------------
 { "success": true }
+-------------------
+
+[[_binding_state_reply]]
+=== GET_BINDING_STATE reply
+
+The binding_state reply is a map which currently only contains the "name"
+member, which is the name of the currently active binding mode as a string.
+
+*Example:*
+-------------------
+{ "name": "default" }
 -------------------
 
 == Events
