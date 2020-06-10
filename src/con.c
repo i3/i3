@@ -1261,9 +1261,17 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
     }
 
     /* If moving a fullscreen container and the destination already has a
-     * fullscreen window on it, un-fullscreen the target's fullscreen con. */
+     * fullscreen window on it, un-fullscreen the target's fullscreen con.
+     * con->fullscreen_mode is not enough in some edge cases:
+     * 1. con is CT_FLOATING_CON, child is fullscreen.
+     * 2. con is the parent of a fullscreen container, can be triggered by
+     * moving the parent with command criteria.
+     */
     Con *fullscreen = con_get_fullscreen_con(target_ws, CF_OUTPUT);
-    if (con->fullscreen_mode != CF_NONE && fullscreen != NULL) {
+    const bool con_has_fullscreen = con->fullscreen_mode != CF_NONE ||
+                                    con_get_fullscreen_con(con, CF_GLOBAL) ||
+                                    con_get_fullscreen_con(con, CF_OUTPUT);
+    if (con_has_fullscreen && fullscreen != NULL) {
         con_toggle_fullscreen(fullscreen, CF_OUTPUT);
         fullscreen = NULL;
     }
