@@ -75,23 +75,23 @@ echo "${RELEASE_VERSION}-non-git" > I3_VERSION
 git add I3_VERSION
 git commit -a -m "Set non-git version to ${RELEASE_VERSION}-non-git."
 
-if [ "${RELEASE_BRANCH}" = "master" ]; then
-	git checkout master
+if [ "${RELEASE_BRANCH}" = "stable" ]; then
+	git checkout stable
 	git merge --no-ff release-${RELEASE_VERSION} -m "Merge branch 'release-${RELEASE_VERSION}'"
 	git checkout next
-	git merge --no-ff -s recursive -X ours -X no-renames master -m "Merge branch 'master' into next"
+	git merge --no-ff -s recursive -X ours -X no-renames stable -m "Merge branch 'stable' into next"
 else
 	git checkout next
 	git merge --no-ff release-${RELEASE_VERSION} -m "Merge branch 'release-${RELEASE_VERSION}'"
-	git checkout master
-	git merge --no-ff -s recursive -X theirs -X no-renames next -m "Merge branch 'next' into master"
+	git checkout stable
+	git merge --no-ff -s recursive -X theirs -X no-renames next -m "Merge branch 'next' into stable"
 fi
 
 git remote remove origin
 git remote add origin git@github.com:i3/i3.git
 git config --add remote.origin.push "+refs/tags/*:refs/tags/*"
 git config --add remote.origin.push "+refs/heads/next:refs/heads/next"
-git config --add remote.origin.push "+refs/heads/master:refs/heads/master"
+git config --add remote.origin.push "+refs/heads/stable:refs/heads/stable"
 
 ################################################################################
 # Section 2: Debian packaging
