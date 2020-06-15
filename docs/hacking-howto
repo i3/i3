@@ -75,11 +75,9 @@ you could have a look at previous reviews and see what the common mistakes are.
 
 === Which branch to use?
 
-Work on i3 generally happens in two branches: “master” and “next” (the latter
-being the default branch, the one that people get when they check out the git
-repository).
+Work on i3 generally happens in two branches: “next” (default) and “stable”.
 
-The contents of “master” are always stable. That is, it contains the source code
+The contents of “stable” are always stable. That is, it contains the source code
 of the latest release, plus any bugfixes that were applied since that release.
 
 New features are only found in the “next” branch. Always use this branch when
