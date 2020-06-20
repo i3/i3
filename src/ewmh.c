@@ -9,6 +9,8 @@
  */
 #include "all.h"
 
+#include "i3-atoms_NET_SUPPORTED.xmacro.h"
+
 xcb_window_t ewmh_window;
 
 #define FOREACH_NONINTERNAL                                                  \
@@ -305,7 +307,7 @@ void ewmh_update_focused(xcb_window_t window, bool is_focused) {
 void ewmh_setup_hints(void) {
     xcb_atom_t supported_atoms[] = {
 #define xmacro(atom) A_##atom,
-#include "atoms_NET_SUPPORTED.xmacro"
+        I3_NET_SUPPORTED_ATOMS_XMACRO
 #undef xmacro
     };
 

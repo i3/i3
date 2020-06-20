@@ -4,7 +4,13 @@
 use strict;
 use warnings;
 use Pod::Simple::HTML;
+use Getopt::Long;
 use v5.10;
+
+my $stylesurl = '';
+
+GetOptions("stylesurl=s" => \$stylesurl)
+  or die "parsing flags";
 
 $Pod::Simple::HTML::Tagmap{'Verbatim'} = '<pre><tt>';
 $Pod::Simple::HTML::Tagmap{'VerbatimFormatted'} = '<pre><tt>';
@@ -22,8 +28,9 @@ open(my $out, '>', $ARGV[1]) or die "Couldn’t open $ARGV[1] for writing: $!\n"
 my $parser = Pod::Simple::HTML->new();
 
 $parser->index(1);
-$parser->html_header_before_title(
-<<'EOF'
+if ($stylesurl ne '') {
+    $parser->html_header_before_title(
+<<EOF
 <!doctype html>
 <html lang="en">
 <head>
@@ -31,7 +38,7 @@ $parser->html_header_before_title(
 <meta charset="utf-8">
 <meta name="generator" content="Pod::Simple::HTML">
 <meta name="description" content="i3 Perl documentation">
-<link rel="stylesheet" href="https://i3wm.org/css/style.css" type="text/css" />
+<link rel="stylesheet" href="$stylesurl/style.css" type="text/css" />
 <style type="text/css">
 .pod pre {
     background: #333;
@@ -63,7 +70,8 @@ tt {
 </style>
 <title>
 EOF
-);
+    );
+}
 $parser->html_header_after_title(
 <<'EOF'
 </title>

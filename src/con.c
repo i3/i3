@@ -10,7 +10,6 @@
  *
  */
 #include "all.h"
-
 #include "yajl_utils.h"
 
 static void con_on_remove_child(Con *con);
@@ -92,8 +91,8 @@ void con_free(Con *con) {
         FREE(mark->name);
         FREE(mark);
     }
-    free(con);
     DLOG("con %p freed\n", con);
+    free(con);
 }
 
 static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus) {
@@ -128,6 +127,30 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
                 else
                     TAILQ_INSERT_TAIL(nodes_head, con, nodes);
             }
+        }
+        goto add_to_focus_head;
+    }
+
+    if (parent->type == CT_DOCKAREA) {
+        /* Insert dock client, sorting alphanumerically by class and then
+         * instance name. This makes dock client order deterministic. As a side
+         * effect, bars without a custom bar id will be sorted according to
+         * their declaration order in the config file. See #3491. */
+        current = NULL;
+        TAILQ_FOREACH (loop, nodes_head, nodes) {
+            int result = strcasecmp_nullable(con->window->class_class, loop->window->class_class);
+            if (result == 0) {
+                result = strcasecmp_nullable(con->window->class_instance, loop->window->class_instance);
+            }
+            if (result < 0) {
+                current = loop;
+                break;
+            }
+        }
+        if (current) {
+            TAILQ_INSERT_BEFORE(loop, con, nodes);
+        } else {
+            TAILQ_INSERT_TAIL(nodes_head, con, nodes);
         }
         goto add_to_focus_head;
     }
@@ -1238,9 +1261,17 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
     }
 
     /* If moving a fullscreen container and the destination already has a
-     * fullscreen window on it, un-fullscreen the target's fullscreen con. */
+     * fullscreen window on it, un-fullscreen the target's fullscreen con.
+     * con->fullscreen_mode is not enough in some edge cases:
+     * 1. con is CT_FLOATING_CON, child is fullscreen.
+     * 2. con is the parent of a fullscreen container, can be triggered by
+     * moving the parent with command criteria.
+     */
     Con *fullscreen = con_get_fullscreen_con(target_ws, CF_OUTPUT);
-    if (con->fullscreen_mode != CF_NONE && fullscreen != NULL) {
+    const bool con_has_fullscreen = con->fullscreen_mode != CF_NONE ||
+                                    con_get_fullscreen_con(con, CF_GLOBAL) ||
+                                    con_get_fullscreen_con(con, CF_OUTPUT);
+    if (con_has_fullscreen && fullscreen != NULL) {
         con_toggle_fullscreen(fullscreen, CF_OUTPUT);
         fullscreen = NULL;
     }
@@ -2295,11 +2326,11 @@ i3String *con_parse_title_format(Con *con) {
     char *formatted_str = format_placeholders(con->title_format, &placeholders[0], num);
     i3String *formatted = i3string_from_utf8(formatted_str);
     i3string_set_markup(formatted, pango_markup);
-    FREE(formatted_str);
 
-    for (size_t i = 0; i < num; i++) {
-        FREE(placeholders[i].value);
-    }
+    free(formatted_str);
+    free(title);
+    free(class);
+    free(instance);
 
     return formatted;
 }

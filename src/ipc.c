@@ -7,16 +7,19 @@
  * ipc.c: UNIX domain socket IPC (initialization, client handling, protocol).
  *
  */
-#include "all.h"
 
+#include "all.h"
 #include "yajl_utils.h"
 
+#include <ev.h>
+#include <fcntl.h>
+#include <libgen.h>
+#include <locale.h>
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <fcntl.h>
-#include <libgen.h>
-#include <ev.h>
+#include <unistd.h>
+
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
 
@@ -217,15 +220,14 @@ void ipc_shutdown(shutdown_reason_t reason, int exempt_fd) {
 }
 
 /*
- * Executes the command and returns whether it could be successfully parsed
- * or not (at the moment, always returns true).
+ * Executes the given command.
  *
  */
 IPC_HANDLER(run_command) {
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
     char *command = sstrndup((const char *)message, message_size);
-    LOG("IPC: received: *%s*\n", command);
+    LOG("IPC: received: *%.4000s*\n", command);
     yajl_gen gen = yajl_gen_alloc(NULL);
 
     CommandResult *result = parse_command(command, gen, client);
@@ -410,17 +412,13 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("urgent");
     y(bool, con->urgent);
 
-    if (!TAILQ_EMPTY(&(con->marks_head))) {
-        ystr("marks");
-        y(array_open);
-
-        mark_t *mark;
-        TAILQ_FOREACH (mark, &(con->marks_head), marks) {
-            ystr(mark->name);
-        }
-
-        y(array_close);
+    ystr("marks");
+    y(array_open);
+    mark_t *mark;
+    TAILQ_FOREACH (mark, &(con->marks_head), marks) {
+        ystr(mark->name);
     }
+    y(array_close);
 
     ystr("focused");
     y(bool, (con == focused));
@@ -1339,9 +1337,27 @@ IPC_HANDLER(sync) {
     ipc_send_client_message(client, strlen(reply), I3_IPC_REPLY_TYPE_SYNC, (const uint8_t *)reply);
 }
 
+IPC_HANDLER(get_binding_state) {
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("name");
+    ystr(current_binding_mode);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_GET_BINDING_STATE, payload);
+    y(free);
+}
+
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[12] = {
+handler_t handlers[13] = {
     handle_run_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -1354,6 +1370,7 @@ handler_t handlers[12] = {
     handle_get_config,
     handle_send_tick,
     handle_sync,
+    handle_get_binding_state,
 };
 
 /*

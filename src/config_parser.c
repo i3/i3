@@ -25,16 +25,17 @@
  */
 #include "all.h"
 
+#include <fcntl.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <unistd.h>
+
 #include <xcb/xcb_xrm.h>
 
 // Macros to make the YAJL API a bit easier to use.

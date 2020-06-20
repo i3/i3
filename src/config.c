@@ -28,17 +28,6 @@ void ungrab_all_keys(xcb_connection_t *conn) {
     xcb_ungrab_key(conn, XCB_GRAB_ANY, root, XCB_BUTTON_MASK_ANY);
 }
 
-/*
- * Sends the current bar configuration as an event to all barconfig_update listeners.
- *
- */
-void update_barconfig(void) {
-    Barconfig *current;
-    TAILQ_FOREACH (current, &barconfigs, configs) {
-        ipc_send_barconfig_update_event(current);
-    }
-}
-
 static void free_configuration(void) {
     assert(conn != NULL);
 
@@ -185,6 +174,7 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     SLIST_INSERT_HEAD(&modes, default_mode, modes);
 
     bindings = default_mode->bindings;
+    current_binding_mode = default_mode->name;
 
     /* Clear the old config or initialize the data structure */
     memset(&config, 0, sizeof(config));

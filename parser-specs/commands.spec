@@ -455,21 +455,27 @@ state TITLE_FORMAT:
 
 # bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]
 state BAR:
-  bar_type = 'hidden_state'
+  'hidden_state'
       -> BAR_HIDDEN_STATE
-  bar_type = 'mode'
+  'mode'
       -> BAR_MODE
 
 state BAR_HIDDEN_STATE:
   bar_value = 'hide', 'show', 'toggle'
-      -> BAR_W_ID
+      -> BAR_HIDDEN_STATE_ID
 
-state BAR_MODE:
-  bar_value = 'dock', 'hide', 'invisible', 'toggle'
-      -> BAR_W_ID
-
-state BAR_W_ID:
+state BAR_HIDDEN_STATE_ID:
   bar_id = word
       ->
   end
-      -> call cmd_bar($bar_type, $bar_value, $bar_id)
+      -> call cmd_bar_hidden_state($bar_value, $bar_id)
+
+state BAR_MODE:
+  bar_value = 'dock', 'hide', 'invisible', 'toggle'
+      -> BAR_MODE_ID
+
+state BAR_MODE_ID:
+  bar_id = word
+      ->
+  end
+      -> call cmd_bar_mode($bar_value, $bar_id)

@@ -1,0 +1,47 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.19   │
+ └──────────────────────────────┘
+
+This is i3 v4.19. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+In this release, we switched from the autotools build system to the meson build
+system (https://mesonbuild.com/). Check https://github.com/i3/i3/issues/4086 for
+details. If this causes problems for you, you can revert the commit which
+removed autotools from the tree: we tried our best to keep both build systems
+working. Please reach out to us in that case!
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.19        │
+ └────────────────────────────┘
+
+  • configure: respect --program-suffix
+  • use exec to avoid leaving useless shell process
+  • ipc: always include the marks property (even if empty)
+  • ipc: introduce GET_BINDING_STATE command
+  • introduce “tiling_from” and ”floating_from” criteria
+  • make dock client order deterministic (sorted by class/instance) as a
+    side effect, i3bars without an explicit bar-id will be sorted according
+    to their definition order in the config file
+  • update i3bar config when necessary (reduces redraws on bar mode changes)
+  • mention rofi in default config file
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • ensure client windows have a size of at least 1px after resize
+  • correctly handle overlapping decorations
+  • limit workspace numbers within 0..INT32_MAX
+  • fix a bug with tiling resize inside floating container
+  • i3-nagbar: Use _PATH_BSHELL to ensure using a bourne shell
+  • do not propagate $mod+right click to fullscreen clients
+  • do not try to resize fullscreen and non-fullscreen windows
+  • do not focus floating windows changing workspace with ConfigureNotify
+  • i3-dmenu-desktop: Support symlinks in search path
+  • build: correctly provide auxiliary functions when needed
+  • build: fix issues with parallel build
+  • set _NET_DESKTOP_VIEWPORT after randr changes
+  • fix a bug with i3-nagbar not starting after it has already started once
+  • fix conflict when moving parent of fullscreen window to workspace

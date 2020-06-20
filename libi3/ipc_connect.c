@@ -7,14 +7,12 @@
  */
 #include "libi3.h"
 
-#include <sys/types.h>
+#include <err.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <string.h>
-#include <err.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
 
 /*
  * Connects to the i3 IPC socket and returns the file descriptor for the

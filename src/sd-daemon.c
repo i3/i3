@@ -28,21 +28,21 @@
 #define _GNU_SOURCE
 #endif
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/fcntl.h>
-#include <netinet/in.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stddef.h>
-
 #include "sd-daemon.h"
+
+#include <errno.h>
+#include <netinet/in.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/fcntl.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 int sd_listen_fds(int unset_environment) {
     int r, fd;

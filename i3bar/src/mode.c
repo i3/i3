@@ -9,12 +9,10 @@
  */
 #include "common.h"
 
-#include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
+#include <string.h>
+
 #include <yajl/yajl_parse.h>
-#include <yajl/yajl_version.h>
 
 /* A datatype to pass through the callbacks to save the state */
 struct mode_json_params {

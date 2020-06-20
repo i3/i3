@@ -40,7 +40,18 @@ docs/*.html
 i3-command-parser.stamp
 i3-config-parser.stamp
 .clang_complete
+compile_commands.json
+/.ccls-cache
+/.clangd
 LAST_VERSION
+
+# We recommend building in a subdirectory called build.
+# If you chose a different directory name,
+# it is up to you to arrange for it to be ignored by git,
+# e.g. by listing your directory in .git/info/exclude.
+/build
+
+# TODO(autotools-removal): remove autotools from .gitignore:
 
 ################################################################################
 # https://raw.githubusercontent.com/github/gitignore/master/Autotools.gitignore

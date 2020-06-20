@@ -7,13 +7,11 @@
  */
 #include "libi3.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <unistd.h>
-#include <stdio.h>
 #include <err.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 /*
  * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of
@@ -109,4 +107,21 @@ ssize_t swrite(int fd, const void *buf, size_t count) {
         err(EXIT_FAILURE, "Failed to write %d", fd);
     else
         return n;
+}
+
+/*
+ * Like strcasecmp but considers the case where either string is NULL.
+ *
+ */
+int strcasecmp_nullable(const char *a, const char *b) {
+    if (a == b) {
+        return 0;
+    }
+    if (a == NULL) {
+        return -1;
+    }
+    if (b == NULL) {
+        return 1;
+    }
+    return strcasecmp(a, b);
 }

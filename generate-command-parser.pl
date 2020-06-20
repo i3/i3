@@ -117,6 +117,7 @@ my @keys = sort { (length($b) <=> length($a)) or ($a cmp $b) } keys %states;
 open(my $enumfh, '>', "GENERATED_${prefix}_enums.h");
 
 my %statenum;
+say $enumfh '#pragma once';
 say $enumfh 'typedef enum {';
 my $cnt = 0;
 for my $state (@keys, '__CALL') {
@@ -131,6 +132,7 @@ close($enumfh);
 # Third step: Generate the call function.
 open(my $callfh, '>', "GENERATED_${prefix}_call.h");
 my $resultname = uc(substr($prefix, 0, 1)) . substr($prefix, 1) . 'ResultIR';
+say $callfh '#pragma once';
 say $callfh "static void GENERATED_call(const int call_identifier, struct $resultname *result) {";
 say $callfh '    switch (call_identifier) {';
 my $call_id = 0;
@@ -206,6 +208,7 @@ close($callfh);
 # Fourth step: Generate the token datastructures.
 
 open(my $tokfh, '>', "GENERATED_${prefix}_tokens.h");
+say $tokfh '#pragma once';
 
 for my $state (@keys) {
     my $tokens = $states{$state};
@@ -218,6 +221,8 @@ for my $state (@keys) {
             # quote of the literal. We can do strdup(literal + 1); then :).
             $token_name =~ s/'$//;
         }
+        # Escape double quotes:
+        $token_name =~ s,",\\",g;
         my $next_state = $token->{next_state};
         if ($next_state =~ /^call /) {
             ($call_identifier) = ($next_state =~ /^call ([0-9]+)$/);

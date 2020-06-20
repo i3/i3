@@ -9,16 +9,13 @@
  */
 #include "common.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <string.h>
 #include <errno.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <i3/ipc.h>
 #include <ev.h>
+#include <i3/ipc.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #ifdef I3_ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
 #endif

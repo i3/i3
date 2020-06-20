@@ -9,7 +9,6 @@
 
 #include <config.h>
 
-#include <stdbool.h>
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
 #include "libi3.h"
@@ -94,5 +93,4 @@ extern TAILQ_HEAD(statusline_head, status_block)
 #include "trayclients.h"
 #include "xcb.h"
 #include "configuration.h"
-#include "libi3.h"
 #include "parse_json_header.h"

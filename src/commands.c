@@ -8,14 +8,11 @@
  *
  */
 #include "all.h"
-
-#include <stdint.h>
-#include <float.h>
-#include <stdarg.h>
-#include <unistd.h>
-#include <fcntl.h>
-
 #include "shmlog.h"
+
+#include <fcntl.h>
+#include <stdint.h>
+#include <unistd.h>
 
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) (cmd_output->json_gen != NULL ? yajl_gen_##x(cmd_output->json_gen, ##__VA_ARGS__) : 0)
@@ -766,7 +763,7 @@ void cmd_border(I3_CMD, const char *border_style_str, long border_width) {
  */
 void cmd_nop(I3_CMD, const char *comment) {
     LOG("-------------------------------------------------\n");
-    LOG("  NOP: %s\n", comment);
+    LOG("  NOP: %.4000s\n", comment);
     LOG("-------------------------------------------------\n");
     ysuccess(true);
 }
@@ -1306,7 +1303,16 @@ void cmd_focus_sibling(I3_CMD, const char *direction_str) {
         }
         Con *next = get_tree_next_sibling(current->con, direction);
         if (next) {
-            con_activate(next);
+            if (next->type == CT_WORKSPACE) {
+                /* On the workspace level, we need to make sure that the
+                 * workspace change happens properly. However, workspace_show
+                 * descends focus so we also have to put focus on the workspace
+                 * itself to maintain consistency. See #3997. */
+                workspace_show(next);
+                con_focus(next);
+            } else {
+                con_activate(next);
+            }
         }
     }
 
@@ -1524,7 +1530,7 @@ void cmd_move_direction(I3_CMD, const char *direction_str, long move_px) {
                     break;
             }
 
-            floating_reposition(current->con->parent, newrect);
+            cmd_output->needs_tree_render = floating_reposition(current->con->parent, newrect);
         } else {
             tree_move(current->con, direction);
             cmd_output->needs_tree_render = true;
@@ -1616,14 +1622,25 @@ void cmd_exit(I3_CMD) {
  */
 void cmd_reload(I3_CMD) {
     LOG("reloading\n");
-    kill_nagbar(&config_error_nagbar_pid, false);
-    kill_nagbar(&command_error_nagbar_pid, false);
+
+    kill_nagbar(config_error_nagbar_pid, false);
+    kill_nagbar(command_error_nagbar_pid, false);
+    /* start_nagbar() will refuse to start a new process if the passed pid is
+     * set. This will happen when our child watcher is triggered by libev when
+     * the loop re-starts. However, config errors might be detected before
+     * that since we will read the config right now with load_configuration.
+     * See #4104. */
+    config_error_nagbar_pid = command_error_nagbar_pid = -1;
+
     load_configuration(NULL, C_RELOAD);
     x_set_i3_atoms();
     /* Send an IPC event just in case the ws names have changed */
     ipc_send_workspace_event("reload", NULL, NULL);
-    /* Send an update event for the barconfig just in case it has changed */
-    update_barconfig();
+    /* Send an update event for each barconfig just in case it has changed */
+    Barconfig *current;
+    TAILQ_FOREACH (current, &barconfigs, configs) {
+        ipc_send_barconfig_update_event(current);
+    }
 
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
@@ -2076,7 +2093,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
  * Implementation of 'bar mode dock|hide|invisible|toggle [<bar_id>]'
  *
  */
-static bool cmd_bar_mode(const char *bar_mode, const char *bar_id) {
+void cmd_bar_mode(I3_CMD, const char *bar_mode, const char *bar_id) {
     int mode = M_DOCK;
     bool toggle = false;
     if (strcmp(bar_mode, "dock") == 0)
@@ -2089,39 +2106,53 @@ static bool cmd_bar_mode(const char *bar_mode, const char *bar_id) {
         toggle = true;
     else {
         ELOG("Unknown bar mode \"%s\", this is a mismatch between code and parser spec.\n", bar_mode);
-        return false;
+        assert(false);
     }
 
-    bool changed_sth = false;
+    if (TAILQ_EMPTY(&barconfigs)) {
+        yerror("No bars found\n");
+        return;
+    }
+
     Barconfig *current = NULL;
     TAILQ_FOREACH (current, &barconfigs, configs) {
-        if (bar_id && strcmp(current->id, bar_id) != 0)
+        if (bar_id && strcmp(current->id, bar_id) != 0) {
             continue;
+        }
 
-        if (toggle)
+        if (toggle) {
             mode = (current->mode + 1) % 2;
+        }
 
-        DLOG("Changing bar mode of bar_id '%s' to '%s (%d)'\n", current->id, bar_mode, mode);
-        current->mode = mode;
-        changed_sth = true;
+        DLOG("Changing bar mode of bar_id '%s' from '%d' to '%s (%d)'\n",
+             current->id, current->mode, bar_mode, mode);
+        if ((int)current->mode != mode) {
+            current->mode = mode;
+            ipc_send_barconfig_update_event(current);
+        }
 
-        if (bar_id)
-            break;
+        if (bar_id) {
+            /* We are looking for a specific bar and we found it */
+            ysuccess(true);
+            return;
+        }
     }
 
-    if (bar_id && !changed_sth) {
-        DLOG("Changing bar mode of bar_id %s failed, bar_id not found.\n", bar_id);
-        return false;
+    if (bar_id) {
+        /* We are looking for a specific bar and we did not find it */
+        yerror("Changing bar mode of bar_id %s failed, bar_id not found.\n", bar_id);
+    } else {
+        /* We have already handled the case of no bars, so we must have
+         * updated all active bars now. */
+        ysuccess(true);
     }
-
-    return true;
 }
 
 /*
  * Implementation of 'bar hidden_state hide|show|toggle [<bar_id>]'
  *
  */
-static bool cmd_bar_hidden_state(const char *bar_hidden_state, const char *bar_id) {
+void cmd_bar_hidden_state(I3_CMD, const char *bar_hidden_state, const char *bar_id) {
     int hidden_state = S_SHOW;
     bool toggle = false;
     if (strcmp(bar_hidden_state, "hide") == 0)
@@ -2132,54 +2163,46 @@ static bool cmd_bar_hidden_state(const char *bar_hidden_state, const char *bar_i
         toggle = true;
     else {
         ELOG("Unknown bar state \"%s\", this is a mismatch between code and parser spec.\n", bar_hidden_state);
-        return false;
+        assert(false);
     }
 
-    bool changed_sth = false;
+    if (TAILQ_EMPTY(&barconfigs)) {
+        yerror("No bars found\n");
+        return;
+    }
+
     Barconfig *current = NULL;
     TAILQ_FOREACH (current, &barconfigs, configs) {
-        if (bar_id && strcmp(current->id, bar_id) != 0)
+        if (bar_id && strcmp(current->id, bar_id) != 0) {
             continue;
+        }
 
-        if (toggle)
+        if (toggle) {
             hidden_state = (current->hidden_state + 1) % 2;
+        }
 
-        DLOG("Changing bar hidden_state of bar_id '%s' to '%s (%d)'\n", current->id, bar_hidden_state, hidden_state);
-        current->hidden_state = hidden_state;
-        changed_sth = true;
+        DLOG("Changing bar hidden_state of bar_id '%s' from '%d' to '%s (%d)'\n",
+             current->id, current->hidden_state, bar_hidden_state, hidden_state);
+        if ((int)current->hidden_state != hidden_state) {
+            current->hidden_state = hidden_state;
+            ipc_send_barconfig_update_event(current);
+        }
 
-        if (bar_id)
-            break;
+        if (bar_id) {
+            /* We are looking for a specific bar and we found it */
+            ysuccess(true);
+            return;
+        }
     }
 
-    if (bar_id && !changed_sth) {
-        DLOG("Changing bar hidden_state of bar_id %s failed, bar_id not found.\n", bar_id);
-        return false;
+    if (bar_id) {
+        /* We are looking for a specific bar and we did not find it */
+        yerror("Changing bar hidden_state of bar_id %s failed, bar_id not found.\n", bar_id);
+    } else {
+        /* We have already handled the case of no bars, so we must have
+         * updated all active bars now. */
+        ysuccess(true);
     }
-
-    return true;
-}
-
-/*
- * Implementation of 'bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]'
- *
- */
-void cmd_bar(I3_CMD, const char *bar_type, const char *bar_value, const char *bar_id) {
-    bool ret;
-    if (strcmp(bar_type, "mode") == 0)
-        ret = cmd_bar_mode(bar_value, bar_id);
-    else if (strcmp(bar_type, "hidden_state") == 0)
-        ret = cmd_bar_hidden_state(bar_value, bar_id);
-    else {
-        ELOG("Unknown bar option type \"%s\", this is a mismatch between code and parser spec.\n", bar_type);
-        ret = false;
-    }
-
-    ysuccess(ret);
-    if (!ret)
-        return;
-
-    update_barconfig();
 }
 
 /*

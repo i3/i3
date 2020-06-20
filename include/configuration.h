@@ -12,9 +12,6 @@
  */
 #pragma once
 
-#include "libi3.h"
-
-#include <stdbool.h>
 #include "queue.h"
 #include "i3.h"
 
@@ -428,9 +425,3 @@ bool load_configuration(const char *override_configfile, config_load_t load_type
  *
  */
 void ungrab_all_keys(xcb_connection_t *conn);
-
-/**
- * Sends the current bar configuration as an event to all barconfig_update listeners.
- *
- */
-void update_barconfig(void);

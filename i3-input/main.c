@@ -8,31 +8,25 @@
  *                  to i3.
  *
  */
-#include <stdio.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <err.h>
-#include <stdint.h>
 #include <getopt.h>
-#include <limits.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-#include <xcb/xcb_event.h>
 #include <xcb/xcb_keysyms.h>
 
 xcb_visualtype_t *visual_type = NULL;
+#include "i3-input.h"
+#include "keysym2ucs.h"
 #include "libi3.h"
 
 #include <X11/keysym.h>
-
-#include "keysym2ucs.h"
-
-#include "i3-input.h"
 
 #define MAX_WIDTH logical_px(500)
 #define BORDER logical_px(2)
@@ -373,9 +367,8 @@ free_resources:
 }
 
 int main(int argc, char *argv[]) {
-    format = sstrdup("%s");
     char *socket_path = NULL;
-    char *pattern = sstrdup("pango:monospace 8");
+    char *pattern = NULL;
     int o, option_index = 0;
 
     static struct option long_options[] = {
@@ -430,6 +423,9 @@ int main(int argc, char *argv[]) {
                 return 0;
         }
     }
+    if (!format) {
+        format = "%s";
+    }
 
     printf("using format \"%s\"\n", format);
 
@@ -446,7 +442,7 @@ int main(int argc, char *argv[]) {
     symbols = xcb_key_symbols_alloc(conn);
 
     init_dpi();
-    font = load_font(pattern, true);
+    font = load_font(pattern ? pattern : "pango:monospace 8", true);
     set_font(&font);
 
     if (prompt != NULL)

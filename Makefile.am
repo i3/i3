@@ -5,12 +5,12 @@ echo-version:
 
 bin_PROGRAMS = \
 	i3 \
-	i3bar/i3bar \
-	i3-config-wizard/i3-config-wizard \
-	i3-dump-log/i3-dump-log \
-	i3-input/i3-input \
-	i3-msg/i3-msg \
-	i3-nagbar/i3-nagbar
+	i3bar \
+	i3-config-wizard \
+	i3-dump-log \
+	i3-input \
+	i3-msg \
+	i3-nagbar
 
 install-exec-hook:
 	$(LN_S) -f i3 $(DESTDIR)$(bindir)/i3-with-shmlog
@@ -126,7 +126,7 @@ EXTRA_DIST = \
 	I3_VERSION \
 	LICENSE \
 	PACKAGE-MAINTAINER \
-	RELEASE-NOTES-4.18 \
+	RELEASE-NOTES-4.18.1 \
 	generate-command-parser.pl \
 	parser-specs/commands.spec \
 	parser-specs/config.spec \
@@ -331,62 +331,61 @@ libi3_a_SOURCES = \
 	libi3/strndup.c \
 	libi3/ucs2_conversion.c
 
-i3_dump_log_i3_dump_log_CFLAGS = \
+i3_dump_log_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(libi3_CFLAGS)
 
-i3_dump_log_i3_dump_log_LDADD = \
+i3_dump_log_LDADD = \
 	$(PTHREAD_LIBS) \
 	$(libi3_LIBS)
 
-i3_dump_log_i3_dump_log_SOURCES = \
+i3_dump_log_SOURCES = \
 	i3-dump-log/main.c
 
-i3_input_i3_input_CFLAGS = \
+i3_input_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(libi3_CFLAGS)
 
-i3_input_i3_input_LDADD = \
+i3_input_LDADD = \
 	$(libi3_LIBS) \
 	$(XCB_UTIL_KEYSYMS_LIBS)
 
-i3_input_i3_input_SOURCES = \
+i3_input_SOURCES = \
 	i3-input/i3-input.h \
 	i3-input/keysym2ucs.c \
 	i3-input/keysym2ucs.h \
 	i3-input/main.c
 
-i3_msg_i3_msg_CFLAGS = \
+i3_msg_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(libi3_CFLAGS)
 
-i3_msg_i3_msg_LDADD = \
+i3_msg_LDADD = \
 	$(libi3_LIBS)
 
-i3_msg_i3_msg_SOURCES = \
+i3_msg_SOURCES = \
 	i3-msg/main.c
 
-i3_nagbar_i3_nagbar_CFLAGS = \
+i3_nagbar_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(LIBSN_CFLAGS) \
 	$(libi3_CFLAGS)
 
-i3_nagbar_i3_nagbar_LDADD = \
+i3_nagbar_LDADD = \
 	$(libi3_LIBS) \
 	$(LIBSN_LIBS) \
 	$(XCB_UTIL_CURSOR_LIBS)
 
-i3_nagbar_i3_nagbar_SOURCES = \
-	i3-nagbar/atoms.xmacro \
-	i3-nagbar/i3-nagbar.h \
+i3_nagbar_SOURCES = \
+	i3-nagbar/i3-nagbar-atoms.xmacro.h \
 	i3-nagbar/main.c
 
-i3bar_i3bar_CPPFLAGS = \
+i3bar_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	-I$(top_srcdir)/i3bar/include
 
-i3bar_i3bar_CFLAGS = \
+i3bar_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(libi3_CFLAGS) \
 	$(XCB_CFLAGS) \
@@ -394,7 +393,7 @@ i3bar_i3bar_CFLAGS = \
 	$(PANGOCAIRO_CFLAGS) \
 	$(YAJL_CFLAGS)
 
-i3bar_i3bar_LDADD = \
+i3bar_LDADD = \
 	$(libi3_LIBS) \
 	$(XCB_LIBS) \
 	$(XCB_UTIL_CURSOR_LIBS) \
@@ -402,7 +401,7 @@ i3bar_i3bar_LDADD = \
 	$(PANGOCAIRO_LIBS) \
 	$(YAJL_LIBS)
 
-i3bar_i3bar_SOURCES = \
+i3bar_SOURCES = \
 	i3bar/include/child.h \
 	i3bar/include/common.h \
 	i3bar/include/configuration.h \
@@ -425,25 +424,25 @@ i3bar_i3bar_SOURCES = \
 	i3bar/src/workspaces.c \
 	i3bar/src/xcb.c
 
-i3_config_wizard_i3_config_wizard_CFLAGS = \
+i3_config_wizard_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(libi3_CFLAGS) \
 	$(LIBSN_CFLAGS) \
 	$(XKBCOMMON_CFLAGS)
 
-i3_config_wizard_i3_config_wizard_LDADD = \
+i3_config_wizard_LDADD = \
 	$(libi3_LIBS) \
 	$(LIBSN_LIBS) \
 	$(XCB_UTIL_KEYSYMS_LIBS) \
 	$(XKBCOMMON_LIBS)
 
-i3_config_wizard_i3_config_wizard_SOURCES = \
-	i3-config-wizard/atoms.xmacro \
+i3_config_wizard_SOURCES = \
+	i3-config-wizard/i3-config-wizard-atoms.xmacro.h \
 	i3-config-wizard/main.c \
 	i3-config-wizard/xcb.h
 
-i3_config_wizard_i3_config_wizard_DEPENDENCIES = \
-	$(config_parser_SOURCES)
+i3_config_wizard_DEPENDENCIES = \
+	$(top_builddir)/libi3.a
 
 test_inject_randr15_CPPFLAGS = \
 	$(AM_CPPFLAGS)
@@ -496,14 +495,13 @@ config_parser_SOURCES = \
 	parser/GENERATED_config_tokens.h \
 	parser/GENERATED_config_call.h
 
+BUILT_SOURCES = $(command_parser_SOURCES) $(config_parser_SOURCES)
+
 i3_SOURCES = \
-	$(command_parser_SOURCES) \
-	$(config_parser_SOURCES) \
 	include/all.h \
 	include/assignments.h \
-	include/atoms_NET_SUPPORTED.xmacro \
-	include/atoms_rest.xmacro \
-	include/atoms.xmacro \
+	include/i3-atoms_NET_SUPPORTED.xmacro.h \
+	include/i3-atoms_rest.xmacro.h \
 	include/bindings.h \
 	include/click.h \
 	include/cmdparse.h \
@@ -622,10 +620,23 @@ i3-config-parser.stamp: parser/$(dirstamp) generate-command-parser.pl parser-spe
 ################################################################################
 
 anyevent-i3.stamp: AnyEvent-I3/lib/AnyEvent/I3.pm
-	$(AM_V_BUILD) (cd $(top_srcdir)/AnyEvent-I3 && perl Makefile.PL && make)
+	$(AM_V_BUILD) (cp -r $(top_srcdir)/AnyEvent-I3 . && cd AnyEvent-I3 && perl Makefile.PL && make)
 	$(AM_V_at) touch $@
 
 CLEANFILES = \
 	i3-command-parser.stamp \
 	i3-config-parser.stamp \
 	anyevent-i3.stamp
+
+################################################################################
+# Language Server support
+################################################################################
+
+# Recursively run make through https://github.com/rizsotto/Bear,
+# which generates a compile_commands.json file in the source directory.
+# This is useful for running e.g. the clangd or ccls language servers:
+# https://clang.llvm.org/extra/clangd/
+# https://github.com/MaskRay/ccls/wiki
+.PHONY: bear
+bear: clean
+	bear -o $(top_srcdir)/compile_commands.json $(MAKE) $(MAKEFLAGS)

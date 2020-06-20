@@ -1049,6 +1049,8 @@ void workspace_move_to_output(Con *ws, Output *output) {
         workspace_show(ws);
     }
 
+    ewmh_update_desktop_properties();
+
     if (!previously_visible_ws) {
         return;
     }

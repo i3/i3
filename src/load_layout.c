@@ -10,10 +10,9 @@
  */
 #include "all.h"
 
-#include <yajl/yajl_common.h>
-#include <yajl/yajl_gen.h>
+#include <locale.h>
+
 #include <yajl/yajl_parse.h>
-#include <yajl/yajl_version.h>
 
 /* TODO: refactor the whole parsing thing */
 
@@ -170,6 +169,19 @@ static int json_end_map(void *ctx) {
         con_attach(json_node, json_node->parent, true);
         LOG("Creating window\n");
         x_con_init(json_node);
+
+        /* Fix erroneous JSON input regarding floating containers to avoid
+         * crashing, see #3901. */
+        const int old_floating_mode = json_node->floating;
+        if (old_floating_mode >= FLOATING_AUTO_ON && json_node->parent->type != CT_FLOATING_CON) {
+            LOG("Fixing floating node without CT_FLOATING_CON parent\n");
+
+            /* Force floating_enable to work */
+            json_node->floating = FLOATING_AUTO_OFF;
+            floating_enable(json_node, false);
+            json_node->floating = old_floating_mode;
+        }
+
         json_node = json_node->parent;
         incomplete--;
         DLOG("incomplete = %d\n", incomplete);

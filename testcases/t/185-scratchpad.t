@@ -548,5 +548,31 @@ is ($x->input_focus, $second->id, 'moving scratchpad window does not show it');
 cmd '[id=' . $first->id . '] move position center';
 is ($x->input_focus, $second->id, 'centering scratchpad window does not show it');
 
+###################################################################################
+# Verify that a scratchpad container with child containers that was open in
+# another workspace is moved to the current workspace (with all its children)
+# after a scratchpad show.
+################################################################################
+
+kill_all_windows;
+open_window;
+open_window;
+# This is to dodge the edge case were the whole workspace is moved
+# window-by-window into the scratchpad.
+cmd 'layout tabbed';
+cmd 'focus parent';
+cmd 'move to scratchpad';
+$ws = fresh_workspace;
+cmd 'scratchpad show';
+# Case 1: a parent node in the scratchpad does not lose children
+# Note on the layout: there should be a floating tabbed container, which is
+# represented as follows:
+#    [workspace object] -> [floating_nodes] -> [tabbed node container] -> [the 2 children we expect]
+is(scalar @{get_ws($ws)->{floating_nodes}->[0]->{nodes}->[0]->{nodes}}, 2, 'both windows moved from scratchpad to this workspace');
+
+# Case 2: a parent node in the scratchpad from another workspace does not lose children
+$ws = fresh_workspace;
+cmd 'scratchpad show';
+is(scalar @{get_ws($ws)->{floating_nodes}->[0]->{nodes}->[0]->{nodes}}, 2, 'both windows moved from scratchpad focused on other workspace to this workspace');
 
 done_testing;

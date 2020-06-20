@@ -9,6 +9,8 @@
  */
 #include "all.h"
 
+#include <math.h>
+
 #ifndef MAX
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
@@ -221,22 +223,22 @@ void floating_check_size(Con *floating_con, bool prefer_height) {
     }
 }
 
-void floating_enable(Con *con, bool automatic) {
+bool floating_enable(Con *con, bool automatic) {
     bool set_focus = (con == focused);
 
     if (con_is_docked(con)) {
         LOG("Container is a dock window, not enabling floating mode.\n");
-        return;
+        return false;
     }
 
     if (con_is_floating(con)) {
         LOG("Container is already in floating mode, not doing anything.\n");
-        return;
+        return false;
     }
 
     if (con->type == CT_WORKSPACE) {
         LOG("Container is a workspace, not enabling floating mode.\n");
-        return;
+        return false;
     }
 
     Con *focus_head_placeholder = NULL;
@@ -419,6 +421,7 @@ void floating_enable(Con *con, bool automatic) {
 
     floating_set_hint_atom(nc, true);
     ipc_send_window_event("floating", con);
+    return true;
 }
 
 void floating_disable(Con *con) {
@@ -514,9 +517,15 @@ bool floating_maybe_reassign_ws(Con *con) {
     Con *content = output_get_content(output->con);
     Con *ws = TAILQ_FIRST(&(content->focus_head));
     DLOG("Moving con %p / %s to workspace %p / %s\n", con, con->name, ws, ws->name);
+    Con *needs_focus = con_descend_focused(con);
+    if (!con_inside_focused(needs_focus)) {
+        needs_focus = NULL;
+    }
     con_move_to_workspace(con, ws, false, true, false);
-    workspace_show(ws);
-    con_activate(con_descend_focused(con));
+    if (needs_focus) {
+        workspace_show(ws);
+        con_activate(needs_focus);
+    }
     return true;
 }
 
@@ -745,16 +754,13 @@ bool floating_reposition(Con *con, Rect newrect) {
 
     con->rect = newrect;
 
-    bool reassigned = floating_maybe_reassign_ws(con);
+    floating_maybe_reassign_ws(con);
 
     /* If this is a scratchpad window, don't auto center it from now on. */
     if (con->scratchpad_state == SCRATCHPAD_FRESH)
         con->scratchpad_state = SCRATCHPAD_CHANGED;
 
-    /* Workspace change will already result in a tree_render. */
-    if (!reassigned) {
-        tree_render();
-    }
+    tree_render();
     return true;
 }
 

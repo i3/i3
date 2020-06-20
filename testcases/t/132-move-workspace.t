@@ -340,6 +340,53 @@ is_num_children($tmp2, 0, 'no regular nodes on second workspace');
 is(@{$ws->{floating_nodes}}, 1, 'one floating node on second workspace');
 
 ###################################################################
+# Test that when moving a fullscreen floating window to a workspace
+# that already has an other fullscreen container, the second
+# container gets un-fullscreened.
+# See #4124
+###################################################################
+$tmp2 = fresh_workspace;
+$second = open_window;
+cmd 'fullscreen enable';
+$ws = get_ws($tmp2);
+is($ws->{nodes}->[0]->{fullscreen_mode}, 1, 'sanity check: fullscreen enabled');
+
+$tmp = fresh_workspace;
+$first = open_window;
+cmd 'floating enable, fullscreen enable';
+cmd "move workspace $tmp2";
+
+$ws = get_ws($tmp2);
+is_num_children($tmp2, 1, 'one regular node on second workspace');
+is_num_fullscreen($tmp2, 1, 'one fullscreen node on second workspace');
+is(@{$ws->{floating_nodes}}, 1, 'one floating node on second workspace');
+is($ws->{nodes}->[0]->{fullscreen_mode}, 0, 'previous fullscreen disabled');
+
+###################################################################
+# Same as above, but trigger the bug with the parent of a
+# fullscreen container, instead of a CT_FLOATING_CON.
+###################################################################
+$tmp2 = fresh_workspace;
+$second = open_window;
+cmd 'fullscreen enable';
+$ws = get_ws($tmp2);
+is($ws->{nodes}->[0]->{fullscreen_mode}, 1, 'sanity check: fullscreen enabled');
+
+$tmp = fresh_workspace;
+open_window;
+$first = open_window;
+cmd 'layout tabbed';
+cmd 'focus parent, mark a, focus child';
+cmd 'fullscreen enable';
+cmd "[con_mark=a] move workspace $tmp2";
+
+$ws = get_ws($tmp2);
+is(sum_nodes(get_ws_content($tmp2)), 4, '3 leafs & 1 split node in second workspace');
+# is_num_fullscreen does not catch this nested fullscreen container
+is($ws->{nodes}->[0]->{fullscreen_mode}, 0, 'previous fullscreen disabled');
+is($ws->{nodes}->[1]->{nodes}->[1]->{fullscreen_mode}, 1, 'nested fullscreen from moved container preserved');
+
+###################################################################
 # Check that moving an empty workspace using criteria doesn't
 # create unfocused empty workspace.
 ###################################################################

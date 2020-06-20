@@ -9,26 +9,15 @@
  */
 #include "common.h"
 
-#include <xcb/xcb.h>
-#include <xcb/xkb.h>
-#include <xcb/xproto.h>
+#include <err.h>
+#include <ev.h>
+#include <i3/ipc.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_cursor.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
-#include <i3/ipc.h>
-#include <ev.h>
-#include <errno.h>
-#include <limits.h>
-#include <err.h>
-
-#include <X11/Xlib.h>
-#include <X11/XKBlib.h>
-#include <X11/extensions/XKB.h>
+#include <xcb/xkb.h>
 
 #ifdef I3_ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
@@ -673,9 +662,6 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
             continue;
         }
         if (output->bar.id == event->window) {
-            if (output->visible == visible) {
-                return;
-            }
             output->visible = visible;
         }
         num_visible += output->visible;
@@ -683,25 +669,9 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
 
     if (num_visible == 0) {
         stop_child();
-    } else if (num_visible == visible) {
-        /* Wake the child only when transitioning from 0 to 1 visible bar.
-         * We cannot transition from 0 to 2 or more visible bars at once since
-         * visibility events are delivered to each window separately */
+    } else {
         cont_child();
     }
-}
-
-static int strcasecmp_nullable(const char *a, const char *b) {
-    if (a == b) {
-        return 0;
-    }
-    if (a == NULL) {
-        return -1;
-    }
-    if (b == NULL) {
-        return 1;
-    }
-    return strcasecmp(a, b);
 }
 
 /*
@@ -1822,6 +1792,8 @@ void reconfig_windows(bool redraw_bars) {
                                                                       bar_height);
 
             /* Set the WM_CLASS and WM_NAME (we don't need UTF-8) atoms */
+            char *class;
+            int len = sasprintf(&class, "%s%ci3bar%c", config.bar_id, 0, 0);
             xcb_void_cookie_t class_cookie;
             class_cookie = xcb_change_property(xcb_connection,
                                                XCB_PROP_MODE_REPLACE,
@@ -1829,8 +1801,8 @@ void reconfig_windows(bool redraw_bars) {
                                                XCB_ATOM_WM_CLASS,
                                                XCB_ATOM_STRING,
                                                8,
-                                               (strlen("i3bar") + 1) * 2,
-                                               "i3bar\0i3bar\0");
+                                               len,
+                                               class);
 
             char *name;
             sasprintf(&name, "i3bar for output %s", walk->name);

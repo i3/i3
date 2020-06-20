@@ -8,8 +8,10 @@
  */
 #include "all.h"
 
-#include <xkbcommon/xkbcommon.h>
+#include <math.h>
+
 #include <xkbcommon/xkbcommon-x11.h>
+#include <xkbcommon/xkbcommon.h>
 
 static struct xkb_context *xkb_context;
 static struct xkb_keymap *xkb_keymap;
@@ -626,6 +628,7 @@ void switch_mode(const char *new_mode) {
 
         ungrab_all_keys(conn);
         bindings = mode->bindings;
+        current_binding_mode = mode->name;
         translate_keysyms();
         grab_all_keys(conn);
 

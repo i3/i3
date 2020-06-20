@@ -11,9 +11,6 @@
 
 #include <config.h>
 
-#include <stdarg.h>
-#include <stdbool.h>
-
 /* We will include libi3.h which define its own version of LOG, ELOG.
  * We want *our* version, so we undef the libi3 one. */
 #if defined(LOG)
@@ -29,7 +26,7 @@
    is, delete the preceding comma */
 #define LOG(fmt, ...) verboselog(fmt, ##__VA_ARGS__)
 #define ELOG(fmt, ...) errorlog("ERROR: " fmt, ##__VA_ARGS__)
-#define DLOG(fmt, ...) debuglog("%s:%s:%d - " fmt, STRIPPED__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define DLOG(fmt, ...) debuglog("%s:%s:%d - " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 extern char *errorfilename;
 extern char *shmlogname;

@@ -11,10 +11,9 @@
  */
 #include "libi3.h"
 
+#include <glib.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <glib.h>
 
 struct _i3String {
     char *utf8;

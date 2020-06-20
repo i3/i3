@@ -8,24 +8,31 @@
  *
  */
 #include "all.h"
+#include "shmlog.h"
 
 #include <ev.h>
 #include <fcntl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
+#include <getopt.h>
 #include <libgen.h>
-#include "shmlog.h"
+#include <locale.h>
+#include <signal.h>
+#include <sys/mman.h>
+#include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 #ifdef I3_ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
 #endif
 
 #include "sd-daemon.h"
+
+#include "i3-atoms_NET_SUPPORTED.xmacro.h"
+#include "i3-atoms_rest.xmacro.h"
 
 /* The original value of RLIMIT_CORE when i3 was started. We need to restore
  * this before starting any other process, since we set RLIMIT_CORE to
@@ -72,6 +79,7 @@ const int default_shmlog_size = 25 * 1024 * 1024;
 
 /* The list of key bindings */
 struct bindings_head *bindings;
+const char *current_binding_mode = NULL;
 
 /* The list of exec-lines */
 struct autostarts_head autostarts = TAILQ_HEAD_INITIALIZER(autostarts);
@@ -94,7 +102,8 @@ bool force_xinerama = false;
 
 /* Define all atoms as global variables */
 #define xmacro(atom) xcb_atom_t A_##atom;
-#include "atoms.xmacro"
+I3_NET_SUPPORTED_ATOMS_XMACRO
+I3_REST_ATOMS_XMACRO
 #undef xmacro
 
 /*
@@ -173,6 +182,10 @@ static void i3_exit(void) {
     ipc_shutdown(SHUTDOWN_REASON_EXIT, -1);
     unlink(config.ipc_socket_path);
     xcb_disconnect(conn);
+
+    /* If a nagbar is active, kill it */
+    kill_nagbar(config_error_nagbar_pid, false);
+    kill_nagbar(command_error_nagbar_pid, false);
 
 /* We need ev >= 4 for the following code. Since it is not *that* important (it
  * only makes sure that there are no i3-nagbar instances left behind) we still
@@ -372,6 +385,11 @@ int main(int argc, char *argv[]) {
                     char *socket_path = root_atom_contents("I3_SOCKET_PATH", NULL, 0);
                     if (socket_path) {
                         printf("%s\n", socket_path);
+                        /* With -O2 (i.e. the buildtype=debugoptimized meson
+                         * option, which we set by default), gcc 9.2.1 optimizes
+                         * away socket_path at this point, resulting in a Leak
+                         * Sanitizer report. An explicit free helps: */
+                        free(socket_path);
                         exit(EXIT_SUCCESS);
                     }
 
@@ -555,7 +573,8 @@ int main(int argc, char *argv[]) {
     /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-#include "atoms.xmacro"
+    I3_NET_SUPPORTED_ATOMS_XMACRO
+    I3_REST_ATOMS_XMACRO
 #undef xmacro
 
     root_depth = root_screen->root_depth;
@@ -601,7 +620,8 @@ int main(int argc, char *argv[]) {
         A_##name = reply->atom;                                                            \
         free(reply);                                                                       \
     } while (0);
-#include "atoms.xmacro"
+    I3_NET_SUPPORTED_ATOMS_XMACRO
+    I3_REST_ATOMS_XMACRO
 #undef xmacro
 
     load_configuration(override_configpath, C_LOAD);

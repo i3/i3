@@ -1,0 +1,2 @@
+#!/bin/sh
+ln -sf "i3" "${MESON_INSTALL_DESTDIR_PREFIX}/$1/i3-with-shmlog"
