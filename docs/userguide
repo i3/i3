@@ -1683,7 +1683,7 @@ the form "[n][:][NAME]" will display only the number.
 
 The default is to display the full name within the workspace button. Be aware
 that the colon in the workspace name is optional, so `[n][NAME]` will also 
-have the the workspace name and number stripped correctly. 
+have the workspace name and number stripped correctly. 
 
 *Syntax*:
 ------------------------------
