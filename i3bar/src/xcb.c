@@ -1609,16 +1609,19 @@ void kick_tray_clients(i3_output *output) {
  *
  */
 void destroy_window(i3_output *output) {
-    if (output == NULL) {
-        return;
-    }
-    if (output->bar.id == XCB_NONE) {
+    if (output == NULL || output->bar.id == XCB_NONE) {
         return;
     }
 
-    kick_tray_clients(output);
+    draw_util_surface_free(xcb_connection, &(output->bar));
+    draw_util_surface_free(xcb_connection, &(output->buffer));
+    draw_util_surface_free(xcb_connection, &(output->statusline_buffer));
     xcb_destroy_window(xcb_connection, output->bar.id);
+    xcb_free_pixmap(xcb_connection, output->buffer.id);
+    xcb_free_pixmap(xcb_connection, output->statusline_buffer.id);
     output->bar.id = XCB_NONE;
+
+    kick_tray_clients(output);
 }
 
 /* Strut partial tells i3 where to reserve space for i3bar. This is determined
