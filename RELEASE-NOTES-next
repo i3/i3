@@ -45,3 +45,4 @@ working. Please reach out to us in that case!
   • set _NET_DESKTOP_VIEWPORT after randr changes
   • fix a bug with i3-nagbar not starting after it has already started once
   • fix conflict when moving parent of fullscreen window to workspace
+  • fix Xorg memory leak with i3bar
