@@ -263,7 +263,7 @@ single workspace on which you open three terminal windows. All these terminal
 windows are directly attached to one node inside i3’s layout tree, the
 workspace node. By default, the workspace node’s orientation is +horizontal+.
 
-Now you move one of these terminals down (+$mod+Shift+k+ by default). The
+Now you move one of these terminals down (+$mod+Shift+j+ by default). The
 workspace node’s orientation will be changed to +vertical+. The terminal window
 you moved down is directly attached to the workspace and appears on the bottom
 of the screen. A new (horizontal) container was created to accommodate the
