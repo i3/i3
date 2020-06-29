@@ -277,7 +277,9 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
         }
         /* Avoid propagating events to clients, since the user expects
          * $mod+click to be handled by i3. */
-        goto done;
+        xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, event->time);
+        xcb_flush(conn);
+        return;
     }
     /* 8: otherwise, check for border/decoration clicks and resize */
     if ((dest == CLICK_BORDER || dest == CLICK_DECORATION) &&
