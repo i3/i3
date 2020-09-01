@@ -220,21 +220,49 @@ is($absolute->y, $absolute_before->y, 'y not changed');
 is($absolute->width, $absolute_before->width, 'width not changed');
 is($absolute->height, $absolute_before->height, 'height not changed');
 
+$absolute_before = $absolute;
+$top_before = $top;
+
 ######################################################################
-# 6) test moving floating window to a specified position
+# 7) test moving floating containers with a specific amount of ppt
+######################################################################
+
+cmd 'move right 25 ppt';
+
+sync_with_i3;
+
+($absolute, $top) = $floatwin->rect;
+
+is($absolute->x, int($x->root->rect->width * 0.25) + $absolute_before->x, 'moved 25 ppt to the right');
+is($absolute->y, $absolute_before->y, 'y not changed');
+is($absolute->width, $absolute_before->width, 'width not changed');
+is($absolute->height, $absolute_before->height, 'height not changed');
+
+######################################################################
+# 8) test moving floating window to a specified position
 #    and to absolute center
 ######################################################################
 
 $tmp = fresh_workspace;
 open_floating_window; my @floatcon;
 
+# Move to specified position with px
 cmd 'move position 5 px 15 px';
 
 @floatcon = @{get_ws($tmp)->{floating_nodes}};
 
-is($floatcon[0]->{rect}->{x}, 5, 'moved to position 5 x');
-is($floatcon[0]->{rect}->{y}, 15, 'moved to position 15 y');
+is($floatcon[0]->{rect}->{x}, 5, 'moved to position 5 (px) x');
+is($floatcon[0]->{rect}->{y}, 15, 'moved to position 15 (px) y');
 
+# Move to specified position with ppt
+cmd 'move position 20 ppt 20 ppt';
+
+@floatcon = @{get_ws($tmp)->{floating_nodes}};
+
+is($floatcon[0]->{rect}->{x}, int($x->root->rect->width * 0.20), "moved to position 20 (ppt) x");
+is($floatcon[0]->{rect}->{y}, int($x->root->rect->height * 0.20), "moved to position 20 (ppt) y");
+
+# Move to absolute center
 cmd 'move absolute position center';
 
 @floatcon = @{get_ws($tmp)->{floating_nodes}};

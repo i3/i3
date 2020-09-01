@@ -245,7 +245,7 @@ you open a new terminal, it will open below the current one.
 
 So, how can you open a new terminal window to the *right* of the current one?
 The solution is to use +focus parent+, which will focus the +Parent Container+ of
-the current +Container+. In default configuration, use +$mod+a+ to navigate one 
+the current +Container+. In default configuration, use +$mod+a+ to navigate one
 +Container+ up the tree (you can repeat this multiple times until you get to the
 +Workspace Container+). In this case, you would focus the +Vertical Split Container+
 which is *inside* the horizontally oriented workspace. Thus, now new windows will be
@@ -1415,7 +1415,7 @@ button6::
     Scroll wheel right.
 button7::
     Scroll wheel left.
-    
+
 
 Please note that the old +wheel_up_cmd+ and +wheel_down_cmd+ commands are deprecated
 and will be removed in a future release. We strongly recommend using the more general
@@ -1682,8 +1682,8 @@ When +strip_workspace_name+ is set to +yes+, any workspace that has a name of
 the form "[n][:][NAME]" will display only the number.
 
 The default is to display the full name within the workspace button. Be aware
-that the colon in the workspace name is optional, so `[n][NAME]` will also 
-have the workspace name and number stripped correctly. 
+that the colon in the workspace name is optional, so `[n][NAME]` will also
+have the workspace name and number stripped correctly.
 
 *Syntax*:
 ------------------------------
@@ -2140,12 +2140,15 @@ Use the +move+ command to move a container.
 # Moves the container into the given direction.
 # The optional pixel argument specifies how far the
 # container should be moved if it is floating and
-# defaults to 10 pixels.
-move <left|right|down|up> [<px> px]
+# defaults to 10 pixels. The optional ppt argument
+# means "percentage points", and if specified it indicates
+# how many points the container should be moved if it is
+# floating rather than by a pixel value.
+move <left|right|down|up> [<amount> [px|ppt]]
 
 # Moves the container to the specified pos_x and pos_y
 # coordinates on the screen.
-move position <pos_x> [px] <pos_y> [px]
+move position <pos_x> [px|ppt] <pos_y> [px|ppt]
 
 # Moves the container to the center of the screen.
 # If 'absolute' is used, it is moved to the center of

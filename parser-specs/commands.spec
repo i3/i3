@@ -131,7 +131,7 @@ state WORKSPACE:
       -> call cmd_workspace_back_and_forth()
   'number'
       -> WORKSPACE_NUMBER
-  workspace = string 
+  workspace = string
       -> call cmd_workspace_name($workspace, $no_auto_back_and_forth)
 
 state WORKSPACE_NUMBER:
@@ -321,14 +321,15 @@ state RENAME_WORKSPACE_TO_NEW_NAME:
   new_name = string
       -> call cmd_rename_workspace($old_name, $new_name)
 
-# move <direction> [<pixels> [px]]
+
+# move <direction> [<amount> [px|ppt]]
 # move [window|container] [to] workspace [<str>|next|prev|next_on_output|prev_on_output|current]
 # move [window|container] [to] output <str>
 # move [window|container] [to] mark <str>
 # move [window|container] [to] scratchpad
 # move workspace to [output] <str>
 # move scratchpad
-# move [window|container] [to] [absolute] position [ [<pixels> [px] <pixels> [px]] | center ]
+# move [window|container] [to] [absolute] position [ [<pos_x> [px|ppt] <pos_y> [px|ppt] ] | center ]
 # move [window|container] [to] position mouse|cursor|pointer
 state MOVE:
   'window'
@@ -355,16 +356,16 @@ state MOVE:
       -> MOVE_TO_ABSOLUTE_POSITION
 
 state MOVE_DIRECTION:
-  pixels = number
-      -> MOVE_DIRECTION_PX
+  amount = number
+      -> MOVE_DIRECTION_NUMBER
   end
-      -> call cmd_move_direction($direction, 10)
+      -> call cmd_move_direction($direction, 10, "px")
 
-state MOVE_DIRECTION_PX:
-  'px'
-      -> call cmd_move_direction($direction, &pixels)
+state MOVE_DIRECTION_NUMBER:
+  mode = 'px', 'ppt'
+      -> call cmd_move_direction($direction, &amount, $mode)
   end
-      -> call cmd_move_direction($direction, &pixels)
+      -> call cmd_move_direction($direction, &amount, "px")
 
 state MOVE_WORKSPACE:
   'to '
@@ -409,14 +410,16 @@ state MOVE_TO_POSITION:
       -> MOVE_TO_POSITION_X
 
 state MOVE_TO_POSITION_X:
-  'px'
+  mode_x = 'px', 'ppt'
       ->
   coord_y = number
       -> MOVE_TO_POSITION_Y
 
 state MOVE_TO_POSITION_Y:
-  'px', end
-      -> call cmd_move_window_to_position(&coord_x, &coord_y)
+  mode_y = 'px', 'ppt'
+      -> call cmd_move_window_to_position(&coord_x, $mode_x, &coord_y, $mode_y)
+  end
+      -> call cmd_move_window_to_position(&coord_x, $mode_x, &coord_y, 0)
 
 # mode <string>
 state MODE:
