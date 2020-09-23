@@ -320,11 +320,11 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
 }
 
 /*
- * Splits (horizontally or vertically) the given container by creating a new
+ * Splits (using the given layout) the given container by creating a new
  * container which contains the old one and the future ones.
  *
  */
-void tree_split(Con *con, orientation_t orientation) {
+void tree_split(Con *con, layout_t layout) {
     if (con_is_floating(con)) {
         DLOG("Floating containers can't be split.\n");
         return;
@@ -337,7 +337,7 @@ void tree_split(Con *con, orientation_t orientation) {
                 con->workspace_layout = L_DEFAULT;
             }
             DLOG("Changing orientation of workspace\n");
-            con->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
+            con->layout = layout;
             return;
         } else {
             /* if there is more than one container on the workspace
@@ -354,22 +354,20 @@ void tree_split(Con *con, orientation_t orientation) {
     /* if we are in a container whose parent contains only one
      * child (its split functionality is unused so far), we just change the
      * orientation (more intuitive than splitting again) */
-    if (con_num_children(parent) == 1 &&
-        (parent->layout == L_SPLITH ||
-         parent->layout == L_SPLITV)) {
-        parent->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
+    if (con_num_children(parent) == 1) {
+        parent->layout = layout;
         DLOG("Just changing orientation of existing container\n");
         return;
     }
 
-    DLOG("Splitting in orientation %d\n", orientation);
+    DLOG("Splitting in orientation %d\n", layout);
 
     /* 2: replace it with a new Con */
     Con *new = con_new(NULL, NULL);
     TAILQ_REPLACE(&(parent->nodes_head), con, new, nodes);
     TAILQ_REPLACE(&(parent->focus_head), con, new, focused);
     new->parent = parent;
-    new->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
+    new->layout = layout;
 
     /* 3: swap 'percent' (resize factor) */
     new->percent = con->percent;
