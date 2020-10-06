@@ -260,6 +260,8 @@ button::
 relative_x, relative_y::
     Coordinates where the click occurred, with respect to the top left corner
     of the block
+output_x, output_y::
+    Coordinates relative to the current output where the click occurred
 width, height::
     Width and height (in px) of the block
 modifiers::
@@ -273,10 +275,12 @@ modifiers::
  "instance": "eth0",
  "button": 1,
  "modifiers": ["Shift", "Mod1"],
- "x": 1320,
+ "x": 1925,
  "y": 1400,
  "relative_x": 12,
  "relative_y": 8,
+ "output_x": 5,
+ "output_y": 1400,
  "width": 50,
  "height": 22
 }

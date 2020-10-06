@@ -443,7 +443,7 @@ static bool execute_custom_command(xcb_keycode_t input_code, bool event_is_relea
     return false;
 }
 
-static void child_handle_button(xcb_button_press_event_t *event, i3_output *output, uint32_t statusline_x) {
+static void child_handle_button(xcb_button_press_event_t *event, i3_output *output, uint32_t statusline_x, uint32_t statusline_y) {
     if (statusline_x > (uint32_t)output->statusline_width) {
         return;
     }
@@ -472,9 +472,13 @@ static void child_handle_button(xcb_button_press_event_t *event, i3_output *outp
         /* x of the click event relative to the current block. */
         const uint32_t relative_x = statusline_x - last_block_x;
         if (relative_x <= full_render_width) {
+            const uint32_t output_x = event->event_x;
+            const uint32_t output_y = statusline_y + event->event_y;
+
             send_block_clicked(event->detail, block->name, block->instance,
                                event->root_x, event->root_y, relative_x,
-                               event->event_y, full_render_width, bar_height,
+                               event->event_y, output_x, output_y,
+                               full_render_width, bar_height,
                                event->state);
             return;
         }
@@ -542,9 +546,9 @@ static void handle_button(xcb_button_press_event_t *event) {
         /* Calculate the horizontal coordinate (x) of the start of the
          * statusline by subtracting its width and the width of the tray from
          * the bar width. */
-        const int offset = walk->rect.w - walk->statusline_width -
-                           tray_width - logical_px((tray_width > 0) * sb_hoff_px);
-        if (x >= offset) {
+        const int offset_x = walk->rect.w - walk->statusline_width -
+                             tray_width - logical_px((tray_width > 0) * sb_hoff_px);
+        if (x >= offset_x) {
             /* Click was after the start of the statusline, return to avoid
              * executing any other actions even if a click event is not
              * produced eventually. */
@@ -552,8 +556,10 @@ static void handle_button(xcb_button_press_event_t *event) {
             if (!event_is_release) {
                 /* x of the click event relative to the start of the
                  * statusline. */
-                const uint32_t statusline_x = x - offset;
-                child_handle_button(event, walk, statusline_x);
+                const uint32_t statusline_x = x - offset_x;
+                const uint32_t statusline_y = event->root_y - walk->rect.y - event->event_y;
+
+                child_handle_button(event, walk, statusline_x, statusline_y);
             }
 
             return;
