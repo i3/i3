@@ -606,7 +606,7 @@ replace_dirs = [
   + ',g;s,@abs_top_srcdir@,'
   + meson.current_source_dir()+',g\''
   # Only mark files ending in .pl as executables
-  + ' "$0" > "$1" && { [[ "${1##*.}" == pl ]] && chmod +x "$1"; } || true',
+  + ' "$0" > "$1" && { [[ "${1##*.}" == pl ]] && chmod +x "$1" || true; }',
   '@INPUT0@',   # $0
   '@OUTPUT0@',  # $1
 ]
