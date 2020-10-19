@@ -1,3 +1,9 @@
+i3-wm (4.19-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Mon, 19 Oct 2020 22:48:30 +0200
+
 i3-wm (4.18.3-1) unstable; urgency=medium
 
   * New upstream release.
