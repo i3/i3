@@ -72,21 +72,22 @@ static void _workspace_apply_default_orientation(Con *ws) {
 
 /*
  * Returns the first output that is assigned to a workspace specified by the
- * given name or number or NULL if no such output exists. If there is a
- * workspace with a matching name and another workspace with a matching number,
- * the output assigned to the first one is returned.
- * The order of the 'ws_assignments' queue is respected: if multiple assignments
- * match the specified workspace, the first one is returned.
- * If 'name' is NULL it will be ignored.
- * If 'parsed_num' is -1 it will be ignored.
+ * given name or number. Returns NULL if no such output exists.
+ *
+ * If an assignment matches by number but there is an assignment later that
+ * matches by name, the second one is preferred.
+ * The order of the 'ws_assignments' queue is respected: if multiple
+ * assignments match the criteria, the first one is returned.
+ * 'name' is ignored when NULL, 'parsed_num' is ignored when it is -1.
  *
  */
-static Con *get_assigned_output(const char *name, long parsed_num) {
+Con *get_assigned_output(const char *name, long parsed_num) {
     Con *output = NULL;
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
         if (name && strcmp(assignment->name, name) == 0) {
-            DLOG("Found workspace name assignment to output \"%s\"\n", assignment->output);
+            DLOG("Found workspace name=\"%s\" assignment to output \"%s\"\n",
+                 name, assignment->output);
             Output *assigned_by_name = get_output_by_name(assignment->output, true);
             if (assigned_by_name) {
                 /* When the name matches exactly, skip numbered assignments. */
@@ -96,7 +97,8 @@ static Con *get_assigned_output(const char *name, long parsed_num) {
                    parsed_num != -1 &&
                    name_is_digits(assignment->name) &&
                    ws_name_to_number(assignment->name) == parsed_num) {
-            DLOG("Found workspace number assignment to output \"%s\"\n", assignment->output);
+            DLOG("Found workspace number=%ld assignment to output \"%s\"\n",
+                 parsed_num, assignment->output);
             Output *assigned_by_num = get_output_by_name(assignment->output, true);
             if (assigned_by_num) {
                 output = assigned_by_num->con;
@@ -122,51 +124,44 @@ bool output_triggers_assignment(Output *output, struct Workspace_Assignment *ass
  * memory and initializing the data structures correctly).
  *
  */
-Con *workspace_get(const char *num, bool *created) {
+Con *workspace_get(const char *num) {
     Con *workspace = get_existing_workspace_by_name(num);
-
-    if (workspace == NULL) {
-        LOG("Creating new workspace \"%s\"\n", num);
-
-        /* We set workspace->num to the number if this workspace’s name begins
-         * with a positive number. Otherwise it’s a named ws and num will be
-         * -1. */
-        long parsed_num = ws_name_to_number(num);
-
-        Con *output = get_assigned_output(num, parsed_num);
-        /* if an assignment is not found, we create this workspace on the current output */
-        if (!output) {
-            output = con_get_output(focused);
-        }
-
-        Con *content = output_get_content(output);
-        LOG("got output %p with content %p\n", output, content);
-        /* We need to attach this container after setting its type. con_attach
-         * will handle CT_WORKSPACEs differently */
-        workspace = con_new(NULL, NULL);
-        char *name;
-        sasprintf(&name, "[i3 con] workspace %s", num);
-        x_set_name(workspace, name);
-        free(name);
-        workspace->type = CT_WORKSPACE;
-        FREE(workspace->name);
-        workspace->name = sstrdup(num);
-        workspace->workspace_layout = config.default_layout;
-        workspace->num = parsed_num;
-        LOG("num = %d\n", workspace->num);
-
-        workspace->parent = content;
-        _workspace_apply_default_orientation(workspace);
-
-        con_attach(workspace, content, false);
-
-        ipc_send_workspace_event("init", workspace, NULL);
-        ewmh_update_desktop_properties();
-        if (created != NULL)
-            *created = true;
-    } else if (created != NULL) {
-        *created = false;
+    if (workspace) {
+        return workspace;
     }
+
+    LOG("Creating new workspace \"%s\"\n", num);
+
+    /* We set workspace->num to the number if this workspace’s name begins with
+     * a positive number. Otherwise it’s a named ws and num will be 1. */
+    const long parsed_num = ws_name_to_number(num);
+
+    Con *output = get_assigned_output(num, parsed_num);
+    /* if an assignment is not found, we create this workspace on the current output */
+    if (!output) {
+        output = con_get_output(focused);
+    }
+
+    /* No parent because we need to attach this container after setting its
+     * type. con_attach will handle CT_WORKSPACEs differently. */
+    workspace = con_new(NULL, NULL);
+
+    char *name;
+    sasprintf(&name, "[i3 con] workspace %s", num);
+    x_set_name(workspace, name);
+    free(name);
+
+    FREE(workspace->name);
+    workspace->name = sstrdup(num);
+    workspace->workspace_layout = config.default_layout;
+    workspace->num = parsed_num;
+    workspace->type = CT_WORKSPACE;
+
+    con_attach(workspace, output_get_content(output), false);
+    _workspace_apply_default_orientation(workspace);
+
+    ipc_send_workspace_event("init", workspace, NULL);
+    ewmh_update_desktop_properties();
 
     return workspace;
 }
@@ -552,9 +547,7 @@ void workspace_show(Con *workspace) {
  *
  */
 void workspace_show_by_name(const char *num) {
-    Con *workspace;
-    workspace = workspace_get(num, NULL);
-    workspace_show(workspace);
+    workspace_show(workspace_get(num));
 }
 
 /*
@@ -821,10 +814,7 @@ Con *workspace_back_and_forth_get(void) {
         return NULL;
     }
 
-    Con *workspace;
-    workspace = workspace_get(previous_workspace_name, NULL);
-
-    return workspace;
+    return workspace_get(previous_workspace_name);
 }
 
 static bool get_urgency_flag(Con *con) {
@@ -1011,7 +1001,7 @@ void workspace_move_to_output(Con *ws, Output *output) {
 
             /* so create the workspace referenced to by this assignment */
             DLOG("Creating workspace from assignment %s.\n", assignment->name);
-            workspace_get(assignment->name, NULL);
+            workspace_get(assignment->name);
             used_assignment = true;
             break;
         }

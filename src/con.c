@@ -1370,7 +1370,7 @@ bool con_move_to_mark(Con *con, const char *mark) {
     }
 
     /* For target containers in the scratchpad, we just send the window to the scratchpad. */
-    if (con_get_workspace(target) == workspace_get("__i3_scratch", NULL)) {
+    if (con_get_workspace(target) == workspace_get("__i3_scratch")) {
         DLOG("target container is in the scratchpad, moving container to scratchpad.\n");
         scratchpad_move(con);
         return true;

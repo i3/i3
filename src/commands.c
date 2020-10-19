@@ -359,7 +359,7 @@ void cmd_move_con_to_workspace_name(I3_CMD, const char *name, const char *no_aut
 
     LOG("should move window to workspace %s\n", name);
     /* get the workspace */
-    Con *ws = workspace_get(name, NULL);
+    Con *ws = workspace_get(name);
 
     if (no_auto_back_and_forth == NULL) {
         ws = maybe_auto_back_and_forth_workspace(ws);
@@ -390,7 +390,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *no_
 
     Con *ws = get_existing_workspace_by_num(parsed_num);
     if (!ws) {
-        ws = workspace_get(which, NULL);
+        ws = workspace_get(which);
     }
 
     if (no_auto_back_and_forth == NULL) {
@@ -1399,7 +1399,7 @@ void cmd_focus(I3_CMD) {
 
     CMD_FOCUS_WARN_CHILDREN;
 
-    Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
+    Con *__i3_scratch = workspace_get("__i3_scratch");
     owindow *current;
     TAILQ_FOREACH (current, &owindows, owindows) {
         Con *ws = con_get_workspace(current->con);
@@ -2026,26 +2026,9 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
     con_attach(workspace, parent, false);
     ipc_send_workspace_event("rename", workspace, NULL);
 
-    /* Move the workspace to the correct output if it has an assignment */
-    struct Workspace_Assignment *assignment = NULL;
-    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
-        if (assignment->output == NULL)
-            continue;
-        if (strcmp(assignment->name, workspace->name) != 0 && (!name_is_digits(assignment->name) || ws_name_to_number(assignment->name) != workspace->num)) {
-            continue;
-        }
-
-        Output *target_output = get_output_by_name(assignment->output, true);
-        if (!target_output) {
-            LOG("Could not get output named \"%s\"\n", assignment->output);
-            continue;
-        }
-        if (!output_triggers_assignment(target_output, assignment)) {
-            continue;
-        }
-        workspace_move_to_output(workspace, target_output);
-
-        break;
+    Con *assigned = get_assigned_output(workspace->name, workspace->num);
+    if (assigned) {
+        workspace_move_to_output(workspace, get_output_for_con(assigned));
     }
 
     bool can_restore_focus = previously_focused != NULL;
