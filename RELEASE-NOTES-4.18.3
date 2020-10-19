@@ -1,9 +1,9 @@
 
  ┌──────────────────────────────┐
- │ Release notes for i3 v4.18.2 │
+ │ Release notes for i3 v4.18.3 │
  └──────────────────────────────┘
 
-This is i3 v4.18.2. This version is considered stable. All users of i3 are
+This is i3 v4.18.3. This version is considered stable. All users of i3 are
 strongly encouraged to upgrade.
 
 This is a bugfix release for v4.18.
@@ -12,10 +12,7 @@ This is a bugfix release for v4.18.
  │ Bugfixes                   │
  └────────────────────────────┘
 
-  • floating_maybe_reassign_ws: only re-focus if previously focused
-    (fixes a focus issue with KDE notifications)
-  • get_output_by_name: guard output->primary with require_active
-  • i3bar: fix Xorg memory leak
+  • Bugfix: kick tray clients before destroying the bar
 
  ┌────────────────────────────┐
  │ Thanks!                    │
@@ -23,6 +20,6 @@ This is a bugfix release for v4.18.
 
 Thanks for testing, bugfixes, discussions and everything I forgot go out to:
 
-  Orestis Floros
+  Mark Guptill, Orestis Floros
 
--- Michael Stapelberg, 2020-07-26
+-- Michael Stapelberg, 2020-10-19
