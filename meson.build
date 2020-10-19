@@ -598,18 +598,22 @@ install_headers(
 # because configure_file strips the backslash in e.g. \@display,
 # resulting in @display, breaking our Perl code:
 # https://github.com/mesonbuild/meson/issues/7165
-sed = find_program('sed')
+bash = find_program('bash')
 replace_dirs = [
-  sed,
-  '-e',
-  's,@abs_top_builddir@,'+meson.current_build_dir()+',g;s,@abs_top_srcdir@,'+meson.current_source_dir()+',g',
-  '@INPUT@',
+  bash, '-c',  # Use bash to capture output and mark as executable
+  'sed -e \'s,@abs_top_builddir@,'
+  + meson.current_build_dir()
+  + ',g;s,@abs_top_srcdir@,'
+  + meson.current_source_dir()+',g\''
+  # Only mark files ending in .pl as executables
+  + ' "$0" > "$1" && { [[ "${1##*.}" == pl ]] && chmod +x "$1" || true; }',
+  '@INPUT0@',   # $0
+  '@OUTPUT0@',  # $1
 ]
 complete_run = custom_target(
   'complete-run',
   input: ['testcases/complete-run.pl.in'],
   output: ['complete-run.pl'],
-  capture: true,
   command: replace_dirs,
   # build this target when running e.g. ninja or ninja test.
   # This is required for older meson versions (< 0.46.0).
@@ -619,7 +623,6 @@ i3test_pm = custom_target(
   'i3test-pm',
   input: ['testcases/lib/i3test.pm.in'],
   output: ['i3test.pm'],
-  capture: true,
   command: replace_dirs,
   # build this target when running e.g. ninja or ninja test.
   # This is required for older meson versions (< 0.46.0).
