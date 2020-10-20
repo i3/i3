@@ -26,6 +26,7 @@ working. Please reach out to us in that case!
     to their definition order in the config file
   • update i3bar config when necessary (reduces redraws on bar mode changes)
   • mention rofi in default config file
+  • i3-input: add different exit codes for when i3-input fails
 
  ┌────────────────────────────┐
  │ Bugfixes                   │

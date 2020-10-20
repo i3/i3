@@ -32,6 +32,14 @@ xcb_visualtype_t *visual_type = NULL;
 #define BORDER logical_px(2)
 #define PADDING logical_px(2)
 
+/* Exit codes for i3-input:
+ * 0 if i3-input exited successfully and the command was run
+ * 1 if the user canceled input
+ * 2 if i3-input fails for any other reason */
+const int EXIT_OK = 0;
+const int EXIT_CANCEL = 1;
+const int EXIT_ERROR = 2;
+
 /* IPC format string. %s will be replaced with what the user entered, then
  * the command will be sent to i3 */
 static char *format;
@@ -186,11 +194,11 @@ static void finish_input(void) {
     /* prefix the command if a prefix was specified on commandline */
     printf("command = %s\n", full);
 
-    ipc_send_message(sockfd, strlen(full), 0, (uint8_t *)full);
+    int ret = ipc_send_message(sockfd, strlen(full), 0, (uint8_t *)full);
 
     free(full);
 
-    exit(0);
+    exit(ret == 0 ? EXIT_OK : EXIT_ERROR);
 }
 
 /*
@@ -239,7 +247,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         return 1;
     }
     if (sym == XK_Escape) {
-        exit(0);
+        exit(EXIT_CANCEL);
     }
 
     /* TODO: handle all of these? */
@@ -297,7 +305,7 @@ static xcb_rectangle_t get_window_position(void) {
     xcb_intern_atom_reply_t *nswc_reply = xcb_intern_atom_reply(conn, nswc_cookie, NULL);
     if (nswc_reply == NULL) {
         ELOG("Could not intern atom _NET_SUPPORTING_WM_CHECK\n");
-        exit(-1);
+        exit(EXIT_ERROR);
     }
     A__NET_SUPPORTING_WM_CHECK = nswc_reply->atom;
     free(nswc_reply);
@@ -392,7 +400,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'v':
                 printf("i3-input " I3_VERSION);
-                return 0;
+                return EXIT_OK;
             case 'p':
                 /* This option is deprecated, but will still work in i3 v4.1, 4.2 and 4.3 */
                 fprintf(stderr, "i3-input: WARNING: the -p option is DEPRECATED in favor of the -F (format) option\n");
@@ -420,7 +428,7 @@ int main(int argc, char *argv[]) {
                 printf("\n");
                 printf("Example:\n");
                 printf("    i3-input -F 'workspace \"%%s\"' -P 'Switch to workspace: '\n");
-                return 0;
+                return EXIT_OK;
         }
     }
     if (!format) {
@@ -491,7 +499,7 @@ int main(int argc, char *argv[]) {
 
     if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
         fprintf(stderr, "Could not grab keyboard, status = %d\n", reply->status);
-        exit(-1);
+        exit(EXIT_ERROR);
     }
 
     xcb_flush(conn);
@@ -527,5 +535,5 @@ int main(int argc, char *argv[]) {
     }
 
     draw_util_surface_free(conn, &surface);
-    return 0;
+    return EXIT_OK;
 }
