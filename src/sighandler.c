@@ -16,9 +16,7 @@ typedef struct dialog_t {
     xcb_colormap_t colormap;
     Rect dims;
     surface_t surface;
-
-    TAILQ_ENTRY(dialog_t)
-    dialogs;
+    TAILQ_ENTRY(dialog_t) dialogs;
 } dialog_t;
 
 static TAILQ_HEAD(dialogs_head, dialog_t) dialogs = TAILQ_HEAD_INITIALIZER(dialogs);
