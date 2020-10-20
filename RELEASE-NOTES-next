@@ -27,6 +27,7 @@ working. Please reach out to us in that case!
   • update i3bar config when necessary (reduces redraws on bar mode changes)
   • mention rofi in default config file
   • i3-input: add different exit codes for when i3-input fails
+  • allow ppt values in move direction and move position commands
 
  ┌────────────────────────────┐
  │ Bugfixes                   │

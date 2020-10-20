@@ -219,10 +219,10 @@ void cmd_fullscreen(I3_CMD, const char *action, const char *fullscreen_mode);
 void cmd_sticky(I3_CMD, const char *action);
 
 /**
- * Implementation of 'move <direction> [<pixels> [px]]'.
+ * Implementation of 'move <direction> [<amount> [px|ppt]]'.
  *
  */
-void cmd_move_direction(I3_CMD, const char *direction_str, long move_px);
+void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const char *mode);
 
 /**
  * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith'.
@@ -267,10 +267,10 @@ void cmd_open(I3_CMD);
 void cmd_focus_output(I3_CMD, const char *name);
 
 /**
- * Implementation of 'move [window|container] [to] [absolute] position <px> [px] <px> [px]
+ * Implementation of 'move [window|container] [to] [absolute] position [<pos_x> [px|ppt] <pos_y> [px|ppt]]
  *
  */
-void cmd_move_window_to_position(I3_CMD, long x, long y);
+void cmd_move_window_to_position(I3_CMD, long x, const char *mode_x, long y, const char *mode_y);
 
 /**
  * Implementation of 'move [window|container] [to] [absolute] position center
