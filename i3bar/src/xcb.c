@@ -196,7 +196,7 @@ static uint32_t predict_statusline_length(bool use_short_text) {
             render = &block->short_render;
         }
 
-        if (i3string_get_num_bytes(text) == 0)
+        if (i3string_get_num_bytes(text) == 0 && block->min_width == 0)
             continue;
 
         render->width = predict_text_width(text);
@@ -259,7 +259,7 @@ static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focu
             render = &block->short_render;
         }
 
-        if (i3string_get_num_bytes(text) == 0)
+        if (i3string_get_num_bytes(text) == 0 && block->min_width == 0)
             continue;
 
         color_t fg_color;
@@ -462,7 +462,7 @@ static void child_handle_button(xcb_button_press_event_t *event, i3_output *outp
             render = &block->full_render;
         }
 
-        if (i3string_get_num_bytes(text) == 0) {
+        if (i3string_get_num_bytes(text) == 0 && block->min_width == 0) {
             continue;
         }
 

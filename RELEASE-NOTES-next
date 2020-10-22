@@ -50,3 +50,4 @@ working. Please reach out to us in that case!
   • fix Xorg memory leak with i3bar
   • fix named workspace assignments on output changes
   • fix named workspace assignment precedence on workspace renames
+  • i3bar: fix render empty blocks with min_width
