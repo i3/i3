@@ -85,4 +85,4 @@ bool child_want_click_events(void);
  * Generates a click event, if enabled.
  *
  */
-void send_block_clicked(int button, const char *name, const char *instance, int x, int y, int x_rel, int y_rel, int width, int height, int mods);
+void send_block_clicked(int button, const char *name, const char *instance, int x, int y, int x_rel, int y_rel, int out_x, int out_y, int width, int height, int mods);

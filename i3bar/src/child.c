@@ -634,7 +634,7 @@ static void child_click_events_initialize(void) {
  * Generates a click event, if enabled.
  *
  */
-void send_block_clicked(int button, const char *name, const char *instance, int x, int y, int x_rel, int y_rel, int width, int height, int mods) {
+void send_block_clicked(int button, const char *name, const char *instance, int x, int y, int x_rel, int y_rel, int out_x, int out_y, int width, int height, int mods) {
     if (!child.click_events) {
         return;
     }
@@ -685,6 +685,12 @@ void send_block_clicked(int button, const char *name, const char *instance, int 
 
     ystr("relative_y");
     yajl_gen_integer(gen, y_rel);
+
+    ystr("output_x");
+    yajl_gen_integer(gen, out_x);
+
+    ystr("output_y");
+    yajl_gen_integer(gen, out_y);
 
     ystr("width");
     yajl_gen_integer(gen, width);
