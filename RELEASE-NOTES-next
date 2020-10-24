@@ -29,6 +29,7 @@ working. Please reach out to us in that case!
   • i3-input: add different exit codes for when i3-input fails
   • allow ppt values in move direction and move position commands
   • i3bar: add coordinates relative to the current output in i3bar click events
+  • i3bar: add “nonprimary” output option
 
  ┌────────────────────────────┐
  │ Bugfixes                   │

@@ -1484,9 +1484,16 @@ options for different outputs by using multiple 'bar' blocks.
 To make a particular i3bar instance handle multiple outputs, specify the output
 directive multiple times.
 
+These output names have a special meaning:
+
+primary::
+    Selects the output that is configured as primary in the X server.
+nonprimary::
+    Selects every output that is not configured as primary in the X server.
+
 *Syntax*:
 ---------------
-output primary|<output>
+output primary|nonprimary|<output>
 ---------------
 
 *Example*:

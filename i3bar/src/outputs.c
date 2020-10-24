@@ -192,11 +192,12 @@ static int outputs_end_map_cb(void *params_) {
 
     /* See if we actually handle that output */
     if (config.num_outputs > 0) {
+        const bool is_primary = params->outputs_walk->primary;
         bool handle_output = false;
         for (int c = 0; c < config.num_outputs; c++) {
-            if (strcasecmp(params->outputs_walk->name, config.outputs[c]) == 0 ||
-                (strcasecmp(config.outputs[c], "primary") == 0 &&
-                 params->outputs_walk->primary)) {
+            if ((strcasecmp(params->outputs_walk->name, config.outputs[c]) == 0) ||
+                (strcasecmp(config.outputs[c], "primary") == 0 && is_primary) ||
+                (strcasecmp(config.outputs[c], "nonprimary") == 0 && !is_primary)) {
                 handle_output = true;
                 break;
             }
