@@ -13,7 +13,7 @@
 
     "files": [
         {
-            "includePattern": "build/deb/ubuntu-amd64/(.*\\.deb)$",
+            "includePattern": "distbuild/deb/ubuntu-amd64/(.*\\.deb)$",
 	    "matrixParams": {
                 "deb_distribution": "bionic",
                 "deb_component": "main",
@@ -22,7 +22,7 @@
 	    "uploadPattern": "$1"
         },
         {
-            "includePattern": "build/deb/ubuntu-i386/(.*\\.deb)$",
+            "includePattern": "distbuild/deb/ubuntu-i386/(.*\\.deb)$",
 	    "matrixParams": {
                 "deb_distribution": "bionic",
                 "deb_component": "main",
