@@ -367,14 +367,12 @@ static yajl_callbacks outputs_callbacks = {
  *
  */
 void parse_config_json(char *json) {
-    yajl_handle handle;
-    yajl_status state;
-    handle = yajl_alloc(&outputs_callbacks, NULL, NULL);
+    yajl_handle handle = yajl_alloc(&outputs_callbacks, NULL, NULL);
 
     TAILQ_INIT(&(config.bindings));
     TAILQ_INIT(&(config.tray_outputs));
 
-    state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
+    yajl_status state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
     /* FIXME: Proper error handling for JSON parsing */
     switch (state) {
@@ -387,6 +385,25 @@ void parse_config_json(char *json) {
             break;
     }
 
+    yajl_free(handle);
+}
+
+static int i3bar_config_string_cb(void *params_, const unsigned char *val, size_t _len) {
+    sasprintf(&config.bar_id, "%.*s", (int)_len, val);
+    return 0; /* Stop parsing */
+}
+
+/*
+ * Start parsing the received bar configuration list. The only usecase right
+ * now is to automatically get the first bar id.
+ *
+ */
+void parse_get_first_i3bar_config(char *json) {
+    yajl_callbacks configs_callbacks = {
+        .yajl_string = i3bar_config_string_cb,
+    };
+    yajl_handle handle = yajl_alloc(&configs_callbacks, NULL, NULL);
+    yajl_parse(handle, (const unsigned char *)json, strlen(json));
     yajl_free(handle);
 }
 

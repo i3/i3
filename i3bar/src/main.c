@@ -56,9 +56,9 @@ static char *expand_path(char *path) {
 }
 
 static void print_usage(char *elf_name) {
-    printf("Usage: %s -b bar_id [-s sock_path] [-t] [-h] [-v] [-V]\n", elf_name);
+    printf("Usage: %s [-b bar_id] [-s sock_path] [-t] [-h] [-v] [-V]\n", elf_name);
     printf("\n");
-    printf("-b, --bar_id       <bar_id>\tBar ID for which to get the configuration\n");
+    printf("-b, --bar_id       <bar_id>\tBar ID for which to get the configuration, defaults to the first bar from the i3 config\n");
     printf("-s, --socket       <sock_path>\tConnect to i3 via <sock_path>\n");
     printf("-t, --transparency Enable transparency (RGBA colors)\n");
     printf("-h, --help         Display this help message and exit\n");
@@ -133,13 +133,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (!config.bar_id) {
-        /* TODO: maybe we want -f which will automatically ask i3 for the first
-         * configured bar (and error out if there are too many)? */
-        ELOG("No bar_id passed. Please let i3 start i3bar or specify --bar_id\n");
-        exit(EXIT_FAILURE);
-    }
-
     main_loop = ev_default_loop(0); /* needed in init_xcb_early */
     char *atom_sock_path = init_xcb_early();
 
@@ -166,10 +159,13 @@ int main(int argc, char **argv) {
     init_dpi();
 
     init_outputs();
-    if (init_connection(socket_path)) {
-        /* Request the bar configuration. When it arrives, we fill the config array. */
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG, config.bar_id);
-    }
+
+    init_connection(socket_path);
+    /* Request the bar configuration. When it arrives, we fill the config
+     * array. In case that config.bar_id is empty, we will receive a list of
+     * available configs and then request the configuration for the first bar.
+     * See got_bar_config for more. */
+    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG, config.bar_id);
     free(socket_path);
 
     /* We listen to SIGTERM/QUIT/INT and try to exit cleanly, by stopping the main loop.

@@ -9,7 +9,7 @@ i3bar - xcb-based status- and workspace-bar
 
 == SYNOPSIS
 
-*i3bar* *-b* 'bar_id' [*-s* 'sock_path'] [*-t*] [*-h*] [*-v*] [*-V*]
+*i3bar* [*-b* 'bar_id'] [*-s* 'sock_path'] [*-t*] [*-h*] [*-v*] [*-V*]
 
 == WARNING
 
@@ -25,7 +25,8 @@ You have been warned!
 Overwrites the path to the i3 IPC socket.
 
 *-b, --bar_id* 'bar_id'::
-Specifies the bar ID for which to get the configuration from i3.
+Specifies the bar ID for which to get the configuration from i3. By default,
+i3bar will use the first bar block as configured in i3.
 
 *-t, --transparency*::
 Enable transparency (RGBA colors)

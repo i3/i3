@@ -85,6 +85,20 @@ static void got_output_reply(char *reply) {
  *
  */
 static void got_bar_config(char *reply) {
+    if (!config.bar_id) {
+        DLOG("Received bar list \"%s\"\n", reply);
+        parse_get_first_i3bar_config(reply);
+
+        if (!config.bar_id) {
+            ELOG("No bar configuration found, please configure a bar block in your i3 config file.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        LOG("Using first bar config: %s. Use --bar_id to manually select a different bar configuration.\n", config.bar_id);
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG, config.bar_id);
+        return;
+    }
+
     DLOG("Received bar config \"%s\"\n", reply);
     /* We initiate the main function by requesting infos about the outputs and
      * workspaces. Everything else (creating the bars, showing the right workspace-
@@ -328,13 +342,12 @@ int i3_send_msg(uint32_t type, const char *payload) {
  * socket_path must be a valid path to the ipc_socket of i3
  *
  */
-int init_connection(const char *socket_path) {
+void init_connection(const char *socket_path) {
     sock_path = socket_path;
     int sockfd = ipc_connect(socket_path);
     i3_connection = smalloc(sizeof(ev_io));
     ev_io_init(i3_connection, &got_data, sockfd, EV_READ);
     ev_io_start(main_loop, i3_connection);
-    return 1;
 }
 
 /*
