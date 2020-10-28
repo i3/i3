@@ -1942,7 +1942,7 @@ i3-msg 'mark MyMark ,border none ; [class="Firefox"] mark    aterminal, floating
 i3-msg -t get_marks
 --------------------------------------------------------
 
-If you would execute the example above in a terminal, you would get an
+Executing the example above in a terminal, would result in an
 output looking something like this:
 (assuming there exist a window with the class "Firefox" and no other marks are set.)
 --------------------------------------------------------
@@ -1950,10 +1950,12 @@ output looking something like this:
 ["aterminal","MyMark "]
 --------------------------------------------------------
 
+The first line is a list indicating the success of each of the four commands.
+The second line is a list of marks, the output from ++i3-msg -t get_marks++.
 Notice the trailing space in "MyMark ". The conclusion is that best practice is to 
-not have any white space before colons and semicolons.
+not have any white space before command separators (colons and semicolons).
 
-There is more information in the the man page for i3-msg:
+Read more about the ++i3-msg++ command in the manpage:
 --------------------------------------------------------
 man i3-msg
 --------------------------------------------------------
