@@ -1926,6 +1926,37 @@ The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
 information on how to use them.
 
+When using +i3-msg+ be aware that that it treats the commands passed as a single
+argument and trailing white space inside that argument is not trimmed when the
+commands are parsed.
+
+In the example below there are two criteria with with two commands each.
+Notice the white space around the colons and semicolons.
+The commands are enclosed in a pair of single quotes, which is not mandatory but,
+makes it simpler to manage in regard to how the shell interprets for example
+semicolon and dollar-sign.
+
+*Example*
+--------------------------------------------------------
+i3-msg 'mark MyMark ,border none ; [class="Firefox"] mark    aterminal, floating enable'
+i3-msg -t get_marks
+--------------------------------------------------------
+
+If you would execute the example above in a terminal, you would get an
+output looking something like this:
+(assuming there exist a window with the class "Firefox" and no other marks are set.)
+--------------------------------------------------------
+[{"success":true},{"success":true},{"success":true},{"success":true}]
+["aterminal","MyMark "]
+--------------------------------------------------------
+
+Notice the trailing space in "MyMark ". The conclusion is that best practice is to 
+not have any white space before colons and semicolons.
+
+There is more information in the the man page for i3-msg:
+--------------------------------------------------------
+man i3-msg
+--------------------------------------------------------
 [[exec]]
 === Executing applications (exec)
 
