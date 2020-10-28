@@ -289,7 +289,7 @@ else
 endif
 
 if meson.version().version_compare('>=0.53')
-  summary('build manpages (-Dmans)', get_option('docs'))
+  summary('build manpages (-Dmans)', get_option('mans'))
 endif
 
 # Required for e.g. struct ucred to be defined as per unix(7).
