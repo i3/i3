@@ -2252,19 +2252,36 @@ char *con_get_tree_representation(Con *con) {
 
     char *buf;
     /* 1) add the Layout type to buf */
-    if (con->layout == L_DEFAULT)
-        buf = sstrdup("D[");
-    else if (con->layout == L_SPLITV)
-        buf = sstrdup("V[");
-    else if (con->layout == L_SPLITH)
-        buf = sstrdup("H[");
-    else if (con->layout == L_TABBED)
-        buf = sstrdup("T[");
-    else if (con->layout == L_STACKED)
-        buf = sstrdup("S[");
-    else {
-        ELOG("BUG: Code not updated to account for new layout type\n");
-        assert(false);
+    if (con->layout_fill_order == LF_DEFAULT) {
+        if (con->layout == L_DEFAULT)
+            buf = sstrdup("D[");
+        else if (con->layout == L_SPLITV)
+            buf = sstrdup("V[");
+        else if (con->layout == L_SPLITH)
+            buf = sstrdup("H[");
+        else if (con->layout == L_TABBED)
+            buf = sstrdup("T[");
+        else if (con->layout == L_STACKED)
+            buf = sstrdup("S[");
+        else {
+            ELOG("BUG: Code not updated to account for new layout type\n");
+            assert(false);
+        }
+    } else {
+        if (con->layout == L_DEFAULT)
+            buf = sstrdup("Dr[");
+        else if (con->layout == L_SPLITV)
+            buf = sstrdup("Vr[");
+        else if (con->layout == L_SPLITH)
+            buf = sstrdup("Hr[");
+        else if (con->layout == L_TABBED)
+            buf = sstrdup("Tr[");
+        else if (con->layout == L_STACKED)
+            buf = sstrdup("Sr[");
+        else {
+            ELOG("BUG: Code not updated to account for new layout type\n");
+            assert(false);
+        }
     }
 
     /* 2) append representation of children */
