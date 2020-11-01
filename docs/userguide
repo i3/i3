@@ -54,7 +54,7 @@ existing window (rotated displays).
 image:two_terminals.png[Two terminals]
 
 To move the focus between the two terminals, you can use the direction keys
-which you may know from the editor +vi+. However, in i3, your homerow is used
+which you might know from the editor +vi+. However, in i3, your homerow is used
 for these keys (in +vi+, the keys are shifted to the left by one for
 compatibility with most keyboard layouts). Therefore, +$mod+j+ is left, +$mod+k+
 is down, +$mod+l+ is up and `$mod+;` is right. So, to switch between the
@@ -924,7 +924,7 @@ available outputs by running +xrandr --current+.
 If your X server supports RandR 1.5 or newer, i3 will use RandR monitor objects
 instead of output objects. Run +xrandr --listmonitors+ to see a list. Usually,
 a monitor object contains exactly one output, and has the same name as the
-output; but should that not be the case, you may specify the name of either the
+output; but should that not be the case, you can specify the name of either the
 monitor or the output in i3's configuration. For example, the Dell UP2414Q uses
 two scalers internally, so its output names might be “DP1” and “DP2”, but the
 monitor name is “Dell UP2414Q”.
@@ -1066,7 +1066,7 @@ mouse_warping none
 === Popups during fullscreen mode
 
 When you are in fullscreen mode, some applications still open popup windows
-(take Xpdf for example). This is because these applications may not be aware
+(take Xpdf for example). This is because these applications might not be aware
 that they are in fullscreen mode (they do not check the corresponding hint).
 There are three things which are possible to do in this situation:
 
@@ -1176,9 +1176,9 @@ workspace_auto_back_and_forth yes
 === Delaying urgency hint reset on workspace change
 
 If an application on another workspace sets an urgency hint, switching to this
-workspace may lead to immediate focus of the application, which also means the
+workspace might lead to immediate focus of the application, which also means the
 window decoration color would be immediately reset to +client.focused+. This
-may make it unnecessarily hard to tell which window originally raised the
+might make it unnecessarily hard to tell which window originally raised the
 event.
 
 In order to prevent this, you can tell i3 to delay resetting the urgency state
@@ -1201,9 +1201,9 @@ force_display_urgency_hint 500 ms
 === Focus on window activation
 
 If a window is activated, e.g., via +google-chrome www.google.com+, it may request
-to take focus. Since this may not be preferable, different reactions can be configured.
+to take focus. Since this might not be preferable, different reactions can be configured.
 
-Note that this may not affect windows that are being opened. To prevent new windows
+Note that this might not affect windows that are being opened. To prevent new windows
 from being focused, see <<no_focus>>.
 
 *Syntax*:
@@ -1649,7 +1649,7 @@ bar {
 
 By default, the width a workspace button is determined by the width of the text
 showing the workspace name. If the name is too short (say, one letter), then the
-workspace button may look too small.
+workspace button might look too small.
 
 This option specifies the minimum width for workspace buttons. If the name of
 a workspace is too short to cover the button, an additional padding is added on
@@ -1659,7 +1659,7 @@ The default value of zero means that no additional padding is added.
 
 The setting also applies to the current binding mode indicator.
 
-Note that the specified pixels refer to logical pixels, which may translate
+Note that the specified pixels refer to logical pixels, which might translate
 into more pixels on HiDPI displays.
 
 *Syntax*:
@@ -2471,7 +2471,7 @@ for_window [class="urxvt"] resize set 640 480
 === Jumping to specific windows
 
 Often when in a multi-monitor environment, you want to quickly jump to a
-specific window. For example, while working on workspace 3 you may want to
+specific window. For example, while working on workspace 3 you might want to
 jump to your mail client to email your boss that you’ve achieved some
 important goal. Instead of figuring out how to navigate to your mail client,
 it would be more convenient to have a shortcut. You can use the +focus+ command
@@ -2506,7 +2506,7 @@ for this purpose: It lets you input a command and sends the command to i3. It
 can also prefix this command and display a custom prompt for the input dialog.
 
 The additional +--toggle+ option will remove the mark if the window already has
-this mark or add it otherwise. Note that you may need to use this in
+this mark or add it otherwise. Note that you might need to use this in
 combination with +--add+ (see below) as any other marks will otherwise be
 removed.
 
@@ -2605,7 +2605,7 @@ optional pixel argument can be used to specify the border width when switching
 to the normal and pixel styles.
 
 Note that "pixel" refers to logical pixel. On HiDPI displays, a logical pixel
-may be represented by multiple physical pixels, so +pixel 1+ might not
+is represented by multiple physical pixels, so +pixel 1+ might not
 necessarily translate into a single pixel row wide border.
 
 *Syntax*:
@@ -2868,7 +2868,7 @@ See also <<presentations>> for more examples of multi-monitor setups.
 
 === Interesting configuration for multi-monitor environments
 
-There are several things to configure in i3 which may be interesting if you
+There are several things to configure in i3 which might be interesting if you
 have more than one monitor:
 
 1. You can specify which workspace should be put on which screen. This
