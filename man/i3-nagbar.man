@@ -9,7 +9,7 @@ i3-nagbar - displays an error bar on top of your screen
 
 == SYNOPSIS
 
-i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t warning|error] [-f <font>] [-v]
+i3-nagbar [-m <message>] [-b <button> <action>] [-B <button> <action>] [-t warning|error] [-f <font>] [-v] [-p]
 
 == OPTIONS
 
@@ -38,6 +38,10 @@ i3-sensible-terminal.
 *-B, --button-no-terminal* 'button' 'action'::
 Same as above, but will execute the shell commands directly, without launching a
 terminal emulator.
+
+*-p, --primary*::
+Always opens the i3-nagbar on the primary monitor. By default it opens on the
+focused monitor.
 
 == DESCRIPTION
 
