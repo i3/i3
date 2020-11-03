@@ -161,6 +161,14 @@ sending a reply. Expect the socket to be shut down.
 [{ "success": true }]
 -------------------
 
+When the specified command cannot be parsed, `success` will be false and
+`parse_error` will be true:
+
+*Example:*
+-------------------
+[{ "success": false, "parse_error": true }]
+-------------------
+
 [[_workspaces_reply]]
 === WORKSPACES reply
 
