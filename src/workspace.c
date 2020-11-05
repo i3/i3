@@ -154,6 +154,7 @@ Con *workspace_get(const char *num) {
     FREE(workspace->name);
     workspace->name = sstrdup(num);
     workspace->workspace_layout = config.default_layout;
+    workspace->layout_fill_order = config.default_layout_fill_order;
     workspace->num = parsed_num;
     workspace->type = CT_WORKSPACE;
 
@@ -288,6 +289,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
     ws->fullscreen_mode = CF_OUTPUT;
 
     ws->workspace_layout = config.default_layout;
+    ws->layout_fill_order = config.default_layout_fill_order;
     _workspace_apply_default_orientation(ws);
 
     ipc_send_workspace_event("init", ws, NULL);
