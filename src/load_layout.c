@@ -398,7 +398,17 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
             else if (strcasecmp(buf, "splitv") == 0)
                 json_node->last_split_layout = L_SPLITV;
             else
-                LOG("Unhandled \"last_splitlayout\": %s\n", buf);
+                LOG("Unhandled \"last_split_layout\": %s\n", buf);
+            free(buf);
+        } else if (strcasecmp(last_key, "layout_fill_order") == 0) {
+            char *buf = NULL;
+            sasprintf(&buf, "%.*s", (int)len, val);
+            if (strcasecmp(buf, "default") == 0)
+                json_node->layout_fill_order = LF_DEFAULT;
+            else if (strcasecmp(buf, "reverse") == 0)
+                json_node->layout_fill_order = LF_REVERSE;
+            else
+                LOG("Unhandled \"layout_fill_order\": %s\n", buf);
             free(buf);
         } else if (strcasecmp(last_key, "mark") == 0) {
             DLOG("Found deprecated key \"mark\".\n");
