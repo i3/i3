@@ -218,9 +218,11 @@ state STICKY:
   action = 'enable', 'disable', 'toggle'
       -> call cmd_sticky($action)
 
-# split v|h|t|vertical|horizontal|toggle
+# split v|vertical|up|down
+# split h|horizontal|left|right
+# split t|toggle
 state SPLIT:
-  direction = 'horizontal', 'vertical', 'toggle', 'v', 'h', 't'
+  direction = 'horizontal', 'vertical', 'toggle', 'v', 'h', 't', 'left', 'right', 'up', 'down'
       -> call cmd_split($direction)
 
 # floating enable|disable|toggle
