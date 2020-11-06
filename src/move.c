@@ -305,11 +305,12 @@ void tree_move(Con *con, direction_t direction) {
                 if (!con_is_leaf(swap)) {
                     DLOG("Moving into our bordering branch\n");
                     target = con_descend_direction(swap, direction);
-                    position = (con_orientation(target->parent) != o ||
-                                        direction == D_UP ||
-                                        direction == D_LEFT
-                                    ? AFTER
-                                    : BEFORE);
+                    position = (con_orientation(target->parent) == o &&
+                                (direction == D_LEFT || direction == D_UP)) ||
+                                       (con_orientation(target->parent) != o &&
+                                        target->parent->layout_fill_order == LF_DEFAULT)
+                                   ? AFTER
+                                   : BEFORE;
                     insert_con_into(con, target, position);
                     goto end;
                 }
@@ -358,11 +359,12 @@ void tree_move(Con *con, direction_t direction) {
     if (next && !con_is_leaf(next)) {
         DLOG("Moving into the bordering branch of our adjacent container\n");
         target = con_descend_direction(next, direction);
-        position = (con_orientation(target->parent) != o ||
-                            direction == D_UP ||
-                            direction == D_LEFT
-                        ? AFTER
-                        : BEFORE);
+        position = (con_orientation(target->parent) == o &&
+                    (direction == D_LEFT || direction == D_UP)) ||
+                           (con_orientation(target->parent) != o &&
+                            target->parent->layout_fill_order == LF_DEFAULT)
+                       ? AFTER
+                       : BEFORE;
         insert_con_into(con, target, position);
     } else if (!next &&
                con->parent->parent->type == CT_WORKSPACE &&

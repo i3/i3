@@ -15,9 +15,14 @@
 #   (unless you are already familiar with Perl)
 #
 # Tests reverse layouts.
-use i3test;
+
+# disable autostart here so that we can test using workspace_layout config
+# option later on.
+use i3test i3_autostart => 0;
 use File::Temp qw(tempfile);
 use IO::Handle;
+
+my $pid = launch_with_config("");
 
 my $tmp = fresh_workspace;
 
@@ -35,7 +40,7 @@ cmp_tree(
     });
 
 my @content = @{get_ws_content($tmp)};
-is($content[0]->{nodes}[2]->{layout_fill_order}, 'reverse', 'manually check that layout created by cmp_tree has to correct fill order');
+is($content[0]->{nodes}[2]->{layout_fill_order}, 'reverse', 'manually check that the layout created by cmp_tree has the correct fill order');
 
 ################################################################################
 # Make sure fill_order is correctly restored.
@@ -181,5 +186,203 @@ cmd 'layout stacked reverse';
 my $split = @{get_ws_content($tmp)}[1];
 is($split->{layout}, 'stacked', 'layout stacked');
 is($split->{layout_fill_order}, 'reverse', 'layout fill order is reverse');
+
+################################################################################
+# Test that the layout_fill_order affects how containers get inserted into a layout)
+################################################################################
+
+# splitv
+$tmp = fresh_workspace;
+
+open_window;
+open_window name => 'foo';
+cmd 'split v';
+open_window name => 'bar';
+
+cmd 'layout fill_order reverse';
+open_window name => 'baz';
+
+$split = @{get_ws_content($tmp)}[1];
+is($split->{nodes}[1]->{name}, 'baz', 'window baz was inserted before window bar (index 1)');
+is($split->{nodes}[2]->{name}, 'bar', 'window bar comes after window baz');
+
+open_window name => 'qux';
+$split = @{get_ws_content($tmp)}[1];
+is($split->{nodes}[1]->{name}, 'qux', 'window qux was inserted before window baz (index 0)');
+
+# splith
+$tmp = fresh_workspace;
+
+open_window;
+open_window name => 'foo';
+cmd 'split h';
+open_window name => 'bar';
+
+cmd 'layout fill_order reverse';
+open_window name => 'baz';
+
+$split = @{get_ws_content($tmp)}[1];
+is($split->{nodes}[1]->{name}, 'baz', 'window baz was inserted before window bar (index 1)');
+is($split->{nodes}[2]->{name}, 'bar', 'window bar comes after window baz');
+
+# tabbed
+$tmp = fresh_workspace;
+
+open_window;
+open_window name => 'foo';
+cmd 'split h';
+open_window name => 'bar';
+
+cmd 'layout tabbed';
+cmd 'layout fill_order reverse';
+open_window name => 'baz';
+
+$split = @{get_ws_content($tmp)}[1];
+is($split->{nodes}[1]->{name}, 'baz', 'window baz was inserted before window bar (index 1)');
+is($split->{nodes}[2]->{name}, 'bar', 'window bar comes after window baz');
+
+# stacking
+$tmp = fresh_workspace;
+
+open_window;
+open_window name => 'foo';
+cmd 'split h';
+open_window name => 'bar';
+
+cmd 'layout stacking';
+cmd 'layout fill_order reverse';
+open_window name => 'baz';
+
+$split = @{get_ws_content($tmp)}[1];
+is($split->{nodes}[1]->{name}, 'baz', 'window baz was inserted before window bar (index 1)');
+is($split->{nodes}[2]->{name}, 'bar', 'window bar comes after window baz');
+
+exit_gracefully($pid);
+
+################################################################################
+# Test that workspace_attach_to() sets the correct layout fill order for new splits
+################################################################################
+
+my $config = <<EOT;
+workspace_layout stacking reverse
+EOT
+
+$pid = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+open_window;
+open_window;
+
+@content = @{get_ws_content($tmp)};
+is($content[0]->{layout}, 'stacked', 'workspace child node has stacking layout');
+is($content[0]->{layout_fill_order}, 'reverse', 'workspace child node has reverse layout fill order');
+
+exit_gracefully($pid);
+
+################################################################################
+# Test that workspace_encapsulate() sets the correct layout fill order (via tree_split)
+################################################################################
+
+my $config = <<EOT;
+workspace_layout default reverse
+EOT
+
+$pid = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+open_window;
+open_window;
+cmd 'focus parent';
+cmd 'split v';
+open_window;
+
+@content = @{get_ws_content($tmp)};
+is($content[1]->{layout_fill_order}, 'reverse', 'workspace child node has reverse layout fill order');
+
+################################################################################
+# Make sure that floating cons get correctly inserted into reverse layout tiling cons
+################################################################################
+cmp_tree(
+    msg => 'moving con into reverse layout inserts it before the last focused con, part 1',
+    layout_before => 'H[Vr[a b*] c]',
+    layout_after => 'H[Vr[a c* b]]',
+    cb => sub {
+        cmd '[class=c] focus';
+        cmd 'move left';
+    });
+
+$tmp = fresh_workspace;
+cmd 'layout splitv'; # We explicitely set the workspace layout to splitv to
+                     # prevent tree_flatten() from removing the outer V[] and
+                     # Hr[] splits. See issues #3503 and #3003.
+cmp_tree(
+    msg => 'moving con into reverse layout inserts it before the last focused con, part 2',
+    layout_before => 'V[a Hr[b c* d]]',
+    layout_after => 'V[Hr[b a c d]]',
+    ws => $tmp,
+    cb => sub {
+        cmd '[class=a] focus';
+        cmd 'move down';
+    });
+
+cmp_tree(
+    msg => "command 'floating disable' inserts container before tiling focused container in reverse layouts, part 1",
+    layout_before => 'Hr[a b c d*]',
+    layout_after => 'Hr[a d* b c]',
+    cb => sub {
+        cmd 'floating enable';
+        cmd '[class=b] focus';
+        cmd 'focus floating';
+        cmd 'floating disable';
+    });
+
+cmp_tree(
+    msg => "command 'floating disable' inserts container before tiling focused container in reverse layouts, part 2",
+    layout_before => 'H[a Vr[b S[c d e]] f*]',
+    layout_after => 'H[a Vr[f* b S[c d e]]]',
+    cb => sub {
+        cmd 'floating enable';
+        cmd '[class=b] focus';
+        cmd 'focus floating';
+        cmd 'floating disable';
+    });
+
+################################################################################
+# Make sure calls to insert_con_into() take layout fill order into account
+################################################################################
+
+# There are three places insert_con_into() gets called which these three
+# cmp_tree() tests below supposed to invoke. Really, only the first two require
+# special fill order handling.
+
+cmp_tree(
+    msg => 'moving con into reverse layout inserts it before the last focused con',
+    layout_before => 'H[Vr[a b*] c]',
+    layout_after => 'H[Vr[a c* b]]',
+    cb => sub {
+        cmd '[class=c] focus';
+        cmd 'move left';
+    });
+
+cmp_tree(
+    msg => "move con into bordering branch of an adjacent container with reverse fill order",
+    layout_before => 'H[Vr[a* b] Vr[c d]]',
+    layout_after => 'H[Vr[c* a b] Vr[d]]',
+    cb => sub {
+        cmd '[class=c] focus';
+        cmd 'move left';
+    });
+
+cmp_tree(
+    msg => 'moving con into parent container with reverse fill order',
+    layout_before => 'Hr[V[a b* c]]',
+    layout_after => 'Hr[V[a c] b*]',
+    cb => sub {
+        cmd 'move right';
+    });
+
+exit_gracefully($pid);
 
 done_testing;

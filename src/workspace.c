@@ -862,6 +862,7 @@ void ws_force_orientation(Con *ws, orientation_t orientation) {
 
     /* 2: copy layout from workspace */
     split->layout = ws->layout;
+    split->layout_fill_order = ws->layout_fill_order;
 
     /* 3: move the existing cons of this workspace below the new con */
     Con **focus_order = get_focus_order(ws);
@@ -913,6 +914,7 @@ Con *workspace_attach_to(Con *ws) {
 
     /* 2: set the requested layout on the split con */
     new->layout = ws->workspace_layout;
+    new->layout_fill_order = ws->layout_fill_order;
 
     /* 4: attach the new split container to the workspace */
     DLOG("Attaching new split %p to workspace %p\n", new, ws);
@@ -939,6 +941,7 @@ Con *workspace_encapsulate(Con *ws) {
     Con *new = con_new(NULL, NULL);
     new->parent = ws;
     new->layout = ws->layout;
+    new->layout_fill_order = ws->layout_fill_order;
 
     Con **focus_order = get_focus_order(ws);
 
