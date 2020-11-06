@@ -116,4 +116,54 @@ is($content[1]->{layout_fill_order}, 'reverse', 'child node two has reverse fill
 
 # TODO Unable to find a method to the i3-frame titles
 
+################################################################################
+# Test that the layout fill_order command works on workspaces
+################################################################################
+
+$tmp = fresh_workspace;
+
+$ws = get_ws($tmp);
+is($ws->{layout_fill_order}, 'default', 'ensure the default layout fill order');
+
+cmd 'layout fill_order reverse';
+$ws = get_ws($tmp);
+is($ws->{layout_fill_order}, 'reverse', 'cmd "layout fill_order reverse" changes layout_fill_order to "reverse"');
+
+cmd 'layout fill_order default';
+$ws = get_ws($tmp);
+is($ws->{layout_fill_order}, 'default', 'cmd "layout fill_order default" changes layout_fill_order to "default"');
+
+cmd 'layout fill_order toggle';
+$ws = get_ws($tmp);
+is ($ws->{layout_fill_order}, 'reverse', 'cmd "layout fill_order toggle" changes layout_fill_order from "default" -> "reverse"');
+cmd 'layout fill_order toggle';
+$ws = get_ws($tmp);
+is ($ws->{layout_fill_order}, 'default', 'cmd "layout fill_order toggle" changes layout_fill_order from "reverse" -> "default"');
+
+cmd 'layout fill_order foobar';
+$ws = get_ws($tmp);
+is ($ws->{layout_fill_order}, 'default', 'nonsensical layout fill_order option leaves fill order at default');
+
+################################################################################
+# Test the layout fill_order command works on containers down the tree
+################################################################################
+
+$tmp = fresh_workspace;
+
+open_window;
+open_window;
+cmd 'split v';
+open_window;
+
+my ($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[1]->{layout_fill_order}, 'default', 'layout fill order is default currently');
+
+cmd 'layout fill_order reverse';
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[1]->{layout_fill_order}, 'reverse', 'layout fill order is reverse now');
+
+cmd 'layout fill_order toggle';
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[1]->{layout_fill_order}, 'default', 'layout fill order was toggled to default');
+
 done_testing;

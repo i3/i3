@@ -101,11 +101,14 @@ state BORDER_WIDTH:
 
 # layout default|stacked|stacking|tabbed|splitv|splith
 # layout toggle [split|all]
+# layout fill_order [default|reverse|toggle]
 state LAYOUT:
   layout_mode = 'default', 'stacked', 'stacking', 'tabbed', 'splitv', 'splith'
       -> call cmd_layout($layout_mode)
   'toggle'
       -> LAYOUT_TOGGLE
+  'fill_order'
+      -> LAYOUT_FILL_ORDER
 
 # layout toggle [split|all]
 state LAYOUT_TOGGLE:
@@ -113,6 +116,13 @@ state LAYOUT_TOGGLE:
       -> call cmd_layout_toggle($toggle_mode)
   toggle_mode = string
       -> call cmd_layout_toggle($toggle_mode)
+
+# layout fill_order [default|reverse|toggle]
+state LAYOUT_FILL_ORDER:
+  end
+      -> call cmd_layout_fill_order($fill_order)
+  fill_order = 'default', 'reverse', 'toggle'
+      -> call cmd_layout_fill_order($fill_order)
 
 # append_layout <path>
 state APPEND_LAYOUT:

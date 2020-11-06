@@ -236,6 +236,12 @@ void cmd_layout(I3_CMD, const char *layout_str);
  */
 void cmd_layout_toggle(I3_CMD, const char *toggle_mode);
 
+/*
+ * Implementation of 'layout fill_order [default|reverse|toggle]'.
+ *
+ */
+void cmd_layout_fill_order(I3_CMD, const char *fill_order);
+
 /**
  * Implementation of 'exit'.
  *

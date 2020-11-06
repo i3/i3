@@ -1600,6 +1600,33 @@ void cmd_layout_toggle(I3_CMD, const char *toggle_mode) {
 }
 
 /*
+ * Implementation of 'layout fill_order [default|reverse|toggle]'.
+ *
+ */
+void cmd_layout_fill_order(I3_CMD, const char *fill_order) {
+    owindow *current;
+
+    if (fill_order == NULL)
+        fill_order = "default";
+
+    DLOG("setting layout fill order to %s\n", fill_order);
+
+    /* check if the match is empty, not if the result is empty */
+    if (match_is_empty(current_match))
+        con_set_layout_fill_order(focused, fill_order);
+    else {
+        TAILQ_FOREACH (current, &owindows, owindows) {
+            DLOG("matching: %p / %s\n", current->con, current->con->name);
+            con_set_layout_fill_order(current->con, fill_order);
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'exit'.
  *
  */
