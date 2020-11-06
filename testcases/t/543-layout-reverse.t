@@ -166,4 +166,20 @@ cmd 'layout fill_order toggle';
 ($nodes, $focus) = get_ws_content($tmp);
 is($nodes->[1]->{layout_fill_order}, 'default', 'layout fill order was toggled to default');
 
+################################################################################
+# Make sure that command 'layout <layout> reverse' works as expected
+################################################################################
+
+$tmp = fresh_workspace;
+
+open_window;
+open_window;
+cmd 'split v';
+open_window;
+
+cmd 'layout stacked reverse';
+my $split = @{get_ws_content($tmp)}[1];
+is($split->{layout}, 'stacked', 'layout stacked');
+is($split->{layout_fill_order}, 'reverse', 'layout fill order is reverse');
+
 done_testing;

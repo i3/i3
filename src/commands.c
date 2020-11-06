@@ -1542,10 +1542,10 @@ void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const ch
 }
 
 /*
- * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith'.
+ * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith [reverse]'.
  *
  */
-void cmd_layout(I3_CMD, const char *layout_str) {
+void cmd_layout(I3_CMD, const char *layout_str, const char *reverse) {
     HANDLE_EMPTY_MATCH;
 
     layout_t layout;
@@ -1565,6 +1565,8 @@ void cmd_layout(I3_CMD, const char *layout_str) {
 
         DLOG("matching: %p / %s\n", current->con, current->con->name);
         con_set_layout(current->con, layout);
+        if (reverse != NULL)
+            con_set_layout_fill_order(current->con, reverse);
     }
 
     cmd_output->needs_tree_render = true;

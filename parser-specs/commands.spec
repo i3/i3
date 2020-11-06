@@ -99,16 +99,22 @@ state BORDER_WIDTH:
   border_width = number
     -> call cmd_border($border_style, &border_width)
 
-# layout default|stacked|stacking|tabbed|splitv|splith
+# layout default|stacked|stacking|tabbed|splitv|splith [reverse]
 # layout toggle [split|all]
 # layout fill_order [default|reverse|toggle]
 state LAYOUT:
   layout_mode = 'default', 'stacked', 'stacking', 'tabbed', 'splitv', 'splith'
-      -> call cmd_layout($layout_mode)
+      -> LAYOUT_REVERSE
   'toggle'
       -> LAYOUT_TOGGLE
   'fill_order'
       -> LAYOUT_FILL_ORDER
+
+state LAYOUT_REVERSE:
+  end
+      -> call cmd_layout($layout_mode, $layout_reverse)
+  layout_reverse = 'reverse'
+      -> call cmd_layout($layout_mode, $layout_reverse)
 
 # layout toggle [split|all]
 state LAYOUT_TOGGLE:

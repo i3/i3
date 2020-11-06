@@ -225,10 +225,10 @@ void cmd_sticky(I3_CMD, const char *action);
 void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const char *mode);
 
 /**
- * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith'.
+ * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith [reverse]'.
  *
  */
-void cmd_layout(I3_CMD, const char *layout_str);
+void cmd_layout(I3_CMD, const char *layout_str, const char *reverse);
 
 /**
  * Implementation of 'layout toggle [all|split]'.
