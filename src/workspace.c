@@ -254,12 +254,15 @@ Con *create_workspace_on_output(Output *output, Con *content) {
             continue;
         }
 
-        exists = (get_existing_workspace_by_name(target_name) != NULL);
+        const int num = ws_name_to_number(target_name);
+        exists = (num == -1)
+                     ? get_existing_workspace_by_name(target_name)
+                     : get_existing_workspace_by_num(num);
         if (!exists) {
             ws->name = sstrdup(target_name);
             /* Set ->num to the number of the workspace, if the name actually
              * is a number or starts with a number */
-            ws->num = ws_name_to_number(ws->name);
+            ws->num = num;
             LOG("Used number %d for workspace with name %s\n", ws->num, ws->name);
 
             break;
