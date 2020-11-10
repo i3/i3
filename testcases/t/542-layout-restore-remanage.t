@@ -83,4 +83,70 @@ is($nodes[0]->{name}, 'different_title', 'test window got swallowed');
 
 close($fh);
 
+############################################################
+# Make sure window only gets swallowed once
+############################################################
+# Regression, issue #3888
+$ws = fresh_workspace;
+
+($fh, $filename) = tempfile(UNLINK => 1);
+print $fh <<'EOT';
+// vim:ts=4:sw=4:et
+{
+    // splith split container with 2 children
+    "layout": "splith",
+    "type": "con",
+    "nodes": [
+        {
+            "type": "con",
+            "swallows": [
+               {
+               "class": "^foo$"
+               }
+            ]
+        },
+        {
+            // splitv split container with 2 children
+            "layout": "splitv",
+            "type": "con",
+            "nodes": [
+                {
+                    "type": "con",
+                    "swallows": [
+                       {
+                        "class": "^foo$"
+                       }
+                    ]
+                },
+                {
+                    "type": "con",
+                    "swallows": [
+                       {
+                        "class": "^foo$"
+                       }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+EOT
+$fh->flush;
+cmd "append_layout $filename";
+
+$window = open_window wm_class => 'foo';
+
+# Changing an unrelated window property originally resulted in the window
+# getting remanaged and swallowd by a different placeholder, even though the
+# matching property (class for the layout above) didn't change.
+change_window_title($window, "different_title");
+
+@content = @{get_ws_content($ws)};
+
+subtest 'regression test that window gets only swallowed once', sub {
+    is($content[0]->{nodes}[0]->{window}, $window->id, 'first placeholder swallowed window');
+    isnt($content[0]->{nodes}[1]->{nodes}[0]->{window}, $window->id, 'second placeholder did not swallow window');
+    isnt($content[0]->{nodes}[1]->{nodes}[1]->{window}, $window->id, 'thid placeholder did not swallow window');
+};
+
 done_testing;
