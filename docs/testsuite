@@ -120,13 +120,11 @@ tests are run under Xvfb.
 ---------------------------------------
 $ cd ~/i3
 
-$ autoreconf -fi
-
 $ mkdir -p build && cd build
 
-$ ../configure
+$ meson ..
 
-$ make -j8
+$ ninja
 # output omitted because it is very long
 
 $ cd testcases
@@ -183,13 +181,11 @@ You can still use ./testcases/complete-run.pl to get the interactive progress ou
 ---------------------------------------
 $ cd ~/i3
 
-$ autoreconf -fi
-
 $ mkdir -p build && cd build
 
-$ ../configure
+$ meson ..
 
-$ make -j8
+$ ninja
 # output omitted because it is very long
 
 $ make check
