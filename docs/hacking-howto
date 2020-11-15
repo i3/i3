@@ -23,8 +23,10 @@ outdated information.
 
 == Building i3
 
-You can build i3 like you build any other software package which uses meson.
-Here’s a memory refresher:
+You can build i3 like you build any other software package which uses
+https://mesonbuild.com/[The Meson Build system]; see
+https://mesonbuild.com/Quick-guide.html#compiling-a-meson-project[Quickstart
+Guide → Compiling a Meson project]. In case you’re unfamiliar:
 
     $ mkdir -p build && cd build
     $ meson ..
