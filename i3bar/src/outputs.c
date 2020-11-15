@@ -9,13 +9,12 @@
  */
 #include "common.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
-#include <i3/ipc.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <yajl/yajl_parse.h>
-#include <yajl/yajl_version.h>
 
 /* A datatype to pass through the callbacks to save the state */
 struct outputs_json_params {
@@ -193,11 +192,12 @@ static int outputs_end_map_cb(void *params_) {
 
     /* See if we actually handle that output */
     if (config.num_outputs > 0) {
+        const bool is_primary = params->outputs_walk->primary;
         bool handle_output = false;
         for (int c = 0; c < config.num_outputs; c++) {
-            if (strcasecmp(params->outputs_walk->name, config.outputs[c]) == 0 ||
-                (strcasecmp(config.outputs[c], "primary") == 0 &&
-                 params->outputs_walk->primary)) {
+            if ((strcasecmp(params->outputs_walk->name, config.outputs[c]) == 0) ||
+                (strcasecmp(config.outputs[c], "primary") == 0 && is_primary) ||
+                (strcasecmp(config.outputs[c], "nonprimary") == 0 && !is_primary)) {
                 handle_output = true;
                 break;
             }
@@ -304,7 +304,7 @@ void free_outputs(void) {
     if (outputs == NULL) {
         return;
     }
-    SLIST_FOREACH(outputs_walk, outputs, slist) {
+    SLIST_FOREACH (outputs_walk, outputs, slist) {
         destroy_window(outputs_walk);
         if (outputs_walk->trayclients != NULL && !TAILQ_EMPTY(outputs_walk->trayclients)) {
             FREE_TAILQ(outputs_walk->trayclients, trayclient);
@@ -323,7 +323,7 @@ i3_output *get_output_by_name(char *name) {
     if (name == NULL) {
         return NULL;
     }
-    SLIST_FOREACH(walk, outputs, slist) {
+    SLIST_FOREACH (walk, outputs, slist) {
         if (!strcmp(walk->name, name)) {
             break;
         }
@@ -338,7 +338,7 @@ i3_output *get_output_by_name(char *name) {
  */
 bool output_has_focus(i3_output *output) {
     i3_ws *ws_walk;
-    TAILQ_FOREACH(ws_walk, output->workspaces, tailq) {
+    TAILQ_FOREACH (ws_walk, output->workspaces, tailq) {
         if (ws_walk->focused) {
             return true;
         }

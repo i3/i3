@@ -49,8 +49,9 @@ Please include your (complete) i3 config with which the issue occurs. You can ei
 
 If you would like to help debugging the issue, please try to reduce the config such that it is as close to the default config as possible while still reproducing the issue. This can help us bisect the root cause.
 -->
-<pre>
+<details><summary>Config file</summary><pre>
 </pre>
+</details>
 
 <!--
 Providing a logfile can help us trace the root cause of an issue much quicker. You can learn how to generate the logfile here:

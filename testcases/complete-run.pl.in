@@ -18,7 +18,7 @@ use Time::HiRes qw(time);
 use IO::Handle;
 
 # these are shipped with the testsuite
-use lib qw(@abs_top_builddir@/testcases/lib @abs_top_srcdir@/testcases/lib @abs_top_srcdir@/AnyEvent-I3/blib/lib);
+use lib qw(@abs_top_builddir@ @abs_top_builddir@/testcases/lib @abs_top_srcdir@/testcases/lib @abs_top_builddir@/AnyEvent-I3/blib/lib);
 use i3test::Util qw(slurp);
 use StartXServer;
 use StatusLine;
@@ -78,12 +78,12 @@ pod2usage(-verbose => 2, -exitcode => 0) if $help;
 # Check for missing executables
 my @binaries = qw(
                    @abs_top_builddir@/i3
-                   @abs_top_builddir@/i3bar/i3bar
-                   @abs_top_builddir@/i3-config-wizard/i3-config-wizard
-                   @abs_top_builddir@/i3-dump-log/i3-dump-log
-                   @abs_top_builddir@/i3-input/i3-input
-                   @abs_top_builddir@/i3-msg/i3-msg
-                   @abs_top_builddir@/i3-nagbar/i3-nagbar
+                   @abs_top_builddir@/i3bar
+                   @abs_top_builddir@/i3-config-wizard
+                   @abs_top_builddir@/i3-dump-log
+                   @abs_top_builddir@/i3-input
+                   @abs_top_builddir@/i3-msg
+                   @abs_top_builddir@/i3-nagbar
                );
 
 foreach my $binary (@binaries) {
@@ -103,12 +103,6 @@ foreach my $binary (@test_binaries) {
 }
 
 $ENV{PATH} = join(':',
-    '@abs_top_builddir@/i3-nagbar',
-    '@abs_top_builddir@/i3-msg',
-    '@abs_top_builddir@/i3-input',
-    '@abs_top_builddir@/i3-dump-log',
-    '@abs_top_builddir@/i3-config-wizard',
-    '@abs_top_builddir@/i3bar',
     '@abs_top_builddir@',
     '@abs_top_srcdir@',
     $ENV{PATH});

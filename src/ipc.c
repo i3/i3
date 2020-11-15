@@ -7,23 +7,25 @@
  * ipc.c: UNIX domain socket IPC (initialization, client handling, protocol).
  *
  */
-#include "all.h"
 
+#include "all.h"
 #include "yajl_utils.h"
 
+#include <ev.h>
+#include <fcntl.h>
+#include <libgen.h>
+#include <locale.h>
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <fcntl.h>
-#include <libgen.h>
-#include <ev.h>
+#include <unistd.h>
+
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
 
 char *current_socketpath = NULL;
 
-TAILQ_HEAD(ipc_client_head, ipc_client)
-all_clients = TAILQ_HEAD_INITIALIZER(all_clients);
+TAILQ_HEAD(ipc_client_head, ipc_client) all_clients = TAILQ_HEAD_INITIALIZER(all_clients);
 
 /*
  * Puts the given socket file descriptor into non-blocking mode or dies if
@@ -160,7 +162,7 @@ static void free_ipc_client(ipc_client *client, int exempt_fd) {
  */
 void ipc_send_event(const char *event, uint32_t message_type, const char *payload) {
     ipc_client *current;
-    TAILQ_FOREACH(current, &all_clients, clients) {
+    TAILQ_FOREACH (current, &all_clients, clients) {
         for (int i = 0; i < current->num_events; i++) {
             if (strcasecmp(current->events[i], event) == 0) {
                 ipc_send_client_message(current, strlen(payload), message_type, (uint8_t *)payload);
@@ -217,15 +219,14 @@ void ipc_shutdown(shutdown_reason_t reason, int exempt_fd) {
 }
 
 /*
- * Executes the command and returns whether it could be successfully parsed
- * or not (at the moment, always returns true).
+ * Executes the given command.
  *
  */
 IPC_HANDLER(run_command) {
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
     char *command = sstrndup((const char *)message, message_size);
-    LOG("IPC: received: *%s*\n", command);
+    LOG("IPC: received: *%.4000s*\n", command);
     yajl_gen gen = yajl_gen_alloc(NULL);
 
     CommandResult *result = parse_command(command, gen, client);
@@ -410,17 +411,13 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("urgent");
     y(bool, con->urgent);
 
-    if (!TAILQ_EMPTY(&(con->marks_head))) {
-        ystr("marks");
-        y(array_open);
-
-        mark_t *mark;
-        TAILQ_FOREACH(mark, &(con->marks_head), marks) {
-            ystr(mark->name);
-        }
-
-        y(array_close);
+    ystr("marks");
+    y(array_open);
+    mark_t *mark;
+    TAILQ_FOREACH (mark, &(con->marks_head), marks) {
+        ystr(mark->name);
     }
+    y(array_close);
 
     ystr("focused");
     y(bool, (con == focused));
@@ -595,7 +592,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(array_open);
     Con *node;
     if (con->type != CT_DOCKAREA || !inplace_restart) {
-        TAILQ_FOREACH(node, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (node, &(con->nodes_head), nodes) {
             dump_node(gen, node, inplace_restart);
         }
     }
@@ -603,14 +600,14 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     ystr("floating_nodes");
     y(array_open);
-    TAILQ_FOREACH(node, &(con->floating_head), floating_windows) {
+    TAILQ_FOREACH (node, &(con->floating_head), floating_windows) {
         dump_node(gen, node, inplace_restart);
     }
     y(array_close);
 
     ystr("focus");
     y(array_open);
-    TAILQ_FOREACH(node, &(con->focus_head), focused) {
+    TAILQ_FOREACH (node, &(con->focus_head), focused) {
         y(integer, (uintptr_t)node);
     }
     y(array_close);
@@ -640,7 +637,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("swallows");
     y(array_open);
     Match *match;
-    TAILQ_FOREACH(match, &(con->swallow_head), matches) {
+    TAILQ_FOREACH (match, &(con->swallow_head), matches) {
         /* We will generate a new restart_mode match specification after this
          * loop, so skip this one. */
         if (match->restart_mode)
@@ -703,7 +700,7 @@ static void dump_bar_bindings(yajl_gen gen, Barconfig *config) {
     y(array_open);
 
     struct Barbinding *current;
-    TAILQ_FOREACH(current, &(config->bar_bindings), bindings) {
+    TAILQ_FOREACH (current, &(config->bar_bindings), bindings) {
         y(map_open);
 
         ystr("input_code");
@@ -752,7 +749,7 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
         y(array_open);
 
         struct tray_output_t *tray_output;
-        TAILQ_FOREACH(tray_output, &(config->tray_outputs), tray_outputs) {
+        TAILQ_FOREACH (tray_output, &(config->tray_outputs), tray_outputs) {
             ystr(canonicalize_output_name(tray_output->output));
         }
 
@@ -898,11 +895,11 @@ IPC_HANDLER(get_workspaces) {
     Con *focused_ws = con_get_workspace(focused);
 
     Con *output;
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
         if (con_is_internal(output))
             continue;
         Con *ws;
-        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+        TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) {
             assert(ws->type == CT_WORKSPACE);
             y(map_open);
 
@@ -963,7 +960,7 @@ IPC_HANDLER(get_outputs) {
     y(array_open);
 
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         y(map_open);
 
         ystr("name");
@@ -1017,9 +1014,9 @@ IPC_HANDLER(get_marks) {
     y(array_open);
 
     Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons) {
+    TAILQ_FOREACH (con, &all_cons, all_cons) {
         mark_t *mark;
-        TAILQ_FOREACH(mark, &(con->marks_head), marks) {
+        TAILQ_FOREACH (mark, &(con->marks_head), marks) {
             ystr(mark->name);
         }
     }
@@ -1079,7 +1076,7 @@ IPC_HANDLER(get_bar_config) {
     if (message_size == 0) {
         y(array_open);
         Barconfig *current;
-        TAILQ_FOREACH(current, &barconfigs, configs) {
+        TAILQ_FOREACH (current, &barconfigs, configs) {
             ystr(current->id);
         }
         y(array_close);
@@ -1099,7 +1096,7 @@ IPC_HANDLER(get_bar_config) {
     sasprintf(&bar_id, "%.*s", message_size, message);
     LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
     Barconfig *current, *config = NULL;
-    TAILQ_FOREACH(current, &barconfigs, configs) {
+    TAILQ_FOREACH (current, &barconfigs, configs) {
         if (strcmp(current->id, bar_id) != 0)
             continue;
 
@@ -1138,7 +1135,7 @@ IPC_HANDLER(get_binding_modes) {
 
     y(array_open);
     struct Mode *mode;
-    SLIST_FOREACH(mode, &modes, modes) {
+    SLIST_FOREACH (mode, &modes, modes) {
         ystr(mode->name);
     }
     y(array_close);
@@ -1339,9 +1336,27 @@ IPC_HANDLER(sync) {
     ipc_send_client_message(client, strlen(reply), I3_IPC_REPLY_TYPE_SYNC, (const uint8_t *)reply);
 }
 
+IPC_HANDLER(get_binding_state) {
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("name");
+    ystr(current_binding_mode);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_GET_BINDING_STATE, payload);
+    y(free);
+}
+
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[12] = {
+handler_t handlers[13] = {
     handle_run_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -1354,6 +1369,7 @@ handler_t handlers[12] = {
     handle_get_config,
     handle_send_tick,
     handle_sync,
+    handle_get_binding_state,
 };
 
 /*

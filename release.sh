@@ -1,8 +1,8 @@
 #!/bin/zsh
 # This script is used to prepare a new release of i3.
 
-export RELEASE_VERSION="4.17"
-export PREVIOUS_VERSION="4.16"
+export RELEASE_VERSION="4.19"
+export PREVIOUS_VERSION="4.18"
 export RELEASE_BRANCH="next"
 
 if [ ! -e "../i3.github.io" ]
@@ -55,49 +55,43 @@ git checkout -b release-${RELEASE_VERSION}
 cp "${STARTDIR}/RELEASE-NOTES-${RELEASE_VERSION}" "RELEASE-NOTES-${RELEASE_VERSION}"
 git add RELEASE-NOTES-${RELEASE_VERSION}
 git rm RELEASE-NOTES-${PREVIOUS_VERSION}
-sed -i "s,RELEASE-NOTES-${PREVIOUS_VERSION},RELEASE-NOTES-${RELEASE_VERSION},g" Makefile.am
-sed -i "s/AC_INIT(\[i3\], \[${PREVIOUS_VERSION}\]/AC_INIT([i3], [${RELEASE_VERSION}]/" configure.ac
-echo "${RELEASE_VERSION} ($(date +%F))" > I3_VERSION
-git add I3_VERSION
+sed -i "s/^\s*version: '${PREVIOUS_VERSION}'/    version: '${RELEASE_VERSION}'/" meson.build
 git commit -a -m "release i3 ${RELEASE_VERSION}"
 git tag "${RELEASE_VERSION}" -m "release i3 ${RELEASE_VERSION}" --sign --local-user=0x4AC8EE1D
 
-autoreconf -fi
 mkdir build
-(cd build && ../configure && make dist-bzip2 -j8)
-cp build/i3-${RELEASE_VERSION}.tar.bz2 .
+(cd build && meson .. && ninja dist)
+cp build/meson-build/i3-${RELEASE_VERSION}.tar.xz .
 
 echo "Differences in the release tarball file lists:"
 
-diff -u \
-	<(tar tf ../i3-${PREVIOUS_VERSION}.tar.bz2 | sed "s,i3-${PREVIOUS_VERSION}/,,g" | sort) \
-	<(tar tf    i3-${RELEASE_VERSION}.tar.bz2  | sed "s,i3-${RELEASE_VERSION}/,,g"  | sort) \
-	| colordiff
+diff --color -u \
+	<(tar tf ../i3-${PREVIOUS_VERSION}.tar.xz | sed "s,i3-${PREVIOUS_VERSION}/,,g" | sort) \
+	<(tar tf    i3-${RELEASE_VERSION}.tar.xz  | sed "s,i3-${RELEASE_VERSION}/,,g"  | sort)
 
-
-gpg --armor -b i3-${RELEASE_VERSION}.tar.bz2
+gpg --armor -b i3-${RELEASE_VERSION}.tar.xz
 
 echo "${RELEASE_VERSION}-non-git" > I3_VERSION
 git add I3_VERSION
 git commit -a -m "Set non-git version to ${RELEASE_VERSION}-non-git."
 
-if [ "${RELEASE_BRANCH}" = "master" ]; then
-	git checkout master
+if [ "${RELEASE_BRANCH}" = "stable" ]; then
+	git checkout stable
 	git merge --no-ff release-${RELEASE_VERSION} -m "Merge branch 'release-${RELEASE_VERSION}'"
 	git checkout next
-	git merge --no-ff -s recursive -X ours -X no-renames master -m "Merge branch 'master' into next"
+	git merge --no-ff -s recursive -X ours -X no-renames stable -m "Merge branch 'stable' into next"
 else
 	git checkout next
 	git merge --no-ff release-${RELEASE_VERSION} -m "Merge branch 'release-${RELEASE_VERSION}'"
-	git checkout master
-	git merge --no-ff -s recursive -X theirs -X no-renames next -m "Merge branch 'next' into master"
+	git checkout stable
+	git merge --no-ff -s recursive -X theirs -X no-renames next -m "Merge branch 'next' into stable"
 fi
 
 git remote remove origin
 git remote add origin git@github.com:i3/i3.git
 git config --add remote.origin.push "+refs/tags/*:refs/tags/*"
 git config --add remote.origin.push "+refs/heads/next:refs/heads/next"
-git config --add remote.origin.push "+refs/heads/master:refs/heads/master"
+git config --add remote.origin.push "+refs/heads/stable:refs/heads/stable"
 
 ################################################################################
 # Section 2: Debian packaging
@@ -115,9 +109,9 @@ cat > ${TMPDIR}/Dockerfile <<EOT
 FROM debian:sid
 RUN sed -i 's,^deb \(.*\),deb \1\ndeb-src \1,g' /etc/apt/sources.list
 RUN apt-get update && apt-get install -y dpkg-dev devscripts
-COPY i3/i3-${RELEASE_VERSION}.tar.bz2 /usr/src/i3-wm_${RELEASE_VERSION}.orig.tar.bz2
+COPY i3/i3-${RELEASE_VERSION}.tar.xz /usr/src/i3-wm_${RELEASE_VERSION}.orig.tar.xz
 WORKDIR /usr/src/
-RUN tar xf i3-wm_${RELEASE_VERSION}.orig.tar.bz2
+RUN tar xf i3-wm_${RELEASE_VERSION}.orig.tar.xz
 WORKDIR /usr/src/i3-${RELEASE_VERSION}
 COPY i3/debian /usr/src/i3-${RELEASE_VERSION}/debian/
 RUN mkdir debian/source
@@ -130,7 +124,7 @@ RUN dpkg-buildpackage -S -sa -j8
 EOT
 
 CONTAINER_NAME=$(echo "i3-${TMPDIR}" | sed 's,/,,g')
-docker build -t i3 .
+docker build --no-cache -t i3 .
 for file in $(docker run --name "${CONTAINER_NAME}" i3 /bin/sh -c "ls /usr/src/i3*_${RELEASE_VERSION}*")
 do
 	docker cp "${CONTAINER_NAME}:${file}" ${TMPDIR}/debian/
@@ -161,14 +155,14 @@ tar cf - '--exclude=[0-9]\.[0-9e]*' docs | tar xf - --strip-components=1 -C docs
 git add docs/${PREVIOUS_VERSION}
 git commit -a -m "save docs for ${PREVIOUS_VERSION}"
 
-cp ${TMPDIR}/i3/i3-${RELEASE_VERSION}.tar.bz2* downloads/
-git add downloads/i3-${RELEASE_VERSION}.tar.bz2*
+cp ${TMPDIR}/i3/i3-${RELEASE_VERSION}.tar.xz* downloads/
+git add downloads/i3-${RELEASE_VERSION}.tar.xz*
 cp ${TMPDIR}/i3/RELEASE-NOTES-${RELEASE_VERSION} downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt
 git add downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt
 sed -i "s,<h2>Documentation for i3 v[^<]*</h2>,<h2>Documentation for i3 v${RELEASE_VERSION}</h2>,g" docs/index.html
 sed -i "s,<span style=\"margin-left: 2em; color: #c0c0c0\">[^<]*</span>,<span style=\"margin-left: 2em; color: #c0c0c0\">${RELEASE_VERSION}</span>,g" index.html
 sed -i "s,The current stable version is .*$,The current stable version is ${RELEASE_VERSION}.,g" downloads/index.html
-sed -i "s,<tbody>,<tbody>\n  <tr>\n    <td>${RELEASE_VERSION}</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.bz2\">i3-${RELEASE_VERSION}.tar.bz2</a></td>\n    <td>$(LC_ALL=en_US.UTF-8 ls -lh ../i3/i3-${RELEASE_VERSION}.tar.bz2 | awk -F " " {'print $5'} | sed 's/K$/ KiB/g' | sed 's/M$/ MiB/g')</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.bz2.asc\">signature</a></td>\n    <td>$(date +'%Y-%m-%d')</td>\n    <td><a href=\"/downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt\">release notes</a></td>\n  </tr>\n,g" downloads/index.html
+sed -i "s,<tbody>,<tbody>\n  <tr>\n    <td>${RELEASE_VERSION}</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.xz\">i3-${RELEASE_VERSION}.tar.xz</a></td>\n    <td>$(LC_ALL=en_US.UTF-8 ls -lh ../i3/i3-${RELEASE_VERSION}.tar.xz | awk -F " " {'print $5'} | sed 's/K$/ KiB/g' | sed 's/M$/ MiB/g')</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.xz.asc\">signature</a></td>\n    <td>$(date +'%Y-%m-%d')</td>\n    <td><a href=\"/downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt\">release notes</a></td>\n  </tr>\n,g" downloads/index.html
 
 git commit -a -m "add ${RELEASE_VERSION} release"
 

@@ -28,15 +28,15 @@
 
 #define NODES_FOREACH(head)                                                    \
     for (Con *child = (Con *)-1; (child == (Con *)-1) && ((child = 0), true);) \
-    TAILQ_FOREACH(child, &((head)->nodes_head), nodes)
+        TAILQ_FOREACH (child, &((head)->nodes_head), nodes)
 
 #define NODES_FOREACH_REVERSE(head)                                            \
     for (Con *child = (Con *)-1; (child == (Con *)-1) && ((child = 0), true);) \
-    TAILQ_FOREACH_REVERSE(child, &((head)->nodes_head), nodes_head, nodes)
+        TAILQ_FOREACH_REVERSE (child, &((head)->nodes_head), nodes_head, nodes)
 
 /* greps the ->nodes of the given head and returns the first node that matches the given condition */
 #define GREP_FIRST(dest, head, condition) \
-    NODES_FOREACH(head) {                 \
+    NODES_FOREACH (head) {                \
         if (!(condition))                 \
             continue;                     \
                                           \
@@ -65,6 +65,7 @@ bool rect_contains(Rect rect, uint32_t x, uint32_t y);
 Rect rect_add(Rect a, Rect b);
 Rect rect_sub(Rect a, Rect b);
 bool rect_equals(Rect a, Rect b);
+Rect rect_sanitize_dimensions(Rect rect);
 
 /**
  * Returns true if the name consists of only digits.
@@ -85,7 +86,7 @@ bool layout_from_name(const char *layout_str, layout_t *out);
  * interpreted as a "named workspace".
  *
  */
-long ws_name_to_number(const char *name);
+int ws_name_to_number(const char *name);
 
 /**
  * Updates *destination with new_value and returns true if it was changed or false
@@ -142,13 +143,13 @@ char *pango_escape_markup(char *input);
 void start_nagbar(pid_t *nagbar_pid, char *argv[]);
 
 /**
- * Kills the i3-nagbar process, if *nagbar_pid != -1.
+ * Kills the i3-nagbar process, if nagbar_pid != -1.
  *
  * If wait_for_it is set (restarting i3), this function will waitpid(),
  * otherwise, ev is assumed to handle it (reloading).
  *
  */
-void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it);
+void kill_nagbar(pid_t nagbar_pid, bool wait_for_it);
 
 /**
  * Converts a string into a long using strtol().

@@ -25,13 +25,6 @@
  */
 #include "all.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <stdint.h>
-
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) (command_output.json_gen != NULL ? yajl_gen_##x(command_output.json_gen, ##__VA_ARGS__) : 0)
 #define ystr(str) (command_output.json_gen != NULL ? yajl_gen_string(command_output.json_gen, (unsigned char *)str, strlen(str)) : 0)
@@ -263,7 +256,7 @@ char *parse_string(const char **walk, bool as_word) {
  * Free the returned CommandResult with command_result_free().
  */
 CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client) {
-    DLOG("COMMAND: *%s*\n", input);
+    DLOG("COMMAND: *%.4000s*\n", input);
     state = INITIAL;
     CommandResult *result = scalloc(1, sizeof(CommandResult));
 

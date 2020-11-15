@@ -10,6 +10,8 @@
  */
 #include <config.h>
 
+#include "libi3.h"
+
 #if defined(__FreeBSD__)
 #include <sys/param.h>
 #endif
@@ -23,37 +25,33 @@
 #define _WITH_GETLINE
 #endif
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <string.h>
 #include <ctype.h>
-#include <errno.h>
 #include <err.h>
-#include <stdint.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <limits.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <glob.h>
-#include <assert.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_keysyms.h>
-
-#include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-x11.h>
+#include <xkbcommon/xkbcommon.h>
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launchee.h>
 
+#include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
-#include <X11/XKBlib.h>
+
+#include "i3-config-wizard-atoms.xmacro.h"
 
 /* We need SYSCONFDIR for the path to the keycode config template, so raise an
  * error if it’s not defined for whatever reason */
@@ -69,7 +67,6 @@
 
 #include "xcb.h"
 xcb_visualtype_t *visual_type = NULL;
-#include "libi3.h"
 
 #define TEXT_PADDING logical_px(4)
 #define WIN_POS_X logical_px(490)
@@ -848,7 +845,7 @@ int main(int argc, char *argv[]) {
 /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-#include "atoms.xmacro"
+    CONFIG_WIZARD_ATOMS_XMACRO
 #undef xmacro
 
     /* Init startup notification. */
@@ -905,7 +902,7 @@ int main(int argc, char *argv[]) {
         A_##name = reply->atom;                                                            \
         free(reply);                                                                       \
     } while (0);
-#include "atoms.xmacro"
+    CONFIG_WIZARD_ATOMS_XMACRO
 #undef xmacro
 
     /* Set dock mode */

@@ -9,27 +9,22 @@
  */
 #include <config.h>
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <err.h>
-#include <stdint.h>
-#include <getopt.h>
-#include <limits.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <signal.h>
-
 #include "libi3.h"
 #include "shmlog.h"
+
+#include <err.h>
+#include <fcntl.h>
+#include <getopt.h>
 #include <i3/ipc.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #if !defined(__OpenBSD__)
 static uint32_t offset_next_write;
@@ -246,8 +241,8 @@ int main(int argc, char *argv[]) {
     sigaction(SIGINT, &action, NULL);
 
     /* Since pthread_cond_wait() expects a mutex, we need to provide one.
-         * To not lock i3 (that’s bad, mhkay?) we just define one outside of
-         * the shared memory. */
+     * To not lock i3 (that’s bad, mhkay?) we just define one outside of
+     * the shared memory. */
     pthread_mutex_t dummy_mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_lock(&dummy_mutex);
     while (!interrupted) {

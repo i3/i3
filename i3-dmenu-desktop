@@ -13,6 +13,7 @@ use POSIX qw(locale_h);
 use File::Find;
 use File::Basename qw(basename);
 use File::Temp qw(tempfile);
+use List::Util 'first';
 use Getopt::Long;
 use Pod::Usage;
 use v5.10;
@@ -123,6 +124,8 @@ for my $dir (split(':', $xdg_data_dirs)) {
 # Cleanup the paths, maybe some application does not cope with double slashes
 # (the field code %k is replaced with the .desktop file location).
 @searchdirs = map { s,//,/,g; $_ } @searchdirs;
+# Also remove any trailing slashes.
+@searchdirs = map { s,/*$,,g; $_ } @searchdirs;
 
 # To avoid errors by File::Find’s find(), only pass existing directories.
 @searchdirs = grep { -d $_ } @searchdirs;
@@ -133,8 +136,15 @@ find(
             return unless substr($_, -1 * length('.desktop')) eq '.desktop';
             my $relative = $File::Find::name;
 
-            # + 1 for the trailing /, which is missing in ::topdir.
-            substr($relative, 0, length($File::Find::topdir) + 1) = '';
+            # Find and then replace the directory in @searchdirs in which the
+            # current file is located. We used to do this with
+            # $File::Find::topdir but it is not supported when using the
+            # 'follow' or 'follow_fast' options.
+            # See #3973, #4031.
+            my $topdir = first { substr($relative, 0, length($_)) eq $_ } @searchdirs;
+
+            # + 1 for the trailing /, which is missing in $topdir.
+            substr($relative, 0, length($topdir) + 1) = '';
 
             # Don’t overwrite files with the same relative path, we search in
             # descending order of importance.
@@ -143,6 +153,7 @@ find(
             $desktops{$relative} = $File::Find::name;
         },
         no_chdir => 1,
+        follow_fast => 1,
     },
     @searchdirs
 );

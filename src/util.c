@@ -10,19 +10,16 @@
  */
 #include "all.h"
 
+#include <ctype.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <libgen.h>
+#include <locale.h>
 #include <sys/wait.h>
-#include <stdarg.h>
+#include <unistd.h>
 #if defined(__OpenBSD__)
 #include <sys/cdefs.h>
 #endif
-#include <fcntl.h>
-#include <pwd.h>
-#include <yajl/yajl_version.h>
-#include <libgen.h>
-#include <ctype.h>
-
-#define SN_API_NOT_YET_FROZEN 1
-#include <libsn/sn-launcher.h>
 
 int min(int a, int b) {
     return (a < b ? a : b);
@@ -51,6 +48,12 @@ Rect rect_sub(Rect a, Rect b) {
                   a.y - b.y,
                   a.width - b.width,
                   a.height - b.height};
+}
+
+Rect rect_sanitize_dimensions(Rect rect) {
+    rect.width = (int32_t)rect.width <= 0 ? 1 : rect.width;
+    rect.height = (int32_t)rect.height <= 0 ? 1 : rect.height;
+    return rect;
 }
 
 bool rect_equals(Rect a, Rect b) {
@@ -103,14 +106,12 @@ bool layout_from_name(const char *layout_str, layout_t *out) {
  * interpreted as a "named workspace".
  *
  */
-long ws_name_to_number(const char *name) {
+int ws_name_to_number(const char *name) {
     /* positive integers and zero are interpreted as numbers */
     char *endptr = NULL;
-    long parsed_num = strtol(name, &endptr, 10);
-    if (parsed_num == LONG_MIN ||
-        parsed_num == LONG_MAX ||
-        parsed_num < 0 ||
-        endptr == name) {
+    errno = 0;
+    long long parsed_num = strtoll(name, &endptr, 10);
+    if (errno != 0 || parsed_num > INT32_MAX || parsed_num < 0 || endptr == name) {
         parsed_num = -1;
     }
 
@@ -286,8 +287,8 @@ static char *store_restart_layout(void) {
 void i3_restart(bool forget_layout) {
     char *restart_filename = forget_layout ? NULL : store_restart_layout();
 
-    kill_nagbar(&config_error_nagbar_pid, true);
-    kill_nagbar(&command_error_nagbar_pid, true);
+    kill_nagbar(config_error_nagbar_pid, true);
+    kill_nagbar(command_error_nagbar_pid, true);
 
     restore_geometry();
 
@@ -335,30 +336,19 @@ char *pango_escape_markup(char *input) {
 static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
     ev_child_stop(EV_A_ watcher);
 
-    if (!WIFEXITED(watcher->rstatus)) {
-        ELOG("ERROR: i3-nagbar did not exit normally.\n");
-        return;
-    }
-
     int exitcode = WEXITSTATUS(watcher->rstatus);
-    DLOG("i3-nagbar process exited with status %d\n", exitcode);
-    if (exitcode == 2) {
-        ELOG("ERROR: i3-nagbar could not be found. Is it correctly installed on your system?\n");
+    if (!WIFEXITED(watcher->rstatus)) {
+        ELOG("i3-nagbar (%d) did not exit normally. This is not an error if the config was reloaded while a nagbar was active.\n", watcher->pid);
+    } else if (exitcode != 0) {
+        ELOG("i3-nagbar (%d) process exited with status %d\n", watcher->pid, exitcode);
+    } else {
+        DLOG("i3-nagbar (%d) process exited with status %d\n", watcher->pid, exitcode);
     }
 
-    *((pid_t *)watcher->data) = -1;
-}
-
-/*
- * Cleanup handler. Will be called when i3 exits. Kills i3-nagbar with signal
- * SIGKILL (9) to make sure there are no left-over i3-nagbar processes.
- *
- */
-static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
-    pid_t *nagbar_pid = (pid_t *)watcher->data;
-    if (*nagbar_pid != -1) {
-        LOG("Sending SIGKILL (%d) to i3-nagbar with PID %d\n", SIGKILL, *nagbar_pid);
-        kill(*nagbar_pid, SIGKILL);
+    pid_t *nagbar_pid = watcher->data;
+    if (*nagbar_pid == watcher->pid) {
+        /* Only reset if the watched nagbar is the active nagbar */
+        *nagbar_pid = -1;
     }
 }
 
@@ -394,27 +384,20 @@ void start_nagbar(pid_t *nagbar_pid, char *argv[]) {
     ev_child_init(child, &nagbar_exited, *nagbar_pid, 0);
     child->data = nagbar_pid;
     ev_child_start(main_loop, child);
-
-    /* install a cleanup watcher (will be called when i3 exits and i3-nagbar is
-     * still running) */
-    ev_cleanup *cleanup = smalloc(sizeof(ev_cleanup));
-    ev_cleanup_init(cleanup, nagbar_cleanup);
-    cleanup->data = nagbar_pid;
-    ev_cleanup_start(main_loop, cleanup);
 }
 
 /*
- * Kills the i3-nagbar process, if *nagbar_pid != -1.
+ * Kills the i3-nagbar process, if nagbar_pid != -1.
  *
  * If wait_for_it is set (restarting i3), this function will waitpid(),
  * otherwise, ev is assumed to handle it (reloading).
  *
  */
-void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it) {
-    if (*nagbar_pid == -1)
+void kill_nagbar(pid_t nagbar_pid, bool wait_for_it) {
+    if (nagbar_pid == -1)
         return;
 
-    if (kill(*nagbar_pid, SIGTERM) == -1)
+    if (kill(nagbar_pid, SIGTERM) == -1)
         warn("kill(configerror_nagbar) failed");
 
     if (!wait_for_it)
@@ -424,7 +407,7 @@ void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it) {
      * exec(), our old pid is no longer watched. So, ev won’t handle SIGCHLD
      * for us and we would end up with a <defunct> process. Therefore we
      * waitpid() here. */
-    waitpid(*nagbar_pid, NULL, 0);
+    waitpid(nagbar_pid, NULL, 0);
 }
 
 /*

@@ -54,7 +54,7 @@ existing window (rotated displays).
 image:two_terminals.png[Two terminals]
 
 To move the focus between the two terminals, you can use the direction keys
-which you may know from the editor +vi+. However, in i3, your homerow is used
+which you might know from the editor +vi+. However, in i3, your homerow is used
 for these keys (in +vi+, the keys are shifted to the left by one for
 compatibility with most keyboard layouts). Therefore, +$mod+j+ is left, +$mod+k+
 is down, +$mod+l+ is up and `$mod+;` is right. So, to switch between the
@@ -245,7 +245,7 @@ you open a new terminal, it will open below the current one.
 
 So, how can you open a new terminal window to the *right* of the current one?
 The solution is to use +focus parent+, which will focus the +Parent Container+ of
-the current +Container+. In default configuration, use +$mod+a+ to navigate one 
+the current +Container+. In default configuration, use +$mod+a+ to navigate one
 +Container+ up the tree (you can repeat this multiple times until you get to the
 +Workspace Container+). In this case, you would focus the +Vertical Split Container+
 which is *inside* the horizontally oriented workspace. Thus, now new windows will be
@@ -263,7 +263,7 @@ single workspace on which you open three terminal windows. All these terminal
 windows are directly attached to one node inside i3’s layout tree, the
 workspace node. By default, the workspace node’s orientation is +horizontal+.
 
-Now you move one of these terminals down (+$mod+Shift+k+ by default). The
+Now you move one of these terminals down (+$mod+Shift+j+ by default). The
 workspace node’s orientation will be changed to +vertical+. The terminal window
 you moved down is directly attached to the workspace and appears on the bottom
 of the screen. A new (horizontal) container was created to accommodate the
@@ -924,7 +924,7 @@ available outputs by running +xrandr --current+.
 If your X server supports RandR 1.5 or newer, i3 will use RandR monitor objects
 instead of output objects. Run +xrandr --listmonitors+ to see a list. Usually,
 a monitor object contains exactly one output, and has the same name as the
-output; but should that not be the case, you may specify the name of either the
+output; but should that not be the case, you can specify the name of either the
 monitor or the output in i3's configuration. For example, the Dell UP2414Q uses
 two scalers internally, so its output names might be “DP1” and “DP2”, but the
 monitor name is “Dell UP2414Q”.
@@ -1066,7 +1066,7 @@ mouse_warping none
 === Popups during fullscreen mode
 
 When you are in fullscreen mode, some applications still open popup windows
-(take Xpdf for example). This is because these applications may not be aware
+(take Xpdf for example). This is because these applications might not be aware
 that they are in fullscreen mode (they do not check the corresponding hint).
 There are three things which are possible to do in this situation:
 
@@ -1176,9 +1176,9 @@ workspace_auto_back_and_forth yes
 === Delaying urgency hint reset on workspace change
 
 If an application on another workspace sets an urgency hint, switching to this
-workspace may lead to immediate focus of the application, which also means the
+workspace might lead to immediate focus of the application, which also means the
 window decoration color would be immediately reset to +client.focused+. This
-may make it unnecessarily hard to tell which window originally raised the
+might make it unnecessarily hard to tell which window originally raised the
 event.
 
 In order to prevent this, you can tell i3 to delay resetting the urgency state
@@ -1201,9 +1201,9 @@ force_display_urgency_hint 500 ms
 === Focus on window activation
 
 If a window is activated, e.g., via +google-chrome www.google.com+, it may request
-to take focus. Since this may not preferable, different reactions can be configured.
+to take focus. Since this might not be preferable, different reactions can be configured.
 
-Note that this may not affect windows that are being opened. To prevent new windows
+Note that this might not affect windows that are being opened. To prevent new windows
 from being focused, see <<no_focus>>.
 
 *Syntax*:
@@ -1350,9 +1350,11 @@ mode). The modifier key can be configured using the +modifier+ option.
 The mode option can be changed during runtime through the +bar mode+ command.
 On reload the mode will be reverted to its configured value.
 
-The hide mode maximizes screen space that can be used for actual windows. Also,
-i3bar sends the +SIGSTOP+ and +SIGCONT+ signals to the statusline process to
-save battery power.
+The hide mode maximizes screen space that can be used for actual windows. When
+the bar is hidden, i3bar sends the +SIGSTOP+ and +SIGCONT+ signals to the
++status_command+ process in order to conserve battery power. This feature can
+be disabled by the +status_command+ process by setting the appropriate values
+in its JSON header message.
 
 Invisible mode allows to permanently maximize screen space, as the bar is never
 shown. Thus, you can configure i3bar to not disturb you by popping up because
@@ -1409,6 +1411,11 @@ button4::
     Scroll wheel up.
 button5::
     Scroll wheel down.
+button6::
+    Scroll wheel right.
+button7::
+    Scroll wheel left.
+
 
 Please note that the old +wheel_up_cmd+ and +wheel_down_cmd+ commands are deprecated
 and will be removed in a future release. We strongly recommend using the more general
@@ -1477,9 +1484,16 @@ options for different outputs by using multiple 'bar' blocks.
 To make a particular i3bar instance handle multiple outputs, specify the output
 directive multiple times.
 
+These output names have a special meaning:
+
+primary::
+    Selects the output that is configured as primary in the X server.
+nonprimary::
+    Selects every output that is not configured as primary in the X server.
+
 *Syntax*:
 ---------------
-output primary|<output>
+output primary|nonprimary|<output>
 ---------------
 
 *Example*:
@@ -1635,7 +1649,7 @@ bar {
 
 By default, the width a workspace button is determined by the width of the text
 showing the workspace name. If the name is too short (say, one letter), then the
-workspace button may look too small.
+workspace button might look too small.
 
 This option specifies the minimum width for workspace buttons. If the name of
 a workspace is too short to cover the button, an additional padding is added on
@@ -1645,7 +1659,7 @@ The default value of zero means that no additional padding is added.
 
 The setting also applies to the current binding mode indicator.
 
-Note that the specified pixels refer to logical pixels, which may translate
+Note that the specified pixels refer to logical pixels, which might translate
 into more pixels on HiDPI displays.
 
 *Syntax*:
@@ -1675,8 +1689,8 @@ When +strip_workspace_name+ is set to +yes+, any workspace that has a name of
 the form "[n][:][NAME]" will display only the number.
 
 The default is to display the full name within the workspace button. Be aware
-that the colon in the workspace name is optional, so `[n][NAME]` will also 
-have the the workspace name and number stripped correctly. 
+that the colon in the workspace name is optional, so `[n][NAME]` will also
+have the workspace name and number stripped correctly.
 
 *Syntax*:
 ------------------------------
@@ -1895,8 +1909,18 @@ con_id::
 	to match only the currently focused window.
 floating::
 	Only matches floating windows. This criterion requires no value.
+floating_from::
+	Like +floating+ but this criterion takes two possible values: "auto"
+	and "user". With "auto", only windows that were automatically opened as
+	floating are matched. With "user", only windows that the user made
+	floating are matched.
 tiling::
 	Only matches tiling windows. This criterion requires no value.
+tiling_from::
+	Like +tiling+ but this criterion takes two possible values: "auto" and
+	"user". With "auto", only windows that were automatically opened as
+	tiling are matched. With "user", only windows that the user made tiling
+	are matched.
 
 The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
 actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
@@ -2123,12 +2147,15 @@ Use the +move+ command to move a container.
 # Moves the container into the given direction.
 # The optional pixel argument specifies how far the
 # container should be moved if it is floating and
-# defaults to 10 pixels.
-move <left|right|down|up> [<px> px]
+# defaults to 10 pixels. The optional ppt argument
+# means "percentage points", and if specified it indicates
+# how many points the container should be moved if it is
+# floating rather than by a pixel value.
+move <left|right|down|up> [<amount> [px|ppt]]
 
 # Moves the container to the specified pos_x and pos_y
 # coordinates on the screen.
-move position <pos_x> [px] <pos_y> [px]
+move position <pos_x> [px|ppt] <pos_y> [px|ppt]
 
 # Moves the container to the center of the screen.
 # If 'absolute' is used, it is moved to the center of
@@ -2444,7 +2471,7 @@ for_window [class="urxvt"] resize set 640 480
 === Jumping to specific windows
 
 Often when in a multi-monitor environment, you want to quickly jump to a
-specific window. For example, while working on workspace 3 you may want to
+specific window. For example, while working on workspace 3 you might want to
 jump to your mail client to email your boss that you’ve achieved some
 important goal. Instead of figuring out how to navigate to your mail client,
 it would be more convenient to have a shortcut. You can use the +focus+ command
@@ -2479,7 +2506,7 @@ for this purpose: It lets you input a command and sends the command to i3. It
 can also prefix this command and display a custom prompt for the input dialog.
 
 The additional +--toggle+ option will remove the mark if the window already has
-this mark or add it otherwise. Note that you may need to use this in
+this mark or add it otherwise. Note that you might need to use this in
 combination with +--add+ (see below) as any other marks will otherwise be
 removed.
 
@@ -2578,7 +2605,7 @@ optional pixel argument can be used to specify the border width when switching
 to the normal and pixel styles.
 
 Note that "pixel" refers to logical pixel. On HiDPI displays, a logical pixel
-may be represented by multiple physical pixels, so +pixel 1+ might not
+is represented by multiple physical pixels, so +pixel 1+ might not
 necessarily translate into a single pixel row wide border.
 
 *Syntax*:
@@ -2841,7 +2868,7 @@ See also <<presentations>> for more examples of multi-monitor setups.
 
 === Interesting configuration for multi-monitor environments
 
-There are several things to configure in i3 which may be interesting if you
+There are several things to configure in i3 which might be interesting if you
 have more than one monitor:
 
 1. You can specify which workspace should be put on which screen. This

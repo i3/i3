@@ -8,7 +8,6 @@
 #include "libi3.h"
 
 #include <stdlib.h>
-#include <stdbool.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>

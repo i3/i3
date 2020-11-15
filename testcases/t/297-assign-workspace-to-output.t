@@ -41,7 +41,7 @@ my $pid = launch_with_config($config);
 
 sub check_output {
     my ($workspace, $output, $msg) = @_;
-    is(get_output_for_workspace($workspace), $output, $msg);
+    is(get_output_for_workspace($workspace), $output, "[$workspace->$output] " . $msg);
 }
 
 check_output('9', '', 'Numbered workspace with a big number that is assigned to output that does not exist is not used');
@@ -82,6 +82,10 @@ workspace 4 output whitespace                    fake-0
 workspace foo output doesnotexist1 doesnotexist2 doesnotexist3
 workspace bar output doesnotexist
 workspace bar output fake-0
+workspace 5 output fake-0
+workspace 5:xxx output fake-1
+workspace 6:xxx output fake-0
+workspace 6 output fake-1
 EOT
 
 $pid = launch_with_config($config);
@@ -90,8 +94,11 @@ do_test('1', 'fake-0', 'Multiple assignments do not override a single one');
 do_test('2', 'fake-3', 'First output out of multiple assignments is used');
 do_test('3', 'fake-0', 'First existing output is used');
 do_test('4', 'fake-0', 'Excessive whitespace is ok');
-do_test('5', 'fake-1', 'Numbered initialization for fake-1');
-do_test('6', 'fake-2', 'Numbered initialization for fake-2');
+do_test('5', 'fake-0', 'Numbered assignment ok');
+do_test('5:xxx', 'fake-1', 'Named assignment overrides number');
+do_test('6', 'fake-1', 'Numbered assignment ok');
+do_test('6:xxx', 'fake-0', 'Named assignment overrides number');
+do_test('7', 'fake-2', 'Numbered initialization for fake-2');
 
 cmd 'focus output fake-0, workspace foo';
 check_output('foo', 'fake-0', 'Workspace with only non-existing assigned outputs opened in current output');
@@ -102,6 +109,15 @@ check_output('bar', 'fake-0', 'Second workspace assignment line ignored');
 # Moving assigned workspaces.
 cmd 'workspace 2, move workspace to output left';
 check_output('2', 'fake-2', 'Moved assigned workspace up');
+
+# Specific name overrides assignment by number after renaming
+# See #4021
+cmd 'workspace 5, rename workspace to 5:xxx';
+check_output('5:xxx', 'fake-1', 'workspace triggered correct, specific assignment after renaming');
+
+# Same but opposite order
+cmd 'workspace 6, rename workspace to 6:xxx';
+check_output('6:xxx', 'fake-0', 'workspace triggered correct, specific assignment after renaming');
 
 exit_gracefully($pid);
 done_testing;

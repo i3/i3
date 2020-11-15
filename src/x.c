@@ -10,6 +10,8 @@
  */
 #include "all.h"
 
+#include <unistd.h>
+
 #ifndef MAX
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
@@ -61,26 +63,18 @@ typedef struct con_state {
 
     char *name;
 
-    CIRCLEQ_ENTRY(con_state)
-    state;
-
-    CIRCLEQ_ENTRY(con_state)
-    old_state;
-
-    TAILQ_ENTRY(con_state)
-    initial_mapping_order;
+    CIRCLEQ_ENTRY(con_state) state;
+    CIRCLEQ_ENTRY(con_state) old_state;
+    TAILQ_ENTRY(con_state) initial_mapping_order;
 } con_state;
 
-CIRCLEQ_HEAD(state_head, con_state)
-state_head =
+CIRCLEQ_HEAD(state_head, con_state) state_head =
     CIRCLEQ_HEAD_INITIALIZER(state_head);
 
-CIRCLEQ_HEAD(old_state_head, con_state)
-old_state_head =
+CIRCLEQ_HEAD(old_state_head, con_state) old_state_head =
     CIRCLEQ_HEAD_INITIALIZER(old_state_head);
 
-TAILQ_HEAD(initial_mapping_head, con_state)
-initial_mapping_head =
+TAILQ_HEAD(initial_mapping_head, con_state) initial_mapping_head =
     TAILQ_HEAD_INITIALIZER(initial_mapping_head);
 
 /*
@@ -92,9 +86,11 @@ initial_mapping_head =
  */
 static con_state *state_for_frame(xcb_window_t window) {
     con_state *state;
-    CIRCLEQ_FOREACH(state, &state_head, state)
-    if (state->id == window)
-        return state;
+    CIRCLEQ_FOREACH (state, &state_head, state) {
+        if (state->id == window) {
+            return state;
+        }
+    }
 
     /* TODO: better error handling? */
     ELOG("No state found for window 0x%08x\n", window);
@@ -588,11 +584,6 @@ void x_draw_decoration(Con *con) {
         }
     }
 
-    /* if this is a borderless/1pixel window, we don’t need to render the
-     * decoration. */
-    if (p->border_style != BS_NORMAL)
-        goto copy_pixmaps;
-
     /* If the parent hasn't been set up yet, skip the decoration rendering
      * for now. */
     if (parent->frame_buffer.id == XCB_NONE)
@@ -605,6 +596,11 @@ void x_draw_decoration(Con *con) {
         draw_util_clear_surface(&(con->parent->frame_buffer), COLOR_TRANSPARENT);
         FREE(con->parent->deco_render_params);
     }
+
+    /* if this is a borderless/1pixel window, we don’t need to render the
+     * decoration. */
+    if (p->border_style != BS_NORMAL)
+        goto copy_pixmaps;
 
     /* 4: paint the bar */
     draw_util_rectangle(&(parent->frame_buffer), p->color->background,
@@ -624,7 +620,7 @@ void x_draw_decoration(Con *con) {
         bool had_visible_mark = false;
 
         mark_t *mark;
-        TAILQ_FOREACH(mark, &(con->marks_head), marks) {
+        TAILQ_FOREACH (mark, &(con->marks_head), marks) {
             if (mark->name[0] == '_')
                 continue;
             had_visible_mark = true;
@@ -726,11 +722,13 @@ void x_deco_recurse(Con *con) {
     con_state *state = state_for_frame(con->frame.id);
 
     if (!leaf) {
-        TAILQ_FOREACH(current, &(con->nodes_head), nodes)
-        x_deco_recurse(current);
+        TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
+            x_deco_recurse(current);
+        }
 
-        TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
-        x_deco_recurse(current);
+        TAILQ_FOREACH (current, &(con->floating_head), floating_windows) {
+            x_deco_recurse(current);
+        }
 
         if (state->mapped) {
             draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
@@ -858,7 +856,7 @@ void x_push_node(Con *con) {
         /* Calculate the height of all window decorations which will be drawn on to
          * this frame. */
         uint32_t max_y = 0, max_height = 0;
-        TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
             Rect *dr = &(current->deco_rect);
             if (dr->y >= max_y && dr->height >= max_height) {
                 max_y = dr->y;
@@ -1070,7 +1068,7 @@ void x_push_node(Con *con) {
     /* Handle all children and floating windows of this node. We recurse
      * in focus order to display the focused client in a stack first when
      * switching workspaces (reduces flickering). */
-    TAILQ_FOREACH(current, &(con->focus_head), focused) {
+    TAILQ_FOREACH (current, &(con->focus_head), focused) {
         x_push_node(current);
     }
 }
@@ -1116,11 +1114,13 @@ static void x_push_node_unmaps(Con *con) {
     }
 
     /* handle all children and floating windows of this node */
-    TAILQ_FOREACH(current, &(con->nodes_head), nodes)
-    x_push_node_unmaps(current);
+    TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
+        x_push_node_unmaps(current);
+    }
 
-    TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
-    x_push_node_unmaps(current);
+    TAILQ_FOREACH (current, &(con->floating_head), floating_windows) {
+        x_push_node_unmaps(current);
+    }
 }
 
 /*
@@ -1133,7 +1133,7 @@ static bool is_con_attached(Con *con) {
         return false;
 
     Con *current;
-    TAILQ_FOREACH(current, &(con->parent->nodes_head), nodes) {
+    TAILQ_FOREACH (current, &(con->parent->nodes_head), nodes) {
         if (current == con)
             return true;
     }
@@ -1167,7 +1167,7 @@ void x_push_changes(Con *con) {
      * ConfigureWindow requests and get them applied directly instead of having
      * them become ConfigureRequests that i3 handles. */
     uint32_t values[1] = {XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT};
-    CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
+    CIRCLEQ_FOREACH_REVERSE (state, &state_head, state) {
         if (state->mapped)
             xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
     }
@@ -1178,9 +1178,11 @@ void x_push_changes(Con *con) {
     /* count first, necessary to (re)allocate memory for the bottom-to-top
      * stack afterwards */
     int cnt = 0;
-    CIRCLEQ_FOREACH_REVERSE(state, &state_head, state)
-    if (con_has_managed_window(state->con))
-        cnt++;
+    CIRCLEQ_FOREACH_REVERSE (state, &state_head, state) {
+        if (con_has_managed_window(state->con)) {
+            cnt++;
+        }
+    }
 
     /* The bottom-to-top window stack of all windows which are managed by i3.
      * Used for x_get_window_stack(). */
@@ -1195,7 +1197,7 @@ void x_push_changes(Con *con) {
     xcb_window_t *walk = client_list_windows;
 
     /* X11 correctly represents the stack if we push it from bottom to top */
-    CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
+    CIRCLEQ_FOREACH_REVERSE (state, &state_head, state) {
         if (con_has_managed_window(state->con))
             memcpy(walk++, &(state->con->window->id), sizeof(xcb_window_t));
 
@@ -1226,7 +1228,7 @@ void x_push_changes(Con *con) {
         walk = client_list_windows;
 
         /* reorder by initial mapping */
-        TAILQ_FOREACH(state, &initial_mapping_head, initial_mapping_order) {
+        TAILQ_FOREACH (state, &initial_mapping_head, initial_mapping_order) {
             if (con_has_managed_window(state->con))
                 *walk++ = state->con->window->id;
         }
@@ -1261,7 +1263,7 @@ void x_push_changes(Con *con) {
 
     //DLOG("Re-enabling EnterNotify\n");
     values[0] = FRAME_EVENT_MASK;
-    CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
+    CIRCLEQ_FOREACH_REVERSE (state, &state_head, state) {
         if (state->mapped)
             xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
     }
@@ -1337,7 +1339,7 @@ void x_push_changes(Con *con) {
      * unmapped, the second one appears under the cursor and therefore gets an
      * EnterNotify event. */
     values[0] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
-    CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
+    CIRCLEQ_FOREACH_REVERSE (state, &state_head, state) {
         if (!state->unmap_now)
             continue;
         xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
@@ -1347,7 +1349,7 @@ void x_push_changes(Con *con) {
     x_push_node_unmaps(con);
 
     /* save the current stack as old stack */
-    CIRCLEQ_FOREACH(state, &state_head, state) {
+    CIRCLEQ_FOREACH (state, &state_head, state) {
         CIRCLEQ_REMOVE(&old_state_head, state, old_state);
         CIRCLEQ_INSERT_TAIL(&old_state_head, state, old_state);
     }
@@ -1439,7 +1441,7 @@ void x_mask_event_mask(uint32_t mask) {
     uint32_t values[] = {FRAME_EVENT_MASK & mask};
 
     con_state *state;
-    CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
+    CIRCLEQ_FOREACH_REVERSE (state, &state_head, state) {
         if (state->mapped)
             xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
     }

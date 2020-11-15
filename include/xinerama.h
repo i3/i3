@@ -13,8 +13,6 @@
 
 #include <config.h>
 
-#include "data.h"
-
 /**
  * We have just established a connection to the X server and need the initial
  * Xinerama information to setup workspaces for each screen.

@@ -8,39 +8,34 @@
  * when the user has an error in their configuration file.
  *
  */
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
+#include <config.h>
+
+#include "libi3.h"
+
 #include <err.h>
-#include <stdint.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <limits.h>
-#include <fcntl.h>
 #include <paths.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
+#include <xcb/randr.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-#include <xcb/xcb_event.h>
-#include <xcb/randr.h>
 #include <xcb/xcb_cursor.h>
 
 xcb_visualtype_t *visual_type = NULL;
-#include "libi3.h"
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launchee.h>
 
-#include "i3-nagbar.h"
-
-/** This is the equivalent of XC_left_ptr. I’m not sure why xcb doesn’t have a
- * constant for that. */
-#define XCB_CURSOR_LEFT_PTR 68
+#include "i3-nagbar-atoms.xmacro.h"
 
 #define MSG_PADDING logical_px(8)
 #define BTN_PADDING logical_px(3)
@@ -48,6 +43,12 @@ xcb_visualtype_t *visual_type = NULL;
 #define BTN_GAP logical_px(20)
 #define CLOSE_BTN_GAP logical_px(15)
 #define BAR_BORDER logical_px(2)
+
+#define xmacro(atom) xcb_atom_t A_##atom;
+NAGBAR_ATOMS_XMACRO
+#undef xmacro
+
+#define die(...) errx(EXIT_FAILURE, __VA_ARGS__);
 
 static char *argv0 = NULL;
 
@@ -108,10 +109,6 @@ void debuglog(char *fmt, ...) {
  * fork to avoid zombie processes. As the started application’s parent exits
  * (immediately), the application is reparented to init (process-id 1), which
  * correctly handles children, so we don’t have to do it :-).
- *
- * The shell is determined by looking for the SHELL environment variable. If it
- * does not exist, /bin/sh is used.
- *
  */
 static void start_application(const char *command) {
     printf("executing: %s\n", command);
@@ -177,7 +174,7 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
         warn("Could not fdopen() temporary script to store the nagbar command");
         return;
     }
-    fprintf(script, "#!/bin/sh\nrm %s\n%s", script_path, button->action);
+    fprintf(script, "#!%s\nrm %s\n%s", _PATH_BSHELL, script_path, button->action);
     /* Also closes fd */
     fclose(script);
 
@@ -322,8 +319,8 @@ static xcb_rectangle_t get_window_position(void) {
     goto free_resources;
 
 free_resources:
-    FREE(res);
-    FREE(primary);
+    free(res);
+    free(primary);
     return result;
 }
 
@@ -357,8 +354,8 @@ int main(int argc, char *argv[]) {
         unlink(argv[0]);
         cmd = sstrdup(argv[0]);
         *(cmd + argv0_len - strlen(".nagbar_cmd")) = '\0';
-        execl("/bin/sh", "/bin/sh", cmd, NULL);
-        err(EXIT_FAILURE, "execv(/bin/sh, /bin/sh, %s)", cmd);
+        execl(_PATH_BSHELL, _PATH_BSHELL, cmd, NULL);
+        err(EXIT_FAILURE, "execl(%s, %s, %s)", _PATH_BSHELL, _PATH_BSHELL, cmd);
     }
 
     argv0 = argv[0];
@@ -431,7 +428,7 @@ int main(int argc, char *argv[]) {
 /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-#include "atoms.xmacro"
+    NAGBAR_ATOMS_XMACRO
 #undef xmacro
 
     /* Init startup notification. */
@@ -469,24 +466,12 @@ int main(int argc, char *argv[]) {
 
     xcb_rectangle_t win_pos = get_window_position();
 
-    xcb_cursor_t cursor;
     xcb_cursor_context_t *cursor_ctx;
-    if (xcb_cursor_context_new(conn, root_screen, &cursor_ctx) == 0) {
-        cursor = xcb_cursor_load_cursor(cursor_ctx, "left_ptr");
-        xcb_cursor_context_free(cursor_ctx);
-    } else {
-        cursor = xcb_generate_id(conn);
-        i3Font cursor_font = load_font("cursor", false);
-        xcb_create_glyph_cursor(
-            conn,
-            cursor,
-            cursor_font.specific.xcb.id,
-            cursor_font.specific.xcb.id,
-            XCB_CURSOR_LEFT_PTR,
-            XCB_CURSOR_LEFT_PTR + 1,
-            0, 0, 0,
-            65535, 65535, 65535);
+    if (xcb_cursor_context_new(conn, root_screen, &cursor_ctx) < 0) {
+        errx(EXIT_FAILURE, "Cannot allocate xcursor context");
     }
+    xcb_cursor_t cursor = xcb_cursor_load_cursor(cursor_ctx, "left_ptr");
+    xcb_cursor_context_free(cursor_ctx);
 
     /* Open an input window */
     win = xcb_generate_id(conn);
@@ -525,7 +510,7 @@ int main(int argc, char *argv[]) {
         A_##name = reply->atom;                                                            \
         free(reply);                                                                       \
     } while (0);
-#include "atoms.xmacro"
+    NAGBAR_ATOMS_XMACRO
 #undef xmacro
 
     /* Set dock mode */
@@ -618,7 +603,7 @@ int main(int argc, char *argv[]) {
         free(event);
     }
 
-    FREE(pattern);
+    free(pattern);
     draw_util_surface_free(conn, &bar);
 
     return 0;

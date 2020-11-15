@@ -9,12 +9,10 @@
  */
 #include "common.h"
 
-#include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
+#include <string.h>
+
 #include <yajl/yajl_parse.h>
-#include <yajl/yajl_version.h>
 
 /* A datatype to pass through the callbacks to save the state */
 struct workspaces_json_params {
@@ -114,7 +112,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
 
         if ((config.strip_ws_numbers || config.strip_ws_name) && params->workspaces_walk->num >= 0) {
             /* Special case: strip off the workspace number/name */
-            static char ws_num[10];
+            static char ws_num[32];
 
             snprintf(ws_num, sizeof(ws_num), "%d", params->workspaces_walk->num);
 
@@ -269,9 +267,9 @@ void free_workspaces(void) {
     }
     i3_ws *ws_walk;
 
-    SLIST_FOREACH(outputs_walk, outputs, slist) {
+    SLIST_FOREACH (outputs_walk, outputs, slist) {
         if (outputs_walk->workspaces != NULL && !TAILQ_EMPTY(outputs_walk->workspaces)) {
-            TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
+            TAILQ_FOREACH (ws_walk, outputs_walk->workspaces, tailq) {
                 I3STRING_FREE(ws_walk->name);
                 FREE(ws_walk->canonical_name);
             }

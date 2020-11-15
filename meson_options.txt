@@ -1,0 +1,10 @@
+# -*- mode: meson -*-
+
+option('docs', type: 'boolean', value: false,
+       description: 'Build documentation from source (release tarballs contain a generated copy)')
+
+option('mans', type: 'boolean', value: false,
+       description: 'Build manpages from source (release tarballs contain a generated copy)')
+
+option('docdir', type: 'string', value: '',
+       description: 'documentation directory (default: $datadir/docs/i3)')

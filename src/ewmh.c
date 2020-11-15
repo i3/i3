@@ -9,12 +9,14 @@
  */
 #include "all.h"
 
+#include "i3-atoms_NET_SUPPORTED.xmacro.h"
+
 xcb_window_t ewmh_window;
 
-#define FOREACH_NONINTERNAL                                             \
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)                  \
-    TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) \
-    if (!con_is_internal(ws))
+#define FOREACH_NONINTERNAL                                                  \
+    TAILQ_FOREACH (output, &(croot->nodes_head), nodes)                      \
+        TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) \
+            if (!con_is_internal(ws))
 
 /*
  * Updates _NET_CURRENT_DESKTOP with the current desktop number.
@@ -125,13 +127,13 @@ static void ewmh_update_wm_desktop_recursively(Con *con, const uint32_t desktop)
     Con *child;
 
     /* Recursively call this to descend through the entire subtree. */
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         ewmh_update_wm_desktop_recursively(child, desktop);
     }
 
     /* If con is a workspace, we also need to go through the floating windows on it. */
     if (con->type == CT_WORKSPACE) {
-        TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
+        TAILQ_FOREACH (child, &(con->floating_head), floating_windows) {
             ewmh_update_wm_desktop_recursively(child, desktop);
         }
     }
@@ -183,9 +185,9 @@ void ewmh_update_wm_desktop(void) {
     uint32_t desktop = 0;
 
     Con *output;
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
         Con *workspace;
-        TAILQ_FOREACH(workspace, &(output_get_content(output)->nodes_head), nodes) {
+        TAILQ_FOREACH (workspace, &(output_get_content(output)->nodes_head), nodes) {
             ewmh_update_wm_desktop_recursively(workspace, desktop);
 
             if (!con_is_internal(workspace)) {
@@ -305,7 +307,7 @@ void ewmh_update_focused(xcb_window_t window, bool is_focused) {
 void ewmh_setup_hints(void) {
     xcb_atom_t supported_atoms[] = {
 #define xmacro(atom) A_##atom,
-#include "atoms_NET_SUPPORTED.xmacro"
+        I3_NET_SUPPORTED_ATOMS_XMACRO
 #undef xmacro
     };
 

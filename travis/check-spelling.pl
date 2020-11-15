@@ -17,8 +17,11 @@ use Lintian::Spelling qw(check_spelling);
 # Lintian complains if we don’t set a vendor.
 use Lintian::Data;
 use Lintian::Profile;
-Lintian::Data->set_vendor(
-    Lintian::Profile->new('debian', ['/usr/share/lintian'], {}));
+
+my $profile = Lintian::Profile->new;
+$profile->load('debian', ['/usr/share/lintian']);
+
+Lintian::Data->set_vendor($profile);
 
 my $exitcode = 0;
 
@@ -30,12 +33,12 @@ my $binary_spelling_exceptions = {
 };
 my @binaries = qw(
     build/i3
-    build/i3-config-wizard/i3-config-wizard
-    build/i3-dump-log/i3-dump-log
-    build/i3-input/i3-input
-    build/i3-msg/i3-msg
-    build/i3-nagbar/i3-nagbar
-    build/i3bar/i3bar
+    build/i3-config-wizard
+    build/i3-dump-log
+    build/i3-input
+    build/i3-msg
+    build/i3-nagbar
+    build/i3bar
 );
 for my $binary (@binaries) {
     check_spelling(slurp($binary), $binary_spelling_exceptions, sub {

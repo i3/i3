@@ -9,7 +9,6 @@
 
 #include <config.h>
 
-#include <stdbool.h>
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
 #include "libi3.h"
@@ -78,12 +77,10 @@ struct status_block {
     char *name;
     char *instance;
 
-    TAILQ_ENTRY(status_block)
-    blocks;
+    TAILQ_ENTRY(status_block) blocks;
 };
 
-extern TAILQ_HEAD(statusline_head, status_block)
-    statusline_head;
+extern TAILQ_HEAD(statusline_head, status_block) statusline_head;
 
 #include "child.h"
 #include "ipc.h"
@@ -94,5 +91,4 @@ extern TAILQ_HEAD(statusline_head, status_block)
 #include "trayclients.h"
 #include "xcb.h"
 #include "configuration.h"
-#include "libi3.h"
 #include "parse_json_header.h"

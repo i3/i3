@@ -9,6 +9,8 @@
  */
 #include "all.h"
 
+#include <math.h>
+
 #ifndef MAX
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
@@ -24,7 +26,7 @@ static Rect total_outputs_dimensions(void) {
     Output *output;
     /* Use Rect to encapsulate dimensions, ignoring x/y */
     Rect outputs_dimensions = {0, 0, 0, 0};
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         outputs_dimensions.height += output->rect.height;
         outputs_dimensions.width += output->rect.width;
     }
@@ -39,7 +41,7 @@ static Rect total_outputs_dimensions(void) {
 static void floating_set_hint_atom(Con *con, bool floating) {
     if (!con_is_leaf(con)) {
         Con *child;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
             floating_set_hint_atom(child, floating);
         }
     }
@@ -221,22 +223,22 @@ void floating_check_size(Con *floating_con, bool prefer_height) {
     }
 }
 
-void floating_enable(Con *con, bool automatic) {
+bool floating_enable(Con *con, bool automatic) {
     bool set_focus = (con == focused);
 
     if (con_is_docked(con)) {
         LOG("Container is a dock window, not enabling floating mode.\n");
-        return;
+        return false;
     }
 
     if (con_is_floating(con)) {
         LOG("Container is already in floating mode, not doing anything.\n");
-        return;
+        return false;
     }
 
     if (con->type == CT_WORKSPACE) {
         LOG("Container is a workspace, not enabling floating mode.\n");
-        return;
+        return false;
     }
 
     Con *focus_head_placeholder = NULL;
@@ -328,7 +330,7 @@ void floating_enable(Con *con, bool automatic) {
     if (rect_equals(nc->rect, (Rect){0, 0, 0, 0})) {
         DLOG("Geometry not set, combining children\n");
         Con *child;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
             DLOG("child geometry: %d x %d\n", child->geometry.width, child->geometry.height);
             nc->rect.width += child->geometry.width;
             nc->rect.height = max(nc->rect.height, child->geometry.height);
@@ -419,6 +421,7 @@ void floating_enable(Con *con, bool automatic) {
 
     floating_set_hint_atom(nc, true);
     ipc_send_window_event("floating", con);
+    return true;
 }
 
 void floating_disable(Con *con) {

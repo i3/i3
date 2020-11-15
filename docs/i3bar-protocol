@@ -103,9 +103,11 @@ https://github.com/i3/i3/blob/next/contrib/trivial-bar-script.sh
 version::
 	The version number (as an integer) of the i3bar protocol you will use.
 stop_signal::
-	Specify to i3bar the signal (as an integer) to send to stop your
-	processing.
-	The default value (if none is specified) is SIGSTOP.
+	Specify the signal (as an integer) that i3bar should send to request that you
+	pause your output. This is used to conserve battery power when the bar is
+	hidden by not unnecessarily computing bar updates. The default value is SIGSTOP,
+	which will unconditionally stop your process. If this is an issue, this feature
+	can be disabled by setting the value to 0.
 cont_signal::
 	Specify to i3bar the signal (as an integer) to send to continue your
 	processing.
@@ -258,6 +260,8 @@ button::
 relative_x, relative_y::
     Coordinates where the click occurred, with respect to the top left corner
     of the block
+output_x, output_y::
+    Coordinates relative to the current output where the click occurred
 width, height::
     Width and height (in px) of the block
 modifiers::
@@ -271,10 +275,12 @@ modifiers::
  "instance": "eth0",
  "button": 1,
  "modifiers": ["Shift", "Mod1"],
- "x": 1320,
+ "x": 1925,
  "y": 1400,
  "relative_x": 12,
  "relative_y": 8,
+ "output_x": 5,
+ "output_y": 1400,
  "width": 50,
  "height": 22
 }

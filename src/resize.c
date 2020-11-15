@@ -238,6 +238,10 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
 
     const struct callback_params params = {orientation, output, helpwin, &new_position, &threshold_exceeded};
 
+    /* Re-render the tree before returning to the event loop (drag_pointer()
+     * runs its own event-loop) in case if there are unrendered updates. */
+    tree_render();
+
     /* `drag_pointer' blocks until the drag is completed. */
     drag_result_t drag_result = drag_pointer(NULL, event, grabwin, 0, use_threshold, resize_callback, &params);
 

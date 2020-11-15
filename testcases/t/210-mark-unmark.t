@@ -98,7 +98,7 @@ cmd 'focus left';
 cmd 'mark important';
 
 is_deeply(get_mark_for_window_on_workspace($tmp, $first), [ 'important' ], 'first container now has the mark');
-ok(!get_mark_for_window_on_workspace($tmp, $second), 'second container lost the mark');
+is_deeply(get_mark_for_window_on_workspace($tmp, $second), [], 'second container lost the mark');
 
 ##############################################################
 # 5: mark a con, toggle the mark, check that the mark is gone
@@ -107,7 +107,7 @@ ok(!get_mark_for_window_on_workspace($tmp, $second), 'second container lost the 
 $con = open_window;
 cmd 'mark important';
 cmd 'mark --toggle important';
-ok(!get_mark_for_window_on_workspace($tmp, $con), 'container no longer has the mark');
+is_deeply(get_mark_for_window_on_workspace($tmp, $con), [], 'container no longer has the mark');
 
 ##############################################################
 # 6: toggle a mark on an unmarked con, check it is marked
@@ -140,7 +140,7 @@ cmd 'focus left';
 cmd 'mark --toggle important';
 
 is_deeply(get_mark_for_window_on_workspace($tmp, $first), [ 'important' ], 'left container has the mark now');
-ok(!get_mark_for_window_on_workspace($tmp, $second), 'second containr no longer has the mark');
+is_deeply(get_mark_for_window_on_workspace($tmp, $second), [], 'second containr no longer has the mark');
 
 ##############################################################
 # 9: try to mark two cons with the same mark and check that
@@ -154,8 +154,8 @@ my $result = cmd "[instance=iamnotunique] mark important";
 
 is($result->[0]->{success}, 0, 'command was unsuccessful');
 is($result->[0]->{error}, 'A mark must not be put onto more than one window', 'correct error is returned');
-ok(!get_mark_for_window_on_workspace($tmp, $first), 'first container is not marked');
-ok(!get_mark_for_window_on_workspace($tmp, $second), 'second containr is not marked');
+is_deeply(get_mark_for_window_on_workspace($tmp, $first), [], 'first container is not marked');
+is_deeply(get_mark_for_window_on_workspace($tmp, $second), [], 'second containr is not marked');
 
 ##############################################################
 

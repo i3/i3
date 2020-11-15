@@ -32,6 +32,5 @@ cmp_ok($version->{minor}, '>', 0, 'minor version > 0');
 
 is(int($version->{minor}), $version->{minor}, 'minor version is an integer');
 is(int($version->{patch}), $version->{patch}, 'patch version is an integer');
-like($version->{human_readable}, qr/branch/, 'human readable version contains branch name');
 
 done_testing;

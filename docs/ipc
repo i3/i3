@@ -1,7 +1,7 @@
 IPC interface (interprocess communication)
 ==========================================
 Michael Stapelberg <michael@i3wm.org>
-September 2017
+June 2020
 
 This document describes how to interface with i3 from a separate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
@@ -66,6 +66,7 @@ to do that).
 | 9 | +GET_CONFIG+ | <<_config_reply,CONFIG>> | Returns the last loaded i3 config.
 | 10 | +SEND_TICK+ | <<_tick_reply,TICK>> | Sends a tick event with the specified payload.
 | 11 | +SYNC+ | <<_sync_reply,SYNC>> | Sends an i3 sync event with the specified random value to the specified window.
+| 12 | +GET_BINDING_STATE+ | <<_binding_state_reply,BINDING_STATE>> | Request the current binding state, i.e. the currently active binding mode name.
 |======================================================
 
 So, a typical message could look like this:
@@ -131,6 +132,8 @@ GET_CONFIG (9)::
 	Reply to the GET_CONFIG message.
 TICK (10)::
 	Reply to the SEND_TICK message.
+GET_BINDING_STATE (12)::
+	Reply to the GET_BINDING_STATE message.
 
 [[_command_reply]]
 === COMMAND reply
@@ -158,6 +161,14 @@ sending a reply. Expect the socket to be shut down.
 [{ "success": true }]
 -------------------
 
+When the specified command cannot be parsed, `success` will be false and
+`parse_error` will be true:
+
+*Example:*
+-------------------
+[{ "success": false, "parse_error": true }]
+-------------------
+
 [[_workspaces_reply]]
 === WORKSPACES reply
 
@@ -172,8 +183,8 @@ num (integer)::
 	The logical number of the workspace. Corresponds to the command
 	to switch to this workspace. For named workspaces, this will be -1.
 name (string)::
-	The name of this workspace (by default num+1), as changed by the
-	user. Encoded in UTF-8.
+	The name of this workspace if changed by the user, otherwise defaults
+	to the string representation of the +num+ field). Encoded in UTF-8.
 visible (boolean)::
 	Whether this workspace is currently visible on an output (multiple
 	workspaces can be visible at the same time).
@@ -707,6 +718,17 @@ responded to.
 *Example:*
 -------------------
 { "success": true }
+-------------------
+
+[[_binding_state_reply]]
+=== GET_BINDING_STATE reply
+
+The binding_state reply is a map which currently only contains the "name"
+member, which is the name of the currently active binding mode as a string.
+
+*Example:*
+-------------------
+{ "name": "default" }
 -------------------
 
 == Events

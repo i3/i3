@@ -1,0 +1,81 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.19   │
+ └──────────────────────────────┘
+
+This is i3 v4.19. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+In this release, we switched from the autotools build system to the meson build
+system (https://mesonbuild.com/). Check https://github.com/i3/i3/issues/4086 for
+details. If this causes problems for you, you can revert the commit which
+removed autotools from the tree: we tried our best to keep both build systems
+working. Please reach out to us in that case!
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.19        │
+ └────────────────────────────┘
+
+  • userguide: explain button6 and button7 (scroll wheel right/left)
+  • ipc: always include the marks property (even if empty)
+  • ipc: introduce GET_BINDING_STATE command
+  • ipc: clarify workspace name field semantics
+  • ipc: document parse_error COMMAND reply field
+  • i3bar: launch using exec to avoid leaving useless shell process
+  • i3bar: make dock client order deterministic (sorted by class/instance) as a
+    side effect, i3bars without an explicit bar-id will be sorted according
+    to their definition order in the config file
+  • i3bar: update config when necessary (reduces redraws on bar mode changes)
+  • i3bar: add coordinates relative to the current output in i3bar click events
+  • i3bar: add “nonprimary” output option
+  • i3bar: set WM_CLASS instance to bar id
+  • i3-input: add different exit codes for when i3-input fails
+  • i3-dmenu-desktop: Support symlinks in search path
+  • pod2html: render without stylesheet by default
+  • introduce “tiling_from” and ”floating_from” criteria
+  • mention rofi in default config file
+  • allow ppt values in move direction and move position commands
+  • allow matching on empty properties like class, title, etc.
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • i3-nagbar: Use _PATH_BSHELL to ensure using a bourne shell
+  • i3bar: fix Xorg memory leak
+  • i3bar: fix hang when pausing/resuming bar program
+  • i3bar: fix crash on invalid JSON input
+  • i3bar: kick tray clients before destroying the bar
+  • ensure client windows have a size of at least 1px after resize
+  • correctly handle overlapping decorations
+  • limit workspace numbers within 0..INT32_MAX
+  • fix a bug with tiling resize inside floating container
+  • correctly handle mouse resize in fullscreen containers by
+    not propagating $mod+right click to fullscreen clients
+  • do not try to resize fullscreen and non-fullscreen windows
+  • do not focus floating windows changing workspace with ConfigureNotify
+  • set _NET_DESKTOP_VIEWPORT after randr changes
+  • fix a bug with i3-nagbar not starting after it has already started once
+  • fix conflict when moving parent of fullscreen window to workspace
+  • fix named workspace assignments on output changes
+  • fix named workspace assignment precedence on workspace renames
+  • fix windows getting swallowed more than once
+  • erase i3 --moreversion progress line before overwriting
+  • fix test case 180-fd-leaks when running on Fedora
+  • fix crash in `focus next sibling`
+  • fix moving tiling windows out of the scratchpad
+  • floating_maybe_reassign_ws: only re-focus if previously focused
+    (fixes a focus issue with KDE notifications)
+  • fix crash on invalid JSON input in stored layouts
+  • fix monitor change during/with i3 restart by moving
+    content for non-existing output containers
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  6144, acheronfail, Albert Safin, Alessandro Vinciguerra, Andrey Burov,
+  Francesc Hervada-Sala, Heman Gandhi, Ian Fan, Ingo Bürk, izzel, Jason, Jason
+  Nader, Jorg Heymans, Joseph, Konstantin Kharlamov, Lukas Kern, Mark Guptill,
+  Martin T. H. Sandsmark, Matthew Martin, Maxim Schuwalow, Mike Sharov, Orestis
+  Floros, Vasily Fomin, Wilhelm Schuster, xzfc, zero77
+
+-- Michael Stapelberg, 2020-11-15

@@ -31,8 +31,9 @@
  * This software is in the public domain. Share and enjoy!
  */
 
-#include <xcb/xcb.h>
 #include "keysym2ucs.h"
+
+#include <xcb/xcb.h>
 
 struct codepair {
     unsigned short keysym;

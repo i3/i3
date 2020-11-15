@@ -33,9 +33,7 @@ my $win = $content->[0];
 # not match it
 ######################################################################
 # TODO: specify more match types
-# we can match on any (non-empty) class here since that window does not have
-# WM_CLASS set
-cmd q|[class=".*"] kill|;
+# Try matching with an empty pattern since there isn't a WM_CLASS set.
 cmd q|[con_id="99999"] kill|;
 
 is_num_children($tmp, 1, 'window still there');
@@ -100,6 +98,20 @@ ok($left->mapped, 'left window mapped');
 is_num_children($tmp, 1, 'window opened');
 
 cmd '[title="^\w [3]$"] kill';
+wait_for_unmap $left;
+is_num_children($tmp, 0, 'window killed');
+
+######################################################################
+# check that we can match empty properties
+######################################################################
+
+$tmp = fresh_workspace;
+
+$left = open_window(name => 'class is empty', wm_class => '');
+ok($left->mapped, 'left window mapped');
+is_num_children($tmp, 1, 'window opened');
+
+cmd '[class="^$"] kill';
 wait_for_unmap $left;
 is_num_children($tmp, 0, 'window killed');
 

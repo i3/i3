@@ -12,6 +12,7 @@
 #include "all.h"
 
 #include <time.h>
+
 #include <xcb/randr.h>
 
 /* Pointer to the result of the query for primary output */
@@ -32,9 +33,11 @@ static bool has_randr_1_5 = false;
  */
 static Output *get_output_by_id(xcb_randr_output_t id) {
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs)
-    if (output->id == id)
-        return output;
+    TAILQ_FOREACH (output, &outputs, outputs) {
+        if (output->id == id) {
+            return output;
+        }
+    }
 
     return NULL;
 }
@@ -47,7 +50,7 @@ static Output *get_output_by_id(xcb_randr_output_t id) {
 Output *get_output_by_name(const char *name, const bool require_active) {
     Output *output;
     bool get_primary = (strcasecmp("primary", name) == 0);
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (require_active && !output->active) {
             continue;
         }
@@ -55,7 +58,7 @@ Output *get_output_by_name(const char *name, const bool require_active) {
             return output;
         }
         struct output_name *output_name;
-        SLIST_FOREACH(output_name, &output->names_head, names) {
+        SLIST_FOREACH (output_name, &output->names_head, names) {
             if (strcasecmp(output_name->name, name) == 0) {
                 return output;
             }
@@ -72,7 +75,7 @@ Output *get_output_by_name(const char *name, const bool require_active) {
 Output *get_first_output(void) {
     Output *output, *result = NULL;
 
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (output->active) {
             if (output->primary) {
                 return output;
@@ -97,7 +100,7 @@ Output *get_first_output(void) {
 static bool any_randr_output_active(void) {
     Output *output;
 
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (output != root_output && !output->to_be_disabled && output->active)
             return true;
     }
@@ -112,7 +115,7 @@ static bool any_randr_output_active(void) {
  */
 Output *get_output_containing(unsigned int x, unsigned int y) {
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active)
             continue;
         DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
@@ -146,7 +149,7 @@ Output *get_output_from_rect(Rect rect) {
  */
 Output *get_output_with_dimensions(Rect rect) {
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active)
             continue;
         DLOG("comparing x=%d y=%d %dx%d with x=%d and y=%d %dx%d\n",
@@ -173,7 +176,7 @@ Output *output_containing_rect(Rect rect) {
     int rx = rect.x + rect.width, by = rect.y + rect.height;
     long max_area = 0;
     Output *result = NULL;
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active)
             continue;
         int lx_o = (int)output->rect.x, uy_o = (int)output->rect.y;
@@ -241,7 +244,7 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
          *other;
     Output *output,
         *best = NULL;
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active)
             continue;
 
@@ -331,7 +334,7 @@ void output_init_con(Output *output) {
 
     /* Search for a Con with that name directly below the root node. There
      * might be one from a restored layout. */
-    TAILQ_FOREACH(current, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH (current, &(croot->nodes_head), nodes) {
         if (strcmp(current->name, output_primary_name(output)) != 0)
             continue;
 
@@ -435,34 +438,29 @@ void init_ws_for_output(Output *output) {
     Con *content = output_get_content(output->con);
     Con *previous_focus = con_get_workspace(focused);
 
-    /* go through all assignments and move the existing workspaces to this output */
-    struct Workspace_Assignment *assignment;
-    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-        if (!output_triggers_assignment(output, assignment)) {
-            continue;
-        }
-        Con *workspace = get_existing_workspace_by_name(assignment->name);
-        if (workspace == NULL)
-            continue;
-
-        /* check that this workspace is not already attached (that means the
-         * user configured this assignment twice) */
-        Con *workspace_out = con_get_output(workspace);
-        if (workspace_out == output->con) {
-            LOG("Workspace \"%s\" assigned to output \"%s\", but it is already "
-                "there. Do you have two assignment directives for the same "
-                "workspace in your configuration file?\n",
-                workspace->name, output_primary_name(output));
+    /* Iterate over all workspaces and check if any of them should be assigned
+     * to this output. */
+    Con *output_con;
+    TAILQ_FOREACH (output_con, &(croot->nodes_head), nodes) {
+        if (con_is_internal(output_con)) {
             continue;
         }
 
-        DLOG("Moving workspace \"%s\" from output \"%s\" to \"%s\" due to assignment\n",
-             workspace->name, workspace_out->name, output_primary_name(output));
-        /* Need to copy output's rect since content is not yet rendered. We
-         * can't call render_con here because render_output only proceeds if a
-         * workspace exists. */
-        content->rect = output->con->rect;
-        workspace_move_to_output(workspace, output);
+        Con *workspace;
+        TAILQ_FOREACH (workspace, &(output_get_content(output_con)->nodes_head), nodes) {
+            Con *workspace_out = get_assigned_output(workspace->name, workspace->num);
+            if (output->con != workspace_out) {
+                continue;
+            }
+
+            DLOG("Moving workspace \"%s\" from output \"%s\" to \"%s\" due to assignment\n",
+                 workspace->name, workspace_out->name, output_primary_name(output));
+            /* Need to copy output's rect since content is not yet rendered. We
+             * can't call render_con here because render_output only proceeds
+             * if a workspace exists. */
+            content->rect = output->con->rect;
+            workspace_move_to_output(workspace, output);
+        }
     }
 
     /* Temporarily set the focused container, might not be initialized yet. */
@@ -482,7 +480,8 @@ void init_ws_for_output(Output *output) {
     }
 
     /* otherwise, we create the first assigned ws for this output */
-    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+    struct Workspace_Assignment *assignment;
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
         if (!output_triggers_assignment(output, assignment)) {
             continue;
         }
@@ -526,8 +525,8 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
 
     /* Fix the position of all floating windows on this output.
      * The 'rect' of each workspace will be updated in src/render.c. */
-    TAILQ_FOREACH(workspace, &(content->nodes_head), nodes) {
-        TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
+    TAILQ_FOREACH (workspace, &(content->nodes_head), nodes) {
+        TAILQ_FOREACH (child, &(workspace->floating_head), floating_windows) {
             floating_fix_coordinates(child, &(workspace->rect), &(output->con->rect));
         }
     }
@@ -536,7 +535,7 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
      * the workspaces and their children depending on output resolution. This is
      * only done for workspaces with maximum one child. */
     if (config.default_orientation == NO_ORIENTATION) {
-        TAILQ_FOREACH(workspace, &(content->nodes_head), nodes) {
+        TAILQ_FOREACH (workspace, &(content->nodes_head), nodes) {
             /* Workspaces with more than one child are left untouched because
              * we do not want to change an existing layout. */
             if (con_num_children(workspace) > 1)
@@ -582,7 +581,7 @@ static bool randr_query_outputs_15(void) {
     /* Mark all outputs as to_be_disabled, since xcb_randr_get_monitors() will
      * only return active outputs. */
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (output != root_output) {
             output->to_be_disabled = true;
         }
@@ -825,6 +824,76 @@ static void randr_query_outputs_14(void) {
 }
 
 /*
+ * Move the content of an outputs container to the first output.
+ *
+ * TODO: Maybe use an on_destroy callback which is implement differently for
+ * different container types (CT_CONTENT vs. CT_DOCKAREA)?
+ *
+ */
+static void move_content(Con *con) {
+    Con *first = get_first_output()->con;
+    Con *first_content = output_get_content(first);
+
+    /* We need to move the workspaces from the disappearing output to the first output */
+    /* 1: Get the con to focus next */
+    Con *next = focused;
+
+    /* 2: iterate through workspaces and re-assign them, fixing the coordinates
+     * of floating containers as we go */
+    Con *current;
+    Con *old_content = output_get_content(con);
+    while (!TAILQ_EMPTY(&(old_content->nodes_head))) {
+        current = TAILQ_FIRST(&(old_content->nodes_head));
+        if (current != next && TAILQ_EMPTY(&(current->focus_head))) {
+            /* the workspace is empty and not focused, get rid of it */
+            DLOG("Getting rid of current = %p / %s (empty, unfocused)\n", current, current->name);
+            tree_close_internal(current, DONT_KILL_WINDOW, false);
+            continue;
+        }
+        DLOG("Detaching current = %p / %s\n", current, current->name);
+        con_detach(current);
+        DLOG("Re-attaching current = %p / %s\n", current, current->name);
+        con_attach(current, first_content, false);
+        DLOG("Fixing the coordinates of floating containers\n");
+        Con *floating_con;
+        TAILQ_FOREACH (floating_con, &(current->floating_head), floating_windows) {
+            floating_fix_coordinates(floating_con, &(con->rect), &(first->rect));
+        }
+    }
+
+    /* Restore focus after con_detach / con_attach. next can be NULL, see #3523. */
+    if (next) {
+        DLOG("now focusing next = %p\n", next);
+        con_focus(next);
+        workspace_show(con_get_workspace(next));
+    }
+
+    /* 3: move the dock clients to the first output */
+    Con *child;
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
+        if (child->type != CT_DOCKAREA) {
+            continue;
+        }
+        DLOG("Handling dock con %p\n", child);
+        Con *dock;
+        while (!TAILQ_EMPTY(&(child->nodes_head))) {
+            dock = TAILQ_FIRST(&(child->nodes_head));
+            Con *nc;
+            Match *match;
+            nc = con_for_window(first, dock->window, &match);
+            DLOG("Moving dock client %p to nc %p\n", dock, nc);
+            con_detach(dock);
+            DLOG("Re-attaching\n");
+            con_attach(dock, nc, false);
+            DLOG("Done\n");
+        }
+    }
+
+    DLOG("Destroying disappearing con %p\n", con);
+    tree_close_internal(con, DONT_KILL_WINDOW, true);
+}
+
+/*
  * (Re-)queries the outputs via RandR and stores them in the list of outputs.
  *
  * If no outputs are found use the root window.
@@ -850,7 +919,7 @@ void randr_query_outputs(void) {
 
     /* Check for clones, disable the clones and reduce the mode to the
      * lowest common mode */
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active || output->to_be_disabled)
             continue;
         DLOG("output %p / %s, position (%d, %d), checking for clones\n",
@@ -866,7 +935,7 @@ void randr_query_outputs(void) {
                 other->rect.y != output->rect.y)
                 continue;
 
-            DLOG("output %p has the same position, his mode = %d x %d\n",
+            DLOG("output %p has the same position, its mode = %d x %d\n",
                  other, other->rect.width, other->rect.height);
             uint32_t width = min(other->rect.width, output->rect.width);
             uint32_t height = min(other->rect.height, output->rect.height);
@@ -891,7 +960,7 @@ void randr_query_outputs(void) {
      * necessary because in the next step, a clone might get disabled. Example:
      * LVDS1 active, VGA1 gets activated as a clone of LVDS1 (has no con).
      * LVDS1 gets disabled. */
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (output->active && output->con == NULL) {
             DLOG("Need to initialize a Con for output %s\n", output_primary_name(output));
             output_init_con(output);
@@ -899,9 +968,24 @@ void randr_query_outputs(void) {
         }
     }
 
+    /* Ensure that all containers with type CT_OUTPUT have a valid
+     * corresponding entry in outputs. This can happen in situations related to
+     * those mentioned #3767 e.g. when a CT_OUTPUT is created from an in-place
+     * restart's layout but the output is disabled by a randr query happening
+     * at the same time. */
+    Con *con;
+    for (con = TAILQ_FIRST(&(croot->nodes_head)); con;) {
+        Con *next = TAILQ_NEXT(con, nodes);
+        if (!con_is_internal(con) && get_output_by_name(con->name, true) == NULL) {
+            DLOG("No output %s found, moving its old content to first output\n", con->name);
+            move_content(con);
+        }
+        con = next;
+    }
+
     /* Handle outputs which have a new mode or are disabled now (either
      * because the user disabled them or because they are clones) */
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (output->to_be_disabled) {
             randr_disable_output(output);
         }
@@ -913,7 +997,7 @@ void randr_query_outputs(void) {
     }
 
     /* Just go through each active output and assign one workspace */
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active)
             continue;
         Con *content = output_get_content(output->con);
@@ -924,7 +1008,7 @@ void randr_query_outputs(void) {
     }
 
     /* Focus the primary screen, if possible */
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->primary || !output->con)
             continue;
 
@@ -935,6 +1019,7 @@ void randr_query_outputs(void) {
     }
 
     /* render_layout flushes */
+    ewmh_update_desktop_properties();
     tree_render();
 
     FREE(primary);
@@ -950,74 +1035,11 @@ void randr_disable_output(Output *output) {
     output->active = false;
     DLOG("Output %s disabled, re-assigning workspaces/docks\n", output_primary_name(output));
 
-    Output *first = get_first_output();
-
-    /* TODO: refactor the following code into a nice function. maybe
-     * use an on_destroy callback which is implement differently for
-     * different container types (CT_CONTENT vs. CT_DOCKAREA)? */
-    Con *first_content = output_get_content(first->con);
-
     if (output->con != NULL) {
-        /* We need to move the workspaces from the disappearing output to the first output */
-        /* 1: Get the con to focus next */
-        Con *next = focused;
-
-        /* 2: iterate through workspaces and re-assign them, fixing the coordinates
-         * of floating containers as we go */
-        Con *current;
-        Con *old_content = output_get_content(output->con);
-        while (!TAILQ_EMPTY(&(old_content->nodes_head))) {
-            current = TAILQ_FIRST(&(old_content->nodes_head));
-            if (current != next && TAILQ_EMPTY(&(current->focus_head))) {
-                /* the workspace is empty and not focused, get rid of it */
-                DLOG("Getting rid of current = %p / %s (empty, unfocused)\n", current, current->name);
-                tree_close_internal(current, DONT_KILL_WINDOW, false);
-                continue;
-            }
-            DLOG("Detaching current = %p / %s\n", current, current->name);
-            con_detach(current);
-            DLOG("Re-attaching current = %p / %s\n", current, current->name);
-            con_attach(current, first_content, false);
-            DLOG("Fixing the coordinates of floating containers\n");
-            Con *floating_con;
-            TAILQ_FOREACH(floating_con, &(current->floating_head), floating_windows) {
-                floating_fix_coordinates(floating_con, &(output->con->rect), &(first->con->rect));
-            }
-        }
-
-        /* Restore focus after con_detach / con_attach. next can be NULL, see #3523. */
-        if (next) {
-            DLOG("now focusing next = %p\n", next);
-            con_focus(next);
-            workspace_show(con_get_workspace(next));
-        }
-
-        /* 3: move the dock clients to the first output */
-        Con *child;
-        TAILQ_FOREACH(child, &(output->con->nodes_head), nodes) {
-            if (child->type != CT_DOCKAREA)
-                continue;
-            DLOG("Handling dock con %p\n", child);
-            Con *dock;
-            while (!TAILQ_EMPTY(&(child->nodes_head))) {
-                dock = TAILQ_FIRST(&(child->nodes_head));
-                Con *nc;
-                Match *match;
-                nc = con_for_window(first->con, dock->window, &match);
-                DLOG("Moving dock client %p to nc %p\n", dock, nc);
-                con_detach(dock);
-                DLOG("Re-attaching\n");
-                con_attach(dock, nc, false);
-                DLOG("Done\n");
-            }
-        }
-
-        DLOG("destroying disappearing con %p\n", output->con);
+        /* clear the pointer before move_content calls tree_close_internal in which the memory is freed */
         Con *con = output->con;
-        /* clear the pointer before calling tree_close_internal in which the memory is freed */
         output->con = NULL;
-        tree_close_internal(con, DONT_KILL_WINDOW, true);
-        DLOG("Done. Should be fine now\n");
+        move_content(con);
     }
 
     output->to_be_disabled = false;

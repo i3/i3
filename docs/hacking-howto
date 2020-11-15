@@ -8,83 +8,82 @@ touching i3’s source code. It should contain all important information to help
 you understand why things are like they are. If it does not mention something
 you find necessary, please do not hesitate to contact me.
 
+++++
+<div style="background-color:red; color:white; padding:20px;">
+<strong style="color:white;">WARNING!</strong>
+<p>
+++++
+This document is not 100% up to date. Specifically, everything up to and
+including <<data_structures>> has been updated recently. The rest might contain
+outdated information.
+++++
+</p>
+</div>
+++++
+
 == Building i3
 
-You can build i3 like you build any other software package which uses autotools.
-Here’s a memory refresher:
+You can build i3 like you build any other software package which uses
+https://mesonbuild.com/[The Meson Build system]; see
+https://mesonbuild.com/Quick-guide.html#compiling-a-meson-project[Quickstart
+Guide → Compiling a Meson project]. In case you’re unfamiliar:
 
-    $ autoreconf -fi
     $ mkdir -p build && cd build
-    $ ../configure
-    $ make -j8
-
-(The autoreconf -fi step is unnecessary if you are building from a release tarball,
- but shouldn’t hurt either.)
+    $ meson ..
+    $ ninja
 
 === Build system features
 
-* We use the AX_ENABLE_BUILDDIR macro to enforce builds happening in a separate
-  directory. This is a prerequisite for the AX_EXTEND_SRCDIR macro and building
+* We use the +AX_ENABLE_BUILDDIR+ macro to enforce builds happening in a separate
+  directory. This is a prerequisite for the +AX_EXTEND_SRCDIR+ macro and building
   in a separate directory is common practice anyway. In case this causes any
   trouble when packaging i3 for your distribution, please open an issue.
 
-* “make check” runs the i3 testsuite. See docs/testsuite for details.
+* +make check+ runs the i3 testsuite. See docs/testsuite for details.
 
-* “make distcheck” (runs testsuite on “make dist” result, tiny bit quicker
+* +make distcheck+ (runs testsuite on +make dist+ result, tiny bit quicker
   feedback cycle than waiting for the travis build to catch the issue).
 
-* “make uninstall” (occasionally requested by users who compile from source)
+* +make uninstall+ (occasionally requested by users who compile from source)
 
-* “make” will build manpages/docs by default if the tools are installed.
+* +make+ will build manpages/docs by default if the tools are installed.
   Conversely, manpages/docs are not tried to be built for users who don’t want
-  to install all these dependencies to get started hacking on i3.
+  to install all these dependencies to get started hacking on i3. Manpages and
+  docs can be disabled with the +--disable-mans++ and ++--disable-docs++
+  configure options respectively.
 
 * non-release builds will enable address sanitizer by default. Use the
-  --disable-sanitizers configure option to turn off all sanitizers, and see
-  --help for available sanitizers.
+  +--disable-sanitizers+ configure option to turn off all sanitizers, and see
+  +--help+ for available sanitizers.
 
-* Support for pre-compiled headers (PCH) has been dropped for now in the
-  interest of simplicity. If you need support for PCH, please open an issue.
+* Coverage reports are now generated using +make check-code-coverage+, which
+  requires specifying +--enable-code-coverage+ when calling configure.
 
-* Coverage reports are now generated using “make check-code-coverage”, which
-  requires specifying --enable-code-coverage when calling configure.
-
-== Using git / sending patches
-
-For a short introduction into using git, see
-https://web.archive.org/web/20121024222556/http://www.spheredev.org/wiki/Git_for_the_lazy
-or, for more documentation, see https://git-scm.com/documentation
+== Pull requests
 
 Please talk to us before working on new features to see whether they will be
 accepted. A good way for this is to open an issue and asking for opinions on it.
-Even for accepted features, this can be a good way to refine an idea upfront. However,
-we don't want to see certain features in i3, e.g., switching window focus in an
-Alt+Tab like way.
+Even for accepted features, this can be a good way to refine an idea upfront.
+However, we don't want to see certain features in i3, e.g., switching window
+focus in an Alt+Tab like way.
 
-When working on bugfixes, please make sure you mention that you are working on
-it in the corresponding bug report at https://github.com/i3/i3/issues. In case
-there is no bug report yet, please create one.
+When working on bugfixes, please make sure you mention that you are working on it
+in the corresponding bug report at https://github.com/i3/i3/issues. In case there
+is no bug report yet, please create one.
 
 After you are done, please submit your work for review as a pull request at
-https://github.com/i3/i3.
-
-Do not send emails to the mailing list or any author directly, and don’t submit
-them in the bugtracker, since all reviews should be done in public at
-https://github.com/i3/i3. In order to make your review go as fast as possible, you
-could have a look at previous reviews and see what the common mistakes are.
+https://github.com/i3/i3. In order to make your review go as fast as possible,
+you could have a look at previous reviews and see what the common mistakes are.
 
 === Which branch to use?
 
-Work on i3 generally happens in two branches: “master” and “next” (the latter
-being the default branch, the one that people get when they check out the git
-repository).
+Work on i3 generally happens in two branches: “next” (default) and “stable”.
 
-The contents of “master” are always stable. That is, it contains the source code
+The contents of “stable” are always stable. That is, it contains the source code
 of the latest release, plus any bugfixes that were applied since that release.
 
-New features are only found in the “next” branch. Therefore, if you are working
-on a new feature, use the “next” branch. If you are working on a bugfix, use the
-“next” branch, too, but make sure your code also works on “master”.
+New features are only found in the “next” branch. Always use this branch when
+writing new code (both bugfixes and features).
 
 == Window Managers
 
@@ -106,9 +105,9 @@ In the case of i3, the tasks (and order of them) are the following:
   the first client of X) and manage them (reparent them, create window
   decorations, etc.)
 . When new windows are created, manage them
-. Handle the client’s `_WM_STATE` property, but only `_WM_STATE_FULLSCREEN` and
-  `_NET_WM_STATE_DEMANDS_ATTENTION`
-. Handle the client’s `WM_NAME` property
+. Handle the client’s +_WM_STATE+ property, but only +_WM_STATE_FULLSCREEN+ and
+  +_NET_WM_STATE_DEMANDS_ATTENTION+
+. Handle the client’s +WM_NAME+ property
 . Handle the client’s size hints to display them proportionally
 . Handle the client’s urgency hint
 . Handle enter notifications (focus follows mouse)
@@ -123,11 +122,11 @@ will be discussed.
 
 === Tiling window managers
 
-Traditionally, there are two approaches to managing windows: The most common
-one nowadays is floating, which means the user can freely move/resize the
-windows. The other approach is called tiling, which means that your window
-manager distributes windows to use as much space as possible while not
-overlapping each other.
+Traditionally, there are two approaches to managing windows: The most common one
+nowadays is stacking (or floating, using i3's terminology), which means the user
+can freely move/resize the windows, potentially overlapping them. The other
+approach is called tiling, which means that the window manager distributes
+windows to use as much space as possible while not overlapping each other.
 
 The idea behind tiling is that you should not need to waste your time
 moving/resizing windows while you usually want to get some work done. After
@@ -161,63 +160,67 @@ example.
 
 == Files
 
-include/atoms.xmacro::
-A file containing all X11 atoms which i3 uses. This file will be included
-various times (for defining, requesting and receiving the atoms), each time
-with a different definition of xmacro().
+i3's source code is in the +src+ folder while header files reside in +include+.
+Other tools such as i3bar and i3-nagbar have their own folders. i3 and its tools
+share an internal library called ``libi3'' which also has its own folder.
+
+The following list gives an overview of the codebase, explaining the
+functionality of the most important, core source code files. Other files in the
+tree that are not mentioned here implement specific functionalities: for example,
++src/scratchpad.c+ is obviously about the scratchpad functionality.
 
 include/data.h::
-Contains data definitions used by nearly all files. You really need to read
-this first.
+Contains data definitions used by nearly all files.
 
 include/*.h::
 Contains forward definitions for all public functions, as well as
 doxygen-compatible comments (so if you want to get a bit more of the big
 picture, either browse all header files or use doxygen if you prefer that).
 
-src/config_parser.c::
-Contains a custom configuration parser. See src/command_parser.c for rationale
- on why we use a custom parser.
-
-src/click.c::
-Contains all functions which handle mouse button clicks (right mouse button
-clicks initiate resizing and thus are relatively complex).
-
-src/command_parser.c::
-Contains a hand-written parser to parse commands (commands are what
-you bind on keys and what you can send to i3 using the IPC interface, like
-'move left' or 'workspace 4').
+src/config_directives.c::
+src/commands.c::
+Contain the definitions for all high-level config and command directives. These
+are excellent places to start with a top-to-bottom approach to understand
+specific i3 behavior. For example, if you want to investigate a bug that happens
+for the +move to mark+ command, you can use gdb to pause in
++cmd_move_con_to_mark+ and then work your way from there, stepping into
+lower-level functions.
 
 src/con.c::
-Contains all functions which deal with containers directly (creating
-containers, searching containers, getting specific properties from containers,
-…).
+Contains all functions which deal with containers directly (creating containers,
+searching containers, getting specific properties from containers, …). Contains
+abstractions and auxiliary functions necessary to work with the container
+structure which is used in almost all parts of the codebase.
 
-src/config.c::
-Contains all functions handling the configuration file (calling the parser
-src/config_parser.c) with the correct path, switching key bindings mode).
+src/tree.c::
+Contains functions which deal with the tree abstraction. However, be aware that
++src/con.c+ also contains functions that heavily interact with the tree
+structure. Some functions that are included in +str/tree.c+ are those that handle
+opening and closing containers in the tree, finding the container that should be
+focused next and flattening the tree. See also +src/move.c+ for other
+move-specific functions that interact with the tree, which were moved into their
+own file because they are so long.
 
-src/ewmh.c::
-Functions to get/set certain EWMH properties easily.
-
-src/floating.c::
-Contains functions for floating mode (mostly resizing/dragging).
+src/workspace.c::
+Contains functions which deal with workspaces. Includes code that creates new
+workspaces, shows existing ones and deals with workspace assignments.
 
 src/handlers.c::
 Contains all handlers for all kinds of X events (new window title, new hints,
-unmapping, key presses, button presses, …).
+unmapping, key presses, button presses, …). This is a very important file to
+understand how i3 interacts with changes to its environment.
 
-src/ipc.c::
-Contains code for the IPC interface.
+src/command_parser.c::
+src/config_parser.c::
+Contain a hand-written parser to parse commands and configuration (commands are what
+you bind on keys and what you can send to i3 using the IPC interface, like
++move left+ or +workspace 4+). +src/config.c+ is responsible for calling the
+configuration parser.
 
-src/load_layout.c::
-Contains code for loading layouts from JSON files.
-
-src/log.c::
-Contains the logging functions.
-
-src/main.c::
-Initializes the window manager.
+src/click.c::
+src/resize.c::
+Contain functions which handle mouse button clicks (right mouse button
+clicks initiate resizing and thus are relatively complex).
 
 src/manage.c::
 Looks at existing or new windows and decides whether to manage them. If so, it
@@ -226,93 +229,66 @@ reparents the window and inserts it into our data structures.
 src/match.c::
 A "match" is a data structure which acts like a mask or expression to match
 certain windows or not. For example, when using commands, you can specify a
-command like this: [title="*Firefox*"] kill. The title member of the match
+command like this: +[title="*Firefox*"] kill+. The title member of the match
 data structure will then be filled and i3 will check each window using
-match_matches_window() to find the windows affected by this command.
-
-src/move.c::
-Contains code to move a container in a specific direction.
-
-src/output.c::
-Functions to handle CT_OUTPUT cons.
++match_matches_window()+ to find the windows affected by this command.
 
 src/randr.c::
 The RandR API is used to get (and re-query) the configured outputs (monitors,
-…).
+…). Legacy Xinerama support resides in +src/xinerama.c+.
 
 src/render.c::
 Renders the tree data structure by assigning coordinates to every node. These
 values will later be pushed to X11 in +src/x.c+.
 
-src/resize.c::
-Contains the functions to resize containers.
-
-src/restore_layout.c::
-Everything for restored containers that is not pure state parsing (which can be
-found in load_layout.c).
-
 src/sighandler.c::
 Handles +SIGSEGV+, +SIGABRT+ and +SIGFPE+ by showing a dialog that i3 crashed.
-You can chose to let it dump core, to restart it in-place or to restart it
-in-place but forget about the layout.
-
-src/tree.c::
-Contains functions which open or close containers in the tree, change focus or
-cleanup ("flatten") the tree. See also +src/move.c+ for another similar
-function, which was moved into its own file because it is so long.
-
-src/util.c::
-Contains useful functions which are not really dependent on anything.
+You can choose to let it dump core and restart i3 in-place (either trying to
+preserve layout or forget about it).
 
 src/window.c::
 Handlers to update X11 window properties like +WM_CLASS+, +_NET_WM_NAME+,
 +CLIENT_LEADER+, etc.
 
-src/workspace.c::
-Contains all functions related to workspaces (displaying, hiding, renaming…)
+include/*.xmacro.*::
+A file containing all X11 atoms which i3 uses. This file will be included
+various times (for defining, requesting and receiving the atoms), each time
+with a different definition of xmacro().
 
-src/x.c::
-Transfers our in-memory tree (see +src/render.c+) to X11.
-
-src/xcb.c::
-Contains wrappers to use xcb more easily.
-
-src/xcursor.c::
-XCursor functions (for cursor themes).
-
-src/xinerama.c::
-Legacy support for Xinerama. See +src/randr.c+ for the preferred API.
-
+[[data_structures]]
 == Data structures
 
+See +include/data.h+ for documented data structures. The most important ones are
+explained here.
 
-See include/data.h for documented data structures. The most important ones are
-explained right here.
+The following picture is generated by the +contrib/dump-asy.pl+ script.
 
-/////////////////////////////////////////////////////////////////////////////////
-// TODO: update image
+image:bigpicture.png["The Big Picture",width=1000,link="bigpicture.png"]
 
-image:bigpicture.png[The Big Picture]
+The hierarchy is:
 
-/////////////////////////////////////////////////////////////////////////////////
-
-So, the hierarchy is:
-
-. *X11 root window*, the root container
-. *Output container* (LVDS1 in this example)
-. *Content container* (there are also containers for dock windows)
-. *Workspaces* (Workspace 1 in this example, with horizontal orientation)
-. *Split container* (vertically split)
-. *X11 window containers*
+. *Root container*
+. *Output containers*: +eDP-1+ in this example and the internal +__i3++ output
+. *Content and 2 dockarea containers*
+. *Workspaces*: Numbered workspace ``1'' and a ``Named workspace''
+. *Split containers*: One horizontal in the first workspace and a tabbed one in
+  the named one.
+. *Leaf containers*: Windows like vim and an i3bar dock.
 
 The data type is +Con+, in all cases.
 
-=== X11 root window
+=== Root container
 
-The X11 root window is a single window per X11 display (a display is identified
-by +:0+ or +:1+ etc.). The root window is what you draw your background image
-on. It spans all the available outputs, e.g. +VGA1+ is a specific part of the
-root window and +LVDS1+ is a specific part of the root window.
+The root container (global variable +croot+) is the up-most ascendant of every i3
+container. It can be used to iterate over the whole tree structure. E.g., it is
+used to reply to the +GET_WORKSPACES+ request, iterating over it's children to
+find all workspaces. This is different from the X11 root window.
+
+The X11 root window (global variable +root+) is a single window per X11 display
+(a display is identified by +:0+ or +:1+ etc.). The root window is what you draw
+your background image on. It spans all the available outputs, e.g. +VGA1+ is a
+specific part of the root window and +LVDS1+ is a specific part of the root
+window.
 
 === Output container
 
@@ -334,8 +310,8 @@ currently on.
 === Content container
 
 Each output has multiple children. Two of them are dock containers which hold
-dock clients. The other one is the content container, which holds the actual
-content (workspaces) of this output.
+the top and bottom dock clients. The other one is the content container, which
+holds the actual content (workspaces) of this output.
 
 === Workspace
 
@@ -354,21 +330,20 @@ vertical) and a layout.
 Split containers (and X11 window containers, which are a subtype of split
 containers) can have different border styles.
 
-=== X11 window container
+=== Leaf containers
 
-An X11 window container holds exactly one X11 window. These are the leaf nodes
-of the layout tree, they cannot have any children.
+A leaf container holds exactly one X11 window. They can't have any children.
 
 == List/queue macros
 
 i3 makes heavy use of the list macros defined in BSD operating systems. To
 ensure that the operating system on which i3 is compiled has all the expected
-features, i3 comes with `include/queue.h`. On BSD systems, you can use man
-`queue(3)`. On Linux, you have to use google (or read the source).
+features, i3 comes with +include/queue.h+. On BSD systems, you can use +man
+queue(3)+. On Linux, you have to use google (or read the source).
 
 The lists used are +SLIST+ (single linked lists), +CIRCLEQ+ (circular
 queues) and +TAILQ+ (tail queues). Usually, only forward traversal is necessary,
-so an `SLIST` works fine. If inserting elements at arbitrary positions or at
+so an +SLIST+ works fine. If inserting elements at arbitrary positions or at
 the end of a list is necessary, a +TAILQ+ is used instead. However, for the
 windows inside a container, a +CIRCLEQ+ is necessary to go from the currently
 selected window to the window above/below.
@@ -378,10 +353,10 @@ selected window to the window above/below.
 There is a row of standard variables used in many events. The following names
 should be chosen for those:
 
- * ``conn'' is the xcb_connection_t
- * ``event'' is the event of the particular type
- * ``con'' names a container
- * ``current'' is a loop variable when using +TAILQ_FOREACH+ etc.
+ * +conn+ is the xcb_connection_t
+ * +event+ is the event of the particular type
+ * +con+ names a container
+ * +current+ is a loop variable when using +TAILQ_FOREACH+ etc.
 
 == Startup (src/mainx.c, main())
 
@@ -430,7 +405,7 @@ The bound command is parsed by the cmdparse lexer/parser, see +parse_cmd+ in
 
 == Manage windows (src/main.c, manage_window() and reparent_window())
 
-`manage_window()` does some checks to decide whether the window should be
++manage_window()+ does some checks to decide whether the window should be
 managed at all:
 
  * Windows have to be mapped, that is, visible on screen
@@ -438,18 +413,18 @@ managed at all:
    not be managed by a window manager
 
 Afterwards, i3 gets the initial geometry and reparents the window (see
-`reparent_window()`) if it wasn’t already managed.
++reparent_window()+) if it wasn’t already managed.
 
 Reparenting means that for each window which is reparented, a new window,
 slightly larger than the original one, is created. The original window is then
 reparented to the bigger one (called "frame").
 
-After reparenting, the window type (`_NET_WM_WINDOW_TYPE`) is checked to see
-whether this window is a dock (`_NET_WM_WINDOW_TYPE_DOCK`), like dzen2 for
+After reparenting, the window type (+_NET_WM_WINDOW_TYPE+) is checked to see
+whether this window is a dock (+_NET_WM_WINDOW_TYPE_DOCK+), like dzen2 for
 example. Docks are handled differently, they don’t have decorations and are not
 assigned to a specific container. Instead, they are positioned at the bottom
 or top of the screen (in the appropriate dock area containers). To get the
-height which needs to be reserved for the window, the `_NET_WM_STRUT_PARTIAL`
+height which needs to be reserved for the window, the +_NET_WM_STRUT_PARTIAL+
 property is used.
 
 Furthermore, the list of assignments (to other workspaces, which may be on
@@ -460,10 +435,10 @@ target workspace is not visible, the window will not be mapped.
 == What happens when an application is started?
 
 i3 does not care about applications. All it notices is when new windows are
-mapped (see `src/handlers.c`, `handle_map_request()`). The window is then
+mapped (see +src/handlers.c+, +handle_map_request()+). The window is then
 reparented (see section "Manage windows").
 
-After reparenting the window, `render_tree()` is called which renders the
+After reparenting the window, +render_tree()+ is called which renders the
 internal layout table. The new window has been placed in the currently focused
 container and therefore the new window and the old windows (if any) need to be
 moved/resized so that the currently active layout (default/stacking/tabbed mode)
@@ -482,7 +457,7 @@ can reconfigure themselves).
 Only the _NET_WM_STATE_FULLSCREEN and _NET_WM_STATE_DEMANDS_ATTENTION atoms
 are handled.
 
-The former calls ``toggle_fullscreen()'' for the specific client which just
+The former calls +toggle_fullscreen()+ for the specific client which just
 configures the client to use the whole screen on which it currently is.
 Also, it is set as fullscreen_client for the i3Screen.
 
@@ -539,7 +514,7 @@ container) to the bottom.
 
 === Rendering the root container
 
-The i3 root container (`con->type == CT_ROOT`) represents the X11 root window.
+The i3 root container (+con->type == CT_ROOT+) represents the X11 root window.
 It contains one child container for every output (like LVDS1, VGA1, …), which
 is available on your computer.
 
@@ -558,7 +533,7 @@ only called for the global fullscreen window.
 
 === Rendering an output
 
-Output containers (`con->layout == L_OUTPUT`) represent a hardware output like
+Output containers (+con->layout == L_OUTPUT+) represent a hardware output like
 LVDS1, VGA1, etc. An output container has three children (at the moment): One
 content container (having workspaces as children) and the top/bottom dock area
 containers.
@@ -566,7 +541,7 @@ containers.
 The rendering happens in the function +render_l_output()+ in the following
 steps:
 
-1. Find the content container (`con->type == CT_CON`)
+1. Find the content container (+con->type == CT_CON+)
 2. Get the currently visible workspace (+con_get_fullscreen_con(content,
    CF_OUTPUT)+).
 3. If there is a fullscreened window on that workspace, directly render it and
@@ -574,22 +549,22 @@ steps:
 4. Sum up the space used by all the dock windows (they have a variable height
    only).
 5. Set the workspace rects (x/y/width/height) based on the position of the
-   output (stored in `con->rect`) and the usable space
-   (`con->rect.{width,height}` without the space used for dock windows).
+   output (stored in +con->rect+) and the usable space
+   (+con->rect.{width,height}+ without the space used for dock windows).
 6. Recursively raise and render the output’s child containers (meaning dock
    area containers and the content container).
 
 === Rendering a workspace or split container
 
 From here on, there really is no difference anymore. All containers are of
-`con->type == CT_CON` (whether workspace or split container) and some of them
-have a `con->window`, meaning they represent an actual window instead of a
++con->type == CT_CON+ (whether workspace or split container) and some of them
+have a +con->window+, meaning they represent an actual window instead of a
 split container.
 
 ==== Default layout
 
 In default layout, containers are placed horizontally or vertically next to
-each other (depending on the `con->orientation`). If a child is a leaf node (as
+each other (depending on the +con->orientation+). If a child is a leaf node (as
 opposed to a split container) and has border style "normal", appropriate space
 will be reserved for its window decoration.
 
@@ -835,8 +810,8 @@ workspace <direction>::
 	the beginning. +
 
 NOTE: Note that you can specify multiple literals in the same line. This has
-	exactly the same effect as if you specified `direction =
-	'next_on_output' -> call cmd_workspace($direction)` and so forth. +
+	exactly the same effect as if you specified +direction =
+	'next_on_output' -> call cmd_workspace($direction)+ and so forth. +
 
 NOTE: Also note that the order of literals is important here: If 'next' were
 	ordered before 'next_on_output', then 'next_on_output' would never
@@ -1020,11 +995,11 @@ Without much ado, here is the list of cases which need to be considered:
 
 == Gotchas
 
-* Forgetting to call `xcb_flush(conn);` after sending a request. This usually
+* Forgetting to call +xcb_flush(conn);+ after sending a request. This usually
   leads to code which looks like it works fine but which does not work under
   certain conditions.
 
-* Forgetting to call `floating_fix_coordinates(con, old_rect, new_rect)` after
+* Forgetting to call +floating_fix_coordinates(con, old_rect, new_rect)+ after
   moving workspaces across outputs. Coordinates for floating containers are
   not relative to workspace boundaries, so you must correct their coordinates
   or those containers will show up in the wrong workspace or not at all.

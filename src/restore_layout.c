@@ -29,8 +29,7 @@ typedef struct placeholder_state {
     /** The drawable surface */
     surface_t surface;
 
-    TAILQ_ENTRY(placeholder_state)
-    state;
+    TAILQ_ENTRY(placeholder_state) state;
 } placeholder_state;
 
 static TAILQ_HEAD(state_head, placeholder_state) state_head =
@@ -140,7 +139,7 @@ static void update_placeholder_contents(placeholder_state *state) {
 
     Match *swallows;
     int n = 0;
-    TAILQ_FOREACH(swallows, &(state->con->swallow_head), matches) {
+    TAILQ_FOREACH (swallows, &(state->con->swallow_head), matches) {
         char *serialized = NULL;
 
 #define APPEND_REGEX(re_name)                                                                                                                        \
@@ -234,10 +233,10 @@ static void open_placeholder_window(Con *con) {
     }
 
     Con *child;
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         open_placeholder_window(child);
     }
-    TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
+    TAILQ_FOREACH (child, &(con->floating_head), floating_windows) {
         open_placeholder_window(child);
     }
 }
@@ -251,10 +250,10 @@ static void open_placeholder_window(Con *con) {
  */
 void restore_open_placeholder_windows(Con *parent) {
     Con *child;
-    TAILQ_FOREACH(child, &(parent->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(parent->nodes_head), nodes) {
         open_placeholder_window(child);
     }
-    TAILQ_FOREACH(child, &(parent->floating_head), floating_windows) {
+    TAILQ_FOREACH (child, &(parent->floating_head), floating_windows) {
         open_placeholder_window(child);
     }
 
@@ -270,7 +269,7 @@ void restore_open_placeholder_windows(Con *parent) {
  */
 bool restore_kill_placeholder(xcb_window_t placeholder) {
     placeholder_state *state;
-    TAILQ_FOREACH(state, &state_head, state) {
+    TAILQ_FOREACH (state, &state_head, state) {
         if (state->window != placeholder)
             continue;
 
@@ -288,7 +287,7 @@ bool restore_kill_placeholder(xcb_window_t placeholder) {
 
 static void expose_event(xcb_expose_event_t *event) {
     placeholder_state *state;
-    TAILQ_FOREACH(state, &state_head, state) {
+    TAILQ_FOREACH (state, &state_head, state) {
         if (state->window != event->window)
             continue;
 
@@ -310,7 +309,7 @@ static void expose_event(xcb_expose_event_t *event) {
  */
 static void configure_notify(xcb_configure_notify_event_t *event) {
     placeholder_state *state;
-    TAILQ_FOREACH(state, &state_head, state) {
+    TAILQ_FOREACH (state, &state_head, state) {
         if (state->window != event->window)
             continue;
 

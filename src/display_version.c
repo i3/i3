@@ -10,13 +10,9 @@
  */
 #include "all.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <fcntl.h>
 #include <time.h>
+#include <unistd.h>
 
 static bool human_readable_key, loaded_config_file_name_key;
 static char *human_readable_version, *loaded_config_file_name;
@@ -98,7 +94,8 @@ void display_running_version(void) {
     if (state != yajl_status_ok)
         errx(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
 
-    printf("\rRunning i3 version: %s (pid %s)\n", human_readable_version, pid_from_atom);
+    printf("\r\x1b[K");
+    printf("Running i3 version: %s (pid %s)\n", human_readable_version, pid_from_atom);
 
     if (loaded_config_file_name) {
         struct stat sb;
