@@ -1,8 +1,10 @@
 #!/bin/zsh
 # This script is used to prepare a new release of i3.
 
+set -eu
+
 export RELEASE_VERSION="4.19"
-export PREVIOUS_VERSION="4.18"
+export PREVIOUS_VERSION="4.18.3"
 export RELEASE_BRANCH="next"
 
 if [ ! -e "../i3.github.io" ]
@@ -21,12 +23,6 @@ fi
 if [ ! -e "RELEASE-NOTES-${RELEASE_VERSION}" ]
 then
 	echo "RELEASE-NOTES-${RELEASE_VERSION} not found."
-	exit 1
-fi
-
-if git diff-files --quiet --exit-code debian/changelog
-then
-	echo "Expected debian/changelog to be changed (containing the changelog for ${RELEASE_VERSION})."
 	exit 1
 fi
 
@@ -52,28 +48,32 @@ if [ ! -e "${STARTDIR}/RELEASE-NOTES-${RELEASE_VERSION}" ]; then
 	exit 1
 fi
 git checkout -b release-${RELEASE_VERSION}
+git rm RELEASE-NOTES-*
 cp "${STARTDIR}/RELEASE-NOTES-${RELEASE_VERSION}" "RELEASE-NOTES-${RELEASE_VERSION}"
 git add RELEASE-NOTES-${RELEASE_VERSION}
-git rm RELEASE-NOTES-${PREVIOUS_VERSION}
-sed -i "s/^\s*version: '${PREVIOUS_VERSION}'/    version: '${RELEASE_VERSION}'/" meson.build
+# Update the release version:
+sed -i "s/^\s*version: '4.[^']*'/  version: '${RELEASE_VERSION}'/" meson.build
+cp meson.build "${TMPDIR}/meson.build"
+# Inject the release date into meson.build for the dist tarball:
+sed -i "s/'-non-git'/' ($(date +'%Y-%m-%d'))'/" meson.build
 git commit -a -m "release i3 ${RELEASE_VERSION}"
 git tag "${RELEASE_VERSION}" -m "release i3 ${RELEASE_VERSION}" --sign --local-user=0x4AC8EE1D
 
 mkdir build
 (cd build && meson .. && ninja dist)
-cp build/meson-build/i3-${RELEASE_VERSION}.tar.xz .
+cp build/meson-dist/i3-${RELEASE_VERSION}.tar.xz .
 
 echo "Differences in the release tarball file lists:"
 
 diff --color -u \
-	<(tar tf ../i3-${PREVIOUS_VERSION}.tar.xz | sed "s,i3-${PREVIOUS_VERSION}/,,g" | sort) \
-	<(tar tf    i3-${RELEASE_VERSION}.tar.xz  | sed "s,i3-${RELEASE_VERSION}/,,g"  | sort)
+	<(tar tf ../i3-${PREVIOUS_VERSION}.tar.* | sed "s,i3-${PREVIOUS_VERSION}/,,g" | sort) \
+	<(tar tf    i3-${RELEASE_VERSION}.tar.xz  | sed "s,i3-${RELEASE_VERSION}/,,g"  | sort) || true
 
 gpg --armor -b i3-${RELEASE_VERSION}.tar.xz
 
-echo "${RELEASE_VERSION}-non-git" > I3_VERSION
-git add I3_VERSION
-git commit -a -m "Set non-git version to ${RELEASE_VERSION}-non-git."
+mv "${TMPDIR}/meson.build" .
+git add meson.build
+git commit -a -m "Restore non-git version suffix"
 
 if [ "${RELEASE_BRANCH}" = "stable" ]; then
 	git checkout stable
@@ -94,16 +94,11 @@ git config --add remote.origin.push "+refs/heads/next:refs/heads/next"
 git config --add remote.origin.push "+refs/heads/stable:refs/heads/stable"
 
 ################################################################################
-# Section 2: Debian packaging
+# Section 2: Debian packaging (for QA)
 ################################################################################
 
 cd "${TMPDIR}"
 mkdir debian
-
-# Copy over the changelog because we expect it to be locally modified in the
-# start directory.
-cp "${STARTDIR}/debian/changelog" i3/debian/changelog
-(cd i3 && git add debian/changelog && git commit -m 'Update debian/changelog')
 
 cat > ${TMPDIR}/Dockerfile <<EOT
 FROM debian:sid
@@ -132,9 +127,6 @@ done
 
 echo "Content of resulting package’s .changes file:"
 cat ${TMPDIR}/debian/*.changes
-
-# debsign is in devscripts, which is available in fedora and debian
-debsign --no-re-sign -k4AC8EE1D ${TMPDIR}/debian/*.changes
 
 # TODO: docker cleanup
 
@@ -176,7 +168,7 @@ sed -i "s,Verify you are using i3 ≥ .*,Verify you are using i3 ≥ ${RELEASE_V
 
 (cd _docs && make)
 
-for i in $(find _docs -maxdepth 1 -and -type f -and \! -regex ".*\.\(html\|man\)$" -and \! -name "Makefile")
+for i in $(find _docs -maxdepth 1 -and -type f -and \! -regex ".*\.\(html\|man\|css\)$" -and \! -name "Makefile")
 do
 	base="$(basename $i)"
 	[ -e "${TMPDIR}/i3/docs/${base}" ] && cp "_docs/${base}.html" docs/
@@ -234,6 +226,5 @@ echo "  Create milestone for the next major version with unset due date"
 echo ""
 echo "Announce on:"
 echo "  twitter"
-echo "  google+"
 echo "  #i3 topic"
-echo "  reddit /r/i3wm"
+echo "  reddit /r/i3wm (link post to changelog)"
