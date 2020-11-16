@@ -23,20 +23,20 @@ It tries to start one of the following (in that order):
 
 * $TERMINAL (this is a non-standard variable)
 * x-terminal-emulator (only present on Debian and derivatives)
+* mate-terminal
+* gnome-terminal
+* terminator
+* xfce4-terminal
 * urxvt
 * rxvt
 * termit
-* terminator
 * Eterm
 * aterm
 * uxterm
 * xterm
-* gnome-terminal
 * roxterm
-* xfce4-terminal
 * termite
 * lxterminal
-* mate-terminal
 * terminology
 * st
 * qterminal
