@@ -53,12 +53,23 @@ existing window (rotated displays).
 
 image:two_terminals.png[Two terminals]
 
-To move the focus between the two terminals, you can use the direction keys
-which you might know from the editor +vi+. However, in i3, your homerow is used
-for these keys (in +vi+, the keys are shifted to the left by one for
-compatibility with most keyboard layouts). Therefore, +$mod+j+ is left, +$mod+k+
-is down, +$mod+l+ is up and `$mod+;` is right. So, to switch between the
-terminals, use +$mod+k+ or +$mod+l+. Of course, you can also use the arrow keys.
+To move the focus between the two terminals, you can use the arrow keys. For
+convenience, the arrows are also available directly on the
+https://en.wikipedia.org/wiki/Touch_typing[keyboard’s home row] underneath your
+right hand:
+
+|===
+| `$mod+j` | left
+| `$mod+k` | down
+| `$mod+l` | up
+| `$mod+;` | right
+|===
+
+Note that this differs by one key from the popular text editor `vi`, which was
+https://twitter.com/hillelogram/status/1326600125569961991[developed on an
+ADM-3A terminal and therefore uses `hjkl` instead of `jkl;`] -- i3’s default is
+meant to require minimal finger movement, but some `vi` users change their i3
+config for consistency.
 
 At the moment, your workspace is split (it contains two terminals) in a
 specific direction (horizontal by default). Every window can be split
