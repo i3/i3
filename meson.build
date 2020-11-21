@@ -514,6 +514,7 @@ executable(
     'i3-config-wizard/i3-config-wizard-atoms.xmacro.h',
     'i3-config-wizard/main.c',
     'i3-config-wizard/xcb.h',
+    config_parser,
   ],
   install: true,
   include_directories: include_directories('include', 'i3-config-wizard'),
@@ -669,7 +670,10 @@ executable(
 
 executable(
   'test.commands_parser',
-  'src/commands_parser.c',
+  [
+    'src/commands_parser.c',
+    command_parser,
+  ],
   include_directories: inc,
   c_args: '-DTEST_PARSER',
   dependencies: common_deps,
@@ -678,7 +682,10 @@ executable(
 
 executable(
   'test.config_parser',
-  'src/config_parser.c',
+  [
+    'src/config_parser.c',
+    config_parser,
+  ],
   include_directories: inc,
   c_args: '-DTEST_PARSER',
   dependencies: common_deps,
