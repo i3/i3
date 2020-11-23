@@ -643,7 +643,7 @@ if get_option('docs')
       '@OUTPUT@',
     ],
     install: true,
-    install_dir: join_paths(get_option('datadir'), 'doc', 'i3'),
+    install_dir: docdir,
   )
 
   custom_target(
@@ -656,7 +656,7 @@ if get_option('docs')
       '@OUTPUT@',
     ],
     install: true,
-    install_dir: join_paths(get_option('datadir'), 'doc', 'i3'),
+    install_dir: docdir,
   )
 endif
 
