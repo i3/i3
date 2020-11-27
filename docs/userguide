@@ -608,9 +608,10 @@ Default is +left+
 title_align left|center|right
 ---------------------------------------------
 
+[[default_border]]
 === Default border style for new windows
 
-This option determines which border style new windows will have. The default is
+This option determines which border style *new* windows will have.  The default is
 +normal+. Note that default_floating_border applies only to windows which are starting out as
 floating windows, e.g., dialog windows, but not windows that are floated later on.
 
@@ -2634,9 +2635,15 @@ border 1pixel
 bindsym $mod+t border normal 0
 # use no window title and a thick border
 bindsym $mod+y border pixel 3
+# use window title *and* a thick border
+bindsym $mod+y border normal 3
 # use neither window title nor border
 bindsym $mod+u border none
+# no border on VLC
+for_window [class="vlc"] border none
 ----------------------------------------------
+
+To change the default for all windows, see the directive <<default_border>>.
 
 [[shmlog]]
 === Enabling shared memory logging
