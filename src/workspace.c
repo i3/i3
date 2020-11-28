@@ -134,7 +134,7 @@ Con *workspace_get(const char *num) {
 
     /* We set workspace->num to the number if this workspace’s name begins with
      * a positive number. Otherwise it’s a named ws and num will be 1. */
-    const long parsed_num = ws_name_to_number(num);
+    const int parsed_num = ws_name_to_number(num);
 
     Con *output = get_assigned_output(num, parsed_num);
     /* if an assignment is not found, we create this workspace on the current output */
@@ -238,7 +238,6 @@ void extract_workspace_names_from_bindings(void) {
  */
 Con *create_workspace_on_output(Output *output, Con *content) {
     /* add a workspace to this output */
-    char *name;
     bool exists = true;
     Con *ws = con_new(NULL, NULL);
     ws->type = CT_WORKSPACE;
@@ -254,13 +253,16 @@ Con *create_workspace_on_output(Output *output, Con *content) {
             continue;
         }
 
-        exists = (get_existing_workspace_by_name(target_name) != NULL);
+        const int num = ws_name_to_number(target_name);
+        exists = (num == -1)
+                     ? get_existing_workspace_by_name(target_name)
+                     : get_existing_workspace_by_num(num);
         if (!exists) {
             ws->name = sstrdup(target_name);
             /* Set ->num to the number of the workspace, if the name actually
              * is a number or starts with a number */
-            ws->num = ws_name_to_number(ws->name);
-            LOG("Used number %d for workspace with name %s\n", ws->num, ws->name);
+            ws->num = num;
+            DLOG("Used number %d for workspace with name %s\n", ws->num, ws->name);
 
             break;
         }
@@ -281,6 +283,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
     }
     con_attach(ws, content, false);
 
+    char *name;
     sasprintf(&name, "[i3 con] workspace %s", ws->name);
     x_set_name(ws, name);
     free(name);
@@ -987,14 +990,14 @@ void workspace_move_to_output(Con *ws, Output *output) {
         bool used_assignment = false;
         struct Workspace_Assignment *assignment;
         TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
-            bool attached;
-            int num;
             if (!output_triggers_assignment(current_output, assignment)) {
                 continue;
             }
             /* check if this workspace's name or num is already attached to the tree */
-            num = ws_name_to_number(assignment->name);
-            attached = ((num == -1) ? get_existing_workspace_by_name(assignment->name) : get_existing_workspace_by_num(num)) != NULL;
+            const int num = ws_name_to_number(assignment->name);
+            const bool attached = (num == -1)
+                                      ? get_existing_workspace_by_name(assignment->name)
+                                      : get_existing_workspace_by_num(num);
             if (attached) {
                 continue;
             }

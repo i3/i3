@@ -17,5 +17,4 @@ strongly encouraged to upgrade.
  │ Bugfixes                   │
  └────────────────────────────┘
 
-  • placeholder
-
+  • when initializing new outputs, avoid duplicating workspace numbers
