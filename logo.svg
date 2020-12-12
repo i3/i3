@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmlns:cc="http://creativecommons.org/ns#"
@@ -13,9 +12,10 @@
    height="297mm"
    id="svg2"
    sodipodi:version="0.32"
-   inkscape:version="0.46"
-   sodipodi:docname="logo_i3_linuxfr_bapt_v2.svg"
-   inkscape:output_extension="org.inkscape.output.svg.inkscape">
+   inkscape:version="1.0.1 (c497b03c, 2020-09-10)"
+   sodipodi:docname="logo.svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   version="1.1">
   <defs
      id="defs4">
     <linearGradient
@@ -39,10 +39,10 @@
     </linearGradient>
     <inkscape:perspective
        id="perspective3661"
-       inkscape:persp3d-origin="750.50629 : 505.26732 : 1"
-       inkscape:vp_z="683.5728 : 1230.5721 : 1"
-       inkscape:vp_y="0 : 1946.8917 : 0"
-       inkscape:vp_x="-526.84957 : 2.2065866e-13 : 0"
+       inkscape:persp3d-origin="800.54004 : 538.95181 : 1"
+       inkscape:vp_z="729.14432 : 1312.6102 : 1"
+       inkscape:vp_y="0 : 2076.6845 : 0"
+       inkscape:vp_x="-561.97287 : 2.3536924e-13 : 0"
        sodipodi:type="inkscape:persp3d" />
     <linearGradient
        id="linearGradient3284">
@@ -112,10 +112,10 @@
     </linearGradient>
     <inkscape:perspective
        sodipodi:type="inkscape:persp3d"
-       inkscape:vp_x="-526.84957 : 2.9848654e-13 : 0"
-       inkscape:vp_y="1.192088e-13 : 1946.8917 : 0"
-       inkscape:vp_z="680.54236 : 1232.3792 : 1"
-       inkscape:persp3d-origin="730.30325 : 937.39936 : 1"
+       inkscape:vp_x="-561.97287 : 3.1838564e-13 : 0"
+       inkscape:vp_y="1.2715605e-13 : 2076.6845 : 0"
+       inkscape:vp_z="725.91185 : 1314.5378 : 1"
+       inkscape:persp3d-origin="778.99013 : 999.89265 : 1"
        id="perspective10" />
     <radialGradient
        inkscape:collect="always"
@@ -152,10 +152,10 @@
        gradientUnits="userSpaceOnUse" />
     <inkscape:perspective
        id="perspective3373"
-       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
-       inkscape:vp_z="744.09448 : 526.18109 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:persp3d-origin="396.85039 : 374.17322 : 1"
+       inkscape:vp_z="793.70078 : 561.25983 : 1"
+       inkscape:vp_y="0 : 1066.6667 : 0"
+       inkscape:vp_x="0 : 561.25983 : 1"
        sodipodi:type="inkscape:persp3d" />
     <linearGradient
        id="linearGradient3211">
@@ -282,15 +282,17 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1"
-     inkscape:cx="239.17981"
-     inkscape:cy="807.75327"
+     inkscape:cx="164.67981"
+     inkscape:cy="285.75327"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:window-width="1272"
-     inkscape:window-height="950"
+     inkscape:window-height="856"
      inkscape:window-x="24"
-     inkscape:window-y="24" />
+     inkscape:window-y="22"
+     inkscape:document-rotation="0"
+     inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -495,7 +497,7 @@
     <path
        style="fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1;display:inline"
        d="M 182.85714,106.6479 L 182.85714,415.21935 L 182.85714,106.6479 z"
-       id="rect3246"
+       id="path934"
        sodipodi:nodetypes="ccc" />
     <path
        sodipodi:nodetypes="ccc"
