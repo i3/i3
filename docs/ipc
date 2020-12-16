@@ -132,6 +132,8 @@ GET_CONFIG (9)::
 	Reply to the GET_CONFIG message.
 TICK (10)::
 	Reply to the SEND_TICK message.
+SYNC (11)::
+	Reply to the SYNC message.
 GET_BINDING_STATE (12)::
 	Reply to the GET_BINDING_STATE message.
 
