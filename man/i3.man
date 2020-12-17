@@ -144,10 +144,10 @@ Enable default layout for the current container.
 Mod1+w::
 Enable tabbed layout for the current container.
 
-Mod1+Shift+Space::
+Mod1+Shift+space::
 Toggle tiling/floating for the current container.
 
-Mod1+Space::
+Mod1+space::
 Select the first tiling container if the current container is floating and
 vice-versa.
 
