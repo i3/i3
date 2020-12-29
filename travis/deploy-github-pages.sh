@@ -9,6 +9,10 @@ mkdir build.i3wm.org
 cp -r deb/COPY-DOCS build.i3wm.org/docs
 cd build.i3wm.org
 echo build.i3wm.org > CNAME
+# Disallow search engine indexing for build.i3wm.org: users should find the
+# release version instead, and only developers should use build.i3wm.org.
+echo 'User-Agent: *' > robots.txt
+echo 'Disallow: /' >> robots.txt
 git init
 
 git config user.name "Travis CI"
