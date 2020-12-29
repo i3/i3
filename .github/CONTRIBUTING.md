@@ -4,7 +4,7 @@
 
 Note that bug reports and feature requests for related projects should be filed in the corresponding repositories for [i3status](https://github.com/i3/i3status) and [i3lock](https://github.com/i3/i3lock).
 
-## i3 bug reports and feature requests
+## i3 bug reports
 
 1. Read the [debugging instructions](https://i3wm.org/docs/debugging.html).
 2. Make sure you include a link to your logfile in your report (section 3).
@@ -17,6 +17,20 @@ Note that bug reports and feature requests for related projects should be filed 
 5. Please note that i3 does not support compositors (e.g. compton). If you
    encountered the issue you are about to report while using a compositor,
    please try reproducing it without a compositor.
+
+## i3 feature requests
+
+1. Read the [project goals](https://i3wm.org) on the website and make sure that
+   they are compatible with the feature you want to suggest.
+2. We are generally happy with the current feature set of i3 and instead focus
+   on maintenance such as stability and fixing bugs. New features will rarely
+   be considered if they require additional configuration and/or commands, or
+   if they add significant complexity (either through the exposed configuration
+   or mental complexity) to the project.
+3. Explain in detail what problem the feature addresses and why existing
+   features fall short.
+4. Consider whether the feature could instead be implemented using the
+   [IPC](https://i3wm.org/docs/ipc.html) or other external tooling.
 
 ## Pull requests
 
