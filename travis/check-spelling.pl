@@ -30,6 +30,7 @@ my $exitcode = 0;
 my $binary_spelling_exceptions = {
     #'exmaple' => 1, # Example for how to add entries to this whitelist.
     'betwen' => 1, # asan_flags.inc contains this spelling error.
+    'dissassemble' => 1, # https://reviews.llvm.org/D93902
 };
 my @binaries = qw(
     build/i3
