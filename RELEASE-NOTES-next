@@ -19,3 +19,4 @@ strongly encouraged to upgrade.
  └────────────────────────────┘
 
   • when initializing new outputs, avoid duplicating workspace numbers
+  • fix workspaces not moving to assigned output after output becomes available
