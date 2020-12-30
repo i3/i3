@@ -56,7 +56,6 @@
 #include "render.h"
 #include "window.h"
 #include "match.h"
-#include "cmdparse.h"
 #include "xcursor.h"
 #include "resize.h"
 #include "sighandler.h"
