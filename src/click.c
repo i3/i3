@@ -218,8 +218,20 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
         goto done;
     }
 
-    /* 2: focus this con. */
-    con_activate(con);
+    /* 2: focus this con or one of its children. */
+    Con *con_to_focus = con;
+    if (in_stacked && dest == CLICK_DECORATION) {
+        /* If the container is a tab/stacked container and the click happened
+         * on a tab, switch to the tab. If the tab contents were already
+         * focused, focus the tab container itself. If the tab container was
+         * already focused, cycle back to focusing the tab contents. */
+        if (was_focused || !con_has_parent(focused, con)) {
+            while (!TAILQ_EMPTY(&(con_to_focus->focus_head))) {
+                con_to_focus = TAILQ_FIRST(&(con_to_focus->focus_head));
+            }
+        }
+    }
+    con_activate(con_to_focus);
 
     /* 3: For floating containers, we also want to raise them on click.
      * We will skip handling events on floating cons in fullscreen mode */
