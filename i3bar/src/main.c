@@ -56,7 +56,7 @@ static char *expand_path(char *path) {
 }
 
 static void print_usage(char *elf_name) {
-    printf("Usage: %s -b bar_id [-s sock_path] [-t] [-h] [-v]\n", elf_name);
+    printf("Usage: %s -b bar_id [-s sock_path] [-t] [-h] [-v] [-V]\n", elf_name);
     printf("\n");
     printf("-b, --bar_id       <bar_id>\tBar ID for which to get the configuration\n");
     printf("-s, --socket       <sock_path>\tConnect to i3 via <sock_path>\n");
