@@ -486,7 +486,6 @@ void x_draw_decoration(Con *con) {
     if (leaf && con->frame_buffer.id == XCB_NONE)
         return;
 
-
     /* 1: build deco_params and compare with cache */
     struct deco_render_params *p = scalloc(1, sizeof(struct deco_render_params));
 
