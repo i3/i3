@@ -14,6 +14,7 @@ strongly encouraged to upgrade.
   • i3-nagbar: position on focused monitor by default
   • i3-nagbar: add option to position on primary monitor
   • alternate focusing tab/stack children-parent containers by clicking on their titlebars
+  • i3bar: use first bar config by default
 
  ┌────────────────────────────┐
  │ Bugfixes                   │
