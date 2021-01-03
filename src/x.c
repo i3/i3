@@ -468,7 +468,6 @@ void x_draw_decoration(Con *con) {
      *  • direct children of outputs or dockareas
      *  • floating containers (they don’t have a decoration)
      */
-
     if ((!leaf &&
          parent->layout != L_STACKED &&
          parent->layout != L_TABBED) ||
@@ -741,7 +740,6 @@ void x_deco_recurse(Con *con) {
             draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
         }
     }
-
 
     if ((con->type != CT_ROOT && con->type != CT_OUTPUT) &&
         (!leaf || con->mapped))
