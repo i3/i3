@@ -468,6 +468,7 @@ void x_draw_decoration(Con *con) {
      *  • direct children of outputs or dockareas
      *  • floating containers (they don’t have a decoration)
      */
+
     if ((!leaf &&
          parent->layout != L_STACKED &&
          parent->layout != L_TABBED) ||
@@ -485,6 +486,7 @@ void x_draw_decoration(Con *con) {
      * x_push_node() was not yet called) */
     if (leaf && con->frame_buffer.id == XCB_NONE)
         return;
+
 
     /* 1: build deco_params and compare with cache */
     struct deco_render_params *p = scalloc(1, sizeof(struct deco_render_params));
@@ -534,6 +536,11 @@ void x_draw_decoration(Con *con) {
     parent->pixmap_recreated = false;
     con->pixmap_recreated = false;
     con->mark_changed = false;
+
+
+    /* Clear background before drawing. Clearing here makes sure we are in a 
+     * state where we are expected to redraw the borders */
+    draw_util_clear_surface(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
 
     /* 2: draw the client.background, but only for the parts around the window_rect */
     if (con->window != NULL) {
@@ -706,7 +713,6 @@ void x_draw_decoration(Con *con) {
 
     x_draw_decoration_after_title(con, p);
 copy_pixmaps:
-    draw_util_clear_surface(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
     draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
 }
 
@@ -735,6 +741,7 @@ void x_deco_recurse(Con *con) {
             draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
         }
     }
+
 
     if ((con->type != CT_ROOT && con->type != CT_OUTPUT) &&
         (!leaf || con->mapped))
