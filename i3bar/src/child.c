@@ -139,6 +139,10 @@ static void cleanup(void) {
     if (stdin_io != NULL) {
         ev_io_stop(main_loop, stdin_io);
         FREE(stdin_io);
+        close(stdin_fd);
+        stdin_fd = 0;
+        close(child_stdin);
+        child_stdin = 0;
     }
 
     if (child_sig != NULL) {
