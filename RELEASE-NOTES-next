@@ -25,3 +25,4 @@ strongly encouraged to upgrade.
   • fix duplicate bindcode after i3-config-wizard
   • clear pixmap before drawing to prevent visual grabage in clients using 'Shape'
   • i3bar: properly close file descriptors
+  • i3bar: properly restart status command after config change
