@@ -155,9 +155,6 @@ static void got_workspace_event(char *event) {
 static void got_output_event(char *event) {
     DLOG("Got output event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
-    if (!config.disable_ws) {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
-    }
 }
 
 /*
