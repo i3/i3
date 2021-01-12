@@ -43,6 +43,12 @@ typedef struct {
 } i3bar_child;
 
 /*
+ * Remove all blocks from the given statusline.
+ * If free_resources is set, the fields of each status block will be free'd.
+ */
+void clear_statusline(struct statusline_head *head, bool free_resources);
+
+/*
  * Start a child process with the specified command and reroute stdin.
  * We actually start a $SHELL to execute the command so we don't have to care
  * about arguments and such

@@ -155,9 +155,6 @@ static void got_workspace_event(char *event) {
 static void got_output_event(char *event) {
     DLOG("Got output event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
-    if (!config.disable_ws) {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
-    }
 }
 
 /*
@@ -168,6 +165,15 @@ static void got_mode_event(char *event) {
     DLOG("Got mode event!\n");
     parse_mode_json(event);
     draw_bars(false);
+}
+
+static bool strings_differ(char *a, char *b) {
+    const bool a_null = (a == NULL);
+    const bool b_null = (b == NULL);
+    if (a_null != b_null) {
+        return true;
+    }
+    return strcmp(a, b) != 0;
 }
 
 /*
@@ -190,8 +196,11 @@ static void got_bar_config_update(char *event) {
 
     /* update the configuration with the received settings */
     DLOG("Received bar config update \"%s\"\n", event);
-    char *old_command = config.command ? sstrdup(config.command) : NULL;
+
+    char *old_command = config.command;
+    config.command = NULL;
     bar_display_mode_t old_mode = config.hide_on_modifier;
+
     parse_config_json(event);
     if (old_mode != config.hide_on_modifier) {
         reconfig_windows(true);
@@ -202,8 +211,9 @@ static void got_bar_config_update(char *event) {
     init_colors(&(config.colors));
 
     /* restart status command process */
-    if (old_command && strcmp(old_command, config.command) != 0) {
+    if (strings_differ(old_command, config.command)) {
         kill_child();
+        clear_statusline(&statusline_head, true);
         start_child(config.command);
     }
     free(old_command);
