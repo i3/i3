@@ -15,6 +15,7 @@ xmacro(I3_CONFIG_PATH) \
 xmacro(I3_SYNC) \
 xmacro(I3_SHMLOG_PATH) \
 xmacro(I3_PID) \
+xmacro(I3_LOG_STREAM_SOCKET_PATH) \
 xmacro(I3_FLOATING_WINDOW) \
 xmacro(_NET_REQUEST_FRAME_EXTENTS) \
 xmacro(_NET_FRAME_EXTENTS) \

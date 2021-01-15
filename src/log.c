@@ -12,6 +12,10 @@
 #include "all.h"
 #include "shmlog.h"
 
+#include <ev.h>
+#include <libgen.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -23,9 +27,6 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <unistd.h>
-#if !defined(__OpenBSD__)
-#include <pthread.h>
-#endif
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
@@ -59,6 +60,18 @@ static int logbuffer_size;
 static int logbuffer_shm;
 /* Size (in bytes) of physical memory */
 static long long physical_mem_bytes;
+
+typedef struct log_client {
+    int fd;
+
+    TAILQ_ENTRY(log_client)
+    clients;
+} log_client;
+
+TAILQ_HEAD(log_client_head, log_client)
+log_clients = TAILQ_HEAD_INITIALIZER(log_clients);
+
+void log_broadcast_to_clients(const char *message, size_t len);
 
 /*
  * Writes the offsets for the next write and for the last wrap to the
@@ -160,14 +173,6 @@ void open_logbuffer(void) {
     memset(logbuffer, '\0', logbuffer_size);
 
     header = (i3_shmlog_header *)logbuffer;
-
-#if !defined(__OpenBSD__)
-    pthread_condattr_t cond_attr;
-    pthread_condattr_init(&cond_attr);
-    if (pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED) != 0)
-        fprintf(stderr, "pthread_condattr_setpshared() failed, i3-dump-log -f will not work!\n");
-    pthread_cond_init(&(header->condvar), &cond_attr);
-#endif
 
     logwalk = logbuffer + sizeof(i3_shmlog_header);
     loglastwrap = logbuffer + logbuffer_size;
@@ -283,13 +288,10 @@ static void vlog(const bool print, const char *fmt, va_list args) {
 
         store_log_markers();
 
-#if !defined(__OpenBSD__)
-        /* Wake up all (i3-dump-log) processes waiting for condvar. */
-        pthread_cond_broadcast(&(header->condvar));
-#endif
-
         if (print)
             fwrite(message, len, 1, stdout);
+
+        log_broadcast_to_clients(message, len);
     }
 }
 
@@ -368,5 +370,53 @@ void purge_zerobyte_logfile(void) {
         /* possibly fails with ENOTEMPTY if there are files (or
          * sockets) left. */
         rmdir(errorfilename);
+    }
+}
+
+char *current_log_stream_socket_path = NULL;
+
+/*
+ * Handler for activity on the listening socket, meaning that a new client
+ * has just connected and we should accept() them. Sets up the event handler
+ * for activity on the new connection and inserts the file descriptor into
+ * the list of log clients.
+ *
+ */
+void log_new_client(EV_P_ struct ev_io *w, int revents) {
+    struct sockaddr_un peer;
+    socklen_t len = sizeof(struct sockaddr_un);
+    int fd;
+    if ((fd = accept(w->fd, (struct sockaddr *)&peer, &len)) < 0) {
+        if (errno != EINTR) {
+            perror("accept()");
+        }
+        return;
+    }
+
+    /* Close this file descriptor on exec() */
+    (void)fcntl(fd, F_SETFD, FD_CLOEXEC);
+
+    set_nonblock(fd);
+
+    log_client *client = scalloc(1, sizeof(log_client));
+    client->fd = fd;
+    TAILQ_INSERT_TAIL(&log_clients, client, clients);
+
+    DLOG("log: new client connected on fd %d\n", fd);
+}
+
+void log_broadcast_to_clients(const char *message, size_t len) {
+    log_client *current = TAILQ_FIRST(&log_clients);
+    while (current != TAILQ_END(&log_clients)) {
+        /* XXX: In case slow connections turn out to be a problem here
+         * (unlikely as long as i3-dump-log is the only consumer), introduce
+         * buffering, similar to the IPC interface. */
+        ssize_t n = writeall(current->fd, message, len);
+        log_client *previous = current;
+        current = TAILQ_NEXT(current, clients);
+        if (n < 0) {
+            TAILQ_REMOVE(&log_clients, previous, clients);
+            free(previous);
+        }
     }
 }

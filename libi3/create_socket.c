@@ -25,20 +25,20 @@
  *
  */
 int create_socket(const char *filename, char **out_socketpath) {
-    int sockfd;
-
     char *resolved = resolve_tilde(filename);
     DLOG("Creating UNIX socket at %s\n", resolved);
     char *copy = sstrdup(resolved);
     const char *dir = dirname(copy);
-    if (!path_exists(dir))
+    if (!path_exists(dir)) {
         mkdirp(dir, DEFAULT_DIR_MODE);
+    }
     free(copy);
 
     /* Unlink the unix domain socket before */
     unlink(resolved);
 
-    if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
+    int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
+    if (sockfd < 0) {
         perror("socket()");
         free(resolved);
         return -1;

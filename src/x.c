@@ -1422,6 +1422,8 @@ void x_set_i3_atoms(void) {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_PID, XCB_ATOM_CARDINAL, 32, 1, &pid);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_CONFIG_PATH, A_UTF8_STRING, 8,
                         strlen(current_configpath), current_configpath);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_LOG_STREAM_SOCKET_PATH, A_UTF8_STRING, 8,
+                        strlen(current_log_stream_socket_path), current_log_stream_socket_path);
     update_shmlog_atom();
 }
 

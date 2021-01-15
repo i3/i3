@@ -181,6 +181,9 @@ static void i3_exit(void) {
     }
     ipc_shutdown(SHUTDOWN_REASON_EXIT, -1);
     unlink(config.ipc_socket_path);
+    if (current_log_stream_socket_path != NULL) {
+        unlink(current_log_stream_socket_path);
+    }
     xcb_disconnect(conn);
 
     /* If a nagbar is active, kill it */
@@ -845,13 +848,25 @@ int main(int argc, char *argv[]) {
     tree_render();
 
     /* Create the UNIX domain socket for IPC */
-    int ipc_socket = ipc_create_socket(config.ipc_socket_path);
+    int ipc_socket = create_socket(config.ipc_socket_path, &current_socketpath);
     if (ipc_socket == -1) {
         ELOG("Could not create the IPC socket, IPC disabled\n");
     } else {
         struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
         ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
         ev_io_start(main_loop, ipc_io);
+    }
+
+    /* Chose a file name in /tmp/ based on the PID */
+    char *log_stream_socket_path = get_process_filename("log-stream-socket");
+    int log_socket = create_socket(log_stream_socket_path, &current_log_stream_socket_path);
+    free(log_stream_socket_path);
+    if (log_socket == -1) {
+        ELOG("Could not create the log socket, i3-dump-log -f will not work\n");
+    } else {
+        struct ev_io *log_io = scalloc(1, sizeof(struct ev_io));
+        ev_io_init(log_io, log_new_client, log_socket, EV_READ);
+        ev_io_start(main_loop, log_io);
     }
 
     /* Also handle the UNIX domain sockets passed via socket activation. The

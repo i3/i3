@@ -15,6 +15,7 @@ void set_nonblock(int sockfd) {
         return;
     }
     flags |= O_NONBLOCK;
-    if (fcntl(sockfd, F_SETFL, flags) < 0)
+    if (fcntl(sockfd, F_SETFL, flags) < 0) {
         err(-1, "Could not set O_NONBLOCK");
+    }
 }
