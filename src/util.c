@@ -176,7 +176,6 @@ void exec_i3_utility(char *name, char *argv[]) {
     _exit(2);
 }
 
-
 /*
  * Goes through the list of arguments (for exec()) and add/replace the given option,
  * including the option name, its argument, and the option character.

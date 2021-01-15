@@ -1661,6 +1661,9 @@ void cmd_restart(I3_CMD) {
     }
     ipc_shutdown(SHUTDOWN_REASON_RESTART, exempt_fd);
     unlink(config.ipc_socket_path);
+    if (current_log_stream_socket_path != NULL) {
+        unlink(current_log_stream_socket_path);
+    }
     /* We need to call this manually since atexit handlers don’t get called
      * when exec()ing */
     purge_zerobyte_logfile();

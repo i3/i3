@@ -1508,15 +1508,6 @@ ipc_client *ipc_new_client_on_fd(EV_P_ int fd) {
 }
 
 /*
- * Creates the UNIX domain socket at the given path, sets it to non-blocking
- * mode, bind()s and listen()s on it.
- *
- */
-int ipc_create_socket(const char *filename) {
-    return create_socket(filename, &current_socketpath);
-}
-
-/*
  * Generates a json workspace event. Returns a dynamically allocated yajl
  * generator. Free with yajl_gen_free().
  */
