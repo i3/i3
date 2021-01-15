@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
                 break;
             default:
                 print_usage(argv[0]);
-                exit(EXIT_SUCCESS);
+                exit(EXIT_FAILURE);
                 break;
         }
     }
