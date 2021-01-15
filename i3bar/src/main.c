@@ -133,6 +133,8 @@ int main(int argc, char **argv) {
         }
     }
 
+    LOG("i3bar version " I3_VERSION "\n");
+
     main_loop = ev_default_loop(0); /* needed in init_xcb_early */
     char *atom_sock_path = init_xcb_early();
 
