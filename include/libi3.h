@@ -638,3 +638,27 @@ void draw_util_clear_surface(surface_t *surface, color_t color);
  */
 void draw_util_copy_surface(surface_t *src, surface_t *dest, double src_x, double src_y,
                             double dest_x, double dest_y, double width, double height);
+
+/**
+ * Puts the given socket file descriptor into non-blocking mode or dies if
+ * setting O_NONBLOCK failed. Non-blocking sockets are a good idea for our
+ * IPC model because we should by no means block the window manager.
+ *
+ */
+void set_nonblock(int sockfd);
+
+/**
+ * Creates the UNIX domain socket at the given path, sets it to non-blocking
+ * mode, bind()s and listen()s on it.
+ *
+ * The full path to the socket is stored in the char* that out_socketpath points
+ * to.
+ *
+ */
+int create_socket(const char *filename, char **out_socketpath);
+
+/**
+ * Checks if the given path exists by calling stat().
+ *
+ */
+bool path_exists(const char *path);

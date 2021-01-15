@@ -12,15 +12,6 @@
 #include <sys/stat.h>
 
 /*
- * Checks if the given path exists by calling stat().
- *
- */
-static bool path_exists(const char *path) {
-    struct stat buf;
-    return (stat(path, &buf) == 0);
-}
-
-/*
  * Get the path of the first configuration file found. If override_configpath is
  * specified, that path is returned and saved for further calls. Otherwise,
  * checks the home directory first, then the system directory, always taking

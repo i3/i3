@@ -325,6 +325,7 @@ ev_dep = cc.find_library('ev')
 inc = include_directories('include')
 
 libi3srcs = [
+  'libi3/create_socket.c',
   'libi3/dpi.c',
   'libi3/draw_util.c',
   'libi3/fake_configure_notify.c',
@@ -341,11 +342,13 @@ libi3srcs = [
   'libi3/ipc_recv_message.c',
   'libi3/ipc_send_message.c',
   'libi3/is_debug_build.c',
+  'libi3/path_exists.c',
   'libi3/resolve_tilde.c',
   'libi3/root_atom_contents.c',
   'libi3/safewrappers.c',
   'libi3/string.c',
   'libi3/ucs2_conversion.c',
+  'libi3/nonblock.c',
 ]
 
 if not cdata.get('HAVE_STRNDUP')
