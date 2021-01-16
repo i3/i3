@@ -128,10 +128,12 @@ int main(int argc, char **argv) {
                 break;
             default:
                 print_usage(argv[0]);
-                exit(EXIT_SUCCESS);
+                exit(EXIT_FAILURE);
                 break;
         }
     }
+
+    LOG("i3bar version " I3_VERSION "\n");
 
     main_loop = ev_default_loop(0); /* needed in init_xcb_early */
     char *atom_sock_path = init_xcb_early();
