@@ -535,10 +535,6 @@ void x_draw_decoration(Con *con) {
     con->pixmap_recreated = false;
     con->mark_changed = false;
 
-    /* Clear background before drawing. Clearing here makes sure we are in a 
-     * state where we are expected to redraw the borders */
-    draw_util_clear_surface(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
-
     /* 2: draw the client.background, but only for the parts around the window_rect */
     if (con->window != NULL) {
         /* top area */
