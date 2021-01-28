@@ -466,3 +466,21 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
 #undef MWM_DECOR_BORDER
 #undef MWM_DECOR_TITLE
 }
+
+/*
+ * Updates the WM_CLIENT_MACHINE
+ *
+ */
+void window_update_machine(i3Window *win, xcb_get_property_reply_t *prop) {
+    if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+        DLOG("WM_CLIENT_MACHINE not set.\n");
+        FREE(prop);
+        return;
+    }
+
+    FREE(win->machine);
+    win->machine = sstrndup((char *)xcb_get_property_value(prop), xcb_get_property_value_length(prop));
+    LOG("WM_CLIENT_MACHINE changed to \"%s\"\n", win->machine);
+
+    free(prop);
+}

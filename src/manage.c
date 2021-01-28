@@ -116,7 +116,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         utf8_title_cookie, title_cookie,
         class_cookie, leader_cookie, transient_cookie,
         role_cookie, startup_id_cookie, wm_hints_cookie,
-        wm_normal_hints_cookie, motif_wm_hints_cookie, wm_user_time_cookie, wm_desktop_cookie;
+        wm_normal_hints_cookie, motif_wm_hints_cookie, wm_user_time_cookie, wm_desktop_cookie,
+        wm_machine_cookie;
 
     geomc = xcb_get_geometry(conn, d);
 
@@ -189,6 +190,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     motif_wm_hints_cookie = GET_PROPERTY(A__MOTIF_WM_HINTS, 5 * sizeof(uint64_t));
     wm_user_time_cookie = GET_PROPERTY(A__NET_WM_USER_TIME, UINT32_MAX);
     wm_desktop_cookie = GET_PROPERTY(A__NET_WM_DESKTOP, UINT32_MAX);
+    wm_machine_cookie = GET_PROPERTY(XCB_ATOM_WM_CLIENT_MACHINE, UINT32_MAX);
 
     i3Window *cwindow = scalloc(1, sizeof(i3Window));
     cwindow->id = window;
@@ -211,6 +213,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     border_style_t motif_border_style = BS_NORMAL;
     window_update_motif_hints(cwindow, xcb_get_property_reply(conn, motif_wm_hints_cookie, NULL), &motif_border_style);
     window_update_normal_hints(cwindow, xcb_get_property_reply(conn, wm_normal_hints_cookie, NULL), geom);
+    window_update_machine(cwindow, xcb_get_property_reply(conn, wm_machine_cookie, NULL));
     xcb_get_property_reply_t *type_reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
     xcb_get_property_reply_t *state_reply = xcb_get_property_reply(conn, state_cookie, NULL);
 

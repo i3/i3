@@ -1896,6 +1896,10 @@ window_type::
 	Compare the window type (_NET_WM_WINDOW_TYPE). Possible values are
 	+normal+, +dialog+, +utility+, +toolbar+, +splash+, +menu+, +dropdown_menu+,
 	+popup_menu+, +tooltip+ and +notification+.
+machine::
+	Compares the name of the machine the client window is running on
+	(WM_CLIENT_MACHINE). Usually, it is equal to the hostname of the local
+	machine, but it may differ if remote X11 apps are used.
 id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
@@ -1933,9 +1937,9 @@ tiling_from::
 	tiling are matched. With "user", only windows that the user made tiling
 	are matched.
 
-The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
-actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
-information on how to use them.
+The criteria +class+, +instance+, +role+, +title+, +workspace+, +machine+ and
++mark+ are actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc
+perlre+ for information on how to use them.
 
 [[exec]]
 === Executing applications (exec)
@@ -2584,6 +2588,9 @@ and the following placeholders which will be replaced:
 +%instance+::
     The X11 window instance (first part of WM_CLASS). This corresponds to the
     +instance+ criterion, see <<command_criteria>>.
++%machine+::
+    The X11 name of the machine (WM_CLIENT_MACHINE). This corresponds to the
+    +machine+ criterion, see <<command_criteria>>.
 
 Using the <<for_window>> directive, you can set the title format for any window
 based on <<command_criteria>>.

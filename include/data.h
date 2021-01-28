@@ -414,6 +414,9 @@ struct Window {
      * for_window. */
     char *role;
 
+    /** WM_CLIENT_MACHINE of the window */
+    char *machine;
+
     /** Flag to force re-rendering the decoration upon changes */
     bool name_x_changed;
 
@@ -500,6 +503,7 @@ struct Match {
     struct regex *mark;
     struct regex *window_role;
     struct regex *workspace;
+    struct regex *machine;
     xcb_atom_t window_type;
     enum {
         U_DONTCHECK = -1,
