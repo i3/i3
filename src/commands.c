@@ -1125,14 +1125,14 @@ void cmd_move_workspace_to_output(I3_CMD, const char *name) {
 }
 
 /*
- * Implementation of 'split v|h|t|vertical|horizontal|toggle'.
+ * Implementation of 'split v|h|t|vertical|horizontal|toggle|tabbed|stacked|stacking'.
  *
  */
 void cmd_split(I3_CMD, const char *direction) {
     HANDLE_EMPTY_MATCH;
 
     owindow *current;
-    LOG("splitting in direction %c\n", direction[0]);
+    LOG("splitting in direction %s\n", direction);
     TAILQ_FOREACH (current, &owindows, owindows) {
         if (con_is_docked(current->con)) {
             ELOG("Cannot split a docked container, skipping.\n");
@@ -1140,7 +1140,9 @@ void cmd_split(I3_CMD, const char *direction) {
         }
 
         DLOG("matching: %p / %s\n", current->con, current->con->name);
-        if (direction[0] == 't') {
+        if (strcmp(direction, "tabbed") == 0) {
+            tree_split(current->con, L_TABBED);
+        } else if (direction[0] == 't') {
             layout_t current_layout;
             if (current->con->type == CT_WORKSPACE) {
                 current_layout = current->con->layout;
@@ -1149,12 +1151,17 @@ void cmd_split(I3_CMD, const char *direction) {
             }
             /* toggling split orientation */
             if (current_layout == L_SPLITH) {
-                tree_split(current->con, VERT);
+                tree_split(current->con, L_SPLITV);
             } else {
-                tree_split(current->con, HORIZ);
+                tree_split(current->con, L_SPLITH);
             }
-        } else {
-            tree_split(current->con, (direction[0] == 'v' ? VERT : HORIZ));
+        } else if (direction[0] == 'v') {
+            tree_split(current->con, L_SPLITV);
+        } else if (direction[0] == 'h') {
+            tree_split(current->con, L_SPLITH);
+        } else if (strcmp(direction, "stacking") == 0 ||
+                   strcmp(direction, "stacked") == 0) {
+            tree_split(current->con, L_STACKED);
         }
     }
 
