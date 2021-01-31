@@ -31,3 +31,4 @@ strongly encouraged to upgrade.
   • i3bar: properly restart status command after config change
   • i3bar: exit with 1 when a wrong command line argument is used
   • fix commented-out rofi call in default i3 config
+  • clear pixmap before drawing to prevent visual garbage
