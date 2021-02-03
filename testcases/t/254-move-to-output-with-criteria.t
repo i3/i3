@@ -41,4 +41,12 @@ is_num_children($ws_top_right, 1, 'one container on the upper right workspace');
 is_num_children($ws_bottom_left, 0, 'no containers on the lower left workspace');
 is_num_children($ws_bottom_right, 1, 'one container on the lower right workspace');
 
+# Also test with multiple explicit outputs
+cmd '[class="moveme"] move window to output fake-1 fake-2';
+
+is_num_children($ws_top_left, 0, 'no containers on the upper left workspace');
+is_num_children($ws_top_right, 1, 'one container on the upper right workspace');
+is_num_children($ws_bottom_left, 1, 'one container on the lower left workspace');
+is_num_children($ws_bottom_right, 0, 'no containers on the lower right workspace');
+
 done_testing;

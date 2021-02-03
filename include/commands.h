@@ -138,7 +138,7 @@ void cmd_mode(I3_CMD, const char *mode);
  * Implementation of 'move [window|container] [to] output <str>'.
  *
  */
-void cmd_move_con_to_output(I3_CMD, const char *name);
+void cmd_move_con_to_output(I3_CMD, const char *name, bool move_workspace);
 
 /**
  * Implementation of 'move [window|container] [to] mark <str>'.
@@ -151,12 +151,6 @@ void cmd_move_con_to_mark(I3_CMD, const char *mark);
  *
  */
 void cmd_floating(I3_CMD, const char *floating_mode);
-
-/**
- * Implementation of 'move workspace to [output] <str>'.
- *
- */
-void cmd_move_workspace_to_output(I3_CMD, const char *name);
 
 /**
  * Implementation of 'split v|h|t|vertical|horizontal|toggle'.
