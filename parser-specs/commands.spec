@@ -385,8 +385,10 @@ state MOVE_WORKSPACE_NUMBER:
       -> call cmd_move_con_to_workspace_number($number, $no_auto_back_and_forth)
 
 state MOVE_TO_OUTPUT:
-  output = string
-      -> call cmd_move_con_to_output($output)
+  output = word
+      -> call cmd_move_con_to_output($output, 0); MOVE_TO_OUTPUT
+  end
+      -> call cmd_move_con_to_output(NULL, 0); INITIAL
 
 state MOVE_TO_MARK:
   mark = string
@@ -394,9 +396,13 @@ state MOVE_TO_MARK:
 
 state MOVE_WORKSPACE_TO_OUTPUT:
   'output'
-      ->
-  output = string
-      -> call cmd_move_workspace_to_output($output)
+      -> MOVE_WORKSPACE_TO_OUTPUT_WORD
+
+state MOVE_WORKSPACE_TO_OUTPUT_WORD:
+  output = word
+      -> call cmd_move_con_to_output($output, 1); MOVE_WORKSPACE_TO_OUTPUT_WORD
+  end
+      -> call cmd_move_con_to_output(NULL, 1); INITIAL
 
 state MOVE_TO_ABSOLUTE_POSITION:
   'position'

@@ -2406,15 +2406,18 @@ To move a container to another RandR output (addressed by names like +LVDS1+ or
 
 *Syntax*:
 ------------------------------------------------------------
-move container to output left|right|down|up|current|primary|<output>
-move workspace to output left|right|down|up|current|primary|<output>
-------------------------------------------------------------
+move container to output left|right|down|up|current|primary|next|<output1> [output2]…
+move workspace to output left|right|down|up|current|primary|next|<output1> [output2]…
+-------------------------------------------------------------------------------------
 
 *Examples*:
 --------------------------------------------------------
 # Move the current workspace to the next output
 # (effectively toggles when you only have two outputs)
-bindsym $mod+x move workspace to output right
+bindsym $mod+x move workspace to output next
+
+# Cycle this workspace between outputs VGA1 and LVDS1 but not DVI0
+bindsym $mod+x move workspace to output VGA1 LVDS1
 
 # Put this window on the presentation output.
 bindsym $mod+x move container to output VGA1
@@ -2422,6 +2425,11 @@ bindsym $mod+x move container to output VGA1
 # Put this window on the primary output.
 bindsym $mod+x move container to output primary
 --------------------------------------------------------
+
+If you specify more than one output, the container/workspace is cycled through
+them: If it is already in one of the outputs of the list, it will move to the
+next output in the list. If it is in an output not in the list, it will move to
+the first specified output. Non-existing outputs are skipped.
 
 Note that you might not have a primary output configured yet. To do so, run:
 -------------------------

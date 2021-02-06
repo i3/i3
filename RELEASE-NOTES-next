@@ -19,6 +19,8 @@ strongly encouraged to upgrade.
     should be more reliable and also more portable.
   • Allow for_window to match against WM_CLIENT_MACHINE
   • Add %machine placeholder (WM_CLIENT_MACHINE) to title_format
+  • Allow multiple output names in 'move container|workspace to output'
+  • Add 'move container|workspace to output next'
 
  ┌────────────────────────────┐
  │ Bugfixes                   │
