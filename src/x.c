@@ -537,6 +537,9 @@ void x_draw_decoration(Con *con) {
 
     /* 2: draw the client.background, but only for the parts around the window_rect */
     if (con->window != NULL) {
+        /* Clear visible windows before beginning to draw */
+        draw_util_clear_surface(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
+
         /* top area */
         draw_util_rectangle(&(con->frame_buffer), config.client.background,
                             0, 0, r->width, w->y);
