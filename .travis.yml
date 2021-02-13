@@ -22,6 +22,7 @@ env:
   - secure: "uJuuefmnJUuEH15ZD8xQilibx7EeBvMHBLoIZ8bgGHeleEImBD0XbD1ypvhYJKpviOmw5BkZmc9bVO8DGDEHYbSlIa2xDlF6vGrwgCEaxcMIhOAhv+dW9C/maJVieLOEPM01/fK2qdKESZaLvlopkWmxZwDyMObI9L7AMW9zQD8=" # BINTRAY_USER
   - secure: "L3aPSNLySPXtWCW+xf8h/AAdquwNgxyTQpYOwexJmTPav82Qx8uQlp1yJkUmt+a+FLZDFfQeMivaHq0311RvuQVmkAJx49DjaddrwqOJut2UPsoVDn1WeuAcSHIXOq/0H+zgFMr/PGY0HXIsw1mTMhgheGJNqg09BvYWROCEAcA=" # BINTRAY_KEY
   - secure: "sBMVn4C/WRWgoAytEFGx4CC5O55Q63h02AcuBnb1jXcBm0RenoBpzUPtxSseJwDPUA1o/UkuEDDjm3PosT5NF+dvED01VDFMsPVE11K0u6+avYy3jYXqyUEDW3G2o6Wo/2aqNjmd++8jskBdS9+Cx9gaFbgxfzSp0Yfu3oJm/4c=" # GH_TOKEN
+  - secure: "HPMBtknjHM9CjaEoTVLiNtjg7JxmEZ+6AzqjT1LsA0e52dIlWzcRLVLL4uAR8SqMfR1iSj4lW74DzFXEnJCKa+04hiTp9Z/6zw/tX/mFOkkpz8H2gVttXh68NRHLJSJrRX/5fGCcl7AHypADBaoybjEmwjFxYRZ1Nwf81SwQVik=" # BALTO_TOKEN
 install:
   - if [ -a .git/shallow ]; then git fetch --unshallow; fi
   - docker pull ${BASENAME} || ./travis/docker-build-and-push.sh ${BASENAME} travis/travis-base.Dockerfile
@@ -40,25 +41,9 @@ script:
   - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME_386} linux32 ./travis/debian-build.sh deb/debian-i386/DIST
   - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME_UBUNTU_386} linux32 ./travis/debian-build.sh deb/ubuntu-i386/DIST
   - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/docs.sh
-  - ./travis/skip-pkg.sh || travis/prep-bintray.sh
+  - ./travis/skip-pkg.sh || travis/push-balto.sh
 
 deploy:
-  - provider: bintray
-    file: travis/bintray-autobuild-debian.json
-    user: $BINTRAY_USER
-    key: $BINTRAY_KEY
-    skip_cleanup: true
-    on:
-      branch: next
-      condition: $CC = gcc
-  - provider: bintray
-    file: travis/bintray-autobuild-ubuntu.json
-    user: $BINTRAY_USER
-    key: $BINTRAY_KEY
-    skip_cleanup: true
-    on:
-      branch: next
-      condition: $CC = gcc
   - provider: script
     script: travis/deploy-github-pages.sh
     skip_cleanup: true
@@ -66,6 +51,7 @@ deploy:
       branch: next
       condition: $CC = gcc
 
-after_deploy:
-  - travis/cleanup-bintray.pl i3-autobuild
-  - travis/cleanup-bintray.pl i3-autobuild-ubuntu
+# TODO: implement cleanup if we stick with balto
+#after_deploy:
+#  - travis/cleanup-bintray.pl i3-autobuild
+#  - travis/cleanup-bintray.pl i3-autobuild-ubuntu
