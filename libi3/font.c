@@ -128,6 +128,7 @@ static int predict_text_width_pango(const char *text, size_t text_len, bool pang
     cairo_surface_t *surface = cairo_xcb_surface_create(conn, root_screen->root, root_visual_type, 1, 1);
     cairo_t *cr = cairo_create(surface);
     PangoLayout *layout = create_layout_with_dpi(cr);
+    PangoRectangle ink_extent, layout_extent;
 
     /* Get the font width */
     gint width;
@@ -139,7 +140,8 @@ static int predict_text_width_pango(const char *text, size_t text_len, bool pang
         pango_layout_set_text(layout, text, text_len);
 
     pango_cairo_update_layout(cr, layout);
-    pango_layout_get_pixel_size(layout, &width, NULL);
+    pango_layout_get_pixel_extents(layout, &ink_extent, &layout_extent);
+    width = layout_extent.width + ink_extent.x;
 
     /* Free resources */
     g_object_unref(layout);
