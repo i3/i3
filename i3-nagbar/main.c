@@ -616,7 +616,6 @@ int main(int argc, char *argv[]) {
         sn_launchee_context_unref(sncontext);
     }
 
-    /* Grab the keyboard to get all input */
     xcb_flush(conn);
 
     xcb_generic_event_t *event;
