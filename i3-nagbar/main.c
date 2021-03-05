@@ -261,7 +261,6 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     /* border line at the bottom */
     draw_util_rectangle(&bar, color_border_bottom, 0, bar.height - BAR_BORDER, bar.width, BAR_BORDER);
 
-    xcb_flush(conn);
     return 1;
 }
 
@@ -654,6 +653,7 @@ int main(int argc, char *argv[]) {
         }
 
         free(event);
+        xcb_flush(conn);
     }
 
     free(pattern);
