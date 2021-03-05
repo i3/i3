@@ -926,7 +926,6 @@ int main(int argc, char *argv[]) {
     draw_util_surface_init(conn, &surface, win, get_visualtype(root_screen), WIN_WIDTH, WIN_HEIGHT);
 
     /* Grab the keyboard to get all input */
-    xcb_flush(conn);
 
     /* Try (repeatedly, if necessary) to grab the keyboard. We might not
      * get the keyboard at the first attempt because of the keybinding
