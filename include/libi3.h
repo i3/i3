@@ -445,18 +445,13 @@ bool font_is_pango(void);
  * specified coordinates (from the top left corner of the leftmost, uppermost
  * glyph) and using the provided gc.
  *
+ * The given cairo surface must refer to the specified X drawable.
+ *
  * Text must be specified as an i3String.
  *
  */
 void draw_text(i3String *text, xcb_drawable_t drawable, xcb_gcontext_t gc,
-               xcb_visualtype_t *visual, int x, int y, int max_width);
-
-/**
- * ASCII version of draw_text to print static strings.
- *
- */
-void draw_text_ascii(const char *text, xcb_drawable_t drawable,
-                     xcb_gcontext_t gc, int x, int y, int max_width);
+               cairo_surface_t *surface, int x, int y, int max_width);
 
 /**
  * Predict the text width in pixels for the given text. Text must be
