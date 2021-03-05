@@ -535,8 +535,6 @@ static int handle_expose(void) {
         txt(5, 10, "<ESC>", red, black);
     }
 
-    xcb_flush(conn);
-
     return 1;
 }
 
@@ -565,7 +563,6 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
                                 8,
                                 strlen("i3: generate config"),
                                 "i3: generate config");
-            xcb_flush(conn);
         } else
             finish();
     }
@@ -986,6 +983,7 @@ int main(int argc, char *argv[]) {
         }
 
         free(event);
+        xcb_flush(conn);
     }
 
     /* Dismiss drawable surface */
