@@ -138,8 +138,6 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
         i3string_free(input);
     }
 
-    xcb_flush(conn);
-
     return 1;
 }
 
@@ -532,6 +530,7 @@ int main(int argc, char *argv[]) {
         }
 
         free(event);
+        xcb_flush(conn);
     }
 
     draw_util_surface_free(conn, &surface);
