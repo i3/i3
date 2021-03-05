@@ -133,7 +133,7 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
     CAIRO_SURFACE_FLUSH(surface->surface);
 
     set_font_colors(surface->gc, fg_color, bg_color);
-    draw_text(text, surface->id, surface->gc, surface->visual_type, x, y, max_width);
+    draw_text(text, surface->id, surface->gc, surface->surface, x, y, max_width);
 
     /* Notify cairo that we (possibly) used another way to draw on the surface. */
     cairo_surface_mark_dirty(surface->surface);
