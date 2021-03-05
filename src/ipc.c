@@ -219,6 +219,14 @@ IPC_HANDLER(run_command) {
     if (result->needs_tree_render)
         tree_render();
 
+    /* Apparently the test suite expects that the X11 server already handled a
+     * command by the time the IPC reply comes in. This was previously done via
+     * xcb_flush(), but that is not enough to prevent races. Only a sync ensures
+     * that the X11 server actually handled things already.
+     */
+    /* XXX: Why? Did I get this right? */
+    xcb_aux_sync(conn);
+
     command_result_free(result);
 
     const unsigned char *reply;
