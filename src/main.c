@@ -147,7 +147,7 @@ static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
         free(event);
     }
 
-    /* Flush all queued events to X11. */
+    /* Flush all queued requests to X11. */
     xcb_flush(conn);
 }
 
