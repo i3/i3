@@ -924,8 +924,6 @@ int main(int argc, char *argv[]) {
     ev_prepare_init(xcb_prepare, xcb_prepare_cb);
     ev_prepare_start(main_loop, xcb_prepare);
 
-    xcb_flush(conn);
-
     /* What follows is a fugly consequence of X11 protocol race conditions like
      * the following: In an i3 in-place restart, i3 will reparent all windows
      * to the root window, then exec() itself. In the new process, it calls
@@ -980,7 +978,6 @@ int main(int argc, char *argv[]) {
 
         xcb_copy_area(conn, root->root, pixmap, gc, 0, 0, 0, 0, width, height);
         xcb_change_window_attributes(conn, root->root, XCB_CW_BACK_PIXMAP, (uint32_t[]){pixmap});
-        xcb_flush(conn);
         xcb_free_gc(conn, gc);
         xcb_free_pixmap(conn, pixmap);
     }

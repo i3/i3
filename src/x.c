@@ -351,7 +351,6 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
 
     LOG("Sending WM_DELETE to the client\n");
     xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char *)ev);
-    xcb_flush(conn);
     free(event);
 }
 
@@ -1052,7 +1051,6 @@ void x_push_node(Con *con) {
         if (con->frame_buffer.id != XCB_NONE) {
             draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
         }
-        xcb_flush(conn);
 
         DLOG("mapping container %08x (serial %d)\n", con->frame.id, cookie.sequence);
         state->mapped = con->mapped;
@@ -1331,7 +1329,6 @@ void x_push_changes(Con *con) {
         last_focused = XCB_NONE;
     }
 
-    xcb_flush(conn);
     DLOG("ENDING CHANGES\n");
 
     /* Disable EnterWindow events for windows which will be unmapped in
@@ -1359,8 +1356,6 @@ void x_push_changes(Con *con) {
     //CIRCLEQ_FOREACH(state, &old_state_head, old_state) {
     //    DLOG("old stack: 0x%08x\n", state->id);
     //}
-
-    xcb_flush(conn);
 }
 
 /*
@@ -1481,7 +1476,5 @@ void x_set_shape(Con *con, xcb_shape_sk_t kind, bool enable) {
         } else {
             x_unshape_frame(con, kind);
         }
-
-        xcb_flush(conn);
     }
 }

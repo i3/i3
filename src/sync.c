@@ -23,6 +23,5 @@ void sync_respond(xcb_window_t window, uint32_t rnd) {
     ev->data.data32[1] = rnd;
 
     xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char *)ev);
-    xcb_flush(conn);
     free(reply);
 }

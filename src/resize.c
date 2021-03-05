@@ -63,8 +63,6 @@ DRAGGING_CB(resize_callback) {
         *(params->new_position) = new_y;
         xcb_configure_window(conn, params->helpwin, XCB_CONFIG_WINDOW_Y, params->new_position);
     }
-
-    xcb_flush(conn);
 }
 
 bool resize_find_tiling_participants(Con **current, Con **other, direction_t direction, bool both_sides) {
@@ -175,7 +173,6 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
     DLOG("x = %d, width = %d\n", output->rect.x, output->rect.width);
 
     x_mask_event_mask(~XCB_EVENT_MASK_ENTER_WINDOW);
-    xcb_flush(conn);
 
     uint32_t mask = 0;
     uint32_t values[2];
@@ -229,8 +226,6 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
 
     xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
 
-    xcb_flush(conn);
-
     /* `new_position' will be updated by the `resize_callback'. */
     new_position = initial_position;
 
@@ -247,7 +242,6 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
 
     xcb_destroy_window(conn, helpwin);
     xcb_destroy_window(conn, grabwin);
-    xcb_flush(conn);
 
     /* User cancelled the drag so no action should be taken. */
     if (drag_result == DRAG_REVERT) {

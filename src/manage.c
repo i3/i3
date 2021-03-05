@@ -562,7 +562,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     values[0] = CHILD_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, values);
-    xcb_flush(conn);
 
     /* Put the client inside the save set. Upon termination (whether killed or
      * normal exit does not matter) of the window manager, these clients will

@@ -1100,6 +1100,4 @@ void randr_init(int *event_base, const bool disable_randr15) {
                                XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE |
                                XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE |
                                XCB_RANDR_NOTIFY_MASK_OUTPUT_PROPERTY);
-
-    xcb_flush(conn);
 }

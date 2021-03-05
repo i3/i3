@@ -57,8 +57,6 @@ static void floating_set_hint_atom(Con *con, bool floating) {
     } else {
         xcb_delete_property(conn, con->window->id, A_I3_FLOATING_WINDOW);
     }
-
-    xcb_flush(conn);
 }
 
 /*
@@ -581,7 +579,6 @@ DRAGGING_CB(drag_window_callback) {
 
     render_con(con);
     x_push_node(con);
-    xcb_flush(conn);
 
     /* Check if we cross workspace boundaries while moving */
     if (!floating_maybe_reassign_ws(con))

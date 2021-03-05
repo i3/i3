@@ -203,7 +203,6 @@ static void sighandler_create_dialogs(void) {
     }
 
     sighandler_handle_expose();
-    xcb_flush(conn);
 }
 
 static void sighandler_destroy_dialogs(void) {
@@ -217,8 +216,6 @@ static void sighandler_destroy_dialogs(void) {
         TAILQ_REMOVE(&dialogs, dialog, dialogs);
         free(dialog);
     }
-
-    xcb_flush(conn);
 }
 
 static void sighandler_handle_expose(void) {
@@ -226,8 +223,6 @@ static void sighandler_handle_expose(void) {
     TAILQ_FOREACH (current, &dialogs, dialogs) {
         sighandler_draw_dialog(current);
     }
-
-    xcb_flush(conn);
 }
 
 static void sighandler_draw_dialog(dialog_t *dialog) {
@@ -323,6 +318,7 @@ static void handle_signal(int sig, siginfo_t *info, void *data) {
         }
 
         free(event);
+        xcb_flush(conn);
     }
 }
 

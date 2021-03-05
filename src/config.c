@@ -242,7 +242,6 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
         /* Redraw the currently visible decorations on reload, so that the
          * possibly new drawing parameters changed. */
         x_deco_recurse(croot);
-        xcb_flush(conn);
     }
 
     return result;

@@ -165,7 +165,6 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
 
         /* ASYNC_POINTER eats the event */
         xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, event->time);
-        xcb_flush(conn);
 
         command_result_free(result);
         return;
@@ -290,7 +289,6 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
         /* Avoid propagating events to clients, since the user expects
          * $mod+click to be handled by i3. */
         xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, event->time);
-        xcb_flush(conn);
         return;
     }
     /* 8: otherwise, check for border/decoration clicks and resize */
@@ -302,7 +300,6 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
 
 done:
     xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
-    xcb_flush(conn);
     tree_render();
 }
 
@@ -364,7 +361,6 @@ void handle_button_press(xcb_button_press_event_t *event) {
 
         ELOG("Clicked into unknown window?!\n");
         xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
-        xcb_flush(conn);
         return;
     }
 

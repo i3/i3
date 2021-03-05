@@ -134,7 +134,6 @@ static void update_placeholder_contents(placeholder_state *state) {
     draw_util_clear_surface(&(state->surface), background);
 
     // TODO: make i3font functions per-connection, at least these two for now…?
-    xcb_flush(restore_conn);
     xcb_aux_sync(restore_conn);
 
     Match *swallows;
@@ -180,7 +179,6 @@ static void update_placeholder_contents(placeholder_state *state) {
     int y = (state->rect.height / 2) - (config.font.height / 2);
     draw_util_text(line, &(state->surface), foreground, background, x, y, text_width);
     i3string_free(line);
-    xcb_flush(restore_conn);
     xcb_aux_sync(restore_conn);
 }
 
@@ -257,8 +255,6 @@ void restore_open_placeholder_windows(Con *parent) {
     TAILQ_FOREACH (child, &(parent->floating_head), floating_windows) {
         open_placeholder_window(child);
     }
-
-    xcb_flush(restore_conn);
 }
 
 /*

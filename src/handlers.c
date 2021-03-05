@@ -305,7 +305,6 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
         COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_STACK_MODE, stack_mode);
 
         xcb_configure_window(conn, event->window, mask, values);
-        xcb_flush(conn);
 
         return;
     }
@@ -627,7 +626,6 @@ static void handle_expose_event(xcb_expose_event_t *event) {
      * only tell us that the X server lost (parts of) the window contents. */
     draw_util_copy_surface(&(parent->frame_buffer), &(parent->frame),
                            0, 0, 0, 0, parent->rect.width, parent->rect.height);
-    xcb_flush(conn);
 }
 
 #define _NET_WM_MOVERESIZE_SIZE_TOPLEFT 0
@@ -797,7 +795,6 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             A__NET_FRAME_EXTENTS,
             XCB_ATOM_CARDINAL, 32, 4,
             &r);
-        xcb_flush(conn);
     } else if (event->type == A_WM_CHANGE_STATE) {
         /* http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.4 */
         if (event->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
