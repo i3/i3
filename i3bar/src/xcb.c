@@ -428,7 +428,6 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
 #undef PARSE_COLOR_FALLBACK
 
     init_tray_colors();
-    xcb_flush(xcb_connection);
 }
 
 static bool execute_custom_command(xcb_keycode_t input_code, bool event_is_release) {
@@ -1361,8 +1360,6 @@ void init_xcb_late(char *fontname) {
     if (config.separator_symbol)
         separator_symbol_width = predict_text_width(config.separator_symbol);
 
-    xcb_flush(xcb_connection);
-
     if (config.hide_on_modifier == M_HIDE)
         register_xkb_keyevents();
 }
@@ -2118,7 +2115,6 @@ void redraw_bars(void) {
 
         draw_util_copy_surface(&(outputs_walk->buffer), &(outputs_walk->bar), 0, 0,
                                0, 0, outputs_walk->rect.w, outputs_walk->rect.h);
-        xcb_flush(xcb_connection);
     }
 }
 
