@@ -24,6 +24,8 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <xcb/xinerama.h>
+#include <xcb/bigreq.h>
 
 #ifdef I3_ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
@@ -573,6 +575,17 @@ int main(int argc, char *argv[]) {
     root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
 
+    /* Prefetch X11 extensions that we are interested in. */
+    xcb_prefetch_extension_data(conn, &xcb_xkb_id);
+    xcb_prefetch_extension_data(conn, &xcb_shape_id);
+    /* BIG-REQUESTS is used by libxcb internally. */
+    xcb_prefetch_extension_data(conn, &xcb_big_requests_id);
+    if (force_xinerama) {
+        xcb_prefetch_extension_data(conn, &xcb_xinerama_id);
+    } else {
+        xcb_prefetch_extension_data(conn, &xcb_randr_id);
+    }
+
     /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
@@ -601,6 +614,8 @@ int main(int argc, char *argv[]) {
     } else {
         visual_type = get_visualtype(root_screen);
     }
+
+    xcb_prefetch_maximum_request_length(conn);
 
     init_dpi();
 
@@ -666,9 +681,6 @@ int main(int argc, char *argv[]) {
     xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
 
     const xcb_query_extension_reply_t *extreply;
-    xcb_prefetch_extension_data(conn, &xcb_xkb_id);
-    xcb_prefetch_extension_data(conn, &xcb_shape_id);
-
     extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
     xkb_supported = extreply->present;
     if (!extreply->present) {
