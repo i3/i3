@@ -566,8 +566,6 @@ typedef struct surface_t {
     /* A classic XCB graphics context. */
     xcb_gcontext_t gc;
 
-    xcb_visualtype_t *visual_type;
-
     int width;
     int height;
 
