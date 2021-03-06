@@ -577,11 +577,14 @@ int main(int argc, char *argv[]) {
 
     /* Prefetch X11 extensions that we are interested in. */
     xcb_prefetch_extension_data(conn, &xcb_xkb_id);
-    xcb_prefetch_extension_data(conn, &xcb_xinerama_id);
-    xcb_prefetch_extension_data(conn, &xcb_randr_id);
     xcb_prefetch_extension_data(conn, &xcb_shape_id);
     /* BIG-REQUESTS is used by libxcb internally. */
     xcb_prefetch_extension_data(conn, &xcb_big_requests_id);
+    if (force_xinerama) {
+        xcb_prefetch_extension_data(conn, &xcb_xinerama_id);
+    } else {
+        xcb_prefetch_extension_data(conn, &xcb_randr_id);
+    }
 
     /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
