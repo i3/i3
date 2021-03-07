@@ -82,6 +82,8 @@ bool event_is_ignored(const int sequence, const int response_type) {
 }
 
 typedef enum { RG_DEFAULT,
+               RG_LOAD_KEYMAP_AND_TRANSLATE,
+               RG_UPDATE_KEY_SYMBOLS_AND_LOAD_KEYMAP_AND_TRANSLATE,
                RG_TRANSLATE } regrab_mode_t;
 
 /*
@@ -92,6 +94,13 @@ static void regrab_keys(regrab_mode_t mode) {
     switch (mode) {
     case RG_DEFAULT:
         break;
+    case RG_UPDATE_KEY_SYMBOLS_AND_LOAD_KEYMAP_AND_TRANSLATE:
+        xcb_key_symbols_free(keysyms);
+        keysyms = xcb_key_symbols_alloc(conn);
+        /* fall through */
+    case RG_LOAD_KEYMAP_AND_TRANSLATE:
+        (void)load_keymap();
+        /* fall through */
     case RG_TRANSLATE:
         translate_keysyms();
         break;
@@ -1313,18 +1322,16 @@ void handle_event(int type, xcb_generic_event_t *event) {
             xcb_key_symbols_free(keysyms);
             keysyms = xcb_key_symbols_alloc(conn);
             if (((xcb_xkb_new_keyboard_notify_event_t *)event)->changed & XCB_XKB_NKN_DETAIL_KEYCODES)
-                (void)load_keymap();
-            regrab_keys(RG_TRANSLATE);
+                regrab_keys(RG_LOAD_KEYMAP_AND_TRANSLATE);
+            else
+                regrab_keys(RG_TRANSLATE);
         } else if (state->xkbType == XCB_XKB_MAP_NOTIFY) {
             if (event_is_ignored(event->sequence, type)) {
                 DLOG("Ignoring map notify event for sequence %d.\n", state->sequence);
             } else {
                 DLOG("xkb map notify, sequence %d, time %d\n", state->sequence, state->time);
                 add_ignore_event(event->sequence, type);
-                xcb_key_symbols_free(keysyms);
-                keysyms = xcb_key_symbols_alloc(conn);
-                regrab_keys(RG_TRANSLATE);
-                (void)load_keymap();
+                regrab_keys(RG_UPDATE_KEY_SYMBOLS_AND_LOAD_KEYMAP_AND_TRANSLATE);
             }
         } else if (state->xkbType == XCB_XKB_STATE_NOTIFY) {
             DLOG("xkb state group = %d\n", state->group);
