@@ -81,17 +81,23 @@ bool event_is_ignored(const int sequence, const int response_type) {
     return false;
 }
 
-typedef enum { RG_DEFAULT,
-               RG_LOAD_KEYMAP_AND_TRANSLATE,
-               RG_UPDATE_KEY_SYMBOLS_AND_LOAD_KEYMAP_AND_TRANSLATE,
-               RG_TRANSLATE } regrab_mode_t;
+typedef enum {
+    RG_DEFAULT = 0,
+    RG_TRANSLATE = 1,
+    RG_LOAD_KEYMAP_AND_TRANSLATE = 2,
+    RG_UPDATE_KEY_SYMBOLS_AND_LOAD_KEYMAP_AND_TRANSLATE = 3,
+} regrab_mode_t;
 
-/*
- * Called when the keyboard state changed and we need to re-grab keys.
- */
-static void regrab_keys(regrab_mode_t mode) {
+static regrab_mode_t pending_regrab = RG_DEFAULT;
+static ev_idle regrab_watcher;
+static bool regrab_watcher_initialised = false;
+extern struct ev_loop *main_loop;
+
+static void regrab_keys_cb(EV_P_ ev_idle *w, int revents) {
+    ev_idle_stop(main_loop, w);
+
     ungrab_all_keys(conn);
-    switch (mode) {
+    switch (pending_regrab) {
     case RG_DEFAULT:
         break;
     case RG_UPDATE_KEY_SYMBOLS_AND_LOAD_KEYMAP_AND_TRANSLATE:
@@ -106,6 +112,20 @@ static void regrab_keys(regrab_mode_t mode) {
         break;
     }
     grab_all_keys(conn);
+
+    pending_regrab = RG_DEFAULT;
+}
+
+/*
+ * Called when the keyboard state changed and we need to re-grab keys.
+ */
+static void regrab_keys(regrab_mode_t mode) {
+    pending_regrab = max(pending_regrab, mode);
+    if (!regrab_watcher_initialised) {
+        regrab_watcher_initialised = true;
+        ev_idle_init(&regrab_watcher, regrab_keys_cb);
+    }
+    ev_idle_start(main_loop, &regrab_watcher);
 }
 
 /*
