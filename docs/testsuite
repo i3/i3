@@ -569,7 +569,35 @@ i3 will then reply with the same ClientMessage, sent to the window specified in
 request. You should use a random value in +data[1]+ and check that you received
 the same one when getting the reply.
 
-== Appendix B: Socket activation
+== Appendix B: The sync IPC command
+
+The above I3_SYNC protocol allows to synchronise with i3. However, it is not
+enough for tests that also involve i3bar: There might still be messages from
+i3bar in-flight even after synchronising with i3. Thus, there also exists a sync
+IPC command, that is however not meant to be used directly. Instead, i3bar uses
+it for implementing the I3_SYNC protocol.
+
+The intended usage works like this:
+
+1. You send an I3_SYNC message to i3bar's window. See <<i3_sync>>.
+2. i3bar sends a SYNC IPC command to i3 with payload
+   +{"window":your-window-here,"rnd":your-random-value}+.
+3. i3 reacts to this IPC command as if it received an I3_SYNC request via X11.
+
+This protocol is used, for example, in t/525-i3bar-mouse-bindings.t: A mouse
+button press on i3bar is triggered. i3bar reacts to this by sending IPC commands
+to i3.
+
+The necessary synchronisation is achieved by sending an I3_SYNC event to i3bar:
+Because i3bar reacts with a sync IPC command to i3, all previous IPC commands from
+i3bar will be handled first. Because i3 reacts via X11, all previous X11
+requests from i3 will be handled by the X11 server first.
+
+The actual test also has to sync with i3 first due to how X11 handling works. If
+you really want to know more, I am sorry for you and recommend to read up on
+XAllowEvents with mode ReplayPointer.
+
+== Appendix C: Socket activation
 
 Socket activation is a mechanism which was made popular by systemd, an init
 replacement. It basically describes creating a listening socket before starting
