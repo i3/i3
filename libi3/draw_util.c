@@ -29,6 +29,76 @@ static bool surface_initialized(surface_t *surface) {
 }
 
 /*
+ * Get a GC for the given depth. The given drawable must have this depth.
+ *
+ * Per the X11 protocol manual for "CreateGC":
+ * > The gcontext can be used with any destination drawable having the same root
+ * > and depth as the specified drawable;
+ */
+static xcb_gcontext_t get_gc(xcb_connection_t *conn, uint8_t depth, xcb_drawable_t drawable, bool *should_free) {
+    static struct {
+        uint8_t depth;
+        xcb_gcontext_t gc;
+    } gc_cache[2] = {
+        0,
+    };
+
+    size_t index = 0;
+    bool cache = false;
+
+    *should_free = false;
+    for (; index < sizeof(gc_cache) / sizeof(gc_cache[0]); index++) {
+        if (gc_cache[index].depth == depth) {
+            return gc_cache[index].gc;
+        }
+        if (gc_cache[index].depth == 0) {
+            cache = true;
+            break;
+        }
+    }
+
+    xcb_gcontext_t gc = xcb_generate_id(conn);
+    xcb_void_cookie_t gc_cookie = xcb_create_gc_checked(conn, gc, drawable, 0, NULL);
+
+    xcb_generic_error_t *error = xcb_request_check(conn, gc_cookie);
+    if (error != NULL) {
+        ELOG("Could not create graphical context. Error code: %d. Please report this bug.\n", error->error_code);
+        free(error);
+        return gc;
+    }
+
+    if (cache) {
+        gc_cache[index].depth = depth;
+        gc_cache[index].gc = gc;
+    } else {
+        *should_free = true;
+    }
+
+    return gc;
+}
+
+/*
+ * Get depth of visual specified by visualid
+ *
+ */
+uint16_t get_visual_depth(xcb_visualid_t visual_id) {
+    xcb_depth_iterator_t depth_iter;
+
+    depth_iter = xcb_screen_allowed_depths_iterator(root_screen);
+    for (; depth_iter.rem; xcb_depth_next(&depth_iter)) {
+        xcb_visualtype_iterator_t visual_iter;
+
+        visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
+        for (; visual_iter.rem; xcb_visualtype_next(&visual_iter)) {
+            if (visual_id == visual_iter.data->visual_id) {
+                return depth_iter.data->depth;
+            }
+        }
+    }
+    return 0;
+}
+
+/*
  * Initialize the surface to represent the given drawable.
  *
  */
@@ -41,15 +111,7 @@ void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_draw
     if (visual == NULL)
         visual = visual_type;
 
-    surface->gc = xcb_generate_id(conn);
-    xcb_void_cookie_t gc_cookie = xcb_create_gc_checked(conn, surface->gc, surface->id, 0, NULL);
-
-    xcb_generic_error_t *error = xcb_request_check(conn, gc_cookie);
-    if (error != NULL) {
-        ELOG("Could not create graphical context. Error code: %d. Please report this bug.\n", error->error_code);
-        free(error);
-    }
-
+    surface->gc = get_gc(conn, get_visual_depth(visual->visual_id), drawable, &surface->owns_gc);
     surface->surface = cairo_xcb_surface_create(conn, surface->id, visual, width, height);
     surface->cr = cairo_create(surface->surface);
 }
@@ -68,11 +130,13 @@ void draw_util_surface_free(xcb_connection_t *conn, surface_t *surface) {
             status, cairo_status_to_string(status));
     }
 
-    /* NOTE: This function is also called on uninitialised surface_t instances.
-     * The x11 error from xcb_free_gc(conn, XCB_NONE) is silently ignored
-     * elsewhere.
-     */
-    xcb_free_gc(conn, surface->gc);
+    if (surface->owns_gc) {
+        /* NOTE: This function is also called on uninitialised surface_t instances.
+         * The x11 error from xcb_free_gc(conn, XCB_NONE) is silently ignored
+         * elsewhere.
+         */
+        xcb_free_gc(conn, surface->gc);
+    }
     cairo_surface_destroy(surface->surface);
     cairo_destroy(surface->cr);
 

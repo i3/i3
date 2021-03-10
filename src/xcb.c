@@ -164,27 +164,6 @@ bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom) {
 }
 
 /*
- * Get depth of visual specified by visualid
- *
- */
-uint16_t get_visual_depth(xcb_visualid_t visual_id) {
-    xcb_depth_iterator_t depth_iter;
-
-    depth_iter = xcb_screen_allowed_depths_iterator(root_screen);
-    for (; depth_iter.rem; xcb_depth_next(&depth_iter)) {
-        xcb_visualtype_iterator_t visual_iter;
-
-        visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
-        for (; visual_iter.rem; xcb_visualtype_next(&visual_iter)) {
-            if (visual_id == visual_iter.data->visual_id) {
-                return depth_iter.data->depth;
-            }
-        }
-    }
-    return 0;
-}
-
-/*
  * Get visual type specified by visualid
  *
  */

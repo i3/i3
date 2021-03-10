@@ -99,12 +99,6 @@ xcb_atom_t xcb_get_preferred_window_type(xcb_get_property_reply_t *reply);
 bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom);
 
 /**
- * Get depth of visual specified by visualid
- *
- */
-uint16_t get_visual_depth(xcb_visualid_t visual_id);
-
-/**
  * Get visual type specified by visualid
  *
  */
