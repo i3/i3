@@ -311,6 +311,7 @@ int main(int argc, char *argv[]) {
         {"fake_outputs", required_argument, 0, 0},
         {"fake-outputs", required_argument, 0, 0},
         {"force-old-config-parser-v4.4-only", no_argument, 0, 0},
+        {"replace", no_argument, 0, 'r'},
         {0, 0, 0, 0}};
     int option_index = 0, opt;
 
@@ -335,7 +336,7 @@ int main(int argc, char *argv[]) {
 
     start_argv = argv;
 
-    while ((opt = getopt_long(argc, argv, "c:CvmaL:hld:V", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "c:CvmaL:hld:Vr", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'a':
                 LOG("Autostart disabled using -a\n");
@@ -372,6 +373,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'l':
                 /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
+                break;
+            case 'r':
+                replace_wm = true;
                 break;
             case 0:
                 if (strcmp(long_options[option_index].name, "force-xinerama") == 0 ||
