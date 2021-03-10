@@ -595,6 +595,10 @@ int main(int argc, char *argv[]) {
         xcb_prefetch_extension_data(conn, &xcb_randr_id);
     }
 
+    /* Prepare for us to get a current timestamp as recommended by ICCCM */
+    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]) { XCB_EVENT_MASK_PROPERTY_CHANGE });
+    xcb_change_property(conn, XCB_PROP_MODE_APPEND, root, XCB_ATOM_SUPERSCRIPT_X, XCB_ATOM_CARDINAL, 32, 0, "");
+
     /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
@@ -635,6 +639,22 @@ int main(int argc, char *argv[]) {
 
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
     xcb_query_pointer_cookie_t pointercookie = xcb_query_pointer(conn, root);
+
+    /* Get the PropertyNotify event we caused above */
+    xcb_flush(conn);
+    {
+        xcb_generic_event_t *event;
+        DLOG("waiting for PropertyNotify event\n");
+        while ((event = xcb_wait_for_event(conn)) != NULL) {
+            if (event->response_type == XCB_PROPERTY_NOTIFY) {
+                last_timestamp = ((xcb_property_notify_event_t *)event)->time;
+                free(event);
+                break;
+            }
+            free(event);
+        }
+        DLOG("got timestamp %d\n", last_timestamp);
+    }
 
     /* Setup NetWM atoms */
 #define xmacro(name)                                                                       \
@@ -720,9 +740,7 @@ int main(int argc, char *argv[]) {
                             (strlen("i3-WM_Sn") + 1) * 2,
                             "i3-WM_Sn\0i3-WM_Sn\0");
 
-        /* FIXME We should not use XCB_CURRENT_TIME */
-        xcb_timestamp_t timestamp = XCB_CURRENT_TIME;
-        xcb_set_selection_owner(conn, wm_sn_selection_owner, wm_sn, timestamp);
+        xcb_set_selection_owner(conn, wm_sn_selection_owner, wm_sn, last_timestamp);
 
         if (selection_reply && selection_reply->owner != XCB_NONE) {
             xcb_get_geometry_reply_t *geom_reply = NULL;
@@ -749,7 +767,7 @@ int main(int argc, char *argv[]) {
         event.message.window = root_screen->root;
         event.message.format = 32;
         event.message.type = A_MANAGER;
-        event.message.data.data32[0] = timestamp;
+        event.message.data.data32[0] = last_timestamp;
         event.message.data.data32[1] = wm_sn;
         event.message.data.data32[2] = wm_sn_selection_owner;
 
