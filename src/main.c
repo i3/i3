@@ -65,7 +65,9 @@ xcb_timestamp_t last_timestamp = XCB_CURRENT_TIME;
 
 xcb_screen_t *root_screen;
 xcb_window_t root;
+
 xcb_window_t wm_sn_selection_owner;
+xcb_atom_t wm_sn;
 
 /* Color depth, visual id and colormap to use when creating windows and
  * pixmaps. Will use 32 bit depth and an appropriate visual, if available,
@@ -682,13 +684,13 @@ int main(int argc, char *argv[]) {
             ELOG("Failed to intern the WM_Sn atom, exiting\n");
             return 1;
         }
-        xcb_atom_t atom = atom_reply->atom;
+        wm_sn = atom_reply->atom;
         free(atom_reply);
 
         /* Check if the selection is already owned */
         xcb_get_selection_owner_reply_t *selection_reply =
             xcb_get_selection_owner_reply(conn,
-                                          xcb_get_selection_owner(conn, atom),
+                                          xcb_get_selection_owner(conn, wm_sn),
                                           NULL);
         if (selection_reply && selection_reply->owner != XCB_NONE && !replace_wm) {
             ELOG("Another window manager is already running (WM_Sn is owned)");
@@ -716,7 +718,7 @@ int main(int argc, char *argv[]) {
 
         /* FIXME We should not use XCB_CURRENT_TIME */
         xcb_timestamp_t timestamp = XCB_CURRENT_TIME;
-        xcb_set_selection_owner(conn, wm_sn_selection_owner, atom, timestamp);
+        xcb_set_selection_owner(conn, wm_sn_selection_owner, wm_sn, timestamp);
 
         if (selection_reply && selection_reply->owner != XCB_NONE) {
             xcb_get_geometry_reply_t *geom_reply = NULL;
@@ -744,7 +746,7 @@ int main(int argc, char *argv[]) {
         event.message.format = 32;
         event.message.type = A_MANAGER;
         event.message.data.data32[0] = timestamp;
-        event.message.data.data32[1] = atom;
+        event.message.data.data32[1] = wm_sn;
         event.message.data.data32[2] = wm_sn_selection_owner;
 
         xcb_send_event(conn, 0, root_screen->root, XCB_EVENT_MASK_STRUCTURE_NOTIFY, event.storage);
