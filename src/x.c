@@ -973,7 +973,6 @@ void x_push_node(Con *con) {
              * is not a concern for us. */
             xcb_change_gc(conn, con->frame_buffer.gc, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){0});
 
-            draw_util_surface_set_size(&(con->frame), width, height);
             con->pixmap_recreated = true;
 
             /* Don’t render the decoration for windows inside a stack which are
