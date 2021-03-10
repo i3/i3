@@ -286,6 +286,7 @@ int main(int argc, char *argv[]) {
     char *fake_outputs = NULL;
     bool disable_signalhandler = false;
     bool only_check_config = false;
+    bool replace_wm = false;
     static struct option long_options[] = {
         {"no-autostart", no_argument, 0, 'a'},
         {"config", required_argument, 0, 'c'},
@@ -684,6 +685,16 @@ int main(int argc, char *argv[]) {
         xcb_atom_t atom = atom_reply->atom;
         free(atom_reply);
 
+        /* Check if the selection is already owned */
+        xcb_get_selection_owner_reply_t *selection_reply =
+            xcb_get_selection_owner_reply(conn,
+                                          xcb_get_selection_owner(conn, atom),
+                                          NULL);
+        if (selection_reply && selection_reply->owner != XCB_NONE && !replace_wm) {
+            ELOG("Another window manager is already running (WM_Sn is owned)");
+            return 1;
+        }
+
         /* Become the selection owner */
         xcb_create_window(conn,
                           root_screen->root_depth,
@@ -706,6 +717,18 @@ int main(int argc, char *argv[]) {
         /* FIXME We should not use XCB_CURRENT_TIME */
         xcb_timestamp_t timestamp = XCB_CURRENT_TIME;
         xcb_set_selection_owner(conn, wm_sn_selection_owner, atom, timestamp);
+
+        if (selection_reply && selection_reply->owner != XCB_NONE) {
+            xcb_get_geometry_reply_t *geom_reply = NULL;
+            DLOG("waiting for old WM_Sn selection owner to exit");
+            do {
+                free(geom_reply);
+                geom_reply = xcb_get_geometry_reply(conn,
+                                                    xcb_get_geometry(conn, selection_reply->owner),
+                                                    NULL);
+            } while (geom_reply != NULL);
+        }
+        free(selection_reply);
 
         /* Announce that we are the new owner */
         /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
