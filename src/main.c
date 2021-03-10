@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <xcb/xcb_atom.h>
 #include <xcb/xinerama.h>
 #include <xcb/bigreq.h>
 
@@ -64,6 +65,7 @@ xcb_timestamp_t last_timestamp = XCB_CURRENT_TIME;
 
 xcb_screen_t *root_screen;
 xcb_window_t root;
+xcb_window_t wm_sn_selection_owner;
 
 /* Color depth, visual id and colormap to use when creating windows and
  * pixmaps. Will use 32 bit depth and an appropriate visual, if available,
@@ -654,6 +656,75 @@ int main(int argc, char *argv[]) {
 
     if (config.force_xinerama) {
         force_xinerama = true;
+    }
+
+    /* Acquire the WM_Sn selection. */
+    {
+        /* Get the WM_Sn atom */
+        char *atom_name = xcb_atom_name_by_screen("WM_S", conn_screen);
+        wm_sn_selection_owner = xcb_generate_id(conn);
+
+        if (atom_name == NULL) {
+            ELOG("xcb_atom_name_by_screen(\"WM_S\", %d) failed, exiting\n", conn_screen);
+            return 1;
+        }
+
+        xcb_intern_atom_reply_t *atom_reply;
+        atom_reply = xcb_intern_atom_reply(conn,
+                                           xcb_intern_atom_unchecked(conn,
+                                                                     0,
+                                                                     strlen(atom_name),
+                                                                     atom_name),
+                                           NULL);
+        free(atom_name);
+        if (atom_reply == NULL) {
+            ELOG("Failed to intern the WM_Sn atom, exiting\n");
+            return 1;
+        }
+        xcb_atom_t atom = atom_reply->atom;
+        free(atom_reply);
+
+        /* Become the selection owner */
+        xcb_create_window(conn,
+                          root_screen->root_depth,
+                          wm_sn_selection_owner, /* window id */
+                          root_screen->root,     /* parent */
+                          -1, -1, 1, 1,          /* geometry */
+                          0,                     /* border width */
+                          XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                          root_screen->root_visual,
+                          0, NULL);
+        xcb_change_property(conn,
+                            XCB_PROP_MODE_REPLACE,
+                            wm_sn_selection_owner,
+                            XCB_ATOM_WM_CLASS,
+                            XCB_ATOM_STRING,
+                            8,
+                            (strlen("i3-WM_Sn") + 1) * 2,
+                            "i3-WM_Sn\0i3-WM_Sn\0");
+
+        /* FIXME We should not use XCB_CURRENT_TIME */
+        xcb_timestamp_t timestamp = XCB_CURRENT_TIME;
+        xcb_set_selection_owner(conn, wm_sn_selection_owner, atom, timestamp);
+
+        /* Announce that we are the new owner */
+        /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
+         * In order to properly initialize these bytes, we allocate 32 bytes even
+         * though we only need less for an xcb_client_message_event_t */
+        union {
+            xcb_client_message_event_t message;
+            char storage[32];
+        } event;
+        memset(&event, 0, sizeof(event));
+        event.message.response_type = XCB_CLIENT_MESSAGE;
+        event.message.window = root_screen->root;
+        event.message.format = 32;
+        event.message.type = A_MANAGER;
+        event.message.data.data32[0] = timestamp;
+        event.message.data.data32[1] = atom;
+        event.message.data.data32[2] = wm_sn_selection_owner;
+
+        xcb_send_event(conn, 0, root_screen->root, XCB_EVENT_MASK_STRUCTURE_NOTIFY, event.storage);
     }
 
     xcb_void_cookie_t cookie;
