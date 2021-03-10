@@ -596,7 +596,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* Prepare for us to get a current timestamp as recommended by ICCCM */
-    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]) { XCB_EVENT_MASK_PROPERTY_CHANGE });
+    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){XCB_EVENT_MASK_PROPERTY_CHANGE});
     xcb_change_property(conn, XCB_PROP_MODE_APPEND, root, XCB_ATOM_SUPERSCRIPT_X, XCB_ATOM_CARDINAL, 32, 0, "");
 
     /* Place requests for the atoms we need as soon as possible */
