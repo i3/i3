@@ -593,9 +593,9 @@ Because i3bar reacts with a sync IPC command to i3, all previous IPC commands fr
 i3bar will be handled first. Because i3 reacts via X11, all previous X11
 requests from i3 will be handled by the X11 server first.
 
-The actual test also has to sync with i3 first due to how X11 handling works. If
-you really want to know more, I am sorry for you and recommend to read up on
-XAllowEvents with mode ReplayPointer.
+The actual test also has to sync with i3 first due to how X11 handling works.
+For more details, refer to the documentation for +XAllowEvents+ with mode
++ReplayPointer+.
 
 == Appendix C: Socket activation
 
