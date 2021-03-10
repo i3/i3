@@ -1078,7 +1078,7 @@ static void handle_configure_notify(xcb_configure_notify_event_t *event) {
 
 /*
  * Handles SelectionClear events for the root window, which are generated when
- * we loose ownership of a selection.
+ * we lose ownership of a selection.
  */
 static void handle_selection_clear(xcb_selection_clear_event_t *event) {
     if (event->selection != wm_sn) {
