@@ -59,6 +59,8 @@ typedef struct con_state {
     Rect rect;
     Rect window_rect;
 
+    xcb_rectangle_t border_rectangles[4];
+
     bool initial;
 
     char *name;
@@ -929,6 +931,15 @@ void x_push_node(Con *con) {
      * needs to be recreated */
     if ((is_pixmap_needed && con->frame_buffer.surfaces[0].surface.id == XCB_NONE) || (!rect_equals(state->rect, rect) &&
                                                                                        rect.height > 0)) {
+        xcb_rectangle_t rectangles[4];
+        /* Make sure unused rectangles are all zero */
+        memset(&rectangles, 0, sizeof(rectangles));
+        size_t num_rectangles = x_get_border_rectangles(con, rectangles);
+            for (int i = 0; i < num_rectangles; i++) {
+                printf("Rectangle %d: (%d,%d) with size (%d,%d)\n", i,
+                        rectangles[i].x, rectangles[i].y, rectangles[i].width, rectangles[i].height);
+            }
+
         /* We first create the new pixmap, then render to it, set it as the
          * background and only afterwards change the window size. This reduces
          * flickering. */
@@ -936,18 +947,29 @@ void x_push_node(Con *con) {
         bool has_rect_changed = (state->rect.x != rect.x || state->rect.y != rect.y ||
                                  state->rect.width != rect.width || state->rect.height != rect.height);
 
+        bool rectangles_changed = false;
+        bool has_non_empty_rectangle = false;
+        for (int i = 0; i < 4; i++) {
+            rectangles_changed |= rectangles[i].x != state->border_rectangles[i].x;
+            rectangles_changed |= rectangles[i].y != state->border_rectangles[i].y;
+            rectangles_changed |= rectangles[i].width != state->border_rectangles[i].width;
+            rectangles_changed |= rectangles[i].height != state->border_rectangles[i].height;
+
+            has_non_empty_rectangle |= rectangles[i].width != 0 && rectangles[i].height != 0;
+        }
+
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
         if (!is_pixmap_needed && con->frame_buffer.surfaces[0].surface.id != XCB_NONE) {
             multi_surface_free_pixmap(&(con->frame_buffer));
         }
 
-        if (is_pixmap_needed && (has_rect_changed || con->frame_buffer.surfaces[0].surface.id == XCB_NONE)) {
-            xcb_pixmap_t pixmap;
-            if (con->frame_buffer.surfaces[0].surface.id == XCB_NONE) {
-                pixmap = xcb_generate_id(conn);
-            } else {
-                pixmap = con->frame_buffer.surfaces[0].surface.id;
+        if (is_pixmap_needed && has_non_empty_rectangle && (has_rect_changed || rectangles_changed || con->frame_buffer.surfaces[0].surface.id == XCB_NONE)) {
+            xcb_pixmap_t pixmaps[4] = { XCB_NONE, XCB_NONE, XCB_NONE, XCB_NONE };
+            if (con->frame_buffer.surfaces[0].surface.id != XCB_NONE) {
+                for (int i = 0; i < 4; i++) {
+                    pixmaps[i] = con->frame_buffer.surfaces[i].surface.id;
+                }
                 multi_surface_free_pixmap(&(con->frame_buffer));
             }
 
@@ -960,12 +982,21 @@ void x_push_node(Con *con) {
             //      for height == 0. Also, we should probably handle width == 0 the same way.
             int width = MAX((int32_t)rect.width, 1);
             int height = MAX((int32_t)rect.height, 1);
-            int x = 0;
-            int y = 0;
 
-            xcb_create_pixmap(conn, win_depth, pixmap, con->frame.id, width, height);
+            int xs[4], ys[4], widths[4], heights[4];
+            for (int i = 0; i < num_rectangles; i++) {
+                if (rectangles[i].width == 0 || rectangles[i].height == 0)
+                    continue;
+                if (pixmaps[i] == XCB_NONE)
+                    pixmaps[i] = xcb_generate_id(conn);
+                xs[i] = rectangles[i].x;
+                ys[i] = rectangles[i].y;
+                widths[i] = rectangles[i].width;
+                heights[i] = rectangles[i].height;
+                xcb_create_pixmap(conn, win_depth, pixmaps[i], con->frame.id, widths[i], heights[i]);
+            }
             multi_draw_init(conn, &(con->frame_buffer), get_visualtype_by_id(get_visualid_by_depth(win_depth)),
-                            1, &pixmap, &x, &y, &width, &height);
+                            num_rectangles, pixmaps, xs, ys, widths, heights);
 
             /* For the graphics context, we disable GraphicsExposure events.
              * Those will be sent when a CopyArea request cannot be fulfilled
@@ -1005,6 +1036,8 @@ void x_push_node(Con *con) {
         xcb_flush(conn);
 
         memcpy(&(state->rect), &rect, sizeof(Rect));
+        assert(sizeof(state->border_rectangles) == sizeof(rectangles));
+        memcpy(&(state->border_rectangles), &rectangles, sizeof(rectangles));
         fake_notify = true;
     }
 

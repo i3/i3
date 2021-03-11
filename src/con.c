@@ -1712,6 +1712,10 @@ adjacent_t con_adjacent_borders(Con *con) {
         return result;
 
     Con *workspace = con_get_workspace(con);
+    if (workspace == NULL) {
+        ELOG("FIXME: Workspace was NULL\n");
+        return result;
+    }
     if (con->rect.x == workspace->rect.x)
         result |= ADJ_LEFT_SCREEN_EDGE;
     if (con->rect.x + con->rect.width == workspace->rect.x + workspace->rect.width)
