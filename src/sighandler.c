@@ -211,7 +211,7 @@ static void sighandler_destroy_dialogs(void) {
         dialog_t *dialog = TAILQ_FIRST(&dialogs);
 
         xcb_free_colormap(conn, dialog->colormap);
-        draw_util_surface_free(conn, &(dialog->surface));
+        draw_util_surface_free(&(dialog->surface));
         xcb_destroy_window(conn, dialog->id);
 
         TAILQ_REMOVE(&dialogs, dialog, dialogs);

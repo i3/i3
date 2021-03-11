@@ -534,6 +534,6 @@ int main(int argc, char *argv[]) {
         free(event);
     }
 
-    draw_util_surface_free(conn, &surface);
+    draw_util_surface_free(&surface);
     return EXIT_OK;
 }

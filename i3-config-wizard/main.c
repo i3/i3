@@ -989,7 +989,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* Dismiss drawable surface */
-    draw_util_surface_free(conn, &surface);
+    draw_util_surface_free(&surface);
 
     return 0;
 }

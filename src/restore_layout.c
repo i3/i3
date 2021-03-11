@@ -273,7 +273,7 @@ bool restore_kill_placeholder(xcb_window_t placeholder) {
             continue;
 
         xcb_destroy_window(restore_conn, state->window);
-        draw_util_surface_free(restore_conn, &(state->surface));
+        draw_util_surface_free(&(state->surface));
         TAILQ_REMOVE(&state_head, state, state);
         free(state);
         DLOG("placeholder window 0x%08x destroyed.\n", placeholder);

@@ -594,7 +594,7 @@ void draw_util_surface_set_size(surface_t *surface, int width, int height);
  * Destroys the surface.
  *
  */
-void draw_util_surface_free(xcb_connection_t *conn, surface_t *surface);
+void draw_util_surface_free(surface_t *surface);
 
 /**
  * Parses the given color in hex format to an internal color representation.

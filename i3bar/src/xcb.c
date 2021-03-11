@@ -1620,9 +1620,9 @@ void destroy_window(i3_output *output) {
 
     kick_tray_clients(output);
 
-    draw_util_surface_free(xcb_connection, &(output->bar));
-    draw_util_surface_free(xcb_connection, &(output->buffer));
-    draw_util_surface_free(xcb_connection, &(output->statusline_buffer));
+    draw_util_surface_free(&(output->bar));
+    draw_util_surface_free(&(output->buffer));
+    draw_util_surface_free(&(output->statusline_buffer));
     xcb_destroy_window(xcb_connection, output->bar.id);
     xcb_free_pixmap(xcb_connection, output->buffer.id);
     xcb_free_pixmap(xcb_connection, output->statusline_buffer.id);
@@ -1914,9 +1914,9 @@ void reconfig_windows(bool redraw_bars) {
                                                                       walk->rect.w,
                                                                       bar_height);
 
-            draw_util_surface_free(xcb_connection, &(walk->bar));
-            draw_util_surface_free(xcb_connection, &(walk->buffer));
-            draw_util_surface_free(xcb_connection, &(walk->statusline_buffer));
+            draw_util_surface_free(&(walk->bar));
+            draw_util_surface_free(&(walk->buffer));
+            draw_util_surface_free(&(walk->statusline_buffer));
             draw_util_surface_init(xcb_connection, &(walk->bar), walk->bar.id, NULL, walk->rect.w, bar_height);
             draw_util_surface_init(xcb_connection, &(walk->buffer), walk->buffer.id, NULL, walk->rect.w, bar_height);
             draw_util_surface_init(xcb_connection, &(walk->statusline_buffer), walk->statusline_buffer.id, NULL, walk->rect.w, bar_height);

@@ -658,7 +658,7 @@ int main(int argc, char *argv[]) {
     }
 
     free(pattern);
-    draw_util_surface_free(conn, &bar);
+    draw_util_surface_free(&bar);
 
     return 0;
 }

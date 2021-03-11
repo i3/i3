@@ -258,8 +258,8 @@ static void _x_con_kill(Con *con) {
         xcb_free_colormap(conn, con->colormap);
     }
 
-    draw_util_surface_free(conn, &(con->frame));
-    draw_util_surface_free(conn, &(con->frame_buffer));
+    draw_util_surface_free(&(con->frame));
+    draw_util_surface_free(&(con->frame_buffer));
     xcb_free_pixmap(conn, con->frame_buffer.id);
     con->frame_buffer.id = XCB_NONE;
     state = state_for_frame(con->frame.id);
@@ -939,7 +939,7 @@ void x_push_node(Con *con) {
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
         if (!is_pixmap_needed && con->frame_buffer.id != XCB_NONE) {
-            draw_util_surface_free(conn, &(con->frame_buffer));
+            draw_util_surface_free(&(con->frame_buffer));
             xcb_free_pixmap(conn, con->frame_buffer.id);
             con->frame_buffer.id = XCB_NONE;
         }
@@ -948,7 +948,7 @@ void x_push_node(Con *con) {
             if (con->frame_buffer.id == XCB_NONE) {
                 con->frame_buffer.id = xcb_generate_id(conn);
             } else {
-                draw_util_surface_free(conn, &(con->frame_buffer));
+                draw_util_surface_free(&(con->frame_buffer));
                 xcb_free_pixmap(conn, con->frame_buffer.id);
             }
 

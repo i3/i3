@@ -57,7 +57,8 @@ void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_draw
  * Destroys the surface.
  *
  */
-void draw_util_surface_free(xcb_connection_t *conn, surface_t *surface) {
+void draw_util_surface_free(surface_t *surface) {
+    xcb_connection_t *conn = cairo_xcb_device_get_connection(cairo_surface_get_device(surface->surface));
     xcb_free_gc(conn, surface->gc);
     cairo_surface_destroy(surface->surface);
     cairo_destroy(surface->cr);
