@@ -76,3 +76,4 @@
 #include "restore_layout.h"
 #include "sync.h"
 #include "main.h"
+#include "multi_draw.h"

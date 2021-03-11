@@ -393,6 +393,7 @@ i3srcs = [
   'src/manage.c',
   'src/match.c',
   'src/move.c',
+  'src/multi_draw.c',
   'src/output.c',
   'src/randr.c',
   'src/regex.c',
