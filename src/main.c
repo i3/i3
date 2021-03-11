@@ -457,6 +457,9 @@ int main(int argc, char *argv[]) {
                                 "\tThe default is %d bytes.\n",
                         shmlog_size);
                 fprintf(stderr, "\n");
+                fprintf(stderr, "\t--replace\n"
+                                "\tReplace an existing window manager.\n");
+                fprintf(stderr, "\n");
                 fprintf(stderr, "If you pass plain text arguments, i3 will interpret them as a command\n"
                                 "to send to a currently running i3 (like i3-msg). This allows you to\n"
                                 "use nice and logical commands, such as:\n"
