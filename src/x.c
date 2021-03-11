@@ -935,10 +935,10 @@ void x_push_node(Con *con) {
         /* Make sure unused rectangles are all zero */
         memset(&rectangles, 0, sizeof(rectangles));
         size_t num_rectangles = x_get_border_rectangles(con, rectangles);
-            for (int i = 0; i < num_rectangles; i++) {
-                printf("Rectangle %d: (%d,%d) with size (%d,%d)\n", i,
-                        rectangles[i].x, rectangles[i].y, rectangles[i].width, rectangles[i].height);
-            }
+        for (int i = 0; i < num_rectangles; i++) {
+            printf("Rectangle %d: (%d,%d) with size (%d,%d)\n", i,
+                    rectangles[i].x, rectangles[i].y, rectangles[i].width, rectangles[i].height);
+        }
 
         /* We first create the new pixmap, then render to it, set it as the
          * background and only afterwards change the window size. This reduces
