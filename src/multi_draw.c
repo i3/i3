@@ -47,6 +47,29 @@ void multi_surface_free(multi_surface_t *surface) {
         (void) offset_x;
         (void) offset_y;
     }
+
+    /* Set everything to NULL; this is used to indicate not-present surfaces */
+    memset(surface, 0, sizeof(*surface));
+}
+
+/**
+ * Destroys the multi surface and calls xcb_free_pixmap() on each drawable.
+ *
+ */
+void multi_surface_free_pixmap(multi_surface_t *surface) {
+    xcb_pixmap_t pixmaps[4];
+    xcb_connection_t *conn = cairo_xcb_device_get_connection(cairo_surface_get_device(surface->surfaces[0].surface.surface));
+
+    /* Check that we got the array size correct */
+    assert(sizeof(pixmaps) / sizeof(pixmaps[0]) == sizeof(surface->surfaces) / sizeof(surface->surfaces[0]));
+    for (int i = 0; i < sizeof(pixmaps) / sizeof(pixmaps[0]); i++)
+        pixmaps[i] = surface->surfaces[i].surface.id;
+
+    multi_surface_free(surface);
+    for (int i = 0; i < sizeof(pixmaps) / sizeof(pixmaps[0]); i++) {
+        if (pixmaps[i] != XCB_NONE)
+            xcb_free_pixmap(conn, pixmaps[i]);
+    }
 }
 
 /**

@@ -37,6 +37,12 @@ void multi_draw_init(xcb_connection_t *conn, multi_surface_t *surface, xcb_visua
 void multi_surface_free(multi_surface_t *surface);
 
 /**
+ * Destroys the multi surface and calls xcb_free_pixmap() on each drawable.
+ *
+ */
+void multi_surface_free_pixmap(multi_surface_t *surface);
+
+/**
  * Draw the given text using libi3.
  *
  */
