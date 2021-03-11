@@ -259,9 +259,7 @@ static void _x_con_kill(Con *con) {
     }
 
     draw_util_surface_free(conn, &(con->frame));
-    draw_util_surface_free(conn, &(con->frame_buffer));
-    xcb_free_pixmap(conn, con->frame_buffer.id);
-    con->frame_buffer.id = XCB_NONE;
+    multi_surface_free_pixmap(&(con->frame_buffer));
     state = state_for_frame(con->frame.id);
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_REMOVE(&old_state_head, state, old_state);
@@ -361,20 +359,20 @@ static void x_draw_title_border(Con *con, struct deco_render_params *p) {
     Rect *dr = &(con->deco_rect);
 
     /* Left */
-    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
-                        dr->x, dr->y, 1, dr->height);
+    multi_surface_rectangle(&(con->parent->frame_buffer), p->color->border,
+                            dr->x, dr->y, 1, dr->height);
 
     /* Right */
-    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
-                        dr->x + dr->width - 1, dr->y, 1, dr->height);
+    multi_surface_rectangle(&(con->parent->frame_buffer), p->color->border,
+                            dr->x + dr->width - 1, dr->y, 1, dr->height);
 
     /* Top */
-    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
-                        dr->x, dr->y, dr->width, 1);
+    multi_surface_rectangle(&(con->parent->frame_buffer), p->color->border,
+                            dr->x, dr->y, dr->width, 1);
 
     /* Bottom */
-    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
-                        dr->x, dr->y + dr->height - 1, dr->width, 1);
+    multi_surface_rectangle(&(con->parent->frame_buffer), p->color->border,
+                            dr->x, dr->y + dr->height - 1, dr->width, 1);
 }
 
 static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p) {
@@ -389,11 +387,11 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
         /* We actually only redraw the far right two pixels as that is the
          * distance we keep from the edge (not the entire border width).
          * Redrawing the entire border would cause text to be cut off. */
-        draw_util_rectangle(&(con->parent->frame_buffer), p->color->background,
-                            dr->x + dr->width - 2 * logical_px(1),
-                            dr->y,
-                            2 * logical_px(1),
-                            dr->height);
+        multi_surface_rectangle(&(con->parent->frame_buffer), p->color->background,
+                                dr->x + dr->width - 2 * logical_px(1),
+                                dr->y,
+                                2 * logical_px(1),
+                                dr->height);
     }
 
     /* Redraw the border. */
@@ -483,7 +481,7 @@ void x_draw_decoration(Con *con) {
     /* Skip containers whose pixmap has not yet been created (can happen when
      * decoration rendering happens recursively for a window for which
      * x_push_node() was not yet called) */
-    if (leaf && con->frame_buffer.id == XCB_NONE)
+    if (leaf && con->frame_buffer.surfaces[0].surface.id == XCB_NONE)
         return;
 
     /* 1: build deco_params and compare with cache */
@@ -538,20 +536,20 @@ void x_draw_decoration(Con *con) {
     /* 2: draw the client.background, but only for the parts around the window_rect */
     if (con->window != NULL) {
         /* Clear visible windows before beginning to draw */
-        draw_util_clear_surface(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
+        multi_surface_clear(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
 
         /* top area */
-        draw_util_rectangle(&(con->frame_buffer), config.client.background,
-                            0, 0, r->width, w->y);
+        multi_surface_rectangle(&(con->frame_buffer), config.client.background,
+                                0, 0, r->width, w->y);
         /* bottom area */
-        draw_util_rectangle(&(con->frame_buffer), config.client.background,
-                            0, w->y + w->height, r->width, r->height - (w->y + w->height));
+        multi_surface_rectangle(&(con->frame_buffer), config.client.background,
+                                0, w->y + w->height, r->width, r->height - (w->y + w->height));
         /* left area */
-        draw_util_rectangle(&(con->frame_buffer), config.client.background,
-                            0, 0, w->x, r->height);
+        multi_surface_rectangle(&(con->frame_buffer), config.client.background,
+                                0, 0, w->x, r->height);
         /* right area */
-        draw_util_rectangle(&(con->frame_buffer), config.client.background,
-                            w->x + w->width, 0, r->width - (w->x + w->width), r->height);
+        multi_surface_rectangle(&(con->frame_buffer), config.client.background,
+                                w->x + w->width, 0, r->width - (w->x + w->width), r->height);
     }
 
     /* 3: draw a rectangle in border color around the client */
@@ -562,11 +560,11 @@ void x_draw_decoration(Con *con) {
         xcb_rectangle_t rectangles[4];
         size_t rectangles_count = x_get_border_rectangles(con, rectangles);
         for (size_t i = 0; i < rectangles_count; i++) {
-            draw_util_rectangle(&(con->frame_buffer), p->color->child_border,
-                                rectangles[i].x,
-                                rectangles[i].y,
-                                rectangles[i].width,
-                                rectangles[i].height);
+            multi_surface_rectangle(&(con->frame_buffer), p->color->child_border,
+                                    rectangles[i].x,
+                                    rectangles[i].y,
+                                    rectangles[i].width,
+                                    rectangles[i].height);
         }
 
         /* Highlight the side of the border at which the next window will be
@@ -578,25 +576,25 @@ void x_draw_decoration(Con *con) {
             TAILQ_PREV(con, nodes_head, nodes) == NULL &&
             con->parent->type != CT_FLOATING_CON) {
             if (p->parent_layout == L_SPLITH) {
-                draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
-                                    r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height);
+                multi_surface_rectangle(&(con->frame_buffer), p->color->indicator,
+                                        r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height);
             } else if (p->parent_layout == L_SPLITV) {
-                draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
-                                    br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
+                multi_surface_rectangle(&(con->frame_buffer), p->color->indicator,
+                                        br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
             }
         }
     }
 
     /* If the parent hasn't been set up yet, skip the decoration rendering
      * for now. */
-    if (parent->frame_buffer.id == XCB_NONE)
+    if (parent->frame_buffer.surfaces[0].surface.id == XCB_NONE)
         goto copy_pixmaps;
 
     /* For the first child, we clear the parent pixmap to ensure there's no
      * garbage left on there. This is important to avoid tearing when using
      * transparency. */
     if (con == TAILQ_FIRST(&(con->parent->nodes_head))) {
-        draw_util_clear_surface(&(con->parent->frame_buffer), COLOR_TRANSPARENT);
+        multi_surface_clear(&(con->parent->frame_buffer), COLOR_TRANSPARENT);
         FREE(con->parent->deco_render_params);
     }
 
@@ -606,8 +604,8 @@ void x_draw_decoration(Con *con) {
         goto copy_pixmaps;
 
     /* 4: paint the bar */
-    draw_util_rectangle(&(parent->frame_buffer), p->color->background,
-                        con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
+    multi_surface_rectangle(&(parent->frame_buffer), p->color->background,
+                            con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
 
     /* 5: draw title border */
     x_draw_title_border(con, p);
@@ -642,10 +640,10 @@ void x_draw_decoration(Con *con) {
                                     ? title_padding
                                     : deco_width - mark_width - title_padding;
 
-            draw_util_text(mark, &(parent->frame_buffer),
-                           p->color->text, p->color->background,
-                           con->deco_rect.x + mark_offset_x,
-                           con->deco_rect.y + text_offset_y, mark_width);
+            multi_surface_text(mark, &(parent->frame_buffer),
+                               p->color->text, p->color->background,
+                               con->deco_rect.x + mark_offset_x,
+                               con->deco_rect.y + text_offset_y, mark_width);
             I3STRING_FREE(mark);
 
             mark_width += title_padding;
@@ -697,11 +695,11 @@ void x_draw_decoration(Con *con) {
             break;
     }
 
-    draw_util_text(title, &(parent->frame_buffer),
-                   p->color->text, p->color->background,
-                   con->deco_rect.x + title_offset_x,
-                   con->deco_rect.y + text_offset_y,
-                   deco_width - mark_width - 2 * title_padding);
+    multi_surface_text(title, &(parent->frame_buffer),
+                       p->color->text, p->color->background,
+                       con->deco_rect.x + title_offset_x,
+                       con->deco_rect.y + text_offset_y,
+                       deco_width - mark_width - 2 * title_padding);
 
     if (win == NULL || con->title_format != NULL) {
         I3STRING_FREE(title);
@@ -709,7 +707,8 @@ void x_draw_decoration(Con *con) {
 
     x_draw_decoration_after_title(con, p);
 copy_pixmaps:
-    draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+    multi_surface_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height,
+                               (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
 }
 
 /*
@@ -734,7 +733,8 @@ void x_deco_recurse(Con *con) {
         }
 
         if (state->mapped) {
-            draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+            multi_surface_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height,
+                                       (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
         }
     }
 
@@ -927,8 +927,8 @@ void x_push_node(Con *con) {
     bool fake_notify = false;
     /* Set new position if rect changed (and if height > 0) or if the pixmap
      * needs to be recreated */
-    if ((is_pixmap_needed && con->frame_buffer.id == XCB_NONE) || (!rect_equals(state->rect, rect) &&
-                                                                   rect.height > 0)) {
+    if ((is_pixmap_needed && con->frame_buffer.surfaces[0].surface.id == XCB_NONE) || (!rect_equals(state->rect, rect) &&
+                                                                                       rect.height > 0)) {
         /* We first create the new pixmap, then render to it, set it as the
          * background and only afterwards change the window size. This reduces
          * flickering. */
@@ -938,18 +938,17 @@ void x_push_node(Con *con) {
 
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
-        if (!is_pixmap_needed && con->frame_buffer.id != XCB_NONE) {
-            draw_util_surface_free(conn, &(con->frame_buffer));
-            xcb_free_pixmap(conn, con->frame_buffer.id);
-            con->frame_buffer.id = XCB_NONE;
+        if (!is_pixmap_needed && con->frame_buffer.surfaces[0].surface.id != XCB_NONE) {
+            multi_surface_free_pixmap(&(con->frame_buffer));
         }
 
-        if (is_pixmap_needed && (has_rect_changed || con->frame_buffer.id == XCB_NONE)) {
-            if (con->frame_buffer.id == XCB_NONE) {
-                con->frame_buffer.id = xcb_generate_id(conn);
+        if (is_pixmap_needed && (has_rect_changed || con->frame_buffer.surfaces[0].surface.id == XCB_NONE)) {
+            xcb_pixmap_t pixmap;
+            if (con->frame_buffer.surfaces[0].surface.id == XCB_NONE) {
+                pixmap = xcb_generate_id(conn);
             } else {
-                draw_util_surface_free(conn, &(con->frame_buffer));
-                xcb_free_pixmap(conn, con->frame_buffer.id);
+                pixmap = con->frame_buffer.surfaces[0].surface.id;
+                multi_surface_free_pixmap(&(con->frame_buffer));
             }
 
             uint16_t win_depth = root_depth;
@@ -961,17 +960,21 @@ void x_push_node(Con *con) {
             //      for height == 0. Also, we should probably handle width == 0 the same way.
             int width = MAX((int32_t)rect.width, 1);
             int height = MAX((int32_t)rect.height, 1);
+            int x = 0;
+            int y = 0;
 
-            xcb_create_pixmap(conn, win_depth, con->frame_buffer.id, con->frame.id, width, height);
-            draw_util_surface_init(conn, &(con->frame_buffer), con->frame_buffer.id,
-                                   get_visualtype_by_id(get_visualid_by_depth(win_depth)), width, height);
+            xcb_create_pixmap(conn, win_depth, pixmap, con->frame.id, width, height);
+            multi_draw_init(conn, &(con->frame_buffer), get_visualtype_by_id(get_visualid_by_depth(win_depth)),
+                            1, &pixmap, &x, &y, &width, &height);
 
             /* For the graphics context, we disable GraphicsExposure events.
              * Those will be sent when a CopyArea request cannot be fulfilled
              * properly due to parts of the source being unmapped or otherwise
              * unavailable. Since we always copy from pixmaps to windows, this
              * is not a concern for us. */
-            xcb_change_gc(conn, con->frame_buffer.gc, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){0});
+            /* FIXME: This only deals with the first GC, but that should be okay
+             * after https://github.com/i3/i3/pull/4376 is merged */
+            xcb_change_gc(conn, con->frame_buffer.surfaces[0].surface.gc, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){0});
 
             draw_util_surface_set_size(&(con->frame), width, height);
             con->pixmap_recreated = true;
@@ -995,8 +998,9 @@ void x_push_node(Con *con) {
          * fast as possible) */
         xcb_flush(conn);
         xcb_set_window_rect(conn, con->frame.id, rect);
-        if (con->frame_buffer.id != XCB_NONE) {
-            draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+        if (con->frame_buffer.surfaces[0].surface.id != XCB_NONE) {
+            multi_surface_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height,
+                                       (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
         }
         xcb_flush(conn);
 
@@ -1049,8 +1053,9 @@ void x_push_node(Con *con) {
         xcb_change_window_attributes(conn, con->frame.id, XCB_CW_EVENT_MASK, values);
 
         /* copy the pixmap contents to the frame window immediately after mapping */
-        if (con->frame_buffer.id != XCB_NONE) {
-            draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+        if (con->frame_buffer.surfaces[0].surface.id != XCB_NONE) {
+            multi_surface_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height,
+                                       (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
         }
         xcb_flush(conn);
 

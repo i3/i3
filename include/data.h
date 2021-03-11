@@ -17,6 +17,7 @@
 #include <sys/time.h>
 
 #include "queue.h"
+#include "multi_draw.h"
 
 /*
  * To get the big concept: There are helper structures like struct
@@ -621,7 +622,7 @@ struct Con {
 
     /* The surface used for the frame window. */
     surface_t frame;
-    surface_t frame_buffer;
+    multi_surface_t frame_buffer;
     bool pixmap_recreated;
 
     enum {
