@@ -389,6 +389,9 @@ fullscreen_mode (integer)::
         +1+ (fullscreened on output) or
         +2+ (fullscreened globally).
     Note that all workspaces are considered fullscreened on their respective output.
+floating (string)::
+	Floating state of container.
+	Can be either "auto_on", "auto_off", "user_on" or "user_off"
 
 nodes (array of node)::
 	The tiling (i.e. non-floating) child containers of this node.
