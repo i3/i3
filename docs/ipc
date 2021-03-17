@@ -138,7 +138,7 @@ BAR_CONFIG (6)::
 VERSION (7)::
 	Reply to the GET_VERSION message.
 BINDING_MODES (8)::
-        Reply to the GET_BINDING_MODES message.
+	Reply to the GET_BINDING_MODES message.
 GET_CONFIG (9)::
 	Reply to the GET_CONFIG message.
 TICK (10)::
