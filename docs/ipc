@@ -14,7 +14,8 @@ most languages. In the default configuration file, the ipc-socket gets created
 in +/tmp/i3-%u.XXXXXX/ipc-socket.%p+ where +%u+ is your UNIX username, +%p+ is
 the PID of i3 and XXXXXX is a string of random characters from the portable
 filename character set (see mkdtemp(3)). You can get the socketpath from i3 by
-calling +i3 --get-socketpath+.
+executing +i3 --get-socketpath+, which will print the path to the standard
+output (plus a newline).
 
 All i3 utilities, like +i3-msg+ and +i3-input+ will read the +I3_SOCKET_PATH+
 X11 property, stored on the X11 root window.
