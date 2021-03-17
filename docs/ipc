@@ -117,7 +117,9 @@ which in turn contain the JSON serialization of a data structure. For example,
 the GET_WORKSPACES message returns an array of workspaces (each workspace is a
 map with certain attributes).
 
-=== Reply format
+Replies currently have a 1:1 correspondence to messages, with the message type
+of the reply corresponding to the message type of the message which caused the
+reply to be sent.
 
 The following reply types are implemented:
 
