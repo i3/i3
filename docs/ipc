@@ -40,12 +40,12 @@ my $sock = IO::Socket::UNIX->new(Peer => $path);
 
 == Sending messages to i3
 
-To send a message to i3, you have to format in the binary message format which
-i3 expects. This format specifies a magic string in the beginning to ensure
-the integrity of messages (to prevent follow-up errors). Following the magic
-string comes the length of the payload of the message as 32-bit integer, and
-the type of the message as 32-bit integer (the integers are not converted, so
-they are in native byte order).
+To send a message to i3, you have to format it in the binary message format
+which i3 expects. This format specifies a magic string in the beginning to
+ensure the integrity of messages (to prevent follow-up errors). Following the
+magic string comes the length of the payload of the message as a 32-bit
+integer, and the type of the message as a 32-bit integer (the integers are not
+converted, so they are in native byte order).
 
 The magic string currently is "i3-ipc" and will only be changed when a change
 in the IPC API is done which breaks compatibility (we hope that we don’t need
