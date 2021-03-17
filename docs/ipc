@@ -309,7 +309,7 @@ active (boolean)::
 	Whether this output is currently active (has a valid mode).
 primary (boolean)::
 	Whether this output is currently the primary output.
-current_workspace (string)::
+current_workspace (string or null)::
 	The name of the current workspace that is visible on this output. +null+ if
 	the output is not active.
 rect (map)::
@@ -389,7 +389,7 @@ orientation (string)::
 	"vertical".
 	THIS FIELD IS OBSOLETE. It is still present, but your code should not
 	use it. Instead, rely on the layout field.
-percent (float)::
+percent (float or null)::
 	The percentage which this container takes in its parent. A value of
 	+null+ means that the percent property does not make sense for this
 	container, for example for the root container.
@@ -413,9 +413,9 @@ deco_rect (map)::
 geometry (map)::
 	The original geometry the window specified when i3 mapped it. Used when
 	switching a window to floating mode, for example.
-window (integer)::
+window (integer or null)::
 	The X11 window ID of the *actual client window* inside this container.
-	This field is set to null for split containers or otherwise empty
+	This field is set to +null+ for split containers or otherwise empty
 	containers. This ID corresponds to what xwininfo(1) and other
 	X11-related tools display (usually in hex).
 window_properties (map)::
