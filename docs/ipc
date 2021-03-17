@@ -97,17 +97,27 @@ $sock->write(format_ipc_command("exit"));
 
 == Receiving replies from i3
 
-Replies from i3 usually consist of a simple string (the length of the string
-is the message_length, so you can consider them length-prefixed) which in turn
-contain the JSON serialization of a data structure. For example, the
-GET_WORKSPACES message returns an array of workspaces (each workspace is a map
-with certain attributes).
+Each message sent to i3 will cause exactly one reply to be sent in return. The
+order of the sent replies will always correspond to the order of the sent
+requests. The only exception to this is <<events>>, which (once subscribed to)
+may be sent at any time (though never in the middle of another event or reply).
 
-=== Reply format
+It is generally safe to send several messages to i3 without first waiting for a
+reply for each one (pipelining) -- though, note that depending on the language /
+network library you use, writing to the socket without also reading from it may
+cause a deadlock due to the socket buffers getting full.
 
 The reply format is identical to the normal message format. There also is
 the magic string, then the message length, then the message type and the
 payload.
+
+The payload of replies from i3 usually consists of a simple string (the length
+of the string is the message_length, so you can consider them length-prefixed),
+which in turn contain the JSON serialization of a data structure. For example,
+the GET_WORKSPACES message returns an array of workspaces (each workspace is a
+map with certain attributes).
+
+=== Reply format
 
 The following reply types are implemented:
 
