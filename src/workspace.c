@@ -1044,6 +1044,24 @@ void workspace_move_to_output(Con *ws, Output *output) {
 
     ewmh_update_desktop_properties();
 
+    struct Workspace_Assignment *assignment;
+    bool assignment_found = false;
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+        if (strcmp(ws->name, assignment->name) == 0) {
+            FREE(assignment->output);
+            assignment->output = sstrdup(output_primary_name(output));
+            assignment_found = true;
+            break;
+        }
+    }
+
+    if (!assignment_found) {
+        assignment = scalloc(1, sizeof(struct Workspace_Assignment));
+        assignment->name = sstrdup(ws->name);
+        assignment->output = sstrdup(output_primary_name(output));
+        TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
+    }
+
     if (!previously_visible_ws) {
         return;
     }
