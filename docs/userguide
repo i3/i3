@@ -78,7 +78,7 @@ horizontally or vertically again, just like the workspace. The terminology is
 or browser) and "split container" for containers that consist of one or more
 windows.
 
-TODO: picture of the tree
+//TODO: picture of the tree
 
 To split a window vertically, press +$mod+v+ before you create the new window.
 To split it horizontally, press +$mod+h+.
