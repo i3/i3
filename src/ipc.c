@@ -235,9 +235,9 @@ static void dump_rect(yajl_gen gen, const char *name, Rect r) {
     ystr(name);
     y(map_open);
     ystr("x");
-    y(integer, r.x);
+    y(integer, (int32_t)r.x);
     ystr("y");
-    y(integer, r.y);
+    y(integer, (int32_t)r.y);
     ystr("width");
     y(integer, r.width);
     ystr("height");
