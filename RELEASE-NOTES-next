@@ -11,6 +11,7 @@ strongly encouraged to upgrade.
  │ Changes in i3 v4.20        │
  └────────────────────────────┘
 
+  • default config: use dex for XDG autostart
   • i3-nagbar: position on focused monitor by default
   • i3-nagbar: add option to position on primary monitor
   • alternate focusing tab/stack children-parent containers by clicking on their titlebars
