@@ -1855,9 +1855,9 @@ void con_set_layout(Con *con, layout_t layout) {
             con_attach(new, con, false);
 
             tree_flatten(croot);
+            con_force_split_parents_redraw(con);
+            return;
         }
-        con_force_split_parents_redraw(con);
-        return;
     }
 
     if (layout == L_DEFAULT) {
