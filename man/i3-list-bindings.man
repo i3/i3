@@ -1,0 +1,31 @@
+i3-list-bindings(1)
+===================
+j-jzk <me@j-jzk.cz>
+v1.0, April 2021
+
+== NAME
+
+i3-list-bindings - lists keybindings in the currently loaded i3 configuration
+
+== SYNOPSIS
+
+i3-list-bindings [-s]
+
+== OPTIONS
+
+-s::
+"Standalone" mode - opens itself as a floating window and doesn't exit immediately,
+but waits for a Return key.
+
+== DESCRIPTION
+
+i3-list-bindings gets the currently loaded i3 configuration and prints all of the
+keybindings in a synoptical way.
+
+== SEE ALSO
+
+i3(1)
+
+== AUTHOR
+
+j-jzk and contributors

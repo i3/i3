@@ -57,6 +57,9 @@ bindcode $mod+40 exec --no-startup-id dmenu_run
 # .desktop file. It is a wrapper around dmenu, so you need that installed.
 # bindcode $mod+40 exec --no-startup-id i3-dmenu-desktop
 
+# show list of keybindings
+bindcode $mod+56 exec i3-sensible-terminal -e "i3-list-bindings -s"
+
 # change focus
 bindcode $mod+44 focus left
 bindcode $mod+45 focus down

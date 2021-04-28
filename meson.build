@@ -206,6 +206,7 @@ if get_option('mans')
     'man/i3-sensible-pager.man',
     'man/i3-sensible-terminal.man',
     'man/i3-dump-log.man',
+    'man/i3-list-bindings.man',
   ]
 
   foreach m : man_inputs
@@ -282,6 +283,7 @@ else
 	'man/i3-dump-log.1',
 	'man/i3-dmenu-desktop.1',
 	'man/i3-save-tree.1',
+    'man/i3-list-bindings.1',
       ],
       install_dir: man1,
     )
@@ -577,6 +579,7 @@ install_data(
     'i3-sensible-editor',
     'i3-sensible-pager',
     'i3-sensible-terminal',
+    'i3-list-bindings',
   ],
   install_dir: 'bin',
 )

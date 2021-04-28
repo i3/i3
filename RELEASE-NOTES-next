@@ -22,6 +22,7 @@ strongly encouraged to upgrade.
   • Add %machine placeholder (WM_CLIENT_MACHINE) to title_format
   • Allow multiple output names in 'move container|workspace to output'
   • Add 'move container|workspace to output next'
+  • Add a script for listing all keybindings and a keybinding for running it
 
  ┌────────────────────────────┐
  │ Bugfixes                   │
