@@ -1,0 +1,91 @@
+#!/usr/bin/env perl
+# vim:ts=4:sw=4:expandtab
+use strict;
+use warnings;
+use v5.10;
+
+# gets the loaded configuration file and parses it
+# the keybindings are grouped into blocks with an optional comment on top
+sub slurp {
+    # get the loaded config and add a few newlines at the end to make sure the last
+    # keybinding block is saved properly
+    my $config = `i3-msg -t get_config` . "\n\n";
+
+    my $last_comment = "";
+    my @blocks = ();
+    my @current_block = (); 
+    my $in_mode = 0;
+
+    foreach my $line (split("\n", $config)) {
+        chomp $line;
+
+        if ($line =~ /^\s*}.*$/) {
+            # end of a mode definition
+            $in_mode = 0;
+        } elsif ($in_mode) {
+            # don't record any keybindings for modes other than "default"
+            next;
+        } elsif ($line =~ /^\s*mode\s.*$/) {
+            # start of a mode definition
+            $in_mode = 1;
+        } elsif ($line =~ /^\s*bindsym\s+(?:--\S*\s+)*(\S*)\s(.*?)\s*(?:#\s*(.*))?$/) {
+            # a keybinding
+            my %keybinding = (binding => $1, action => $2, comment => $3 ? $3 : "");
+            push(@current_block, \%keybinding);
+        } elsif ($line =~ /^\s*#\s*(.*)\s*$/) {
+            # a comment
+            $last_comment = $1;
+        } else {
+            # a command or a blank line - end of a block
+            if (@current_block && scalar @current_block != 1) {
+                # save the current block to the array of blocks
+                push(@blocks, {bindings => [@current_block], comment => $last_comment});
+            } elsif (scalar @current_block == 1) {
+                # if the current block is a single stray keybinding, we should group it together with
+                # other such keybindings.
+
+                # save the comment
+                $current_block[0]->{comment} = $last_comment;
+
+                if ($blocks[-1] && $blocks[-1]->{_stray}) {
+                    push(@{$blocks[-1]->{bindings}}, $current_block[0]);
+                } else {
+                    # if there is no block with stray keybindings, create one
+                    push(@blocks, {bindings => [@current_block], comment => "", _stray => 1});
+                }
+            }
+
+            @current_block = ();
+            $last_comment = "";
+        }
+    }
+
+    return @blocks;
+}
+
+# text formatting subroutines
+sub block_header { return "\e[7m" . shift . "\e[0m"; }
+sub keybinding { return "\e[94m" . shift . "\e[0m"; }
+sub comment { return "\e[32m" . shift . "\e[0m"; }
+
+foreach my $block (slurp()) {
+    print block_header "$block->{comment}\n" if $block->{comment};
+
+    foreach my $binding (@{$block->{bindings}}) {
+        print keybinding($binding->{binding}) . "\t$binding->{action}\t" . comment("$binding->{comment}\n");
+    }
+
+    print "\n";
+}
+
+# optionally wait for user input
+my $param = @ARGV ? $ARGV[0] : 0;
+if ($param eq "-s") {
+    `i3-msg floating enable`;
+
+    print "Press RETURN to exit\n";
+    <STDIN>;
+} elsif ($param) {
+    print "Illegal parameter $param\n";
+    exit 1;
+}
