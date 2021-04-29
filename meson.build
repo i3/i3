@@ -708,12 +708,6 @@ anyevent_i3 = custom_target(
 )
 
 if meson.version().version_compare('>=0.46.0')
-  # meson < 0.57 doesn't support infinite (0) test timeouts
-  test_timeout = 999
-  if meson.version().version_compare('>=0.57')
-    test_timeout = 0
-  endif
-  
   test(
     'complete-run',
     perl,
@@ -722,7 +716,7 @@ if meson.version().version_compare('>=0.46.0')
       anyevent_i3,
       i3test_pm,
     ],
-    timeout: test_timeout,
+    timeout: 120,  # Default of 30 seconds can cause timeouts on slower machines
   )
 else
   # meson < 0.46.0 does not support the depends arg in test targets.
