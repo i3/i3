@@ -56,40 +56,19 @@ typedef struct tokenptr {
 
 #include "GENERATED_command_tokens.h"
 
-/*******************************************************************************
- * The (small) stack where identified literals are stored during the parsing
- * of a single command (like $workspace).
- ******************************************************************************/
-
-struct stack_entry {
-    /* Just a pointer, not dynamically allocated. */
-    const char *identifier;
-    enum {
-        STACK_STR = 0,
-        STACK_LONG = 1,
-    } type;
-    union {
-        char *str;
-        long num;
-    } val;
-};
-
-/* 10 entries should be enough for everybody. */
-static struct stack_entry stack[10];
-
 /*
  * Pushes a string (identified by 'identifier') on the stack. We simply use a
  * single array, since the number of entries we have to store is very small.
  *
  */
-static void push_string(const char *identifier, char *str) {
+static void push_string(struct stack *stack, const char *identifier, char *str) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].identifier != NULL)
+        if (stack->stack[c].identifier != NULL)
             continue;
         /* Found a free slot, let’s store it here. */
-        stack[c].identifier = identifier;
-        stack[c].val.str = str;
-        stack[c].type = STACK_STR;
+        stack->stack[c].identifier = identifier;
+        stack->stack[c].val.str = str;
+        stack->stack[c].type = STACK_STR;
         return;
     }
 
@@ -103,15 +82,15 @@ static void push_string(const char *identifier, char *str) {
 }
 
 // TODO move to a common util
-static void push_long(const char *identifier, long num) {
+static void push_long(struct stack *stack, const char *identifier, long num) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].identifier != NULL) {
+        if (stack->stack[c].identifier != NULL) {
             continue;
         }
 
-        stack[c].identifier = identifier;
-        stack[c].val.num = num;
-        stack[c].type = STACK_LONG;
+        stack->stack[c].identifier = identifier;
+        stack->stack[c].val.num = num;
+        stack->stack[c].type = STACK_LONG;
         return;
     }
 
@@ -125,36 +104,36 @@ static void push_long(const char *identifier, long num) {
 }
 
 // TODO move to a common util
-static const char *get_string(const char *identifier) {
+static const char *get_string(struct stack *stack, const char *identifier) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].identifier == NULL)
+        if (stack->stack[c].identifier == NULL)
             break;
-        if (strcmp(identifier, stack[c].identifier) == 0)
-            return stack[c].val.str;
+        if (strcmp(identifier, stack->stack[c].identifier) == 0)
+            return stack->stack[c].val.str;
     }
     return NULL;
 }
 
 // TODO move to a common util
-static long get_long(const char *identifier) {
+static long get_long(struct stack *stack, const char *identifier) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].identifier == NULL)
+        if (stack->stack[c].identifier == NULL)
             break;
-        if (strcmp(identifier, stack[c].identifier) == 0)
-            return stack[c].val.num;
+        if (strcmp(identifier, stack->stack[c].identifier) == 0)
+            return stack->stack[c].val.num;
     }
 
     return 0;
 }
 
 // TODO move to a common util
-static void clear_stack(void) {
+static void clear_stack(struct stack *stack) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].type == STACK_STR)
-            free(stack[c].val.str);
-        stack[c].identifier = NULL;
-        stack[c].val.str = NULL;
-        stack[c].val.num = 0;
+        if (stack->stack[c].type == STACK_STR)
+            free(stack->stack[c].val.str);
+        stack->stack[c].identifier = NULL;
+        stack->stack[c].val.str = NULL;
+        stack->stack[c].val.num = 0;
     }
 }
 
@@ -163,9 +142,12 @@ static void clear_stack(void) {
  ******************************************************************************/
 
 static cmdp_state state;
-#ifndef TEST_PARSER
 static Match current_match;
-#endif
+/*******************************************************************************
+ * The (small) stack where identified literals are stored during the parsing
+ * of a single command (like $workspace).
+ ******************************************************************************/
+static struct stack stack;
 static struct CommandResultIR subcommand_output;
 static struct CommandResultIR command_output;
 
@@ -176,19 +158,19 @@ static void next_state(const cmdp_token *token) {
         subcommand_output.json_gen = command_output.json_gen;
         subcommand_output.client = command_output.client;
         subcommand_output.needs_tree_render = false;
-        GENERATED_call(token->extra.call_identifier, &subcommand_output);
+        GENERATED_call(&current_match, &stack, token->extra.call_identifier, &subcommand_output);
         state = subcommand_output.next_state;
         /* If any subcommand requires a tree_render(), we need to make the
          * whole parser result request a tree_render(). */
         if (subcommand_output.needs_tree_render)
             command_output.needs_tree_render = true;
-        clear_stack();
+        clear_stack(&stack);
         return;
     }
 
     state = token->next_state;
     if (state == INITIAL) {
-        clear_stack();
+        clear_stack(&stack);
     }
 }
 
@@ -296,8 +278,9 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             /* A literal. */
             if (token->name[0] == '\'') {
                 if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
-                    if (token->identifier != NULL)
-                        push_string(token->identifier, sstrdup(token->name + 1));
+                    if (token->identifier != NULL) {
+                        push_string(&stack, token->identifier, sstrdup(token->name + 1));
+                    }
                     walk += strlen(token->name) - 1;
                     next_state(token);
                     token_handled = true;
@@ -319,8 +302,9 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                 if (end == walk)
                     continue;
 
-                if (token->identifier != NULL)
-                    push_long(token->identifier, num);
+                if (token->identifier != NULL) {
+                    push_long(&stack, token->identifier, num);
+                }
 
                 /* Set walk to the first non-number character */
                 walk = end;
@@ -333,8 +317,9 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                 strcmp(token->name, "word") == 0) {
                 char *str = parse_string(&walk, (token->name[0] != 's'));
                 if (str != NULL) {
-                    if (token->identifier)
-                        push_string(token->identifier, str);
+                    if (token->identifier) {
+                        push_string(&stack, token->identifier, str);
+                    }
                     /* If we are at the end of a quoted string, skip the ending
                      * double quote. */
                     if (*walk == '"')
@@ -436,7 +421,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             y(map_close);
 
             free(position);
-            clear_stack();
+            clear_stack(&stack);
             break;
         }
     }

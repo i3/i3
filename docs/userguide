@@ -319,6 +319,90 @@ include the following line in your config file:
 # i3 config file (v4)
 ---------------------
 
+[[include]]
+=== Include directive
+
+Since i3 v4.20, it is possible to include other configuration files from your i3
+configuration.
+
+*Syntax*:
+-----------------
+include <pattern>
+-----------------
+
+i3 expands `pattern` using shell-like word expansion, specifically using the
+https://manpages.debian.org/wordexp.3[`wordexp(3)` C standard library function].
+
+*Examples*:
+--------------------------------------------------------------------------------
+# Tilde expands to the user’s home directory:
+include ~/.config/i3/assignments.conf
+
+# Environment variables are expanded:
+include $HOME/.config/i3/assignments.conf
+
+# Wildcards are expanded:
+include ~/.config/i3/config.d/*.conf
+
+# Command substitution:
+include ~/.config/i3/`hostname`.conf
+
+# i3 loads each path only once, so including the i3 config will not result
+# in an endless loop, but in an error:
+include ~/.config/i3/config
+
+# i3 changes the working directory while parsing a config file
+# so that relative paths are interpreted relative to the directory
+# of the config file that contains the path:
+include assignments.conf
+--------------------------------------------------------------------------------
+
+If a specified file cannot be read, for example because of a lack of file
+permissions, or because of a dangling symlink, i3 will report an error and
+continue processing your remaining configuration.
+
+To list all loaded configuration files, run `i3 --moreversion`:
+
+--------------------------------------------------------------------------------
+% i3 --moreversion
+Binary i3 version:  4.19.2-87-gfcae64f7+ © 2009 Michael Stapelberg and contributors
+Running i3 version: 4.19.2-87-gfcae64f7+ (pid 963940)
+Loaded i3 config:
+  /tmp/i3.cfg (main) (last modified: 2021-05-13T16:42:31 CEST, 463 seconds ago)
+  /tmp/included.cfg (included) (last modified: 2021-05-13T16:42:43 CEST, 451 seconds ago)
+  /tmp/another.cfg (included) (last modified: 2021-05-13T16:42:46 CEST, 448 seconds ago)
+--------------------------------------------------------------------------------
+
+Variables are shared between all config files, but beware of the following limitation:
+
+* You can define a variable and use it within an included file.
+* You cannot use (in the parent file) a variable that was defined within an included file.
+
+This is a technical limitation: variable expansion happens in a separate stage
+before parsing include directives.
+
+Conceptually, included files can only add to the configuration, not undo the
+effects of already-processed configuration. For example, you can only add new
+key bindings, not overwrite or remove existing key bindings. This means:
+
+* The `include` directive is suitable for organizing large configurations into
+  separate files, possibly selecting files based on conditionals.
+
+* The `include` directive is not suitable for expressing “use the default
+  configuration with the following changes”. For that case, we still recommend
+  copying and modifying the default config.
+
+[NOTE]
+====
+Implementation-wise, i3 does not currently construct one big configuration from
+all `include` directives. Instead, i3’s config file parser interprets all
+configuration directives in its `parse_file()` function. When processing an
+`include` configuration directive, the parser recursively calls `parse_file()`.
+
+This means the evaluation order of files forms a tree, or one could say i3 uses
+depth-first traversal.
+====
+
 === Comments
 
 It is possible and recommended to use comments in your configuration file to
