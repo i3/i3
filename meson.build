@@ -350,6 +350,7 @@ libi3srcs = [
   'libi3/ucs2_conversion.c',
   'libi3/nonblock.c',
   'libi3/screenshot_wallpaper.c',
+  'libi3/is_background_set.c',
 ]
 
 if not cdata.get('HAVE_STRNDUP')

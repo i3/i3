@@ -660,3 +660,11 @@ bool path_exists(const char *path);
  * Grab a screenshot of the screen's root window and set it as the wallpaper.
  */
 void set_screenshot_as_wallpaper(xcb_connection_t *conn, xcb_screen_t *screen);
+
+/**
+ * Test whether the screen's root window has a background set.
+ *
+ * This opens & closes a window and test whether the root window still shows the
+ * content of the window.
+ */
+bool is_background_set(xcb_connection_t *conn, xcb_screen_t *screen);

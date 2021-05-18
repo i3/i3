@@ -977,9 +977,23 @@ int main(int argc, char *argv[]) {
     xcb_ungrab_server(conn);
 
     if (autostart) {
-        LOG("This is not an in-place restart, copying root window contents to a pixmap\n");
+        /* When the root's window background is set to NONE, that might mean
+         * that old content stays visible when a window is closed. That has
+         * unpleasant effect of "my terminal (does not seem to) close!".
+         *
+         * There does not seem to be an easy way to query for this problem, so
+         * we test for it: Open & close a window and check if the background is
+         * redrawn or the window contents stay visible.
+         */
+        LOG("This is not an in-place restart, checking if a wallpaper is set.\n");
+
         xcb_screen_t *root = xcb_aux_get_screen(conn, conn_screen);
-        set_screenshot_as_wallpaper(conn, root);
+        if (is_background_set(conn, root)) {
+            LOG("A wallpaper is set, so no screenshot is necessary.\n");
+        } else {
+            LOG("No wallpaper set, copying root window contents to a pixmap\n");
+            set_screenshot_as_wallpaper(conn, root);
+        }
     }
 
 #if defined(__OpenBSD__)

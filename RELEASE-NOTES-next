@@ -6,6 +6,13 @@
 This is i3 v4.19. This version is considered stable. All users of i3 are
 strongly encouraged to upgrade.
 
+i3 used to unconditionally take a screenshot and set it as the wallpaper when
+initially starting up. This was done to work around problems in case no
+wallpaper is set, but caused problems if any windows were visible in the
+screenshot. This work around is now only applied if no wallpaper is detected. If
+you not set a wallpaper, it is recommended to add exec --no-startup-id xsetroot
+-solid black to your config.
+
 
  ┌────────────────────────────┐
  │ Changes in i3 v4.20        │
