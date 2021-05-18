@@ -655,3 +655,8 @@ int create_socket(const char *filename, char **out_socketpath);
  *
  */
 bool path_exists(const char *path);
+
+/**
+ * Grab a screenshot of the screen's root window and set it as the wallpaper.
+ */
+void set_screenshot_as_wallpaper(xcb_connection_t *conn, xcb_screen_t *screen);

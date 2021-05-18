@@ -979,22 +979,7 @@ int main(int argc, char *argv[]) {
     if (autostart) {
         LOG("This is not an in-place restart, copying root window contents to a pixmap\n");
         xcb_screen_t *root = xcb_aux_get_screen(conn, conn_screen);
-        uint16_t width = root->width_in_pixels;
-        uint16_t height = root->height_in_pixels;
-        xcb_pixmap_t pixmap = xcb_generate_id(conn);
-        xcb_gcontext_t gc = xcb_generate_id(conn);
-
-        xcb_create_pixmap(conn, root->root_depth, pixmap, root->root, width, height);
-
-        xcb_create_gc(conn, gc, root->root,
-                      XCB_GC_FUNCTION | XCB_GC_PLANE_MASK | XCB_GC_FILL_STYLE | XCB_GC_SUBWINDOW_MODE,
-                      (uint32_t[]){XCB_GX_COPY, ~0, XCB_FILL_STYLE_SOLID, XCB_SUBWINDOW_MODE_INCLUDE_INFERIORS});
-
-        xcb_copy_area(conn, root->root, pixmap, gc, 0, 0, 0, 0, width, height);
-        xcb_change_window_attributes(conn, root->root, XCB_CW_BACK_PIXMAP, (uint32_t[]){pixmap});
-        xcb_flush(conn);
-        xcb_free_gc(conn, gc);
-        xcb_free_pixmap(conn, pixmap);
+        set_screenshot_as_wallpaper(conn, root);
     }
 
 #if defined(__OpenBSD__)
