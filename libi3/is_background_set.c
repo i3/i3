@@ -81,18 +81,18 @@ static void find_unobscured_pixel(xcb_connection_t *conn, xcb_window_t window,
 }
 
 static uint32_t flicker_window_at(xcb_connection_t *conn, xcb_screen_t *screen, int16_t x, int16_t y, xcb_window_t window,
-                                 uint32_t pixel) {
+                                  uint32_t pixel) {
     xcb_create_window(conn, XCB_COPY_FROM_PARENT, window, screen->root, x, y, 10, 10,
-            0, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_COPY_FROM_PARENT,
-            XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT, (uint32_t[]) { pixel, 1 });
+                      0, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_COPY_FROM_PARENT,
+                      XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT, (uint32_t[]){pixel, 1});
     xcb_map_window(conn, window);
     xcb_clear_area(conn, 0, window, 0, 0, 0, 0);
     xcb_aux_sync(conn);
     xcb_destroy_window(conn, window);
 
     xcb_get_image_reply_t *img = xcb_get_image_reply(conn,
-            xcb_get_image_unchecked(conn, XCB_IMAGE_FORMAT_Z_PIXMAP, screen->root, x, y, 1, 1, ~0),
-            NULL);
+                                                     xcb_get_image_unchecked(conn, XCB_IMAGE_FORMAT_Z_PIXMAP, screen->root, x, y, 1, 1, ~0),
+                                                     NULL);
     uint32_t result = 0;
     if (img) {
         uint8_t *data = xcb_get_image_data(img);
