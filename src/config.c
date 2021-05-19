@@ -31,10 +31,10 @@ void ungrab_all_keys(xcb_connection_t *conn) {
 
 static void color_to_hex(color_t color, char *hex) {
     hex[0] = '#';
-    sprintf(hex+1, "%02x", (int) (color.red * 255));
-    sprintf(hex+3, "%02x", (int) (color.green * 255));
-    sprintf(hex+5, "%02x", (int) (color.blue * 255));
-    sprintf(hex+7, "%02x", (int) (color.alpha * 255));
+    sprintf(hex + 1, "%02x", (int)(color.red * 255));
+    sprintf(hex + 3, "%02x", (int)(color.green * 255));
+    sprintf(hex + 5, "%02x", (int)(color.blue * 255));
+    sprintf(hex + 7, "%02x", (int)(color.alpha * 255));
     hex[9] = '\0';
 }
 
@@ -42,8 +42,8 @@ static void dump_colortriple(yajl_gen gen, struct Colortriple triple) {
     char str[10];
 
     y(map_open);
-#define ADD(name) \
-    ystr(#name); \
+#define ADD(name)                   \
+    ystr(#name);                    \
     color_to_hex(triple.name, str); \
     ystr(str);
 
@@ -62,9 +62,17 @@ static void generate_structured_config(void) {
     y(map_open);
 
     /* Values from Config */
-#define CINT(name)  ystr(#name); y(integer, config.name)
-#define CBOOL(name) ystr(#name); y(bool, config.name)
-#define CSTR(name)  if (config.name != NULL) { ystr(#name); ystr(config.name); }
+#define CINT(name) \
+    ystr(#name);   \
+    y(integer, config.name)
+#define CBOOL(name) \
+    ystr(#name);    \
+    y(bool, config.name)
+#define CSTR(name)             \
+    if (config.name != NULL) { \
+        ystr(#name);           \
+        ystr(config.name);     \
+    }
     CSTR(ipc_socket_path);
     CSTR(restart_state_path);
     CINT(default_border_width);
@@ -235,7 +243,7 @@ static void generate_structured_config(void) {
 /* 'element' is the element of Config (client, bar) and 'class' is the color
  * class to be saved */
 #define ADD(element, class) \
-    ystr(#class); \
+    ystr(#class);           \
     dump_colortriple(gen, config.element.class);
 
     ystr("colors_client");
@@ -288,7 +296,7 @@ static void generate_structured_config(void) {
         ystr(autostart->command);
 
         ystr("no-startup-id");
-        y(bool, (int) autostart->no_startup_id);
+        y(bool, (int)autostart->no_startup_id);
 
         y(map_close);
     }
@@ -305,7 +313,7 @@ static void generate_structured_config(void) {
         ystr(autostart->command);
 
         ystr("no-startup-id");
-        y(bool, (int) autostart->no_startup_id);
+        y(bool, (int)autostart->no_startup_id);
 
         y(map_close);
     }
@@ -362,9 +370,9 @@ static void generate_structured_config(void) {
         /* The Match (criteria) */
         ystr("criteria");
         y(map_open);
-#define ADD(name) \
-    if (assignment->match.name != NULL) { \
-        ystr(#name); \
+#define ADD(name)                              \
+    if (assignment->match.name != NULL) {      \
+        ystr(#name);                           \
         ystr(assignment->match.name->pattern); \
     }
         ADD(title);
@@ -425,7 +433,7 @@ static void generate_structured_config(void) {
         if (assignment->match.window_mode != WM_ANY) {
             ystr("window_mode");
             switch (assignment->match.window_mode) {
-               case  WM_TILING_AUTO:
+                case WM_TILING_AUTO:
                     ystr("tiling_auto");
                     break;
                 case WM_TILING_USER:
@@ -450,7 +458,7 @@ static void generate_structured_config(void) {
 
         if (assignment->match.con_id != NULL) {
             ystr("con_id");
-            y(integer, (long) assignment->match.con_id);
+            y(integer, (long)assignment->match.con_id);
         }
 
         if (assignment->match.id != 0) {
@@ -689,7 +697,7 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     /* Generate the structured configuration information */
     config.json_gen = ygenalloc();
     generate_structured_config();
-    yajl_gen_get_buf(config.json_gen, (const unsigned char **) &(config.json), &(config.json_len));
+    yajl_gen_get_buf(config.json_gen, (const unsigned char **)&(config.json), &(config.json_len));
 
     return result;
 }
