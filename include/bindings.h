@@ -114,3 +114,13 @@ bool load_keymap(void);
  * The list is terminated by a 0.
  */
 int *bindings_get_buttons_to_grab(void);
+
+/**
+ * Dumps an i3_event_state_mask_t into JSON (as an array)
+ */
+void dump_event_state_mask(yajl_gen gen, i3_event_state_mask_t mask);
+
+/**
+ * Dumps a binding into JSON
+ */
+void dump_binding(yajl_gen gen, Binding *bind);

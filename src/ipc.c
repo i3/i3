@@ -245,96 +245,6 @@ static void dump_rect(yajl_gen gen, const char *name, Rect r) {
     y(map_close);
 }
 
-static void dump_event_state_mask(yajl_gen gen, Binding *bind) {
-    y(array_open);
-    for (int i = 0; i < 20; i++) {
-        if (bind->event_state_mask & (1 << i)) {
-            switch (1 << i) {
-                case XCB_KEY_BUT_MASK_SHIFT:
-                    ystr("shift");
-                    break;
-                case XCB_KEY_BUT_MASK_LOCK:
-                    ystr("lock");
-                    break;
-                case XCB_KEY_BUT_MASK_CONTROL:
-                    ystr("ctrl");
-                    break;
-                case XCB_KEY_BUT_MASK_MOD_1:
-                    ystr("Mod1");
-                    break;
-                case XCB_KEY_BUT_MASK_MOD_2:
-                    ystr("Mod2");
-                    break;
-                case XCB_KEY_BUT_MASK_MOD_3:
-                    ystr("Mod3");
-                    break;
-                case XCB_KEY_BUT_MASK_MOD_4:
-                    ystr("Mod4");
-                    break;
-                case XCB_KEY_BUT_MASK_MOD_5:
-                    ystr("Mod5");
-                    break;
-                case XCB_KEY_BUT_MASK_BUTTON_1:
-                    ystr("Button1");
-                    break;
-                case XCB_KEY_BUT_MASK_BUTTON_2:
-                    ystr("Button2");
-                    break;
-                case XCB_KEY_BUT_MASK_BUTTON_3:
-                    ystr("Button3");
-                    break;
-                case XCB_KEY_BUT_MASK_BUTTON_4:
-                    ystr("Button4");
-                    break;
-                case XCB_KEY_BUT_MASK_BUTTON_5:
-                    ystr("Button5");
-                    break;
-                case (I3_XKB_GROUP_MASK_1 << 16):
-                    ystr("Group1");
-                    break;
-                case (I3_XKB_GROUP_MASK_2 << 16):
-                    ystr("Group2");
-                    break;
-                case (I3_XKB_GROUP_MASK_3 << 16):
-                    ystr("Group3");
-                    break;
-                case (I3_XKB_GROUP_MASK_4 << 16):
-                    ystr("Group4");
-                    break;
-            }
-        }
-    }
-    y(array_close);
-}
-
-static void dump_binding(yajl_gen gen, Binding *bind) {
-    y(map_open);
-    ystr("input_code");
-    y(integer, bind->keycode);
-
-    ystr("input_type");
-    ystr((const char *)(bind->input_type == B_KEYBOARD ? "keyboard" : "mouse"));
-
-    ystr("symbol");
-    if (bind->symbol == NULL)
-        y(null);
-    else
-        ystr(bind->symbol);
-
-    ystr("command");
-    ystr(bind->command);
-
-    // This key is only provided for compatibility, new programs should use
-    // event_state_mask instead.
-    ystr("mods");
-    dump_event_state_mask(gen, bind);
-
-    ystr("event_state_mask");
-    dump_event_state_mask(gen, bind);
-
-    y(map_close);
-}
-
 void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(map_open);
     ystr("id");
@@ -1340,9 +1250,13 @@ IPC_HANDLER(get_binding_state) {
     y(free);
 }
 
+IPC_HANDLER(get_config_json) {
+    ipc_send_client_message(client, config.json_len, I3_IPC_REPLY_TYPE_GET_CONFIG_JSON, config.json);
+}
+
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[13] = {
+handler_t handlers[] = {
     handle_run_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -1356,6 +1270,7 @@ handler_t handlers[13] = {
     handle_send_tick,
     handle_sync,
     handle_get_binding_state,
+    handle_get_config_json,
 };
 
 /*

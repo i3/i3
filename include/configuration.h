@@ -249,6 +249,14 @@ struct Config {
 
     /* The number of currently parsed barconfigs */
     int number_barconfigs;
+
+    /** A yajl_gen for generating the structured configuration */
+    yajl_gen json_gen;
+
+    /** The loaded configuration as JSON*/
+    unsigned char *json;
+    /** Length of the JSON */
+    size_t json_len;
 };
 
 /**
