@@ -1532,7 +1532,6 @@ void clean_xcb(void) {
     free_font();
 
     xcb_free_cursor(xcb_connection, cursor);
-    xcb_flush(xcb_connection);
     xcb_aux_sync(xcb_connection);
     xcb_disconnect(xcb_connection);
 
