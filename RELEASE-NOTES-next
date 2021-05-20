@@ -8,18 +8,17 @@ strongly encouraged to upgrade.
 
 Background/wallpaper workaround:
 
-Some login managers (e.g. gdm) start X11 with the -background none flag. When
-this flag is set, a background needs to be explicitly set later in the X11
-session, otherwise stale copies of closed windows remain visible on the X11 root
-window (symptom looks like “my terminal window is not closing”).
+Some login managers (e.g. gdm) start the X11 server with the -background none
+flag. When this flag is set, a background needs to be explicitly set later in
+the X11 session, otherwise stale copies of closed windows remain visible on the
+X11 root window (symptom looks like “my terminal window is not closing”).
 
-i3 works around this situation by setting a screenshot of the X11 root window as
-background when starting. Any background you set before starting i3 (e.g. in
-your Xsession) or after starting i3 (e.g. via exec statements in the i3 config)
-will be visible.
+i3 works around this situation by setting a screenshot as background when
+starting. Any background you set before starting i3 (e.g. in your Xsession) or
+after starting i3 (e.g. via exec statements in the i3 config) will be visible.
 
-A downside of this workaround is that if you have any windows open in your X11
-session, those will be part of the screenshot.
+A downside of this workaround is that if you have any windows already open in
+your X11 session, those will be part of the screenshot.
 
 To fix this issue, starting in v4.20, i3 detects whether the -background none
 option is enabled and only then sets a screenshot as background.
