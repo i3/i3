@@ -746,10 +746,18 @@ int main(int argc, char *argv[]) {
         xcb_set_selection_owner(conn, wm_sn_selection_owner, wm_sn, last_timestamp);
 
         if (selection_reply && selection_reply->owner != XCB_NONE) {
+            unsigned int usleep_time = 100000; /* 0.1 seconds */
+            int check_rounds = 150;            /* Wait for a maximum of 15 seconds */
             xcb_get_geometry_reply_t *geom_reply = NULL;
+
             DLOG("waiting for old WM_Sn selection owner to exit");
             do {
                 free(geom_reply);
+                usleep(usleep_time);
+                if (check_rounds-- == 0) {
+                    ELOG("The old window manager is not exiting");
+                    return 1;
+                }
                 geom_reply = xcb_get_geometry_reply(conn,
                                                     xcb_get_geometry(conn, selection_reply->owner),
                                                     NULL);
