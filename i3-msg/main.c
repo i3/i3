@@ -195,6 +195,8 @@ int main(int argc, char *argv[]) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_VERSION;
             } else if (strcasecmp(optarg, "get_config") == 0) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_CONFIG;
+            } else if (strcasecmp(optarg, "get_config_json") == 0) {
+                message_type = I3_IPC_MESSAGE_TYPE_GET_CONFIG_JSON;
             } else if (strcasecmp(optarg, "send_tick") == 0) {
                 message_type = I3_IPC_MESSAGE_TYPE_SEND_TICK;
             } else if (strcasecmp(optarg, "subscribe") == 0) {

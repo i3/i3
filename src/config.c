@@ -9,6 +9,7 @@
  *
  */
 #include "all.h"
+#include "yajl_utils.h"
 
 #include <xkbcommon/xkbcommon.h>
 
@@ -26,6 +27,450 @@ struct barconfig_head barconfigs = TAILQ_HEAD_INITIALIZER(barconfigs);
 void ungrab_all_keys(xcb_connection_t *conn) {
     DLOG("Ungrabbing all keys\n");
     xcb_ungrab_key(conn, XCB_GRAB_ANY, root, XCB_BUTTON_MASK_ANY);
+}
+
+static void color_to_hex(color_t color, char *hex) {
+    hex[0] = '#';
+    sprintf(hex + 1, "%02x", (int)(color.red * 255));
+    sprintf(hex + 3, "%02x", (int)(color.green * 255));
+    sprintf(hex + 5, "%02x", (int)(color.blue * 255));
+    sprintf(hex + 7, "%02x", (int)(color.alpha * 255));
+    hex[9] = '\0';
+}
+
+static void dump_colortriple(yajl_gen gen, struct Colortriple triple) {
+    char str[10];
+
+    y(map_open);
+#define ADD(name)                   \
+    ystr(#name);                    \
+    color_to_hex(triple.name, str); \
+    ystr(str);
+
+    ADD(border);
+    ADD(background);
+    ADD(text);
+    ADD(indicator);
+    ADD(child_border);
+#undef ADD
+    y(map_close);
+}
+
+static void generate_structured_config(void) {
+    yajl_gen gen = config.json_gen;
+
+    y(map_open);
+
+    /* Values from Config */
+#define CINT(name) \
+    ystr(#name);   \
+    y(integer, config.name)
+#define CBOOL(name) \
+    ystr(#name);    \
+    y(bool, config.name)
+#define CSTR(name)             \
+    if (config.name != NULL) { \
+        ystr(#name);           \
+        ystr(config.name);     \
+    }
+    CSTR(ipc_socket_path);
+    CSTR(restart_state_path);
+    CINT(default_border_width);
+    CINT(default_floating_border_width);
+    CBOOL(disable_focus_follows_mouse);
+    CBOOL(force_xinerama);
+    CBOOL(disable_randr15);
+    CBOOL(workspace_auto_back_and_forth);
+    CBOOL(show_marks);
+    CINT(floating_maximum_width);
+    CINT(floating_maximum_height);
+    CINT(floating_minimum_width);
+    CINT(floating_minimum_height);
+    CSTR(fake_outputs);
+#undef CSTR
+#undef CINT
+#undef CBOOL
+
+    /* Enums and the like from Config */
+    if (config.font.pattern != NULL) {
+        ystr("font");
+        ystr(config.font.pattern);
+    }
+
+    ystr("floating_modifier");
+    dump_event_state_mask(gen, config.floating_modifier);
+
+    ystr("default_layout");
+    switch (config.default_layout) {
+        case L_DEFAULT:
+            ystr("default");
+            break;
+        case L_STACKED:
+            ystr("stacked");
+            break;
+        case L_TABBED:
+            ystr("tabbed");
+            break;
+        case L_DOCKAREA:
+            ystr("dockarea");
+            break;
+        case L_OUTPUT:
+            ystr("output");
+            break;
+        case L_SPLITV:
+            ystr("splitv");
+            break;
+        case L_SPLITH:
+            ystr("splith");
+            break;
+    }
+
+    ystr("default_orientation");
+    switch (config.default_orientation) {
+        case HORIZ:
+            ystr("horizontal");
+            break;
+        case VERT:
+            ystr("vertical");
+            break;
+        case NO_ORIENTATION:
+            ystr("none");
+            break;
+    }
+
+    ystr("mouse_warping");
+    switch (config.mouse_warping) {
+        case POINTER_WARPING_OUTPUT:
+            ystr("output");
+            break;
+        case POINTER_WARPING_NONE:
+            ystr("none");
+            break;
+    }
+
+    ystr("hide_edge_borders");
+    switch (config.hide_edge_borders) {
+        case HEBM_NONE:
+            ystr("none");
+            break;
+        case HEBM_VERTICAL:
+            ystr("vertical");
+            break;
+        case HEBM_HORIZONTAL:
+            ystr("horizontal");
+            break;
+        case HEBM_BOTH:
+            ystr("both");
+            break;
+        case HEBM_SMART:
+            ystr("smart");
+            break;
+    }
+
+    ystr("focus_wrapping");
+    switch (config.focus_wrapping) {
+        case FOCUS_WRAPPING_OFF:
+            ystr("off");
+            break;
+        case FOCUS_WRAPPING_ON:
+            ystr("on");
+            break;
+        case FOCUS_WRAPPING_FORCE:
+            ystr("force");
+            break;
+        case FOCUS_WRAPPING_WORKSPACE:
+            ystr("workspace");
+            break;
+    }
+
+    ystr("workspace_urgency_timer");
+    y(double, config.workspace_urgency_timer);
+
+    ystr("focus_on_window_activation");
+    switch (config.focus_on_window_activation) {
+        case FOWA_SMART:
+            ystr("smart");
+            break;
+        case FOWA_URGENT:
+            ystr("urgent");
+            break;
+        case FOWA_FOCUS:
+            ystr("focus");
+            break;
+        case FOWA_NONE:
+            ystr("none");
+            break;
+    }
+
+    ystr("title_align");
+    switch (config.title_align) {
+        case ALIGN_LEFT:
+            ystr("left");
+            break;
+        case ALIGN_CENTER:
+            ystr("center");
+            break;
+        case ALIGN_RIGHT:
+            ystr("right");
+            break;
+    }
+
+    ystr("default_border");
+    switch (config.default_border) {
+        case BS_NORMAL:
+            ystr("normal");
+            break;
+        case BS_NONE:
+            ystr("none");
+            break;
+        case BS_PIXEL:
+            ystr("pixel");
+            break;
+    }
+    ystr("default_floating_border");
+    switch (config.default_floating_border) {
+        case BS_NORMAL:
+            ystr("normal");
+            break;
+        case BS_NONE:
+            ystr("none");
+            break;
+        case BS_PIXEL:
+            ystr("pixel");
+            break;
+    }
+
+/* 'element' is the element of Config (client, bar) and 'class' is the color
+ * class to be saved */
+#define ADD(element, class) \
+    ystr(#class);           \
+    dump_colortriple(gen, config.element.class);
+
+    ystr("colors_client");
+    y(map_open);
+
+    char client_bg[10];
+    color_to_hex(config.client.background, client_bg);
+    ystr("background");
+    ystr(client_bg);
+
+    ADD(client, focused);
+    ADD(client, focused_inactive);
+    ADD(client, unfocused);
+    ADD(client, urgent);
+    ADD(client, placeholder);
+
+    y(map_close); /* colors_client */
+
+    ystr("colors_bar");
+    y(map_open);
+
+    ADD(bar, focused);
+    ADD(bar, unfocused);
+    ADD(bar, urgent);
+
+    y(map_close);
+#undef ADD
+
+    ystr("popup_during_fullscreen");
+    switch (config.popup_during_fullscreen) {
+        case PDF_SMART:
+            ystr("smart");
+            break;
+        case PDF_LEAVE_FULLSCREEN:
+            ystr("leave_fullscreen");
+            break;
+        case PDF_IGNORE:
+            ystr("ignore");
+            break;
+    }
+    /* exec */
+    ystr("exec");
+    y(array_open);
+
+    struct Autostart *autostart;
+    TAILQ_FOREACH (autostart, &autostarts, autostarts) {
+        y(map_open);
+
+        ystr("command");
+        ystr(autostart->command);
+
+        ystr("no-startup-id");
+        y(bool, (int)autostart->no_startup_id);
+
+        y(map_close);
+    }
+    y(array_close);
+
+    /* exec_always */
+    ystr("exec_always");
+    y(array_open);
+
+    TAILQ_FOREACH (autostart, &autostarts_always, autostarts_always) {
+        y(map_open);
+
+        ystr("command");
+        ystr(autostart->command);
+
+        ystr("no-startup-id");
+        y(bool, (int)autostart->no_startup_id);
+
+        y(map_close);
+    }
+    y(array_close);
+
+    /* Assignments */
+    ystr("assignments");
+    y(array_open);
+
+    Assignment *assignment;
+    TAILQ_FOREACH (assignment, &assignments, assignments) {
+        y(map_open);
+        ystr("type");
+        switch (assignment->type) {
+            case A_COMMAND:
+                ystr("command");
+                break;
+            case A_TO_WORKSPACE:
+                ystr("workspace");
+                break;
+            case A_TO_WORKSPACE_NUMBER:
+                ystr("workspace_number");
+                break;
+            case A_TO_OUTPUT:
+                ystr("output");
+                break;
+            case A_NO_FOCUS:
+                ystr("no_focus");
+                break;
+            case A_ANY:
+                break;
+        }
+
+        if (assignment->type & (A_COMMAND | A_TO_WORKSPACE |
+                                A_TO_WORKSPACE_NUMBER | A_TO_OUTPUT)) {
+            ystr("value");
+            switch (assignment->type) {
+                case A_COMMAND:
+                    ystr(assignment->dest.command);
+                    break;
+                case A_TO_WORKSPACE:
+                case A_TO_WORKSPACE_NUMBER:
+                    ystr(assignment->dest.workspace);
+                    break;
+                case A_TO_OUTPUT:
+                    ystr(assignment->dest.output);
+                    break;
+                default:
+                    /* to make the compiler happy */
+                    break;
+            }
+        }
+
+        /* The Match (criteria) */
+        ystr("criteria");
+        y(map_open);
+#define ADD(name)                              \
+    if (assignment->match.name != NULL) {      \
+        ystr(#name);                           \
+        ystr(assignment->match.name->pattern); \
+    }
+        ADD(title);
+        ADD(application);
+        ADD(class);
+        ADD(instance);
+        ADD(mark);
+        ADD(window_role);
+        ADD(workspace);
+        ADD(machine);
+#undef ADD
+
+        if (assignment->match.window_type != UINT32_MAX) {
+            ystr("window_type");
+            if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_NORMAL) {
+                ystr("normal");
+            } else if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_DOCK) {
+                ystr("dock");
+            } else if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_DIALOG) {
+                ystr("dialog");
+            } else if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_UTILITY) {
+                ystr("utility");
+            } else if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_TOOLBAR) {
+                ystr("toolbar");
+            } else if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_SPLASH) {
+                ystr("splash");
+            } else if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_MENU) {
+                ystr("menu");
+            } else if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU) {
+                ystr("dropdown_menu");
+            } else if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_POPUP_MENU) {
+                ystr("popup_menu");
+            } else if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_TOOLTIP) {
+                ystr("tooltip");
+            } else if (assignment->match.window_type == A__NET_WM_WINDOW_TYPE_NOTIFICATION) {
+                ystr("notification");
+            } else {
+                ELOG("Illegal value of window type: %d. This is probably a bug in i3\n",
+                     assignment->match.window_type);
+                y(null);
+            }
+        }
+
+        if (assignment->match.urgent != U_DONTCHECK) {
+            ystr("urgent");
+            switch (assignment->match.urgent) {
+                case U_LATEST:
+                    ystr("latest");
+                    break;
+                case U_OLDEST:
+                    ystr("oldest");
+                    break;
+                case U_DONTCHECK:
+                    break;
+            }
+        }
+
+        if (assignment->match.window_mode != WM_ANY) {
+            ystr("window_mode");
+            switch (assignment->match.window_mode) {
+                case WM_TILING_AUTO:
+                    ystr("tiling_auto");
+                    break;
+                case WM_TILING_USER:
+                    ystr("tiling_user");
+                    break;
+                case WM_TILING:
+                    ystr("tiling");
+                    break;
+                case WM_FLOATING_AUTO:
+                    ystr("floating_auto");
+                    break;
+                case WM_FLOATING_USER:
+                    ystr("floating_user");
+                    break;
+                case WM_FLOATING:
+                    ystr("floating");
+                    break;
+                case WM_ANY:
+                    break;
+            }
+        }
+
+        if (assignment->match.con_id != NULL) {
+            ystr("con_id");
+            y(integer, (long)assignment->match.con_id);
+        }
+
+        if (assignment->match.id != 0) {
+            ystr("id");
+            y(integer, assignment->match.id);
+        }
+
+        y(map_close); /* Match */
+        y(map_close); /* Assignment */
+    }
+    y(array_close); /* Assignments */
+    y(map_close);
 }
 
 static void free_configuration(void) {
@@ -146,6 +591,10 @@ static void free_configuration(void) {
     free(config.ipc_socket_path);
     free(config.restart_state_path);
     free(config.fake_outputs);
+
+    /* Free the structured config */
+    yajl_gen_free(config.json_gen);
+    config.json_len = 0;
 }
 
 /*
@@ -244,6 +693,11 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
         x_deco_recurse(croot);
         xcb_flush(conn);
     }
+
+    /* Generate the structured configuration information */
+    config.json_gen = ygenalloc();
+    generate_structured_config();
+    yajl_gen_get_buf(config.json_gen, (const unsigned char **)&(config.json), &(config.json_len));
 
     return result;
 }
