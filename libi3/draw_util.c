@@ -51,6 +51,19 @@ void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_draw
 
     surface->surface = cairo_xcb_surface_create(conn, surface->id, visual, width, height);
     surface->cr = cairo_create(surface->surface);
+    if (cairo_status(surface->cr) != CAIRO_STATUS_SUCCESS) {
+        cairo_status_t status = cairo_status(surface->cr);
+        ELOG("Could not create cairo context. Error %d: %s.\n", status, cairo_status_to_string(status));
+
+        xcb_free_gc(conn, surface->gc);
+        cairo_destroy(surface->cr);
+        cairo_surface_destroy(surface->surface);
+
+        surface->gc = XCB_NONE;
+        surface->cr = NULL;
+        surface->surface = NULL;
+        surface->id = XCB_NONE;
+    }
 }
 
 /*
@@ -58,6 +71,8 @@ void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_draw
  *
  */
 void draw_util_surface_free(surface_t *surface) {
+    RETURN_UNLESS_SURFACE_INITIALIZED(surface);
+
     xcb_connection_t *conn = cairo_xcb_device_get_connection(cairo_surface_get_device(surface->surface));
     xcb_free_gc(conn, surface->gc);
     cairo_surface_destroy(surface->surface);
@@ -75,6 +90,7 @@ void draw_util_surface_free(surface_t *surface) {
  *
  */
 void draw_util_surface_set_size(surface_t *surface, int width, int height) {
+    RETURN_UNLESS_SURFACE_INITIALIZED(surface);
     surface->width = width;
     surface->height = height;
     cairo_xcb_surface_set_size(surface->surface, width, height);
