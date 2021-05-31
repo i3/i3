@@ -349,6 +349,8 @@ libi3srcs = [
   'libi3/string.c',
   'libi3/ucs2_conversion.c',
   'libi3/nonblock.c',
+  'libi3/screenshot_wallpaper.c',
+  'libi3/is_background_set.c',
 ]
 
 if not cdata.get('HAVE_STRNDUP')
@@ -716,6 +718,7 @@ if meson.version().version_compare('>=0.46.0')
       anyevent_i3,
       i3test_pm,
     ],
+    timeout: 120,  # Default of 30 seconds can cause timeouts on slower machines
   )
 else
   # meson < 0.46.0 does not support the depends arg in test targets.

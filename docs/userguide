@@ -78,7 +78,7 @@ horizontally or vertically again, just like the workspace. The terminology is
 or browser) and "split container" for containers that consist of one or more
 windows.
 
-TODO: picture of the tree
+//TODO: picture of the tree
 
 To split a window vertically, press +$mod+v+ before you create the new window.
 To split it horizontally, press +$mod+h+.
@@ -608,9 +608,10 @@ Default is +left+
 title_align left|center|right
 ---------------------------------------------
 
+[[default_border]]
 === Default border style for new windows
 
-This option determines which border style new windows will have. The default is
+This option determines which border style *new* windows will have.  The default is
 +normal+. Note that default_floating_border applies only to windows which are starting out as
 floating windows, e.g., dialog windows, but not windows that are floated later on.
 
@@ -2279,9 +2280,8 @@ exhausting numbered ones and looks for numbered ones after exhausting named ones
 See <<move_to_outputs>> for how to move a container/workspace to a different
 RandR output.
 
-Workspace names are parsed as
-https://developer.gnome.org/pango/stable/pango-Markup.html[Pango markup]
-by i3bar.
+Workspace names are parsed as https://developer.gnome.org/pango/1.46/[Pango
+markup] by i3bar.
 
 [[back_and_forth]]
 To switch back to the previously focused workspace, use +workspace
@@ -2581,9 +2581,8 @@ unmark irssi
 
 By default, i3 will simply print the X11 window title. Using +title_format+,
 this can be customized by setting the format to the desired output. This
-directive supports
-https://developer.gnome.org/pango/stable/pango-Markup.html[Pango markup]
-and the following placeholders which will be replaced:
+directive supports https://developer.gnome.org/pango/1.46/[Pango markup] and the
+following placeholders which will be replaced:
 
 +%title+::
     For normal windows, this is the X11 window title (_NET_WM_NAME or WM_NAME
@@ -2649,9 +2648,15 @@ border 1pixel
 bindsym $mod+t border normal 0
 # use no window title and a thick border
 bindsym $mod+y border pixel 3
+# use window title *and* a thick border
+bindsym $mod+y border normal 3
 # use neither window title nor border
 bindsym $mod+u border none
+# no border on VLC
+for_window [class="vlc"] border none
 ----------------------------------------------
+
+To change the default for all windows, see the directive <<default_border>>.
 
 [[shmlog]]
 === Enabling shared memory logging

@@ -6,11 +6,29 @@
 This is i3 v4.19. This version is considered stable. All users of i3 are
 strongly encouraged to upgrade.
 
+Background/wallpaper workaround:
+
+Some login managers (e.g. gdm) start the X11 server with the -background none
+flag. When this flag is set, a background needs to be explicitly set later in
+the X11 session, otherwise stale copies of closed windows remain visible on the
+X11 root window (symptom looks like “my terminal window is not closing”).
+
+i3 works around this situation by setting a screenshot as background when
+starting. Any background you set before starting i3 (e.g. in your Xsession) or
+after starting i3 (e.g. via exec statements in the i3 config) will be visible.
+
+A downside of this workaround is that if you have any windows already open in
+your X11 session, those will be part of the screenshot.
+
+To fix this issue, starting in v4.20, i3 detects whether the -background none
+option is enabled and only then sets a screenshot as background.
+
 
  ┌────────────────────────────┐
  │ Changes in i3 v4.20        │
  └────────────────────────────┘
 
+  • default config: use dex for XDG autostart
   • i3-nagbar: position on focused monitor by default
   • i3-nagbar: add option to position on primary monitor
   • alternate focusing tab/stack children-parent containers by clicking on their titlebars
@@ -36,3 +54,5 @@ strongly encouraged to upgrade.
   • i3bar: exit with 1 when a wrong command line argument is used
   • fix commented-out rofi call in default i3 config
   • clear pixmap before drawing to prevent visual garbage
+  • ipc: return proper signed int for container positions: negative values were
+    returned as large 32 bits integers
