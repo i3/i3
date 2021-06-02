@@ -35,6 +35,7 @@ option is enabled and only then sets a screenshot as background.
   • i3bar: use first bar config by default
   • i3-dump-log -f now uses UNIX sockets instead of pthreads. The UNIX socket approach
     should be more reliable and also more portable.
+  • Implement the include config directive
   • Allow for_window to match against WM_CLIENT_MACHINE
   • Add %machine placeholder (WM_CLIENT_MACHINE) to title_format
   • Allow multiple output names in 'move container|workspace to output'

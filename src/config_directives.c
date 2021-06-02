@@ -9,6 +9,85 @@
  */
 #include "all.h"
 
+#include <wordexp.h>
+
+/*******************************************************************************
+ * Include functions.
+ ******************************************************************************/
+
+CFGFUN(include, const char *pattern) {
+    DLOG("include %s\n", pattern);
+
+    wordexp_t p;
+    const int ret = wordexp(pattern, &p, 0);
+    if (ret != 0) {
+        ELOG("wordexp(%s): error %d\n", pattern, ret);
+        result->has_errors = true;
+        return;
+    }
+    char **w = p.we_wordv;
+    for (size_t i = 0; i < p.we_wordc; i++) {
+        char resolved_path[PATH_MAX] = {'\0'};
+        if (realpath(w[i], resolved_path) == NULL) {
+            ELOG("realpath(%s): %s\n", w[i], strerror(errno));
+            result->has_errors = true;
+            continue;
+        }
+
+        bool skip = false;
+        IncludedFile *file;
+        TAILQ_FOREACH (file, &included_files, files) {
+            if (strcmp(file->path, resolved_path) == 0) {
+                skip = true;
+                break;
+            }
+        }
+        if (skip) {
+            LOG("Skipping file %s (already included)\n", resolved_path);
+            continue;
+        }
+
+        LOG("Including config file %s\n", resolved_path);
+
+        file = scalloc(1, sizeof(IncludedFile));
+        file->path = sstrdup(resolved_path);
+        TAILQ_INSERT_TAIL(&included_files, file, files);
+
+        struct stack stack;
+        memset(&stack, '\0', sizeof(struct stack));
+        struct parser_ctx ctx = {
+            .use_nagbar = result->ctx->use_nagbar,
+            /* The include mechanism was added in v4, so we can skip the
+             * auto-detection and get rid of the risk of detecting the wrong
+             * version in potentially very short include fragments: */
+            .assume_v4 = true,
+            .stack = &stack,
+            .variables = result->ctx->variables,
+        };
+        switch (parse_file(&ctx, resolved_path)) {
+            case PARSE_FILE_SUCCESS:
+                break;
+
+            case PARSE_FILE_FAILED:
+                ELOG("including config file %s: %s\n", resolved_path, strerror(errno));
+                /* fallthrough */
+
+            case PARSE_FILE_CONFIG_ERRORS:
+                result->has_errors = true;
+                TAILQ_REMOVE(&included_files, file, files);
+                FREE(file->path);
+                FREE(file);
+                break;
+
+            default:
+                /* missing case statement */
+                assert(false);
+                break;
+        }
+    }
+    wordfree(&p);
+}
+
 /*******************************************************************************
  * Criteria functions.
  ******************************************************************************/

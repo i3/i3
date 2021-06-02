@@ -35,18 +35,14 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #include <xcb/xcb_xrm.h>
-
-// Macros to make the YAJL API a bit easier to use.
-#define y(x, ...) yajl_gen_##x(command_output.json_gen, ##__VA_ARGS__)
-#define ystr(str) yajl_gen_string(command_output.json_gen, (unsigned char *)str, strlen(str))
 
 xcb_xrm_database_t *database = NULL;
 
 #ifndef TEST_PARSER
 pid_t config_error_nagbar_pid = -1;
-static struct context *context;
 #endif
 
 /*******************************************************************************
@@ -76,46 +72,25 @@ typedef struct tokenptr {
 
 #include "GENERATED_config_tokens.h"
 
-/*******************************************************************************
- * The (small) stack where identified literals are stored during the parsing
- * of a single command (like $workspace).
- ******************************************************************************/
-
-struct stack_entry {
-    /* Just a pointer, not dynamically allocated. */
-    const char *identifier;
-    enum {
-        STACK_STR = 0,
-        STACK_LONG = 1,
-    } type;
-    union {
-        char *str;
-        long num;
-    } val;
-};
-
-/* 10 entries should be enough for everybody. */
-static struct stack_entry stack[10];
-
 /*
  * Pushes a string (identified by 'identifier') on the stack. We simply use a
  * single array, since the number of entries we have to store is very small.
  *
  */
-static void push_string(const char *identifier, const char *str) {
+static void push_string(struct stack *ctx, const char *identifier, const char *str) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].identifier != NULL &&
-            strcmp(stack[c].identifier, identifier) != 0)
+        if (ctx->stack[c].identifier != NULL &&
+            strcmp(ctx->stack[c].identifier, identifier) != 0)
             continue;
-        if (stack[c].identifier == NULL) {
+        if (ctx->stack[c].identifier == NULL) {
             /* Found a free slot, let’s store it here. */
-            stack[c].identifier = identifier;
-            stack[c].val.str = sstrdup(str);
-            stack[c].type = STACK_STR;
+            ctx->stack[c].identifier = identifier;
+            ctx->stack[c].val.str = sstrdup(str);
+            ctx->stack[c].type = STACK_STR;
         } else {
             /* Append the value. */
-            char *prev = stack[c].val.str;
-            sasprintf(&(stack[c].val.str), "%s,%s", prev, str);
+            char *prev = ctx->stack[c].val.str;
+            sasprintf(&(ctx->stack[c].val.str), "%s,%s", prev, str);
             free(prev);
         }
         return;
@@ -130,14 +105,15 @@ static void push_string(const char *identifier, const char *str) {
     exit(EXIT_FAILURE);
 }
 
-static void push_long(const char *identifier, long num) {
+static void push_long(struct stack *ctx, const char *identifier, long num) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].identifier != NULL)
+        if (ctx->stack[c].identifier != NULL) {
             continue;
+        }
         /* Found a free slot, let’s store it here. */
-        stack[c].identifier = identifier;
-        stack[c].val.num = num;
-        stack[c].type = STACK_LONG;
+        ctx->stack[c].identifier = identifier;
+        ctx->stack[c].val.num = num;
+        ctx->stack[c].type = STACK_LONG;
         return;
     }
 
@@ -150,33 +126,33 @@ static void push_long(const char *identifier, long num) {
     exit(EXIT_FAILURE);
 }
 
-static const char *get_string(const char *identifier) {
+static const char *get_string(struct stack *ctx, const char *identifier) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].identifier == NULL)
+        if (ctx->stack[c].identifier == NULL)
             break;
-        if (strcmp(identifier, stack[c].identifier) == 0)
-            return stack[c].val.str;
+        if (strcmp(identifier, ctx->stack[c].identifier) == 0)
+            return ctx->stack[c].val.str;
     }
     return NULL;
 }
 
-static long get_long(const char *identifier) {
+static long get_long(struct stack *ctx, const char *identifier) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].identifier == NULL)
+        if (ctx->stack[c].identifier == NULL)
             break;
-        if (strcmp(identifier, stack[c].identifier) == 0)
-            return stack[c].val.num;
+        if (strcmp(identifier, ctx->stack[c].identifier) == 0)
+            return ctx->stack[c].val.num;
     }
     return 0;
 }
 
-static void clear_stack(void) {
+static void clear_stack(struct stack *ctx) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].type == STACK_STR)
-            free(stack[c].val.str);
-        stack[c].identifier = NULL;
-        stack[c].val.str = NULL;
-        stack[c].val.num = 0;
+        if (ctx->stack[c].type == STACK_STR)
+            free(ctx->stack[c].val.str);
+        ctx->stack[c].identifier = NULL;
+        ctx->stack[c].val.str = NULL;
+        ctx->stack[c].val.num = 0;
     }
 }
 
@@ -184,50 +160,42 @@ static void clear_stack(void) {
  * The parser itself.
  ******************************************************************************/
 
-static cmdp_state state;
-static Match current_match;
-static struct ConfigResultIR subcommand_output;
-static struct ConfigResultIR command_output;
-
-/* A list which contains the states that lead to the current state, e.g.
- * INITIAL, WORKSPACE_LAYOUT.
- * When jumping back to INITIAL, statelist_idx will simply be set to 1
- * (likewise for other states, e.g. MODE or BAR).
- * This list is used to process the nearest error token. */
-static cmdp_state statelist[10] = {INITIAL};
-/* NB: statelist_idx points to where the next entry will be inserted */
-static int statelist_idx = 1;
-
 #include "GENERATED_config_call.h"
 
-static void next_state(const cmdp_token *token) {
+static void next_state(const cmdp_token *token, struct parser_ctx *ctx) {
     cmdp_state _next_state = token->next_state;
 
     //printf("token = name %s identifier %s\n", token->name, token->identifier);
     //printf("next_state = %d\n", token->next_state);
     if (token->next_state == __CALL) {
-        subcommand_output.json_gen = command_output.json_gen;
-        GENERATED_call(token->extra.call_identifier, &subcommand_output);
+        struct ConfigResultIR subcommand_output = {
+            .ctx = ctx,
+        };
+        GENERATED_call(&(ctx->current_match), ctx->stack, token->extra.call_identifier, &subcommand_output);
+        if (subcommand_output.has_errors) {
+            ctx->has_errors = true;
+        }
         _next_state = subcommand_output.next_state;
-        clear_stack();
+        clear_stack(ctx->stack);
     }
 
-    state = _next_state;
-    if (state == INITIAL) {
-        clear_stack();
+    ctx->state = _next_state;
+    if (ctx->state == INITIAL) {
+        clear_stack(ctx->stack);
     }
 
     /* See if we are jumping back to a state in which we were in previously
      * (statelist contains INITIAL) and just move statelist_idx accordingly. */
-    for (int i = 0; i < statelist_idx; i++) {
-        if (statelist[i] != _next_state)
+    for (int i = 0; i < ctx->statelist_idx; i++) {
+        if ((cmdp_state)(ctx->statelist[i]) != _next_state) {
             continue;
-        statelist_idx = i + 1;
+        }
+        ctx->statelist_idx = i + 1;
         return;
     }
 
     /* Otherwise, the state is new and we add it to the list */
-    statelist[statelist_idx++] = _next_state;
+    ctx->statelist[ctx->statelist_idx++] = _next_state;
 }
 
 /*
@@ -257,7 +225,7 @@ static char *single_line(const char *start) {
     return result;
 }
 
-struct ConfigResultIR *parse_config(const char *input, struct context *context) {
+static void parse_config(struct parser_ctx *ctx, const char *input, struct context *context) {
     /* Dump the entire config file into the debug log. We cannot just use
      * DLOG("%s", input); because one log message must not exceed 4 KiB. */
     const char *dumpwalk = input;
@@ -273,13 +241,11 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
         }
         linecnt++;
     }
-    state = INITIAL;
-    statelist_idx = 1;
-
-    /* A YAJL JSON generator used for formatting replies. */
-    command_output.json_gen = yajl_gen_alloc(NULL);
-
-    y(array_open);
+    ctx->state = INITIAL;
+    for (int i = 0; i < 10; i++) {
+        ctx->statelist[i] = INITIAL;
+    }
+    ctx->statelist_idx = 1;
 
     const char *walk = input;
     const size_t len = strlen(input);
@@ -290,7 +256,10 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
 
 // TODO: make this testable
 #ifndef TEST_PARSER
-    cfg_criteria_init(&current_match, &subcommand_output, INITIAL);
+    struct ConfigResultIR subcommand_output = {
+        .ctx = ctx,
+    };
+    cfg_criteria_init(&(ctx->current_match), &subcommand_output, INITIAL);
 #endif
 
     /* The "<=" operator is intentional: We also handle the terminating 0-byte
@@ -303,7 +272,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
 
         //printf("remaining input: %s\n", walk);
 
-        cmdp_token_ptr *ptr = &(tokens[state]);
+        cmdp_token_ptr *ptr = &(tokens[ctx->state]);
         token_handled = false;
         for (c = 0; c < ptr->n; c++) {
             token = &(ptr->array[c]);
@@ -311,10 +280,11 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
             /* A literal. */
             if (token->name[0] == '\'') {
                 if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
-                    if (token->identifier != NULL)
-                        push_string(token->identifier, token->name + 1);
+                    if (token->identifier != NULL) {
+                        push_string(ctx->stack, token->identifier, token->name + 1);
+                    }
                     walk += strlen(token->name) - 1;
-                    next_state(token);
+                    next_state(token, ctx);
                     token_handled = true;
                     break;
                 }
@@ -334,12 +304,13 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
                 if (end == walk)
                     continue;
 
-                if (token->identifier != NULL)
-                    push_long(token->identifier, num);
+                if (token->identifier != NULL) {
+                    push_long(ctx->stack, token->identifier, num);
+                }
 
                 /* Set walk to the first non-number character */
                 walk = end;
-                next_state(token);
+                next_state(token, ctx);
                 token_handled = true;
                 break;
             }
@@ -382,14 +353,15 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
                             inpos++;
                         str[outpos] = beginning[inpos];
                     }
-                    if (token->identifier)
-                        push_string(token->identifier, str);
+                    if (token->identifier) {
+                        push_string(ctx->stack, token->identifier, str);
+                    }
                     free(str);
                     /* If we are at the end of a quoted string, skip the ending
                      * double quote. */
                     if (*walk == '"')
                         walk++;
-                    next_state(token);
+                    next_state(token, ctx);
                     token_handled = true;
                     break;
                 }
@@ -398,7 +370,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
             if (strcmp(token->name, "line") == 0) {
                 while (*walk != '\0' && *walk != '\n' && *walk != '\r')
                     walk++;
-                next_state(token);
+                next_state(token, ctx);
                 token_handled = true;
                 linecnt++;
                 walk++;
@@ -408,7 +380,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
             if (strcmp(token->name, "end") == 0) {
                 //printf("checking for end: *%s*\n", walk);
                 if (*walk == '\0' || *walk == '\n' || *walk == '\r') {
-                    next_state(token);
+                    next_state(token, ctx);
                     token_handled = true;
                     /* To make sure we start with an appropriate matching
                      * datastructure for commands which do *not* specify any
@@ -416,7 +388,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
                      * every command. */
 // TODO: make this testable
 #ifndef TEST_PARSER
-                    cfg_criteria_init(&current_match, &subcommand_output, INITIAL);
+                    cfg_criteria_init(&(ctx->current_match), &subcommand_output, INITIAL);
 #endif
                     linecnt++;
                     walk++;
@@ -515,41 +487,24 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
 
             context->has_errors = true;
 
-            /* Format this error message as a JSON reply. */
-            y(map_open);
-            ystr("success");
-            y(bool, false);
-            /* We set parse_error to true to distinguish this from other
-             * errors. i3-nagbar is spawned upon keypresses only for parser
-             * errors. */
-            ystr("parse_error");
-            y(bool, true);
-            ystr("error");
-            ystr(errormessage);
-            ystr("input");
-            ystr(input);
-            ystr("errorposition");
-            ystr(position);
-            y(map_close);
-
             /* Skip the rest of this line, but continue parsing. */
             while ((size_t)(walk - input) <= len && *walk != '\n')
                 walk++;
 
             free(position);
             free(errormessage);
-            clear_stack();
+            clear_stack(ctx->stack);
 
             /* To figure out in which state to go (e.g. MODE or INITIAL),
              * we find the nearest state which contains an <error> token
              * and follow that one. */
             bool error_token_found = false;
-            for (int i = statelist_idx - 1; (i >= 0) && !error_token_found; i--) {
-                cmdp_token_ptr *errptr = &(tokens[statelist[i]]);
+            for (int i = ctx->statelist_idx - 1; (i >= 0) && !error_token_found; i--) {
+                cmdp_token_ptr *errptr = &(tokens[ctx->statelist[i]]);
                 for (int j = 0; j < errptr->n; j++) {
                     if (strcmp(errptr->array[j].name, "error") != 0)
                         continue;
-                    next_state(&(errptr->array[j]));
+                    next_state(&(errptr->array[j]), ctx);
                     error_token_found = true;
                     break;
                 }
@@ -558,10 +513,6 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
             assert(error_token_found);
         }
     }
-
-    y(array_close);
-
-    return &command_output;
 }
 
 /*******************************************************************************
@@ -612,9 +563,17 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Syntax: %s <command>\n", argv[0]);
         return 1;
     }
+    struct stack stack;
+    memset(&stack, '\0', sizeof(struct stack));
+    struct parser_ctx ctx = {
+        .use_nagbar = false,
+        .assume_v4 = false,
+        .stack = &stack,
+    };
+    SLIST_INIT(&(ctx.variables));
     struct context context;
     context.filename = "<stdin>";
-    parse_config(argv[1], &context);
+    parse_config(&ctx, argv[1], &context);
 }
 
 #else
@@ -636,6 +595,7 @@ static int detect_version(char *buf) {
 
         /* check for some v4-only statements */
         if (strncasecmp(line, "bindcode", strlen("bindcode")) == 0 ||
+            strncasecmp(line, "include", strlen("include")) == 0 ||
             strncasecmp(line, "force_focus_wrapping", strlen("force_focus_wrapping")) == 0 ||
             strncasecmp(line, "# i3 config file (v4)", strlen("# i3 config file (v4)")) == 0 ||
             strncasecmp(line, "workspace_layout", strlen("workspace_layout")) == 0) {
@@ -878,35 +838,66 @@ static char *get_resource(char *name) {
 }
 
 /*
+ * Releases the memory of all variables in ctx.
+ *
+ */
+void free_variables(struct parser_ctx *ctx) {
+    struct Variable *current;
+    while (!SLIST_EMPTY(&(ctx->variables))) {
+        current = SLIST_FIRST(&(ctx->variables));
+        FREE(current->key);
+        FREE(current->value);
+        SLIST_REMOVE_HEAD(&(ctx->variables), variables);
+        FREE(current);
+    }
+}
+
+/*
  * Parses the given file by first replacing the variables, then calling
  * parse_config and possibly launching i3-nagbar.
  *
  */
-bool parse_file(const char *f, bool use_nagbar) {
-    struct variables_head variables = SLIST_HEAD_INITIALIZER(&variables);
+parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f) {
     int fd;
     struct stat stbuf;
     char *buf;
     FILE *fstr;
     char buffer[4096], key[512], value[4096], *continuation = NULL;
 
-    if ((fd = open(f, O_RDONLY)) == -1)
-        die("Could not open configuration file: %s\n", strerror(errno));
+    char *old_dir = get_current_dir_name();
+    char *dir = NULL;
+    /* dirname(3) might modify the buffer, so make a copy: */
+    char *dirbuf = sstrdup(f);
+    if ((dir = dirname(dirbuf)) != NULL) {
+        LOG("Changing working directory to config file directory %s\n", dir);
+        if (chdir(dir) == -1) {
+            ELOG("chdir(%s) failed: %s\n", dir, strerror(errno));
+            return PARSE_FILE_FAILED;
+        }
+    }
+    free(dirbuf);
 
-    if (fstat(fd, &stbuf) == -1)
-        die("Could not fstat file: %s\n", strerror(errno));
+    if ((fd = open(f, O_RDONLY)) == -1) {
+        return PARSE_FILE_FAILED;
+    }
+
+    if (fstat(fd, &stbuf) == -1) {
+        return PARSE_FILE_FAILED;
+    }
 
     buf = scalloc(stbuf.st_size + 1, 1);
 
-    if ((fstr = fdopen(fd, "r")) == NULL)
-        die("Could not fdopen: %s\n", strerror(errno));
-
-    FREE(current_config);
-    current_config = scalloc(stbuf.st_size + 1, 1);
-    if ((ssize_t)fread(current_config, 1, stbuf.st_size, fstr) != stbuf.st_size) {
-        die("Could not fread: %s\n", strerror(errno));
+    if ((fstr = fdopen(fd, "r")) == NULL) {
+        return PARSE_FILE_FAILED;
     }
-    rewind(fstr);
+
+    if (current_config == NULL) {
+        current_config = scalloc(stbuf.st_size + 1, 1);
+        if ((ssize_t)fread(current_config, 1, stbuf.st_size, fstr) != stbuf.st_size) {
+            return PARSE_FILE_FAILED;
+        }
+        rewind(fstr);
+    }
 
     bool invalid_sets = false;
 
@@ -916,7 +907,7 @@ bool parse_file(const char *f, bool use_nagbar) {
         if (fgets(continuation, sizeof(buffer) - (continuation - buffer), fstr) == NULL) {
             if (feof(fstr))
                 break;
-            die("Could not read configuration file\n");
+            return PARSE_FILE_FAILED;
         }
         if (buffer[strlen(buffer) - 1] != '\n' && !feof(fstr)) {
             ELOG("Your line continuation is too long, it exceeds %zd bytes\n", sizeof(buffer));
@@ -960,7 +951,7 @@ bool parse_file(const char *f, bool use_nagbar) {
                 continue;
             }
 
-            upsert_variable(&variables, v_key, v_value);
+            upsert_variable(&(ctx->variables), v_key, v_value);
             continue;
         } else if (strcasecmp(key, "set_from_resource") == 0) {
             char res_name[512] = {'\0'};
@@ -993,7 +984,7 @@ bool parse_file(const char *f, bool use_nagbar) {
                 res_value = sstrdup(fallback);
             }
 
-            upsert_variable(&variables, v_key, res_value);
+            upsert_variable(&(ctx->variables), v_key, res_value);
             FREE(res_value);
             continue;
         }
@@ -1014,7 +1005,7 @@ bool parse_file(const char *f, bool use_nagbar) {
      * variables (otherwise we will count them twice, which is bad when
      * 'extra' is negative) */
     char *bufcopy = sstrdup(buf);
-    SLIST_FOREACH (current, &variables, variables) {
+    SLIST_FOREACH (current, &(ctx->variables), variables) {
         int extra = (strlen(current->value) - strlen(current->key));
         char *next;
         for (next = bufcopy;
@@ -1034,12 +1025,12 @@ bool parse_file(const char *f, bool use_nagbar) {
     destwalk = new;
     while (walk < (buf + stbuf.st_size)) {
         /* Find the next variable */
-        SLIST_FOREACH (current, &variables, variables) {
+        SLIST_FOREACH (current, &(ctx->variables), variables) {
             current->next_match = strcasestr(walk, current->key);
         }
         nearest = NULL;
         int distance = stbuf.st_size;
-        SLIST_FOREACH (current, &variables, variables) {
+        SLIST_FOREACH (current, &(ctx->variables), variables) {
             if (current->next_match == NULL)
                 continue;
             if ((current->next_match - walk) < distance) {
@@ -1064,7 +1055,10 @@ bool parse_file(const char *f, bool use_nagbar) {
 
     /* analyze the string to find out whether this is an old config file (3.x)
      * or a new config file (4.x). If it’s old, we run the converter script. */
-    int version = detect_version(buf);
+    int version = 4;
+    if (!ctx->assume_v4) {
+        version = detect_version(buf);
+    }
     if (version == 3) {
         /* We need to convert this v3 configuration */
         char *converted = migrate_config(new, strlen(new));
@@ -1090,17 +1084,16 @@ bool parse_file(const char *f, bool use_nagbar) {
         }
     }
 
-    context = scalloc(1, sizeof(struct context));
+    struct context *context = scalloc(1, sizeof(struct context));
     context->filename = f;
+    parse_config(ctx, new, context);
+    if (ctx->has_errors) {
+        context->has_errors = true;
+    }
 
-    struct ConfigResultIR *config_output = parse_config(new, context);
-    yajl_gen_free(config_output->json_gen);
-
-    extract_workspace_names_from_bindings();
     check_for_duplicate_bindings(context);
-    reorder_bindings();
 
-    if (use_nagbar && (context->has_errors || context->has_warnings || invalid_sets)) {
+    if (ctx->use_nagbar && (context->has_errors || context->has_warnings || invalid_sets)) {
         ELOG("FYI: You are using i3 version %s\n", i3_version);
         if (version == 3)
             ELOG("Please convert your configfile first, then fix any remaining errors (see above).\n");
@@ -1108,22 +1101,22 @@ bool parse_file(const char *f, bool use_nagbar) {
         start_config_error_nagbar(f, context->has_errors || invalid_sets);
     }
 
-    bool has_errors = context->has_errors;
+    const bool has_errors = context->has_errors;
 
     FREE(context->line_copy);
     free(context);
     free(new);
     free(buf);
 
-    while (!SLIST_EMPTY(&variables)) {
-        current = SLIST_FIRST(&variables);
-        FREE(current->key);
-        FREE(current->value);
-        SLIST_REMOVE_HEAD(&variables, variables);
-        FREE(current);
+    if (chdir(old_dir) == -1) {
+        ELOG("chdir(%s) failed: %s\n", old_dir, strerror(errno));
+        return PARSE_FILE_FAILED;
     }
-
-    return !has_errors;
+    free(old_dir);
+    if (has_errors) {
+        return PARSE_FILE_CONFIG_ERRORS;
+    }
+    return PARSE_FILE_SUCCESS;
 }
 
 #endif

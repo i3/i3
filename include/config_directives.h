@@ -39,6 +39,7 @@ CFGFUN(criteria_init, int _state);
 CFGFUN(criteria_add, const char *ctype, const char *cvalue);
 CFGFUN(criteria_pop_state);
 
+CFGFUN(include, const char *pattern);
 CFGFUN(font, const char *font);
 CFGFUN(exec, const char *exectype, const char *no_startup_id, const char *command);
 CFGFUN(for_window, const char *command);
