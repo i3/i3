@@ -331,3 +331,9 @@ void cmd_shmlog(I3_CMD, const char *argument);
  *
  */
 void cmd_debuglog(I3_CMD, const char *argument);
+
+/**
+ * Implementation of 'title_window_icon <yes|no>' and 'title_window_icon padding <px>'
+ *
+ */
+void cmd_title_window_icon(I3_CMD, const char *enable, int padding);

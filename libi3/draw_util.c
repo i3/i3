@@ -141,6 +141,30 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
     cairo_surface_mark_dirty(surface->surface);
 }
 
+/**
+ * Draw the given image using libi3.
+ * This function is a convenience wrapper and takes care of flushing the
+ * surface as well as restoring the cairo state.
+ *
+ */
+void draw_util_image(cairo_surface_t *image, surface_t *surface, int x, int y, int width, int height) {
+    RETURN_UNLESS_SURFACE_INITIALIZED(surface);
+
+    cairo_save(surface->cr);
+
+    cairo_translate(surface->cr, x, y);
+
+    const int src_width = cairo_image_surface_get_width(image);
+    const int src_height = cairo_image_surface_get_height(image);
+    double scale = MIN((double)width / src_width, (double)height / src_height);
+    cairo_scale(surface->cr, scale, scale);
+
+    cairo_set_source_surface(surface->cr, image, 0, 0);
+    cairo_paint(surface->cr);
+
+    cairo_restore(surface->cr);
+}
+
 /*
  * Draws a filled rectangle.
  * This function is a convenience wrapper and takes care of flushing the

@@ -498,6 +498,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         ystr(con->title_format);
     }
 
+    ystr("window_icon_padding");
+    y(integer, con->window_icon_padding);
+
     if (con->type == CT_WORKSPACE) {
         ystr("num");
         y(integer, con->num);

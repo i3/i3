@@ -2038,6 +2038,35 @@ void cmd_title_format(I3_CMD, const char *format) {
 }
 
 /*
+ * Implementation of 'title_window_icon <yes|no>' and 'title_window_icon padding <px>'
+ *
+ */
+void cmd_title_window_icon(I3_CMD, const char *enable, int padding) {
+    if (enable != NULL && !boolstr(enable)) {
+        padding = -1;
+    }
+    DLOG("setting window_icon=%d\n", padding);
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH (current, &owindows, owindows) {
+        DLOG("setting window_icon for %p / %s\n", current->con, current->con->name);
+        current->con->window_icon_padding = padding;
+
+        if (current->con->window != NULL) {
+            /* Make sure the window title is redrawn immediately. */
+            current->con->window->name_x_changed = true;
+        } else {
+            /* For windowless containers we also need to force the redrawing. */
+            FREE(current->con->deco_render_params);
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'rename workspace [<name>] to <name>'
  *
  */
