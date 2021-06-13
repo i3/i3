@@ -176,6 +176,7 @@ is(parser_calls('unknown_literal'),
        scratchpad
        swap
        title_format
+       title_window_icon
        mode
        bar
     )) . "'\n" .

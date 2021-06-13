@@ -2703,6 +2703,32 @@ for_window [class=".*"] title_format "<b>%title</b>"
 for_window [class="(?i)firefox"] title_format "<span foreground='red'>%title</span>"
 -------------------------------------------------------------------------------------
 
+[[title_window_icon]]
+=== Window title icon
+
+By default, i3 does not display the window icon in the title bar.
+
+Starting with i3 v4.20, you can optionally enable window icons either for
+specific windows or for all windows (using the <<for_window>> directive).
+
+*Syntax*:
+-----------------------------
+title_window_icon <yes|no>
+title_window_icon padding <px>
+------------------------------
+
+*Examples*:
+-------------------------------------------------------------------------------------
+# show the window icon for the focused window to make it stand out
+bindsym $mod+p title_window_icon on
+
+# enable window icons for all windows
+for_window [class=".*"] title_window_icon on
+
+# enable window icons for all windows with extra horizontal padding
+for_window [class=".*"] title_window_icon padding 3px
+-------------------------------------------------------------------------------------
+
 === Changing border style
 
 To change the border of the current client, you can use +border normal+ to use the normal
