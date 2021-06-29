@@ -35,4 +35,12 @@ cmd "workspace 2:bar";
 cmd "workspace prev";
 is(focused_ws, "2:foo", "move from 2:bar to prev is 2:foo");
 
+cmd "workspace 2:foo";
+cmd "workspace next_on_output";
+is(focused_ws, "2:bar", "move from 2:foo to next_on_output is 2:bar");
+
+cmd "workspace 2:bar";
+cmd "workspace prev_on_output";
+is(focused_ws, "2:foo", "move from 2:bar to prev_on_output is 2:foo");
+
 done_testing;
