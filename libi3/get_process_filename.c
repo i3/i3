@@ -27,15 +27,14 @@ char *get_process_filename(const char *prefix) {
             char *tmp;
             sasprintf(&tmp, "%s/i3", dir);
             dir = tmp;
-            struct stat buf;
-            if (stat(dir, &buf) != 0) {
-                if (mkdir(dir, 0700) == -1) {
-                    warn("Could not mkdir(%s)", dir);
-                    errx(EXIT_FAILURE, "Check permissions of $XDG_RUNTIME_DIR = '%s'",
-                         getenv("XDG_RUNTIME_DIR"));
-                    perror("mkdir()");
-                    return NULL;
-                }
+            /* mkdirp() should prevent race between multiple i3 instances started
+             * in parallel from causing problem */
+            if (mkdirp(dir, 0700) == -1) {
+                warn("Could not mkdirp(%s)", dir);
+                errx(EXIT_FAILURE, "Check permissions of $XDG_RUNTIME_DIR = '%s'",
+                     getenv("XDG_RUNTIME_DIR"));
+                perror("mkdirp()");
+                return NULL;
             }
         } else {
             /* If not, we create a (secure) temp directory using the template
