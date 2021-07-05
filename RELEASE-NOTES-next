@@ -45,6 +45,7 @@ option is enabled and only then sets a screenshot as background.
   • Add 'all' window matching criterion
   • Acquire the WM_Sn selection when starting as required by ICCCM
   • Add --replace command line argument to replace an existing WM
+  • Notify systemd when i3 is ready, allowing other services to use i3 as a dependency
 
  ┌────────────────────────────┐
  │ Bugfixes                   │
