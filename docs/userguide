@@ -1959,12 +1959,17 @@ bindsym $mod+x [class="Firefox" window_role="About"] kill
 # enable floating mode and move container to workspace 4
 for_window [class="^evil-app$"] floating enable, move container to workspace 4
 
+# enable window icons for all windows with extra horizontal padding of 1px
+for_window [all] title_window_icon padding 1px
+
 # move all floating windows to the scratchpad
 bindsym $mod+x [floating] move scratchpad
 ------------------------------------
 
 The criteria which are currently implemented are:
 
+all::
+	Matches all windows. This criterion requires no value.
 class::
 	Compares the window class (the second part of WM_CLASS). Use the
 	special value +\_\_focused__+ to match all windows having the same window
