@@ -200,7 +200,7 @@ state CRITERIA:
   ctype = 'machine'     -> CRITERION
   ctype = 'floating_from' -> CRITERION_FROM
   ctype = 'tiling_from'   -> CRITERION_FROM
-  ctype = 'tiling', 'floating'
+  ctype = 'tiling', 'floating', 'all'
       -> call cfg_criteria_add($ctype, NULL); CRITERIA
   ']'
       -> call cfg_criteria_pop_state()

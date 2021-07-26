@@ -530,6 +530,7 @@ struct Match {
            WM_FLOATING_USER,
            WM_FLOATING } window_mode;
     Con *con_id;
+    bool match_all_windows;
 
     /* Where the window looking for a match should be inserted:
      *
