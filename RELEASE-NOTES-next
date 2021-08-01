@@ -62,3 +62,4 @@ option is enabled and only then sets a screenshot as background.
   • ipc: return proper signed int for container positions: negative values were
     returned as large 32 bits integers
   • fix crash with "layout default"
+  • send an "output" event on XRandR 1.5 monitor configuration change
