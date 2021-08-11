@@ -127,7 +127,7 @@ static int predict_text_width_pango(const char *text, size_t text_len, bool pang
     PangoLayout *layout = create_layout_with_dpi(cr);
 
     /* Get the font width */
-    gint width;
+    PangoRectangle ink_rect;
     pango_layout_set_font_description(layout, savedFont->specific.pango_desc);
 
     if (pango_markup)
@@ -136,14 +136,20 @@ static int predict_text_width_pango(const char *text, size_t text_len, bool pang
         pango_layout_set_text(layout, text, text_len);
 
     pango_cairo_update_layout(cr, layout);
-    pango_layout_get_pixel_size(layout, &width, NULL);
+    /* We use ink_rect instead of logical_rect. See [1].
+     * [1] https://mail.gnome.org/archives/gtk-devel-list/2001-August/msg00325.html */
+    pango_layout_get_pixel_extents(layout, &ink_rect, NULL);
 
     /* Free resources */
     g_object_unref(layout);
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
 
-    return width;
+    /* Our callers want to know how far the drawn area extends from the cursor.
+     * `ink_rect.width` is the width of the rectangle Pango draws to. But this rectangle
+     * is offset from the cursor by `ink_rect.x`.
+     */
+    return ink_rect.x + ink_rect.width;
 }
 
 /*
