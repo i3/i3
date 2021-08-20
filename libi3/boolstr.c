@@ -7,10 +7,6 @@
  */
 #include "libi3.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
 /*
  * Reports whether str represents the enabled state (1, yes, true, …).
  *

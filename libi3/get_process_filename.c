@@ -10,7 +10,6 @@
 #include <err.h>
 #include <pwd.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 /*

@@ -11,6 +11,8 @@
 
 #include <config.h>
 
+#include "commands_parser.h"
+
 extern pid_t command_error_nagbar_pid;
 
 /**

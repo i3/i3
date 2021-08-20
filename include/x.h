@@ -11,6 +11,7 @@
 #pragma once
 
 #include <config.h>
+#include <xcb/shape.h>
 
 /** Stores the X11 window ID of the currently focused window */
 extern xcb_window_t focused_id;

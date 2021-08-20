@@ -11,6 +11,8 @@
 
 #include <config.h>
 
+#include "ipc.h"
+
 #include <yajl/yajl_gen.h>
 
 /**

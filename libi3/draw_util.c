@@ -12,7 +12,6 @@
 #include <string.h>
 
 #include <xcb/xcb.h>
-#include <xcb/xcb_aux.h>
 
 /* The default visual_type to use if none is specified when creating the surface. Must be defined globally. */
 extern xcb_visualtype_t *visual_type;

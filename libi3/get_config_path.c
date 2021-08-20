@@ -9,7 +9,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 /*
  * Get the path of the first configuration file found. If override_configpath is

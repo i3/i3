@@ -16,7 +16,6 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <i3/ipc.h>
-#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -25,7 +24,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 

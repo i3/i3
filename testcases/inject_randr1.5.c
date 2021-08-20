@@ -12,13 +12,8 @@
  * have been marked as such to make such a refactoring easier.
  *
  */
-#include <config.h>
-
-#include <assert.h>
 #include <err.h>
 #include <errno.h>
-#include <limits.h>
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -28,67 +23,15 @@
 #include <sys/types.h>
 
 #include <xcb/xcb.h>
-#include <xcb/xcb_aux.h>
-#include <xcb/xcb_icccm.h>
-#include <xcb/xcb_keysyms.h>
 
 #include "libi3.h"
-#include "data.h"
-#include "util.h"
-#include "ipc.h"
-#include "tree.h"
-#include "log.h"
-#include "xcb.h"
-#include "manage.h"
-#include "workspace.h"
-#include "i3.h"
-#include "x.h"
-#include "click.h"
-#include "key_press.h"
-#include "floating.h"
-#include "drag.h"
-#include "configuration.h"
 #include "handlers.h"
-#include "randr.h"
-#include "xinerama.h"
-#include "con.h"
-#include "load_layout.h"
-#include "render.h"
-#include "window.h"
-#include "match.h"
-#include "xcursor.h"
-#include "resize.h"
-#include "sighandler.h"
-#include "move.h"
-#include "output.h"
-#include "ewmh.h"
-#include "assignments.h"
-#include "regex.h"
-#include "startup.h"
-#include "scratchpad.h"
-#include "commands.h"
-#include "commands_parser.h"
-#include "bindings.h"
-#include "config_directives.h"
-#include "config_parser.h"
-#include "fake_outputs.h"
-#include "display_version.h"
-#include "restore_layout.h"
-#include "sync.h"
-#include "main.h"
 
 #include <ev.h>
 #include <fcntl.h>
 #include <getopt.h>
-#include <libgen.h>
-#include <sys/mman.h>
-#include <sys/resource.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <sys/un.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 static void uds_connection_cb(EV_P_ ev_io *w, int revents);

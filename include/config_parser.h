@@ -11,6 +11,8 @@
 
 #include <config.h>
 
+#include "data.h"
+
 #include <yajl/yajl_gen.h>
 
 SLIST_HEAD(variables_head, Variable);

@@ -7,9 +7,7 @@
  */
 #include "libi3.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 /*
  * Checks if the given path exists by calling stat().

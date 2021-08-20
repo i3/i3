@@ -34,12 +34,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-#include <xcb/xcb_event.h>
 #include <xcb/xcb_keysyms.h>
 #include <xkbcommon/xkbcommon-x11.h>
 #include <xkbcommon/xkbcommon.h>
@@ -47,7 +45,6 @@
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launchee.h>
 
-#include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 
