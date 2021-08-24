@@ -228,8 +228,15 @@ for my $state (@keys) {
             ($call_identifier) = ($next_state =~ /^call ([0-9]+)$/);
             $next_state = '__CALL';
         }
-        my $identifier = $token->{identifier};
-        say $tokfh qq|    { "$token_name", "$identifier", $next_state, { $call_identifier } },|;
+        my $identifier;
+        # Set $identifier to NULL if there is no identifier
+        if ($token->{identifier} eq ""){
+            $identifier = "NULL"
+        }
+        else{
+            $identifier = qq|"$token->{identifier}"|;
+        }
+        say $tokfh qq|    { "$token_name", $identifier, $next_state, { $call_identifier } },|;
     }
     say $tokfh '};';
 }
