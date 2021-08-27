@@ -506,6 +506,7 @@ EOT
 
 my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '#', '" . join("', '", 'set ', 'set	', qw(
         set_from_resource
+        include
         bindsym
         bindcode
         bind

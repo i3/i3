@@ -3,6 +3,7 @@
 xmacro(_NET_WM_USER_TIME) \
 xmacro(_NET_STARTUP_ID) \
 xmacro(_NET_WORKAREA) \
+xmacro(_NET_WM_ICON) \
 xmacro(WM_PROTOCOLS) \
 xmacro(WM_DELETE_WINDOW) \
 xmacro(UTF8_STRING) \

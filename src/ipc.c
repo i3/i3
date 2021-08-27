@@ -498,6 +498,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         ystr(con->title_format);
     }
 
+    ystr("window_icon_padding");
+    y(integer, con->window_icon_padding);
+
     if (con->type == CT_WORKSPACE) {
         ystr("num");
         y(integer, con->num);
@@ -1040,6 +1043,17 @@ IPC_HANDLER(get_version) {
     ystr("loaded_config_file_name");
     ystr(current_configpath);
 
+    ystr("included_config_file_names");
+    y(array_open);
+    IncludedFile *file;
+    TAILQ_FOREACH (file, &included_files, files) {
+        if (file == TAILQ_FIRST(&included_files)) {
+            /* Skip the first file, which is current_configpath. */
+            continue;
+        }
+        ystr(file->path);
+    }
+    y(array_close);
     y(map_close);
 
     const unsigned char *payload;

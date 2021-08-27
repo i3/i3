@@ -53,7 +53,8 @@ bool match_is_empty(Match *match) {
             match->window_type == UINT32_MAX &&
             match->con_id == NULL &&
             match->dock == M_NODOCK &&
-            match->window_mode == WM_ANY);
+            match->window_mode == WM_ANY &&
+            match->match_all_windows == false);
 }
 
 /*
@@ -260,6 +261,10 @@ bool match_matches_window(Match *match, i3Window *window) {
         LOG("window_mode matches\n");
     }
 
+    /* NOTE: See the comment regarding 'all' in match_parse_property()
+     * for an explanation of why match_all_windows isn't explicitly
+     * checked. */
+
     return true;
 }
 
@@ -435,6 +440,17 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
         cvalue != NULL &&
         strcmp(cvalue, "user") == 0) {
         match->window_mode = WM_FLOATING_USER;
+        return;
+    }
+
+    /* match_matches_window() only checks negatively, so match_all_windows
+     * won't actually be used there, but that's OK because if no negative
+     * match is found (e.g. because of a more restrictive criterion) the
+     * return value of match_matches_window() is true.
+     * Setting it here only serves to cause match_is_empty() to return false,
+     * otherwise empty criteria rules apply, and that's not what we want. */
+    if (strcmp(ctype, "all") == 0) {
+        match->match_all_windows = true;
         return;
     }
 

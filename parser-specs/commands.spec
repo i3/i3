@@ -40,6 +40,7 @@ state INITIAL:
   'scratchpad' -> SCRATCHPAD
   'swap' -> SWAP
   'title_format' -> TITLE_FORMAT
+  'title_window_icon' -> TITLE_WINDOW_ICON
   'mode' -> MODE
   'bar' -> BAR
 
@@ -55,7 +56,7 @@ state CRITERIA:
   ctype = 'urgent'      -> CRITERION
   ctype = 'workspace'   -> CRITERION
   ctype = 'machine'     -> CRITERION
-  ctype = 'tiling', 'floating'
+  ctype = 'tiling', 'floating', 'all'
       -> call cmd_criteria_add($ctype, NULL); CRITERIA
   ']' -> call cmd_criteria_match_windows(); INITIAL
 
@@ -461,6 +462,20 @@ state SWAP_ARGUMENT:
 state TITLE_FORMAT:
   format = string
       -> call cmd_title_format($format)
+
+state TITLE_WINDOW_ICON:
+  'padding'
+    -> TITLE_WINDOW_ICON_PADDING
+  enable = '1', 'yes', 'true', 'on', 'enable', 'active', '0', 'no', 'false', 'off', 'disable', 'inactive'
+    -> call cmd_title_window_icon($enable, 0)
+
+state TITLE_WINDOW_ICON_PADDING:
+  end
+    -> call cmd_title_window_icon($enable, &padding)
+  'px'
+    -> call cmd_title_window_icon($enable, &padding)
+  padding = number
+    ->
 
 # bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]
 state BAR:

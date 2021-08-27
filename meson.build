@@ -325,6 +325,7 @@ ev_dep = cc.find_library('ev')
 inc = include_directories('include')
 
 libi3srcs = [
+  'libi3/boolstr.c',
   'libi3/create_socket.c',
   'libi3/dpi.c',
   'libi3/draw_util.c',

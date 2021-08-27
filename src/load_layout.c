@@ -455,6 +455,10 @@ static int json_int(void *ctx, long long val) {
     if (strcasecmp(last_key, "current_border_width") == 0)
         json_node->current_border_width = val;
 
+    if (strcasecmp(last_key, "window_icon_padding") == 0) {
+        json_node->window_icon_padding = val;
+    }
+
     if (strcasecmp(last_key, "depth") == 0)
         json_node->depth = val;
 
