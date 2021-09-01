@@ -61,3 +61,4 @@ option is enabled and only then sets a screenshot as background.
   • clear pixmap before drawing to prevent visual garbage
   • ipc: return proper signed int for container positions: negative values were
     returned as large 32 bits integers
+  • fix crash with "layout default"
