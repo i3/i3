@@ -18,6 +18,8 @@
 void window_free(i3Window *win) {
     FREE(win->class_class);
     FREE(win->class_instance);
+    FREE(win->role);
+    FREE(win->machine);
     i3string_free(win->name);
     cairo_surface_destroy(win->icon);
     FREE(win->ran_assignments);
