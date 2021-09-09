@@ -42,7 +42,7 @@ void x_reparent_child(Con *con, Con *old);
  * window_rect and child_mapped.
  *
  */
-void x_reparent_child2(Con *new, Con *old);
+void x_reparent_child_deep(Con *new, Con *old);
 
 /**
  * Re-initializes the associated X window state for this container. You have

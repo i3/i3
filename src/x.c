@@ -258,7 +258,7 @@ void x_move_win(Con *src, Con *dest) {
  * window_rect and child_mapped.
  *
  */
-void x_reparent_child2(Con *new, Con *old) {
+void x_reparent_child_deep(Con *new, Con *old) {
     struct con_state *new_state, *old_state;
 
     if ((new_state = state_for_frame(new->frame.id)) == NULL) {
