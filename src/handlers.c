@@ -1074,6 +1074,8 @@ static void handle_configure_notify(xcb_configure_notify_event_t *event) {
         return;
     }
     randr_query_outputs();
+
+    ipc_send_event("output", I3_IPC_EVENT_OUTPUT, "{\"change\":\"unspecified\"}");
 }
 
 /*
