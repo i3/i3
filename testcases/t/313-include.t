@@ -56,10 +56,11 @@ is(launch_get_border($config), 'normal', 'normal border');
 #####################################################################
 
 my ($fh, $filename) = tempfile(UNLINK => 1);
-print $fh <<'EOT';
+my $varconfig = <<'EOT';
 set $vartest special title
 for_window [title="$vartest"] border none
 EOT
+print $fh $varconfig;
 $fh->flush;
 
 $config = <<EOT;
@@ -316,11 +317,21 @@ my $tmpdir = tempdir(CLEANUP => 1);
 my $socketpath = $tmpdir . "/config.sock";
 ok(! -e $socketpath, "$socketpath does not exist yet");
 
+my ($indirectfh3, $indirectfilename3) = tempfile(UNLINK => 1);
+my $indirectconfig = <<EOT;
+for_window [title="\$vartest"] border none
+include $relative
+EOT
+print $indirectfh3 $indirectconfig;
+$indirectfh3->flush;
+
 $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
-include $indirectfilename2
+set \$vartest special title
+
+include $indirectfilename3
 
 ipc-socket $socketpath
 EOT
@@ -331,6 +342,18 @@ my $i3 = i3(get_socket_path(0));
 my $config_reply = $i3->get_config()->recv;
 
 is($config_reply->{config}, $config, 'GET_CONFIG returns the top-level config file');
+
+my $included = $config_reply->{included_configs};
+is(scalar @{$included}, 3, 'included_configs contains all 3 files');
+is($included->[0]->{raw_contents}, $config, 'included_configs->[0]->{raw_contents} contains top-level config');
+is($included->[1]->{raw_contents}, $indirectconfig, 'included_configs->[1]->{raw_contents} contains indirect config');
+is($included->[2]->{raw_contents}, $varconfig, 'included_configs->[2]->{raw_contents} contains variable config');
+
+my $indirect_replaced_config = <<EOT;
+for_window [title="special title"] border none
+include $relative
+EOT
+is($included->[1]->{variable_replaced_contents}, $indirect_replaced_config, 'included_configs->[1]->{variable_replaced_contents} contains config with variables replaced');
 
 exit_gracefully($pid);
 

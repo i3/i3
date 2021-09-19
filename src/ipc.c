@@ -1236,7 +1236,22 @@ IPC_HANDLER(get_config) {
     y(map_open);
 
     ystr("config");
-    ystr(current_config);
+    IncludedFile *file = TAILQ_FIRST(&included_files);
+    ystr(file->raw_contents);
+
+    ystr("included_configs");
+    y(array_open);
+    TAILQ_FOREACH (file, &included_files, files) {
+        y(map_open);
+        ystr("path");
+        ystr(file->path);
+        ystr("raw_contents");
+        ystr(file->raw_contents);
+        ystr("variable_replaced_contents");
+        ystr(file->variable_replaced_contents);
+        y(map_close);
+    }
+    y(array_close);
 
     y(map_close);
 

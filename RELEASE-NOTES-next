@@ -30,6 +30,7 @@ option is enabled and only then sets a screenshot as background.
 
   • default config: use dex for XDG autostart
   • docs/ipc: document scratchpad_state
+  • ipc: the GET_CONFIG request now returns all included files and their details
   • i3-nagbar: position on focused monitor by default
   • i3-nagbar: add option to position on primary monitor
   • alternate focusing tab/stack children-parent containers by clicking on their titlebars

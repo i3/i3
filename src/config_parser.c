@@ -857,7 +857,7 @@ void free_variables(struct parser_ctx *ctx) {
  * parse_config and possibly launching i3-nagbar.
  *
  */
-parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f) {
+parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFile *included_file) {
     int fd;
     struct stat stbuf;
     char *buf;
@@ -891,13 +891,11 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f) {
         return PARSE_FILE_FAILED;
     }
 
-    if (current_config == NULL) {
-        current_config = scalloc(stbuf.st_size + 1, 1);
-        if ((ssize_t)fread(current_config, 1, stbuf.st_size, fstr) != stbuf.st_size) {
-            return PARSE_FILE_FAILED;
-        }
-        rewind(fstr);
+    included_file->raw_contents = scalloc(stbuf.st_size + 1, 1);
+    if ((ssize_t)fread(included_file->raw_contents, 1, stbuf.st_size, fstr) != stbuf.st_size) {
+        return PARSE_FILE_FAILED;
     }
+    rewind(fstr);
 
     bool invalid_sets = false;
 
@@ -1083,6 +1081,8 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f) {
             LOG("\n");
         }
     }
+
+    included_file->variable_replaced_contents = sstrdup(new);
 
     struct context *context = scalloc(1, sizeof(struct context));
     context->filename = f;

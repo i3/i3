@@ -156,6 +156,7 @@ int main(int argc, char *argv[]) {
     char *payload = NULL;
     bool quiet = false;
     bool monitor = false;
+    bool raw_reply = false;
 
     static struct option long_options[] = {
         {"socket", required_argument, 0, 's'},
@@ -164,9 +165,10 @@ int main(int argc, char *argv[]) {
         {"quiet", no_argument, 0, 'q'},
         {"monitor", no_argument, 0, 'm'},
         {"help", no_argument, 0, 'h'},
+        {"raw", no_argument, 0, 'r'},
         {0, 0, 0, 0}};
 
-    char *options_string = "s:t:vhqm";
+    char *options_string = "s:t:vhqmr";
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         if (o == 's') {
@@ -217,6 +219,8 @@ int main(int argc, char *argv[]) {
             return 0;
         } else if (o == '?') {
             exit(EXIT_FAILURE);
+        } else if (o == 'r') {
+            raw_reply = true;
         }
     }
 
@@ -262,32 +266,38 @@ int main(int argc, char *argv[]) {
     /* For the reply of commands, have a look if that command was successful.
      * If not, nicely format the error message. */
     if (reply_type == I3_IPC_REPLY_TYPE_COMMAND) {
-        yajl_handle handle = yajl_alloc(&reply_callbacks, NULL, NULL);
-        yajl_status state = yajl_parse(handle, (const unsigned char *)reply, reply_length);
-        yajl_free(handle);
+        if (!raw_reply) {
+            yajl_handle handle = yajl_alloc(&reply_callbacks, NULL, NULL);
+            yajl_status state = yajl_parse(handle, (const unsigned char *)reply, reply_length);
+            yajl_free(handle);
 
-        switch (state) {
-            case yajl_status_ok:
-                break;
-            case yajl_status_client_canceled:
-            case yajl_status_error:
-                errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
+            switch (state) {
+                case yajl_status_ok:
+                    break;
+                case yajl_status_client_canceled:
+                case yajl_status_error:
+                    errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
+            }
         }
 
-        if (!quiet) {
+        if (!quiet || raw_reply) {
             printf("%.*s\n", reply_length, reply);
         }
     } else if (reply_type == I3_IPC_REPLY_TYPE_CONFIG) {
-        yajl_handle handle = yajl_alloc(&config_callbacks, NULL, NULL);
-        yajl_status state = yajl_parse(handle, (const unsigned char *)reply, reply_length);
-        yajl_free(handle);
+        if (raw_reply) {
+            printf("%.*s\n", reply_length, reply);
+        } else {
+            yajl_handle handle = yajl_alloc(&config_callbacks, NULL, NULL);
+            yajl_status state = yajl_parse(handle, (const unsigned char *)reply, reply_length);
+            yajl_free(handle);
 
-        switch (state) {
-            case yajl_status_ok:
-                break;
-            case yajl_status_client_canceled:
-            case yajl_status_error:
-                errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
+            switch (state) {
+                case yajl_status_ok:
+                    break;
+                case yajl_status_client_canceled:
+                case yajl_status_error:
+                    errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
+            }
         }
     } else if (reply_type == I3_IPC_REPLY_TYPE_SUBSCRIBE) {
         do {
