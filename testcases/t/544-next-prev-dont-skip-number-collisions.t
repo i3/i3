@@ -16,6 +16,7 @@
 #
 # Tests that switching to next/prev workspace doesn't skip those that have
 # the same number as current.
+# See: #4452
 use i3test;
 
 cmd "workspace 1";
