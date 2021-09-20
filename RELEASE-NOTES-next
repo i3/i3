@@ -56,3 +56,5 @@ option is enabled and only then sets a screenshot as background.
   • clear pixmap before drawing to prevent visual garbage
   • ipc: return proper signed int for container positions: negative values were
     returned as large 32 bits integers
+  • Workspaces with colliding numbers are no longer skipped when moving to
+    next, prev, next_on_output, or prev_on_output workspaces
