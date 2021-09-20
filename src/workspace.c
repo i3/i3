@@ -581,8 +581,7 @@ Con *workspace_next(void) {
                 if (child == current) {
                     found_current = true;
                 } else if (child->num == -1 && found_current) {
-                    next = child;
-                    return next;
+                    return child;
                 }
             }
         }
@@ -604,8 +603,7 @@ Con *workspace_next(void) {
                 if (child == current) {
                     found_current = true;
                 } else if (child->num == current->num && found_current) {
-                    next = child;
-                    return next;
+                    return child;
                 }
                 /* Need to check child against current and next because we are
                  * traversing multiple lists and thus are not guaranteed the
@@ -652,8 +650,7 @@ Con *workspace_prev(void) {
                     if (child == current) {
                         found_current = true;
                     } else if (child->num == -1 && found_current) {
-                        prev = child;
-                        return prev;
+                        return child;
                     }
                 }
             }
@@ -676,8 +673,7 @@ Con *workspace_prev(void) {
                 if (child == current) {
                     found_current = true;
                 } else if (child->num == current->num && found_current) {
-                    prev = child;
-                    return prev;
+                    return child;
                 }
                 /* Need to check child against current and previous because we
                  * are traversing multiple lists and thus are not guaranteed
@@ -717,8 +713,7 @@ Con *workspace_next_on_output(void) {
             if (child == current) {
                 found_current = true;
             } else if (child->num == current->num && found_current) {
-                next = child;
-                goto workspace_next_on_output_end;
+                return child;
             }
             /* Need to check child against current and next because we are
              * traversing multiple lists and thus are not guaranteed the
@@ -736,8 +731,7 @@ Con *workspace_next_on_output(void) {
             if (child == current) {
                 found_current = true;
             } else if (child->num == -1 && (current->num != -1 || found_current)) {
-                next = child;
-                goto workspace_next_on_output_end;
+                return child;
             }
         }
     }
@@ -751,7 +745,7 @@ Con *workspace_next_on_output(void) {
                 next = child;
         }
     }
-workspace_next_on_output_end:
+
     return next;
 }
 
@@ -779,8 +773,7 @@ Con *workspace_prev_on_output(void) {
             if (child == current) {
                 found_current = true;
             } else if (child->num == current->num && found_current) {
-                prev = child;
-                goto workspace_prev_on_output_end;
+                return child;
             }
             /* Need to check child against current and previous because we
              * are traversing multiple lists and thus are not guaranteed
@@ -798,8 +791,7 @@ Con *workspace_prev_on_output(void) {
             if (child == current) {
                 found_current = true;
             } else if (child->num == -1 && (current->num != -1 || found_current)) {
-                prev = child;
-                goto workspace_prev_on_output_end;
+                return child;
             }
         }
     }
@@ -814,7 +806,6 @@ Con *workspace_prev_on_output(void) {
         }
     }
 
-workspace_prev_on_output_end:
     return prev;
 }
 
