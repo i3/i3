@@ -77,6 +77,8 @@ struct Variable {
  */
 struct IncludedFile {
     char *path;
+    char *raw_contents;
+    char *variable_replaced_contents;
 
     TAILQ_ENTRY(IncludedFile) files;
 };

@@ -103,4 +103,4 @@ typedef enum {
  * parsing.
  *
  */
-parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f);
+parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFile *included_file);

@@ -16,7 +16,6 @@
 #include <xkbcommon/xkbcommon.h>
 
 char *current_configpath = NULL;
-char *current_config = NULL;
 Config config;
 struct modes_head modes;
 struct barconfig_head barconfigs = TAILQ_HEAD_INITIALIZER(barconfigs);
@@ -234,6 +233,8 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     while (!TAILQ_EMPTY(&included_files)) {
         file = TAILQ_FIRST(&included_files);
         FREE(file->path);
+        FREE(file->raw_contents);
+        FREE(file->variable_replaced_contents);
         TAILQ_REMOVE(&included_files, file, files);
         FREE(file);
     }
@@ -256,8 +257,7 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
         .stack = &stack,
     };
     SLIST_INIT(&(ctx.variables));
-    FREE(current_config);
-    const int result = parse_file(&ctx, resolved_path);
+    const int result = parse_file(&ctx, resolved_path, file);
     free_variables(&ctx);
     if (result == -1) {
         die("Could not open configuration file: %s\n", strerror(errno));

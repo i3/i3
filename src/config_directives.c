@@ -63,7 +63,7 @@ CFGFUN(include, const char *pattern) {
             .stack = &stack,
             .variables = result->ctx->variables,
         };
-        switch (parse_file(&ctx, resolved_path)) {
+        switch (parse_file(&ctx, resolved_path, file)) {
             case PARSE_FILE_SUCCESS:
                 break;
 
@@ -75,6 +75,8 @@ CFGFUN(include, const char *pattern) {
                 result->has_errors = true;
                 TAILQ_REMOVE(&included_files, file, files);
                 FREE(file->path);
+                FREE(file->raw_contents);
+                FREE(file->variable_replaced_contents);
                 FREE(file);
                 break;
 
