@@ -1059,6 +1059,76 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
 }
 
 /*
+ * Log FocusOut events.
+ *
+ */
+static void handle_focus_out(xcb_focus_in_event_t *event) {
+    Con *con = con_by_window_id(event->event);
+    const char *window_name, *mode, *detail;
+
+    if (con != NULL) {
+        window_name = con->name;
+        if (window_name == NULL) {
+            window_name = "<unnamed con>";
+        }
+    } else if (event->event == root) {
+        window_name = "<the root window>";
+    } else {
+        window_name = "<unknown window>";
+    }
+
+    switch (event->mode) {
+        case XCB_NOTIFY_MODE_NORMAL:
+            mode = "Normal";
+            break;
+        case XCB_NOTIFY_MODE_GRAB:
+            mode = "Grab";
+            break;
+        case XCB_NOTIFY_MODE_UNGRAB:
+            mode = "Ungrab";
+            break;
+        case XCB_NOTIFY_MODE_WHILE_GRABBED:
+            mode = "WhileGrabbed";
+            break;
+        default:
+            mode = "<unknown>";
+            break;
+    }
+
+    switch (event->detail) {
+        case XCB_NOTIFY_DETAIL_ANCESTOR:
+            detail = "Ancestor";
+            break;
+        case XCB_NOTIFY_DETAIL_VIRTUAL:
+            detail = "Virtual";
+            break;
+        case XCB_NOTIFY_DETAIL_INFERIOR:
+            detail = "Inferior";
+            break;
+        case XCB_NOTIFY_DETAIL_NONLINEAR:
+            detail = "Nonlinear";
+            break;
+        case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
+            detail = "NonlinearVirtual";
+            break;
+        case XCB_NOTIFY_DETAIL_POINTER:
+            detail = "Pointer";
+            break;
+        case XCB_NOTIFY_DETAIL_POINTER_ROOT:
+            detail = "PointerRoot";
+            break;
+        case XCB_NOTIFY_DETAIL_NONE:
+            detail = "NONE";
+            break;
+        default:
+            detail = "unknown";
+            break;
+    }
+
+    DLOG("focus change out: window 0x%08x (con %p, %s) lost focus with detail=%s, mode=%s\n", event->event, con, window_name, detail, mode);
+}
+
+/*
  * Handles ConfigureNotify events for the root window, which are generated when
  * the monitor configuration changed.
  *
@@ -1432,6 +1502,10 @@ void handle_event(int type, xcb_generic_event_t *event) {
 
         case XCB_FOCUS_IN:
             handle_focus_in((xcb_focus_in_event_t *)event);
+            break;
+
+        case XCB_FOCUS_OUT:
+            handle_focus_out((xcb_focus_out_event_t *)event);
             break;
 
         case XCB_PROPERTY_NOTIFY: {
