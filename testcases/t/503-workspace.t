@@ -54,16 +54,12 @@ cmd 'workspace 5';
 # ensure workspace 5 stays open
 open_window;
 
-# numbered w/ name workspaces must be created in reverse order compared to
-# other workspace types (because a new numbered w/ name workspace is prepended
-# to the list of similarly numbered workspaces).
-
-cmd 'workspace 6:b';
-# ensure workspace 5 stays open
+cmd 'workspace 6:a';
+# ensure workspace 6:a stays open
 open_window;
 
-cmd 'workspace 6:a';
-# ensure workspace 5 stays open
+cmd 'workspace 6:b';
+# ensure workspace 6:b stays open
 open_window;
 
 ################################################################################
@@ -101,7 +97,7 @@ cmd 'workspace next';
 # later in time and mess up our subsequent tests.
 sync_with_i3;
 
-is(focused_ws, '6:b', 'workspace 6:b focused');
+is(focused_ws, '6:b', 'workspace 6:a focused');
 cmd 'workspace next';
 # We need to sync after changing focus to a different output to wait for the
 # EnterNotify to be processed, otherwise it will be processed at some point
@@ -144,60 +140,5 @@ is(focused_ws, '6:c', 'workspace 6:c focused');
 
 cmd 'workspace prev_on_output';
 is(focused_ws, '2', 'workspace 2 focused');
-
-################################################################################
-# Setup a few more workspaces that have identical numbers (but different names).
-################################################################################
-
-# The current order should still be:
-# output 1: 1, 5
-# output 2: 2
-
-
-cmd 'workspace 1';
-# We need to sync after changing focus to a different output to wait for the
-# EnterNotify to be processed, otherwise it will be processed at some point
-# later in time and mess up our subsequent tests.
-sync_with_i3;
-
-cmd 'workspace 2:a';
-# ensure workspace 2:a stays open
-open_window;
-cmd 'workspace 6:a';
-# ensure workspace 6:a stays open
-open_window;
-cmd 'workspace 6:b';
-# ensure workspace 6:b stays open
-open_window;
-cmd 'workspace 7';
-# ensure workspace 7 stays open
-open_window;
-
-cmd 'workspace 2';
-# We need to sync after changing focus to a different output to wait for the
-# EnterNotify to be processed, otherwise it will be processed at some point
-# later in time and mess up our subsequent tests.
-sync_with_i3;
-
-cmd 'workspace 2:b';
-# ensure workspace 2:b stays open
-open_window;
-
-# The current order should now be:
-# output 1: 1, 2:a, 5, 6:a, 6:b, 7
-# output 2: 2, 2:b
-
-################################################################################
-# Move to next workspaces to the right of existing ones with the same number.
-################################################################################
-
-cmd 'workspace 5';
-# We need to sync after changing focus to a different output to wait for the
-# EnterNotify to be processed, otherwise it will be processed at some point
-# later in time and mess up our subsequent tests.
-sync_with_i3;
-
-cmd 'workspace next';
-is(focused_ws, '6:a', 'workspace 6:a focused');
 
 done_testing;
