@@ -41,6 +41,10 @@ is(focused_ws, '2', 'workspace 2 on second output');
 # ensure workspace 2 stays open
 open_window;
 
+cmd 'workspace 6:c';
+# ensure workspace 6:c stays open
+open_window;
+
 cmd 'focus output right';
 is(focused_ws, '1', 'back on workspace 1');
 
@@ -50,13 +54,25 @@ cmd 'workspace 5';
 # ensure workspace 5 stays open
 open_window;
 
+# numbered w/ name workspaces must be created in reverse order compared to
+# other workspace types (because a new numbered w/ name workspace is prepended
+# to the list of similarly numbered workspaces).
+
+cmd 'workspace 6:b';
+# ensure workspace 5 stays open
+open_window;
+
+cmd 'workspace 6:a';
+# ensure workspace 5 stays open
+open_window;
+
 ################################################################################
 # Use workspace next and verify the correct order.
 ################################################################################
 
 # The current order should be:
-# output 1: 1, 5
-# output 2: 2
+# output 1: 1, 5, 6:a, 6:b
+# output 2: 2, 6:c
 cmd 'workspace 1';
 cmd 'workspace next';
 # We need to sync after changing focus to a different output to wait for the
@@ -72,6 +88,27 @@ cmd 'workspace next';
 sync_with_i3;
 
 is(focused_ws, '5', 'workspace 5 focused');
+cmd 'workspace next';
+# We need to sync after changing focus to a different output to wait for the
+# EnterNotify to be processed, otherwise it will be processed at some point
+# later in time and mess up our subsequent tests.
+sync_with_i3;
+
+is(focused_ws, '6:a', 'workspace 6:a focused');
+cmd 'workspace next';
+# We need to sync after changing focus to a different output to wait for the
+# EnterNotify to be processed, otherwise it will be processed at some point
+# later in time and mess up our subsequent tests.
+sync_with_i3;
+
+is(focused_ws, '6:b', 'workspace 6:b focused');
+cmd 'workspace next';
+# We need to sync after changing focus to a different output to wait for the
+# EnterNotify to be processed, otherwise it will be processed at some point
+# later in time and mess up our subsequent tests.
+sync_with_i3;
+
+is(focused_ws, '6:c', 'workspace 6:b focused');
 
 ################################################################################
 # Now try the same with workspace next_on_output.
@@ -81,8 +118,16 @@ cmd 'workspace 1';
 cmd 'workspace next_on_output';
 is(focused_ws, '5', 'workspace 5 focused');
 cmd 'workspace next_on_output';
+is(focused_ws, '6:a', 'workspace 6:a focused');
+cmd 'workspace next_on_output';
+is(focused_ws, '6:b', 'workspace 6:b focused');
+cmd 'workspace next_on_output';
 is(focused_ws, '1', 'workspace 1 focused');
 
+cmd 'workspace prev_on_output';
+is(focused_ws, '6:b', 'workspace 6:b focused');
+cmd 'workspace prev_on_output';
+is(focused_ws, '6:a', 'workspace 6:a focused');
 cmd 'workspace prev_on_output';
 is(focused_ws, '5', 'workspace 5 focused');
 cmd 'workspace prev_on_output';
@@ -93,6 +138,9 @@ cmd 'workspace 2';
 # EnterNotify to be processed, otherwise it will be processed at some point
 # later in time and mess up our subsequent tests.
 sync_with_i3;
+
+cmd 'workspace prev_on_output';
+is(focused_ws, '6:c', 'workspace 6:c focused');
 
 cmd 'workspace prev_on_output';
 is(focused_ws, '2', 'workspace 2 focused');
