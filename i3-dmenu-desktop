@@ -154,6 +154,8 @@ find(
         },
         no_chdir => 1,
         follow_fast => 1,
+        # Ignore any duplicate files and directories and proceed normally:
+        follow_skip => 2,
     },
     @searchdirs
 );
