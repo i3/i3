@@ -94,7 +94,8 @@ cmd 'workspace 8:a'; open_window;
 # Use workspace next and verify the correct order.
 # numbered -> numerical sort
 # numbered w/ names -> numerical sort. Workspaces with the same number but
-#     different names sort by output, followed by creation time on each output.
+#     different names sort by output, followed by reverse creation time on each
+#     output.
 # named -> sort by creation time
 ################################################################################
 cmd 'workspace 1';
