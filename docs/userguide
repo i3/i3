@@ -2728,10 +2728,10 @@ title_window_icon padding <px>
 bindsym $mod+p title_window_icon on
 
 # enable window icons for all windows
-for_window [class=".*"] title_window_icon on
+for_window [all] title_window_icon on
 
 # enable window icons for all windows with extra horizontal padding
-for_window [class=".*"] title_window_icon padding 3px
+for_window [all] title_window_icon padding 3px
 -------------------------------------------------------------------------------------
 
 === Changing border style
