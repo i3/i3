@@ -6,7 +6,7 @@
 project(
   'i3',
   'c',
-  version: '4.19.2',
+  version: '4.20',
   default_options: [
     'c_std=c11',
     'warning_level=1',  # enable all warnings (-Wall)
