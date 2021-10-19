@@ -41,11 +41,14 @@ Note that bug reports and feature requests for related projects should be filed 
 * Use `clang-format` to format your code.
 * Run the [testsuite](https://i3wm.org/docs/testsuite.html)
 * If your changes should be reported on the next release's changelog, also
-  update the [RELEASE-notes-next](../RELEASE-notes-next) file in the root
-  folder. Example of changes that should be reported are bug fixes present in
-  the latest stable version of i3 and new enhancements. Example of changes that
-  should not be reported are minor code improvements, documentation, regression
-  and fixes for bugs that were introduced in the `next` branch.
+  add a small single-line file starting with a number (see examples) containing
+  a short explanation of your change either in the
+  [changes](../release-notes/changes) or the
+  [bugfixes](../release-notes/bugfixes/) folder. Example of changes that should
+  be reported are bug fixes present in the latest stable version of i3 and new
+  enhancements. Example of changes that should not be reported are minor code
+  improvements, documentation, regression and fixes for bugs that were
+  introduced in the `next` branch.
 
 ## Finding something to do
 

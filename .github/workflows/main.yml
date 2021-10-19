@@ -25,6 +25,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
+    - name: check & print release notes
+      run: ./release-notes/generator.pl
     - name: construct container name
       run: |
         echo "BASENAME=i3wm/travis-base:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base.Dockerfile)" >> $GITHUB_ENV
