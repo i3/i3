@@ -77,3 +77,17 @@ In case you notice any issues regarding your background/wallpaper, note:
   • clear pixmap before drawing to prevent visual garbage
   • fix crash with "layout default"
   • send an "output" event on XRandR 1.5 monitor configuration change
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  ajakk, Albert Safin, Anaël Beutot, Antoine Martin, Dmitri Goutnik, ekarpp,
+  Imran Virani, Ingo Bürk, Isaac Garzon, Ivan Milov, Jay Khandkar, j-jzk, Ken
+  Gilmer, Kjetil Torgrim Homme, lbonn, Michael Stapelberg, Orestis Floros, Ralph
+  Gutkowski, Romuald Brunet, tomty89, Tristan Giles, Tudor Brindus, Uli
+  Schlachter, Vincent Bernat, Vladimir Panteleev
+
+-- Michael Stapelberg, 2021-10-19
