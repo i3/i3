@@ -537,6 +537,9 @@ void x_draw_decoration(Con *con) {
 
     /* 2: draw the client.background, but only for the parts around the window_rect */
     if (con->window != NULL) {
+        /* Clear visible windows before beginning to draw */
+        draw_util_clear_surface(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
+
         /* top area */
         draw_util_rectangle(&(con->frame_buffer), config.client.background,
                             0, 0, r->width, w->y);
@@ -609,11 +612,14 @@ void x_draw_decoration(Con *con) {
     /* 5: draw title border */
     x_draw_title_border(con, p);
 
-    /* 6: draw the title */
+    /* 6: draw the icon and title */
     int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
 
-    const int title_padding = logical_px(2);
+    struct Window *win = con->window;
+
     const int deco_width = (int)con->deco_rect.width;
+    const int title_padding = logical_px(2);
+
     int mark_width = 0;
     if (config.show_marks && !TAILQ_EMPTY(&(con->marks_head))) {
         char *formatted_mark = sstrdup("");
@@ -652,7 +658,6 @@ void x_draw_decoration(Con *con) {
     }
 
     i3String *title = NULL;
-    struct Window *win = con->window;
     if (win == NULL) {
         if (con->title_format == NULL) {
             char *_title;
@@ -672,25 +677,45 @@ void x_draw_decoration(Con *con) {
         goto copy_pixmaps;
     }
 
+    /* icon_padding is applied horizontally only, the icon will always use all
+     * available vertical space. */
+    int icon_size = max(0, con->deco_rect.height - logical_px(2));
+    int icon_padding = logical_px(max(1, con->window_icon_padding));
+    int total_icon_space = icon_size + 2 * icon_padding;
+    const bool has_icon = (con->window_icon_padding > -1) && win && win->icon && (total_icon_space < deco_width);
+    if (!has_icon) {
+        icon_size = icon_padding = total_icon_space = 0;
+    }
+    /* Determine x offsets according to title alignment */
+    int icon_offset_x;
     int title_offset_x;
     switch (config.title_align) {
         case ALIGN_LEFT:
-            /* (pad)[text    ](pad)[mark + its pad) */
-            title_offset_x = title_padding;
+            /* (pad)[(pad)(icon)(pad)][text    ](pad)[mark + its pad)
+             *             ^           ^--- title_offset_x
+             *             ^--- icon_offset_x */
+            icon_offset_x = icon_padding;
+            title_offset_x = title_padding + total_icon_space;
             break;
         case ALIGN_CENTER:
-            /* (pad)[  text  ](pad)[mark + its pad)
-             * To center the text inside its allocated space, the surface
-             * between the brackets, we use the formula
-             * (surface_width - predict_text_width) / 2
-             * where surface_width = deco_width - 2 * pad - mark_width
-             * so, offset = pad + (surface_width - predict_text_width) / 2 =
-             * = … = (deco_width - mark_width - predict_text_width) / 2 */
-            title_offset_x = max(title_padding, (deco_width - mark_width - predict_text_width(title)) / 2);
+            /* (pad)[  ][(pad)(icon)(pad)][text  ](pad)[mark + its pad)
+             *                 ^           ^--- title_offset_x
+             *                 ^--- icon_offset_x
+             * Text should come right after the icon (+padding). We calculate
+             * the offset for the icon (white space in the title) by dividing
+             * by two the total available area. That's the decoration width
+             * minus the elements that come after icon_offset_x (icon, its
+             * padding, text, marks). */
+            icon_offset_x = max(icon_padding, (deco_width - icon_padding - icon_size - predict_text_width(title) - title_padding - mark_width) / 2);
+            title_offset_x = max(title_padding, icon_offset_x + icon_padding + icon_size);
             break;
         case ALIGN_RIGHT:
-            /* [mark + its pad](pad)[    text](pad) */
-            title_offset_x = max(title_padding + mark_width, deco_width - title_padding - predict_text_width(title));
+            /* [mark + its pad](pad)[    text][(pad)(icon)(pad)](pad)
+             *                           ^           ^--- icon_offset_x
+             *                           ^--- title_offset_x */
+            title_offset_x = max(title_padding + mark_width, deco_width - title_padding - predict_text_width(title) - total_icon_space);
+            /* Make sure the icon does not escape title boundaries */
+            icon_offset_x = min(deco_width - icon_size - icon_padding - title_padding, title_offset_x + predict_text_width(title) + icon_padding);
             break;
     }
 
@@ -698,7 +723,16 @@ void x_draw_decoration(Con *con) {
                    p->color->text, p->color->background,
                    con->deco_rect.x + title_offset_x,
                    con->deco_rect.y + text_offset_y,
-                   deco_width - mark_width - 2 * title_padding);
+                   deco_width - mark_width - 2 * title_padding - total_icon_space);
+    if (has_icon) {
+        draw_util_image(
+            win->icon,
+            &(parent->frame_buffer),
+            con->deco_rect.x + icon_offset_x,
+            con->deco_rect.y + logical_px(1),
+            icon_size,
+            icon_size);
+    }
 
     if (win == NULL || con->title_format != NULL) {
         I3STRING_FREE(title);
@@ -1418,6 +1452,8 @@ void x_set_i3_atoms(void) {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_PID, XCB_ATOM_CARDINAL, 32, 1, &pid);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_CONFIG_PATH, A_UTF8_STRING, 8,
                         strlen(current_configpath), current_configpath);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_LOG_STREAM_SOCKET_PATH, A_UTF8_STRING, 8,
+                        strlen(current_log_stream_socket_path), current_log_stream_socket_path);
     update_shmlog_atom();
 }
 

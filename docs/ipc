@@ -14,7 +14,8 @@ most languages. In the default configuration file, the ipc-socket gets created
 in +/tmp/i3-%u.XXXXXX/ipc-socket.%p+ where +%u+ is your UNIX username, +%p+ is
 the PID of i3 and XXXXXX is a string of random characters from the portable
 filename character set (see mkdtemp(3)). You can get the socketpath from i3 by
-calling +i3 --get-socketpath+.
+executing +i3 --get-socketpath+, which will print the path to the standard
+output (plus a newline).
 
 All i3 utilities, like +i3-msg+ and +i3-input+ will read the +I3_SOCKET_PATH+
 X11 property, stored on the X11 root window.
@@ -39,12 +40,12 @@ my $sock = IO::Socket::UNIX->new(Peer => $path);
 
 == Sending messages to i3
 
-To send a message to i3, you have to format in the binary message format which
-i3 expects. This format specifies a magic string in the beginning to ensure
-the integrity of messages (to prevent follow-up errors). Following the magic
-string comes the length of the payload of the message as 32-bit integer, and
-the type of the message as 32-bit integer (the integers are not converted, so
-they are in native byte order).
+To send a message to i3, you have to format it in the binary message format
+which i3 expects. This format specifies a magic string in the beginning to
+ensure the integrity of messages (to prevent follow-up errors). Following the
+magic string comes the length of the payload of the message as a 32-bit
+integer, and the type of the message as a 32-bit integer (the integers are not
+converted, so they are in native byte order).
 
 The magic string currently is "i3-ipc" and will only be changed when a change
 in the IPC API is done which breaks compatibility (we hope that we don’t need
@@ -96,17 +97,29 @@ $sock->write(format_ipc_command("exit"));
 
 == Receiving replies from i3
 
-Replies from i3 usually consist of a simple string (the length of the string
-is the message_length, so you can consider them length-prefixed) which in turn
-contain the JSON serialization of a data structure. For example, the
-GET_WORKSPACES message returns an array of workspaces (each workspace is a map
-with certain attributes).
+Each message sent to i3 will cause exactly one reply to be sent in return. The
+order of the sent replies will always correspond to the order of the sent
+requests. The only exception to this is <<events>>, which (once subscribed to)
+may be sent at any time (though never in the middle of another event or reply).
 
-=== Reply format
+It is generally safe to send several messages to i3 without first waiting for a
+reply for each one (pipelining) -- though, note that depending on the language /
+network library you use, writing to the socket without also reading from it may
+cause a deadlock due to the socket buffers getting full.
 
 The reply format is identical to the normal message format. There also is
 the magic string, then the message length, then the message type and the
 payload.
+
+The payload of replies from i3 usually consists of a simple string (the length
+of the string is the message_length, so you can consider them length-prefixed),
+which in turn contain the JSON serialization of a data structure. For example,
+the GET_WORKSPACES message returns an array of workspaces (each workspace is a
+map with certain attributes).
+
+Replies currently have a 1:1 correspondence to messages, with the message type
+of the reply corresponding to the message type of the message which caused the
+reply to be sent.
 
 The following reply types are implemented:
 
@@ -127,16 +140,30 @@ BAR_CONFIG (6)::
 VERSION (7)::
 	Reply to the GET_VERSION message.
 BINDING_MODES (8)::
-        Reply to the GET_BINDING_MODES message.
+	Reply to the GET_BINDING_MODES message.
 GET_CONFIG (9)::
 	Reply to the GET_CONFIG message.
 TICK (10)::
 	Reply to the SEND_TICK message.
+SYNC (11)::
+	Reply to the SYNC message.
 GET_BINDING_STATE (12)::
 	Reply to the GET_BINDING_STATE message.
 
+== Messages and replies
+
 [[_command_reply]]
-=== COMMAND reply
+=== RUN_COMMAND / COMMAND
+
+Run the payload as an https://i3wm.org/docs/userguide.html#list_of_commands[i3
+command] (like the commands you can bind to keys).
+
+*Message:*
+
+The message payload is the string containing the command to execute. There is
+no JSON encoding or trailing newline.
+
+*Reply:*
 
 The reply consists of a list of serialized maps for each command that was
 parsed. Each has the property +success (bool)+ and may also include a
@@ -170,7 +197,15 @@ When the specified command cannot be parsed, `success` will be false and
 -------------------
 
 [[_workspaces_reply]]
-=== WORKSPACES reply
+=== GET_WORKSPACES / WORKSPACES
+
+Get the list of current workspaces.
+
+*Message:*
+
+No payload.
+
+*Reply:*
 
 The reply consists of a serialized list of workspaces. Each workspace has the
 following properties:
@@ -234,7 +269,16 @@ output (string)::
 -------------------
 
 [[_subscribe_reply]]
-=== SUBSCRIBE reply
+=== SUBSCRIBE
+
+Subscribe this IPC connection to the event types specified in the message
+payload. See <<events>>.
+
+*Message:*
+
+A JSON-encoded array of event types to subscribe to.
+
+*Reply:*
 
 The reply consists of a single serialized map. The only property is
 +success (bool)+, indicating whether the subscription was successful (the
@@ -246,7 +290,15 @@ default) or whether a JSON parse error occurred.
 -------------------
 
 [[_outputs_reply]]
-=== OUTPUTS reply
+=== GET_OUTPUTS / OUTPUTS
+
+Get the list of current outputs.
+
+*Message:*
+
+No payload.
+
+*Reply:*
 
 The reply consists of a serialized list of outputs. Each output has the
 following properties:
@@ -257,7 +309,7 @@ active (boolean)::
 	Whether this output is currently active (has a valid mode).
 primary (boolean)::
 	Whether this output is currently the primary output.
-current_workspace (string)::
+current_workspace (string or null)::
 	The name of the current workspace that is visible on this output. +null+ if
 	the output is not active.
 rect (map)::
@@ -293,7 +345,15 @@ rect (map)::
 -------------------
 
 [[_tree_reply]]
-=== TREE reply
+=== GET_TREE / TREE
+
+Get the i3 layout tree.
+
+*Message:*
+
+No payload.
+
+*Reply:*
 
 The reply consists of a serialized tree. Each node in the tree (representing
 one container) has at least the properties listed below. While the nodes might
@@ -329,7 +389,7 @@ orientation (string)::
 	"vertical".
 	THIS FIELD IS OBSOLETE. It is still present, but your code should not
 	use it. Instead, rely on the layout field.
-percent (float)::
+percent (float or null)::
 	The percentage which this container takes in its parent. A value of
 	+null+ means that the percent property does not make sense for this
 	container, for example for the root container.
@@ -353,14 +413,15 @@ deco_rect (map)::
 geometry (map)::
 	The original geometry the window specified when i3 mapped it. Used when
 	switching a window to floating mode, for example.
-window (integer)::
+window (integer or null)::
 	The X11 window ID of the *actual client window* inside this container.
-	This field is set to null for split containers or otherwise empty
+	This field is set to +null+ for split containers or otherwise empty
 	containers. This ID corresponds to what xwininfo(1) and other
 	X11-related tools display (usually in hex).
 window_properties (map)::
 	This optional field contains all available X11 window properties from the
-	following list: *title*, *instance*, *class*, *window_role* and *transient_for*.
+	following list: *title*, *instance*, *class*, *window_role*, *machine*
+	and *transient_for*.
 window_type (string)::
 	The window type (_NET_WM_WINDOW_TYPE). Possible values are undefined, normal,
 	dialog, utility, toolbar, splash, menu, dropdown_menu, popup_menu, tooltip and
@@ -386,12 +447,18 @@ fullscreen_mode (integer)::
         +1+ (fullscreened on output) or
         +2+ (fullscreened globally).
     Note that all workspaces are considered fullscreened on their respective output.
-
+floating (string)::
+	Floating state of container.
+	Can be either "auto_on", "auto_off", "user_on" or "user_off"
 nodes (array of node)::
 	The tiling (i.e. non-floating) child containers of this node.
 floating_nodes (array of node)::
 	The floating child containers of this node. Only non-empty on nodes with
 	type +workspace+.
+scratchpad_state (string)::
+	Whether the window is not in the scratchpad ("none"), freshly moved to
+	the scratchpad but not yet resized ("fresh") or moved to the scratchpad
+	and resized ("changed").
 
 Please note that in the following example, I have left out some keys/values
 which are not relevant for the type of the node. Otherwise, the example would
@@ -532,7 +599,15 @@ JSON dump:
 -----------------------
 
 [[_marks_reply]]
-=== MARKS reply
+=== GET_MARKS / MARKS
+
+Gets the names of all currently set marks.
+
+*Message:*
+
+No payload.
+
+*Reply:*
 
 The reply consists of a single array of strings for each container that has a
 mark. A mark can only be set on one container, so the array is unique.
@@ -541,7 +616,15 @@ The order of that array is undefined.
 If no window has a mark the response will be the empty array [].
 
 [[_bar_config_reply]]
-=== BAR_CONFIG reply
+=== GET_BAR_CONFIG / BAR_CONFIG
+
+Gets the specified bar configuration or the names of all bar configurations if payload is empty.
+
+*Message:*
+
+No payload, or the ID of the bar whose configuration to retrieve.
+
+*Reply:*
 
 This can be used by third-party workspace bars (especially i3bar, but others
 are free to implement compatible alternatives) to get the +bar+ block
@@ -641,7 +724,15 @@ binding_mode_text/binding_mode_bg/binding_mode_border::
 --------------
 
 [[_version_reply]]
-=== VERSION reply
+=== GET_VERSION / VERSION
+
+Gets the i3 version.
+
+*Message:*
+
+No payload.
+
+*Reply:*
 
 The reply consists of a single JSON dictionary with the following keys:
 
@@ -674,7 +765,15 @@ loaded_config_file_name (string)::
 -------------------
 
 [[_binding_modes_reply]]
-=== BINDING_MODES reply
+=== GET_BINDING_MODES / BINDING_MODES
+
+Gets the names of all currently configured binding modes.
+
+*Message:*
+
+No payload.
+
+*Reply:*
 
 The reply consists of an array of all currently configured binding modes.
 
@@ -684,18 +783,66 @@ The reply consists of an array of all currently configured binding modes.
 ---------------------
 
 [[_config_reply]]
-=== CONFIG reply
+=== GET_CONFIG / CONFIG
 
-The config reply is a map which currently only contains the "config" member,
-which is a string containing the config file as loaded by i3 most recently.
+Returns the last loaded i3 config.
+
+*Message:*
+
+No payload.
+
+*Reply:*
+
+The config reply is a map which contains the following fields:
+
+config (string)::
+	The top-level config file contents that i3 has loaded most recently.
+	This field is kept for backwards compatibility. See +included_configs+
+	instead.
+included_configs (array of maps)::
+	i3 adds one entry to this array for each config file it loads, in
+	order. The first entry’s +raw_contents+ are identical to the +config+
+	field.
+
+Each +included_configs+ entry contains the following fields
+
+path (string)::
+	Absolute path name to the config file that i3 loaded.
+raw_contents (string)::
+	The raw contents of the file as i3 read them.
+variable_replaced_contents (string)::
+	The contents of the file after i3 replaced all variables. This is useful
+	for debugging variable replacement.
 
 *Example:*
 -------------------
-{ "config": "font pango:monospace 8\nbindsym Mod4+q exit\n" }
+{
+  "config": "include font.cfg\n",
+  "included_configs": [
+    {
+      "path": "/home/michael/configfiles/i3/config",
+      "raw_contents": "include font.cfg\n",
+      "variable_replaced_contents": "include font.cfg\n"
+    },
+    {
+      "path": "/home/michael/configfiles/i3/font.cfg",
+      "raw_contents": "set $font pango:monospace 8\nfont $font",
+      "variable_replaced_contents": "set pango:monospace 8 pango:monospace 8\nfont pango:monospace 8\n"
+    }
+  ],
+}
 -------------------
 
 [[_tick_reply]]
-=== TICK reply
+=== SEND_TICK / TICK
+
+Sends a tick event with the specified payload.
+
+*Message:*
+
+The payload of the tick event to send to IPC event listeners.
+
+*Reply:*
 
 The reply is a map containing the "success" member. After the reply was
 received, the tick event has been written to all IPC connections which subscribe
@@ -709,7 +856,15 @@ events generated prior to the +SEND_TICK+ message (happened-before relation).
 -------------------
 
 [[_sync_reply]]
-=== SYNC reply
+=== SYNC
+
+Sends an i3 sync event with the specified random value to the specified window.
+
+*Message:*
+
+A JSON-encoded map with the properties "rnd" and "window" (both integer).
+
+*Reply:*
 
 The reply is a map containing the "success" member. After the reply was
 received, the https://i3wm.org/docs/testsuite.html#i3_sync[i3 sync message] was
@@ -721,7 +876,15 @@ responded to.
 -------------------
 
 [[_binding_state_reply]]
-=== GET_BINDING_STATE reply
+=== GET_BINDING_STATE
+
+Request the current binding state, i.e. the currently active binding mode name.
+
+*Message:*
+
+No payload.
+
+*Reply:*
 
 The binding_state reply is a map which currently only contains the "name"
 member, which is the name of the currently active binding mode as a string.

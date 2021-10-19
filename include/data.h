@@ -15,6 +15,7 @@
 #include <xcb/randr.h>
 #include <pcre.h>
 #include <sys/time.h>
+#include <cairo/cairo.h>
 
 #include "queue.h"
 
@@ -414,6 +415,9 @@ struct Window {
      * for_window. */
     char *role;
 
+    /** WM_CLIENT_MACHINE of the window */
+    char *machine;
+
     /** Flag to force re-rendering the decoration upon changes */
     bool name_x_changed;
 
@@ -468,6 +472,9 @@ struct Window {
     double min_aspect_ratio;
     double max_aspect_ratio;
 
+    /** Window icon, as Cairo surface */
+    cairo_surface_t *icon;
+
     /** The window has a nonrectangular shape. */
     bool shaped;
     /** The window has a nonrectangular input shape. */
@@ -500,6 +507,7 @@ struct Match {
     struct regex *mark;
     struct regex *window_role;
     struct regex *workspace;
+    struct regex *machine;
     xcb_atom_t window_type;
     enum {
         U_DONTCHECK = -1,
@@ -522,6 +530,7 @@ struct Match {
            WM_FLOATING_USER,
            WM_FLOATING } window_mode;
     Con *con_id;
+    bool match_all_windows;
 
     /* Where the window looking for a match should be inserted:
      *
@@ -651,6 +660,11 @@ struct Con {
 
     /** The format with which the window's name should be displayed. */
     char *title_format;
+
+    /** Whether the window icon should be displayed, and with what padding. -1
+      * means display no window icon (default behavior), 0 means display without
+      * any padding, 1 means display with 1 pixel of padding and so on. */
+    int window_icon_padding;
 
     /* a sticky-group is an identifier which bundles several containers to a
      * group. The contents are shared between all of them, that is they are

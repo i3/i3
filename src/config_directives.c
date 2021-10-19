@@ -9,6 +9,86 @@
  */
 #include "all.h"
 
+#include <wordexp.h>
+
+/*******************************************************************************
+ * Include functions.
+ ******************************************************************************/
+
+CFGFUN(include, const char *pattern) {
+    DLOG("include %s\n", pattern);
+
+    wordexp_t p;
+    const int ret = wordexp(pattern, &p, 0);
+    if (ret != 0) {
+        ELOG("wordexp(%s): error %d\n", pattern, ret);
+        result->has_errors = true;
+        return;
+    }
+    char **w = p.we_wordv;
+    for (size_t i = 0; i < p.we_wordc; i++) {
+        char resolved_path[PATH_MAX] = {'\0'};
+        if (realpath(w[i], resolved_path) == NULL) {
+            LOG("Skipping %s: %s\n", w[i], strerror(errno));
+            continue;
+        }
+
+        bool skip = false;
+        IncludedFile *file;
+        TAILQ_FOREACH (file, &included_files, files) {
+            if (strcmp(file->path, resolved_path) == 0) {
+                skip = true;
+                break;
+            }
+        }
+        if (skip) {
+            LOG("Skipping file %s (already included)\n", resolved_path);
+            continue;
+        }
+
+        LOG("Including config file %s\n", resolved_path);
+
+        file = scalloc(1, sizeof(IncludedFile));
+        file->path = sstrdup(resolved_path);
+        TAILQ_INSERT_TAIL(&included_files, file, files);
+
+        struct stack stack;
+        memset(&stack, '\0', sizeof(struct stack));
+        struct parser_ctx ctx = {
+            .use_nagbar = result->ctx->use_nagbar,
+            /* The include mechanism was added in v4, so we can skip the
+             * auto-detection and get rid of the risk of detecting the wrong
+             * version in potentially very short include fragments: */
+            .assume_v4 = true,
+            .stack = &stack,
+            .variables = result->ctx->variables,
+        };
+        switch (parse_file(&ctx, resolved_path, file)) {
+            case PARSE_FILE_SUCCESS:
+                break;
+
+            case PARSE_FILE_FAILED:
+                ELOG("including config file %s: %s\n", resolved_path, strerror(errno));
+                /* fallthrough */
+
+            case PARSE_FILE_CONFIG_ERRORS:
+                result->has_errors = true;
+                TAILQ_REMOVE(&included_files, file, files);
+                FREE(file->path);
+                FREE(file->raw_contents);
+                FREE(file->variable_replaced_contents);
+                FREE(file);
+                break;
+
+            default:
+                /* missing case statement */
+                assert(false);
+                break;
+        }
+    }
+    wordfree(&p);
+}
+
 /*******************************************************************************
  * Criteria functions.
  ******************************************************************************/
@@ -44,15 +124,6 @@ CFGFUN(criteria_add, const char *ctype, const char *cvalue) {
 /*******************************************************************************
  * Utility functions
  ******************************************************************************/
-
-static bool eval_boolstr(const char *str) {
-    return (strcasecmp(str, "1") == 0 ||
-            strcasecmp(str, "yes") == 0 ||
-            strcasecmp(str, "true") == 0 ||
-            strcasecmp(str, "on") == 0 ||
-            strcasecmp(str, "enable") == 0 ||
-            strcasecmp(str, "active") == 0);
-}
 
 /*
  * A utility function to convert a string containing the group and modifiers to
@@ -237,14 +308,14 @@ CFGFUN(hide_edge_borders, const char *borders) {
         config.hide_edge_borders = HEBM_BOTH;
     else if (strcmp(borders, "none") == 0)
         config.hide_edge_borders = HEBM_NONE;
-    else if (eval_boolstr(borders))
+    else if (boolstr(borders))
         config.hide_edge_borders = HEBM_VERTICAL;
     else
         config.hide_edge_borders = HEBM_NONE;
 }
 
 CFGFUN(focus_follows_mouse, const char *value) {
-    config.disable_focus_follows_mouse = !eval_boolstr(value);
+    config.disable_focus_follows_mouse = !boolstr(value);
 }
 
 CFGFUN(mouse_warping, const char *value) {
@@ -255,11 +326,11 @@ CFGFUN(mouse_warping, const char *value) {
 }
 
 CFGFUN(force_xinerama, const char *value) {
-    config.force_xinerama = eval_boolstr(value);
+    config.force_xinerama = boolstr(value);
 }
 
 CFGFUN(disable_randr15, const char *value) {
-    config.disable_randr15 = eval_boolstr(value);
+    config.disable_randr15 = boolstr(value);
 }
 
 CFGFUN(focus_wrapping, const char *value) {
@@ -267,7 +338,7 @@ CFGFUN(focus_wrapping, const char *value) {
         config.focus_wrapping = FOCUS_WRAPPING_FORCE;
     } else if (strcmp(value, "workspace") == 0) {
         config.focus_wrapping = FOCUS_WRAPPING_WORKSPACE;
-    } else if (eval_boolstr(value)) {
+    } else if (boolstr(value)) {
         config.focus_wrapping = FOCUS_WRAPPING_ON;
     } else {
         config.focus_wrapping = FOCUS_WRAPPING_OFF;
@@ -276,7 +347,7 @@ CFGFUN(focus_wrapping, const char *value) {
 
 CFGFUN(force_focus_wrapping, const char *value) {
     /* Legacy syntax. */
-    if (eval_boolstr(value)) {
+    if (boolstr(value)) {
         config.focus_wrapping = FOCUS_WRAPPING_FORCE;
     } else {
         /* For "force_focus_wrapping off", don't enable or disable
@@ -288,7 +359,7 @@ CFGFUN(force_focus_wrapping, const char *value) {
 }
 
 CFGFUN(workspace_back_and_forth, const char *value) {
-    config.workspace_auto_back_and_forth = eval_boolstr(value);
+    config.workspace_auto_back_and_forth = boolstr(value);
 }
 
 CFGFUN(fake_outputs, const char *outputs) {
@@ -330,7 +401,7 @@ CFGFUN(title_align, const char *alignment) {
 }
 
 CFGFUN(show_marks, const char *value) {
-    config.show_marks = eval_boolstr(value);
+    config.show_marks = boolstr(value);
 }
 
 static char *current_workspace = NULL;
@@ -518,7 +589,7 @@ CFGFUN(bar_output, const char *output) {
 }
 
 CFGFUN(bar_verbose, const char *verbose) {
-    current_bar->verbose = eval_boolstr(verbose);
+    current_bar->verbose = boolstr(verbose);
 }
 
 CFGFUN(bar_modifier, const char *modifiers) {
@@ -638,11 +709,11 @@ CFGFUN(bar_status_command, const char *command) {
 }
 
 CFGFUN(bar_binding_mode_indicator, const char *value) {
-    current_bar->hide_binding_mode_indicator = !eval_boolstr(value);
+    current_bar->hide_binding_mode_indicator = !boolstr(value);
 }
 
 CFGFUN(bar_workspace_buttons, const char *value) {
-    current_bar->hide_workspace_buttons = !eval_boolstr(value);
+    current_bar->hide_workspace_buttons = !boolstr(value);
 }
 
 CFGFUN(bar_workspace_min_width, const long width) {
@@ -650,11 +721,11 @@ CFGFUN(bar_workspace_min_width, const long width) {
 }
 
 CFGFUN(bar_strip_workspace_numbers, const char *value) {
-    current_bar->strip_workspace_numbers = eval_boolstr(value);
+    current_bar->strip_workspace_numbers = boolstr(value);
 }
 
 CFGFUN(bar_strip_workspace_name, const char *value) {
-    current_bar->strip_workspace_name = eval_boolstr(value);
+    current_bar->strip_workspace_name = boolstr(value);
 }
 
 CFGFUN(bar_start) {

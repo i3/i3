@@ -75,6 +75,13 @@ extern config_t config;
 void parse_config_json(char *json);
 
 /**
+ * Start parsing the received bar configuration list. The only usecase right
+ * now is to automatically get the first bar id.
+ *
+ */
+void parse_get_first_i3bar_config(char *json);
+
+/**
  * free()s the color strings as soon as they are not needed anymore.
  *
  */

@@ -278,10 +278,10 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
  */
 void ewmh_update_sticky(xcb_window_t window, bool sticky) {
     if (sticky) {
-        DLOG("Setting _NET_WM_STATE_STICKY for window = %d.\n", window);
+        DLOG("Setting _NET_WM_STATE_STICKY for window = %08x.\n", window);
         xcb_add_property_atom(conn, window, A__NET_WM_STATE, A__NET_WM_STATE_STICKY);
     } else {
-        DLOG("Removing _NET_WM_STATE_STICKY for window = %d.\n", window);
+        DLOG("Removing _NET_WM_STATE_STICKY for window = %08x.\n", window);
         xcb_remove_property_atom(conn, window, A__NET_WM_STATE, A__NET_WM_STATE_STICKY);
     }
 }
@@ -292,10 +292,10 @@ void ewmh_update_sticky(xcb_window_t window, bool sticky) {
  */
 void ewmh_update_focused(xcb_window_t window, bool is_focused) {
     if (is_focused) {
-        DLOG("Setting _NET_WM_STATE_FOCUSED for window = %d.\n", window);
+        DLOG("Setting _NET_WM_STATE_FOCUSED for window = %08x.\n", window);
         xcb_add_property_atom(conn, window, A__NET_WM_STATE, A__NET_WM_STATE_FOCUSED);
     } else {
-        DLOG("Removing _NET_WM_STATE_FOCUSED for window = %d.\n", window);
+        DLOG("Removing _NET_WM_STATE_FOCUSED for window = %08x.\n", window);
         xcb_remove_property_atom(conn, window, A__NET_WM_STATE, A__NET_WM_STATE_FOCUSED);
     }
 }

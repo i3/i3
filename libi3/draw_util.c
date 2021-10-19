@@ -35,9 +35,11 @@ static void draw_util_set_source_color(surface_t *surface, color_t color);
 void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_drawable_t drawable,
                             xcb_visualtype_t *visual, int width, int height) {
     surface->id = drawable;
-    surface->visual_type = ((visual == NULL) ? visual_type : visual);
     surface->width = width;
     surface->height = height;
+
+    if (visual == NULL)
+        visual = visual_type;
 
     surface->gc = xcb_generate_id(conn);
     xcb_void_cookie_t gc_cookie = xcb_create_gc_checked(conn, surface->gc, surface->id, 0, NULL);
@@ -45,9 +47,10 @@ void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_draw
     xcb_generic_error_t *error = xcb_request_check(conn, gc_cookie);
     if (error != NULL) {
         ELOG("Could not create graphical context. Error code: %d. Please report this bug.\n", error->error_code);
+        free(error);
     }
 
-    surface->surface = cairo_xcb_surface_create(conn, surface->id, surface->visual_type, width, height);
+    surface->surface = cairo_xcb_surface_create(conn, surface->id, visual, width, height);
     surface->cr = cairo_create(surface->surface);
 }
 
@@ -56,6 +59,19 @@ void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_draw
  *
  */
 void draw_util_surface_free(xcb_connection_t *conn, surface_t *surface) {
+    cairo_status_t status = CAIRO_STATUS_SUCCESS;
+    if (surface->cr) {
+        status = cairo_status(surface->cr);
+    }
+    if (status != CAIRO_STATUS_SUCCESS) {
+        LOG("Found cairo context in an error status while freeing, error %d is %s",
+            status, cairo_status_to_string(status));
+    }
+
+    /* NOTE: This function is also called on uninitialised surface_t instances.
+     * The x11 error from xcb_free_gc(conn, XCB_NONE) is silently ignored
+     * elsewhere.
+     */
     xcb_free_gc(conn, surface->gc);
     cairo_surface_destroy(surface->surface);
     cairo_destroy(surface->cr);
@@ -133,10 +149,34 @@ void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_
     CAIRO_SURFACE_FLUSH(surface->surface);
 
     set_font_colors(surface->gc, fg_color, bg_color);
-    draw_text(text, surface->id, surface->gc, surface->visual_type, x, y, max_width);
+    draw_text(text, surface->id, surface->gc, surface->surface, x, y, max_width);
 
     /* Notify cairo that we (possibly) used another way to draw on the surface. */
     cairo_surface_mark_dirty(surface->surface);
+}
+
+/**
+ * Draw the given image using libi3.
+ * This function is a convenience wrapper and takes care of flushing the
+ * surface as well as restoring the cairo state.
+ *
+ */
+void draw_util_image(cairo_surface_t *image, surface_t *surface, int x, int y, int width, int height) {
+    RETURN_UNLESS_SURFACE_INITIALIZED(surface);
+
+    cairo_save(surface->cr);
+
+    cairo_translate(surface->cr, x, y);
+
+    const int src_width = cairo_image_surface_get_width(image);
+    const int src_height = cairo_image_surface_get_height(image);
+    double scale = MIN((double)width / src_width, (double)height / src_height);
+    cairo_scale(surface->cr, scale, scale);
+
+    cairo_set_source_surface(surface->cr, image, 0, 0);
+    cairo_paint(surface->cr);
+
+    cairo_restore(surface->cr);
 }
 
 /*

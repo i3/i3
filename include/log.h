@@ -10,6 +10,7 @@
 #pragma once
 
 #include <config.h>
+#include <ev.h>
 
 /* We will include libi3.h which define its own version of LOG, ELOG.
  * We want *our* version, so we undef the libi3 one. */
@@ -31,6 +32,7 @@
 extern char *errorfilename;
 extern char *shmlogname;
 extern int shmlog_size;
+extern char *current_log_stream_socket_path;
 
 /**
  * Initializes logging by creating an error logfile in /tmp (or
@@ -100,3 +102,5 @@ void verboselog(char *fmt, ...)
  * failures. This function is invoked automatically when exiting.
  */
 void purge_zerobyte_logfile(void);
+
+void log_new_client(EV_P_ struct ev_io *w, int revents);

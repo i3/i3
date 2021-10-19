@@ -445,18 +445,13 @@ bool font_is_pango(void);
  * specified coordinates (from the top left corner of the leftmost, uppermost
  * glyph) and using the provided gc.
  *
+ * The given cairo surface must refer to the specified X drawable.
+ *
  * Text must be specified as an i3String.
  *
  */
 void draw_text(i3String *text, xcb_drawable_t drawable, xcb_gcontext_t gc,
-               xcb_visualtype_t *visual, int x, int y, int max_width);
-
-/**
- * ASCII version of draw_text to print static strings.
- *
- */
-void draw_text_ascii(const char *text, xcb_drawable_t drawable,
-                     xcb_gcontext_t gc, int x, int y, int max_width);
+               cairo_surface_t *surface, int x, int y, int max_width);
 
 /**
  * Predict the text width in pixels for the given text. Text must be
@@ -571,8 +566,6 @@ typedef struct surface_t {
     /* A classic XCB graphics context. */
     xcb_gcontext_t gc;
 
-    xcb_visualtype_t *visual_type;
-
     int width;
     int height;
 
@@ -619,6 +612,11 @@ color_t draw_util_hex_to_color(const char *color);
 void draw_util_text(i3String *text, surface_t *surface, color_t fg_color, color_t bg_color, int x, int y, int max_width);
 
 /**
+ * Draw the given image using libi3.
+ */
+void draw_util_image(cairo_surface_t *image, surface_t *surface, int x, int y, int width, int height);
+
+/**
  * Draws a filled rectangle.
  * This function is a convenience wrapper and takes care of flushing the
  * surface as well as restoring the cairo state.
@@ -638,3 +636,46 @@ void draw_util_clear_surface(surface_t *surface, color_t color);
  */
 void draw_util_copy_surface(surface_t *src, surface_t *dest, double src_x, double src_y,
                             double dest_x, double dest_y, double width, double height);
+
+/**
+ * Puts the given socket file descriptor into non-blocking mode or dies if
+ * setting O_NONBLOCK failed. Non-blocking sockets are a good idea for our
+ * IPC model because we should by no means block the window manager.
+ *
+ */
+void set_nonblock(int sockfd);
+
+/**
+ * Creates the UNIX domain socket at the given path, sets it to non-blocking
+ * mode, bind()s and listen()s on it.
+ *
+ * The full path to the socket is stored in the char* that out_socketpath points
+ * to.
+ *
+ */
+int create_socket(const char *filename, char **out_socketpath);
+
+/**
+ * Checks if the given path exists by calling stat().
+ *
+ */
+bool path_exists(const char *path);
+
+/**
+ * Grab a screenshot of the screen's root window and set it as the wallpaper.
+ */
+void set_screenshot_as_wallpaper(xcb_connection_t *conn, xcb_screen_t *screen);
+
+/**
+ * Test whether the screen's root window has a background set.
+ *
+ * This opens & closes a window and test whether the root window still shows the
+ * content of the window.
+ */
+bool is_background_set(xcb_connection_t *conn, xcb_screen_t *screen);
+
+/**
+ * Reports whether str represents the enabled state (1, yes, true, …).
+ *
+ */
+bool boolstr(const char *str);

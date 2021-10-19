@@ -12,10 +12,6 @@
 
 #include <config.h>
 
-#if !defined(__OpenBSD__)
-#include <pthread.h>
-#endif
-
 /* Default shmlog size if not set by user. */
 extern const int default_shmlog_size;
 
@@ -39,11 +35,4 @@ typedef struct i3_shmlog_header {
      * coincidentally be exactly the same as previously). Overflows can happen
      * and don’t matter — clients use an equality check (==). */
     uint32_t wrap_count;
-
-#if !defined(__OpenBSD__)
-    /* pthread condvar which will be broadcasted whenever there is a new
-     * message in the log. i3-dump-log uses this to implement -f (follow, like
-     * tail -f) in an efficient way. */
-    pthread_cond_t condvar;
-#endif
 } i3_shmlog_header;

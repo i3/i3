@@ -43,6 +43,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     new->window = window;
     new->border_style = config.default_border;
     new->current_border_width = -1;
+    new->window_icon_padding = -1;
     if (window) {
         new->depth = window->depth;
     } else {
@@ -1855,9 +1856,9 @@ void con_set_layout(Con *con, layout_t layout) {
             con_attach(new, con, false);
 
             tree_flatten(croot);
+            con_force_split_parents_redraw(con);
+            return;
         }
-        con_force_split_parents_redraw(con);
-        return;
     }
 
     if (layout == L_DEFAULT) {
@@ -2304,20 +2305,25 @@ i3String *con_parse_title_format(Con *con) {
     char *title;
     char *class;
     char *instance;
+    char *machine;
     if (win == NULL) {
         title = pango_escape_markup(con_get_tree_representation(con));
         class = sstrdup("i3-frame");
         instance = sstrdup("i3-frame");
+        machine = sstrdup("");
     } else {
         title = pango_escape_markup(sstrdup((win->name == NULL) ? "" : i3string_as_utf8(win->name)));
         class = pango_escape_markup(sstrdup((win->class_class == NULL) ? "" : win->class_class));
         instance = pango_escape_markup(sstrdup((win->class_instance == NULL) ? "" : win->class_instance));
+        machine = pango_escape_markup(sstrdup((win->machine == NULL) ? "" : win->machine));
     }
 
     placeholder_t placeholders[] = {
         {.name = "%title", .value = title},
         {.name = "%class", .value = class},
-        {.name = "%instance", .value = instance}};
+        {.name = "%instance", .value = instance},
+        {.name = "%machine", .value = machine},
+    };
     const size_t num = sizeof(placeholders) / sizeof(placeholder_t);
 
     char *formatted_str = format_placeholders(con->title_format, &placeholders[0], num);

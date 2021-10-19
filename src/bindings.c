@@ -718,6 +718,40 @@ void reorder_bindings(void) {
 }
 
 /*
+ * Returns true if a is a key binding for the same key as b.
+ *
+ */
+static bool binding_same_key(Binding *a, Binding *b) {
+    /* Check if the input types are different */
+    if (a->input_type != b->input_type) {
+        return false;
+    }
+
+    /* Check if one is using keysym while the other is using bindsym. */
+    if ((a->symbol == NULL && b->symbol != NULL) ||
+        (a->symbol != NULL && b->symbol == NULL)) {
+        return false;
+    }
+
+    /* If a is NULL, b has to be NULL, too (see previous conditional).
+     * If the keycodes differ, it can't be a duplicate. */
+    if (a->symbol != NULL &&
+        strcasecmp(a->symbol, b->symbol) != 0) {
+        return false;
+    }
+
+    /* Check if the keycodes or modifiers are different. If so, they
+     * can't be duplicate */
+    if (a->keycode != b->keycode ||
+        a->event_state_mask != b->event_state_mask ||
+        a->release != b->release) {
+        return false;
+    }
+
+    return true;
+}
+
+/*
  * Checks for duplicate key bindings (the same keycode or keysym is configured
  * more than once). If a duplicate binding is found, a message is printed to
  * stderr and the has_errors variable is set to true, which will start
@@ -730,31 +764,13 @@ void check_for_duplicate_bindings(struct context *context) {
         TAILQ_FOREACH (bind, bindings, bindings) {
             /* Abort when we reach the current keybinding, only check the
              * bindings before */
-            if (bind == current)
+            if (bind == current) {
                 break;
+            }
 
-            /* Check if the input types are different */
-            if (bind->input_type != current->input_type)
+            if (!binding_same_key(bind, current)) {
                 continue;
-
-            /* Check if one is using keysym while the other is using bindsym.
-             * If so, skip. */
-            if ((bind->symbol == NULL && current->symbol != NULL) ||
-                (bind->symbol != NULL && current->symbol == NULL))
-                continue;
-
-            /* If bind is NULL, current has to be NULL, too (see above).
-             * If the keycodes differ, it can't be a duplicate. */
-            if (bind->symbol != NULL &&
-                strcasecmp(bind->symbol, current->symbol) != 0)
-                continue;
-
-            /* Check if the keycodes or modifiers are different. If so, they
-             * can't be duplicate */
-            if (bind->keycode != current->keycode ||
-                bind->event_state_mask != current->event_state_mask ||
-                bind->release != current->release)
-                continue;
+            }
 
             context->has_errors = true;
             if (current->keycode != 0) {

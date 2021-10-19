@@ -400,8 +400,8 @@ the correct state.
 Then, it looks through all bindings and gets the one which matches the received
 event.
 
-The bound command is parsed by the cmdparse lexer/parser, see +parse_cmd+ in
-+src/cmdparse.y+.
+The bound command is parsed by the i3 parser, see +parse_command+ in
++src/commands_parser.c+.
 
 == Manage windows (src/main.c, manage_window() and reparent_window())
 

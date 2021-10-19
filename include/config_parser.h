@@ -16,6 +16,50 @@
 SLIST_HEAD(variables_head, Variable);
 extern pid_t config_error_nagbar_pid;
 
+struct stack_entry {
+    /* Just a pointer, not dynamically allocated. */
+    const char *identifier;
+    enum {
+        STACK_STR = 0,
+        STACK_LONG = 1,
+    } type;
+    union {
+        char *str;
+        long num;
+    } val;
+};
+
+struct stack {
+    struct stack_entry stack[10];
+};
+
+struct parser_ctx {
+    bool use_nagbar;
+    bool assume_v4;
+
+    int state;
+    Match current_match;
+
+    /* A list which contains the states that lead to the current state, e.g.
+   * INITIAL, WORKSPACE_LAYOUT.
+   * When jumping back to INITIAL, statelist_idx will simply be set to 1
+   * (likewise for other states, e.g. MODE or BAR).
+   * This list is used to process the nearest error token. */
+    int statelist[10];
+    /* NB: statelist_idx points to where the next entry will be inserted */
+    int statelist_idx;
+
+    /*******************************************************************************
+   * The (small) stack where identified literals are stored during the parsing
+   * of a single config directive (like $workspace).
+   ******************************************************************************/
+    struct stack *stack;
+
+    struct variables_head variables;
+
+    bool has_errors;
+};
+
 /**
  * An intermediate reprsentation of the result of a parse_config call.
  * Currently unused, but the JSON output will be useful in the future when we
@@ -23,21 +67,33 @@ extern pid_t config_error_nagbar_pid;
  *
  */
 struct ConfigResultIR {
-    /* The JSON generator to append a reply to. */
-    yajl_gen json_gen;
+    struct parser_ctx *ctx;
 
     /* The next state to transition to. Passed to the function so that we can
      * determine the next state as a result of a function call, like
      * cfg_criteria_pop_state() does. */
     int next_state;
-};
 
-struct ConfigResultIR *parse_config(const char *input, struct context *context);
+    /* Whether any error happened while processing this config directive. */
+    bool has_errors;
+};
 
 /**
  * launch nagbar to indicate errors in the configuration file.
  */
 void start_config_error_nagbar(const char *configpath, bool has_errors);
+
+/**
+ * Releases the memory of all variables in ctx.
+ *
+ */
+void free_variables(struct parser_ctx *ctx);
+
+typedef enum {
+    PARSE_FILE_FAILED = -1,
+    PARSE_FILE_SUCCESS = 0,
+    PARSE_FILE_CONFIG_ERRORS = 1,
+} parse_file_result_t;
 
 /**
  * Parses the given file by first replacing the variables, then calling
@@ -47,4 +103,4 @@ void start_config_error_nagbar(const char *configpath, bool has_errors);
  * parsing.
  *
  */
-bool parse_file(const char *f, bool use_nagbar);
+parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFile *included_file);

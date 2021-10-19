@@ -481,7 +481,7 @@ an i3 crash resulting in the testcase being unable to communicate with i3 via
 IPC anymore.
 
 [[i3_sync]]
-== Appendix A: The i3 sync protocol
+== Appendix A: The I3_SYNC protocol
 
 Consider the following situation: You open two windows in your testcase, then
 you use +focus left+ and want to verify that the X11 focus has been updated
@@ -499,9 +499,9 @@ is($x->input_focus, $left->id, 'left window focused');
 However, the test fails. Sometimes. Apparently, there is a race condition in
 your test. If you think about it, this is because you are using two different
 pieces of software: You tell i3 to update focus, i3 confirms that, and then you
-ask X11 to give you the current focus. There is a certain time i3 needs to
-update the X11 state. If the testcase gets CPU time before X11 processed i3's
-requests, the test will fail.
+ask X11 to give you the current focus. There is a certain time that the X11
+server needs to process the requests from i3. If the testcase's request for the
+input focus is processed before i3's requests, the test will fail.
 
 image::i3-sync.png["Diagram of the race condition", title="Diagram of the race condition"]
 
@@ -531,10 +531,10 @@ less robust.
 
 The real solution for this problem is a mechanism which I call "the i3 sync
 protocol". The idea is to send a request (which does not modify state) via X11
-to i3 which will then be answered. Due to the request's position in the event
-queue (*after* all previous events), you can be sure that by the time you
-receive the reply, all other events have been dealt with by i3 (and, more
-importantly, X11).
+to i3 which will then be answered, again via X11. Because this answer is
+generated via an X11 request, it will be sent to the X11 server *after* all
+previous requests. Thus, you can be sure that by the time you receive the reply,
+all other events have been dealt with by i3 (and, more importantly, X11).
 
 image::i3-sync-working.png["Diagram of the i3 sync solution", title="Diagram of the i3 sync solution"]
 
@@ -569,7 +569,35 @@ i3 will then reply with the same ClientMessage, sent to the window specified in
 request. You should use a random value in +data[1]+ and check that you received
 the same one when getting the reply.
 
-== Appendix B: Socket activation
+== Appendix B: The sync IPC command
+
+The above I3_SYNC protocol allows to synchronise with i3. However, it is not
+enough for tests that also involve i3bar: There might still be messages from
+i3bar in-flight even after synchronising with i3. Thus, there also exists a sync
+IPC command, that is however not meant to be used directly. Instead, i3bar uses
+it for implementing the I3_SYNC protocol.
+
+The intended usage works like this:
+
+1. You send an I3_SYNC message to i3bar's window. See <<i3_sync>>.
+2. i3bar sends a SYNC IPC command to i3 with payload
+   +{"window":your-window-here,"rnd":your-random-value}+.
+3. i3 reacts to this IPC command as if it received an I3_SYNC request via X11.
+
+This protocol is used, for example, in t/525-i3bar-mouse-bindings.t: A mouse
+button press on i3bar is triggered. i3bar reacts to this by sending IPC commands
+to i3.
+
+The necessary synchronisation is achieved by sending an I3_SYNC event to i3bar:
+Because i3bar reacts with a sync IPC command to i3, all previous IPC commands from
+i3bar will be handled first. Because i3 reacts via X11, all previous X11
+requests from i3 will be handled by the X11 server first.
+
+The actual test also has to sync with i3 first due to how X11 handling works.
+For more details, refer to the documentation for +XAllowEvents+ with mode
++ReplayPointer+.
+
+== Appendix C: Socket activation
 
 Socket activation is a mechanism which was made popular by systemd, an init
 replacement. It basically describes creating a listening socket before starting

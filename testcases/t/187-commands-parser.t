@@ -54,6 +54,7 @@ is(parser_calls(
    'move workspace foobar; ' .
    'move workspace torrent; ' .
    'move workspace to output LVDS1; ' .
+   'move to output LVDS1 DVI1; ' .
    'move workspace 3: foobar; ' .
    'move workspace "3: foobar"; ' .
    'move workspace "3: foobar, baz"; '),
@@ -62,7 +63,11 @@ is(parser_calls(
    "cmd_move_con_to_workspace_name(3, (null))\n" .
    "cmd_move_con_to_workspace_name(foobar, (null))\n" .
    "cmd_move_con_to_workspace_name(torrent, (null))\n" .
-   "cmd_move_workspace_to_output(LVDS1)\n" .
+   "cmd_move_con_to_output(LVDS1, 1)\n" .
+   "cmd_move_con_to_output(NULL, 1)\n" .
+   "cmd_move_con_to_output(LVDS1, 0)\n" .
+   "cmd_move_con_to_output(DVI1, 0)\n" .
+   "cmd_move_con_to_output(NULL, 0)\n" .
    "cmd_move_con_to_workspace_name(3: foobar, (null))\n" .
    "cmd_move_con_to_workspace_name(3: foobar, (null))\n" .
    "cmd_move_con_to_workspace_name(3: foobar, baz, (null))",
@@ -171,6 +176,7 @@ is(parser_calls('unknown_literal'),
        scratchpad
        swap
        title_format
+       title_window_icon
        mode
        bar
     )) . "'\n" .
