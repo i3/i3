@@ -173,6 +173,9 @@ static bool strings_differ(char *a, char *b) {
     if (a_null != b_null) {
         return true;
     }
+    if (a_null && b_null) {
+        return false;
+    }
     return strcmp(a, b) != 0;
 }
 
