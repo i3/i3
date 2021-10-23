@@ -166,8 +166,10 @@ state FOCUS_AUTO:
       -> call cmd_focus_direction($direction)
 
 state FOCUS_OUTPUT:
-  output = string
-      -> call cmd_focus_output($output)
+  output = word
+      -> call cmd_focus_output($output); FOCUS_OUTPUT
+  end
+      -> call cmd_focus_output(NULL); INITIAL
 
 # kill [window|client]
 state KILL:

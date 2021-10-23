@@ -1768,6 +1768,17 @@ void cmd_open(I3_CMD) {
  *
  */
 void cmd_focus_output(I3_CMD, const char *name) {
+    static user_output_names_head names = TAILQ_HEAD_INITIALIZER(names);
+    if (name) {
+        user_output_names_add(&names, name);
+        return;
+    }
+
+    if (TAILQ_EMPTY(&names)) {
+        yerror("At least one output must be specified");
+        return;
+    }
+
     HANDLE_EMPTY_MATCH;
 
     if (TAILQ_EMPTY(&owindows)) {
@@ -1776,25 +1787,29 @@ void cmd_focus_output(I3_CMD, const char *name) {
     }
 
     Output *current_output = get_output_for_con(TAILQ_FIRST(&owindows)->con);
-    Output *output = get_output_from_string(current_output, name);
+    Output *target_output = user_output_names_find_next(&names, current_output);
+    user_output_names_free(&names);
+    bool success = false;
+    if (target_output) {
+        success = true;
 
-    if (!output) {
-        yerror("Output %s not found.", name);
-        return;
+        /* get visible workspace on output */
+        Con *ws = NULL;
+        GREP_FIRST(ws, output_get_content(target_output->con), workspace_is_visible(child));
+        if (!ws) {
+            yerror("BUG: No workspace found on output.");
+            return;
+        }
+
+        workspace_show(ws);
     }
 
-    /* get visible workspace on output */
-    Con *ws = NULL;
-    GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-    if (!ws) {
-        yerror("BUG: No workspace found on output.");
-        return;
+    cmd_output->needs_tree_render = success;
+    if (success) {
+        ysuccess(true);
+    } else {
+        yerror("No output matched");
     }
-
-    workspace_show(ws);
-
-    cmd_output->needs_tree_render = true;
-    ysuccess(true);
 }
 
 /*
