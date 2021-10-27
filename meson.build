@@ -229,6 +229,8 @@ if get_option('mans')
       output: '@BASENAME@.1',
       command: [
         xmlto,
+        '--stringparam',
+        'man.th.title.max.length=30',
         'man',
         '-o',
         '@OUTDIR@',
