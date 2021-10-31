@@ -13,6 +13,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <unistd.h>
 
 /*
  * Connects to the i3 IPC socket and returns the file descriptor for the
@@ -39,6 +40,20 @@ int ipc_connect(const char *socket_path) {
         path = sstrdup("/tmp/i3-ipc.sock");
     }
 
+    int sockfd = ipc_connect_impl(path);
+    if (sockfd < 0) {
+        err(EXIT_FAILURE, "Could not connect to i3 on socket %s", path);
+    }
+    free(path);
+    return sockfd;
+}
+
+/**
+ * Connects to the socket at the given path with no fallback paths. Returns
+ * -1 if connect() fails and die()s for other errors.
+ *
+ */
+int ipc_connect_impl(const char *socket_path) {
     int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
     if (sockfd == -1)
         err(EXIT_FAILURE, "Could not create socket");
@@ -48,9 +63,10 @@ int ipc_connect(const char *socket_path) {
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_LOCAL;
-    strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
-    if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0)
-        err(EXIT_FAILURE, "Could not connect to i3 on socket %s", path);
-    free(path);
+    strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
+    if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0) {
+        close(sockfd);
+        return -1;
+    }
     return sockfd;
 }
