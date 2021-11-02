@@ -683,6 +683,11 @@ int main(int argc, char *argv[]) {
         else
             config.ipc_socket_path = sstrdup(config.ipc_socket_path);
     }
+    /* Create the UNIX domain socket for IPC */
+    int ipc_socket = create_socket(config.ipc_socket_path, &current_socketpath);
+    if (ipc_socket == -1) {
+        die("Could not create the IPC socket: %s", config.ipc_socket_path);
+    }
 
     if (config.force_xinerama) {
         force_xinerama = true;
@@ -988,15 +993,10 @@ int main(int argc, char *argv[]) {
 
     tree_render();
 
-    /* Create the UNIX domain socket for IPC */
-    int ipc_socket = create_socket(config.ipc_socket_path, &current_socketpath);
-    if (ipc_socket == -1) {
-        ELOG("Could not create the IPC socket, IPC disabled\n");
-    } else {
-        struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
-        ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
-        ev_io_start(main_loop, ipc_io);
-    }
+    /* Listen to the IPC socket for clients */
+    struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
+    ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
+    ev_io_start(main_loop, ipc_io);
 
     /* Chose a file name in /tmp/ based on the PID */
     char *log_stream_socket_path = get_process_filename("log-stream-socket");
