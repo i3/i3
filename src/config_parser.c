@@ -864,7 +864,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
     FILE *fstr;
     char buffer[4096], key[512], value[4096], *continuation = NULL;
 
-    char *old_dir = get_current_dir_name();
+    char *old_dir = getcwd(NULL, 0);
     char *dir = NULL;
     /* dirname(3) might modify the buffer, so make a copy: */
     char *dirbuf = sstrdup(f);
