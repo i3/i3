@@ -63,7 +63,7 @@ config_h = declare_dependency(
   sources: vcs_tag(
     input: config_h_in,
     output: 'config.h',
-    fallback: meson.project_version() + ' (2021-11-03)',
+    fallback: meson.project_version() + '-non-git',
   )
 )
 
