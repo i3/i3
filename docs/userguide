@@ -1057,6 +1057,10 @@ client.focused::
 client.focused_inactive::
 	A client which is the focused one of its container, but it does not have
 	the focus at the moment.
+client.focused_tab_title::
+    Tab or stack container title that is the parent of the focused container
+    but not directly focused. Defaults to focused_inactive if not specified and
+    does not use the indicator and child_border colors.
 client.unfocused::
 	A client which is not the focused one of its container.
 client.urgent::
