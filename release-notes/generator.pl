@@ -29,10 +29,17 @@ strongly encouraged to upgrade.
 my $print_urls = 0;
 my $result = GetOptions('print-urls' => \$print_urls);
 
+sub get_number {
+  my $s = shift;
+  return $1 if $s =~ m/^(\d+)/;
+  return -1;
+}
+
 sub read_changefiles {
     my $dirpath = shift;
     opendir my $dir, $dirpath or die "Cannot open directory $dirpath: $!";
-    my @files = readdir $dir;
+    my @files = sort { get_number($a) <=> get_number($b) } readdir $dir;
+
     closedir $dir;
 
     my $s = '';
@@ -41,7 +48,7 @@ sub read_changefiles {
         next if $filename eq '..';
         next if $filename eq '0-example';
 
-        die "Filename $filename should start with a number (e.g. the pull request number)" unless ($filename =~ /^\d+/);
+        die "Filename $filename should start with a number (e.g. the pull request number)" unless get_number($filename) > 0;
 
         $filename = $dirpath . '/' . $filename;
         open my $in, '<', $filename or die "can't open $filename: $!";
