@@ -58,14 +58,14 @@ sub read_changefiles {
         my $content = trim(join("\n  ", map { trim($_) } @lines));
         die "$filename can't be empty" unless length($content) > 0;
 
-        my $commit = `git log --diff-filter=A --pretty=format:"%H" $filename`;
-        $commit = trim($commit) if defined($commit);
-        die "$filename: git log failed to find commit" if ($?) || (length($commit) == 0);
-
         my $url = '';
         if ($print_urls) {
+            my $commit = `git log --diff-filter=A --pretty=format:"%H" $filename`;
+            $commit = trim($commit) if defined($commit);
+            die "$filename: git log failed to find commit" if ($?) || (length($commit) == 0);
+
             my $pr = find_pr($commit);
-            my $url = 'https://github.com/i3/i3/commit/' . $commit;
+            $url = 'https://github.com/i3/i3/commit/' . $commit;
             $url = 'https://github.com/i3/i3/pull/' . $pr if defined($pr);
             $url = $url . "\n";
         }
