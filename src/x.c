@@ -490,14 +490,20 @@ void x_draw_decoration(Con *con) {
     struct deco_render_params *p = scalloc(1, sizeof(struct deco_render_params));
 
     /* find out which colors to use */
-    if (con->urgent)
+    if (con->urgent) {
         p->color = &config.client.urgent;
-    else if (con == focused || con_inside_focused(con))
+    } else if (con == focused || con_inside_focused(con)) {
         p->color = &config.client.focused;
-    else if (con == TAILQ_FIRST(&(parent->focus_head)))
-        p->color = &config.client.focused_inactive;
-    else
+    } else if (con == TAILQ_FIRST(&(parent->focus_head))) {
+        if (config.client.got_focused_tab_title && !leaf && con_descend_focused(con) == focused) {
+            /* Stacked/tabbed parent of focused container */
+            p->color = &config.client.focused_tab_title;
+        } else {
+            p->color = &config.client.focused_inactive;
+        }
+    } else {
         p->color = &config.client.unfocused;
+    }
 
     p->border_style = con_border_style(con);
 
