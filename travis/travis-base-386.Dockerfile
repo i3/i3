@@ -13,12 +13,11 @@ RUN echo 'APT::Acquire::Retries "5";' > /etc/apt/apt.conf.d/80retry
 # (3608 kB/s)). Hence, let’s stick with httpredir.debian.org (default) for now.
 
 # Install mk-build-deps (for installing the i3 build dependencies),
-# clang and clang-format-9 (for checking formatting and building with clang),
 # lintian (for checking spelling errors),
 RUN linux32 apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     dpkg-dev devscripts git equivs \
-    build-essential clang clang-format-9 \
+    build-essential clang \
     lintian && \
     rm -rf /var/lib/apt/lists/*
 
