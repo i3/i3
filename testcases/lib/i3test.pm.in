@@ -972,6 +972,8 @@ sub kill_all_windows {
     # Sync in case not all windows are managed by i3 just yet.
     sync_with_i3;
     cmd '[title=".*"] kill';
+    # Sync to make sure x_window_kill() calls have taken effect.
+    sync_with_i3;
 }
 
 =head2 events_for($subscribecb, [ $rettype ], [ $eventcbs ])
