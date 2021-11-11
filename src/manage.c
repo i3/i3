@@ -485,34 +485,17 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         (cwindow->leader != XCB_NONE &&
          cwindow->leader != cwindow->id &&
          con_by_window_id(cwindow->leader) != NULL)) {
-        LOG("This window is transient for another window, setting floating\n");
+        DLOG("This window is transient for another window, setting floating\n");
         want_floating = true;
 
         if (config.popup_during_fullscreen == PDF_LEAVE_FULLSCREEN &&
             fs != NULL) {
-            LOG("There is a fullscreen window, leaving fullscreen mode\n");
+            DLOG("There is a fullscreen window, leaving fullscreen mode\n");
             con_toggle_fullscreen(fs, CF_OUTPUT);
         } else if (config.popup_during_fullscreen == PDF_SMART &&
                    fs != NULL &&
                    fs->window != NULL) {
-            i3Window *transient_win = cwindow;
-            while (transient_win != NULL &&
-                   transient_win->transient_for != XCB_NONE) {
-                if (transient_win->transient_for == fs->window->id) {
-                    LOG("This floating window belongs to the fullscreen window (popup_during_fullscreen == smart)\n");
-                    set_focus = true;
-                    break;
-                }
-                Con *next_transient = con_by_window_id(transient_win->transient_for);
-                if (next_transient == NULL)
-                    break;
-                /* Some clients (e.g. x11-ssh-askpass) actually set
-                 * WM_TRANSIENT_FOR to their own window id, so break instead of
-                 * looping endlessly. */
-                if (transient_win == next_transient->window)
-                    break;
-                transient_win = next_transient->window;
-            }
+            set_focus = con_find_transient_for_window(nc, fs->window->id);
         }
     }
 
