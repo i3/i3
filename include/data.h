@@ -805,4 +805,7 @@ struct Con {
 
     /* The colormap for this con if a custom one is used. */
     xcb_colormap_t colormap;
+
+    /* Border radius specified in pixel units */
+    uint32_t border_radius;
 };

@@ -274,6 +274,9 @@ struct Config {
 
     /* Disable gaps if there is only one container on the workspace */
     smart_gaps_t smart_gaps;
+
+    /* Border radius specified in pixel units */
+    int32_t border_radius;
 };
 
 /**

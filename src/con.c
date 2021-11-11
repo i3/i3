@@ -44,6 +44,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     new->border_style = new->max_user_border_style = config.default_border;
     new->current_border_width = -1;
     new->window_icon_padding = -1;
+    new->border_radius = config.border_radius;
     if (window) {
         new->depth = window->depth;
     } else {
@@ -1802,7 +1803,7 @@ Con *con_descend_direction(Con *con, direction_t direction) {
     return con_descend_direction(most, direction);
 }
 
-static bool has_outer_gaps(gaps_t gaps) {
+bool has_outer_gaps(gaps_t gaps) {
     return gaps.top > 0 ||
            gaps.right > 0 ||
            gaps.bottom > 0 ||
@@ -1875,6 +1876,7 @@ static Rect con_border_style_rect_without_title(Con *con) {
     if (borders_to_hide & ADJ_LOWER_SCREEN_EDGE) {
         result.height += border_width;
     }
+
     return result;
 }
 

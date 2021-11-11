@@ -81,6 +81,12 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
 void cmd_border(I3_CMD, const char *border_style_str, long border_width);
 
 /**
+ * Implementation of 'border_radius [all] <px>'.
+ *
+ */
+void cmd_border_radius(I3_CMD, long border_radius, const char *border_radius_target);
+
+/**
  * Implementation of 'nop <comment>'.
  *
  */

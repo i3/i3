@@ -377,6 +377,8 @@ type (string)::
 border (string)::
 	Can be either "normal", "none" or "pixel", depending on the
 	container’s border style.
+border_radius (integer)::
+	Number of pixels of the border radius.
 current_border_width (integer)::
 	Number of pixels of the border width.
 layout (string)::

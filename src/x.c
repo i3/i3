@@ -11,6 +11,7 @@
 #include "all.h"
 
 #include <unistd.h>
+#include <xcb/xproto.h>
 
 #ifndef MAX
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
@@ -455,6 +456,155 @@ static size_t x_get_border_rectangles(Con *con, xcb_rectangle_t rectangles[4]) {
     return count;
 }
 
+static void x_shape_title(Con *con) {
+    if (con->border_radius == 0) {
+        return;
+    }
+
+    // if (con->layout != L_TABBED && con->layout != L_STACKED) {
+    if (con->layout != L_STACKED) {
+        return;
+    }
+
+    uint16_t w = con->rect.width;
+    uint16_t h = con->rect.height;
+
+    xcb_pixmap_t pid = xcb_generate_id(conn);
+
+    xcb_create_pixmap(conn, 1, pid, con->frame.id, w, h);
+
+    xcb_gcontext_t black = xcb_generate_id(conn);
+    xcb_gcontext_t white = xcb_generate_id(conn);
+
+    xcb_create_gc(conn, black, pid, XCB_GC_FOREGROUND, (uint32_t[]){0, 0});
+    xcb_create_gc(conn, white, pid, XCB_GC_FOREGROUND, (uint32_t[]){1, 0});
+
+    int32_t r = con->border_radius;
+    int32_t d = r * 2;
+
+    // clang-format off
+    xcb_rectangle_t bounding = { 0, 0, w, h };
+
+    xcb_arc_t arcs[] = {
+        { 0        , 1, d, d, 0, 360 << 6 },
+        { w - d - 1, 1, d, d, 0, 360 << 6 },
+    };
+
+    xcb_rectangle_t rects[] = {
+        { r, 0, w - d, h     },
+        { 0, r, w    , h - r },
+    };
+    // clang-format on
+
+    xcb_poly_fill_rectangle(conn, pid, black, 1, &bounding);
+    xcb_poly_fill_rectangle(conn, pid, white, 2, rects);
+    xcb_poly_fill_arc(conn, pid, white, 2, arcs);
+
+#if 0
+    xcb_shape_mask(conn, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, con->frame.id, 0, 0, pid);
+    xcb_shape_mask(conn, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, con->frame.id, 0, 0, pid);
+#endif
+
+    xcb_free_pixmap(conn, pid);
+}
+
+static bool smart_gaps_active(Con *con) {
+    return config.smart_gaps == SMART_GAPS_ON && con_num_visible_children(con->parent) <= 1;
+}
+
+static bool smart_gaps_has_gaps(Con *con) {
+    return smart_gaps_active(con) && !has_outer_gaps(calculate_effective_gaps(con));
+}
+
+static inline xcb_rectangle_t rectangle_shrink_by(xcb_rectangle_t r, int16_t px) {
+    return (xcb_rectangle_t){
+        .x = r.x + px,
+        .y = r.y + px,
+        .width = r.width - 2 * px,
+        .height = r.height - 2 * px};
+}
+
+/*
+ * Round window corners when possible
+ *
+ */
+static void x_shape_window(Con *con) {
+    if (con->border_radius == 0) {
+        return;
+    }
+
+    if (con->layout == L_TABBED || con->layout == L_STACKED) {
+        con->border_radius = 0;
+
+        xcb_shape_mask(conn, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, con->frame.id, 0, 0, XCB_NONE);
+        xcb_shape_mask(conn, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, con->frame.id, 0, 0, XCB_NONE);
+        return;
+    }
+
+    if (con->parent->type == CT_DOCKAREA) {
+        return;
+    }
+
+    if (con->fullscreen_mode ||
+        (!con_is_floating(con) && smart_gaps_has_gaps(con))) {
+        xcb_shape_mask(conn, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, con->frame.id, 0, 0, XCB_NONE);
+        xcb_shape_mask(conn, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, con->frame.id, 0, 0, XCB_NONE);
+        return;
+    }
+
+    const xcb_query_extension_reply_t *shape_query;
+    shape_query = xcb_get_extension_data(conn, &xcb_shape_id);
+
+    if (!shape_query->present) {
+        return;
+    }
+
+    uint16_t w = con->rect.width;
+    uint16_t h = con->rect.height;
+    uint16_t dh = con->deco_rect.height;
+
+    xcb_pixmap_t pid = xcb_generate_id(conn);
+
+    xcb_create_pixmap(conn, 1, pid, con->frame.id, w, h);
+
+    xcb_gcontext_t black = xcb_generate_id(conn);
+    xcb_gcontext_t white = xcb_generate_id(conn);
+
+    xcb_create_gc(conn, black, pid, XCB_GC_FOREGROUND, (uint32_t[]){0, 0});
+    xcb_create_gc(conn, white, pid, XCB_GC_FOREGROUND, (uint32_t[]){1, 0});
+
+    int32_t r = con->border_radius;
+    int32_t d = r * 2;
+
+    // clang-format off
+    xcb_rectangle_t bounding = { 0, 0, w, h };
+
+    xcb_arc_t arcs[] = {
+        { 0        , -dh      , d, d, 0, 360 << 6 },
+        { 0        , h - d - 1, d, d, 0, 360 << 6 },
+        { w - d - 1, -dh      , d, d, 0, 360 << 6 },
+        { w - d - 1, h - d - 1, d, d, 0, 360 << 6 },
+    };
+
+    xcb_rectangle_t rects[] = {
+        { r, 0     , w - d, h          },
+        { 0, r - dh, w    , h - d + dh },
+    };
+    // clang-format on
+    rectangle_shrink_by (rects[0], con->border_radius);
+    rectangle_shrink_by (rects[1], con->border_radius);
+
+    xcb_poly_fill_rectangle(conn, pid, black, 1, &bounding);
+    xcb_poly_fill_rectangle(conn, pid, white, 2, rects);
+    xcb_poly_fill_arc(conn, pid, white, 4, arcs);
+
+    // this sets the entire size and shape of window + content + csd
+    xcb_shape_mask(conn, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, con->frame.id, 0, 0, pid);
+    xcb_shape_mask(conn, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, con->frame.id, 0, 0, pid);
+
+    xcb_free_pixmap(conn, pid);
+}
+
 /*
  * Draws the decoration of the given container onto its parent.
  *
@@ -462,6 +612,7 @@ static size_t x_get_border_rectangles(Con *con, xcb_rectangle_t rectangles[4]) {
 void x_draw_decoration(Con *con) {
     Con *parent = con->parent;
     bool leaf = con_is_leaf(con);
+    bool do_draw_border = false;
 
     /* This code needs to run for:
      *  • leaf containers
@@ -553,6 +704,7 @@ void x_draw_decoration(Con *con) {
         /* Clear visible windows before beginning to draw */
         draw_util_clear_surface(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
 
+#if 1
         /* top area */
         draw_util_rectangle(&(con->frame_buffer), config.client.background,
                             0, 0, r->width, w->y);
@@ -565,22 +717,13 @@ void x_draw_decoration(Con *con) {
         /* right area */
         draw_util_rectangle(&(con->frame_buffer), config.client.background,
                             w->x + w->width, 0, r->width - (w->x + w->width), r->height);
+#endif
     }
 
     /* 3: draw a rectangle in border color around the client */
+
     if (p->border_style != BS_NONE && p->con_is_leaf) {
-        /* Fill the border. We don’t just fill the whole rectangle because some
-         * children are not freely resizable and we want their background color
-         * to "shine through". */
-        xcb_rectangle_t rectangles[4];
-        size_t rectangles_count = x_get_border_rectangles(con, rectangles);
-        for (size_t i = 0; i < rectangles_count; i++) {
-            draw_util_rectangle(&(con->frame_buffer), p->color->child_border,
-                                rectangles[i].x,
-                                rectangles[i].y,
-                                rectangles[i].width,
-                                rectangles[i].height);
-        }
+        do_draw_border = true;
 
         /* Highlight the side of the border at which the next window will be
          * opened if we are rendering a single window within a split container
@@ -768,8 +911,46 @@ void x_draw_decoration(Con *con) {
     }
 
     x_draw_decoration_after_title(con, p, dest_surface);
+
 copy_pixmaps:
-    draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+    x_shape_window(con);
+
+#if 0
+    if (do_draw_border && p->border_style != BS_NONE && con->border_radius > 0 && con->parent->type != CT_DOCKAREA && con->type != CT_ROOT) {
+        DLOG("frame = %p, width = %d, height = %d, "
+             "border_width = %d, border_radius = %d\n",
+             &(con->frame),
+             con->rect.width,
+             con->rect.height,
+             con->border_width,
+             con->border_radius);
+
+        surface_t *dest_surface = &(parent->frame_buffer);
+        if (con_draw_decoration_into_frame(con)) {
+            dest_surface = &(con->frame_buffer);
+        }
+
+        /* If the parent hasn't been set up yet, skip the decoration rendering
+         * for now. */
+        draw_util_rounded_rectangle(dest_surface,
+                                    p->color->border,
+                                    0,
+                                    0,
+                                    con->rect.width,
+                                    con->rect.height,
+                                    con->border_width,
+                                    con->border_radius);
+    }
+#endif
+
+    draw_util_copy_surface(&(con->frame_buffer),
+                           &(con->frame),
+                           0,
+                           0,
+                           0,
+                           0,
+                           con->rect.width,
+                           con->rect.height);
 }
 
 /*
@@ -1095,6 +1276,7 @@ void x_push_node(Con *con) {
                  * from the very first moment. Later calls will be cached, so this
                  * doesn’t hurt performance. */
                 x_deco_recurse(con);
+                x_shape_title(con);
             }
         }
 

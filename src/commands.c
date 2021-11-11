@@ -763,6 +763,35 @@ void cmd_border(I3_CMD, const char *border_style_str, long border_width) {
 }
 
 /*
+ * Implementation of 'border_radius [all] <px>'.
+ *
+ */
+void cmd_border_radius(I3_CMD, long border_radius, const char *target) {
+    DLOG("border radius should be changed to %ld for %s\n", border_radius, target);
+
+    HANDLE_EMPTY_MATCH;
+
+    if (target && strcmp(target, "all") == 0) {
+        Con *con;
+        TAILQ_FOREACH (con, &all_cons, all_cons) {
+            DLOG("matching: %p / %s\n", con, con->name);
+
+            con->border_radius = border_radius;
+        }
+    } else {
+        owindow *current;
+        TAILQ_FOREACH (current, &owindows, owindows) {
+            DLOG("matching: %p / %s\n", current->con, current->con->name);
+
+            current->con->border_radius = border_radius;
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'nop <comment>'.
  *
  */
