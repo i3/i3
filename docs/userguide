@@ -2212,7 +2212,7 @@ output::
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
 focus next|prev [sibling]
-focus output left|right|up|down|primary|<output>
+focus output left|right|down|up|current|primary|next|<output1> [output2]…
 ----------------------------------------------
 
 *Examples*:
@@ -2232,6 +2232,9 @@ bindsym $mod+u focus parent
 # Focus last floating/tiling container
 bindsym $mod+g focus mode_toggle
 
+# Focus the next output (effectively toggles when you only have two outputs)
+bindsym $mod+x move workspace to output next
+
 # Focus the output right to the current one
 bindsym $mod+x focus output right
 
@@ -2240,6 +2243,9 @@ bindsym $mod+x focus output HDMI-2
 
 # Focus the primary output
 bindsym $mod+x focus output primary
+
+# Cycle focus between outputs VGA1 and LVDS1 but not DVI0
+bindsym $mod+x move workspace to output VGA1 LVDS1
 -------------------------------------------------
 
 Note that you might not have a primary output configured yet. To do so, run:

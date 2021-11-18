@@ -1023,6 +1023,76 @@ void cmd_mode(I3_CMD, const char *mode) {
     ysuccess(true);
 }
 
+typedef struct user_output_name {
+    char *name;
+    TAILQ_ENTRY(user_output_name) user_output_names;
+} user_output_name;
+typedef TAILQ_HEAD(user_output_names_head, user_output_name) user_output_names_head;
+
+static void user_output_names_add(user_output_names_head *list, const char *name) {
+    if (strcmp(name, "next") == 0) {
+        /* "next" here works like a wildcard: It "expands" to all available
+         * outputs. */
+        Output *output;
+        TAILQ_FOREACH (output, &outputs, outputs) {
+            user_output_name *co = scalloc(sizeof(user_output_name), 1);
+            co->name = sstrdup(output_primary_name(output));
+            TAILQ_INSERT_TAIL(list, co, user_output_names);
+        }
+        return;
+    }
+
+    user_output_name *co = scalloc(sizeof(user_output_name), 1);
+    co->name = sstrdup(name);
+    TAILQ_INSERT_TAIL(list, co, user_output_names);
+    return;
+}
+
+static Output *user_output_names_find_next(user_output_names_head *names, Output *current_output) {
+    Output *target_output = NULL;
+    user_output_name *uo;
+    TAILQ_FOREACH (uo, names, user_output_names) {
+        if (strcasecmp(output_primary_name(current_output), uo->name) == 0) {
+            /* The current output is in the user list */
+            while (true) {
+                /* This corrupts the outer loop but it is ok since we are going
+                 * to break anyway. */
+                uo = TAILQ_NEXT(uo, user_output_names);
+                if (!uo) {
+                    /* We reached the end of the list. We should use the first
+                     * available output that, if it exists, is already saved in
+                     * target_output. */
+                    break;
+                }
+                Output *out = get_output_from_string(current_output, uo->name);
+                if (out) {
+                    return out;
+                }
+            }
+            break;
+        }
+        if (!target_output) {
+            /* The first available output from the list is used in 2 cases:
+             * 1. When we must wrap around the user list. For example, if user
+             * specifies outputs A B C and C is `current_output`.
+             * 2. When the current output is not in the user list. For example,
+             * user specifies A B C and D is `current_output`. */
+            target_output = get_output_from_string(current_output, uo->name);
+        }
+    }
+    return target_output;
+}
+
+static void user_output_names_free(user_output_names_head *names) {
+    user_output_name *uo;
+    while (!TAILQ_EMPTY(names)) {
+        uo = TAILQ_FIRST(names);
+        free(uo->name);
+        TAILQ_REMOVE(names, uo, user_output_names);
+        free(uo);
+    }
+}
+
 /*
  * Implementation of 'move [window|container|workspace] [to] output <strings>'.
  *
@@ -1031,40 +1101,21 @@ void cmd_move_con_to_output(I3_CMD, const char *name, bool move_workspace) {
     /* Initialize a data structure that is used to save multiple user-specified
      * output names since this function is called multiple types for each
      * command call. */
-    typedef struct user_output_name {
-        char *name;
-        TAILQ_ENTRY(user_output_name) user_output_names;
-    } user_output_name;
-    static TAILQ_HEAD(user_output_names_head, user_output_name) user_output_names = TAILQ_HEAD_INITIALIZER(user_output_names);
+    static user_output_names_head names = TAILQ_HEAD_INITIALIZER(names);
 
     if (name) {
-        if (strcmp(name, "next") == 0) {
-            /* "next" here works like a wildcard: It "expands" to all available
-             * outputs. */
-            Output *output;
-            TAILQ_FOREACH (output, &outputs, outputs) {
-                user_output_name *co = scalloc(sizeof(user_output_name), 1);
-                co->name = sstrdup(output_primary_name(output));
-                TAILQ_INSERT_TAIL(&user_output_names, co, user_output_names);
-            }
-            return;
-        }
-
-        user_output_name *co = scalloc(sizeof(user_output_name), 1);
-        co->name = sstrdup(name);
-        TAILQ_INSERT_TAIL(&user_output_names, co, user_output_names);
+        user_output_names_add(&names, name);
         return;
     }
 
     HANDLE_EMPTY_MATCH;
 
-    if (TAILQ_EMPTY(&user_output_names)) {
+    if (TAILQ_EMPTY(&names)) {
         yerror("At least one output must be specified");
         return;
     }
 
     bool success = false;
-    user_output_name *uo;
     owindow *current;
     TAILQ_FOREACH (current, &owindows, owindows) {
         Con *ws = con_get_workspace(current->con);
@@ -1073,41 +1124,7 @@ void cmd_move_con_to_output(I3_CMD, const char *name, bool move_workspace) {
         }
 
         Output *current_output = get_output_for_con(ws);
-
-        Output *target_output = NULL;
-        TAILQ_FOREACH (uo, &user_output_names, user_output_names) {
-            if (strcasecmp(output_primary_name(current_output), uo->name) == 0) {
-                /* The current output is in the user list */
-                while (true) {
-                    /* This corrupts the outer loop but it is ok since we are
-                     * going to break anyway. */
-                    uo = TAILQ_NEXT(uo, user_output_names);
-                    if (!uo) {
-                        /* We reached the end of the list. We should use the
-                         * first available output that, if it exists, is
-                         * already saved in target_output. */
-                        break;
-                    }
-                    Output *out = get_output_from_string(current_output, uo->name);
-                    if (out) {
-                        DLOG("Found next target for workspace %s from user list: %s\n", ws->name, uo->name);
-                        target_output = out;
-                        break;
-                    }
-                }
-                break;
-            }
-            if (!target_output) {
-                /* The first available output from the list is used in 2 cases:
-                 * 1. When we must wrap around the user list. For example, if
-                 * user specifies outputs A B C and C is `current_output`.
-                 * 2. When the current output is not in the user list. For
-                 * example, user specifies A B C and D is `current_output`.
-                 */
-                DLOG("Found first target for workspace %s from user list: %s\n", ws->name, uo->name);
-                target_output = get_output_from_string(current_output, uo->name);
-            }
-        }
+        Output *target_output = user_output_names_find_next(&names, current_output);
         if (target_output) {
             if (move_workspace) {
                 workspace_move_to_output(ws, target_output);
@@ -1117,13 +1134,7 @@ void cmd_move_con_to_output(I3_CMD, const char *name, bool move_workspace) {
             success = true;
         }
     }
-
-    while (!TAILQ_EMPTY(&user_output_names)) {
-        uo = TAILQ_FIRST(&user_output_names);
-        free(uo->name);
-        TAILQ_REMOVE(&user_output_names, uo, user_output_names);
-        free(uo);
-    }
+    user_output_names_free(&names);
 
     cmd_output->needs_tree_render = success;
     if (success) {
@@ -1757,6 +1768,17 @@ void cmd_open(I3_CMD) {
  *
  */
 void cmd_focus_output(I3_CMD, const char *name) {
+    static user_output_names_head names = TAILQ_HEAD_INITIALIZER(names);
+    if (name) {
+        user_output_names_add(&names, name);
+        return;
+    }
+
+    if (TAILQ_EMPTY(&names)) {
+        yerror("At least one output must be specified");
+        return;
+    }
+
     HANDLE_EMPTY_MATCH;
 
     if (TAILQ_EMPTY(&owindows)) {
@@ -1765,25 +1787,29 @@ void cmd_focus_output(I3_CMD, const char *name) {
     }
 
     Output *current_output = get_output_for_con(TAILQ_FIRST(&owindows)->con);
-    Output *output = get_output_from_string(current_output, name);
+    Output *target_output = user_output_names_find_next(&names, current_output);
+    user_output_names_free(&names);
+    bool success = false;
+    if (target_output) {
+        success = true;
 
-    if (!output) {
-        yerror("Output %s not found.", name);
-        return;
+        /* get visible workspace on output */
+        Con *ws = NULL;
+        GREP_FIRST(ws, output_get_content(target_output->con), workspace_is_visible(child));
+        if (!ws) {
+            yerror("BUG: No workspace found on output.");
+            return;
+        }
+
+        workspace_show(ws);
     }
 
-    /* get visible workspace on output */
-    Con *ws = NULL;
-    GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-    if (!ws) {
-        yerror("BUG: No workspace found on output.");
-        return;
+    cmd_output->needs_tree_render = success;
+    if (success) {
+        ysuccess(true);
+    } else {
+        yerror("No output matched");
     }
-
-    workspace_show(ws);
-
-    cmd_output->needs_tree_render = true;
-    ysuccess(true);
 }
 
 /*

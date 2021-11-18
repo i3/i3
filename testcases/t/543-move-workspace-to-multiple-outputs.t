@@ -14,7 +14,7 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
-# Test using multiple workspaces for 'move workspace to output …'
+# Test using multiple outputs for 'move workspace to output …'
 # Ticket: #4337
 use i3test i3_config => <<EOT;
 # i3 config file (v4)
