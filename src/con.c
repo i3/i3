@@ -731,6 +731,41 @@ Con *con_by_mark(const char *mark) {
 }
 
 /*
+ * Start from a container and traverse the transient_for linked list. Returns
+ * true if target window is found in the list. Protects againsts potential
+ * cycles.
+ *
+ */
+bool con_find_transient_for_window(Con *start, xcb_window_t target) {
+    Con *transient_con = start;
+    int count = con_num_windows(croot);
+    while (transient_con != NULL &&
+           transient_con->window != NULL &&
+           transient_con->window->transient_for != XCB_NONE) {
+        DLOG("transient_con = 0x%08x, transient_con->window->transient_for = 0x%08x, target = 0x%08x\n",
+             transient_con->window->id, transient_con->window->transient_for, target);
+        if (transient_con->window->transient_for == target) {
+            return true;
+        }
+        Con *next_transient = con_by_window_id(transient_con->window->transient_for);
+        if (next_transient == NULL) {
+            break;
+        }
+        /* Some clients (e.g. x11-ssh-askpass) actually set WM_TRANSIENT_FOR to
+         * their own window id, so break instead of looping endlessly. */
+        if (transient_con == next_transient) {
+            break;
+        }
+        transient_con = next_transient;
+
+        if (count-- <= 0) { /* Avoid cycles, see #4404 */
+            break;
+        }
+    }
+    return false;
+}
+
+/*
  * Returns true if and only if the given containers holds the mark.
  *
  */
