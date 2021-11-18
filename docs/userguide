@@ -1104,7 +1104,7 @@ i3 uses Unix sockets to provide an IPC interface. This allows third-party
 programs to get information from i3, such as the current workspaces
 (to display a workspace bar), and to control i3.
 
-The IPC socket is enabled by default and will be created in
+By default, an IPC socket will be created in
 +$XDG_RUNTIME_DIR/i3/ipc-socket.%p+ if the directory is available, falling back
 to +/tmp/i3-%u.XXXXXX/ipc-socket.%p+, where +%u+ is your UNIX username, +%p+ is
 the PID of i3 and XXXXXX is a string of random characters from the portable
