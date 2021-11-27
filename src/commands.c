@@ -1052,6 +1052,14 @@ static Output *user_output_names_find_next(user_output_names_head *names, Output
     Output *target_output = NULL;
     user_output_name *uo;
     TAILQ_FOREACH (uo, names, user_output_names) {
+        if (!target_output) {
+            /* The first available output from the list is used in 2 cases:
+             * 1. When we must wrap around the user list. For example, if user
+             * specifies outputs A B C and C is `current_output`.
+             * 2. When the current output is not in the user list. For example,
+             * user specifies A B C and D is `current_output`. */
+            target_output = get_output_from_string(current_output, uo->name);
+        }
         if (strcasecmp(output_primary_name(current_output), uo->name) == 0) {
             /* The current output is in the user list */
             while (true) {
@@ -1070,14 +1078,6 @@ static Output *user_output_names_find_next(user_output_names_head *names, Output
                 }
             }
             break;
-        }
-        if (!target_output) {
-            /* The first available output from the list is used in 2 cases:
-             * 1. When we must wrap around the user list. For example, if user
-             * specifies outputs A B C and C is `current_output`.
-             * 2. When the current output is not in the user list. For example,
-             * user specifies A B C and D is `current_output`. */
-            target_output = get_output_from_string(current_output, uo->name);
         }
     }
     return target_output;
