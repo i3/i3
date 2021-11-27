@@ -40,6 +40,16 @@ sub is_ws {
 }
 
 ###############################################################################
+# Test moving workspace to same output
+# See issue #4691
+###############################################################################
+is_ws(1, 0, 'sanity check');
+
+my $reply = cmd '[con_mark=aa] move workspace to output fake-0';
+is_ws(1, 0, 'workspace did not move');
+ok($reply->[0]->{success}, 'reply success');
+
+###############################################################################
 # Test using "next" special keyword
 ###############################################################################
 
