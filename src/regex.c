@@ -20,33 +20,22 @@
  *
  */
 struct regex *regex_new(const char *pattern) {
-    const char *error;
-    int errorcode, offset;
+    int errorcode;
+    PCRE2_SIZE offset;
 
     struct regex *re = scalloc(1, sizeof(struct regex));
     re->pattern = sstrdup(pattern);
-    int options = PCRE_UTF8;
+    uint32_t options = PCRE2_UTF;
     /* We use PCRE_UCP so that \B, \b, \D, \d, \S, \s, \W, \w and some POSIX
      * character classes play nicely with Unicode */
-    options |= PCRE_UCP;
-    while (!(re->regex = pcre_compile2(pattern, options, &errorcode, &error, &offset, NULL))) {
-        /* If the error is that PCRE was not compiled with UTF-8 support we
-         * disable it and try again */
-        if (errorcode == 32) {
-            options &= ~PCRE_UTF8;
-            continue;
-        }
-        ELOG("PCRE regular expression compilation failed at %d: %s\n",
-             offset, error);
+    options |= PCRE2_UCP;
+    if (!(re->regex = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED, options, &errorcode, &offset, NULL))) {
+        PCRE2_UCHAR buffer[256];
+        pcre2_get_error_message(errorcode, buffer, sizeof(buffer));
+        ELOG("PCRE regular expression compilation failed at %lu: %s\n",
+             offset, buffer);
         regex_free(re);
         return NULL;
-    }
-    re->extra = pcre_study(re->regex, 0, &error);
-    /* If an error happened, we print the error message, but continue.
-     * Studying the regular expression leads to faster matching, but it’s not
-     * absolutely necessary. */
-    if (error) {
-        ELOG("PCRE regular expression studying failed: %s\n", error);
     }
     return re;
 }
@@ -60,7 +49,6 @@ void regex_free(struct regex *regex) {
         return;
     FREE(regex->pattern);
     FREE(regex->regex);
-    FREE(regex->extra);
     FREE(regex);
 }
 
@@ -71,17 +59,22 @@ void regex_free(struct regex *regex) {
  *
  */
 bool regex_matches(struct regex *regex, const char *input) {
+    pcre2_match_data *match_data;
     int rc;
+
+    match_data = pcre2_match_data_create_from_pattern(regex->regex, NULL);
 
     /* We use strlen() because pcre_exec() expects the length of the input
      * string in bytes */
-    if ((rc = pcre_exec(regex->regex, regex->extra, input, strlen(input), 0, 0, NULL, 0)) == 0) {
+    rc = pcre2_match(regex->regex, (PCRE2_SPTR)input, strlen(input), 0, 0, match_data, NULL);
+    pcre2_match_data_free(match_data);
+    if (rc > 0) {
         LOG("Regular expression \"%s\" matches \"%s\"\n",
             regex->pattern, input);
         return true;
     }
 
-    if (rc == PCRE_ERROR_NOMATCH) {
+    if (rc == PCRE2_ERROR_NOMATCH) {
         LOG("Regular expression \"%s\" does not match \"%s\"\n",
             regex->pattern, input);
         return false;

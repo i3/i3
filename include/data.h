@@ -9,11 +9,13 @@
  */
 #pragma once
 
+#define PCRE2_CODE_UNIT_WIDTH 8
+
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
 
 #include <xcb/randr.h>
-#include <pcre.h>
+#include <pcre2.h>
 #include <sys/time.h>
 #include <cairo/cairo.h>
 
@@ -248,8 +250,7 @@ struct Startup_Sequence {
  */
 struct regex {
     char *pattern;
-    pcre *regex;
-    pcre_extra *extra;
+    pcre2_code *regex;
 };
 
 /**
