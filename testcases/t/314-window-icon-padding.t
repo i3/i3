@@ -38,6 +38,36 @@ is(window_icon_padding($tmp), -1, 'window_icon_padding defaults to -1');
 cmd 'title_window_icon on';
 isnt(window_icon_padding($tmp), -1, 'window_icon_padding no longer -1');
 
+cmd 'title_window_icon toggle';
+is(window_icon_padding($tmp), -1, 'window_icon_padding back to -1');
+
+cmd 'title_window_icon toggle';
+isnt(window_icon_padding($tmp), -1, 'window_icon_padding no longer -1 again');
+
+cmd 'title_window_icon off';
+is(window_icon_padding($tmp), -1, 'window_icon_padding back to -1');
+
+cmd 'title_window_icon padding 3px';
+is(window_icon_padding($tmp), 3, 'window_icon_padding set to 3');
+
+cmd 'title_window_icon toggle';
+ok(window_icon_padding($tmp) < 0, 'window_icon_padding toggled off');
+
+cmd 'title_window_icon toggle';
+is(window_icon_padding($tmp), 3, 'window_icon_padding toggled back to 3');
+
+cmd 'title_window_icon toggle 5px';
+ok(window_icon_padding($tmp) < 0, 'window_icon_padding toggled off');
+
+cmd 'title_window_icon toggle 5px';
+is(window_icon_padding($tmp), 5, 'window_icon_padding toggled on to 5px');
+
+cmd 'title_window_icon toggle 5px';
+ok(window_icon_padding($tmp) < 0, 'window_icon_padding toggled off');
+
+cmd 'title_window_icon toggle 4px';
+is(window_icon_padding($tmp), 4, 'window_icon_padding toggled on to 4px');
+
 exit_gracefully($pid);
 
 ################################################################################

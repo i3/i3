@@ -2728,8 +2728,8 @@ specific windows or for all windows (using the <<for_window>> directive).
 
 *Syntax*:
 -----------------------------
-title_window_icon <yes|no>
-title_window_icon padding <px>
+title_window_icon <yes|no|toggle>
+title_window_icon <padding|toggle> <px>
 ------------------------------
 
 *Examples*:
