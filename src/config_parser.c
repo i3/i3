@@ -165,8 +165,6 @@ static void clear_stack(struct stack *ctx) {
 static void next_state(const cmdp_token *token, struct parser_ctx *ctx) {
     cmdp_state _next_state = token->next_state;
 
-    //printf("token = name %s identifier %s\n", token->name, token->identifier);
-    //printf("next_state = %d\n", token->next_state);
     if (token->next_state == __CALL) {
         struct ConfigResultIR subcommand_output = {
             .ctx = ctx,
@@ -254,7 +252,6 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
     bool token_handled;
     linecnt = 1;
 
-// TODO: make this testable
 #ifndef TEST_PARSER
     struct ConfigResultIR subcommand_output = {
         .ctx = ctx,
@@ -269,8 +266,6 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
          * separate configuration directives. */
         while ((*walk == ' ' || *walk == '\t') && *walk != '\0')
             walk++;
-
-        //printf("remaining input: %s\n", walk);
 
         cmdp_token_ptr *ptr = &(tokens[ctx->state]);
         token_handled = false;
@@ -378,7 +373,6 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
             }
 
             if (strcmp(token->name, "end") == 0) {
-                //printf("checking for end: *%s*\n", walk);
                 if (*walk == '\0' || *walk == '\n' || *walk == '\r') {
                     next_state(token, ctx);
                     token_handled = true;
@@ -386,7 +380,6 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
                      * datastructure for commands which do *not* specify any
                      * criteria, we re-initialize the criteria system after
                      * every command. */
-// TODO: make this testable
 #ifndef TEST_PARSER
                     cfg_criteria_init(&(ctx->current_match), &subcommand_output, INITIAL);
 #endif
