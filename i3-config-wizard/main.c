@@ -332,8 +332,6 @@ static char *rewrite_binding(const char *input) {
         while ((*walk == ' ' || *walk == '\t') && *walk != '\0')
             walk++;
 
-        //printf("remaining input: %s\n", walk);
-
         cmdp_token_ptr *ptr = &(tokens[state]);
         for (c = 0; c < ptr->n; c++) {
             token = &(ptr->array[c]);
@@ -426,15 +424,13 @@ static char *rewrite_binding(const char *input) {
             }
 
             if (strcmp(token->name, "end") == 0) {
-                //printf("checking for end: *%s*\n", walk);
                 if (*walk == '\0' || *walk == '\n' || *walk == '\r') {
                     if ((result = next_state(token)) != NULL)
                         return result;
-                    /* To make sure we start with an appropriate matching
-                     * datastructure for commands which do *not* specify any
+                    /* To make sure we start with an appropriate matching data
+                     * structure for commands which do *not* specify any
                      * criteria, we re-initialize the criteria system after
                      * every command. */
-                    // TODO: make this testable
                     walk++;
                     break;
                 }

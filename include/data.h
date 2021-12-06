@@ -663,8 +663,8 @@ struct Con {
     char *title_format;
 
     /** Whether the window icon should be displayed, and with what padding. -1
-      * means display no window icon (default behavior), 0 means display without
-      * any padding, 1 means display with 1 pixel of padding and so on. */
+     * means display no window icon (default behavior), 0 means display without
+     * any padding, 1 means display with 1 pixel of padding and so on. */
     int window_icon_padding;
 
     /* a sticky-group is an identifier which bundles several containers to a

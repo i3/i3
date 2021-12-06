@@ -70,11 +70,9 @@ bool event_is_ignored(const int sequence, const int response_type) {
             event->response_type != response_type)
             continue;
 
-        /* instead of removing a sequence number we better wait until it gets
-         * garbage collected. it may generate multiple events (there are multiple
-         * enter_notifies for one configure_request, for example). */
-        //SLIST_REMOVE(&ignore_events, event, Ignore_Event, ignore_events);
-        //free(event);
+        /* Instead of removing & freeing a sequence number we better wait until
+         * it gets garbage collected. It may generate multiple events (there
+         * are multiple enter_notifies for one configure_request, for example). */
         return true;
     }
 
@@ -1346,7 +1344,7 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
     }
 
     if (handler == NULL) {
-        //DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom);
+        /* DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom); */
         return;
     }
 
@@ -1524,7 +1522,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
             break;
 
         default:
-            //DLOG("Unhandled event of type %d\n", type);
+            /* DLOG("Unhandled event of type %d\n", type); */
             break;
     }
 }
