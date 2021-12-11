@@ -2064,20 +2064,40 @@ void cmd_title_format(I3_CMD, const char *format) {
 }
 
 /*
- * Implementation of 'title_window_icon <yes|no>' and 'title_window_icon padding <px>'
+ * Implementation of 'title_window_icon <yes|no|toggle>' and 'title_window_icon padding <px>'
  *
  */
 void cmd_title_window_icon(I3_CMD, const char *enable, int padding) {
-    if (enable != NULL && !boolstr(enable)) {
-        padding = -1;
+    bool is_toggle = false;
+    if (enable != NULL) {
+        if (strcmp(enable, "toggle") == 0) {
+            is_toggle = true;
+        } else if (!boolstr(enable)) {
+            padding = -1;
+        }
     }
     DLOG("setting window_icon=%d\n", padding);
     HANDLE_EMPTY_MATCH;
 
     owindow *current;
     TAILQ_FOREACH (current, &owindows, owindows) {
-        DLOG("setting window_icon for %p / %s\n", current->con, current->con->name);
-        current->con->window_icon_padding = padding;
+        if (is_toggle) {
+            const int current_padding = current->con->window_icon_padding;
+            if (padding > 0) {
+                if (current_padding < 0) {
+                    current->con->window_icon_padding = padding;
+                } else {
+                    /* toggle off, but store padding given */
+                    current->con->window_icon_padding = -(padding + 1);
+                }
+            } else {
+                /* Set to negative of (current value+1) to keep old padding when toggling */
+                current->con->window_icon_padding = -(current_padding + 1);
+            }
+        } else {
+            current->con->window_icon_padding = padding;
+        }
+        DLOG("Set window_icon for %p / %s to %d\n", current->con, current->con->name, current->con->window_icon_padding);
 
         if (current->con->window != NULL) {
             /* Make sure the window title is redrawn immediately. */

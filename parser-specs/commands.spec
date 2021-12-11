@@ -468,6 +468,8 @@ state TITLE_FORMAT:
 state TITLE_WINDOW_ICON:
   'padding'
     -> TITLE_WINDOW_ICON_PADDING
+  enable = 'toggle'
+    -> TITLE_WINDOW_ICON_PADDING
   enable = '1', 'yes', 'true', 'on', 'enable', 'active', '0', 'no', 'false', 'off', 'disable', 'inactive'
     -> call cmd_title_window_icon($enable, 0)
 
