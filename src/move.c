@@ -321,6 +321,12 @@ void tree_move(Con *con, direction_t direction) {
                     TAILQ_SWAP(con, swap, &(swap->parent->nodes_head), nodes);
                 }
 
+                /* split container parents should be redrawn when swapping child containers
+                 * so they show the correct window ordering (note without this higher level split
+                 * parent container titles will only update when changing layout or moving child
+                 * cons in/out */
+                con_force_split_parents_redraw(con);
+
                 ipc_send_window_event("move", con);
                 return;
             }
