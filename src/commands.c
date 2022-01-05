@@ -118,6 +118,31 @@ static Con *maybe_auto_back_and_forth_workspace(Con *workspace) {
     return workspace;
 }
 
+/**
+ * This function changes the way new containers get added to layouts. The
+ * 'default' means the layout is filled left-to-right or top-to-bottom
+ * depending on orientation. 'reverse' changes that to right-to-left or
+ * bottom-to-top. 'toggle' inverts the setting depending on its previous value.
+ *
+ */
+static void set_layout_fill_order(Con *con, const char *fill_order) {
+    Con *parent = con;
+    /* Users can focus workspaces, but not any higher in the hierarchy.
+     * Focus on the workspace is a special case, since in every other case, the
+     * user means "change the layout of the parent split container". */
+    if (con->type != CT_WORKSPACE)
+        parent = con->parent;
+    DLOG("con_set_fill_order(%p, %s), parent = %p\n", con, fill_order, parent);
+
+    if (fill_order == NULL || strcasecmp(fill_order, "default") == 0) {
+        parent->layout_fill_order = LF_DEFAULT;
+    } else if (strcasecmp(fill_order, "reverse") == 0) {
+        parent->layout_fill_order = LF_REVERSE;
+    } else if (strcasecmp(fill_order, "toggle") == 0) {
+        parent->layout_fill_order = (parent->layout_fill_order == LF_DEFAULT) ? LF_REVERSE : LF_DEFAULT;
+    }
+}
+
 /*******************************************************************************
  * Criteria functions.
  ******************************************************************************/
@@ -1672,8 +1697,9 @@ void cmd_layout(I3_CMD, const char *layout_str, const char *reverse) {
 
         DLOG("matching: %p / %s\n", current->con, current->con->name);
         con_set_layout(current->con, layout);
-        if (reverse != NULL)
-            con_set_layout_fill_order(current->con, reverse);
+        if (reverse != NULL) {
+            set_layout_fill_order(current->con, reverse);
+        }
     }
 
     cmd_output->needs_tree_render = true;
@@ -1721,12 +1747,12 @@ void cmd_layout_fill_order(I3_CMD, const char *fill_order) {
     DLOG("setting layout fill order to %s\n", fill_order);
 
     /* check if the match is empty, not if the result is empty */
-    if (match_is_empty(current_match))
-        con_set_layout_fill_order(focused, fill_order);
-    else {
+    if (match_is_empty(current_match)) {
+        set_layout_fill_order(focused, fill_order);
+    } else {
         TAILQ_FOREACH (current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
-            con_set_layout_fill_order(current->con, fill_order);
+            set_layout_fill_order(current->con, fill_order);
         }
     }
 

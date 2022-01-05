@@ -2009,31 +2009,6 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
     }
 }
 
-/**
- * This function changes the way new containers get added to layouts. The
- * 'default' means the layout is filled left-to-right or top-to-bottom
- * depending on orientation. 'reverse' changes that to right-to-left or
- * bottom-to-top. 'toggle' inverts the setting depending on its previous value.
- *
- */
-void con_set_layout_fill_order(Con *con, const char *fill_order) {
-    Con *parent = con;
-    /* Users can focus workspaces, but not any higher in the hierarchy.
-     * Focus on the workspace is a special case, since in every other case, the
-     * user means "change the layout of the parent split container". */
-    if (con->type != CT_WORKSPACE)
-        parent = con->parent;
-    DLOG("con_set_fill_order(%p, %s), parent = %p\n", con, fill_order, parent);
-
-    if (strcasecmp(fill_order, "default") == 0) {
-        parent->layout_fill_order = LF_DEFAULT;
-    } else if (strcasecmp(fill_order, "reverse") == 0) {
-        parent->layout_fill_order = LF_REVERSE;
-    } else if (strcasecmp(fill_order, "toggle") == 0) {
-        parent->layout_fill_order = (parent->layout_fill_order == LF_DEFAULT) ? LF_REVERSE : LF_DEFAULT;
-    }
-}
-
 /*
  * Callback which will be called when removing a child from the given con.
  * Kills the container if it is empty and replaces it with the child if there
