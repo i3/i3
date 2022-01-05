@@ -18,6 +18,10 @@ font pango:monospace 8
 # text rendering and scalability on retina/hidpi displays (thanks to pango).
 #font pango:DejaVu Sans Mono 8
 
+# Start XDG autostart .desktop files using dex. See also
+# https://wiki.archlinux.org/index.php/XDG_Autostart
+exec --no-startup-id dex --autostart --environment i3
+
 # The combination of xss-lock, nm-applet and pactl is a popular choice, so
 # they are included here as an example. Modify as you see fit.
 
@@ -48,10 +52,10 @@ bindcode $mod+Shift+24 kill
 # start dmenu (a program launcher)
 bindcode $mod+40 exec --no-startup-id dmenu_run
 # A more modern dmenu replacement is rofi:
-# bindcode $mod+40 exec rofi -modi drun,run -show drun
+# bindcode $mod+40 exec "rofi -modi drun,run -show drun"
 # There also is i3-dmenu-desktop which only displays applications shipping a
 # .desktop file. It is a wrapper around dmenu, so you need that installed.
-bindcode $mod+40 exec --no-startup-id i3-dmenu-desktop
+# bindcode $mod+40 exec --no-startup-id i3-dmenu-desktop
 
 # change focus
 bindcode $mod+44 focus left

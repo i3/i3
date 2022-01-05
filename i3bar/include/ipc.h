@@ -18,7 +18,7 @@
  * socket_path must be a valid path to the ipc_socket of i3
  *
  */
-int init_connection(const char *socket_path);
+void init_connection(const char *socket_path);
 
 /*
  * Destroy the connection to i3.

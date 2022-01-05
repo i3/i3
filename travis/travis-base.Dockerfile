@@ -11,13 +11,12 @@ RUN echo 'APT::Acquire::Retries "5";' > /etc/apt/apt.conf.d/80retry
 # (3608 kB/s)). Hence, let’s stick with httpredir.debian.org (default) for now.
 
 # Install mk-build-deps (for installing the i3 build dependencies),
-# clang and clang-format-9 (for checking formatting and building with clang),
 # lintian (for checking spelling errors),
 # test suite dependencies (for running tests)
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     dpkg-dev devscripts git equivs \
-    build-essential clang clang-format-9 \
+    build-essential clang \
     lintian \
     libmodule-install-perl libanyevent-perl libextutils-pkgconfig-perl xcb-proto cpanminus xvfb xserver-xephyr xauth libinline-perl libinline-c-perl libxml-simple-perl libmouse-perl libmousex-nativetraits-perl libextutils-depends-perl perl libtest-deep-perl libtest-exception-perl libxml-parser-perl libtest-simple-perl libtest-fatal-perl libdata-dump-perl libtest-differences-perl libxml-tokeparser-perl libipc-run-perl libxcb-xtest0-dev libx11-xcb-perl libjson-xs-perl x11-xserver-utils && \
     rm -rf /var/lib/apt/lists/*

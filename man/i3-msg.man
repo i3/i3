@@ -9,7 +9,7 @@ i3-msg - send messages to i3 window manager
 
 == SYNOPSIS
 
-i3-msg  [-q] [-v] [-h] [-s socket] [-t type] [message]
+i3-msg  [-q] [-v] [-h] [-s socket] [-t type] [-r] [message]
 
 == OPTIONS
 
@@ -35,6 +35,10 @@ Send ipc message, see below. This option defaults to "command".
 Instead of exiting right after receiving the first subscribed event,
 wait indefinitely for all of them. Can only be used with "-t subscribe".
 See the "subscribe" IPC message type below for details.
+
+*-r, --raw*::
+Display the raw JSON reply instead of pretty-printing errors (for commands) or
+displaying the top-level config file contents (for GET_CONFIG).
 
 *message*::
 Send ipc message, see below.

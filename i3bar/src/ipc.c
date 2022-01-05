@@ -85,6 +85,20 @@ static void got_output_reply(char *reply) {
  *
  */
 static void got_bar_config(char *reply) {
+    if (!config.bar_id) {
+        DLOG("Received bar list \"%s\"\n", reply);
+        parse_get_first_i3bar_config(reply);
+
+        if (!config.bar_id) {
+            ELOG("No bar configuration found, please configure a bar block in your i3 config file.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        LOG("Using first bar config: %s. Use --bar_id to manually select a different bar configuration.\n", config.bar_id);
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG, config.bar_id);
+        return;
+    }
+
     DLOG("Received bar config \"%s\"\n", reply);
     /* We initiate the main function by requesting infos about the outputs and
      * workspaces. Everything else (creating the bars, showing the right workspace-
@@ -141,9 +155,6 @@ static void got_workspace_event(char *event) {
 static void got_output_event(char *event) {
     DLOG("Got output event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
-    if (!config.disable_ws) {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
-    }
 }
 
 /*
@@ -154,6 +165,18 @@ static void got_mode_event(char *event) {
     DLOG("Got mode event!\n");
     parse_mode_json(event);
     draw_bars(false);
+}
+
+static bool strings_differ(char *a, char *b) {
+    const bool a_null = (a == NULL);
+    const bool b_null = (b == NULL);
+    if (a_null != b_null) {
+        return true;
+    }
+    if (a_null && b_null) {
+        return false;
+    }
+    return strcmp(a, b) != 0;
 }
 
 /*
@@ -176,8 +199,11 @@ static void got_bar_config_update(char *event) {
 
     /* update the configuration with the received settings */
     DLOG("Received bar config update \"%s\"\n", event);
-    char *old_command = config.command ? sstrdup(config.command) : NULL;
+
+    char *old_command = config.command;
+    config.command = NULL;
     bar_display_mode_t old_mode = config.hide_on_modifier;
+
     parse_config_json(event);
     if (old_mode != config.hide_on_modifier) {
         reconfig_windows(true);
@@ -188,8 +214,9 @@ static void got_bar_config_update(char *event) {
     init_colors(&(config.colors));
 
     /* restart status command process */
-    if (old_command && strcmp(old_command, config.command) != 0) {
+    if (strings_differ(old_command, config.command)) {
         kill_child();
+        clear_statusline(&statusline_head, true);
         start_child(config.command);
     }
     free(old_command);
@@ -328,13 +355,12 @@ int i3_send_msg(uint32_t type, const char *payload) {
  * socket_path must be a valid path to the ipc_socket of i3
  *
  */
-int init_connection(const char *socket_path) {
+void init_connection(const char *socket_path) {
     sock_path = socket_path;
     int sockfd = ipc_connect(socket_path);
     i3_connection = smalloc(sizeof(ev_io));
     ev_io_init(i3_connection, &got_data, sockfd, EV_READ);
     ev_io_start(main_loop, i3_connection);
-    return 1;
 }
 
 /*

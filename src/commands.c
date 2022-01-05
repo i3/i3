@@ -1023,24 +1023,125 @@ void cmd_mode(I3_CMD, const char *mode) {
     ysuccess(true);
 }
 
-/*
- * Implementation of 'move [window|container] [to] output <str>'.
- *
- */
-void cmd_move_con_to_output(I3_CMD, const char *name) {
-    DLOG("Should move window to output \"%s\".\n", name);
-    HANDLE_EMPTY_MATCH;
+typedef struct user_output_name {
+    char *name;
+    TAILQ_ENTRY(user_output_name) user_output_names;
+} user_output_name;
+typedef TAILQ_HEAD(user_output_names_head, user_output_name) user_output_names_head;
 
-    owindow *current;
-    bool had_error = false;
-    TAILQ_FOREACH (current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
-
-        had_error |= !con_move_to_output_name(current->con, name, true);
+static void user_output_names_add(user_output_names_head *list, const char *name) {
+    if (strcmp(name, "next") == 0) {
+        /* "next" here works like a wildcard: It "expands" to all available
+         * outputs. */
+        Output *output;
+        TAILQ_FOREACH (output, &outputs, outputs) {
+            user_output_name *co = scalloc(sizeof(user_output_name), 1);
+            co->name = sstrdup(output_primary_name(output));
+            TAILQ_INSERT_TAIL(list, co, user_output_names);
+        }
+        return;
     }
 
-    cmd_output->needs_tree_render = true;
-    ysuccess(!had_error);
+    user_output_name *co = scalloc(sizeof(user_output_name), 1);
+    co->name = sstrdup(name);
+    TAILQ_INSERT_TAIL(list, co, user_output_names);
+    return;
+}
+
+static Output *user_output_names_find_next(user_output_names_head *names, Output *current_output) {
+    Output *target_output = NULL;
+    user_output_name *uo;
+    TAILQ_FOREACH (uo, names, user_output_names) {
+        if (!target_output) {
+            /* The first available output from the list is used in 2 cases:
+             * 1. When we must wrap around the user list. For example, if user
+             * specifies outputs A B C and C is `current_output`.
+             * 2. When the current output is not in the user list. For example,
+             * user specifies A B C and D is `current_output`. */
+            target_output = get_output_from_string(current_output, uo->name);
+        }
+        if (strcasecmp(output_primary_name(current_output), uo->name) == 0) {
+            /* The current output is in the user list */
+            while (true) {
+                /* This corrupts the outer loop but it is ok since we are going
+                 * to break anyway. */
+                uo = TAILQ_NEXT(uo, user_output_names);
+                if (!uo) {
+                    /* We reached the end of the list. We should use the first
+                     * available output that, if it exists, is already saved in
+                     * target_output. */
+                    break;
+                }
+                Output *out = get_output_from_string(current_output, uo->name);
+                if (out) {
+                    return out;
+                }
+            }
+            break;
+        }
+    }
+    return target_output;
+}
+
+static void user_output_names_free(user_output_names_head *names) {
+    user_output_name *uo;
+    while (!TAILQ_EMPTY(names)) {
+        uo = TAILQ_FIRST(names);
+        free(uo->name);
+        TAILQ_REMOVE(names, uo, user_output_names);
+        free(uo);
+    }
+}
+
+/*
+ * Implementation of 'move [window|container|workspace] [to] output <strings>'.
+ *
+ */
+void cmd_move_con_to_output(I3_CMD, const char *name, bool move_workspace) {
+    /* Initialize a data structure that is used to save multiple user-specified
+     * output names since this function is called multiple types for each
+     * command call. */
+    static user_output_names_head names = TAILQ_HEAD_INITIALIZER(names);
+
+    if (name) {
+        user_output_names_add(&names, name);
+        return;
+    }
+
+    HANDLE_EMPTY_MATCH;
+
+    if (TAILQ_EMPTY(&names)) {
+        yerror("At least one output must be specified");
+        return;
+    }
+
+    bool success = false;
+    owindow *current;
+    TAILQ_FOREACH (current, &owindows, owindows) {
+        Con *ws = con_get_workspace(current->con);
+        if (con_is_internal(ws)) {
+            continue;
+        }
+
+        Output *current_output = get_output_for_con(ws);
+        Output *target_output = user_output_names_find_next(&names, current_output);
+        if (target_output) {
+            if (move_workspace) {
+                workspace_move_to_output(ws, target_output);
+            } else {
+                con_move_to_output(current->con, target_output, true);
+            }
+            success = true;
+        }
+    }
+    user_output_names_free(&names);
+
+    cmd_output->needs_tree_render = success;
+    if (success) {
+        ysuccess(true);
+    } else {
+        yerror("No output matched");
+    }
 }
 
 /*
@@ -1696,6 +1797,9 @@ void cmd_restart(I3_CMD) {
     }
     ipc_shutdown(SHUTDOWN_REASON_RESTART, exempt_fd);
     unlink(config.ipc_socket_path);
+    if (current_log_stream_socket_path != NULL) {
+        unlink(current_log_stream_socket_path);
+    }
     /* We need to call this manually since atexit handlers don’t get called
      * when exec()ing */
     purge_zerobyte_logfile();
@@ -1729,6 +1833,17 @@ void cmd_open(I3_CMD) {
  *
  */
 void cmd_focus_output(I3_CMD, const char *name) {
+    static user_output_names_head names = TAILQ_HEAD_INITIALIZER(names);
+    if (name) {
+        user_output_names_add(&names, name);
+        return;
+    }
+
+    if (TAILQ_EMPTY(&names)) {
+        yerror("At least one output must be specified");
+        return;
+    }
+
     HANDLE_EMPTY_MATCH;
 
     if (TAILQ_EMPTY(&owindows)) {
@@ -1737,25 +1852,29 @@ void cmd_focus_output(I3_CMD, const char *name) {
     }
 
     Output *current_output = get_output_for_con(TAILQ_FIRST(&owindows)->con);
-    Output *output = get_output_from_string(current_output, name);
+    Output *target_output = user_output_names_find_next(&names, current_output);
+    user_output_names_free(&names);
+    bool success = false;
+    if (target_output) {
+        success = true;
 
-    if (!output) {
-        yerror("Output %s not found.", name);
-        return;
+        /* get visible workspace on output */
+        Con *ws = NULL;
+        GREP_FIRST(ws, output_get_content(target_output->con), workspace_is_visible(child));
+        if (!ws) {
+            yerror("BUG: No workspace found on output.");
+            return;
+        }
+
+        workspace_show(ws);
     }
 
-    /* get visible workspace on output */
-    Con *ws = NULL;
-    GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-    if (!ws) {
-        yerror("BUG: No workspace found on output.");
-        return;
+    cmd_output->needs_tree_render = success;
+    if (success) {
+        ysuccess(true);
+    } else {
+        yerror("No output matched");
     }
-
-    workspace_show(ws);
-
-    cmd_output->needs_tree_render = true;
-    ysuccess(true);
 }
 
 /*
@@ -1995,6 +2114,55 @@ void cmd_title_format(I3_CMD, const char *format) {
                 ewmh_update_visible_name(current->con->window->id, NULL);
             }
         }
+
+        if (current->con->window != NULL) {
+            /* Make sure the window title is redrawn immediately. */
+            current->con->window->name_x_changed = true;
+        } else {
+            /* For windowless containers we also need to force the redrawing. */
+            FREE(current->con->deco_render_params);
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'title_window_icon <yes|no|toggle>' and 'title_window_icon padding <px>'
+ *
+ */
+void cmd_title_window_icon(I3_CMD, const char *enable, int padding) {
+    bool is_toggle = false;
+    if (enable != NULL) {
+        if (strcmp(enable, "toggle") == 0) {
+            is_toggle = true;
+        } else if (!boolstr(enable)) {
+            padding = -1;
+        }
+    }
+    DLOG("setting window_icon=%d\n", padding);
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH (current, &owindows, owindows) {
+        if (is_toggle) {
+            const int current_padding = current->con->window_icon_padding;
+            if (padding > 0) {
+                if (current_padding < 0) {
+                    current->con->window_icon_padding = padding;
+                } else {
+                    /* toggle off, but store padding given */
+                    current->con->window_icon_padding = -(padding + 1);
+                }
+            } else {
+                /* Set to negative of (current value+1) to keep old padding when toggling */
+                current->con->window_icon_padding = -(current_padding + 1);
+            }
+        } else {
+            current->con->window_icon_padding = padding;
+        }
+        DLOG("Set window_icon for %p / %s to %d\n", current->con, current->con->name, current->con->window_icon_padding);
 
         if (current->con->window != NULL) {
             /* Make sure the window title is redrawn immediately. */

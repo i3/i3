@@ -25,22 +25,16 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
-#if !defined(__OpenBSD__)
-static uint32_t offset_next_write;
-#endif
 static uint32_t wrap_count;
 
 static i3_shmlog_header *header;
 static char *logbuffer,
     *walk;
 static int ipcfd = -1;
-
-static volatile bool interrupted = false;
-
-static void sighandler(int signal) {
-    interrupted = true;
-}
 
 static void disable_shmlog(void) {
     const char *disablecmd = "debuglog off; shmlog off";
@@ -188,22 +182,25 @@ int main(int argc, char *argv[]) {
 
     /* NB: While we must never write, we need O_RDWR for the pthread condvar. */
     int logbuffer_shm = shm_open(shmname, O_RDWR, 0);
-    if (logbuffer_shm == -1)
+    if (logbuffer_shm == -1) {
         err(EXIT_FAILURE, "Could not shm_open SHM segment for the i3 log (%s)", shmname);
+    }
 
-    if (fstat(logbuffer_shm, &statbuf) != 0)
+    if (fstat(logbuffer_shm, &statbuf) != 0) {
         err(EXIT_FAILURE, "stat(%s)", shmname);
+    }
 
-    /* NB: While we must never write, we need PROT_WRITE for the pthread condvar. */
-    logbuffer = mmap(NULL, statbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, logbuffer_shm, 0);
-    if (logbuffer == MAP_FAILED)
+    logbuffer = mmap(NULL, statbuf.st_size, PROT_READ, MAP_SHARED, logbuffer_shm, 0);
+    if (logbuffer == MAP_FAILED) {
         err(EXIT_FAILURE, "Could not mmap SHM segment for the i3 log");
+    }
 
     header = (i3_shmlog_header *)logbuffer;
 
-    if (verbose)
+    if (verbose) {
         printf("next_write = %d, last_wrap = %d, logbuffer_size = %d, shmname = %s\n",
                header->offset_next_write, header->offset_last_wrap, header->size, shmname);
+    }
     free(shmname);
     walk = logbuffer + header->offset_next_write;
 
@@ -233,25 +230,38 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    /* Handle SIGINT gracefully to invoke atexit handlers, if any. */
-    struct sigaction action;
-    action.sa_handler = sighandler;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-    sigaction(SIGINT, &action, NULL);
+    char *log_stream_socket_path = root_atom_contents("I3_LOG_STREAM_SOCKET_PATH", NULL, 0);
+    if (log_stream_socket_path == NULL) {
+        errx(EXIT_FAILURE, "could not determine i3 log stream socket path: possible i3-dump-log and i3 version mismatch");
+    }
 
-    /* Since pthread_cond_wait() expects a mutex, we need to provide one.
-     * To not lock i3 (that’s bad, mhkay?) we just define one outside of
-     * the shared memory. */
-    pthread_mutex_t dummy_mutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_lock(&dummy_mutex);
-    while (!interrupted) {
-        pthread_cond_wait(&(header->condvar), &dummy_mutex);
-        /* If this was not a spurious wakeup, print the new lines. */
-        if (header->offset_next_write != offset_next_write) {
-            offset_next_write = header->offset_next_write;
-            print_till_end();
+    int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        err(EXIT_FAILURE, "Could not create socket");
+    }
+
+    (void)fcntl(sockfd, F_SETFD, FD_CLOEXEC);
+
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(struct sockaddr_un));
+    addr.sun_family = AF_LOCAL;
+    strncpy(addr.sun_path, log_stream_socket_path, sizeof(addr.sun_path) - 1);
+    if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0) {
+        err(EXIT_FAILURE, "Could not connect to i3 on socket %s", log_stream_socket_path);
+    }
+
+    /* Same size as the buffer used in log.c vlog(): */
+    char buf[4096];
+    for (;;) {
+        const int n = read(sockfd, buf, sizeof(buf));
+        if (n == -1) {
+            err(EXIT_FAILURE, "read(log-stream-socket):");
         }
+        if (n == 0) {
+            exit(0); /* i3 closed the socket */
+        }
+        buf[n] = '\0';
+        swrite(STDOUT_FILENO, buf, n);
     }
 
 #endif

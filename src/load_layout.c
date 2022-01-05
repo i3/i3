@@ -285,6 +285,9 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         } else if (strcasecmp(last_key, "title") == 0) {
             current_swallow->title = regex_new(sval);
             swallow_is_empty = false;
+        } else if (strcasecmp(last_key, "machine") == 0) {
+            current_swallow->machine = regex_new(sval);
+            swallow_is_empty = false;
         } else {
             ELOG("swallow key %s unknown\n", last_key);
         }
@@ -470,6 +473,10 @@ static int json_int(void *ctx, long long val) {
 
     if (strcasecmp(last_key, "current_border_width") == 0)
         json_node->current_border_width = val;
+
+    if (strcasecmp(last_key, "window_icon_padding") == 0) {
+        json_node->window_icon_padding = val;
+    }
 
     if (strcasecmp(last_key, "depth") == 0)
         json_node->depth = val;

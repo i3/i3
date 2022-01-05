@@ -3,9 +3,9 @@ i3 User’s Guide
 Michael Stapelberg <michael@i3wm.org>
 
 This document contains all the information you need to configure and use the i3
-window manager. If it does not, please check https://www.reddit.com/r/i3wm/
-first, then contact us on IRC (preferred) or post your question(s) on the
-mailing list.
+window manager. If it does not you can https://i3wm.org/contact/[contact us] on
+https://github.com/i3/i3/discussions[GitHub Discussions], IRC, or the mailing
+list.
 
 == Default keybindings
 
@@ -78,7 +78,7 @@ horizontally or vertically again, just like the workspace. The terminology is
 or browser) and "split container" for containers that consist of one or more
 windows.
 
-TODO: picture of the tree
+//TODO: picture of the tree
 
 To split a window vertically, press +$mod+v+ before you create the new window.
 To split it horizontally, press +$mod+h+.
@@ -318,6 +318,90 @@ include the following line in your config file:
 ---------------------
 # i3 config file (v4)
 ---------------------
+
+[[include]]
+=== Include directive
+
+Since i3 v4.20, it is possible to include other configuration files from your i3
+configuration.
+
+*Syntax*:
+-----------------
+include <pattern>
+-----------------
+
+i3 expands `pattern` using shell-like word expansion, specifically using the
+https://manpages.debian.org/wordexp.3[`wordexp(3)` C standard library function].
+
+*Examples*:
+--------------------------------------------------------------------------------
+# Tilde expands to the user’s home directory:
+include ~/.config/i3/assignments.conf
+
+# Environment variables are expanded:
+include $HOME/.config/i3/assignments.conf
+
+# Wildcards are expanded:
+include ~/.config/i3/config.d/*.conf
+
+# Command substitution:
+include ~/.config/i3/`hostname`.conf
+
+# i3 loads each path only once, so including the i3 config will not result
+# in an endless loop, but in an error:
+include ~/.config/i3/config
+
+# i3 changes the working directory while parsing a config file
+# so that relative paths are interpreted relative to the directory
+# of the config file that contains the path:
+include assignments.conf
+--------------------------------------------------------------------------------
+
+If a specified file cannot be read, for example because of a lack of file
+permissions, or because of a dangling symlink, i3 will report an error and
+continue processing your remaining configuration.
+
+To list all loaded configuration files, run `i3 --moreversion`:
+
+--------------------------------------------------------------------------------
+% i3 --moreversion
+Binary i3 version:  4.19.2-87-gfcae64f7+ © 2009 Michael Stapelberg and contributors
+Running i3 version: 4.19.2-87-gfcae64f7+ (pid 963940)
+Loaded i3 config:
+  /tmp/i3.cfg (main) (last modified: 2021-05-13T16:42:31 CEST, 463 seconds ago)
+  /tmp/included.cfg (included) (last modified: 2021-05-13T16:42:43 CEST, 451 seconds ago)
+  /tmp/another.cfg (included) (last modified: 2021-05-13T16:42:46 CEST, 448 seconds ago)
+--------------------------------------------------------------------------------
+
+Variables are shared between all config files, but beware of the following limitation:
+
+* You can define a variable and use it within an included file.
+* You cannot use (in the parent file) a variable that was defined within an included file.
+
+This is a technical limitation: variable expansion happens in a separate stage
+before parsing include directives.
+
+Conceptually, included files can only add to the configuration, not undo the
+effects of already-processed configuration. For example, you can only add new
+key bindings, not overwrite or remove existing key bindings. This means:
+
+* The `include` directive is suitable for organizing large configurations into
+  separate files, possibly selecting files based on conditionals.
+
+* The `include` directive is not suitable for expressing “use the default
+  configuration with the following changes”. For that case, we still recommend
+  copying and modifying the default config.
+
+[NOTE]
+====
+Implementation-wise, i3 does not currently construct one big configuration from
+all `include` directives. Instead, i3’s config file parser interprets all
+configuration directives in its `parse_file()` function. When processing an
+`include` configuration directive, the parser recursively calls `parse_file()`.
+
+This means the evaluation order of files forms a tree, or one could say i3 uses
+depth-first traversal.
+====
 
 === Comments
 
@@ -608,9 +692,10 @@ Default is +left+
 title_align left|center|right
 ---------------------------------------------
 
+[[default_border]]
 === Default border style for new windows
 
-This option determines which border style new windows will have. The default is
+This option determines which border style *new* windows will have.  The default is
 +normal+. Note that default_floating_border applies only to windows which are starting out as
 floating windows, e.g., dialog windows, but not windows that are floated later on.
 
@@ -972,6 +1057,10 @@ client.focused::
 client.focused_inactive::
 	A client which is the focused one of its container, but it does not have
 	the focus at the moment.
+client.focused_tab_title::
+    Tab or stack container title that is the parent of the focused container
+    but not directly focused. Defaults to focused_inactive if not specified and
+    does not use the indicator and child_border colors.
 client.unfocused::
 	A client which is not the focused one of its container.
 client.urgent::
@@ -1015,7 +1104,7 @@ i3 uses Unix sockets to provide an IPC interface. This allows third-party
 programs to get information from i3, such as the current workspaces
 (to display a workspace bar), and to control i3.
 
-The IPC socket is enabled by default and will be created in
+By default, an IPC socket will be created in
 +$XDG_RUNTIME_DIR/i3/ipc-socket.%p+ if the directory is available, falling back
 to +/tmp/i3-%u.XXXXXX/ipc-socket.%p+, where +%u+ is your UNIX username, +%p+ is
 the PID of i3 and XXXXXX is a string of random characters from the portable
@@ -1874,12 +1963,17 @@ bindsym $mod+x [class="Firefox" window_role="About"] kill
 # enable floating mode and move container to workspace 4
 for_window [class="^evil-app$"] floating enable, move container to workspace 4
 
+# enable window icons for all windows with extra horizontal padding of 1px
+for_window [all] title_window_icon padding 1px
+
 # move all floating windows to the scratchpad
 bindsym $mod+x [floating] move scratchpad
 ------------------------------------
 
 The criteria which are currently implemented are:
 
+all::
+	Matches all windows. This criterion requires no value.
 class::
 	Compares the window class (the second part of WM_CLASS). Use the
 	special value +\_\_focused__+ to match all windows having the same window
@@ -1896,6 +1990,10 @@ window_type::
 	Compare the window type (_NET_WM_WINDOW_TYPE). Possible values are
 	+normal+, +dialog+, +utility+, +toolbar+, +splash+, +menu+, +dropdown_menu+,
 	+popup_menu+, +tooltip+ and +notification+.
+machine::
+	Compares the name of the machine the client window is running on
+	(WM_CLIENT_MACHINE). Usually, it is equal to the hostname of the local
+	machine, but it may differ if remote X11 apps are used.
 id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
@@ -1933,9 +2031,9 @@ tiling_from::
 	tiling are matched. With "user", only windows that the user made tiling
 	are matched.
 
-The criteria +class+, +instance+, +role+, +title+, +workspace+ and +mark+ are
-actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
-information on how to use them.
+The criteria +class+, +instance+, +role+, +title+, +workspace+, +machine+ and
++mark+ are actually regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc
+perlre+ for information on how to use them.
 
 [[exec]]
 === Executing applications (exec)
@@ -2114,7 +2212,7 @@ output::
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
 focus next|prev [sibling]
-focus output left|right|up|down|primary|<output>
+focus output left|right|down|up|current|primary|next|<output1> [output2]…
 ----------------------------------------------
 
 *Examples*:
@@ -2134,6 +2232,9 @@ bindsym $mod+u focus parent
 # Focus last floating/tiling container
 bindsym $mod+g focus mode_toggle
 
+# Focus the next output (effectively toggles when you only have two outputs)
+bindsym $mod+x move workspace to output next
+
 # Focus the output right to the current one
 bindsym $mod+x focus output right
 
@@ -2142,6 +2243,9 @@ bindsym $mod+x focus output HDMI-2
 
 # Focus the primary output
 bindsym $mod+x focus output primary
+
+# Cycle focus between outputs VGA1 and LVDS1 but not DVI0
+bindsym $mod+x move workspace to output VGA1 LVDS1
 -------------------------------------------------
 
 Note that you might not have a primary output configured yet. To do so, run:
@@ -2275,9 +2379,8 @@ exhausting numbered ones and looks for numbered ones after exhausting named ones
 See <<move_to_outputs>> for how to move a container/workspace to a different
 RandR output.
 
-Workspace names are parsed as
-https://developer.gnome.org/pango/stable/pango-Markup.html[Pango markup]
-by i3bar.
+Workspace names are parsed as https://developer.gnome.org/pango/1.46/[Pango
+markup] by i3bar.
 
 [[back_and_forth]]
 To switch back to the previously focused workspace, use +workspace
@@ -2402,15 +2505,18 @@ To move a container to another RandR output (addressed by names like +LVDS1+ or
 
 *Syntax*:
 ------------------------------------------------------------
-move container to output left|right|down|up|current|primary|<output>
-move workspace to output left|right|down|up|current|primary|<output>
-------------------------------------------------------------
+move container to output left|right|down|up|current|primary|next|<output1> [output2]…
+move workspace to output left|right|down|up|current|primary|next|<output1> [output2]…
+-------------------------------------------------------------------------------------
 
 *Examples*:
 --------------------------------------------------------
 # Move the current workspace to the next output
 # (effectively toggles when you only have two outputs)
-bindsym $mod+x move workspace to output right
+bindsym $mod+x move workspace to output next
+
+# Cycle this workspace between outputs VGA1 and LVDS1 but not DVI0
+bindsym $mod+x move workspace to output VGA1 LVDS1
 
 # Put this window on the presentation output.
 bindsym $mod+x move container to output VGA1
@@ -2418,6 +2524,11 @@ bindsym $mod+x move container to output VGA1
 # Put this window on the primary output.
 bindsym $mod+x move container to output primary
 --------------------------------------------------------
+
+If you specify more than one output, the container/workspace is cycled through
+them: If it is already in one of the outputs of the list, it will move to the
+next output in the list. If it is in an output not in the list, it will move to
+the first specified output. Non-existing outputs are skipped.
 
 Note that you might not have a primary output configured yet. To do so, run:
 -------------------------
@@ -2569,9 +2680,8 @@ unmark irssi
 
 By default, i3 will simply print the X11 window title. Using +title_format+,
 this can be customized by setting the format to the desired output. This
-directive supports
-https://developer.gnome.org/pango/stable/pango-Markup.html[Pango markup]
-and the following placeholders which will be replaced:
+directive supports https://developer.gnome.org/pango/1.46/[Pango markup] and the
+following placeholders which will be replaced:
 
 +%title+::
     For normal windows, this is the X11 window title (_NET_WM_NAME or WM_NAME
@@ -2584,6 +2694,9 @@ and the following placeholders which will be replaced:
 +%instance+::
     The X11 window instance (first part of WM_CLASS). This corresponds to the
     +instance+ criterion, see <<command_criteria>>.
++%machine+::
+    The X11 name of the machine (WM_CLIENT_MACHINE). This corresponds to the
+    +machine+ criterion, see <<command_criteria>>.
 
 Using the <<for_window>> directive, you can set the title format for any window
 based on <<command_criteria>>.
@@ -2603,6 +2716,32 @@ for_window [class=".*"] title_format "<b>%title</b>"
 
 # print window titles of firefox windows red
 for_window [class="(?i)firefox"] title_format "<span foreground='red'>%title</span>"
+-------------------------------------------------------------------------------------
+
+[[title_window_icon]]
+=== Window title icon
+
+By default, i3 does not display the window icon in the title bar.
+
+Starting with i3 v4.20, you can optionally enable window icons either for
+specific windows or for all windows (using the <<for_window>> directive).
+
+*Syntax*:
+-----------------------------
+title_window_icon <yes|no|toggle>
+title_window_icon <padding|toggle> <px>
+------------------------------
+
+*Examples*:
+-------------------------------------------------------------------------------------
+# show the window icon for the focused window to make it stand out
+bindsym $mod+p title_window_icon on
+
+# enable window icons for all windows
+for_window [all] title_window_icon on
+
+# enable window icons for all windows with extra horizontal padding
+for_window [all] title_window_icon padding 3px
 -------------------------------------------------------------------------------------
 
 === Changing border style
@@ -2634,9 +2773,15 @@ border 1pixel
 bindsym $mod+t border normal 0
 # use no window title and a thick border
 bindsym $mod+y border pixel 3
+# use window title *and* a thick border
+bindsym $mod+y border normal 3
 # use neither window title nor border
 bindsym $mod+u border none
+# no border on VLC
+for_window [class="vlc"] border none
 ----------------------------------------------
+
+To change the default for all windows, see the directive <<default_border>>.
 
 [[shmlog]]
 === Enabling shared memory logging

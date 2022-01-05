@@ -15,6 +15,7 @@
 #include "queue.h"
 #include "i3.h"
 
+typedef struct IncludedFile IncludedFile;
 typedef struct Config Config;
 typedef struct Barconfig Barconfig;
 extern char *current_configpath;
@@ -22,6 +23,7 @@ extern char *current_config;
 extern Config config;
 extern SLIST_HEAD(modes_head, Mode) modes;
 extern TAILQ_HEAD(barconfig_head, Barconfig) barconfigs;
+extern TAILQ_HEAD(includedfiles_head, IncludedFile) included_files;
 
 /**
  * Used during the config file lexing/parsing to keep the state of the lexer
@@ -67,6 +69,18 @@ struct Variable {
     char *next_match;
 
     SLIST_ENTRY(Variable) variables;
+};
+
+/**
+ * List entry struct for an included file.
+ *
+ */
+struct IncludedFile {
+    char *path;
+    char *raw_contents;
+    char *variable_replaced_contents;
+
+    TAILQ_ENTRY(IncludedFile) files;
 };
 
 /**
@@ -225,9 +239,11 @@ struct Config {
         color_t background;
         struct Colortriple focused;
         struct Colortriple focused_inactive;
+        struct Colortriple focused_tab_title;
         struct Colortriple unfocused;
         struct Colortriple urgent;
         struct Colortriple placeholder;
+        bool got_focused_tab_title;
     } client;
     struct config_bar {
         struct Colortriple focused;

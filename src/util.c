@@ -177,15 +177,6 @@ void exec_i3_utility(char *name, char *argv[]) {
 }
 
 /*
- * Checks if the given path exists by calling stat().
- *
- */
-bool path_exists(const char *path) {
-    struct stat buf;
-    return (stat(path, &buf) == 0);
-}
-
-/*
  * Goes through the list of arguments (for exec()) and add/replace the given option,
  * including the option name, its argument, and the option character.
  */

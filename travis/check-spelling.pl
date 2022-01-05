@@ -11,6 +11,7 @@ use warnings;
 use v5.10;
 use autodie;
 use lib 'testcases/lib';
+use lib '/usr/share/lintian/lib';
 use i3test::Util qw(slurp);
 use Lintian::Spelling qw(check_spelling);
 
@@ -21,8 +22,6 @@ use Lintian::Profile;
 my $profile = Lintian::Profile->new;
 $profile->load('debian', ['/usr/share/lintian']);
 
-Lintian::Data->set_vendor($profile);
-
 my $exitcode = 0;
 
 # Whitelist for spelling errors in manpages, in case the spell checker has
@@ -30,6 +29,7 @@ my $exitcode = 0;
 my $binary_spelling_exceptions = {
     #'exmaple' => 1, # Example for how to add entries to this whitelist.
     'betwen' => 1, # asan_flags.inc contains this spelling error.
+    'dissassemble' => 1, # https://reviews.llvm.org/D93902
 };
 my @binaries = qw(
     build/i3
@@ -41,7 +41,7 @@ my @binaries = qw(
     build/i3bar
 );
 for my $binary (@binaries) {
-    check_spelling(slurp($binary), $binary_spelling_exceptions, sub {
+    check_spelling($profile, slurp($binary), $binary_spelling_exceptions, sub {
         my ($current, $fixed) = @_;
         say STDERR qq|Binary "$binary" contains a spelling error: "$current" should be "$fixed"|;
         $exitcode = 1;
@@ -56,7 +56,7 @@ my $manpage_spelling_exceptions = {
 for my $name (glob('build/man/*.1')) {
     for my $line (split(/\n/, slurp($name))) {
         next if $line =~ /^\.\\\"/o;
-        check_spelling($line, $manpage_spelling_exceptions, sub {
+        check_spelling($profile, $line, $manpage_spelling_exceptions, sub {
             my ($current, $fixed) = @_;
             say STDERR qq|Manpage "$name" contains a spelling error: "$current" should be "$fixed"|;
             $exitcode = 1;

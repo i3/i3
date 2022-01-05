@@ -10,13 +10,16 @@
  */
 #include "all.h"
 
+#include <libgen.h>
+#include <unistd.h>
+
 #include <xkbcommon/xkbcommon.h>
 
 char *current_configpath = NULL;
-char *current_config = NULL;
 Config config;
 struct modes_head modes;
 struct barconfig_head barconfigs = TAILQ_HEAD_INITIALIZER(barconfigs);
+struct includedfiles_head included_files = TAILQ_HEAD_INITIALIZER(included_files);
 
 /*
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
@@ -194,6 +197,7 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     INIT_COLOR(config.client.focused_inactive, "#333333", "#5f676a", "#ffffff", "#484e50");
     INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888", "#292d2e");
     INIT_COLOR(config.client.urgent, "#2f343a", "#900000", "#ffffff", "#900000");
+    config.client.got_focused_tab_title = false;
 
     /* border and indicator color are ignored for placeholder contents */
     INIT_COLOR(config.client.placeholder, "#000000", "#0c0c0c", "#ffffff", "#000000");
@@ -225,8 +229,43 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
             "$XDG_CONFIG_HOME/i3/config, ~/.i3/config, $XDG_CONFIG_DIRS/i3/config "
             "and " SYSCONFDIR "/i3/config)");
     }
-    LOG("Parsing configfile %s\n", current_configpath);
-    const bool result = parse_file(current_configpath, load_type != C_VALIDATE);
+
+    IncludedFile *file;
+    while (!TAILQ_EMPTY(&included_files)) {
+        file = TAILQ_FIRST(&included_files);
+        FREE(file->path);
+        FREE(file->raw_contents);
+        FREE(file->variable_replaced_contents);
+        TAILQ_REMOVE(&included_files, file, files);
+        FREE(file);
+    }
+
+    char resolved_path[PATH_MAX] = {'\0'};
+    if (realpath(current_configpath, resolved_path) == NULL) {
+        die("realpath(%s): %s", current_configpath, strerror(errno));
+    }
+
+    file = scalloc(1, sizeof(IncludedFile));
+    file->path = sstrdup(resolved_path);
+    TAILQ_INSERT_TAIL(&included_files, file, files);
+
+    LOG("Parsing configfile %s\n", resolved_path);
+    struct stack stack;
+    memset(&stack, '\0', sizeof(struct stack));
+    struct parser_ctx ctx = {
+        .use_nagbar = (load_type != C_VALIDATE),
+        .assume_v4 = false,
+        .stack = &stack,
+    };
+    SLIST_INIT(&(ctx.variables));
+    const int result = parse_file(&ctx, resolved_path, file);
+    free_variables(&ctx);
+    if (result == -1) {
+        die("Could not open configuration file: %s\n", strerror(errno));
+    }
+
+    extract_workspace_names_from_bindings();
+    reorder_bindings();
 
     if (config.font.type == FONT_TYPE_NONE && load_type != C_VALIDATE) {
         ELOG("You did not specify required configuration option \"font\"\n");
@@ -245,5 +284,5 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
         xcb_flush(conn);
     }
 
-    return result;
+    return result == 0;
 }

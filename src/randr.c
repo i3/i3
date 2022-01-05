@@ -439,28 +439,31 @@ void init_ws_for_output(Output *output) {
     Con *previous_focus = con_get_workspace(focused);
 
     /* Iterate over all workspaces and check if any of them should be assigned
-     * to this output. */
-    Con *output_con;
-    TAILQ_FOREACH (output_con, &(croot->nodes_head), nodes) {
-        if (con_is_internal(output_con)) {
+     * to this output.
+     * Note: in order to do that we iterate over all_cons and not using another
+     * list that would be updated during iteration by the
+     * workspace_move_to_output function. */
+    Con *workspace;
+    TAILQ_FOREACH (workspace, &all_cons, all_cons) {
+        if (workspace->type != CT_WORKSPACE || con_is_internal(workspace)) {
             continue;
         }
 
-        Con *workspace;
-        TAILQ_FOREACH (workspace, &(output_get_content(output_con)->nodes_head), nodes) {
-            Con *workspace_out = get_assigned_output(workspace->name, workspace->num);
-            if (output->con != workspace_out) {
-                continue;
-            }
+        Con *workspace_out = get_assigned_output(workspace->name, workspace->num);
 
-            DLOG("Moving workspace \"%s\" from output \"%s\" to \"%s\" due to assignment\n",
-                 workspace->name, workspace_out->name, output_primary_name(output));
-            /* Need to copy output's rect since content is not yet rendered. We
-             * can't call render_con here because render_output only proceeds
-             * if a workspace exists. */
-            content->rect = output->con->rect;
-            workspace_move_to_output(workspace, output);
+        if (output->con != workspace_out) {
+            continue;
         }
+
+        DLOG("Moving workspace \"%s\" from output \"%s\" to \"%s\" due to assignment\n",
+             workspace->name, output_primary_name(get_output_for_con(workspace)),
+             output_primary_name(output));
+
+        /* Need to copy output's rect since content is not yet rendered. We
+         * can't call render_con here because render_output only proceeds
+         * if a workspace exists. */
+        content->rect = output->con->rect;
+        workspace_move_to_output(workspace, output);
     }
 
     /* Temporarily set the focused container, might not be initialized yet. */

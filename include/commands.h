@@ -138,7 +138,7 @@ void cmd_mode(I3_CMD, const char *mode);
  * Implementation of 'move [window|container] [to] output <str>'.
  *
  */
-void cmd_move_con_to_output(I3_CMD, const char *name);
+void cmd_move_con_to_output(I3_CMD, const char *name, bool move_workspace);
 
 /**
  * Implementation of 'move [window|container] [to] mark <str>'.
@@ -343,3 +343,9 @@ void cmd_shmlog(I3_CMD, const char *argument);
  *
  */
 void cmd_debuglog(I3_CMD, const char *argument);
+
+/**
+ * Implementation of 'title_window_icon <yes|no|toggle>' and 'title_window_icon <padding|toggle> <px>'
+ *
+ */
+void cmd_title_window_icon(I3_CMD, const char *enable, int padding);

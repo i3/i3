@@ -74,6 +74,7 @@ my $expected = {
     workspace_layout => 'default',
     current_border_width => -1,
     marks => $ignore,
+    window_icon_padding => -1,
 };
 
 # a shallow copy is sufficient, since we only ignore values at the root

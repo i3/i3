@@ -6,7 +6,7 @@
 project(
   'i3',
   'c',
-  version: '4.19',
+  version: '4.20.1',
   default_options: [
     'c_std=c11',
     'warning_level=1',  # enable all warnings (-Wall)
@@ -229,6 +229,8 @@ if get_option('mans')
       output: '@BASENAME@.1',
       command: [
         xmlto,
+        '--stringparam',
+        'man.th.title.max.length=30',
         'man',
         '-o',
         '@OUTDIR@',
@@ -314,7 +316,7 @@ xcb_util_xrm_dep = dependency('xcb-xrm', method: 'pkg-config')
 xkbcommon_dep = dependency('xkbcommon', method: 'pkg-config')
 xkbcommon_x11_dep = dependency('xkbcommon-x11', method: 'pkg-config')
 yajl_dep = dependency('yajl', method: 'pkg-config')
-libpcre_dep = dependency('libpcre', version: '>=8.10', method: 'pkg-config')
+libpcre_dep = dependency('libpcre2-8', version: '>=10', method: 'pkg-config')
 cairo_dep = dependency('cairo', version: '>=1.14.4', method: 'pkg-config')
 pangocairo_dep = dependency('pangocairo', method: 'pkg-config')
 glib_dep = dependency('glib-2.0', method: 'pkg-config')
@@ -325,6 +327,8 @@ ev_dep = cc.find_library('ev')
 inc = include_directories('include')
 
 libi3srcs = [
+  'libi3/boolstr.c',
+  'libi3/create_socket.c',
   'libi3/dpi.c',
   'libi3/draw_util.c',
   'libi3/fake_configure_notify.c',
@@ -341,11 +345,15 @@ libi3srcs = [
   'libi3/ipc_recv_message.c',
   'libi3/ipc_send_message.c',
   'libi3/is_debug_build.c',
+  'libi3/path_exists.c',
   'libi3/resolve_tilde.c',
   'libi3/root_atom_contents.c',
   'libi3/safewrappers.c',
   'libi3/string.c',
   'libi3/ucs2_conversion.c',
+  'libi3/nonblock.c',
+  'libi3/screenshot_wallpaper.c',
+  'libi3/is_background_set.c',
 ]
 
 if not cdata.get('HAVE_STRNDUP')
@@ -643,7 +651,7 @@ if get_option('docs')
       '@OUTPUT@',
     ],
     install: true,
-    install_dir: join_paths(get_option('datadir'), 'doc', 'i3'),
+    install_dir: docdir,
   )
 
   custom_target(
@@ -656,7 +664,7 @@ if get_option('docs')
       '@OUTPUT@',
     ],
     install: true,
-    install_dir: join_paths(get_option('datadir'), 'doc', 'i3'),
+    install_dir: docdir,
   )
 endif
 
@@ -713,6 +721,7 @@ if meson.version().version_compare('>=0.46.0')
       anyevent_i3,
       i3test_pm,
     ],
+    timeout: 120,  # Default of 30 seconds can cause timeouts on slower machines
   )
 else
   # meson < 0.46.0 does not support the depends arg in test targets.

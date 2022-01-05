@@ -24,6 +24,9 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <xcb/xcb_atom.h>
+#include <xcb/xinerama.h>
+#include <xcb/bigreq.h>
 
 #ifdef I3_ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
@@ -62,6 +65,9 @@ xcb_timestamp_t last_timestamp = XCB_CURRENT_TIME;
 
 xcb_screen_t *root_screen;
 xcb_window_t root;
+
+xcb_window_t wm_sn_selection_owner;
+xcb_atom_t wm_sn;
 
 /* Color depth, visual id and colormap to use when creating windows and
  * pixmaps. Will use 32 bit depth and an appropriate visual, if available,
@@ -181,6 +187,9 @@ static void i3_exit(void) {
     }
     ipc_shutdown(SHUTDOWN_REASON_EXIT, -1);
     unlink(config.ipc_socket_path);
+    if (current_log_stream_socket_path != NULL) {
+        unlink(current_log_stream_socket_path);
+    }
     xcb_disconnect(conn);
 
     /* If a nagbar is active, kill it */
@@ -279,6 +288,7 @@ int main(int argc, char *argv[]) {
     char *fake_outputs = NULL;
     bool disable_signalhandler = false;
     bool only_check_config = false;
+    bool replace_wm = false;
     static struct option long_options[] = {
         {"no-autostart", no_argument, 0, 'a'},
         {"config", required_argument, 0, 'c'},
@@ -301,6 +311,7 @@ int main(int argc, char *argv[]) {
         {"fake_outputs", required_argument, 0, 0},
         {"fake-outputs", required_argument, 0, 0},
         {"force-old-config-parser-v4.4-only", no_argument, 0, 0},
+        {"replace", no_argument, 0, 'r'},
         {0, 0, 0, 0}};
     int option_index = 0, opt;
 
@@ -325,7 +336,7 @@ int main(int argc, char *argv[]) {
 
     start_argv = argv;
 
-    while ((opt = getopt_long(argc, argv, "c:CvmaL:hld:V", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "c:CvmaL:hld:Vr", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'a':
                 LOG("Autostart disabled using -a\n");
@@ -362,6 +373,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'l':
                 /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
+                break;
+            case 'r':
+                replace_wm = true;
                 break;
             case 0:
                 if (strcmp(long_options[option_index].name, "force-xinerama") == 0 ||
@@ -442,6 +456,9 @@ int main(int argc, char *argv[]) {
                                 "\tto 0 disables SHM logging entirely.\n"
                                 "\tThe default is %d bytes.\n",
                         shmlog_size);
+                fprintf(stderr, "\n");
+                fprintf(stderr, "\t--replace\n"
+                                "\tReplace an existing window manager.\n");
                 fprintf(stderr, "\n");
                 fprintf(stderr, "If you pass plain text arguments, i3 will interpret them as a command\n"
                                 "to send to a currently running i3 (like i3-msg). This allows you to\n"
@@ -570,6 +587,21 @@ int main(int argc, char *argv[]) {
     root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
 
+    /* Prefetch X11 extensions that we are interested in. */
+    xcb_prefetch_extension_data(conn, &xcb_xkb_id);
+    xcb_prefetch_extension_data(conn, &xcb_shape_id);
+    /* BIG-REQUESTS is used by libxcb internally. */
+    xcb_prefetch_extension_data(conn, &xcb_big_requests_id);
+    if (force_xinerama) {
+        xcb_prefetch_extension_data(conn, &xcb_xinerama_id);
+    } else {
+        xcb_prefetch_extension_data(conn, &xcb_randr_id);
+    }
+
+    /* Prepare for us to get a current timestamp as recommended by ICCCM */
+    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){XCB_EVENT_MASK_PROPERTY_CHANGE});
+    xcb_change_property(conn, XCB_PROP_MODE_APPEND, root, XCB_ATOM_SUPERSCRIPT_X, XCB_ATOM_CARDINAL, 32, 0, "");
+
     /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
@@ -599,6 +631,8 @@ int main(int argc, char *argv[]) {
         visual_type = get_visualtype(root_screen);
     }
 
+    xcb_prefetch_maximum_request_length(conn);
+
     init_dpi();
 
     DLOG("root_depth = %d, visual_id = 0x%08x.\n", root_depth, visual_type->visual_id);
@@ -608,6 +642,22 @@ int main(int argc, char *argv[]) {
 
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
     xcb_query_pointer_cookie_t pointercookie = xcb_query_pointer(conn, root);
+
+    /* Get the PropertyNotify event we caused above */
+    xcb_flush(conn);
+    {
+        xcb_generic_event_t *event;
+        DLOG("waiting for PropertyNotify event\n");
+        while ((event = xcb_wait_for_event(conn)) != NULL) {
+            if (event->response_type == XCB_PROPERTY_NOTIFY) {
+                last_timestamp = ((xcb_property_notify_event_t *)event)->time;
+                free(event);
+                break;
+            }
+            free(event);
+        }
+        DLOG("got timestamp %d\n", last_timestamp);
+    }
 
     /* Setup NetWM atoms */
 #define xmacro(name)                                                                       \
@@ -633,9 +683,111 @@ int main(int argc, char *argv[]) {
         else
             config.ipc_socket_path = sstrdup(config.ipc_socket_path);
     }
+    /* Create the UNIX domain socket for IPC */
+    int ipc_socket = create_socket(config.ipc_socket_path, &current_socketpath);
+    if (ipc_socket == -1) {
+        die("Could not create the IPC socket: %s", config.ipc_socket_path);
+    }
 
     if (config.force_xinerama) {
         force_xinerama = true;
+    }
+
+    /* Acquire the WM_Sn selection. */
+    {
+        /* Get the WM_Sn atom */
+        char *atom_name = xcb_atom_name_by_screen("WM_S", conn_screen);
+        wm_sn_selection_owner = xcb_generate_id(conn);
+
+        if (atom_name == NULL) {
+            ELOG("xcb_atom_name_by_screen(\"WM_S\", %d) failed, exiting\n", conn_screen);
+            return 1;
+        }
+
+        xcb_intern_atom_reply_t *atom_reply;
+        atom_reply = xcb_intern_atom_reply(conn,
+                                           xcb_intern_atom_unchecked(conn,
+                                                                     0,
+                                                                     strlen(atom_name),
+                                                                     atom_name),
+                                           NULL);
+        free(atom_name);
+        if (atom_reply == NULL) {
+            ELOG("Failed to intern the WM_Sn atom, exiting\n");
+            return 1;
+        }
+        wm_sn = atom_reply->atom;
+        free(atom_reply);
+
+        /* Check if the selection is already owned */
+        xcb_get_selection_owner_reply_t *selection_reply =
+            xcb_get_selection_owner_reply(conn,
+                                          xcb_get_selection_owner(conn, wm_sn),
+                                          NULL);
+        if (selection_reply && selection_reply->owner != XCB_NONE && !replace_wm) {
+            ELOG("Another window manager is already running (WM_Sn is owned)");
+            return 1;
+        }
+
+        /* Become the selection owner */
+        xcb_create_window(conn,
+                          root_screen->root_depth,
+                          wm_sn_selection_owner, /* window id */
+                          root_screen->root,     /* parent */
+                          -1, -1, 1, 1,          /* geometry */
+                          0,                     /* border width */
+                          XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                          root_screen->root_visual,
+                          0, NULL);
+        xcb_change_property(conn,
+                            XCB_PROP_MODE_REPLACE,
+                            wm_sn_selection_owner,
+                            XCB_ATOM_WM_CLASS,
+                            XCB_ATOM_STRING,
+                            8,
+                            (strlen("i3-WM_Sn") + 1) * 2,
+                            "i3-WM_Sn\0i3-WM_Sn\0");
+
+        xcb_set_selection_owner(conn, wm_sn_selection_owner, wm_sn, last_timestamp);
+
+        if (selection_reply && selection_reply->owner != XCB_NONE) {
+            unsigned int usleep_time = 100000; /* 0.1 seconds */
+            int check_rounds = 150;            /* Wait for a maximum of 15 seconds */
+            xcb_get_geometry_reply_t *geom_reply = NULL;
+
+            DLOG("waiting for old WM_Sn selection owner to exit");
+            do {
+                free(geom_reply);
+                usleep(usleep_time);
+                if (check_rounds-- == 0) {
+                    ELOG("The old window manager is not exiting");
+                    return 1;
+                }
+                geom_reply = xcb_get_geometry_reply(conn,
+                                                    xcb_get_geometry(conn, selection_reply->owner),
+                                                    NULL);
+            } while (geom_reply != NULL);
+        }
+        free(selection_reply);
+
+        /* Announce that we are the new owner */
+        /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
+         * In order to properly initialize these bytes, we allocate 32 bytes even
+         * though we only need less for an xcb_client_message_event_t */
+        union {
+            xcb_client_message_event_t message;
+            char storage[32];
+        } event;
+        memset(&event, 0, sizeof(event));
+        event.message.response_type = XCB_CLIENT_MESSAGE;
+        event.message.window = root_screen->root;
+        event.message.format = 32;
+        event.message.type = A_MANAGER;
+        event.message.data.data32[0] = last_timestamp;
+        event.message.data.data32[1] = wm_sn;
+        event.message.data.data32[2] = wm_sn_selection_owner;
+
+        xcb_send_event(conn, 0, root_screen->root, XCB_EVENT_MASK_STRUCTURE_NOTIFY, event.storage);
     }
 
     xcb_void_cookie_t cookie;
@@ -663,9 +815,6 @@ int main(int argc, char *argv[]) {
     xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
 
     const xcb_query_extension_reply_t *extreply;
-    xcb_prefetch_extension_data(conn, &xcb_xkb_id);
-    xcb_prefetch_extension_data(conn, &xcb_shape_id);
-
     extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
     xkb_supported = extreply->present;
     if (!extreply->present) {
@@ -844,19 +993,26 @@ int main(int argc, char *argv[]) {
 
     tree_render();
 
-    /* Create the UNIX domain socket for IPC */
-    int ipc_socket = ipc_create_socket(config.ipc_socket_path);
-    if (ipc_socket == -1) {
-        ELOG("Could not create the IPC socket, IPC disabled\n");
+    /* Listen to the IPC socket for clients */
+    struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
+    ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
+    ev_io_start(main_loop, ipc_io);
+
+    /* Chose a file name in /tmp/ based on the PID */
+    char *log_stream_socket_path = get_process_filename("log-stream-socket");
+    int log_socket = create_socket(log_stream_socket_path, &current_log_stream_socket_path);
+    free(log_stream_socket_path);
+    if (log_socket == -1) {
+        ELOG("Could not create the log socket, i3-dump-log -f will not work\n");
     } else {
-        struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
-        ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
-        ev_io_start(main_loop, ipc_io);
+        struct ev_io *log_io = scalloc(1, sizeof(struct ev_io));
+        ev_io_init(log_io, log_new_client, log_socket, EV_READ);
+        ev_io_start(main_loop, log_io);
     }
 
-    /* Also handle the UNIX domain sockets passed via socket activation. The
-     * parameter 1 means "remove the environment variables", we don’t want to
-     * pass these to child processes. */
+    /* Also handle the UNIX domain sockets passed via socket
+     * activation. The parameter 0 means "do not remove the
+     * environment variables", we need to be able to reexec. */
     listen_fds = sd_listen_fds(0);
     if (listen_fds < 0)
         ELOG("socket activation: Error in sd_listen_fds\n");
@@ -950,24 +1106,23 @@ int main(int argc, char *argv[]) {
     xcb_ungrab_server(conn);
 
     if (autostart) {
-        LOG("This is not an in-place restart, copying root window contents to a pixmap\n");
+        /* When the root's window background is set to NONE, that might mean
+         * that old content stays visible when a window is closed. That has
+         * unpleasant effect of "my terminal (does not seem to) close!".
+         *
+         * There does not seem to be an easy way to query for this problem, so
+         * we test for it: Open & close a window and check if the background is
+         * redrawn or the window contents stay visible.
+         */
+        LOG("This is not an in-place restart, checking if a wallpaper is set.\n");
+
         xcb_screen_t *root = xcb_aux_get_screen(conn, conn_screen);
-        uint16_t width = root->width_in_pixels;
-        uint16_t height = root->height_in_pixels;
-        xcb_pixmap_t pixmap = xcb_generate_id(conn);
-        xcb_gcontext_t gc = xcb_generate_id(conn);
-
-        xcb_create_pixmap(conn, root->root_depth, pixmap, root->root, width, height);
-
-        xcb_create_gc(conn, gc, root->root,
-                      XCB_GC_FUNCTION | XCB_GC_PLANE_MASK | XCB_GC_FILL_STYLE | XCB_GC_SUBWINDOW_MODE,
-                      (uint32_t[]){XCB_GX_COPY, ~0, XCB_FILL_STYLE_SOLID, XCB_SUBWINDOW_MODE_INCLUDE_INFERIORS});
-
-        xcb_copy_area(conn, root->root, pixmap, gc, 0, 0, 0, 0, width, height);
-        xcb_change_window_attributes(conn, root->root, XCB_CW_BACK_PIXMAP, (uint32_t[]){pixmap});
-        xcb_flush(conn);
-        xcb_free_gc(conn, gc);
-        xcb_free_pixmap(conn, pixmap);
+        if (is_background_set(conn, root)) {
+            LOG("A wallpaper is set, so no screenshot is necessary.\n");
+        } else {
+            LOG("No wallpaper set, copying root window contents to a pixmap\n");
+            set_screenshot_as_wallpaper(conn, root);
+        }
     }
 
 #if defined(__OpenBSD__)
@@ -1041,5 +1196,6 @@ int main(int argc, char *argv[]) {
      * when calling exit() */
     atexit(i3_exit);
 
+    sd_notify(1, "READY=1");
     ev_loop(main_loop, 0);
 }

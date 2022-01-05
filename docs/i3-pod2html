@@ -83,7 +83,7 @@ $parser->html_header_after_title(
 			<ul id="nav">
 				<li><a style="border-bottom: 2px solid #fff" href="/docs">Docs</a></li>
 				<li><a href="/screenshots">Screens</a></li>
-				<li><a href="https://www.reddit.com/r/i3wm/">FAQ</a></li>
+				<li><a href="https://www.github.com/i3/i3/discussions">Get Help</a></li>
 				<li><a href="/contact">Contact</a></li>
 				<li><a href="https://bugs.i3wm.org/">Bugs</a></li>
 			</ul>

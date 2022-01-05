@@ -185,9 +185,9 @@ Therefore, if you just start Emacs via dmenu, it will not get swallowed by that
 container. Only if you start Emacs with the proper instance name (+emacs24
 --name notmuch+), it will get swallowed.
 
-You can match on "class", "instance", "window_role" and "title". All values are
-case-sensitive regular expressions (PCRE). Use +xprop(1)+ and click into a
-window to see its properties:
+You can match on "class", "instance", "window_role", "title" and "machine". All
+values are case-sensitive regular expressions (PCRE). Use +xprop(1)+ and click
+into a window to see its properties:
 
 --------------------------------------------------------------------------------
 $ xprop
