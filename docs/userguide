@@ -667,19 +667,27 @@ default_orientation horizontal|vertical|auto
 default_orientation vertical
 ----------------------------
 
+[[layout_mode_for_new_containers]]
 === Layout mode for new containers
 
 This option determines in which mode new containers on workspace level will
 start.
 
+Use +reverse+ to have the workspace container prepend all new windows.  That is, 
+add new windows to the *left* (or *top*) of the currently selected window 
+(the default behaviour appends windows).
+
 *Syntax*:
 ---------------------------------------------
-workspace_layout default|stacking|tabbed
+workspace_layout default|stacking|tabbed [reverse]
 ---------------------------------------------
 
 *Example*:
 ---------------------
-workspace_layout tabbed
+workspace_layout stacking
+
+# add new windows to the left  
+workspace_layout tabbed reverse
 ---------------------
 
 === Window title alignment
@@ -2093,9 +2101,10 @@ bindsym $mod+p exec "notify-send \\"Hello, i3; from $USER\\""
 === Splitting containers
 
 The split command makes the current window a split container. Split containers
-can contain multiple windows. Depending on the layout of the split container,
-new windows get placed to the right of the current one (splith) or new windows
-get placed below the current one (splitv).
+can contain multiple windows. For horizontal layouts, new windows can be placed 
+to the right (splith) or left (splith reverse) or the current window.  For 
+vertical layouts, new windows can be placed to the bottom (splitv) or top 
+(splitv reverse) of the current window.
 
 If you apply this command to a split container with the same orientation,
 nothing will happen. If you use a different orientation, the split container’s
@@ -2112,10 +2121,26 @@ to cycle through with +layout toggle+, see <<manipulating_layout>>.
 split vertical|horizontal|toggle
 --------------------------------
 
+An alternate syntax is also provided which may be preferred for 
+<<reverse_layouts>>:
+--------------------------------
+split left|right|up|down
+--------------------------------
+
+where +split left+ creates a horizontal split layout, and +split up+ creates a
+vertical split layout each with a <<reverse_layouts, reverse fill order>> (i.e. new windows are placed 
+to the left or top of the current window, respectively).
+
++split right+ and +split down+ are aliases for +split horizontal+ and +split vertical+
+respectively, and are provided for consistency.
+
+
 *Example*:
 -------------------------------
 bindsym $mod+v split vertical
 bindsym $mod+h split horizontal
+bindsym $mod+v split up
+bindsym $mod+h split left
 bindsym $mod+t split toggle
 -------------------------------
 
@@ -2125,6 +2150,11 @@ bindsym $mod+t split toggle
 Use +layout toggle split+, +layout stacking+, +layout tabbed+, +layout splitv+
 or +layout splith+ to change the current container layout to splith/splitv,
 stacking, tabbed layout, splitv or splith, respectively.
+
+Add +reverse+ to +layout default+, +layout tabbed+, +layout stacking+, +layout splitv+
+or +layout splith+ to have the layout prepend all new windows.  That is, 
+add new windows to the *left* (or *top*) of the currently selected window 
+(the default behaviour appends windows).
 
 Specify up to four layouts after +layout toggle+ to cycle through them. Every
 time the command is executed, the layout specified after the currently active
@@ -2141,7 +2171,7 @@ enable+ respectively +floating disable+ (or +floating toggle+):
 
 *Syntax*:
 --------------------------------------------
-layout default|tabbed|stacking|splitv|splith
+layout default|tabbed|stacking|splitv|splith [reverse]
 layout toggle [split|all]
 layout toggle [split|tabbed|stacking|splitv|splith] [split|tabbed|stacking|splitv|splith]…
 --------------------------------------------
@@ -2150,7 +2180,7 @@ layout toggle [split|tabbed|stacking|splitv|splith] [split|tabbed|stacking|split
 --------------
 bindsym $mod+s layout stacking
 bindsym $mod+l layout toggle split
-bindsym $mod+w layout tabbed
+bindsym $mod+w layout tabbed reverse
 
 # Toggle between stacking/tabbed/split:
 bindsym $mod+x layout toggle
@@ -2173,6 +2203,33 @@ bindsym $mod+f fullscreen toggle
 # Toggle floating/tiling
 bindsym $mod+t floating toggle
 --------------
+
+[[reverse_layouts]]
+=== Reverse layouts and fill order
+
+Reverse layouts refer to the order that new windows are added to the 
+current container.  By default i3 *appends* new windows to a container.  That is,
+it adds new windows to the *right* or *bottom* of the currently selected window.
+
+Reversing a layout instead *prepends* new windows to the container.  That is, it adds
+new windows to the *left* or *top* of the currently selected window.
+
+This is is referred to as the *fill order* of the layout.
+
+To change the *fill order* of the current container layout use the +layout fill_order+ command.
+
+*Syntax*:
+----------------------------------------
+layout fill_order default|reverse|toggle
+----------------------------------------
+
+*Examples*:
+-------------------------------------------------
+# toggle the current container fill order
+bindsym $mod+t layout fill_order toggle
+-------------------------------------------------
+
+See also +reverse+ arguments in <<layout_mode_for_new_containers>> and <<manipulating_layout>>.
 
 [[_focusing_moving_containers]]
 === Focusing containers
