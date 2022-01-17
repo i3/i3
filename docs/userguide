@@ -1041,6 +1041,9 @@ workspace 5 output VGA1 LVDS1
 workspace "2: vim" output VGA1
 ---------------------------
 
+When adjusting your layout in the i3 config, you may need to reload i3 or
+exit/re-launch i3 entirely to apply the changes.
+
 === Changing colors
 
 You can change all colors which i3 uses to draw the window decorations.
