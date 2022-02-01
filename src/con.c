@@ -424,7 +424,12 @@ bool con_is_hidden(Con *con) {
  *
  */
 bool con_is_sticky(Con *con) {
-    if (con->sticky)
+    /*
+     * If a window is both sticky and fullscreen, don't consider it sticky, as it
+     * would then make no sense to switch between workspaces - user will only see this
+     * window
+     */
+    if (con->sticky && con->fullscreen_mode == CF_NONE)
         return true;
 
     Con *child;
