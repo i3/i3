@@ -696,11 +696,11 @@ int main(int argc, char *argv[]) {
     /* Acquire the WM_Sn selection. */
     {
         /* Get the WM_Sn atom */
-        char *atom_name = xcb_atom_name_by_screen("WM_S", conn_screen);
+        char *atom_name = xcb_atom_name_by_screen("WM", conn_screen);
         wm_sn_selection_owner = xcb_generate_id(conn);
 
         if (atom_name == NULL) {
-            ELOG("xcb_atom_name_by_screen(\"WM_S\", %d) failed, exiting\n", conn_screen);
+            ELOG("xcb_atom_name_by_screen(\"WM\", %d) failed, exiting\n", conn_screen);
             return 1;
         }
 
