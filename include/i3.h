@@ -56,7 +56,6 @@ extern xcb_timestamp_t last_timestamp;
 extern SnDisplay *sndisplay;
 extern xcb_key_symbols_t *keysyms;
 extern char **start_argv;
-extern Display *xlibdpy, *xkbdpy;
 extern int xkb_current_group;
 extern TAILQ_HEAD(bindings_head, Binding) *bindings;
 extern const char *current_binding_mode;
