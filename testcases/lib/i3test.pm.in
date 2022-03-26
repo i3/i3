@@ -42,6 +42,7 @@ our @EXPORT = qw(
     exit_forcefully
     workspace_exists
     focused_ws
+    focused_output
     get_socket_path
     launch_with_config
     get_i3_log
@@ -664,6 +665,25 @@ sub workspace_exists {
     (scalar grep { $_ eq $name } @{get_workspace_names()}) > 0;
 }
 
+=head2 focused_output
+
+Returns the name of the currently focused output.
+
+  is(focused_output, 'fake-0', 'i3 starts on output 0');
+
+=cut
+sub _focused_output {
+    my $i3 = i3(get_socket_path());
+    my $tree = $i3->get_tree->recv;
+    my $focused = $tree->{focus}->[0];
+    my $output = first { $_->{id} == $focused } @{$tree->{nodes}};
+    return $output;
+}
+
+sub focused_output {
+    return _focused_output->{name}
+}
+
 =head2 focused_ws
 
 Returns the name of the currently focused workspace.
@@ -672,11 +692,9 @@ Returns the name of the currently focused workspace.
   is($ws, '1', 'i3 starts on workspace 1');
 
 =cut
+
 sub focused_ws {
-    my $i3 = i3(get_socket_path());
-    my $tree = $i3->get_tree->recv;
-    my $focused = $tree->{focus}->[0];
-    my $output = first { $_->{id} == $focused } @{$tree->{nodes}};
+    my $output = _focused_output;
     my $content = first { $_->{type} eq 'con' } @{$output->{nodes}};
     my $first = first { $_->{fullscreen_mode} == 1 } @{$content->{nodes}};
     return $first->{name}
@@ -972,6 +990,8 @@ sub kill_all_windows {
     # Sync in case not all windows are managed by i3 just yet.
     sync_with_i3;
     cmd '[title=".*"] kill';
+    # Sync to make sure x_window_kill() calls have taken effect.
+    sync_with_i3;
 }
 
 =head2 events_for($subscribecb, [ $rettype ], [ $eventcbs ])

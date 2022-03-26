@@ -36,7 +36,7 @@ Instead of exiting right after receiving the first subscribed event,
 wait indefinitely for all of them. Can only be used with "-t subscribe".
 See the "subscribe" IPC message type below for details.
 
-*-q, --raw*::
+*-r, --raw*::
 Display the raw JSON reply instead of pretty-printing errors (for commands) or
 displaying the top-level config file contents (for GET_CONFIG).
 

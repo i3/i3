@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
 #include <xcb/xcb_keysyms.h>
@@ -292,6 +293,12 @@ size_t i3string_get_num_glyphs(i3String *str);
  *
  */
 int ipc_connect(const char *socket_path);
+
+/**
+ * Connects to the socket at the given path with no fallback paths. Returns
+ * -1 if connect() fails and die()s for other errors.
+ */
+int ipc_connect_impl(const char *socket_path);
 
 /**
  * Formats a message (payload) of the given size and type and sends it to i3 via

@@ -4,10 +4,9 @@ Michael Stapelberg <michael@i3wm.org>
 September 2012
 
 This document explains how the i3 testsuite works, how to use it and extend it.
-It is targeted at developers who not necessarily have been doing testing before
-or have not been testing in Perl before. In general, the testsuite is not of
+It is targeted at developers who haven't necessarily done testing before,
+or have not used Perl for testing before. In general, the testsuite is not of
 interest for end users.
-
 
 == Introduction
 

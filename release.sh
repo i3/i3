@@ -3,8 +3,8 @@
 
 set -eu
 
-export RELEASE_VERSION="4.19"
-export PREVIOUS_VERSION="4.18.3"
+export RELEASE_VERSION="4.20"
+export PREVIOUS_VERSION="4.19.2"
 export RELEASE_BRANCH="next"
 
 if [ ! -e "../i3.github.io" ]
@@ -22,7 +22,8 @@ fi
 
 if [ ! -e "RELEASE-NOTES-${RELEASE_VERSION}" ]
 then
-	echo "RELEASE-NOTES-${RELEASE_VERSION} not found."
+	echo "RELEASE-NOTES-${RELEASE_VERSION} not found. Here is the output from the generator:"
+	./release-notes/generator.pl --print-urls
 	exit 1
 fi
 
@@ -37,8 +38,8 @@ STARTDIR=$PWD
 
 TMPDIR=$(mktemp -d)
 cd $TMPDIR
-if ! wget https://i3wm.org/downloads/i3-${PREVIOUS_VERSION}.tar.bz2; then
-	echo "Could not download i3-${PREVIOUS_VERSION}.tar.bz2 (required for comparing files)."
+if ! wget https://i3wm.org/downloads/i3-${PREVIOUS_VERSION}.tar.xz; then
+	echo "Could not download i3-${PREVIOUS_VERSION}.tar.xz (required for comparing files)."
 	exit 1
 fi
 git clone --quiet --branch "${RELEASE_BRANCH}" https://github.com/i3/i3
@@ -99,6 +100,11 @@ git config --add remote.origin.push "+refs/heads/stable:refs/heads/stable"
 
 cd "${TMPDIR}"
 mkdir debian
+
+# Copy over the changelog because we expect it to be locally modified in the
+# start directory.
+cp "${STARTDIR}/debian/changelog" i3/debian/changelog
+(cd i3 && git add debian/changelog && git commit -m 'Update debian/changelog')
 
 cat > ${TMPDIR}/Dockerfile <<EOT
 FROM debian:sid

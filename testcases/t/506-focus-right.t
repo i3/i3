@@ -149,32 +149,25 @@ sync_with_i3;
 # Ensure that focusing right/left works in the expected order.
 ############################################################################
 
-sub get_focused_output {
-    my $tree = i3(get_socket_path())->get_tree->recv;
-    my ($focused_id) = @{$tree->{focus}};
-    my ($output) = grep { $_->{id} == $focused_id } @{$tree->{nodes}};
-    return $output->{name};
-}
-
-is(get_focused_output(), 'fake-0', 'focus on fake-0');
+is(focused_output, 'fake-0', 'focus on fake-0');
 
 cmd 'focus output right';
-is(get_focused_output(), 'fake-1', 'focus on fake-1');
+is(focused_output, 'fake-1', 'focus on fake-1');
 
 cmd 'focus output right';
-is(get_focused_output(), 'fake-2', 'focus on fake-2');
+is(focused_output, 'fake-2', 'focus on fake-2');
 
 cmd 'focus output left';
-is(get_focused_output(), 'fake-1', 'focus on fake-1');
+is(focused_output, 'fake-1', 'focus on fake-1');
 
 cmd 'focus output left';
-is(get_focused_output(), 'fake-0', 'focus on fake-0');
+is(focused_output, 'fake-0', 'focus on fake-0');
 
 cmd 'focus output left';
-is(get_focused_output(), 'fake-2', 'focus on fake-2 (wrapping)');
+is(focused_output, 'fake-2', 'focus on fake-2 (wrapping)');
 
 cmd 'focus output right';
-is(get_focused_output(), 'fake-0', 'focus on fake-0 (wrapping)');
+is(focused_output, 'fake-0', 'focus on fake-0 (wrapping)');
 
 exit_gracefully($pid);
 
