@@ -10,22 +10,41 @@
 #include "all.h"
 
 /*
+ * Returns the depth of the given container in the tree (i.e. the number of
+ * edges between the node and the root)
+ *
+ */
+static int depth_in_tree(Con *con) {
+    int ans = 0;
+    while (con->parent) {
+        con = con->parent;
+        ++ans;
+    }
+    return ans;
+}
+
+/*
  * Returns the lowest container in the tree that has both a and b as descendants.
  *
  */
 static Con *lowest_common_ancestor(Con *a, Con *b) {
-    Con *parent_a = a;
-    while (parent_a) {
-        Con *parent_b = b;
-        while (parent_b) {
-            if (parent_a == parent_b) {
-                return parent_a;
-            }
-            parent_b = parent_b->parent;
-        }
-        parent_a = parent_a->parent;
+    int depth_a = depth_in_tree(a);
+    int depth_b = depth_in_tree(b);
+    if (depth_a > depth_b) {
+        SWAP(a, b, Con *);
+        SWAP(depth_a, depth_b, int);
     }
-    assert(false);
+    // Bring them to the same level
+    while (depth_a < depth_b) {
+        b = b->parent;
+        --depth_b;
+    }
+    // Step by step decrease level until they meet
+    while (a != b) {
+        a = a->parent;
+        b = b->parent;
+    }
+    return a;
 }
 
 /*
