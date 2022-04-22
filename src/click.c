@@ -183,9 +183,7 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
 
     /* 7: floating modifier pressed, initiate a resize */
     if (dest == CLICK_INSIDE && mod_pressed && is_right_click) {
-        if (floating_mod_on_tiled_client(con, event)) {
-            return;
-        }
+        floating_mod_on_tiled_client(con, event);
         /* Avoid propagating events to clients, since the user expects
          * $mod+click to be handled by i3. */
         xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, event->time);
