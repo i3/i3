@@ -228,10 +228,19 @@ static void move_to_output_directed(Con *con, direction_t direction) {
          * the focused container, con, is now a child of ws. To work around this
          * and still produce the correct workspace focus events (see
          * 517-regress-move-direction-ipc.t) we need to temporarily set focused
-         * to the old workspace. */
+         * to the old workspace.
+         *
+         * The following happen:
+         * 1. Focus con to push it on the top of the focus stack in its new
+         * workspace
+         * 2. Set focused to the old workspace to force workspace_show to
+         * execute
+         * 3. workspace_show will descend focus and target our con for
+         * focusing. This also ensures that the mouse warps correctly.
+         * See: #3518. */
+        con_focus(con);
         focused = old_ws;
         workspace_show(ws);
-        con_focus(con);
     }
 
     /* force re-painting the indicators */

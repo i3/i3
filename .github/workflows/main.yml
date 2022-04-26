@@ -45,12 +45,6 @@ jobs:
         echo "::group::Ubuntu i386"
         ./travis/skip-pkg.sh || docker pull ${{ env.BASENAME_UBUNTU_386 }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME_UBUNTU_386 }} travis/travis-base-ubuntu-386.Dockerfile
         echo "::endgroup::"
-    - name: verify safe wrapper functions are used
-      run: |
-        docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME }} ./travis/check-safe-wrappers.sh
-    - name: verify code formatting
-      run: |
-        docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME }} ./travis/check-formatting.sh
     - name: build i3
       run: |
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf build; mkdir -p build && cd build && CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Werror -fno-common" meson .. -Ddocs=true -Dmans=true -Db_sanitize=address && ninja -v'
@@ -92,3 +86,17 @@ jobs:
     - name: push docs to GitHub pages
       run: |
         ./travis/skip-pkg.sh || travis/deploy-github-pages.sh
+  formatting:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: check & print release notes
+      run: ./release-notes/generator.pl
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y clang-format-10
+    - name: Check formatting
+      run: clang-format-10 --dry-run --Werror $(git ls-files '*.c' '*.h')
+    - name: Verify safe wrapper functions are used
+      run: ./travis/check-safe-wrappers.sh

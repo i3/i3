@@ -467,24 +467,32 @@ CFGFUN(color_single, const char *colorclass, const char *color) {
 }
 
 CFGFUN(color, const char *colorclass, const char *border, const char *background, const char *text, const char *indicator, const char *child_border) {
-#define APPLY_COLORS(classname)                                                              \
-    do {                                                                                     \
-        if (strcmp(colorclass, "client." #classname) == 0) {                                 \
-            config.client.classname.border = draw_util_hex_to_color(border);                 \
-            config.client.classname.background = draw_util_hex_to_color(background);         \
-            config.client.classname.text = draw_util_hex_to_color(text);                     \
-            if (indicator != NULL) {                                                         \
-                config.client.classname.indicator = draw_util_hex_to_color(indicator);       \
-            }                                                                                \
-            if (child_border != NULL) {                                                      \
-                config.client.classname.child_border = draw_util_hex_to_color(child_border); \
-            } else {                                                                         \
-                config.client.classname.child_border = config.client.classname.background;   \
-            }                                                                                \
-        }                                                                                    \
+#define APPLY_COLORS(classname)                                                                              \
+    do {                                                                                                     \
+        if (strcmp(colorclass, "client." #classname) == 0) {                                                 \
+            if (strcmp("focused_tab_title", #classname) == 0) {                                              \
+                config.client.got_focused_tab_title = true;                                                  \
+                if (indicator || child_border) {                                                             \
+                    ELOG("indicator and child_border colors have no effect for client.focused_tab_title\n"); \
+                }                                                                                            \
+            }                                                                                                \
+            config.client.classname.border = draw_util_hex_to_color(border);                                 \
+            config.client.classname.background = draw_util_hex_to_color(background);                         \
+            config.client.classname.text = draw_util_hex_to_color(text);                                     \
+            if (indicator != NULL) {                                                                         \
+                config.client.classname.indicator = draw_util_hex_to_color(indicator);                       \
+            }                                                                                                \
+            if (child_border != NULL) {                                                                      \
+                config.client.classname.child_border = draw_util_hex_to_color(child_border);                 \
+            } else {                                                                                         \
+                config.client.classname.child_border = config.client.classname.background;                   \
+            }                                                                                                \
+            return;                                                                                          \
+        }                                                                                                    \
     } while (0)
 
     APPLY_COLORS(focused_inactive);
+    APPLY_COLORS(focused_tab_title);
     APPLY_COLORS(focused);
     APPLY_COLORS(unfocused);
     APPLY_COLORS(urgent);

@@ -56,7 +56,11 @@ sub kill_subtest {
     my $focus = AnyEvent->condvar;
 
     my @events = events_for(
-	sub { cmd $cmd },
+	sub {
+	    cmd $cmd;
+	    # Sync to make sure x_window_kill() calls have taken effect.
+	    sync_with_i3;
+	},
 	'window');
 
     is(scalar @events, 1, 'Received 1 event');

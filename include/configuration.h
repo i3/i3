@@ -238,9 +238,11 @@ struct Config {
         color_t background;
         struct Colortriple focused;
         struct Colortriple focused_inactive;
+        struct Colortriple focused_tab_title;
         struct Colortriple unfocused;
         struct Colortriple urgent;
         struct Colortriple placeholder;
+        bool got_focused_tab_title;
     } client;
     struct config_bar {
         struct Colortriple focused;

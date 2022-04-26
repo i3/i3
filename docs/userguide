@@ -1057,6 +1057,10 @@ client.focused::
 client.focused_inactive::
 	A client which is the focused one of its container, but it does not have
 	the focus at the moment.
+client.focused_tab_title::
+    Tab or stack container title that is the parent of the focused container
+    but not directly focused. Defaults to focused_inactive if not specified and
+    does not use the indicator and child_border colors.
 client.unfocused::
 	A client which is not the focused one of its container.
 client.urgent::
@@ -1100,7 +1104,7 @@ i3 uses Unix sockets to provide an IPC interface. This allows third-party
 programs to get information from i3, such as the current workspaces
 (to display a workspace bar), and to control i3.
 
-The IPC socket is enabled by default and will be created in
+By default, an IPC socket will be created in
 +$XDG_RUNTIME_DIR/i3/ipc-socket.%p+ if the directory is available, falling back
 to +/tmp/i3-%u.XXXXXX/ipc-socket.%p+, where +%u+ is your UNIX username, +%p+ is
 the PID of i3 and XXXXXX is a string of random characters from the portable
@@ -2208,7 +2212,7 @@ output::
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
 focus next|prev [sibling]
-focus output left|right|up|down|primary|<output>
+focus output left|right|down|up|current|primary|next|<output1> [output2]…
 ----------------------------------------------
 
 *Examples*:
@@ -2228,6 +2232,9 @@ bindsym $mod+u focus parent
 # Focus last floating/tiling container
 bindsym $mod+g focus mode_toggle
 
+# Focus the next output (effectively toggles when you only have two outputs)
+bindsym $mod+x move workspace to output next
+
 # Focus the output right to the current one
 bindsym $mod+x focus output right
 
@@ -2236,6 +2243,9 @@ bindsym $mod+x focus output HDMI-2
 
 # Focus the primary output
 bindsym $mod+x focus output primary
+
+# Cycle focus between outputs VGA1 and LVDS1 but not DVI0
+bindsym $mod+x move workspace to output VGA1 LVDS1
 -------------------------------------------------
 
 Note that you might not have a primary output configured yet. To do so, run:
@@ -2718,8 +2728,8 @@ specific windows or for all windows (using the <<for_window>> directive).
 
 *Syntax*:
 -----------------------------
-title_window_icon <yes|no>
-title_window_icon padding <px>
+title_window_icon <yes|no|toggle>
+title_window_icon <padding|toggle> <px>
 ------------------------------
 
 *Examples*:

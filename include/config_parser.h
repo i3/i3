@@ -41,18 +41,18 @@ struct parser_ctx {
     Match current_match;
 
     /* A list which contains the states that lead to the current state, e.g.
-   * INITIAL, WORKSPACE_LAYOUT.
-   * When jumping back to INITIAL, statelist_idx will simply be set to 1
-   * (likewise for other states, e.g. MODE or BAR).
-   * This list is used to process the nearest error token. */
+     * INITIAL, WORKSPACE_LAYOUT.
+     * When jumping back to INITIAL, statelist_idx will simply be set to 1
+     * (likewise for other states, e.g. MODE or BAR).
+     * This list is used to process the nearest error token. */
     int statelist[10];
     /* NB: statelist_idx points to where the next entry will be inserted */
     int statelist_idx;
 
     /*******************************************************************************
-   * The (small) stack where identified literals are stored during the parsing
-   * of a single config directive (like $workspace).
-   ******************************************************************************/
+     * The (small) stack where identified literals are stored during the parsing
+     * of a single config directive (like $workspace).
+     ******************************************************************************/
     struct stack *stack;
 
     struct variables_head variables;

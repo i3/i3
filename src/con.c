@@ -731,6 +731,41 @@ Con *con_by_mark(const char *mark) {
 }
 
 /*
+ * Start from a container and traverse the transient_for linked list. Returns
+ * true if target window is found in the list. Protects againsts potential
+ * cycles.
+ *
+ */
+bool con_find_transient_for_window(Con *start, xcb_window_t target) {
+    Con *transient_con = start;
+    int count = con_num_windows(croot);
+    while (transient_con != NULL &&
+           transient_con->window != NULL &&
+           transient_con->window->transient_for != XCB_NONE) {
+        DLOG("transient_con = 0x%08x, transient_con->window->transient_for = 0x%08x, target = 0x%08x\n",
+             transient_con->window->id, transient_con->window->transient_for, target);
+        if (transient_con->window->transient_for == target) {
+            return true;
+        }
+        Con *next_transient = con_by_window_id(transient_con->window->transient_for);
+        if (next_transient == NULL) {
+            break;
+        }
+        /* Some clients (e.g. x11-ssh-askpass) actually set WM_TRANSIENT_FOR to
+         * their own window id, so break instead of looping endlessly. */
+        if (transient_con == next_transient) {
+            break;
+        }
+        transient_con = next_transient;
+
+        if (count-- <= 0) { /* Avoid cycles, see #4404 */
+            break;
+        }
+    }
+    return false;
+}
+
+/*
  * Returns true if and only if the given containers holds the mark.
  *
  */
@@ -852,8 +887,6 @@ void con_unmark(Con *con, const char *name) {
 Con *con_for_window(Con *con, i3Window *window, Match **store_match) {
     Con *child;
     Match *match;
-    //DLOG("searching con for window %p starting at con %p\n", window, con);
-    //DLOG("class == %s\n", window->class_class);
 
     TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         TAILQ_FOREACH (match, &(child->swallow_head), matches) {
@@ -1012,8 +1045,8 @@ void con_fix_percent(Con *con) {
     Con *child;
     int children = con_num_children(con);
 
-    // calculate how much we have distributed and how many containers
-    // with a percentage set we have
+    /* calculate how much we have distributed and how many containers with a
+     * percentage set we have */
     double total = 0.0;
     int children_with_percent = 0;
     TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
@@ -1023,8 +1056,8 @@ void con_fix_percent(Con *con) {
         }
     }
 
-    // if there were children without a percentage set, set to a value that
-    // will make those children proportional to all others
+    /* if there were children without a percentage set, set to a value that
+     * will make those children proportional to all others */
     if (children_with_percent != children) {
         TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
             if (child->percent <= 0.0) {
@@ -1037,8 +1070,8 @@ void con_fix_percent(Con *con) {
         }
     }
 
-    // if we got a zero, just distribute the space equally, otherwise
-    // distribute according to the proportions we got
+    /* if we got a zero, just distribute the space equally, otherwise
+     * distribute according to the proportions we got */
     if (total == 0.0) {
         TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
             child->percent = 1.0 / children;
@@ -2202,7 +2235,6 @@ void con_set_urgency(Con *con, bool urgent) {
     } else
         DLOG("Discarding urgency WM_HINT because timer is running\n");
 
-    //CLIENT_LOG(con);
     if (con->window) {
         if (con->urgent) {
             gettimeofday(&con->window->urgent, NULL);
