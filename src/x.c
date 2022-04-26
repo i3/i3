@@ -1067,6 +1067,7 @@ void x_push_node(Con *con) {
             xcb_create_pixmap(conn, win_depth, con->frame_buffer.id, con->frame.id, width, height);
             draw_util_surface_init(conn, &(con->frame_buffer), con->frame_buffer.id,
                                    get_visualtype_by_id(get_visualid_by_depth(win_depth)), width, height);
+            draw_util_clear_surface(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
 
             /* For the graphics context, we disable GraphicsExposure events.
              * Those will be sent when a CopyArea request cannot be fulfilled
