@@ -268,7 +268,7 @@ static void handle_map_request(xcb_map_request_event_t *event) {
  * Configure requests are received when the application wants to resize windows
  * on their own.
  *
- * We generate a synthethic configure notify event to signalize the client its
+ * We generate a synthetic configure notify event to signalize the client its
  * "new" position.
  *
  */
@@ -799,7 +799,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
     } else if (event->type == A_WM_CHANGE_STATE) {
         /* http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.4 */
         if (event->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
-            /* For compatiblity reasons, Wine will request iconic state and cannot ensure that the WM has agreed on it;
+            /* For compatibility reasons, Wine will request iconic state and cannot ensure that the WM has agreed on it;
              * immediately revert to normal to avoid being stuck in a paused state. */
             DLOG("Client has requested iconic state, rejecting. (window = %08x)\n", event->window);
             long data[] = {XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE};
@@ -1182,7 +1182,7 @@ static bool handle_machine_change(Con *con, xcb_get_property_reply_t *prop) {
 }
 
 /*
- * Handles the _MOTIF_WM_HINTS property of specifing window deocration settings.
+ * Handles the _MOTIF_WM_HINTS property of specifying window deocration settings.
  *
  */
 static bool handle_motif_hints_change(Con *con, xcb_get_property_reply_t *prop) {

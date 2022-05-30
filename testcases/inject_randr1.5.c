@@ -433,7 +433,7 @@ int main(int argc, char *argv[]) {
             bound = true;
             /* Let the user know bind() was successful, so that they know the
              * error messages can be disregarded. */
-            fprintf(stderr, "Successfuly bound to %s\n", addr.sun_path);
+            fprintf(stderr, "Successfully bound to %s\n", addr.sun_path);
             sun_path = sstrdup(addr.sun_path);
             break;
         }

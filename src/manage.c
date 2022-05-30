@@ -123,7 +123,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     geomc = xcb_get_geometry(conn, d);
 
-    /* Check if the window is mapped (it could be not mapped when intializing and
+    /* Check if the window is mapped (it could be not mapped when initializing and
        calling manage_window() for every window) */
     if ((attr = xcb_get_window_attributes_reply(conn, cookie, 0)) == NULL) {
         DLOG("Could not get attributes\n");

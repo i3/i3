@@ -55,7 +55,7 @@ sync_with_i3;
 
 # Check that the windows are on the correct output
 is_deeply(scalar $win_on_first_output->rect, $orig_rect1, "first window spans the first output");
-is_deeply(scalar $win_on_second_output->rect, $orig_rect2, "second window spans the sencond output");
+is_deeply(scalar $win_on_second_output->rect, $orig_rect2, "second window spans the second output");
 
 # Check that both windows remained fullscreen
 my $tree = i3(get_socket_path())->get_tree->recv;

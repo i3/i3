@@ -538,7 +538,7 @@ for the keybinding.
 # The middle button over a titlebar kills the window
 bindsym --release button2 kill
 
-# The middle button and a modifer over any part of the window kills the window
+# The middle button and a modifier over any part of the window kills the window
 bindsym --whole-window $mod+button2 kill
 
 # The right button toggles floating
