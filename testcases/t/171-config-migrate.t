@@ -267,7 +267,7 @@ like($output->[2], qr|^bindsym Mod1\+f resize shrink right 20 px$|, 'resize righ
 like($output->[3], qr|^bindsym Mod1\+f resize grow down 23 px$|, 'resize bottom changed');
 
 #####################################################################
-# also resizing, but with indention this time
+# also resizing, but with indentation this time
 #####################################################################
 
 like($output->[4], qr|^bindsym Mod1\+f resize grow left 10 px$|, 'resize left changed');

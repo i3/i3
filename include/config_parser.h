@@ -61,7 +61,7 @@ struct parser_ctx {
 };
 
 /**
- * An intermediate reprsentation of the result of a parse_config call.
+ * An intermediate representation of the result of a parse_config call.
  * Currently unused, but the JSON output will be useful in the future when we
  * implement a config parsing IPC command.
  *
