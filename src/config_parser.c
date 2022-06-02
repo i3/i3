@@ -438,7 +438,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
             const char *error_line = start_of_line(walk, input);
 
             /* Contains the same amount of characters as 'input' has, but with
-             * the unparseable part highlighted using ^ characters. */
+             * the unparsable part highlighted using ^ characters. */
             char *position = scalloc(strlen(error_line) + 1, 1);
             const char *copywalk;
             for (copywalk = error_line;

@@ -26,3 +26,8 @@ COPY debian/control /usr/src/i3-debian-packaging/control
 RUN linux32 apt-get update && \
     DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends -y' /usr/src/i3-debian-packaging/control && \
     rm -rf /var/lib/apt/lists/*
+
+# The user outside of Docker (GitHub Actions CI runner) and inside of Docker
+# (root) are different, and newer versions of git error out in that scenario.
+# To fix this, explicitly configure /usr/src/i3 as a safe directory:
+RUN git config --global --add safe.directory /usr/src/i3

@@ -43,9 +43,9 @@ void init_ctx(void *connptr) {
  *   |   C   |
  *   +-------+
  *
- * - Zone A is completly opaque.
+ * - Zone A is completely opaque.
  * - Zone B is clickable through (input shape).
- * - Zone C is completly transparent (bounding shape).
+ * - Zone C is completely transparent (bounding shape).
  */
 void set_shape(long window_id) {
     xcb_rectangle_t bounding_rectangle = { 0, 0, 100, 50 };

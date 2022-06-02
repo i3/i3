@@ -80,7 +80,7 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
  */
 static bool floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *event) {
     /* The client is in tiling layout. We can still initiate a resize with the
-     * right mouse button, by chosing the border which is the most near one to
+     * right mouse button, by choosing the border which is the most near one to
      * the position of the mouse pointer */
     int to_right = con->rect.width - event->event_x,
         to_left = event->event_x,
