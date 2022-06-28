@@ -21,6 +21,8 @@ my %layouts = (
     '5' => 'stacked',
 );
 
+my %new_ws;
+
 my $i3 = i3();
 
 die "Could not connect to i3: $!" unless $i3->connect->recv();
@@ -29,19 +31,27 @@ die "Could not subscribe to the workspace event: $!" unless
     $i3->subscribe({
         workspace => sub {
             my ($msg) = @_;
-            return unless $msg->{change} eq 'focus';
+            return unless $msg->{change} eq 'focus' or $msg->{change} eq 'init';
             die "Your version of i3 is too old. You need >= v4.4"
                 unless exists($msg->{current});
             my $ws = $msg->{current};
 
-            # If the workspace already has children, don’t change the layout.
-            return unless scalar @{$ws->{nodes}} == 0;
-
             my $name = $ws->{name};
+           
+            # if the workspace is created, store it in $new_ws so we can set
+            # the layout on the first focus
+            if($msg->{change} eq 'init') {
+                return unless exists $layouts{$name};
+                $new_ws{$name} = 1 unless exists $new_ws{$name};
+                my $nodes = scalar @{$ws->{nodes}} == 0;
+                return
+            }
+
             my $con_id = $ws->{id};
 
-            return unless exists $layouts{$name};
+            return unless exists $new_ws{$name};
 
+            delete($new_ws{$name});
             $i3->command(qq|[con_id="$con_id"] layout | . $layouts{$name});
         },
         _error => sub {
