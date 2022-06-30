@@ -330,6 +330,9 @@ void tree_move(Con *con, direction_t direction) {
                     TAILQ_SWAP(con, swap, &(swap->parent->nodes_head), nodes);
                 }
 
+                /* redraw parents to ensure all parent split container titles are updated correctly */
+                con_force_split_parents_redraw(con);
+
                 ipc_send_window_event("move", con);
                 return;
             }
