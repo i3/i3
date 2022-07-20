@@ -10,6 +10,6 @@
 
 chairwm is a tiling window manager for X11 based on i3.
 
-For more information about chair, please see [the project's website](https://i3wm.org/) and [online documentation](https://i3wm.org/docs/).
+For more information about chairwm, please see [the project's website](https://i3wm.org/) and [online documentation](https://i3wm.org/docs/).
 
 For information about contributing to i3, please see [CONTRIBUTING.md](.github/CONTRIBUTING.md).
