@@ -8,7 +8,7 @@
 [![Packages](https://repology.org/badge/latest-versions/i3.svg)](https://repology.org/metapackage/i3/versions)
 [![Packages](https://repology.org/badge/tiny-repos/i3.svg)](https://repology.org/metapackage/i3/versions)
 
-chairwm is a tiling window manager for X11 basedon i3.
+chairwm is a tiling window manager for X11 based on i3.
 
 For more information about chair, please see [the project's website](https://i3wm.org/) and [online documentation](https://i3wm.org/docs/).
 
