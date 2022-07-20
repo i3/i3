@@ -1,4 +1,4 @@
-![Logo](docs/logo-30.png) i3: A tiling window manager
+![Logo](docs/logo-30.png) chairwm: A CHAIR tiling window manager
 =====================================================
 
 [![Build Status](https://github.com/i3/i3/actions/workflows/main.yml/badge.svg)](https://github.com/i3/i3/actions/workflows/main.yml)
