@@ -17,9 +17,5 @@ override_dh_auto_configure:
 	# Set -Ddocdir; the default is /usr/share/doc/i3
 	dh_auto_configure -- -Ddocdir=/usr/share/doc/i3-wm -Dmans=true
 
-override_dh_builddeb:
-	# bintray does not support xz currently.
-	dh_builddeb -- -Zgzip
-
 %:
 	dh $@ --buildsystem=meson

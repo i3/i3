@@ -14,7 +14,7 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
-# Verify that the corrent focus stack order is preserved after various
+# Verify that the current focus stack order is preserved after various
 # operations.
 use i3test i3_config => <<EOT;
 # i3 config file (v4)

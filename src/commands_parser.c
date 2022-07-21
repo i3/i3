@@ -390,7 +390,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             free(possible_tokens);
 
             /* Contains the same amount of characters as 'input' has, but with
-             * the unparseable part highlighted using ^ characters. */
+             * the unparsable part highlighted using ^ characters. */
             char *position = smalloc(len + 1);
             for (const char *copywalk = input; *copywalk != '\0'; copywalk++)
                 position[(copywalk - input)] = (copywalk >= walk ? '^' : ' ');

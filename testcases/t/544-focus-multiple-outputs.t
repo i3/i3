@@ -37,7 +37,7 @@ for (my $i = 1; $i < 9; $i++) {
 }
 
 ###############################################################################
-# Same as above but explicitely type all the outputs
+# Same as above but explicitly type all the outputs
 ###############################################################################
 
 is(focused_output, "fake-0", 'sanity check');

@@ -203,7 +203,7 @@ static uint32_t predict_statusline_length(bool use_short_text) {
         if (block->border)
             render->width += logical_px(block->border_left + block->border_right);
 
-        /* Compute offset and append for text aligment in min_width. */
+        /* Compute offset and append for text alignment in min_width. */
         if (block->min_width <= render->width) {
             render->x_offset = 0;
             render->x_append = 0;
