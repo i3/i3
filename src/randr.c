@@ -666,9 +666,9 @@ static bool randr_query_outputs_15(void) {
         new->primary = monitor_info->primary;
 
         new->changed =
-            update_if_necessary(&(new->rect.x), monitor_info->x) |
-            update_if_necessary(&(new->rect.y), monitor_info->y) |
-            update_if_necessary(&(new->rect.width), monitor_info->width) |
+            update_if_necessary(&(new->rect.x), monitor_info->x) ||
+            update_if_necessary(&(new->rect.y), monitor_info->y) ||
+            update_if_necessary(&(new->rect.width), monitor_info->width) ||
             update_if_necessary(&(new->rect.height), monitor_info->height);
 
         DLOG("name %s, x %d, y %d, width %d px, height %d px, width %d mm, height %d mm, primary %d, automatic %d\n",
@@ -743,9 +743,9 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         return;
     }
 
-    bool updated = update_if_necessary(&(new->rect.x), crtc->x) |
-                   update_if_necessary(&(new->rect.y), crtc->y) |
-                   update_if_necessary(&(new->rect.width), crtc->width) |
+    bool updated = update_if_necessary(&(new->rect.x), crtc->x) ||
+                   update_if_necessary(&(new->rect.y), crtc->y) ||
+                   update_if_necessary(&(new->rect.width), crtc->width) ||
                    update_if_necessary(&(new->rect.height), crtc->height);
     free(crtc);
     new->active = (new->rect.width != 0 && new->rect.height != 0);
@@ -943,7 +943,7 @@ void randr_query_outputs(void) {
             uint32_t width = min(other->rect.width, output->rect.width);
             uint32_t height = min(other->rect.height, output->rect.height);
 
-            if (update_if_necessary(&(output->rect.width), width) |
+            if (update_if_necessary(&(output->rect.width), width) ||
                 update_if_necessary(&(output->rect.height), height))
                 output->changed = true;
 
