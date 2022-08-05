@@ -183,3 +183,15 @@ position_t position_from_direction(direction_t direction);
  *
  */
 direction_t direction_from_orientation_position(orientation_t orientation, position_t position);
+
+/**
+ * Converts direction to a string representation.
+ *
+ */
+const char *direction_to_string(direction_t direction);
+
+/**
+ * Converts position to a string representation.
+ *
+ */
+const char *position_to_string(position_t position);

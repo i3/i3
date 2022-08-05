@@ -476,3 +476,35 @@ direction_t direction_from_orientation_position(orientation_t orientation, posit
         return position == BEFORE ? D_UP : D_DOWN;
     }
 }
+
+/*
+ * Converts direction to a string representation.
+ *
+ */
+const char *direction_to_string(direction_t direction) {
+    switch (direction) {
+        case D_LEFT:
+            return "left";
+        case D_RIGHT:
+            return "right";
+        case D_UP:
+            return "up";
+        case D_DOWN:
+            return "down";
+    }
+    return "invalid";
+}
+
+/*
+ * Converts position to a string representation.
+ *
+ */
+const char *position_to_string(position_t position) {
+    switch (position) {
+        case BEFORE:
+            return "before";
+        case AFTER:
+            return "after";
+    }
+    return "invalid";
+}
