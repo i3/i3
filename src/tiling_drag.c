@@ -312,7 +312,7 @@ void tiling_drag(Con *con, xcb_button_press_event_t *event) {
                 if (con->parent == target->parent && con_num_children(target->parent) == 2) {
                     target->parent->layout = layout;
                 } else {
-                    tree_split(target, orientation);
+                    tree_split(target, direction);
                 }
             }
 
