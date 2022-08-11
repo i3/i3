@@ -931,6 +931,41 @@ set_from_resource $<name> <resource_name> <fallback>
 set_from_resource $black i3wm.color0 #000000
 ----------------------------------------------------------------------------
 
+[[environment_variables]]
+=== Environment variables
+
+<<variables>> can also be created from environment variables.
+This is useful, for example, to pass along values which you need in other
+places.
+
+It important to note, however, that the variable must be known
+*by the time i3 is started*, so just because the variable is set by the time
+you open a shell doesn't mean it's set when i3 launches.
+
+Depending on how you start i3, you need to set environment variables in different
+places: if you start it with `startx`, you need to set them (either bei `export`ing
+them, or by sourcing some config file in which they are set) in your `~/.xinitrc`.
+If login via a display manager like SDDM, you need to check which files it reads on
+login (usually one of `~/.login`,  `~/.profile`, `~/.zprofile`, `~/.xsessionrc`,
+`~/.xsession`, etc.). It's best to check with the docs of your display manager and
+read https://unix.stackexchange.com/a/4628/[this].
+
+*Syntax*:
+----------------------------------------------------
+set_from_env $<name> <environment_variable> <fallback>
+----------------------------------------------------
+
+*Example*:
+----------------------------------------------------------------------------
+# The environment should contain a variable $FONT by the time the i3
+# config is loaded. So your xinitrc could look like:
+#     ...
+#     export FONT Hack
+#     ...
+#     exec i3
+set_from_env $font FONT fixed
+----------------------------------------------------------------------------
+
 [[assign_workspace]]
 === Automatically putting clients on specific workspaces
 
