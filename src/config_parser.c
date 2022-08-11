@@ -978,6 +978,39 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
             upsert_variable(&(ctx->variables), v_key, res_value);
             FREE(res_value);
             continue;
+        } else if (strcasecmp(key, "set_from_env") == 0) {
+            char env_var[512] = {'\0'};
+            char v_key[512];
+            char fallback[4096] = {'\0'};
+
+            /* Ensure that this string is terminated. For example, a user might
+             * want a variable to be empty if the resource can't be found and
+             * uses
+             *   set_from_env $foo FOO
+             * Without explicitly terminating the string first, sscanf() will
+             * leave it uninitialized, causing garbage in the config.*/
+            fallback[0] = '\0';
+
+            if (sscanf(value, "%511s %511s %4095[^\n]", v_key, env_var, fallback) < 1) {
+                ELOG("Failed to parse resource specification '%s', skipping it.\n", value);
+                invalid_sets = true;
+                continue;
+            }
+
+            if (v_key[0] != '$') {
+                ELOG("Malformed variable assignment, name has to start with $\n");
+                invalid_sets = true;
+                continue;
+            }
+
+            char *env_value = getenv(env_var);
+            if (env_value == NULL) {
+                DLOG("Could not get environment variable '%s', using fallback '%s'.\n", env_var, fallback);
+                env_value = sstrdup(fallback);
+            }
+
+            upsert_variable(&(ctx->variables), v_key, env_value);
+            continue;
         }
     }
     fclose(fstr);

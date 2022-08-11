@@ -20,6 +20,7 @@ state INITIAL:
   'set '                                   -> IGNORE_LINE
   'set	'                                  -> IGNORE_LINE
   'set_from_resource'                      -> IGNORE_LINE
+  'set_from_env'                           -> IGNORE_LINE
   'include'                                -> INCLUDE
   bindtype = 'bindsym', 'bindcode', 'bind' -> BINDING
   'bar'                                    -> BARBRACE
