@@ -67,6 +67,8 @@ static void query_screens(xcb_connection_t *conn) {
             s->rect.y = screen_info[screen].y_org;
             s->rect.width = screen_info[screen].width;
             s->rect.height = screen_info[screen].height;
+            s->remembered_x = -1;
+            s->remembered_y = -1;
             /* We always treat the screen at 0x0 as the primary screen */
             if (s->rect.x == 0 && s->rect.y == 0)
                 TAILQ_INSERT_HEAD(&outputs, s, outputs);

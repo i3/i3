@@ -312,6 +312,8 @@ Output *create_root_output(xcb_connection_t *conn) {
     s->rect.y = 0;
     s->rect.width = root_screen->width_in_pixels;
     s->rect.height = root_screen->height_in_pixels;
+    s->remembered_x = -1;
+    s->remembered_y = -1;
 
     struct output_name *output_name = scalloc(1, sizeof(struct output_name));
     output_name->name = "xroot-0";
@@ -663,6 +665,9 @@ static bool randr_query_outputs_15(void) {
         new->active = true;
         new->to_be_disabled = false;
 
+        new->remembered_x = -1;
+        new->remembered_y = -1;
+
         new->primary = monitor_info->primary;
 
         const bool update_x = update_if_necessary(&(new->rect.x), monitor_info->x);
@@ -755,6 +760,9 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         DLOG("width/height 0/0, disabling output\n");
         return;
     }
+
+    new->remembered_x = -1;
+    new->remembered_y = -1;
 
     DLOG("mode: %dx%d+%d+%d\n", new->rect.width, new->rect.height,
          new->rect.x, new->rect.y);
