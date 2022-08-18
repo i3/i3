@@ -1816,7 +1816,7 @@ void cmd_focus_output(I3_CMD, const char *name) {
  * Implementation of 'move [window|container] [to] [absolute] position [<pos_x> [px|ppt] <pos_y> [px|ppt]]
  *
  */
-void cmd_move_window_to_position(I3_CMD, long x, const char *mode_x, long y, const char *mode_y) {
+void cmd_move_window_to_position(I3_CMD, const char *method, long x, const char *mode_x, long y, const char *mode_y) {
     bool has_error = false;
 
     owindow *current;
@@ -1839,6 +1839,12 @@ void cmd_move_window_to_position(I3_CMD, long x, const char *mode_x, long y, con
 
         newrect.x = mode_x && strcmp(mode_x, "ppt") == 0 ? output->rect.width * ((double)x / 100.0) : x;
         newrect.y = mode_y && strcmp(mode_y, "ppt") == 0 ? output->rect.height * ((double)y / 100.0) : y;
+
+        if (strcmp(method, "position") == 0) {
+            newrect.x += output->rect.x;
+            newrect.y += output->rect.y;
+        }
+
         DLOG("moving to position %d %s %d %s\n", newrect.x, mode_x, newrect.y, mode_y);
 
         if (!floating_reposition(current->con->parent, newrect)) {

@@ -427,9 +427,9 @@ state MOVE_TO_POSITION_X:
 
 state MOVE_TO_POSITION_Y:
   mode_y = 'px', 'ppt'
-      -> call cmd_move_window_to_position(&coord_x, $mode_x, &coord_y, $mode_y)
+      -> call cmd_move_window_to_position($method, &coord_x, $mode_x, &coord_y, $mode_y)
   end
-      -> call cmd_move_window_to_position(&coord_x, $mode_x, &coord_y, 0)
+      -> call cmd_move_window_to_position($method, &coord_x, $mode_x, &coord_y, 0)
 
 # mode <string>
 state MODE:

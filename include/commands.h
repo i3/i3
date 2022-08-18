@@ -264,7 +264,7 @@ void cmd_focus_output(I3_CMD, const char *name);
  * Implementation of 'move [window|container] [to] [absolute] position [<pos_x> [px|ppt] <pos_y> [px|ppt]]
  *
  */
-void cmd_move_window_to_position(I3_CMD, long x, const char *mode_x, long y, const char *mode_y);
+void cmd_move_window_to_position(I3_CMD, const char *method, long x, const char *mode_x, long y, const char *mode_y);
 
 /**
  * Implementation of 'move [window|container] [to] [absolute] position center
