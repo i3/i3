@@ -565,7 +565,7 @@ state BAR_POSITION:
       -> call cfg_bar_position($position); BAR
 
 state BAR_OUTPUT:
-  output = string
+  output = word
       -> call cfg_bar_output($output); BAR
 
 state BAR_TRAY_OUTPUT:
