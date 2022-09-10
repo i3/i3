@@ -798,6 +798,8 @@ sub exit_gracefully {
     my ($pid, $socketpath) = @_;
     $socketpath ||= get_socket_path();
 
+    $SIG{CHLD} = undef;
+
     my $exited = 0;
     eval {
         say "Exiting i3 cleanly...";
@@ -835,6 +837,8 @@ C<launch_with_config>).
 sub exit_forcefully {
     my ($pid, $signal) = @_;
     $signal ||= 'TERM';
+
+    $SIG{CHLD} = undef;
 
     # Send the given signal to the i3 instance and wait for up to 10s
     # for it to terminate.
@@ -958,6 +962,18 @@ sub launch_with_config {
 
         return ${^CHILD_ERROR_NATIVE};
     }
+
+    $SIG{CHLD} = sub {
+	# don't change $! and $? outside handler
+	local ($!, $?);
+
+	my $child = waitpid -1, POSIX::WNOHANG;
+	warn "SIGCHLD, waitpid() = $child";
+	if ($child == $i3_pid) {
+	    warn "i3 died, exiting!";
+	    exit 1;
+	}
+    };
 
     # force update of the cached socket path in lib/i3test
     # as soon as i3 has started
