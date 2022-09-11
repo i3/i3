@@ -180,6 +180,11 @@ static char *current_mode;
 static bool current_mode_pango_markup;
 
 CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command) {
+    if (current_mode == NULL) {
+        /* When using an invalid mode name, e.g. “default” */
+        return;
+    }
+
     configure_binding(bindtype, modifiers, key, release, border, whole_window, exclude_titlebar, command, current_mode, current_mode_pango_markup);
 }
 
