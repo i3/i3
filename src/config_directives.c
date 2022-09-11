@@ -186,20 +186,27 @@ static char *current_mode;
 static bool current_mode_pango_markup;
 
 CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command) {
+    if (current_mode == NULL) {
+        /* When using an invalid mode name, e.g. “default” */
+        return;
+    }
+
     configure_binding(bindtype, modifiers, key, release, border, whole_window, exclude_titlebar, command, current_mode, current_mode_pango_markup);
 }
 
 CFGFUN(enter_mode, const char *pango_markup, const char *modename) {
     if (strcmp(modename, DEFAULT_BINDING_MODE) == 0) {
         ELOG("You cannot use the name %s for your mode\n", DEFAULT_BINDING_MODE);
-    } else {
-        struct Mode *mode;
-        SLIST_FOREACH (mode, &modes, modes) {
-            if (strcmp(mode->name, modename) == 0) {
-                ELOG("The binding mode with name \"%s\" is defined at least twice.\n", modename);
-            }
+        return;
+    }
+
+    struct Mode *mode;
+    SLIST_FOREACH (mode, &modes, modes) {
+        if (strcmp(mode->name, modename) == 0) {
+            ELOG("The binding mode with name \"%s\" is defined at least twice.\n", modename);
         }
     }
+
     DLOG("\t now in mode %s\n", modename);
     FREE(current_mode);
     current_mode = sstrdup(modename);
