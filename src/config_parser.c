@@ -1001,9 +1001,14 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
         char *next;
         for (next = bufcopy;
              next < (bufcopy + stbuf.st_size) &&
-             (next = strcasestr(next, current->key)) != NULL;
-             next += strlen(current->key)) {
-            *next = '_';
+             (next = strcasestr(next, current->key)) != NULL;) {
+            /* We need to invalidate variables completely (otherwise we may count
+             * the same variable more than once, thus causing buffer overflow or
+             * allocation failure) with spaces (variable names cannot contain spaces) */
+            char *end = next + strlen(current->key);
+            while (next < end) {
+                *next++ = ' ';
+            }
             extra_bytes += extra;
         }
     }
