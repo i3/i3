@@ -19,7 +19,11 @@ static xcb_window_t create_drop_indicator(Rect rect);
 static Rect con_rect_plus_deco_height(Con *con) {
     Rect rect = con->rect;
     rect.height += con->deco_rect.height;
-    rect.y -= con->deco_rect.height;
+    if (rect.y < con->deco_rect.height) {
+        rect.y = 0;
+    } else {
+        rect.y -= con->deco_rect.height;
+    }
     return rect;
 }
 
