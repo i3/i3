@@ -94,7 +94,7 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *ur
  * it is still in use by popular widget toolkits such as GTK+ and Java AWT.
  *
  */
-void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style);
+bool window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style);
 
 /**
  * Updates the WM_CLIENT_MACHINE

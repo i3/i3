@@ -1187,9 +1187,9 @@ static bool handle_machine_change(Con *con, xcb_get_property_reply_t *prop) {
  */
 static bool handle_motif_hints_change(Con *con, xcb_get_property_reply_t *prop) {
     border_style_t motif_border_style;
-    window_update_motif_hints(con->window, prop, &motif_border_style);
+    bool has_mwm_hints = window_update_motif_hints(con->window, prop, &motif_border_style);
 
-    if (motif_border_style != con->border_style && motif_border_style != BS_NORMAL) {
+    if (has_mwm_hints && motif_border_style != con->border_style) {
         DLOG("Update border style of con %p to %d\n", con, motif_border_style);
         con_set_border_style(con, motif_border_style, con->current_border_width);
 
