@@ -378,6 +378,7 @@ void tiling_drag(Con *con, xcb_button_press_event_t *event) {
         con_enable_fullscreen(con, CF_OUTPUT);
     }
     if (set_focus) {
+        workspace_show(con_get_workspace(con));
         con_focus(con);
     }
     tree_render();
