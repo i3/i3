@@ -3,8 +3,8 @@
 
 set -eu
 
-export RELEASE_VERSION="4.20"
-export PREVIOUS_VERSION="4.19.2"
+export RELEASE_VERSION="4.21"
+export PREVIOUS_VERSION="4.20.1"
 export RELEASE_BRANCH="next"
 
 if [ ! -e "../i3.github.io" ]
