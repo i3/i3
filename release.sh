@@ -158,7 +158,7 @@ git add downloads/i3-${RELEASE_VERSION}.tar.xz*
 cp ${TMPDIR}/i3/RELEASE-NOTES-${RELEASE_VERSION} downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt
 git add downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt
 sed -i "s,<h2>Documentation for i3 v[^<]*</h2>,<h2>Documentation for i3 v${RELEASE_VERSION}</h2>,g" docs/index.html
-sed -i "s,<span style=\"margin-left: 2em; color: #c0c0c0\">[^<]*</span>,<span style=\"margin-left: 2em; color: #c0c0c0\">${RELEASE_VERSION}</span>,g" index.html
+sed -i "s,\(span class=\"version\">\)[^<]*\(</span>\),\1${RELEASE_VERSION}\2,g" index.html
 sed -i "s,The current stable version is .*$,The current stable version is ${RELEASE_VERSION}.,g" downloads/index.html
 sed -i "s,<tbody>,<tbody>\n  <tr>\n    <td>${RELEASE_VERSION}</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.xz\">i3-${RELEASE_VERSION}.tar.xz</a></td>\n    <td>$(LC_ALL=en_US.UTF-8 ls -lh ../i3/i3-${RELEASE_VERSION}.tar.xz | awk -F " " {'print $5'} | sed 's/K$/ KiB/g' | sed 's/M$/ MiB/g')</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.xz.asc\">signature</a></td>\n    <td>$(date +'%Y-%m-%d')</td>\n    <td><a href=\"/downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt\">release notes</a></td>\n  </tr>\n,g" downloads/index.html
 
