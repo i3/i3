@@ -62,7 +62,7 @@ jobs:
       if: ${{ failure() }}
     - name: build dist tarball
       run: |
-        docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf distbuild; mkdir distbuild && cd distbuild && meson .. -Ddocs=true -Dmans=true && ninja -v dist'
+        docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf distbuild; mkdir distbuild && cd distbuild && meson .. -Ddocs=true -Dmans=true && meson dist --no-tests'
     - name: build Debian packages
       run: |
         echo "::group::Debian amd64"
