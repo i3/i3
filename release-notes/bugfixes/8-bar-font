@@ -1,0 +1,1 @@
+fix default font not being applied to bars if defined after bar block

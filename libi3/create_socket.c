@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <libgen.h>
 #include <err.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,10 +35,20 @@ int create_socket(const char *filename, char **out_socketpath) {
     }
     free(copy);
 
+    /* Check if the socket is in use by another process (this call does not
+     * succeed if the socket is stale / the owner already exited) */
+    int sockfd = ipc_connect_impl(resolved);
+    if (sockfd != -1) {
+        ELOG("Refusing to create UNIX socket at %s: Socket is already in use\n", resolved);
+        close(sockfd);
+        errno = EEXIST;
+        return -1;
+    }
+
     /* Unlink the unix domain socket before */
     unlink(resolved);
 
-    int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
+    sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
     if (sockfd < 0) {
         perror("socket()");
         free(resolved);

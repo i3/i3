@@ -13,13 +13,12 @@ RUN echo 'APT::Acquire::Retries "5";' > /etc/apt/apt.conf.d/80retry
 # (3608 kB/s)). Hence, let’s stick with httpredir.debian.org (default) for now.
 
 # Install mk-build-deps (for installing the i3 build dependencies),
-# clang and clang-format-9 (for checking formatting and building with clang),
 # lintian (for checking spelling errors),
 # test suite dependencies (for running tests)
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     dpkg-dev devscripts git equivs \
-    build-essential clang clang-format-9 \
+    build-essential clang \
     lintian && \
     rm -rf /var/lib/apt/lists/*
 
@@ -28,3 +27,8 @@ COPY debian/control /usr/src/i3-debian-packaging/control
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends -y' /usr/src/i3-debian-packaging/control && \
     rm -rf /var/lib/apt/lists/*
+
+# The user outside of Docker (GitHub Actions CI runner) and inside of Docker
+# (root) are different, and newer versions of git error out in that scenario.
+# To fix this, explicitly configure /usr/src/i3 as a safe directory:
+RUN git config --global --add safe.directory /usr/src/i3

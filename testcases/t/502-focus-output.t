@@ -31,13 +31,6 @@ my $i3 = i3(get_socket_path());
 # use 'focus output' and verify that focus gets changed appropriately
 ################################################################################
 
-sub focused_output {
-    my $tree = $i3->get_tree->recv;
-    my $focused = $tree->{focus}->[0];
-    my $output = first { $_->{id} == $focused } @{$tree->{nodes}};
-    return $output->{name};
-}
-
 sync_with_i3;
 $x->root->warp_pointer(0, 0);
 sync_with_i3;

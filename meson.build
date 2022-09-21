@@ -6,7 +6,7 @@
 project(
   'i3',
   'c',
-  version: '4.20.1',
+  version: '4.21',
   default_options: [
     'c_std=c11',
     'warning_level=1',  # enable all warnings (-Wall)
@@ -316,7 +316,7 @@ xcb_util_xrm_dep = dependency('xcb-xrm', method: 'pkg-config')
 xkbcommon_dep = dependency('xkbcommon', method: 'pkg-config')
 xkbcommon_x11_dep = dependency('xkbcommon-x11', method: 'pkg-config')
 yajl_dep = dependency('yajl', method: 'pkg-config')
-libpcre_dep = dependency('libpcre', version: '>=8.10', method: 'pkg-config')
+libpcre_dep = dependency('libpcre2-8', version: '>=10', method: 'pkg-config')
 cairo_dep = dependency('cairo', version: '>=1.14.4', method: 'pkg-config')
 pangocairo_dep = dependency('pangocairo', method: 'pkg-config')
 glib_dep = dependency('glib-2.0', method: 'pkg-config')
@@ -409,6 +409,7 @@ i3srcs = [
   'src/sighandler.c',
   'src/startup.c',
   'src/sync.c',
+  'src/tiling_drag.c',
   'src/tree.c',
   'src/util.c',
   'src/version.c',

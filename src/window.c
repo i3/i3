@@ -415,12 +415,10 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *ur
  * it is still in use by popular widget toolkits such as GTK+ and Java AWT.
  *
  */
-void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style) {
-    /* This implementation simply mirrors Gnome's Metacity. Official
-     * documentation of this hint is nowhere to be found.
-     * For more information see:
-     * https://people.gnome.org/~tthurman/docs/metacity/xprops_8h-source.html
-     * https://stackoverflow.com/questions/13787553/detect-if-a-x11-window-has-decorations
+bool window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style) {
+    /* See `man VendorShell' for more info, `XmNmwmDecorations' section:
+     * https://linux.die.net/man/3/vendorshell
+     * The following constants are adapted from <Xm/MwmUtil.h>.
      */
 #define MWM_HINTS_FLAGS_FIELD 0
 #define MWM_HINTS_DECORATIONS_FIELD 2
@@ -435,7 +433,7 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
 
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         FREE(prop);
-        return;
+        return false;
     }
 
     /* The property consists of an array of 5 uint32_t's. The first value is a
@@ -461,6 +459,7 @@ void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
     }
 
     FREE(prop);
+    return true;
 
 #undef MWM_HINTS_FLAGS_FIELD
 #undef MWM_HINTS_DECORATIONS_FIELD

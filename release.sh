@@ -22,7 +22,8 @@ fi
 
 if [ ! -e "RELEASE-NOTES-${RELEASE_VERSION}" ]
 then
-	echo "RELEASE-NOTES-${RELEASE_VERSION} not found."
+	echo "RELEASE-NOTES-${RELEASE_VERSION} not found. Here is the output from the generator:"
+	./release-notes/generator.pl --print-urls
 	exit 1
 fi
 

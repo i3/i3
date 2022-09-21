@@ -62,7 +62,7 @@ $config = <<'EOT';
 font \
 -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
-# Use line contiuation with too many lines (>4096 characters).
+# Use line continuation with too many lines (>4096 characters).
 # This config is invalid. Use it to ensure no buffer overflow.
 bindsym Mod1+b \
 0001-This is a very very very very very very very very very very very very very very very very very long cmd \

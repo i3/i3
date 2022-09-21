@@ -56,7 +56,7 @@ state INITIAL:
   exectype = 'exec_always', 'exec'         -> EXEC
   colorclass = 'client.background'
       -> COLOR_SINGLE
-  colorclass = 'client.focused_inactive', 'client.focused', 'client.unfocused', 'client.urgent', 'client.placeholder'
+  colorclass = 'client.focused_inactive', 'client.focused_tab_title', 'client.focused', 'client.unfocused', 'client.urgent', 'client.placeholder'
       -> COLOR_BORDER
 
 # We ignore comments and 'set' lines (variables).
@@ -400,8 +400,6 @@ state BINDCOMMAND:
       ->
   command = string
       -> call cfg_binding($bindtype, $modifiers, $key, $release, $border, $whole_window, $exclude_titlebar, $command)
-  end
-      -> call cfg_binding($bindtype, $modifiers, $key, $release, $border, $whole_window, $exclude_titlebar, $command)
 
 ################################################################################
 # Mode configuration
@@ -567,7 +565,7 @@ state BAR_POSITION:
       -> call cfg_bar_position($position); BAR
 
 state BAR_OUTPUT:
-  output = string
+  output = word
       -> call cfg_bar_output($output); BAR
 
 state BAR_TRAY_OUTPUT:

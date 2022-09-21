@@ -71,7 +71,7 @@ cmd 'focus left';
 cmd 'mark left';
 
 #
-# get_marks replys an array of marks, whose order is undefined,
+# get_marks replies an array of marks, whose order is undefined,
 # so we use sort to be able to compare the output
 #
 

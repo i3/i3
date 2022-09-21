@@ -39,7 +39,7 @@ Display the <prompt> string in front of user input text field.
 The prompt string is not included in the user input/command.
 
 -f <font>::
-Use the specified X11 core font (use +xfontsel+ to chose a font).
+Use the specified X11 core font (use +xfontsel+ to choose a font).
 
 -v::
 Show version and exit.

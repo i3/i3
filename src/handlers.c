@@ -70,11 +70,9 @@ bool event_is_ignored(const int sequence, const int response_type) {
             event->response_type != response_type)
             continue;
 
-        /* instead of removing a sequence number we better wait until it gets
-         * garbage collected. it may generate multiple events (there are multiple
-         * enter_notifies for one configure_request, for example). */
-        //SLIST_REMOVE(&ignore_events, event, Ignore_Event, ignore_events);
-        //free(event);
+        /* Instead of removing & freeing a sequence number we better wait until
+         * it gets garbage collected. It may generate multiple events (there
+         * are multiple enter_notifies for one configure_request, for example). */
         return true;
     }
 
@@ -270,7 +268,7 @@ static void handle_map_request(xcb_map_request_event_t *event) {
  * Configure requests are received when the application wants to resize windows
  * on their own.
  *
- * We generate a synthethic configure notify event to signalize the client its
+ * We generate a synthetic configure notify event to signalize the client its
  * "new" position.
  *
  */
@@ -801,7 +799,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
     } else if (event->type == A_WM_CHANGE_STATE) {
         /* http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.4 */
         if (event->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
-            /* For compatiblity reasons, Wine will request iconic state and cannot ensure that the WM has agreed on it;
+            /* For compatibility reasons, Wine will request iconic state and cannot ensure that the WM has agreed on it;
              * immediately revert to normal to avoid being stuck in a paused state. */
             DLOG("Client has requested iconic state, rejecting. (window = %08x)\n", event->window);
             long data[] = {XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE};
@@ -1184,14 +1182,14 @@ static bool handle_machine_change(Con *con, xcb_get_property_reply_t *prop) {
 }
 
 /*
- * Handles the _MOTIF_WM_HINTS property of specifing window deocration settings.
+ * Handles the _MOTIF_WM_HINTS property of specifying window deocration settings.
  *
  */
 static bool handle_motif_hints_change(Con *con, xcb_get_property_reply_t *prop) {
     border_style_t motif_border_style;
-    window_update_motif_hints(con->window, prop, &motif_border_style);
+    bool has_mwm_hints = window_update_motif_hints(con->window, prop, &motif_border_style);
 
-    if (motif_border_style != con->border_style && motif_border_style != BS_NORMAL) {
+    if (has_mwm_hints && motif_border_style != con->border_style) {
         DLOG("Update border style of con %p to %d\n", con, motif_border_style);
         con_set_border_style(con, motif_border_style, con->current_border_width);
 
@@ -1346,7 +1344,7 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
     }
 
     if (handler == NULL) {
-        //DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom);
+        /* DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom); */
         return;
     }
 
@@ -1524,7 +1522,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
             break;
 
         default:
-            //DLOG("Unhandled event of type %d\n", type);
+            /* DLOG("Unhandled event of type %d\n", type); */
             break;
     }
 }

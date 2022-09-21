@@ -123,7 +123,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     geomc = xcb_get_geometry(conn, d);
 
-    /* Check if the window is mapped (it could be not mapped when intializing and
+    /* Check if the window is mapped (it could be not mapped when initializing and
        calling manage_window() for every window) */
     if ((attr = xcb_get_window_attributes_reply(conn, cookie, 0)) == NULL) {
         DLOG("Could not get attributes\n");
@@ -214,8 +214,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_role(cwindow, xcb_get_property_reply(conn, role_cookie, NULL));
     bool urgency_hint;
     window_update_hints(cwindow, xcb_get_property_reply(conn, wm_hints_cookie, NULL), &urgency_hint);
-    border_style_t motif_border_style = BS_NORMAL;
-    window_update_motif_hints(cwindow, xcb_get_property_reply(conn, motif_wm_hints_cookie, NULL), &motif_border_style);
+    border_style_t motif_border_style;
+    bool has_mwm_hints = window_update_motif_hints(cwindow, xcb_get_property_reply(conn, motif_wm_hints_cookie, NULL), &motif_border_style);
     window_update_normal_hints(cwindow, xcb_get_property_reply(conn, wm_normal_hints_cookie, NULL), geom);
     window_update_machine(cwindow, xcb_get_property_reply(conn, wm_machine_cookie, NULL));
     xcb_get_property_reply_t *type_reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
@@ -485,34 +485,17 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         (cwindow->leader != XCB_NONE &&
          cwindow->leader != cwindow->id &&
          con_by_window_id(cwindow->leader) != NULL)) {
-        LOG("This window is transient for another window, setting floating\n");
+        DLOG("This window is transient for another window, setting floating\n");
         want_floating = true;
 
         if (config.popup_during_fullscreen == PDF_LEAVE_FULLSCREEN &&
             fs != NULL) {
-            LOG("There is a fullscreen window, leaving fullscreen mode\n");
+            DLOG("There is a fullscreen window, leaving fullscreen mode\n");
             con_toggle_fullscreen(fs, CF_OUTPUT);
         } else if (config.popup_during_fullscreen == PDF_SMART &&
                    fs != NULL &&
                    fs->window != NULL) {
-            i3Window *transient_win = cwindow;
-            while (transient_win != NULL &&
-                   transient_win->transient_for != XCB_NONE) {
-                if (transient_win->transient_for == fs->window->id) {
-                    LOG("This floating window belongs to the fullscreen window (popup_during_fullscreen == smart)\n");
-                    set_focus = true;
-                    break;
-                }
-                Con *next_transient = con_by_window_id(transient_win->transient_for);
-                if (next_transient == NULL)
-                    break;
-                /* Some clients (e.g. x11-ssh-askpass) actually set
-                 * WM_TRANSIENT_FOR to their own window id, so break instead of
-                 * looping endlessly. */
-                if (transient_win == next_transient->window)
-                    break;
-                transient_win = next_transient->window;
-            }
+            set_focus = con_find_transient_for_window(nc, fs->window->id);
         }
     }
 
@@ -528,7 +511,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (nc->geometry.width == 0)
         nc->geometry = (Rect){geom->x, geom->y, geom->width, geom->height};
 
-    if (motif_border_style != BS_NORMAL) {
+    if (has_mwm_hints) {
         DLOG("MOTIF_WM_HINTS specifies decorations (border_style = %d)\n", motif_border_style);
         if (want_floating) {
             con_set_border_style(nc, motif_border_style, config.default_floating_border_width);

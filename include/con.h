@@ -209,6 +209,14 @@ Con *con_by_frame_id(xcb_window_t frame);
 Con *con_by_mark(const char *mark);
 
 /**
+ * Start from a container and traverse the transient_for linked list. Returns
+ * true if target window is found in the list. Protects againsts potential
+ * cycles.
+ *
+ */
+bool con_find_transient_for_window(Con *start, xcb_window_t target);
+
+/**
  * Returns true if and only if the given containers holds the mark.
  *
  */
@@ -363,6 +371,7 @@ void con_move_to_output(Con *con, Output *output, bool fix_coordinates);
  */
 bool con_move_to_output_name(Con *con, const char *name, bool fix_coordinates);
 
+bool con_move_to_target(Con *con, Con *target);
 /**
  * Moves the given container to the given mark.
  *

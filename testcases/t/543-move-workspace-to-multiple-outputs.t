@@ -14,7 +14,7 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
-# Test using multiple workspaces for 'move workspace to output …'
+# Test using multiple outputs for 'move workspace to output …'
 # Ticket: #4337
 use i3test i3_config => <<EOT;
 # i3 config file (v4)
@@ -40,6 +40,16 @@ sub is_ws {
 }
 
 ###############################################################################
+# Test moving workspace to same output
+# See issue #4691
+###############################################################################
+is_ws(1, 0, 'sanity check');
+
+my $reply = cmd '[con_mark=aa] move workspace to output fake-0';
+is_ws(1, 0, 'workspace did not move');
+ok($reply->[0]->{success}, 'reply success');
+
+###############################################################################
 # Test using "next" special keyword
 ###############################################################################
 
@@ -56,7 +66,7 @@ for (my $i = 1; $i < 9; $i++) {
 }
 
 ###############################################################################
-# Same as above but explicitely type all the outputs
+# Same as above but explicitly type all the outputs
 ###############################################################################
 
 is_ws(1, 0, 'sanity check');

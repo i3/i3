@@ -665,11 +665,12 @@ static bool randr_query_outputs_15(void) {
 
         new->primary = monitor_info->primary;
 
-        new->changed =
-            update_if_necessary(&(new->rect.x), monitor_info->x) |
-            update_if_necessary(&(new->rect.y), monitor_info->y) |
-            update_if_necessary(&(new->rect.width), monitor_info->width) |
-            update_if_necessary(&(new->rect.height), monitor_info->height);
+        const bool update_x = update_if_necessary(&(new->rect.x), monitor_info->x);
+        const bool update_y = update_if_necessary(&(new->rect.y), monitor_info->y);
+        const bool update_w = update_if_necessary(&(new->rect.width), monitor_info->width);
+        const bool update_h = update_if_necessary(&(new->rect.height), monitor_info->height);
+
+        new->changed = update_x || update_y || update_w || update_h;
 
         DLOG("name %s, x %d, y %d, width %d px, height %d px, width %d mm, height %d mm, primary %d, automatic %d\n",
              name,
@@ -743,10 +744,11 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         return;
     }
 
-    bool updated = update_if_necessary(&(new->rect.x), crtc->x) |
-                   update_if_necessary(&(new->rect.y), crtc->y) |
-                   update_if_necessary(&(new->rect.width), crtc->width) |
-                   update_if_necessary(&(new->rect.height), crtc->height);
+    const bool update_x = update_if_necessary(&(new->rect.x), crtc->x);
+    const bool update_y = update_if_necessary(&(new->rect.y), crtc->y);
+    const bool update_w = update_if_necessary(&(new->rect.width), crtc->width);
+    const bool update_h = update_if_necessary(&(new->rect.height), crtc->height);
+    const bool updated = update_x || update_y || update_w || update_h;
     free(crtc);
     new->active = (new->rect.width != 0 && new->rect.height != 0);
     if (!new->active) {
@@ -943,9 +945,11 @@ void randr_query_outputs(void) {
             uint32_t width = min(other->rect.width, output->rect.width);
             uint32_t height = min(other->rect.height, output->rect.height);
 
-            if (update_if_necessary(&(output->rect.width), width) |
-                update_if_necessary(&(output->rect.height), height))
+            const bool update_w = update_if_necessary(&(output->rect.width), width);
+            const bool update_h = update_if_necessary(&(output->rect.height), height);
+            if (update_w || update_h) {
                 output->changed = true;
+            }
 
             update_if_necessary(&(other->rect.width), width);
             update_if_necessary(&(other->rect.height), height);

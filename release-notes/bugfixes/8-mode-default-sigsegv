@@ -1,0 +1,1 @@
+Fix segfault with explicit mode "default" key bindings.

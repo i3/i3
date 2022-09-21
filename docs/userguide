@@ -196,6 +196,48 @@ provided by the i3 https://github.com/i3/i3/blob/next/etc/config.keycodes[defaul
 
 Floating windows are always on top of tiling windows.
 
+=== Moving tiling containers with the mouse
+
+Since i3 4.21, it's possible to drag tiling containers using the mouse. The
+drag can be initiated either by dragging the window's titlebar or by pressing
+the <<floating_modifier>> and dragging the container while holding the
+left-click button.
+
+Once the drag is initiated and the cursor has left the original container, drop
+indicators are created according to the position of the cursor relatively to
+the target container. These indicators help you understand what the resulting
+<<tree>> layout is going to be after you release the mouse button.
+
+The possible drop positions are:
+
+Drop on container::
+    This happens when the mouse is relatively near the center of a container.
+    If the mouse is released, the result is exactly as if you had run the
+    +move container to mark+ command. See <<move_to_mark>>.
+Drop as sibling::
+    This happens when the mouse is relatively near the edge of a container. If
+    the mouse is released, the dragged container will become a sibling of the
+    target container, placed left/right/up/down according to the position of
+    the indicator.
+    This might or might not create a new v-split or h-split according to the
+    previous layout of the target container. For example, if the target
+    container is in an h-split and you drop the dragged container below it, the
+    new layout will have to be a v-split.
+Drop to parent::
+    This happens when the mouse is relatively near the edge of a container (but
+    even closer to the border in comparison to the sibling case above) *and* if
+    that edge is also the parent container's edge. For example, if three
+    containers are in a horizontal layout then edges where this can happen is
+    the left edge of the left container, the right edge of the right container
+    and all bottom and top edges of all three containers.
+    If the mouse is released, the container is first dropped as a sibling to
+    the target container, like in the case above, and then is moved
+    directionally like with the +move left|right|down|up+ command. See
+    <<move_direction>>.
+
+The color of the indicator matches the +client.focused+ setting. See <<client_colors>>.
+
+[[tree]]
 == Tree
 
 i3 stores all information about the X11 outputs, workspaces and layout of the
@@ -538,7 +580,7 @@ for the keybinding.
 # The middle button over a titlebar kills the window
 bindsym --release button2 kill
 
-# The middle button and a modifer over any part of the window kills the window
+# The middle button and a modifier over any part of the window kills the window
 bindsym --whole-window $mod+button2 kill
 
 # The right button toggles floating
@@ -1041,6 +1083,7 @@ workspace 5 output VGA1 LVDS1
 workspace "2: vim" output VGA1
 ---------------------------
 
+[[client_colors]]
 === Changing colors
 
 You can change all colors which i3 uses to draw the window decorations.
@@ -1057,6 +1100,10 @@ client.focused::
 client.focused_inactive::
 	A client which is the focused one of its container, but it does not have
 	the focus at the moment.
+client.focused_tab_title::
+    Tab or stack container title that is the parent of the focused container
+    but not directly focused. Defaults to focused_inactive if not specified and
+    does not use the indicator and child_border colors.
 client.unfocused::
 	A client which is not the focused one of its container.
 client.urgent::
@@ -1100,7 +1147,7 @@ i3 uses Unix sockets to provide an IPC interface. This allows third-party
 programs to get information from i3, such as the current workspaces
 (to display a workspace bar), and to control i3.
 
-The IPC socket is enabled by default and will be created in
+By default, an IPC socket will be created in
 +$XDG_RUNTIME_DIR/i3/ipc-socket.%p+ if the directory is available, falling back
 to +/tmp/i3-%u.XXXXXX/ipc-socket.%p+, where +%u+ is your UNIX username, +%p+ is
 the PID of i3 and XXXXXX is a string of random characters from the portable
@@ -2208,7 +2255,7 @@ output::
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
 focus next|prev [sibling]
-focus output left|right|up|down|primary|<output>
+focus output left|right|down|up|current|primary|next|<output1> [output2]…
 ----------------------------------------------
 
 *Examples*:
@@ -2228,6 +2275,9 @@ bindsym $mod+u focus parent
 # Focus last floating/tiling container
 bindsym $mod+g focus mode_toggle
 
+# Focus the next output (effectively toggles when you only have two outputs)
+bindsym $mod+x move workspace to output next
+
 # Focus the output right to the current one
 bindsym $mod+x focus output right
 
@@ -2236,6 +2286,9 @@ bindsym $mod+x focus output HDMI-2
 
 # Focus the primary output
 bindsym $mod+x focus output primary
+
+# Cycle focus between outputs VGA1 and LVDS1 but not DVI0
+bindsym $mod+x move workspace to output VGA1 LVDS1
 -------------------------------------------------
 
 Note that you might not have a primary output configured yet. To do so, run:
@@ -2243,6 +2296,7 @@ Note that you might not have a primary output configured yet. To do so, run:
 xrandr --output <output> --primary
 -------------------------
 
+[[move_direction]]
 === Moving containers
 
 Use the +move+ command to move a container.
@@ -2477,9 +2531,11 @@ bindsym $mod+2 workspace number "2: mail"
 If a workspace does not exist, the command +workspace number "1: mail"+ will
 create workspace "1: mail".
 
-If a workspace with number 1 does already exist, the command will switch to this
+If a workspace with number 1 already exists, the command will switch to this
 workspace and ignore the text part. So even when the workspace has been renamed
-to "1: web", the above command will still switch to it.
+"1: web", the above command will still switch to it.  The command +workspace 1+
+will however create and move to a new workspace "1" alongside the existing
+"1: mail" workspace.
 
 === Moving workspaces to a different screen
 
@@ -2525,6 +2581,7 @@ Note that you might not have a primary output configured yet. To do so, run:
 xrandr --output <output> --primary
 -------------------------
 
+[[move_to_mark]]
 === Moving containers/windows to marks
 
 To move a container to another container with a specific mark (see <<vim_like_marks>>),
@@ -2718,8 +2775,8 @@ specific windows or for all windows (using the <<for_window>> directive).
 
 *Syntax*:
 -----------------------------
-title_window_icon <yes|no>
-title_window_icon padding <px>
+title_window_icon <yes|no|toggle>
+title_window_icon <padding|toggle> <px>
 ------------------------------
 
 *Examples*:

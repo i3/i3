@@ -8,6 +8,11 @@
 # Distributions/packagers can enhance this script with a
 # distribution-specific mechanism to find the preferred pager.
 
+# The less -E and -F options exit immediately for short files, strip if present.
+case "$LESS" in
+  *[EF]*) LESS=`echo "$LESS" | tr -d EF`
+esac
+
 # Hopefully one of these is installed (no flamewars about preference please!):
 # We don't use 'more' because it will exit if the file is too short.
 # Worst case scenario we'll open the file in your editor.

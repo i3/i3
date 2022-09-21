@@ -14,7 +14,7 @@
 # 2. Distribution-specific mechanisms come next, e.g. x-terminal-emulator
 # 3. The terminal emulator with best accessibility comes first.
 # 4. No order is guaranteed/desired for the remaining terminal emulators.
-for terminal in "$TERMINAL" x-terminal-emulator mate-terminal gnome-terminal terminator xfce4-terminal urxvt rxvt termit Eterm aterm uxterm xterm roxterm termite lxterminal terminology st qterminal lilyterm tilix terminix konsole kitty guake tilda alacritty hyper; do
+for terminal in "$TERMINAL" x-terminal-emulator mate-terminal gnome-terminal terminator xfce4-terminal urxvt rxvt termit Eterm aterm uxterm xterm roxterm termite lxterminal terminology st qterminal lilyterm tilix terminix konsole kitty guake tilda alacritty hyper wezterm; do
     if command -v "$terminal" > /dev/null 2>&1; then
         exec "$terminal" "$@"
     fi

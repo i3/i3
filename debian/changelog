@@ -1,3 +1,9 @@
+i3-wm (4.20.1-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Wed, 03 Nov 2021 09:22:48 +0100
+
 i3-wm (4.20-1) unstable; urgency=medium
 
   * New upstream release.
@@ -621,7 +627,7 @@ i3-wm (3.d-bf1-1) unstable; urgency=low
   * Bugfix: Resize client after updating base_width/base_height
   * Bugfix: Force render containers after setting the client active
   * Bugfix: Fix two problems in resizing floating windows with right mouse
-  * Bugfix: Use more precise floating point arithmetics
+  * Bugfix: Use more precise floating point arithmetic
   * Bugfix: Correctly place new windows below fullscreen windows
 
  -- Michael Stapelberg <michael@stapelberg.de>  Mon, 21 Dec 2009 22:33:02 +0100

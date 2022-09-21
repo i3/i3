@@ -137,7 +137,11 @@ void open_logbuffer(void) {
      * For 512 MiB of RAM this will lead to a 5 MiB log buffer.
      * At the moment (2011-12-10), no testcase leads to an i3 log
      * of more than ~ 600 KiB. */
-    logbuffer_size = min(physical_mem_bytes * 0.01, shmlog_size);
+    logbuffer_size = shmlog_size;
+    if (physical_mem_bytes * 0.01 < (long long)shmlog_size) {
+        logbuffer_size = physical_mem_bytes * 0.01;
+    }
+
 #if defined(__FreeBSD__)
     sasprintf(&shmlogname, "/tmp/i3-log-%d", getpid());
 #else

@@ -14,7 +14,7 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
-# Tests whether we can switch to a non-existant workspace
+# Tests whether we can switch to a non-existent workspace
 # (necessary for further tests)
 #
 use List::Util qw(first);

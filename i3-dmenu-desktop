@@ -482,7 +482,8 @@ EOT
     # double quote which is NOT preceded by a backslash (\).
     #
     # Therefore, we escape all double quotes (") by replacing them with \"
-    $exec =~ s/"/\\"/g;
+    $exec =~ s/\\"/\\\\\\"/g;
+    $exec =~ s/([^\\])"/$1\\"/g;
 
     if (exists($app->{StartupNotify}) && !$app->{StartupNotify}) {
         $nosn = '--no-startup-id';

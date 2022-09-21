@@ -1,6 +1,6 @@
 # This list can be used to convert X11 Keysyms to Unicode 2.1 character. 
 # The list is not checked for correctness by Unicode officials.  Use it 
-# at your own risk and the creator is not responsable for any damage that 
+# at your own risk and the creator is not responsible for any damage that 
 # occurred due to using this list. 
 # 
 # The list is created by looking at the Keysym names and the Unicode data 

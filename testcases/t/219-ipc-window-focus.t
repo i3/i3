@@ -18,7 +18,7 @@ use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
-# fake-1 under fake-0 to not interfere with left/right wraping
+# fake-1 under fake-0 to not interfere with left/right wrapping
 fake-outputs 1024x768+0+0,1024x768+0+1024
 workspace X output fake-1
 EOT
@@ -56,7 +56,11 @@ sub kill_subtest {
     my $focus = AnyEvent->condvar;
 
     my @events = events_for(
-	sub { cmd $cmd },
+	sub {
+	    cmd $cmd;
+	    # Sync to make sure x_window_kill() calls have taken effect.
+	    sync_with_i3;
+	},
 	'window');
 
     is(scalar @events, 1, 'Received 1 event');
