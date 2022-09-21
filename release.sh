@@ -108,7 +108,7 @@ cp "${STARTDIR}/debian/changelog" i3/debian/changelog
 
 cat > ${TMPDIR}/Dockerfile <<EOT
 FROM debian:sid
-RUN sed -i 's,^deb \(.*\),deb \1\ndeb-src \1,g' /etc/apt/sources.list
+RUN echo deb-src http://deb.debian.org/debian sid main > /etc/apt/sources.list
 RUN apt-get update && apt-get install -y dpkg-dev devscripts
 COPY i3/i3-${RELEASE_VERSION}.tar.xz /usr/src/i3-wm_${RELEASE_VERSION}.orig.tar.xz
 WORKDIR /usr/src/
