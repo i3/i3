@@ -1,0 +1,74 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.21   │
+ └──────────────────────────────┘
+
+This is i3 v4.21. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+The biggest change in this release is that you can now drag tiling windows
+with your mouse (floating windows could already be dragged). For more details
+on how to use this feature, please refer to the userguide:
+
+https://i3wm.org/docs/userguide.html#_moving_tiling_containers_with_the_mouse
+
+A big thank you goes out to our core i3 developer Orestis Floros who made this
+feature possible, based on previous work from Michael Forster and Tony Crisci!
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.21        │
+ └────────────────────────────┘
+
+  • Allow dragging tiling windows with the mouse
+  • Add client.focused_tab_title color option
+  • Add support for multiple output names in the focus command,
+    allowing users to cycle focus between e.g. VGA1 and LVDS1 but not DVI0.
+  • Add a toggle option to the title_window_icon command
+  • i3 switched from the obsolete PCRE 8.x regular expression matching
+    library to the current PCRE2 10.x version.
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • docs/ipc: document all window_type values
+  • docs/userguide: clarify the difference between the “workspace N” and
+    “workspace number N” commands
+  • i3bar: fix default font not being applied to bars if defined after bar block
+  • i3-dmenu-desktop: add backslashes for the exec command,
+    which fixes opening some .desktop files (e.g. electrum)
+  • i3-sensible-pager: sanitize LESS environment variable to remove -E or -F
+  • testsuite: catch i3 crashes instead of hanging on crash
+  • Fix logging on machines with 256 GB of RAM
+  • Do not replace existing IPC socket on start, to prevent clobbering
+    the IPC socket when running i3 within i3 (e.g. in Xepyhr, for development)
+  • Refuse to start without a valid IPC socket
+  • Fix focus when moving container between outputs with mouse warp and
+    focus_follows_mouse
+  • Fix endless loop with transient_for windows
+  • Fix wrong “failed” IPC reply on move workspace to output
+  • Fix WM registration selection (from WM_S_S<screen> to WM_S<screen>)
+  • avoid graphics artifacts when changing the layout tree by
+    initializing surfaces to all black
+  • update parent split con titles when child container swaps position with
+    another child container
+  • Fix segfault if command in bindsym is empty
+  • Fix segfault with explicit mode "default" key bindings
+  • Fix crash if config contains nested variables.
+  • strip trailing whitespace in bar output names
+  • Fix crash with long commands
+  • Fix changing borders by restoring BS_NORMAL _MOTIF_WM_HINTS correctly
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+André Silva, Anton Älgmyr, Baptiste Daroussin, bodea, Chris Templin, George
+Rodrigues, Gergely Risko, Ingo Bürk, Jakob Haufe, Jay Ta'ala, Jeff Smith, Jonta,
+Josh Soref, Kjetil Torgrim Homme, lycurgus, mariano, Michael Forster, Orestis
+Floros, paperluigis, Peder Stray, rvalieris, sergio, Tony Crisci, takelley1, Uli
+Schlachter, viri, zhiv-git, zhrvn
+
+-- Michael Stapelberg, 2021-10-19
