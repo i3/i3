@@ -20,6 +20,12 @@ then
 	exit 1
 fi
 
+if git diff-files --quiet --exit-code debian/changelog
+then
+	echo "Expected debian/changelog to be changed (containing the changelog for ${RELEASE_VERSION})."
+	exit 1
+fi
+
 if [ ! -e "RELEASE-NOTES-${RELEASE_VERSION}" ]
 then
 	echo "RELEASE-NOTES-${RELEASE_VERSION} not found. Here is the output from the generator:"
