@@ -21,7 +21,9 @@
 #
 # Ticket: #2318
 # Bug still in: 4.12-46-g2123888
-use i3test;
+use i3test i3_autostart => 0;
+
+my $pid = launch_with_config('-default');
 
 # We cannot use events_for in this test as we cannot send events after
 # issuing the restart/shutdown command.
@@ -59,7 +61,7 @@ $i3->subscribe({
         }
     })->recv;
 
-cmd 'exit';
+exit_gracefully($pid);
 
 $e = $cv->recv;
 
