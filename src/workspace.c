@@ -48,7 +48,7 @@ Con *get_existing_workspace_by_num(int num) {
     TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
         /*
          * iterate through workspaces and get first (as fallback) - otherwise return
-         * the workspace right after the current workspace (or the same num).
+         * the workspace right after the current workspace (of the same num).
          */
         NODES_FOREACH (output_get_content(output)) {
             if (child->num != num) {
