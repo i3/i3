@@ -503,6 +503,8 @@ void workspace_show(Con *workspace) {
     current = con_get_workspace(focused);
     if (workspace == current) {
         DLOG("Not switching, already there.\n");
+        clear_num_last_selected_by_num(workspace->num);
+        workspace->num_last_selected = true;
         return;
     }
 
