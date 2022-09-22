@@ -1,1 +1,0 @@
-Fix segfault if command in bindsym is empty

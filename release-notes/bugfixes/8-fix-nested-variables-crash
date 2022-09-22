@@ -1,1 +1,0 @@
-Fix crash if config contains nested variables.
