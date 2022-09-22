@@ -642,6 +642,12 @@ struct Con {
      * workspace is not a named workspace (for named workspaces, num == -1) */
     int num;
 
+    /**
+     * Used to track the last selected workspace for a num (in situation where we
+     * have multiple workspaces with the same num (e.g. 1a, 1b, 1c).
+     */
+    bool num_last_selected;
+
     struct Con *parent;
 
     /* The position and size for this con. These coordinates are absolute. Note
