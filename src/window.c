@@ -403,6 +403,49 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *ur
     free(prop);
 }
 
+/* See `man VendorShell' for more info, `XmNmwmDecorations' section:
+ * https://linux.die.net/man/3/vendorshell
+ * The following constants are adapted from <Xm/MwmUtil.h>.
+ */
+#define MWM_HINTS_FLAGS_FIELD 0
+#define MWM_HINTS_DECORATIONS_FIELD 2
+
+#define MWM_HINTS_DECORATIONS (1 << 1)
+#define MWM_DECOR_ALL (1 << 0)
+#define MWM_DECOR_BORDER (1 << 1)
+#define MWM_DECOR_TITLE (1 << 3)
+
+static border_style_t border_style_from_motif_value(uint32_t value) {
+    if (value & MWM_DECOR_ALL) {
+        /* If this value is set, all other flags set are exclusive:
+         * MWM_DECOR_ALL
+         * All decorations except those specified by other flag bits that are set
+         *
+         * We support these cases:
+         * - No exceptions -> BS_NORMAL
+         * - Title and no border (ignored) -> BS_NORMAL
+         * - No title and no border -> BS_NONE
+         * - No title and border -> BS_PIXEL
+         * */
+
+        if (value & MWM_DECOR_TITLE) {
+            if (value & MWM_DECOR_BORDER) {
+                return BS_NONE;
+            }
+
+            return BS_PIXEL;
+        }
+
+        return BS_NORMAL;
+    } else if (value & MWM_DECOR_TITLE) {
+        return BS_NORMAL;
+    } else if (value & MWM_DECOR_BORDER) {
+        return BS_PIXEL;
+    } else {
+        return BS_NONE;
+    }
+}
+
 /*
  * Updates the MOTIF_WM_HINTS. The container's border style should be set to
  * `motif_border_style' if border style is not BS_NORMAL.
@@ -416,22 +459,10 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *ur
  *
  */
 bool window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style) {
-    /* See `man VendorShell' for more info, `XmNmwmDecorations' section:
-     * https://linux.die.net/man/3/vendorshell
-     * The following constants are adapted from <Xm/MwmUtil.h>.
-     */
-#define MWM_HINTS_FLAGS_FIELD 0
-#define MWM_HINTS_DECORATIONS_FIELD 2
+    assert(prop != NULL);
+    assert(motif_border_style != NULL);
 
-#define MWM_HINTS_DECORATIONS (1 << 1)
-#define MWM_DECOR_ALL (1 << 0)
-#define MWM_DECOR_BORDER (1 << 1)
-#define MWM_DECOR_TITLE (1 << 3)
-
-    if (motif_border_style != NULL)
-        *motif_border_style = BS_NORMAL;
-
-    if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+    if (xcb_get_property_value_length(prop) == 0) {
         FREE(prop);
         return false;
     }
@@ -447,19 +478,14 @@ bool window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
      * i.e. returns 32-bit data fields. */
     uint32_t *motif_hints = (uint32_t *)xcb_get_property_value(prop);
 
-    if (motif_border_style != NULL &&
-        motif_hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS) {
-        if (motif_hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_ALL ||
-            motif_hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_TITLE)
-            *motif_border_style = BS_NORMAL;
-        else if (motif_hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_BORDER)
-            *motif_border_style = BS_PIXEL;
-        else
-            *motif_border_style = BS_NONE;
+    if (motif_hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS) {
+        *motif_border_style = border_style_from_motif_value(motif_hints[MWM_HINTS_DECORATIONS_FIELD]);
+        FREE(prop);
+        return true;
     }
-
     FREE(prop);
-    return true;
+    return false;
+}
 
 #undef MWM_HINTS_FLAGS_FIELD
 #undef MWM_HINTS_DECORATIONS_FIELD
@@ -467,7 +493,6 @@ bool window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
 #undef MWM_DECOR_ALL
 #undef MWM_DECOR_BORDER
 #undef MWM_DECOR_TITLE
-}
 
 /*
  * Updates the WM_CLIENT_MACHINE
