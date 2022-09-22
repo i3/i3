@@ -608,6 +608,10 @@ void workspace_show(Con *workspace) {
 
     /* Push any sticky windows to the now visible workspace. */
     output_push_sticky_windows(old_focus);
+
+    /* update num_last_selected for this workspaces with same num (but diff name) */
+    clear_num_last_selected_by_num(workspace->num);
+    workspace->num_last_selected = true;
 }
 
 /*
@@ -678,8 +682,6 @@ Con *workspace_next(void) {
                 if (child == current) {
                     found_current = true;
                 } else if (found_current && current->num == child->num) {
-                    clear_num_last_selected_by_num(child->num);
-                    child->num_last_selected = true;
                     return child;
                 }
             }
@@ -690,10 +692,6 @@ Con *workspace_next(void) {
         next = first_opposite ? first_opposite : first;
     }
 
-    if (next) {
-        clear_num_last_selected_by_num(next->num);
-        next->num_last_selected = true;
-    }
     return next;
 }
 
@@ -760,8 +758,6 @@ Con *workspace_prev(void) {
                 if (child == current) {
                     found_current = true;
                 } else if (found_current && current->num == child->num) {
-                    clear_num_last_selected_by_num(child->num);
-                    child->num_last_selected = true;
                     return child;
                 }
             }
@@ -772,10 +768,6 @@ Con *workspace_prev(void) {
         prev = first_opposite ? first_opposite : last;
     }
 
-    if (prev) {
-        clear_num_last_selected_by_num(prev->num);
-        prev->num_last_selected = true;
-    }
     return prev;
 }
 
