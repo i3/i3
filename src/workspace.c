@@ -42,12 +42,38 @@ Con *get_existing_workspace_by_name(const char *name) {
  *
  */
 Con *get_existing_workspace_by_num(int num) {
-    Con *output, *workspace = NULL;
+    Con *current = con_get_workspace(focused);
+    Con *output, *first=NULL;
+    bool prev_was_current = false;
     TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
-        GREP_FIRST(workspace, output_get_content(output), child->num == num);
+        /*
+         * iterate through workspaces and get first (as fallback) - otherwise return
+         * the workspace right after the current workspace (or the same num).
+         */
+        NODES_FOREACH (output_get_content(output)) {
+            if (child->type != CT_WORKSPACE)
+                continue;
+            if (child->num != num) {
+                continue;
+            }
+            // select first as fallback
+            if (!first) {
+                first = child;
+            }
+            // if current equals the child, go to next
+            if (current == child) {
+                prev_was_current = true;
+                continue;
+            }
+            // return the next after prev
+            if (prev_was_current) {
+                return child;
+            }
+        }
     }
 
-    return workspace;
+    // if here then the child after current wasn't found, return first
+    return first;
 }
 
 /*
