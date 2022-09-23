@@ -192,11 +192,16 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
             DLOG("done\n");
         }
 
-        /* Insert the container after the tiling container, if found.
+        /* Insert the container before/after the tiling container, if found.
          * When adding to a CT_OUTPUT, just append one after another. */
         if (current != NULL && parent->type != CT_OUTPUT) {
-            DLOG("Inserting con = %p after con %p\n", con, current);
-            TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
+            if (parent->layout_fill_order == LF_REVERSE) {
+                DLOG("Inserting con = %p before con %p\n", con, current);
+                TAILQ_INSERT_BEFORE(current, con, nodes);
+            } else {
+                DLOG("Inserting con = %p after con %p\n", con, current);
+                TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
+            }
         } else
             TAILQ_INSERT_TAIL(nodes_head, con, nodes);
     }
@@ -1908,9 +1913,9 @@ void con_set_layout(Con *con, layout_t layout) {
         /* In case last_split_layout was not initialized… */
         if (con->layout == L_DEFAULT)
             con->layout = L_SPLITH;
-    } else {
+    } else
         con->layout = layout;
-    }
+
     con_force_split_parents_redraw(con);
 }
 
@@ -2289,19 +2294,36 @@ char *con_get_tree_representation(Con *con) {
 
     char *buf;
     /* 1) add the Layout type to buf */
-    if (con->layout == L_DEFAULT)
-        buf = sstrdup("D[");
-    else if (con->layout == L_SPLITV)
-        buf = sstrdup("V[");
-    else if (con->layout == L_SPLITH)
-        buf = sstrdup("H[");
-    else if (con->layout == L_TABBED)
-        buf = sstrdup("T[");
-    else if (con->layout == L_STACKED)
-        buf = sstrdup("S[");
-    else {
-        ELOG("BUG: Code not updated to account for new layout type\n");
-        assert(false);
+    if (con->layout_fill_order == LF_DEFAULT) {
+        if (con->layout == L_DEFAULT)
+            buf = sstrdup("D[");
+        else if (con->layout == L_SPLITV)
+            buf = sstrdup("V[");
+        else if (con->layout == L_SPLITH)
+            buf = sstrdup("H[");
+        else if (con->layout == L_TABBED)
+            buf = sstrdup("T[");
+        else if (con->layout == L_STACKED)
+            buf = sstrdup("S[");
+        else {
+            ELOG("BUG: Code not updated to account for new layout type\n");
+            assert(false);
+        }
+    } else {
+        if (con->layout == L_DEFAULT)
+            buf = sstrdup("Dr[");
+        else if (con->layout == L_SPLITV)
+            buf = sstrdup("Vr[");
+        else if (con->layout == L_SPLITH)
+            buf = sstrdup("Hr[");
+        else if (con->layout == L_TABBED)
+            buf = sstrdup("Tr[");
+        else if (con->layout == L_STACKED)
+            buf = sstrdup("Sr[");
+        else {
+            ELOG("BUG: Code not updated to account for new layout type\n");
+            assert(false);
+        }
     }
 
     /* 2) append representation of children */
