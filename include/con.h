@@ -451,7 +451,7 @@ int con_border_style(Con *con);
  * floating window.
  *
  */
-void con_set_border_style(Con *con, int border_style, int border_width);
+void con_set_border_style(Con *con, border_style_t border_style, int border_width);
 
 /**
  * This function changes the layout of a given container. Use it to handle

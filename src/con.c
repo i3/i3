@@ -41,7 +41,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     TAILQ_INSERT_TAIL(&all_cons, new, all_cons);
     new->type = CT_CON;
     new->window = window;
-    new->border_style = config.default_border;
+    new->border_style = new->max_user_border_style = config.default_border;
     new->current_border_width = -1;
     new->window_icon_padding = -1;
     if (window) {
@@ -1794,7 +1794,11 @@ int con_border_style(Con *con) {
  * floating window.
  *
  */
-void con_set_border_style(Con *con, int border_style, int border_width) {
+void con_set_border_style(Con *con, border_style_t border_style, int border_width) {
+    if (border_style > con->max_user_border_style) {
+        border_style = con->max_user_border_style;
+    }
+
     /* Handle the simple case: non-floating containerns */
     if (!con_is_floating(con)) {
         con->border_style = border_style;
@@ -1807,8 +1811,6 @@ void con_set_border_style(Con *con, int border_style, int border_width) {
      * con->rect represent the absolute position of the window (same for
      * parent). Then, we change the border style and subtract the new border
      * pixels. For the parent, we do the same also for the decoration. */
-    DLOG("This is a floating container\n");
-
     Con *parent = con->parent;
     Rect bsr = con_border_style_rect(con);
     int deco_height = (con->border_style == BS_NORMAL ? render_deco_height() : 0);

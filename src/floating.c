@@ -347,8 +347,9 @@ bool floating_enable(Con *con, bool automatic) {
     con->floating = FLOATING_USER_ON;
 
     /* 4: set the border style as specified with new_float */
-    if (automatic)
-        con->border_style = config.default_floating_border;
+    if (automatic) {
+        con->border_style = con->max_user_border_style = config.default_floating_border;
+    }
 
     /* Add pixels for the decoration. */
     Rect border_style_rect = con_border_style_rect(con);
