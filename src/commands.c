@@ -747,6 +747,8 @@ void cmd_border(I3_CMD, const char *border_style_str, long border_width) {
             return;
         }
 
+        /* User changed the border */
+        current->con->max_user_border_style = border_style;
         const int con_border_width = border_width_from_style(border_style, border_width, current->con);
         con_set_border_style(current->con, border_style, con_border_width);
     }
