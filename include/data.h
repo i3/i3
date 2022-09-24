@@ -61,9 +61,11 @@ typedef enum { NO_ORIENTATION = 0,
                VERT } orientation_t;
 typedef enum { BEFORE,
                AFTER } position_t;
-typedef enum { BS_NORMAL = 0,
-               BS_NONE = 1,
-               BS_PIXEL = 2 } border_style_t;
+typedef enum {
+    BS_NONE = 0,
+    BS_PIXEL = 1,
+    BS_NORMAL = 2,
+} border_style_t;
 
 /** parameter to specify whether tree_close_internal() and x_window_kill() should kill
  * only this specific window or the whole X11 client */
