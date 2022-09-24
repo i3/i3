@@ -23,18 +23,38 @@ use List::Util qw(first);
 use i3test i3_autostart => 0;
 use X11::XCB qw(:all);
 
+my $use_floating;
 sub subtest_with_config {
     my ($style, $cb) = @_;
+    my $some_other_style = $style eq "normal" ? "pixel" : "normal";
+
+    subtest 'with tiling', sub {
     my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 default_border $style
+default_floating_border $some_other_style
 EOT
     my $pid = launch_with_config($config);
+    $use_floating = 0;
     $cb->();
-    kill_all_windows;
     exit_gracefully($pid);
+    };
+
+    subtest 'with floating', sub {
+    my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+default_border $some_other_style
+default_floating_border $style
+EOT
+    my $pid = launch_with_config($config);
+    $use_floating = 1;
+    $cb->();
+    exit_gracefully($pid);
+    };
 }
 
 sub _change_motif_property {
@@ -51,7 +71,16 @@ sub _change_motif_property {
 
 sub open_window_with_motifs {
     my $value = shift;
-    my $window = open_window(
+
+    # we don't need other windows anymore, simplifies get_border_style
+    kill_all_windows;
+
+    my $open = \&open_window;
+    if ($use_floating) {
+        $open = \&open_floating_window;
+    }
+
+    my $window = $open->(
         before_map => sub {
             my ($window) = @_;
             _change_motif_property($window, $value);
@@ -71,9 +100,12 @@ sub change_motif_property {
 }
 
 sub get_border_style {
-    my @content = @{get_ws_content(focused_ws)};
-    my $wininfo = first { $_->{window} == $window->id } @content;
-    return $wininfo->{border};
+    if ($use_floating) {
+        my @floating = @{get_ws(focused_ws)->{floating_nodes}};
+        return $floating[0]->{nodes}[0]->{border};
+    }
+
+    return @{get_ws(focused_ws)->{nodes}}[0]->{border};
 }
 
 sub is_border_style {
