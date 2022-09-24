@@ -511,23 +511,19 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (nc->geometry.width == 0)
         nc->geometry = (Rect){geom->x, geom->y, geom->width, geom->height};
 
+    if (want_floating) {
+        DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
+        if (floating_enable(nc, true)) {
+            nc->floating = FLOATING_AUTO_ON;
+        }
+    }
+
     if (has_mwm_hints) {
         DLOG("MOTIF_WM_HINTS specifies decorations (border_style = %d)\n", motif_border_style);
         if (want_floating) {
             con_set_border_style(nc, motif_border_style, config.default_floating_border_width);
         } else {
             con_set_border_style(nc, motif_border_style, config.default_border_width);
-        }
-    }
-
-    if (want_floating) {
-        DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
-        /* automatically set the border to the default value if a motif border
-         * was not specified */
-        bool automatic_border = (motif_border_style == BS_NORMAL);
-
-        if (floating_enable(nc, automatic_border)) {
-            nc->floating = FLOATING_AUTO_ON;
         }
     }
 
