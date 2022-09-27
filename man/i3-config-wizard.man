@@ -35,7 +35,7 @@ used.
 
 == DESCRIPTION
 
-i3-config-wizard is started by i3 in its default config, unless ~/.i3/config
+i3-config-wizard is started by i3 in its default config, unless \~/.i3/config
 exists. i3-config-wizard creates a keysym based i3 config file (based on
 /etc/i3/config.keycodes) in ~/.i3/config.
 
