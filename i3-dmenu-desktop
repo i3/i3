@@ -413,7 +413,7 @@ my $exec = $app->{Exec};
 my $location = $app->{_Location};
 
 # Quote as described by “The Exec key”:
-# https://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
+# https://standards.freedesktop.org/desktop-entry-spec/latest/ar01s07.html
 sub quote {
     my ($str) = @_;
     $str =~ s/("|`|\$|\\)/\\$1/g;
@@ -424,6 +424,17 @@ sub quote {
 $choice = quote($choice);
 $location = quote($location);
 $name = quote($name);
+
+# https://standards.freedesktop.org/desktop-entry-spec/latest/ar01s07.html:
+#
+# Note that the general escape rule for values of type string states that the
+# backslash character can be escaped as ("\\") as well and that this escape rule
+# is applied before the quoting rule. As such, to unambiguously represent a
+# literal backslash character in a quoted argument in a desktop entry file
+# requires the use of four successive backslash characters ("\\\\"). Likewise, a
+# literal dollar sign in a quoted argument in a desktop entry file is
+# unambiguously represented with ("\\$").
+$exec =~ s/\\\\/\\/g;
 
 # Remove deprecated field codes, as the spec dictates.
 $exec =~ s/%[dDnNvm]//g;
@@ -481,9 +492,10 @@ EOT
     # starts with a double quote ("), everything is parsed as-is until the next
     # double quote which is NOT preceded by a backslash (\).
     #
-    # Therefore, we escape all double quotes (") by replacing them with \"
-    $exec =~ s/\\"/\\\\\\"/g;
-    $exec =~ s/([^\\])"/$1\\"/g;
+    # Therefore, we escape all double quotes (") by replacing them with \".
+    # To not change the meaning of any double quote, backslashes need to be
+    # escaped as well.
+    $exec =~ s/(["\\])/\\$1/g;
 
     if (exists($app->{StartupNotify}) && !$app->{StartupNotify}) {
         $nosn = '--no-startup-id';
