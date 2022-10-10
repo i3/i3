@@ -698,6 +698,10 @@ void floating_resize_window(Con *con, const bool proportional,
                             const xcb_button_press_event_t *event) {
     DLOG("floating_resize_window\n");
 
+    /* Push changes before resizing, so that the window gets raised now and not
+     * after the user releases the mouse button */
+    tree_render();
+
     /* corner saves the nearest corner to the original click. It contains
      * a bitmask of the nearest borders (BORDER_LEFT, BORDER_RIGHT, …) */
     border_t corner = 0;
