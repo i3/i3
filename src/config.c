@@ -275,11 +275,13 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
 
     /* Make bar config blocks without a configured font use the i3-wide font. */
     Barconfig *current;
-    TAILQ_FOREACH (current, &barconfigs, configs) {
-        if (current->font != NULL) {
-            continue;
+    if (load_type != C_VALIDATE) {
+        TAILQ_FOREACH (current, &barconfigs, configs) {
+            if (current->font != NULL) {
+                continue;
+            }
+            current->font = sstrdup(config.font.pattern);
         }
-        current->font = sstrdup(config.font.pattern);
     }
 
     if (load_type == C_RELOAD) {
