@@ -42,9 +42,7 @@ Con *get_existing_workspace_by_name(const char *name) {
  *
  */
 Con *get_existing_workspace_by_num(int num) {
-    Con *current = con_get_workspace(focused);
-    Con *output, *first = NULL, *last_select = NULL, *after_current = NULL;
-    bool prev_was_current = false;
+    Con *output, *first = NULL, *last_select = NULL;
     TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
         /*
          * iterate through workspaces and get first (as fallback) - otherwise return
@@ -62,17 +60,6 @@ Con *get_existing_workspace_by_num(int num) {
             if (child->num_last_selected) {
                 last_select = child;
             }
-
-            // if current equals the child, go to next
-            if (current == child) {
-                prev_was_current = true;
-                continue;
-            }
-            // return the next after prev
-            if (prev_was_current) {
-                after_current = child;
-                prev_was_current = false;
-            }
         }
     }
 
@@ -80,15 +67,9 @@ Con *get_existing_workspace_by_num(int num) {
 
     // selection logic
     // if last selected is current -> then check for after_current
-    if (last_select && last_select != current) {
+    if (last_select) {
         last_select->num_last_selected = true;
         return last_select;
-    }
-
-    // if after_current exists, return that
-    if (after_current) {
-        after_current->num_last_selected = true;
-        return after_current;
     }
 
     // fallback is return first
