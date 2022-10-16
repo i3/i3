@@ -283,7 +283,8 @@ void tiling_drag(Con *con, xcb_button_press_event_t *event) {
     xcb_window_t indicator = 0;
     const struct callback_params params = {&indicator, &target, &direction, &drop_type};
 
-    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, BORDER_TOP, XCURSOR_CURSOR_MOVE, drag_callback, &params);
+    const bool use_threshold = true;
+    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, XCURSOR_CURSOR_MOVE, use_threshold, drag_callback, &params);
 
     /* Dragging is done. We don't need the indicator window any more. */
     xcb_destroy_window(conn, indicator);
