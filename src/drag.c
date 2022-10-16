@@ -42,7 +42,8 @@ struct drag_x11_cb {
 
 static bool threshold_exceeded(uint32_t x1, uint32_t y1,
                                uint32_t x2, uint32_t y2) {
-    const uint32_t threshold = 9;
+    /* The threshold is about the height of one window decoration. */
+    const uint32_t threshold = logical_px(15);
     return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) > threshold * threshold;
 }
 
