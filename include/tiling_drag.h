@@ -13,4 +13,4 @@
  * Initiates a mouse drag operation on a tiled window.
  *
  */
-void tiling_drag(Con *con, xcb_button_press_event_t *event);
+void tiling_drag(Con *con, xcb_button_press_event_t *event, bool use_threshold);
