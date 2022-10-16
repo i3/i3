@@ -41,6 +41,11 @@ static Con *find_drop_target(uint32_t x, uint32_t y) {
             !con_is_floating(con) &&
             !con_is_hidden(con)) {
             Con *ws = con_get_workspace(con);
+            if (strcmp(ws->name, "__i3_scratch") == 0) {
+                /* Skip containers on the scratchpad, which are technically
+                   visible on their pseudo-output. */
+                continue;
+            }
             if (!workspace_is_visible(ws)) {
                 continue;
             }
