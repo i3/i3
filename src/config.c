@@ -222,6 +222,8 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
 
     config.focus_wrapping = FOCUS_WRAPPING_ON;
 
+    config.tiling_drag = TILING_DRAG_MODIFIER;
+
     FREE(current_configpath);
     current_configpath = get_config_path(override_configpath, true);
     if (current_configpath == NULL) {

@@ -560,6 +560,20 @@ CFGFUN(ipc_kill_timeout, const long timeout_ms) {
     ipc_set_kill_timeout(timeout_ms / 1000.0);
 }
 
+CFGFUN(tiling_drag, const char *value) {
+    if (strcmp(value, "modifier") == 0) {
+        config.tiling_drag = TILING_DRAG_MODIFIER;
+    } else if (strcmp(value, "titlebar") == 0) {
+        config.tiling_drag = TILING_DRAG_TITLEBAR;
+    } else if (strcmp(value, "modifier,titlebar") == 0 ||
+               strcmp(value, "titlebar,modifier") == 0) {
+        /* Switch the above to strtok() or similar if we ever grow more options */
+        config.tiling_drag = TILING_DRAG_MODIFIER_OR_TITLEBAR;
+    } else {
+        config.tiling_drag = TILING_DRAG_OFF;
+    }
+}
+
 /*******************************************************************************
  * Bar configuration (i3bar)
  ******************************************************************************/

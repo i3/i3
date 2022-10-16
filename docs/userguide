@@ -196,6 +196,7 @@ provided by the i3 https://github.com/i3/i3/blob/next/etc/config.keycodes[defaul
 
 Floating windows are always on top of tiling windows.
 
+[[tiling_drag]]
 === Moving tiling containers with the mouse
 
 Since i3 4.21, it's possible to drag tiling containers using the mouse. The
@@ -1401,6 +1402,29 @@ fullscreen toggle
 # this line is not continued \
 bindsym Mod1+F fullscreen toggle
 -------------------
+
+[[config_tiling_drag]]
+=== Tiling drag
+
+You can configure how to initiate the tiling drag feature (see <<tiling_drag>>).
+
+*Syntax*:
+--------------------------------
+tiling_drag off
+tiling_drag modifier|titlebar [modifier|titlebar]
+--------------------------------
+
+*Examples*:
+--------------------------------
+# Only initiate a tiling drag when the modifier is held:
+tiling_drag modifier
+
+# Initiate a tiling drag on either titlebar click or held modifier:
+tiling_drag modifier titlebar
+
+# Disable tiling drag altogether
+tiling_drag off
+--------------------------------
 
 == Configuring i3bar
 

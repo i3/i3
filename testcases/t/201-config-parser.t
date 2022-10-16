@@ -549,6 +549,7 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         ipc_kill_timeout
         restart_state
         popup_during_fullscreen
+	tiling_drag
         exec_always
         exec
         client.background
