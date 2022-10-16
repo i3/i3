@@ -230,7 +230,8 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
     /* 2: floating modifier pressed, initiate a drag */
     if (mod_pressed && is_left_click && !floatingcon &&
         (config.tiling_drag == TILING_DRAG_MODIFIER ||
-         config.tiling_drag == TILING_DRAG_MODIFIER_OR_TITLEBAR)) {
+         config.tiling_drag == TILING_DRAG_MODIFIER_OR_TITLEBAR) &&
+        has_drop_targets()) {
         const bool use_threshold = !mod_pressed;
         tiling_drag(con, event, use_threshold);
         allow_replay_pointer(event->time);
@@ -311,7 +312,8 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
     if (is_left_click &&
         ((config.tiling_drag == TILING_DRAG_TITLEBAR && dest == CLICK_DECORATION) ||
          (config.tiling_drag == TILING_DRAG_MODIFIER_OR_TITLEBAR &&
-          (mod_pressed || dest == CLICK_DECORATION)))) {
+          (mod_pressed || dest == CLICK_DECORATION))) &&
+        has_drop_targets()) {
         allow_replay_pointer(event->time);
         const bool use_threshold = !mod_pressed;
         tiling_drag(con, event, use_threshold);
