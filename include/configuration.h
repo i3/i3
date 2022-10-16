@@ -14,6 +14,7 @@
 
 #include "queue.h"
 #include "i3.h"
+#include "tiling_drag.h"
 
 typedef struct IncludedFile IncludedFile;
 typedef struct Config Config;
@@ -265,6 +266,8 @@ struct Config {
 
     /* The number of currently parsed barconfigs */
     int number_barconfigs;
+
+    tiling_drag_t tiling_drag;
 };
 
 /**

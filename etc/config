@@ -49,6 +49,10 @@ set $right semicolon
 # use Mouse+Mod1 to drag floating windows to their wanted position
 floating_modifier Mod1
 
+# move tiling windows via drag & drop by left-clicking into the title bar,
+# or left-clicking anywhere into the window while holding the floating modifier.
+tiling_drag modifier titlebar
+
 # start a terminal
 bindsym Mod1+Return exec i3-sensible-terminal
 
