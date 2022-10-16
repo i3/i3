@@ -267,7 +267,7 @@ static xcb_window_t create_drop_indicator(Rect rect) {
  * Initiates a mouse drag operation on a tiled window.
  *
  */
-void tiling_drag(Con *con, xcb_button_press_event_t *event) {
+void tiling_drag(Con *con, xcb_button_press_event_t *event, bool use_threshold) {
     DLOG("Start dragging tiled container: con = %p\n", con);
     bool set_focus = (con == focused);
     bool set_fs = con->fullscreen_mode != CF_NONE;
@@ -283,7 +283,6 @@ void tiling_drag(Con *con, xcb_button_press_event_t *event) {
     xcb_window_t indicator = 0;
     const struct callback_params params = {&indicator, &target, &direction, &drop_type};
 
-    const bool use_threshold = true;
     drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, XCURSOR_CURSOR_MOVE, use_threshold, drag_callback, &params);
 
     /* Dragging is done. We don't need the indicator window any more. */
