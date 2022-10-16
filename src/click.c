@@ -229,7 +229,8 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
 
     /* 2: floating modifier pressed, initiate a drag */
     if (mod_pressed && event->detail == XCB_BUTTON_INDEX_1 && !floatingcon) {
-        tiling_drag(con, event);
+        const bool use_threshold = !mod_pressed;
+        tiling_drag(con, event, use_threshold);
         allow_replay_pointer(event->time);
         return;
     }
@@ -307,7 +308,8 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
     /* 8: floating modifier pressed, initiate a drag */
     if ((mod_pressed || dest == CLICK_DECORATION) && event->detail == XCB_BUTTON_INDEX_1) {
         allow_replay_pointer(event->time);
-        tiling_drag(con, event);
+        const bool use_threshold = !mod_pressed;
+        tiling_drag(con, event, use_threshold);
         return;
     }
 
