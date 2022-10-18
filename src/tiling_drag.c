@@ -27,6 +27,62 @@ static Rect con_rect_plus_deco_height(Con *con) {
     return rect;
 }
 
+static bool is_tiling_drop_target(Con *con) {
+    if (!con_has_managed_window(con) ||
+        con_is_floating(con) ||
+        con_is_hidden(con)) {
+        return false;
+    }
+    Con *ws = con_get_workspace(con);
+    if (con_is_internal(ws)) {
+        /* Skip containers on i3-internal containers like the scratchpad, which are
+           technically visible on their pseudo-output. */
+        return false;
+    }
+    if (!workspace_is_visible(ws)) {
+        return false;
+    }
+    Con *fs = con_get_fullscreen_covering_ws(ws);
+    if (fs != NULL && fs != con) {
+        /* Workspace is visible, but con is not visible because some other
+           container is in fullscreen. */
+        return false;
+    }
+    return true;
+}
+
+/*
+ * Returns whether there currently are any drop targets.
+ * Used to only initiate a drag when there is something to drop onto.
+ *
+ */
+bool has_drop_targets(void) {
+    int drop_targets = 0;
+    Con *con;
+    TAILQ_FOREACH (con, &all_cons, all_cons) {
+        if (!is_tiling_drop_target(con)) {
+            continue;
+        }
+        drop_targets++;
+    }
+
+    /* In addition to tiling containers themselves, an visible but empty
+     * workspace (in a multi-monitor scenario) also is a drop target. */
+    Con *output;
+    TAILQ_FOREACH (output, &(croot->focus_head), focused) {
+        if (con_is_internal(output)) {
+            continue;
+        }
+        Con *visible_ws = NULL;
+        GREP_FIRST(visible_ws, output_get_content(output), workspace_is_visible(child));
+        if (visible_ws != NULL && con_num_children(visible_ws) == 0) {
+            drop_targets++;
+        }
+    }
+
+    return drop_targets > 1;
+}
+
 /*
  * Return an appropriate target at given coordinates.
  *
@@ -35,23 +91,13 @@ static Con *find_drop_target(uint32_t x, uint32_t y) {
     Con *con;
     TAILQ_FOREACH (con, &all_cons, all_cons) {
         Rect rect = con_rect_plus_deco_height(con);
-
-        if (rect_contains(rect, x, y) &&
-            con_has_managed_window(con) &&
-            !con_is_floating(con) &&
-            !con_is_hidden(con)) {
-            Con *ws = con_get_workspace(con);
-            if (strcmp(ws->name, "__i3_scratch") == 0) {
-                /* Skip containers on the scratchpad, which are technically
-                   visible on their pseudo-output. */
-                continue;
-            }
-            if (!workspace_is_visible(ws)) {
-                continue;
-            }
-            Con *fs = con_get_fullscreen_covering_ws(ws);
-            return fs ? fs : con;
+        if (!rect_contains(rect, x, y) ||
+            !is_tiling_drop_target(con)) {
+            continue;
         }
+        Con *ws = con_get_workspace(con);
+        Con *fs = con_get_fullscreen_covering_ws(ws);
+        return fs ? fs : con;
     }
 
     /* Couldn't find leaf container, get a workspace. */
