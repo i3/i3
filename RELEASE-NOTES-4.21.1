@@ -1,0 +1,44 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.21.1 │
+ └──────────────────────────────┘
+
+This is i3 v4.21.1. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+This release fixes a few rough edges with regards to the newly-introduced
+tiling drag feature, which is now configurable:
+https://i3wm.org/docs/userguide.html#config_tiling_drag
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.21.1      │
+ └────────────────────────────┘
+
+  • tiling drag: allow configuration
+  • tiling drag: allow click immediately, to focus on decoration click
+  • tiling drag: fix cursor (wrong argument passed)
+  • tiling drag: increase drag threshold, run it through logical_px
+  • tiling drag: left-click needs threshold, mod-click doesn’t
+  • tiling drag: ignore scratchpad windows when locating drop targets
+  • tiling drag: only start when there are drop targets
+  • Raise floating windows when their border is clicked
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • docs/ipc: document sticky field of GET_TREE
+  • man/i3-config-wizard: escape ~ to prevent interpretation as subscript
+  • Motif hints: respect maximum border style configuration set by user
+  • i3-dmenu-desktop: fix quoting bug
+  • Fix segfault during config validation
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  Erich Heine, Matias Goldfeld, Orestis Floros, Tudor Brindus, bodea
+
+-- Michael Stapelberg, 2022-10-24
