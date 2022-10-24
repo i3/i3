@@ -18,7 +18,7 @@
 # and sends the command to i3 for execution.
 # Ticket: #5152, #5156
 # Bug still in: 4.21-17-g389d555d
-use i3test;
+use i3test i3_autostart => 0;
 use i3test::Util qw(slurp);
 use File::Temp qw(tempfile tempdir);
 use POSIX qw(mkfifo);
