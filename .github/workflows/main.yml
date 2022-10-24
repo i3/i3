@@ -23,7 +23,7 @@ jobs:
       BALTO_TOKEN: ${{ secrets.BALTO_TOKEN }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: git fetch --prune --unshallow
     - name: construct container name
       run: |
@@ -90,7 +90,7 @@ jobs:
     name: Check formatting
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: check & print release notes
       run: ./release-notes/generator.pl
     - name: Install dependencies
