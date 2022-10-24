@@ -67,10 +67,8 @@ EOT
 
     # complete-run.pl arranges for $PATH to be set up such that the
     # i3-dmenu-desktop version we execute is the one from the build directory.
-    my $exit = system("i3-dmenu-desktop --dmenu 'echo i3-testsuite-$testcnt' &");
-    if ($exit != 0) {
-	die "failed to run i3-dmenu-desktop";
-    }
+    my $exit = system("(i3-dmenu-desktop --dmenu 'echo i3-testsuite-$testcnt' || echo failed with \$? > $tmpdir/fifo) &");
+    die "failed to start i3-dmenu-desktop" unless $exit == 0;
 
     chomp($want_arg);  # trim trailing newline
     my $got_args = decode_json(slurp("$tmpdir/fifo"));
