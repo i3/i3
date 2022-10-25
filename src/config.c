@@ -282,7 +282,10 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
             if (current->font != NULL) {
                 continue;
             }
-            current->font = sstrdup(config.font.pattern);
+
+            if (config.font.pattern != NULL) {
+                current->font = sstrdup(config.font.pattern);
+            }
         }
     }
 
