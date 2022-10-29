@@ -366,8 +366,13 @@ binmode $dmenu_in, ':utf8';
 binmode $dmenu_out, ':utf8';
 
 # Feed dmenu the possible choices.
+# Since the process might have already exited, we ignore SIGPIPE.
+$SIG{PIPE} = 'IGNORE';
+
 say $dmenu_in $_ for sort keys %choices;
 close($dmenu_in);
+
+$SIG{PIPE} = 'DEFAULT';
 
 waitpid($pid, 0);
 my $status = ($? >> 8);
