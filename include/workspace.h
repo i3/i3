@@ -46,6 +46,12 @@ Con *get_existing_workspace_by_name(const char *name);
 Con *get_existing_workspace_by_num(int num);
 
 /**
+ * Clears the num_last_selected property of all workspaces by workspace number.
+ * (there can be multiple: 1a, 1b, etc.).
+ */
+void clear_num_last_selected_by_num(int num);
+
+/**
  * Returns the first output that is assigned to a workspace specified by the
  * given name or number. Returns NULL if no such output exists.
  *
