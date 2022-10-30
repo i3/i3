@@ -329,6 +329,12 @@ static int config_integer_cb(void *params_, long long val) {
         return 0;
     }
 
+    if (!strcmp(cur_key, "bar_height")) {
+        DLOG("bar_height = %lld", val);
+        config.bar_height = (uint32_t)val;
+        return 1;
+    }
+
     if (!strcmp(cur_key, "tray_padding")) {
         DLOG("tray_padding = %lld\n", val);
         config.tray_padding = val;
@@ -353,8 +359,8 @@ static int config_integer_cb(void *params_, long long val) {
 /* A datastructure to pass all these callbacks to yajl */
 static yajl_callbacks outputs_callbacks = {
     .yajl_null = config_null_cb,
-    .yajl_boolean = config_boolean_cb,
     .yajl_integer = config_integer_cb,
+    .yajl_boolean = config_boolean_cb,
     .yajl_string = config_string_cb,
     .yajl_end_array = config_end_array_cb,
     .yajl_map_key = config_map_key_cb,

@@ -43,6 +43,7 @@ typedef struct config_t {
     TAILQ_HEAD(bindings_head, binding_t) bindings;
     position_t position;
     bool verbose;
+    uint32_t bar_height;
     bool transparency;
     struct xcb_color_strings_t colors;
     bool disable_binding_mode_indicator;
