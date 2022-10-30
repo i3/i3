@@ -1545,7 +1545,7 @@ the windows key). The default value for the hidden_state is hide.
 mode dock|hide|invisible
 hidden_state hide|show
 modifier <Modifier>|none
-------------------------
+-------------------------
 
 *Example*:
 ----------------
@@ -1715,7 +1715,7 @@ tray_output none|primary|<output>
 ---------------------------------
 
 *Example*:
--------------------------
+----------------------------------
 # disable system tray
 bar {
     tray_output none
@@ -1730,7 +1730,7 @@ bar {
 bar {
     tray_output HDMI2
 }
--------------------------
+----------------------------------
 
 Note that you might not have a primary output configured yet. To do so, run:
 -------------------------
@@ -1754,10 +1754,10 @@ tray_padding <px> [px]
 -------------------------
 
 *Example*:
--------------------------
+---------------------------
 # Obey Fitts's law
 tray_padding 0
--------------------------
+---------------------------
 
 === Font
 
@@ -2574,7 +2574,7 @@ To move a container to another RandR output (addressed by names like +LVDS1+ or
 +right+, +up+ or +down+), there are two commands:
 
 *Syntax*:
-------------------------------------------------------------
+-------------------------------------------------------------------------------------
 move container to output left|right|down|up|current|primary|next|<output1> [output2]…
 move workspace to output left|right|down|up|current|primary|next|<output1> [output2]…
 -------------------------------------------------------------------------------------
@@ -2798,10 +2798,10 @@ Starting with i3 v4.20, you can optionally enable window icons either for
 specific windows or for all windows (using the <<for_window>> directive).
 
 *Syntax*:
------------------------------
+----------------------------------------
 title_window_icon <yes|no|toggle>
 title_window_icon <padding|toggle> <px>
-------------------------------
+----------------------------------------
 
 *Examples*:
 -------------------------------------------------------------------------------------
@@ -3035,7 +3035,8 @@ To help you get going if you have never used multiple monitors before, here is
 a short overview of the xrandr options which will probably be of interest to
 you. It is always useful to get an overview of the current screen configuration.
 Just run "xrandr" and you will get an output like the following:
--------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------------
 $ xrandr
 Screen 0: minimum 320 x 200, current 1280 x 800, maximum 8192 x 8192
 VGA1 disconnected (normal left inverted right x axis y axis)
@@ -3048,7 +3049,7 @@ LVDS1 connected 1280x800+0+0 (normal left inverted right x axis y axis) 261mm x 
    720x400        85.0
    640x400        85.1
    640x350        85.1
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
 
 Several things are important here: You can see that +LVDS1+ is connected (of
 course, it is the internal flat panel) but +VGA1+ is not. If you have a monitor
@@ -3060,12 +3061,15 @@ combined resolution of your monitors. By default, it is usually too low and has
 to be increased by editing +/etc/X11/xorg.conf+.
 
 So, say you connected VGA1 and want to use it as an additional screen:
+
 -------------------------------------------
 xrandr --output VGA1 --auto --left-of LVDS1
 -------------------------------------------
+
 This command makes xrandr try to find the native resolution of the device
 connected to +VGA1+ and configures it to the left of your internal flat panel.
 When running "xrandr" again, the output looks like this:
+
 -------------------------------------------------------------------------------
 $ xrandr
 Screen 0: minimum 320 x 200, current 2560 x 1024, maximum 8192 x 8192
@@ -3088,6 +3092,7 @@ LVDS1 connected 1280x800+1280+0 (normal left inverted right x axis y axis) 261mm
    640x400        85.1
    640x350        85.1
 -------------------------------------------------------------------------------
+
 Please note that i3 uses exactly the same API as xrandr does, so it will see
 only what you can see in xrandr.
 
