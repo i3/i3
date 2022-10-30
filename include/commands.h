@@ -333,6 +333,12 @@ void cmd_shmlog(I3_CMD, const char *argument);
 void cmd_debuglog(I3_CMD, const char *argument);
 
 /**
+ * Implementation of 'gaps inner|outer|top|right|bottom|left|horizontal|vertical current|all set|plus|minus|toggle <px>'
+ *
+ */
+void cmd_gaps(I3_CMD, const char *type, const char *scope, const char *mode, const char *value);
+
+/**
  * Implementation of 'title_window_icon <yes|no|toggle>' and 'title_window_icon <padding|toggle> <px>'
  *
  */

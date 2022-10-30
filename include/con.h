@@ -526,6 +526,13 @@ void con_set_urgency(Con *con, bool urgent);
 char *con_get_tree_representation(Con *con);
 
 /**
+  * Calculates the effective gap sizes for a container depending
+  * on whether it is adjacent to the edge of the screen or another
+  * container.
+  */
+gaps_t calculate_effective_gaps(Con *con);
+
+/**
  * force parent split containers to be redrawn
  *
  */

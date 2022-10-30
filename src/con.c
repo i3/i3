@@ -1685,6 +1685,13 @@ Con *con_descend_direction(Con *con, direction_t direction) {
     return con_descend_direction(most, direction);
 }
 
+static bool has_outer_gaps(gaps_t gaps) {
+    return gaps.top > 0 ||
+           gaps.right > 0 ||
+           gaps.bottom > 0 ||
+           gaps.left > 0;
+}
+
 /*
  * Returns a "relative" Rect which contains the amount of pixels that need to
  * be added to the original Rect to get the final position (obviously the
@@ -1692,10 +1699,12 @@ Con *con_descend_direction(Con *con, direction_t direction) {
  *
  */
 Rect con_border_style_rect(Con *con) {
-    if (config.hide_edge_borders == HEBM_SMART && con_num_visible_children(con_get_workspace(con)) <= 1) {
-        if (!con_is_floating(con)) {
+    if ((config.smart_borders == SMART_BORDERS_ON && con_num_visible_children(con_get_workspace(con)) <= 1) ||
+        (config.smart_borders == SMART_BORDERS_NO_GAPS && !has_outer_gaps(calculate_effective_gaps(con))) ||
+        (config.hide_edge_borders == HEBM_SMART && con_num_visible_children(con_get_workspace(con)) <= 1) ||
+        (config.hide_edge_borders == HEBM_SMART_NO_GAPS && con_num_visible_children(con_get_workspace(con)) <= 1 && !has_outer_gaps(calculate_effective_gaps(con)))) {
+        if (!con_is_floating(con))
             return (Rect){0, 0, 0, 0};
-        }
     }
 
     adjacent_t borders_to_hide = ADJ_NONE;
@@ -1720,7 +1729,13 @@ Rect con_border_style_rect(Con *con) {
         result = (Rect){border_width, border_width, -(2 * border_width), -(2 * border_width)};
     }
 
-    borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
+    /* If hide_edge_borders is set to no_gaps and it did not pass the no border check, show all borders */
+    if (config.hide_edge_borders == HEBM_SMART_NO_GAPS) {
+        borders_to_hide = con_adjacent_borders(con) & HEBM_NONE;
+    } else {
+        borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
+    }
+
     if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {
         result.x -= border_width;
         result.width += border_width;
@@ -2325,6 +2340,45 @@ char *con_get_tree_representation(Con *con) {
     free(buf);
 
     return complete_buf;
+}
+
+/**
+ * Calculates the effective gap sizes for a container.
+ */
+gaps_t calculate_effective_gaps(Con *con) {
+    Con *workspace = con_get_workspace(con);
+    if (workspace == NULL)
+        return (gaps_t){0, 0, 0, 0, 0};
+
+    bool one_child = con_num_visible_children(workspace) <= 1 ||
+                     (con_num_children(workspace) == 1 &&
+                      (TAILQ_FIRST(&(workspace->nodes_head))->layout == L_TABBED ||
+                       TAILQ_FIRST(&(workspace->nodes_head))->layout == L_STACKED));
+
+    if (config.smart_gaps == SMART_GAPS_ON && one_child)
+        return (gaps_t){0, 0, 0, 0, 0};
+
+    gaps_t gaps = {
+        .inner = (workspace->gaps.inner + config.gaps.inner) / 2,
+        .top = 0,
+        .right = 0,
+        .bottom = 0,
+        .left = 0};
+
+    if (config.smart_gaps != SMART_GAPS_INVERSE_OUTER || one_child) {
+        gaps.top = workspace->gaps.top + config.gaps.top;
+        gaps.right = workspace->gaps.right + config.gaps.right;
+        gaps.bottom = workspace->gaps.bottom + config.gaps.bottom;
+        gaps.left = workspace->gaps.left + config.gaps.left;
+    }
+
+    /* Outer gaps are added on top of inner gaps. */
+    gaps.top += 2 * gaps.inner;
+    gaps.right += 2 * gaps.inner;
+    gaps.bottom += 2 * gaps.inner;
+    gaps.left += 2 * gaps.inner;
+
+    return gaps;
 }
 
 /*

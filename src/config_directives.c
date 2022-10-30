@@ -231,6 +231,160 @@ CFGFUN(for_window, const char *command) {
     TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
 }
 
+static void create_gaps_assignment(const char *workspace, const char *scope, gaps_t gaps) {
+    DLOG("Setting gaps for workspace %s", workspace);
+
+    struct Workspace_Assignment *assignment;
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+        if (strcasecmp(assignment->name, workspace) == 0) {
+            if (!strcmp(scope, "inner")) {
+                assignment->gaps.inner = gaps.inner;
+            } else if (!strcmp(scope, "outer")) {
+                assignment->gaps.top = gaps.top;
+                assignment->gaps.right = gaps.right;
+                assignment->gaps.bottom = gaps.bottom;
+                assignment->gaps.left = gaps.left;
+            } else if (!strcmp(scope, "vertical")) {
+                assignment->gaps.top = gaps.top;
+                assignment->gaps.bottom = gaps.bottom;
+            } else if (!strcmp(scope, "horizontal")) {
+                assignment->gaps.right = gaps.right;
+                assignment->gaps.left = gaps.left;
+            } else if (!strcmp(scope, "top")) {
+                assignment->gaps.top = gaps.top;
+            } else if (!strcmp(scope, "right")) {
+                assignment->gaps.right = gaps.right;
+            } else if (!strcmp(scope, "bottom")) {
+                assignment->gaps.bottom = gaps.bottom;
+            } else if (!strcmp(scope, "left")) {
+                assignment->gaps.left = gaps.left;
+            } else {
+                ELOG("Invalid command, cannot process scope %s", scope);
+            }
+
+            return;
+        }
+    }
+
+    // Assignment does not yet exist, let's create it.
+    assignment = scalloc(1, sizeof(struct Workspace_Assignment));
+    assignment->name = sstrdup(workspace);
+    assignment->output = NULL;
+    if (!strcmp(scope, "inner")) {
+        assignment->gaps.inner = gaps.inner;
+    } else if (!strcmp(scope, "outer")) {
+        assignment->gaps.top = gaps.top;
+        assignment->gaps.right = gaps.right;
+        assignment->gaps.bottom = gaps.bottom;
+        assignment->gaps.left = gaps.left;
+    } else if (!strcmp(scope, "vertical")) {
+        assignment->gaps.top = gaps.top;
+        assignment->gaps.bottom = gaps.bottom;
+    } else if (!strcmp(scope, "horizontal")) {
+        assignment->gaps.right = gaps.right;
+        assignment->gaps.left = gaps.left;
+    } else if (!strcmp(scope, "top")) {
+        assignment->gaps.top = gaps.top;
+    } else if (!strcmp(scope, "right")) {
+        assignment->gaps.right = gaps.right;
+    } else if (!strcmp(scope, "bottom")) {
+        assignment->gaps.bottom = gaps.bottom;
+    } else if (!strcmp(scope, "left")) {
+        assignment->gaps.left = gaps.left;
+    } else {
+        ELOG("Invalid command, cannot process scope %s", scope);
+    }
+    TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
+}
+
+CFGFUN(gaps, const char *workspace, const char *scope, const long value) {
+    int pixels = logical_px(value);
+    gaps_t gaps = (gaps_t){0, 0, 0, 0, 0};
+    if (!strcmp(scope, "inner")) {
+        if (workspace == NULL)
+            config.gaps.inner = pixels;
+        else {
+            gaps.inner = pixels - config.gaps.inner;
+            create_gaps_assignment(workspace, scope, gaps);
+        }
+    } else if (!strcmp(scope, "outer")) {
+        if (workspace == NULL) {
+            config.gaps.top = pixels;
+            config.gaps.right = pixels;
+            config.gaps.bottom = pixels;
+            config.gaps.left = pixels;
+        } else {
+            gaps.top = pixels - config.gaps.top;
+            gaps.right = pixels - config.gaps.right;
+            gaps.bottom = pixels - config.gaps.bottom;
+            gaps.left = pixels - config.gaps.left;
+            create_gaps_assignment(workspace, scope, gaps);
+        }
+    } else if (!strcmp(scope, "vertical")) {
+        if (workspace == NULL) {
+            config.gaps.top = pixels;
+            config.gaps.bottom = pixels;
+        } else {
+            gaps.top = pixels - config.gaps.top;
+            gaps.bottom = pixels - config.gaps.bottom;
+            create_gaps_assignment(workspace, scope, gaps);
+        }
+    } else if (!strcmp(scope, "horizontal")) {
+        if (workspace == NULL) {
+            config.gaps.right = pixels;
+            config.gaps.left = pixels;
+        } else {
+            gaps.right = pixels - config.gaps.right;
+            gaps.left = pixels - config.gaps.left;
+            create_gaps_assignment(workspace, scope, gaps);
+        }
+    } else if (!strcmp(scope, "top")) {
+        if (workspace == NULL)
+            config.gaps.top = pixels;
+        else {
+            gaps.top = pixels - config.gaps.top;
+            create_gaps_assignment(workspace, scope, gaps);
+        }
+    } else if (!strcmp(scope, "right")) {
+        if (workspace == NULL)
+            config.gaps.right = pixels;
+        else {
+            gaps.right = pixels - config.gaps.right;
+            create_gaps_assignment(workspace, scope, gaps);
+        }
+    } else if (!strcmp(scope, "bottom")) {
+        if (workspace == NULL)
+            config.gaps.bottom = pixels;
+        else {
+            gaps.bottom = pixels - config.gaps.bottom;
+            create_gaps_assignment(workspace, scope, gaps);
+        }
+    } else if (!strcmp(scope, "left")) {
+        if (workspace == NULL)
+            config.gaps.left = pixels;
+        else {
+            gaps.left = pixels - config.gaps.left;
+            create_gaps_assignment(workspace, scope, gaps);
+        }
+    } else {
+        ELOG("Invalid command, cannot process scope %s", scope);
+    }
+}
+
+CFGFUN(smart_borders, const char *enable) {
+    if (!strcmp(enable, "no_gaps"))
+        config.smart_borders = SMART_BORDERS_NO_GAPS;
+    else
+        config.smart_borders = boolstr(enable) ? SMART_BORDERS_ON : SMART_BORDERS_OFF;
+}
+
+CFGFUN(smart_gaps, const char *enable) {
+    if (!strcmp(enable, "inverse_outer"))
+        config.smart_gaps = SMART_GAPS_INVERSE_OUTER;
+    else
+        config.smart_gaps = boolstr(enable) ? SMART_GAPS_ON : SMART_GAPS_OFF;
+}
+
 CFGFUN(floating_minimum_size, const long width, const long height) {
     config.floating_minimum_width = width;
     config.floating_minimum_height = height;
@@ -297,7 +451,9 @@ CFGFUN(default_border, const char *windowtype, const char *border, const long wi
 }
 
 CFGFUN(hide_edge_borders, const char *borders) {
-    if (strcmp(borders, "smart") == 0)
+    if (strcmp(borders, "smart_no_gaps") == 0)
+        config.hide_edge_borders = HEBM_SMART_NO_GAPS;
+    else if (strcmp(borders, "smart") == 0)
         config.hide_edge_borders = HEBM_SMART;
     else if (strcmp(borders, "vertical") == 0)
         config.hide_edge_borders = HEBM_VERTICAL;
@@ -417,9 +573,11 @@ CFGFUN(workspace, const char *workspace, const char *output) {
 
         TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
             if (strcasecmp(assignment->name, workspace) == 0) {
-                ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
-                     workspace);
-                return;
+                if (assignment->output != NULL) {
+                    ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
+                         workspace);
+                    return;
+                }
             }
         }
 
