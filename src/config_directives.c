@@ -613,6 +613,10 @@ CFGFUN(bar_verbose, const char *verbose) {
     current_bar->verbose = boolstr(verbose);
 }
 
+CFGFUN(bar_height, const long height) {
+    current_bar->bar_height = (uint32_t)height;
+}
+
 CFGFUN(bar_modifier, const char *modifiers) {
     current_bar->modifier = modifiers ? event_state_from_str(modifiers) : XCB_NONE;
 }

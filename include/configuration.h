@@ -355,6 +355,9 @@ struct Barconfig {
     /** Enable verbose mode? Useful for debugging purposes. */
     bool verbose;
 
+    /** Defines the height of the bar in pixels. */
+    uint32_t bar_height;
+
     struct bar_colors {
         char *background;
         char *statusline;
