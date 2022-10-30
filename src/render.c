@@ -20,6 +20,8 @@ static void render_con_split(Con *con, Con *child, render_params *p, int i);
 static void render_con_stacked(Con *con, Con *child, render_params *p, int i);
 static void render_con_tabbed(Con *con, Con *child, render_params *p, int i);
 static void render_con_dockarea(Con *con, Con *child, render_params *p);
+bool should_inset_con(Con *con, int children);
+bool has_adjacent_container(Con *con, direction_t direction);
 
 /*
  * Returns the height for the decorations
@@ -39,7 +41,7 @@ int render_deco_height(void) {
  * updated in X11.
  *
  */
-void render_con(Con *con) {
+void render_con(Con *con, bool already_inset) {
     render_params params = {
         .rect = con->rect,
         .x = con->rect.x,
@@ -48,6 +50,33 @@ void render_con(Con *con) {
 
     DLOG("Rendering node %p / %s / layout %d / children %d\n", con, con->name,
          con->layout, params.children);
+
+    bool should_inset = should_inset_con(con, params.children);
+    if (!already_inset && should_inset) {
+        gaps_t gaps = calculate_effective_gaps(con);
+        Rect inset = (Rect){
+            has_adjacent_container(con, D_LEFT) ? gaps.inner : gaps.left,
+            has_adjacent_container(con, D_UP) ? gaps.inner : gaps.top,
+            has_adjacent_container(con, D_RIGHT) ? -gaps.inner : -gaps.right,
+            has_adjacent_container(con, D_DOWN) ? -gaps.inner : -gaps.bottom};
+        inset.width -= inset.x;
+        inset.height -= inset.y;
+
+        if (con->fullscreen_mode == CF_NONE) {
+            params.rect = rect_add(params.rect, inset);
+            con->rect = rect_add(con->rect, inset);
+            if (con->window) {
+                con->window_rect = rect_add(con->window_rect, inset);
+            }
+        }
+        inset.height = 0;
+        if (con->deco_rect.width != 0 && con->deco_rect.height != 0) {
+            con->deco_rect = rect_add(con->deco_rect, inset);
+        }
+
+        params.x = con->rect.x;
+        params.y = con->rect.y;
+    }
 
     int i = 0;
     con->mapped = true;
@@ -85,7 +114,7 @@ void render_con(Con *con) {
     if (fullscreen) {
         fullscreen->rect = params.rect;
         x_raise_con(fullscreen);
-        render_con(fullscreen);
+        render_con(fullscreen, false);
         /* Fullscreen containers are either global (underneath the CT_ROOT
          * container) or per-output (underneath the CT_CONTENT container). For
          * global fullscreen containers, we cannot abort rendering here yet,
@@ -130,7 +159,7 @@ void render_con(Con *con) {
             DLOG("child at (%d, %d) with (%d x %d)\n",
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
             x_raise_con(child);
-            render_con(child);
+            render_con(child, should_inset || already_inset);
             i++;
         }
 
@@ -144,7 +173,7 @@ void render_con(Con *con) {
                  * that we have a non-leaf-container inside the stack. In that
                  * case, the children of the non-leaf-container need to be
                  * raised as well. */
-                render_con(child);
+                render_con(child, true);
             }
 
             if (params.children != 1)
@@ -193,7 +222,7 @@ static void render_root(Con *con, Con *fullscreen) {
     Con *output;
     if (!fullscreen) {
         TAILQ_FOREACH (output, &(con->nodes_head), nodes) {
-            render_con(output);
+            render_con(output, false);
         }
     }
 
@@ -237,7 +266,7 @@ static void render_root(Con *con, Con *fullscreen) {
             DLOG("floating child at (%d,%d) with %d x %d\n",
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
             x_raise_con(child);
-            render_con(child);
+            render_con(child, true);
         }
     }
 }
@@ -287,7 +316,7 @@ static void render_output(Con *con) {
     if (fullscreen) {
         fullscreen->rect = con->rect;
         x_raise_con(fullscreen);
-        render_con(fullscreen);
+        render_con(fullscreen, false);
         return;
     }
 
@@ -328,7 +357,7 @@ static void render_output(Con *con) {
         DLOG("child at (%d, %d) with (%d x %d)\n",
              child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         x_raise_con(child);
-        render_con(child);
+        render_con(child, child->type == CT_DOCKAREA);
     }
 }
 
@@ -429,4 +458,47 @@ static void render_con_dockarea(Con *con, Con *child, render_params *p) {
     child->deco_rect.width = 0;
     child->deco_rect.height = 0;
     p->y += child->rect.height;
+}
+
+/*
+ * Decides whether the container should be inset.
+ */
+bool should_inset_con(Con *con, int children) {
+    /* Don't inset floating containers and workspaces. */
+    if (con->type == CT_FLOATING_CON || con->type == CT_WORKSPACE)
+        return false;
+
+    if (con_is_leaf(con))
+        return true;
+
+    return (con->layout == L_STACKED || con->layout == L_TABBED) && children > 0;
+}
+
+/*
+ * Returns whether the given container has an adjacent container in the
+ * specified direction. In other words, this returns true if and only if
+ * the container is not touching the edge of the screen in that direction.
+ */
+bool has_adjacent_container(Con *con, direction_t direction) {
+    Con *workspace = con_get_workspace(con);
+    Con *fullscreen = con_get_fullscreen_con(workspace, CF_GLOBAL);
+    if (fullscreen == NULL)
+        fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
+
+    /* If this container is fullscreen by itself, there's no adjacent container. */
+    if (con == fullscreen)
+        return false;
+
+    Con *first = con;
+    Con *second = NULL;
+    bool found_neighbor = resize_find_tiling_participants(&first, &second, direction, false);
+    if (!found_neighbor)
+        return false;
+
+    /* If we have an adjacent container and nothing is fullscreen, we consider it. */
+    if (fullscreen == NULL)
+        return true;
+
+    /* For fullscreen containers, only consider the adjacent container if it is also fullscreen. */
+    return con_has_parent(con, fullscreen) && con_has_parent(second, fullscreen);
 }

@@ -831,7 +831,7 @@ void cmd_append_layout(I3_CMD, const char *cpath) {
     // is not executed yet and will be batched with append_layout’s
     // needs_tree_render after the parser finished. We should check if that is
     // necessary at all.
-    render_con(croot);
+    render_con(croot, false);
 
     restore_open_placeholder_windows(parent);
 
@@ -2371,6 +2371,118 @@ void cmd_debuglog(I3_CMD, const char *argument) {
         LOG("Disabling debug logging\n");
         set_debug_logging(false);
     }
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/**
+ * Implementation of 'gaps inner|outer|top|right|bottom|left|horizontal|vertical current|all set|plus|minus|toggle <px>'
+ *
+ */
+void cmd_gaps(I3_CMD, const char *type, const char *scope, const char *mode, const char *value) {
+    int pixels = logical_px(atoi(value));
+    Con *workspace = con_get_workspace(focused);
+
+#define CMD_SET_GAPS_VALUE(type, value, reset)                          \
+    do {                                                                \
+        if (!strcmp(scope, "all")) {                                    \
+            Con *output, *cur_ws = NULL;                                \
+            TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {       \
+                Con *content = output_get_content(output);              \
+                TAILQ_FOREACH (cur_ws, &(content->nodes_head), nodes) { \
+                    if (reset)                                          \
+                        cur_ws->gaps.type = 0;                          \
+                    else if (value + cur_ws->gaps.type < 0)             \
+                        cur_ws->gaps.type = -value;                     \
+                }                                                       \
+            }                                                           \
+                                                                        \
+            config.gaps.type = value;                                   \
+        } else {                                                        \
+            workspace->gaps.type = value - config.gaps.type;            \
+        }                                                               \
+    } while (0)
+
+#define CMD_GAPS(type)                                                                                          \
+    do {                                                                                                        \
+        int current_value = config.gaps.type;                                                                   \
+        if (strcmp(scope, "current") == 0)                                                                      \
+            current_value += workspace->gaps.type;                                                              \
+                                                                                                                \
+        bool reset = false;                                                                                     \
+        if (!strcmp(mode, "plus"))                                                                              \
+            current_value += pixels;                                                                            \
+        else if (!strcmp(mode, "minus"))                                                                        \
+            current_value -= pixels;                                                                            \
+        else if (!strcmp(mode, "set")) {                                                                        \
+            current_value = pixels;                                                                             \
+            reset = true;                                                                                       \
+        } else if (!strcmp(mode, "toggle")) {                                                                   \
+            current_value = !current_value * pixels;                                                            \
+            reset = true;                                                                                       \
+        } else {                                                                                                \
+            ELOG("Invalid mode %s when changing gaps", mode);                                                   \
+            ysuccess(false);                                                                                    \
+            return;                                                                                             \
+        }                                                                                                       \
+                                                                                                                \
+        /* see issue 262 */                                                                                     \
+        int min_value = 0;                                                                                      \
+        if (strcmp(#type, "inner") != 0) {                                                                      \
+            min_value = strcmp(scope, "all") ? -config.gaps.inner - workspace->gaps.inner : -config.gaps.inner; \
+        }                                                                                                       \
+                                                                                                                \
+        if (current_value < min_value)                                                                          \
+            current_value = min_value;                                                                          \
+                                                                                                                \
+        CMD_SET_GAPS_VALUE(type, current_value, reset);                                                         \
+    } while (0)
+
+#define CMD_UPDATE_GAPS(type)                                                                              \
+    do {                                                                                                   \
+        if (!strcmp(scope, "all")) {                                                                       \
+            if (config.gaps.type + config.gaps.inner < 0)                                                  \
+                CMD_SET_GAPS_VALUE(type, -config.gaps.inner, true);                                        \
+        } else {                                                                                           \
+            if (config.gaps.type + workspace->gaps.type + config.gaps.inner + workspace->gaps.inner < 0) { \
+                CMD_SET_GAPS_VALUE(type, -config.gaps.inner - workspace->gaps.inner, true);                \
+            }                                                                                              \
+        }                                                                                                  \
+    } while (0)
+
+    if (!strcmp(type, "inner")) {
+        CMD_GAPS(inner);
+        // update inconsistent values
+        CMD_UPDATE_GAPS(top);
+        CMD_UPDATE_GAPS(bottom);
+        CMD_UPDATE_GAPS(right);
+        CMD_UPDATE_GAPS(left);
+    } else if (!strcmp(type, "outer")) {
+        CMD_GAPS(top);
+        CMD_GAPS(bottom);
+        CMD_GAPS(right);
+        CMD_GAPS(left);
+    } else if (!strcmp(type, "vertical")) {
+        CMD_GAPS(top);
+        CMD_GAPS(bottom);
+    } else if (!strcmp(type, "horizontal")) {
+        CMD_GAPS(right);
+        CMD_GAPS(left);
+    } else if (!strcmp(type, "top")) {
+        CMD_GAPS(top);
+    } else if (!strcmp(type, "bottom")) {
+        CMD_GAPS(bottom);
+    } else if (!strcmp(type, "right")) {
+        CMD_GAPS(right);
+    } else if (!strcmp(type, "left")) {
+        CMD_GAPS(left);
+    } else {
+        ELOG("Invalid type %s when changing gaps", type);
+        ysuccess(false);
+        return;
+    }
+
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
 }

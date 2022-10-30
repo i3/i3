@@ -415,7 +415,7 @@ bool floating_enable(Con *con, bool automatic) {
     DLOG("Corrected y = %d (deco_height = %d)\n", nc->rect.y, deco_height);
 
     /* render the cons to get initial window_rect correct */
-    render_con(nc);
+    render_con(nc, true);
 
     if (set_focus)
         con_activate(con);
@@ -580,7 +580,7 @@ DRAGGING_CB(drag_window_callback) {
     con->rect.x = old_rect->x + (new_x - event->root_x);
     con->rect.y = old_rect->y + (new_y - event->root_y);
 
-    render_con(con);
+    render_con(con, true);
     x_push_node(con);
     xcb_flush(conn);
 
@@ -685,7 +685,7 @@ DRAGGING_CB(resize_window_callback) {
     con->rect.x = dest_x;
     con->rect.y = dest_y;
 
-    render_con(con);
+    render_con(con, true);
     x_push_changes(croot);
 }
 

@@ -216,6 +216,12 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     /* Set default_orientation to NO_ORIENTATION for auto orientation. */
     config.default_orientation = NO_ORIENTATION;
 
+    config.gaps.inner = 0;
+    config.gaps.top = 0;
+    config.gaps.right = 0;
+    config.gaps.bottom = 0;
+    config.gaps.left = 0;
+
     /* Set default urgency reset delay to 500ms */
     if (config.workspace_urgency_timer == 0)
         config.workspace_urgency_timer = 0.5;

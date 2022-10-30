@@ -85,6 +85,10 @@ Con *get_assigned_output(const char *name, long parsed_num) {
     Con *output = NULL;
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+        if (assignment->output == NULL) {
+            continue;
+        }
+
         if (name && strcmp(assignment->name, name) == 0) {
             DLOG("Found workspace name=\"%s\" assignment to output \"%s\"\n",
                  name, assignment->output);
@@ -131,10 +135,21 @@ Con *workspace_get(const char *num) {
     }
 
     LOG("Creating new workspace \"%s\"\n", num);
+    gaps_t gaps = (gaps_t){0, 0, 0, 0, 0};
 
     /* We set workspace->num to the number if this workspace’s name begins with
      * a positive number. Otherwise it’s a named ws and num will be 1. */
     const int parsed_num = ws_name_to_number(num);
+
+    struct Workspace_Assignment *assignment;
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+        if (strcmp(assignment->name, num) == 0) {
+            gaps = assignment->gaps;
+            break;
+        } else if (parsed_num != -1 && name_is_digits(assignment->name) && ws_name_to_number(assignment->name) == parsed_num) {
+            gaps = assignment->gaps;
+        }
+    }
 
     Con *output = get_assigned_output(num, parsed_num);
     /* if an assignment is not found, we create this workspace on the current output */
@@ -156,6 +171,7 @@ Con *workspace_get(const char *num) {
     workspace->workspace_layout = config.default_layout;
     workspace->num = parsed_num;
     workspace->type = CT_WORKSPACE;
+    workspace->gaps = gaps;
 
     con_attach(workspace, output_get_content(output), false);
     _workspace_apply_default_orientation(workspace);
@@ -281,6 +297,15 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         ws->num = c;
         sasprintf(&(ws->name), "%d", c);
     }
+
+    struct Workspace_Assignment *assignment;
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+        if (strcmp(assignment->name, ws->name) == 0) {
+            ws->gaps = assignment->gaps;
+            break;
+        }
+    }
+
     con_attach(ws, content, false);
 
     char *name;

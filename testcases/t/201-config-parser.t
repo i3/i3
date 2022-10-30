@@ -515,6 +515,9 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         bar
         font
         mode
+        gaps
+        smart_borders
+        smart_gaps
         floating_minimum_size
         floating_maximum_size
         floating_modifier
@@ -581,7 +584,7 @@ client.focused          #4c7899 #285577 #ffffff #2e9ef4
 EOT
 
 $expected = <<'EOT';
-ERROR: CONFIG: Expected one of these tokens: 'none', 'vertical', 'horizontal', 'both', 'smart', '1', 'yes', 'true', 'on', 'enable', 'active'
+ERROR: CONFIG: Expected one of these tokens: 'none', 'vertical', 'horizontal', 'both', 'smart_no_gaps', 'smart', '1', 'yes', 'true', 'on', 'enable', 'active'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: hide_edge_borders FOOBAR
 ERROR: CONFIG:                             ^^^^^^
