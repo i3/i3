@@ -617,6 +617,46 @@ CFGFUN(bar_height, const long height) {
     current_bar->bar_height = (uint32_t)height;
 }
 
+static void dlog_padding(void) {
+    DLOG("padding now: x=%d, y=%d, w=%d, h=%d\n",
+         current_bar->padding.x,
+         current_bar->padding.y,
+         current_bar->padding.width,
+         current_bar->padding.height);
+}
+
+CFGFUN(bar_padding_one, const long all) {
+    current_bar->padding.x = (uint32_t)all;
+    current_bar->padding.y = (uint32_t)all;
+    current_bar->padding.width = (uint32_t)all;
+    current_bar->padding.height = (uint32_t)all;
+    dlog_padding();
+}
+
+CFGFUN(bar_padding_two, const long top_and_bottom, const long right_and_left) {
+    current_bar->padding.x = (uint32_t)right_and_left;
+    current_bar->padding.y = (uint32_t)top_and_bottom;
+    current_bar->padding.width = (uint32_t)right_and_left;
+    current_bar->padding.height = (uint32_t)top_and_bottom;
+    dlog_padding();
+}
+
+CFGFUN(bar_padding_three, const long top, const long right_and_left, const long bottom) {
+    current_bar->padding.x = (uint32_t)right_and_left;
+    current_bar->padding.y = (uint32_t)top;
+    current_bar->padding.width = (uint32_t)right_and_left;
+    current_bar->padding.height = (uint32_t)bottom;
+    dlog_padding();
+}
+
+CFGFUN(bar_padding_four, const long top, const long right, const long bottom, const long left) {
+    current_bar->padding.x = (uint32_t)left;
+    current_bar->padding.y = (uint32_t)top;
+    current_bar->padding.width = (uint32_t)right;
+    current_bar->padding.height = (uint32_t)bottom;
+    dlog_padding();
+}
+
 CFGFUN(bar_modifier, const char *modifiers) {
     current_bar->modifier = modifiers ? event_state_from_str(modifiers) : XCB_NONE;
 }

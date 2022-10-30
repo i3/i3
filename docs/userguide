@@ -1980,6 +1980,49 @@ while +#000000FF+ will be a fully opaque black (the same as +#000000+).
 Please note that due to the way the tray specification works, enabling this
 flag will cause all tray icons to have a transparent background.
 
+[[i3bar_padding]]
+=== Padding
+
+To make i3bar higher (without increasing the font size), and/or add padding to
+the left and right side of i3bar, you can use the +padding+ directive:
+
+*Syntax*:
+--------------------------------------
+bar {
+    # 2px left/right and 2px top/bottom padding
+    padding 2px
+
+    # 2px top/bottom padding, no left/right padding
+    padding 2px 0
+
+    # 2px top padding, no left/right padding, 4px bottom padding
+    padding 2px 0 4px
+
+    # four value syntax
+    padding top[px] right[px] bottom[px] left[px]
+}
+--------------------------------------
+
+*Examples*:
+--------------------------------------
+bar {
+    # 2px left/right and 2px top/bottom padding
+    padding 2px
+
+    # 2px top/bottom padding, no left/right padding
+    padding 2px 0
+
+    # 2px top padding, no left/right padding, 4px bottom padding
+    padding 2px 0 4px
+
+    # 2px top padding, 6px right padding, 4px bottom padding, 1px left padding
+    padding 2px 6px 4px 1px
+}
+--------------------------------------
+
+Note: As a convenience for users who migrate from i3-gaps to i3, the +height+
+directive from i3-gaps is supported by i3, but should be changed to +padding+.
+
 [[list_of_commands]]
 == List of commands
 
