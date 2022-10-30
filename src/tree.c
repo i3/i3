@@ -458,7 +458,7 @@ void tree_render(void) {
     mark_unmapped(croot);
     croot->mapped = true;
 
-    render_con(croot, false);
+    render_con(croot);
 
     x_push_changes(croot);
     DLOG("-- END RENDERING --\n");

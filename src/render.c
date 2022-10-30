@@ -41,7 +41,7 @@ int render_deco_height(void) {
  * updated in X11.
  *
  */
-void render_con(Con *con, bool already_inset) {
+void render_con(Con *con) {
     render_params params = {
         .rect = con->rect,
         .x = con->rect.x,
@@ -51,8 +51,7 @@ void render_con(Con *con, bool already_inset) {
     DLOG("Rendering node %p / %s / layout %d / children %d\n", con, con->name,
          con->layout, params.children);
 
-    bool should_inset = should_inset_con(con, params.children);
-    if (!already_inset && should_inset) {
+    if (should_inset_con(con, params.children)) {
         gaps_t gaps = calculate_effective_gaps(con);
         Rect inset = (Rect){
             has_adjacent_container(con, D_LEFT) ? gaps.inner : gaps.left,
@@ -111,7 +110,7 @@ void render_con(Con *con, bool already_inset) {
     if (fullscreen) {
         fullscreen->rect = params.rect;
         x_raise_con(fullscreen);
-        render_con(fullscreen, false);
+        render_con(fullscreen);
         /* Fullscreen containers are either global (underneath the CT_ROOT
          * container) or per-output (underneath the CT_CONTENT container). For
          * global fullscreen containers, we cannot abort rendering here yet,
@@ -156,7 +155,7 @@ void render_con(Con *con, bool already_inset) {
             DLOG("child at (%d, %d) with (%d x %d)\n",
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
             x_raise_con(child);
-            render_con(child, should_inset || already_inset);
+            render_con(child);
             i++;
         }
 
@@ -170,7 +169,7 @@ void render_con(Con *con, bool already_inset) {
                  * that we have a non-leaf-container inside the stack. In that
                  * case, the children of the non-leaf-container need to be
                  * raised as well. */
-                render_con(child, true);
+                render_con(child);
             }
 
             if (params.children != 1)
@@ -219,7 +218,7 @@ static void render_root(Con *con, Con *fullscreen) {
     Con *output;
     if (!fullscreen) {
         TAILQ_FOREACH (output, &(con->nodes_head), nodes) {
-            render_con(output, false);
+            render_con(output);
         }
     }
 
@@ -263,7 +262,7 @@ static void render_root(Con *con, Con *fullscreen) {
             DLOG("floating child at (%d,%d) with %d x %d\n",
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
             x_raise_con(child);
-            render_con(child, true);
+            render_con(child);
         }
     }
 }
@@ -313,7 +312,7 @@ static void render_output(Con *con) {
     if (fullscreen) {
         fullscreen->rect = con->rect;
         x_raise_con(fullscreen);
-        render_con(fullscreen, false);
+        render_con(fullscreen);
         return;
     }
 
@@ -354,7 +353,7 @@ static void render_output(Con *con) {
         DLOG("child at (%d, %d) with (%d x %d)\n",
              child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         x_raise_con(child);
-        render_con(child, child->type == CT_DOCKAREA);
+        render_con(child);
     }
 }
 
@@ -461,14 +460,27 @@ static void render_con_dockarea(Con *con, Con *child, render_params *p) {
  * Decides whether the container should be inset.
  */
 bool should_inset_con(Con *con, int children) {
-    /* Don't inset floating containers and workspaces. */
-    if (con->type == CT_FLOATING_CON || con->type == CT_WORKSPACE)
-        return false;
-
-    if (con_is_leaf(con))
+    /* Inset direct children of the workspace that are leaf containers or
+       stacked/tabbed containers. */
+    if (con->parent != NULL &&
+        con->parent->type == CT_WORKSPACE &&
+        (con_is_leaf(con) ||
+         (con->layout == L_STACKED || con->layout == L_TABBED))) {
         return true;
+    }
 
-    return (con->layout == L_STACKED || con->layout == L_TABBED) && children > 0;
+    /* Inset direct children of vertical or horizontal split containers at any
+       depth in the tree (only leaf containers, not split containers within
+       split containers, to avoid double insets). */
+    if (con_is_leaf(con) &&
+        con->parent != NULL &&
+        con->parent->type == CT_CON &&
+        (con->parent->layout == L_SPLITH ||
+         con->parent->layout == L_SPLITV)) {
+        return true;
+    }
+
+    return false;
 }
 
 /*

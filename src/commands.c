@@ -831,7 +831,7 @@ void cmd_append_layout(I3_CMD, const char *cpath) {
     // is not executed yet and will be batched with append_layout’s
     // needs_tree_render after the parser finished. We should check if that is
     // necessary at all.
-    render_con(croot, false);
+    render_con(croot);
 
     restore_open_placeholder_windows(parent);
 

@@ -591,13 +591,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
          * workspace at all. However, just calling render_con() on the
          * workspace isn’t enough either — it needs the rect. */
         ws->rect = ws->parent->rect;
-        render_con(ws, false);
+        render_con(ws);
         /* Disable setting focus, otherwise we’d move focus to an invisible
          * workspace, which we generally prevent (e.g. in
          * con_move_to_workspace). */
         set_focus = false;
     }
-    render_con(croot, false);
+    render_con(croot);
 
     cwindow->managed_since = time(NULL);
 
