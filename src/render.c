@@ -65,9 +65,6 @@ void render_con(Con *con, bool already_inset) {
         if (con->fullscreen_mode == CF_NONE) {
             params.rect = rect_add(params.rect, inset);
             con->rect = rect_add(con->rect, inset);
-            if (con->window) {
-                con->window_rect = rect_add(con->window_rect, inset);
-            }
         }
         inset.height = 0;
         if (con->deco_rect.width != 0 && con->deco_rect.height != 0) {
