@@ -164,7 +164,7 @@ state DEFAULT_BORDER_PIXELS_PX:
   end
       -> call cfg_default_border($windowtype, $border, &width)
 
-# hide_edge_borders <none|vertical|horizontal|both|smart|no_gaps>
+# hide_edge_borders <none|vertical|horizontal|both|smart|smart_no_gaps>
 # also hide_edge_borders <bool> for compatibility
 state HIDE_EDGE_BORDERS:
   hide_borders = 'none', 'vertical', 'horizontal', 'both', 'smart_no_gaps', 'smart'
