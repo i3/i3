@@ -358,6 +358,8 @@ struct Barconfig {
     /** Defines the height of the bar in pixels. */
     uint32_t bar_height;
 
+    struct Rect padding;
+
     struct bar_colors {
         char *background;
         char *statusline;

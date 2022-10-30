@@ -59,7 +59,7 @@ xcb_visualtype_t *visual_type;
 uint8_t depth;
 xcb_colormap_t colormap;
 
-/* Overall height of the size */
+/* Overall height of the bar */
 int bar_height;
 
 /* These are only relevant for XKB, which we only need for grabbing modifiers */
@@ -1357,13 +1357,24 @@ void init_xcb_late(char *fontname) {
     DLOG("Calculated font-height: %d\n", font.height);
 
     /*
-     * If the bar height was explicitly set, use it. Otherwise, calculate it
-     * based on the font size.
+     * If the bar height was explicitly set (but padding was not set), use
+     * it. Otherwise, calculate it based on the font size.
      */
-    if (config.bar_height <= 0)
-        bar_height = font.height + 2 * logical_px(ws_voff_px);
-    else
-        bar_height = config.bar_height;
+    const int default_px = font.height + 2 * logical_px(ws_voff_px);
+    int padding_scaled =
+        logical_px(config.padding.y) +
+        logical_px(config.padding.height);
+    if (config.bar_height > 0 &&
+        config.padding.x == 0 &&
+        config.padding.y == 0 &&
+        config.padding.width == 0 &&
+        config.padding.height == 0) {
+        padding_scaled = config.bar_height - default_px;
+        DLOG("setting padding_scaled=%d based on bar_height=%d\n", padding_scaled, config.bar_height);
+    } else {
+        DLOG("padding: x=%d, y=%d -> padding_scaled=%d\n", config.padding.x, config.padding.y, padding_scaled);
+    }
+    bar_height = default_px + padding_scaled;
     icon_size = bar_height - 2 * logical_px(config.tray_padding);
 
     if (config.separator_symbol)
@@ -2006,7 +2017,7 @@ void draw_bars(bool unhide) {
 
     i3_output *outputs_walk;
     SLIST_FOREACH (outputs_walk, outputs, slist) {
-        int workspace_width = 0;
+        int workspace_width = logical_px(config.padding.x);
 
         if (!outputs_walk->active) {
             DLOG("Output %s inactive, skipping...\n", outputs_walk->name);
@@ -2090,6 +2101,7 @@ void draw_bars(bool unhide) {
 
             int16_t visible_statusline_width = MIN(statusline_width, max_statusline_width);
             int x_dest = outputs_walk->rect.w - tray_width - logical_px((tray_width > 0) * sb_hoff_px) - visible_statusline_width;
+            x_dest -= logical_px(config.padding.width);
 
             draw_statusline(outputs_walk, clip_left, use_focus_colors, use_short_text);
             draw_util_copy_surface(&outputs_walk->statusline_buffer, &outputs_walk->buffer, 0, 0,

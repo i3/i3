@@ -802,6 +802,8 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
         y(integer, config->bar_height);
     }
 
+    dump_rect(gen, "padding", config->padding);
+
     if (config->separator_symbol) {
         ystr("separator_symbol");
         ystr(config->separator_symbol);
