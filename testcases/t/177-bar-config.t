@@ -121,6 +121,9 @@ bar {
         urgent_workspace    #2f343a #900000 #ffffff
         binding_mode        #abc123 #123abc #ababab
     }
+
+    # old syntax for compatibility with i3-gaps
+    height 50
 }
 EOT
 
@@ -145,6 +148,7 @@ is_deeply($bar_config->{tray_outputs}, [ 'LVDS1', 'HDMI2' ], 'tray_output ok');
 is($bar_config->{tray_padding}, 0, 'tray_padding ok');
 is($bar_config->{font}, 'Terminus', 'font ok');
 is($bar_config->{socket_path}, '/tmp/foobar', 'socket_path ok');
+is($bar_config->{bar_height}, 50, 'bar_height ok');
 is_deeply($bar_config->{colors},
     {
         background => '#ff0000',
