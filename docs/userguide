@@ -1426,6 +1426,98 @@ tiling_drag modifier titlebar
 tiling_drag off
 --------------------------------
 
+[[gaps]]
+=== Gaps
+
+“Gaps” are added spacing between windows (or split containers) and to the screen
+edges:
+
+image::gaps1920.png["Screenshot of i3 with gaps enabled (10 px inner gaps, 20 px outer gaps)",title="Gaps enabled (10 px inner gaps, 20 px outer gaps)"]
+
+You can configure two different kind of gaps:
+
+1. Inner gaps are space between two adjacent windows (or split containers).
+2. Outer gaps are space along the screen edges. You can configure each side
+   (left, right, top, bottom) separately.
+
+If you are familiar with HTML and CSS, you can think of inner gaps as `padding`,
+and of outer gaps as `margin`, applied to a `<div>` around your window or split
+container.
+
+Note that outer gaps are added to the inner gaps, meaning the total gap size
+between a screen edge and a window (or split container) will be the sum of outer
+and inner gaps.
+
+You can define gaps either globally or per workspace using the following
+syntax. Note that the gaps configurations should be ordered from least specific
+to most specific as some directives can overwrite others.
+
+*Syntax*:
+-----------------------
+# Inner gaps for all windows: space between two adjacent windows (or split containers).
+gaps inner <gap_size_in_px>
+
+# Outer gaps for all windows: space along the screen edges.
+gaps outer|horizontal|vertical|top|left|bottom|right <gap_size_in_px>
+
+# Inner and outer gaps for all windows on a specific workspace.
+# <ws> can be a workspace number or name.
+workspace <ws> gaps inner <gap_size_in_px>
+workspace <ws> gaps outer|horizontal|vertical|top|left|bottom|right <gap_size_in_px>
+
+# Enabling “Smart Gaps” means no gaps will be shown when there is
+# precisely one window or split container on the workspace.
+#
+# inverse_outer only enables outer gaps when there is exactly one
+# window or split container on the workspace.
+smart_gaps on|off|inverse_outer
+-----------------------
+
+Outer gaps can be configured for each side individually with the `top`, `left`,
+`bottom` and `right` directive. `horizontal` and `vertical` are shortcuts for
+`left`/`right` and `top`/`bottom`, respectively.
+
+*Example*:
+-------------------------------------------------
+# Configure 5px of space between windows and to the screen edges.
+gaps inner 5px
+
+# Configure an additional 5px of extra space to the screen edges,
+# for a total gap of 10px to the screen edges, and 5px between windows.
+gaps outer 5px
+
+# Overwrite gaps to 0, I need all the space I can get on workspace 3.
+workspace 3 gaps inner 0
+workspace 3 gaps outer 0
+
+# Only enable outer gaps when there is exactly one window or split container on the workspace.
+smart_gaps inverse_outer
+-------------------------------------------------
+
+Tip: Gaps can additionally be changed at runtime with the `gaps` command, see
+<<changing_gaps>>.
+
+Tip: You can find an
+https://github.com/Airblader/i3/wiki/Example-Configuration[example
+configuration] that uses modes to illustrate various gap configurations.
+
+[[gaps_artifacts]]
+==== ⚠ Known issue with gaps: graphical artifacts (black rectangles)
+
+The way i3 renders window title bars results in graphical artifacts (black
+rectangles behind windows) when enabling gaps. In some circumstances, running a
+compositor such as `picom` works around the artifacts.
+
+Another workaround is to disable window title bars entirely:
+
+------------------------
+# You can also use any non-zero value if you'd like to have a border
+default_border pixel 0
+------------------------
+
+See https://github.com/i3/i3/issues/3724[Issue #3724] for more details and
+updates on this issue.
+
 == Configuring i3bar
 
 The bar at the bottom of your monitor is drawn by a separate process called
@@ -3044,6 +3136,35 @@ bindsym $mod+b bar mode hide bar-1
 # Set the bar instance with id 'bar-1' to always stay hidden
 bindsym $mod+Shift+b bar mode invisible bar-1
 ------------------------------------------------
+
+[[changing_gaps]]
+=== Changing gaps
+
+Gaps can be modified at runtime with the following command syntax:
+
+*Syntax*:
+-----------------------------------------------
+# Inner gaps: space between two adjacent windows (or split containers).
+gaps inner current|all set|plus|minus|toggle <gap_size_in_px>
+# Outer gaps: space along the screen edges.
+gaps outer|horizontal|vertical|top|right|bottom|left current|all set|plus|minus|toggle <gap_size_in_px>
+-----------------------------------------------
+
+With `current` or `all` you can change gaps either for only the currently
+focused or all currently existing workspaces (note that this does not affect the
+global configuration itself).
+
+*Examples*:
+----------------------------------------------
+gaps inner all set 20
+gaps outer current plus 5
+gaps horizontal current plus 40
+gaps outer current toggle 60
+
+for_window [class="vlc"] gaps inner 0, gaps outer 0
+----------------------------------------------
+
+To change the gaps for all windows, see the <<gaps>> configuration directive.
 
 [[multi_monitor]]
 == Multiple monitors
