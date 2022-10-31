@@ -91,7 +91,7 @@ state SMART_BORDERS:
   enabled = 'no_gaps'
       -> call cfg_smart_borders($enabled)
 
-# smart_gaps on|off
+# smart_gaps on|off|inverse_outer
 state SMART_GAPS:
   enabled = '1', 'yes', 'true', 'on', 'enable', 'active'
       -> call cfg_smart_gaps($enabled)
