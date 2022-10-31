@@ -1455,15 +1455,15 @@ to most specific as some directives can overwrite others.
 *Syntax*:
 -----------------------
 # Inner gaps for all windows: space between two adjacent windows (or split containers).
-gaps inner <gap_size_in_px>
+gaps inner <gap_size>[px]
 
 # Outer gaps for all windows: space along the screen edges.
-gaps outer|horizontal|vertical|top|left|bottom|right <gap_size_in_px>
+gaps outer|horizontal|vertical|top|left|bottom|right <gap_size>[px]
 
 # Inner and outer gaps for all windows on a specific workspace.
 # <ws> can be a workspace number or name.
-workspace <ws> gaps inner <gap_size_in_px>
-workspace <ws> gaps outer|horizontal|vertical|top|left|bottom|right <gap_size_in_px>
+workspace <ws> gaps inner <gap_size>[px]
+workspace <ws> gaps outer|horizontal|vertical|top|left|bottom|right <gap_size>[px]
 
 # Enabling “Smart Gaps” means no gaps will be shown when there is
 # precisely one window or split container on the workspace.

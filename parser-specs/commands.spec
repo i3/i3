@@ -111,6 +111,12 @@ state GAPS_WITH_SCOPE:
 
 state GAPS_WITH_MODE:
   value = word
+      -> GAPS_END
+
+state GAPS_END:
+  'px'
+      ->
+  end
       -> call cmd_gaps($type, $scope, $mode, $value)
 
 state BORDER_WIDTH:
