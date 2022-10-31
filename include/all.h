@@ -46,6 +46,7 @@
 #include "click.h"
 #include "key_press.h"
 #include "floating.h"
+#include "gaps.h"
 #include "drag.h"
 #include "configuration.h"
 #include "handlers.h"

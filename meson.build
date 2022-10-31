@@ -389,6 +389,7 @@ i3srcs = [
   'src/ewmh.c',
   'src/fake_outputs.c',
   'src/floating.c',
+  'src/gaps.c',
   'src/handlers.c',
   'src/ipc.c',
   'src/key_press.c',

@@ -2342,45 +2342,6 @@ char *con_get_tree_representation(Con *con) {
     return complete_buf;
 }
 
-/**
- * Calculates the effective gap sizes for a container.
- */
-gaps_t calculate_effective_gaps(Con *con) {
-    Con *workspace = con_get_workspace(con);
-    if (workspace == NULL)
-        return (gaps_t){0, 0, 0, 0, 0};
-
-    bool one_child = con_num_visible_children(workspace) <= 1 ||
-                     (con_num_children(workspace) == 1 &&
-                      (TAILQ_FIRST(&(workspace->nodes_head))->layout == L_TABBED ||
-                       TAILQ_FIRST(&(workspace->nodes_head))->layout == L_STACKED));
-
-    if (config.smart_gaps == SMART_GAPS_ON && one_child)
-        return (gaps_t){0, 0, 0, 0, 0};
-
-    gaps_t gaps = {
-        .inner = (workspace->gaps.inner + config.gaps.inner) / 2,
-        .top = 0,
-        .right = 0,
-        .bottom = 0,
-        .left = 0};
-
-    if (config.smart_gaps != SMART_GAPS_INVERSE_OUTER || one_child) {
-        gaps.top = workspace->gaps.top + config.gaps.top;
-        gaps.right = workspace->gaps.right + config.gaps.right;
-        gaps.bottom = workspace->gaps.bottom + config.gaps.bottom;
-        gaps.left = workspace->gaps.left + config.gaps.left;
-    }
-
-    /* Outer gaps are added on top of inner gaps. */
-    gaps.top += 2 * gaps.inner;
-    gaps.right += 2 * gaps.inner;
-    gaps.bottom += 2 * gaps.inner;
-    gaps.left += 2 * gaps.inner;
-
-    return gaps;
-}
-
 /*
  * Returns the container's title considering the current title format.
  *

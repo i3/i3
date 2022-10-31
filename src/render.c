@@ -20,8 +20,6 @@ static void render_con_split(Con *con, Con *child, render_params *p, int i);
 static void render_con_stacked(Con *con, Con *child, render_params *p, int i);
 static void render_con_tabbed(Con *con, Con *child, render_params *p, int i);
 static void render_con_dockarea(Con *con, Con *child, render_params *p);
-bool should_inset_con(Con *con, int children);
-bool has_adjacent_container(Con *con, direction_t direction);
 
 /*
  * Returns the height for the decorations
@@ -51,13 +49,13 @@ void render_con(Con *con) {
     DLOG("Rendering node %p / %s / layout %d / children %d\n", con, con->name,
          con->layout, params.children);
 
-    if (should_inset_con(con, params.children)) {
+    if (gaps_should_inset_con(con, params.children)) {
         gaps_t gaps = calculate_effective_gaps(con);
         Rect inset = (Rect){
-            has_adjacent_container(con, D_LEFT) ? gaps.inner : gaps.left,
-            has_adjacent_container(con, D_UP) ? gaps.inner : gaps.top,
-            has_adjacent_container(con, D_RIGHT) ? -gaps.inner : -gaps.right,
-            has_adjacent_container(con, D_DOWN) ? -gaps.inner : -gaps.bottom};
+            gaps_has_adjacent_container(con, D_LEFT) ? gaps.inner : gaps.left,
+            gaps_has_adjacent_container(con, D_UP) ? gaps.inner : gaps.top,
+            gaps_has_adjacent_container(con, D_RIGHT) ? -gaps.inner : -gaps.right,
+            gaps_has_adjacent_container(con, D_DOWN) ? -gaps.inner : -gaps.bottom};
         inset.width -= inset.x;
         inset.height -= inset.y;
 
@@ -459,60 +457,4 @@ static void render_con_dockarea(Con *con, Con *child, render_params *p) {
     child->deco_rect.width = 0;
     child->deco_rect.height = 0;
     p->y += child->rect.height;
-}
-
-/*
- * Decides whether the container should be inset.
- */
-bool should_inset_con(Con *con, int children) {
-    /* Inset direct children of the workspace that are leaf containers or
-       stacked/tabbed containers. */
-    if (con->parent != NULL &&
-        con->parent->type == CT_WORKSPACE &&
-        (con_is_leaf(con) ||
-         (con->layout == L_STACKED || con->layout == L_TABBED))) {
-        return true;
-    }
-
-    /* Inset direct children of vertical or horizontal split containers at any
-       depth in the tree (only leaf containers, not split containers within
-       split containers, to avoid double insets). */
-    if (con_is_leaf(con) &&
-        con->parent != NULL &&
-        con->parent->type == CT_CON &&
-        (con->parent->layout == L_SPLITH ||
-         con->parent->layout == L_SPLITV)) {
-        return true;
-    }
-
-    return false;
-}
-
-/*
- * Returns whether the given container has an adjacent container in the
- * specified direction. In other words, this returns true if and only if
- * the container is not touching the edge of the screen in that direction.
- */
-bool has_adjacent_container(Con *con, direction_t direction) {
-    Con *workspace = con_get_workspace(con);
-    Con *fullscreen = con_get_fullscreen_con(workspace, CF_GLOBAL);
-    if (fullscreen == NULL)
-        fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
-
-    /* If this container is fullscreen by itself, there's no adjacent container. */
-    if (con == fullscreen)
-        return false;
-
-    Con *first = con;
-    Con *second = NULL;
-    bool found_neighbor = resize_find_tiling_participants(&first, &second, direction, false);
-    if (!found_neighbor)
-        return false;
-
-    /* If we have an adjacent container and nothing is fullscreen, we consider it. */
-    if (fullscreen == NULL)
-        return true;
-
-    /* For fullscreen containers, only consider the adjacent container if it is also fullscreen. */
-    return con_has_parent(con, fullscreen) && con_has_parent(second, fullscreen);
 }
