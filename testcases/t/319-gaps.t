@@ -37,28 +37,93 @@ my $screen_height = 800;
 my $outer_gaps = 20;
 my $inner_gaps = 10;
 my $total_gaps = $outer_gaps + $inner_gaps;
-my $left_rect = $left->rect;
-my $right_rect = $right->rect;
 
-# Gaps toward one screen edge, each window covers half of the screen,
-# each gets half of the inner gaps.
-my $expected_width = ($screen_width / 2) - $total_gaps - ($inner_gaps / 2);
+sub is_gaps {
+    my $left_rect = $left->rect;
+    my $right_rect = $right->rect;
 
-# Gaps toward the screen edges at top and bottom.
-my $expected_height = $screen_height - 2 * $total_gaps;
+    # Gaps toward one screen edge, each window covers half of the screen,
+    # each gets half of the inner gaps.
+    my $expected_width = ($screen_width / 2) - $total_gaps - ($inner_gaps / 2);
 
-is_deeply($left_rect, {
-    x => $total_gaps,
-    y => $total_gaps,
-    width => $expected_width,
-    height => $expected_height,
-}, 'left window position and size matches gaps expectations');
+    # Gaps toward the screen edges at top and bottom.
+    my $expected_height = $screen_height - 2 * $total_gaps;
 
-is_deeply($right_rect, {
-    x => $left_rect->x + $left_rect->width + $inner_gaps,
-    y => $total_gaps,
-    width => $expected_width,
-    height => $expected_height,
-}, 'right window position and size matches gaps expectations');
+    is_deeply($left_rect, {
+	x => $total_gaps,
+	y => $total_gaps,
+	width => $expected_width,
+	height => $expected_height,
+    }, 'left window position and size matches gaps expectations');
+
+    is_deeply($right_rect, {
+	x => $left_rect->x + $left_rect->width + $inner_gaps,
+	y => $total_gaps,
+	width => $expected_width,
+	height => $expected_height,
+    }, 'right window position and size matches gaps expectations');
+}
+
+is_gaps();
+
+################################################################################
+# gaps command
+################################################################################
+
+# Verify gaps on a different workspace do not influence the existing workspace
+fresh_workspace;
+cmd 'gaps outer current set 30px';
+cmd "workspace $tmp";
+sync_with_i3;
+is_gaps();
+
+# Verify global gaps do influence all workspaces
+cmd 'gaps outer all set 30px';
+sync_with_i3;
+
+$outer_gaps = 30;
+$total_gaps = $outer_gaps + $inner_gaps;
+is_gaps();
+
+# Verify negative outer gaps compensate inner gaps, resulting only in gaps
+# in between adjacent windows or split containers, not towards the screen edges.
+cmd 'gaps outer all set -10px';
+sync_with_i3;
+
+sub is_gaps_in_between_only {
+    my $left_rect = $left->rect;
+    my $right_rect = $right->rect;
+
+    # No gaps towards the screen edges, each window covers half of the screen,
+    # each gets half of the inner gaps.
+    my $expected_width = ($screen_width / 2) - ($inner_gaps / 2);
+
+    # No gaps towards the screen edges at top and bottom.
+    my $expected_height = $screen_height;
+
+    is_deeply($left_rect, {
+	x => 0,
+	y => 0,
+	width => $expected_width,
+	height => $expected_height,
+    }, 'left window position and size matches gaps expectations');
+
+    is_deeply($right_rect, {
+	x => $left_rect->x + $left_rect->width + $inner_gaps,
+	y => 0,
+	width => $expected_width,
+	height => $expected_height,
+    }, 'right window position and size matches gaps expectations');
+}
+
+is_gaps_in_between_only();
+
+# Reduce the inner gaps and verify the outer gaps are adjusted to not
+# over-compensate.
+cmd 'gaps inner all set 6px';
+$inner_gaps = 6;
+$total_gaps = $outer_gaps + $inner_gaps;
+sync_with_i3;
+is_gaps_in_between_only();
 
 done_testing;
