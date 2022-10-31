@@ -68,13 +68,19 @@ state IGNORE_LINE:
   line
       -> INITIAL
 
-# gaps inner|outer|horizontal|vertical|top|right|bottom|left <px>
+# gaps inner|outer|horizontal|vertical|top|right|bottom|left <gap_size>[px]
 state GAPS:
   scope = 'inner', 'outer', 'horizontal', 'vertical', 'top', 'right', 'bottom', 'left'
       -> GAPS_WITH_SCOPE
 
 state GAPS_WITH_SCOPE:
   value = number
+      -> GAPS_END
+
+state GAPS_END:
+  'px'
+      ->
+  end
       -> call cfg_gaps($workspace, $scope, &value)
 
 # smart_borders true|false

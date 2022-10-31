@@ -22,7 +22,7 @@ use i3test i3_config => <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 gaps inner 10
-gaps outer 20
+gaps outer 20px
 
 default_border pixel 0
 EOT
