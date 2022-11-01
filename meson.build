@@ -166,6 +166,7 @@ install_data(
     'docs/refcard_style.css',
     'docs/logo-30.png',
     'docs/layout-saving-1.png',
+    'docs/gaps1920.png',
   ],
   install_dir: docdir,
 )
