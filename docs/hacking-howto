@@ -564,9 +564,7 @@ split container.
 ==== Default layout
 
 In default layout, containers are placed horizontally or vertically next to
-each other (depending on the +con->orientation+). If a child is a leaf node (as
-opposed to a split container) and has border style "normal", appropriate space
-will be reserved for its window decoration.
+each other (depending on the +con->orientation+).
 
 ==== Stacked layout
 

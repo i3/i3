@@ -1693,6 +1693,20 @@ static bool has_outer_gaps(gaps_t gaps) {
 }
 
 /*
+ * Returns whether the window decoration (title bar) should be drawn into the
+ * X11 frame window of this container (default) or into the X11 frame window of
+ * the parent container (for stacked/tabbed containers).
+ *
+ */
+bool con_draw_decoration_into_frame(Con *con) {
+    return con_is_leaf(con) &&
+           con->border_style == BS_NORMAL &&
+           (con->parent == NULL ||
+            (con->parent->layout != L_TABBED &&
+             con->parent->layout != L_STACKED));
+}
+
+/*
  * Returns a "relative" Rect which contains the amount of pixels that need to
  * be added to the original Rect to get the final position (obviously the
  * amount of pixels for normal, 1pixel and borderless are different).
@@ -1724,7 +1738,16 @@ Rect con_border_style_rect(Con *con) {
     if (border_style == BS_NONE)
         return (Rect){0, 0, 0, 0};
     if (border_style == BS_NORMAL) {
+        const int deco_height = render_deco_height();
         result = (Rect){border_width, 0, -(2 * border_width), -(border_width)};
+        if (con_draw_decoration_into_frame(con)) {
+            result = (Rect){
+                .x = border_width /* left */,
+                .y = deco_height,
+                .width = -(border_width /* left */ + border_width /* right */),
+                .height = -(border_width /* bottom */ + deco_height),
+            };
+        }
     } else {
         result = (Rect){border_width, border_width, -(2 * border_width), -(2 * border_width)};
     }
@@ -1828,23 +1851,17 @@ void con_set_border_style(Con *con, border_style_t border_style, int border_widt
      * pixels. For the parent, we do the same also for the decoration. */
     Con *parent = con->parent;
     Rect bsr = con_border_style_rect(con);
-    int deco_height = (con->border_style == BS_NORMAL ? render_deco_height() : 0);
 
     con->rect = rect_add(con->rect, bsr);
     parent->rect = rect_add(parent->rect, bsr);
-    parent->rect.y += deco_height;
-    parent->rect.height -= deco_height;
 
     /* Change the border style, get new border/decoration values. */
     con->border_style = border_style;
     con->current_border_width = border_width;
     bsr = con_border_style_rect(con);
-    deco_height = (con->border_style == BS_NORMAL ? render_deco_height() : 0);
 
     con->rect = rect_sub(con->rect, bsr);
     parent->rect = rect_sub(parent->rect, bsr);
-    parent->rect.y -= deco_height;
-    parent->rect.height += deco_height;
 }
 
 /*

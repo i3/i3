@@ -1501,23 +1501,6 @@ Tip: You can find an
 https://github.com/Airblader/i3/wiki/Example-Configuration[example
 configuration] that uses modes to illustrate various gap configurations.
 
-[[gaps_artifacts]]
-==== ⚠ Known issue with gaps: graphical artifacts (black rectangles)
-
-The way i3 renders window title bars results in graphical artifacts (black
-rectangles behind windows) when enabling gaps. In some circumstances, running a
-compositor such as `picom` works around the artifacts.
-
-Another workaround is to disable window title bars entirely:
-
-------------------------
-# You can also use any non-zero value if you'd like to have a border
-default_border pixel 0
-------------------------
-
-See https://github.com/i3/i3/issues/3724[Issue #3724] for more details and
-updates on this issue.
-
 == Configuring i3bar
 
 The bar at the bottom of your monitor is drawn by a separate process called

@@ -79,16 +79,22 @@ void floating_check_size(Con *floating_con, bool prefer_height) {
     Rect floating_sane_max_dimensions;
     Con *focused_con = con_descend_focused(floating_con);
 
+    DLOG("deco_rect.height = %d\n", focused_con->deco_rect.height);
     Rect border_rect = con_border_style_rect(focused_con);
     /* We have to do the opposite calculations that render_con() do
      * to get the exact size we want. */
     border_rect.width = -border_rect.width;
-    border_rect.width += 2 * focused_con->border_width;
     border_rect.height = -border_rect.height;
+
+    /* undo x11 border */
+    border_rect.width += 2 * focused_con->border_width;
     border_rect.height += 2 * focused_con->border_width;
-    if (con_border_style(focused_con) == BS_NORMAL) {
-        border_rect.height += render_deco_height();
-    }
+
+    DLOG("floating_check_size, want min width %d, min height %d, border extra: w=%d, h=%d\n",
+         floating_sane_min_width,
+         floating_sane_min_height,
+         border_rect.width,
+         border_rect.height);
 
     i3Window *window = focused_con->window;
     if (window != NULL) {
@@ -319,9 +325,6 @@ bool floating_enable(Con *con, bool automatic) {
     x_set_name(nc, name);
     free(name);
 
-    /* find the height for the decorations */
-    int deco_height = render_deco_height();
-
     DLOG("Original rect: (%d, %d) with %d x %d\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
     DLOG("Geometry = (%d, %d) with %d x %d\n", con->geometry.x, con->geometry.y, con->geometry.width, con->geometry.height);
     nc->rect = con->geometry;
@@ -352,15 +355,10 @@ bool floating_enable(Con *con, bool automatic) {
     }
 
     /* Add pixels for the decoration. */
-    Rect border_style_rect = con_border_style_rect(con);
+    Rect bsr = con_border_style_rect(con);
 
-    nc->rect.height -= border_style_rect.height;
-    nc->rect.width -= border_style_rect.width;
-
-    /* Add some more pixels for the title bar */
-    if (con_border_style(con) == BS_NORMAL) {
-        nc->rect.height += deco_height;
-    }
+    nc->rect.height -= bsr.height;
+    nc->rect.width -= bsr.width;
 
     /* Honor the X11 border */
     nc->rect.height += con->border_width * 2;
@@ -405,14 +403,6 @@ bool floating_enable(Con *con, bool automatic) {
     }
 
     DLOG("Floating rect: (%d, %d) with %d x %d\n", nc->rect.x, nc->rect.y, nc->rect.width, nc->rect.height);
-
-    /* 5: Subtract the deco_height in order to make the floating window appear
-     * at precisely the position it specified in its original geometry (which
-     * is what applications might remember). */
-    deco_height = (con->border_style == BS_NORMAL ? render_deco_height() : 0);
-    nc->rect.y -= deco_height;
-
-    DLOG("Corrected y = %d (deco_height = %d)\n", nc->rect.y, deco_height);
 
     /* render the cons to get initial window_rect correct */
     render_con(nc);

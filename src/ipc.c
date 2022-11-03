@@ -503,7 +503,15 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(integer, con->current_border_width);
 
     dump_rect(gen, "rect", con->rect);
-    dump_rect(gen, "deco_rect", con->deco_rect);
+    if (con_draw_decoration_into_frame(con)) {
+        Rect simulated_deco_rect = con->deco_rect;
+        simulated_deco_rect.x = con->rect.x - con->parent->rect.x;
+        simulated_deco_rect.y = con->rect.y - con->parent->rect.y;
+        dump_rect(gen, "deco_rect", simulated_deco_rect);
+        dump_rect(gen, "actual_deco_rect", con->deco_rect);
+    } else {
+        dump_rect(gen, "deco_rect", con->deco_rect);
+    }
     dump_rect(gen, "window_rect", con->window_rect);
     dump_rect(gen, "geometry", con->geometry);
 
