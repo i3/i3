@@ -421,6 +421,14 @@ Con *con_descend_tiling_focused(Con *con);
 Con *con_descend_direction(Con *con, direction_t direction);
 
 /**
+ * Returns whether the window decoration (title bar) should be drawn into the
+ * X11 frame window of this container (default) or into the X11 frame window of
+ * the parent container (for stacked/tabbed containers).
+ *
+ */
+bool con_draw_decoration_into_frame(Con *con);
+
+/**
  * Returns a "relative" Rect which contains the amount of pixels that need to
  * be added to the original Rect to get the final position (obviously the
  * amount of pixels for normal, 1pixel and borderless are different).

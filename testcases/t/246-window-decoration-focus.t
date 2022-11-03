@@ -50,7 +50,7 @@ $target = get_focused($ws);
 $A = $cons[0];
 $C = $cons[1]->{nodes}[1];
 
-$y = $C->{rect}->{y} - 0.5 * $C->{deco_rect}->{height};
+$y = $C->{rect}->{y} + 0.5 * $C->{deco_rect}->{height};
 
 # make sure that B is the focus head of its parent
 cmd '[id="' . $B->{id} . '"] focus';

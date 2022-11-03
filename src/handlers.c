@@ -214,18 +214,30 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
         return;
 
     /* see over which rect the user is */
-    Con *current;
-    TAILQ_FOREACH_REVERSE (current, &(con->nodes_head), nodes_head, nodes) {
-        if (!rect_contains(current->deco_rect, event->event_x, event->event_y))
-            continue;
+    if (con->window != NULL) {
+        if (rect_contains(con->deco_rect, event->event_x, event->event_y)) {
+            /* We found the rect, let’s see if this window is focused */
+            if (TAILQ_FIRST(&(con->parent->focus_head)) == con)
+                return;
 
-        /* We found the rect, let’s see if this window is focused */
-        if (TAILQ_FIRST(&(con->focus_head)) == current)
+            con_focus(con);
+            x_push_changes(croot);
             return;
+        }
+    } else {
+        Con *current;
+        TAILQ_FOREACH_REVERSE (current, &(con->nodes_head), nodes_head, nodes) {
+            if (!rect_contains(current->deco_rect, event->event_x, event->event_y))
+                continue;
 
-        con_focus(current);
-        x_push_changes(croot);
-        return;
+            /* We found the rect, let’s see if this window is focused */
+            if (TAILQ_FIRST(&(con->focus_head)) == current)
+                return;
+
+            con_focus(current);
+            x_push_changes(croot);
+            return;
+        }
     }
 }
 
@@ -318,15 +330,9 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
     Con *fullscreen = con_get_fullscreen_covering_ws(workspace);
 
     if (fullscreen != con && con_is_floating(con) && con_is_leaf(con)) {
-        /* find the height for the decorations */
-        int deco_height = con->deco_rect.height;
         /* we actually need to apply the size/position changes to the *parent*
          * container */
         Rect bsr = con_border_style_rect(con);
-        if (con->border_style == BS_NORMAL) {
-            bsr.y += deco_height;
-            bsr.height -= deco_height;
-        }
         Con *floatingcon = con->parent;
         Rect newrect = floatingcon->rect;
 

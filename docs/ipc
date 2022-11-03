@@ -410,6 +410,14 @@ deco_rect (map)::
 	The coordinates of the *window decoration* inside its container. These
 	coordinates are relative to the container and do not include the actual
 	client window.
+actual_deco_rect (map)::
+	See +deco_rect+. i3 v4.22 changed the way title bars are rendered. Before
+	i3 v4.22, the deco_rect was always relative to the parent coordinates.
+	Starting with i3 v4.22, this remains true for tabbed/stacked containers
+	(actual_deco_rect is identical to deco_rect), but for normal-border leaf
+	containers within vertical/horizontal split containers, actual_deco_rect
+	is relative to the container itself. For more background, see
+	https://github.com/i3/i3/issues/1966
 geometry (map)::
 	The original geometry the window specified when i3 mapped it. Used when
 	switching a window to floating mode, for example.

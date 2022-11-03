@@ -23,6 +23,7 @@ static Con *to_focus;
 static bool parsing_gaps;
 static bool parsing_swallows;
 static bool parsing_rect;
+static bool parsing_actual_deco_rect;
 static bool parsing_deco_rect;
 static bool parsing_window_rect;
 static bool parsing_geometry;
@@ -61,7 +62,12 @@ static int json_start_map(void *ctx) {
         TAILQ_INSERT_TAIL(&(json_node->swallow_head), current_swallow, matches);
         swallow_is_empty = true;
     } else {
-        if (!parsing_rect && !parsing_deco_rect && !parsing_window_rect && !parsing_geometry && !parsing_gaps) {
+        if (!parsing_rect &&
+            !parsing_actual_deco_rect &&
+            !parsing_deco_rect &&
+            !parsing_window_rect &&
+            !parsing_geometry &&
+            !parsing_gaps) {
             if (last_key && strcasecmp(last_key, "floating_nodes") == 0) {
                 DLOG("New floating_node\n");
                 Con *ws = con_get_workspace(json_node);
@@ -85,7 +91,13 @@ static int json_start_map(void *ctx) {
 
 static int json_end_map(void *ctx) {
     LOG("end of map\n");
-    if (!parsing_swallows && !parsing_rect && !parsing_deco_rect && !parsing_window_rect && !parsing_geometry && !parsing_gaps) {
+    if (!parsing_swallows &&
+        !parsing_rect &&
+        !parsing_actual_deco_rect &&
+        !parsing_deco_rect &&
+        !parsing_window_rect &&
+        !parsing_geometry &&
+        !parsing_gaps) {
         /* Set a few default values to simplify manually crafted layout files. */
         if (json_node->layout == L_DEFAULT) {
             DLOG("Setting layout = L_SPLITH\n");
@@ -195,6 +207,7 @@ static int json_end_map(void *ctx) {
 
     parsing_gaps = false;
     parsing_rect = false;
+    parsing_actual_deco_rect = false;
     parsing_deco_rect = false;
     parsing_window_rect = false;
     parsing_geometry = false;
@@ -252,6 +265,9 @@ static int json_key(void *ctx, const unsigned char *val, size_t len) {
 
     if (strcasecmp(last_key, "rect") == 0)
         parsing_rect = true;
+
+    if (strcasecmp(last_key, "actual_deco_rect") == 0)
+        parsing_actual_deco_rect = true;
 
     if (strcasecmp(last_key, "deco_rect") == 0)
         parsing_deco_rect = true;
@@ -674,6 +690,7 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
     incomplete = 0;
     parsing_swallows = false;
     parsing_rect = false;
+    parsing_actual_deco_rect = false;
     parsing_deco_rect = false;
     parsing_window_rect = false;
     parsing_geometry = false;
