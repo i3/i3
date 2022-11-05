@@ -31,6 +31,7 @@ my $binary_spelling_exceptions = [
     'betwen', # asan_flags.inc contains this spelling error.
     'dissassemble', # https://reviews.llvm.org/D93902
     'oT', # lintian finds this in build/i3bar when built with clang?!
+    'ot', # lintian finds this in build/i3-config-wizard when built with clang?!
 ];
 my @binaries = qw(
     build/i3
