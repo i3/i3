@@ -21,6 +21,7 @@ static xcb_visualtype_t *root_visual_type;
 static double pango_font_red;
 static double pango_font_green;
 static double pango_font_blue;
+static double pango_font_alpha;
 
 static PangoLayout *create_layout_with_dpi(cairo_t *cr) {
     PangoLayout *layout;
@@ -102,7 +103,7 @@ static void draw_text_pango(const char *text, size_t text_len,
 
     /* Do the drawing */
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
+    cairo_set_source_rgba(cr, pango_font_red, pango_font_green, pango_font_blue, pango_font_alpha);
     pango_cairo_update_layout(cr, layout);
     pango_layout_get_pixel_size(layout, NULL, &height);
     /* Center the piece of text vertically. */
@@ -303,6 +304,7 @@ void set_font_colors(xcb_gcontext_t gc, color_t foreground, color_t background) 
             pango_font_red = foreground.red;
             pango_font_green = foreground.green;
             pango_font_blue = foreground.blue;
+            pango_font_alpha = foreground.alpha;
             break;
     }
 }
