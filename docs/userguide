@@ -798,6 +798,27 @@ hide_edge_borders none|vertical|horizontal|both|smart|smart_no_gaps
 hide_edge_borders vertical
 ----------------------
 
+[[_smart_borders]]
+=== Smart borders
+
+Smart borders will draw borders on windows only if there is more than one window
+in a workspace. This feature can also be enabled only if the gap size between
+window and screen edge is +0+.
+
+*Syntax*:
+-----------------------------------------------
+smart_borders on|off|no_gaps
+-----------------------------------------------
+
+*Example*:
+----------------------
+# Activate smart borders (always)
+smart_borders on
+
+# Activate smart borders (only when there are effectively no gaps)
+smart_borders no_gaps
+----------------------
+
 [[for_window]]
 === Arbitrary commands for specific windows (for_window)
 
