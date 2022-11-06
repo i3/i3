@@ -1144,7 +1144,8 @@ client.background::
         which do not cover the whole area of this window expose the color. Note
         that this colorclass only takes a single color.
 
-Colors are in HTML hex format (#rrggbb), see the following example:
+Colors are in HTML hex format (#rrggbb, optionally #rrggbbaa), see the following
+example:
 
 *Examples (default colors)*:
 ----------------------------------------------------------------------
@@ -1996,8 +1997,8 @@ bar {
 
 === Colors
 
-As with i3, colors are in HTML hex format (#rrggbb). The following colors can
-be configured at the moment:
+As with i3, colors are in HTML hex format (#rrggbb, optionally #rrggbbaa). The
+following colors can be configured at the moment:
 
 background::
 	Background color of the bar.
