@@ -1,1 +1,0 @@
-gaps: use logical_px() to scale pixel values to hi-dpi
