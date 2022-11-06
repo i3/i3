@@ -59,11 +59,6 @@ void render_con(Con *con) {
         inset.width -= inset.x;
         inset.height -= inset.y;
 
-        inset.x = logical_px(inset.x);
-        inset.y = logical_px(inset.y);
-        inset.width = logical_px(inset.width);
-        inset.height = logical_px(inset.height);
-
         if (con->fullscreen_mode == CF_NONE) {
             params.rect = rect_add(params.rect, inset);
             con->rect = rect_add(con->rect, inset);
