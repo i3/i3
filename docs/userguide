@@ -1476,8 +1476,7 @@ between a screen edge and a window (or split container) will be the sum of outer
 and inner gaps.
 
 You can define gaps either globally or per workspace using the following
-syntax. Note that the gaps configurations should be ordered from least specific
-to most specific as some directives can overwrite others.
+syntax.
 
 *Syntax*:
 -----------------------

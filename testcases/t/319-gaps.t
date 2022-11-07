@@ -17,7 +17,9 @@
 # Basic gaps functionality test
 # Ticket: #3724
 
-use i3test i3_config => <<EOT;
+use i3test i3_autostart => 0;
+
+my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
@@ -26,6 +28,8 @@ gaps outer 20px
 
 default_border pixel 0
 EOT
+
+my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -125,5 +129,38 @@ $inner_gaps = 6;
 $total_gaps = $outer_gaps + $inner_gaps;
 sync_with_i3;
 is_gaps_in_between_only();
+
+exit_gracefully($pid);
+
+################################################################################
+# Ensure gaps configuration does not need to be ordered from least to most specific
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+# This should result in a gap of 16px, not 26px
+workspace 2 gaps inner 16
+gaps inner 10
+
+default_border pixel 0
+EOT
+
+$pid = launch_with_config($config);
+
+cmd 'workspace 2';
+
+$left = open_window;
+$right = open_window;
+sync_with_i3;
+
+$inner_gaps = 16;
+$outer_gaps = 0;
+$total_gaps = $outer_gaps + $inner_gaps;
+
+is_gaps();
+
+exit_gracefully($pid);
 
 done_testing;
