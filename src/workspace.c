@@ -151,6 +151,22 @@ Con *workspace_get(const char *num) {
         }
     }
 
+    if (gaps.inner != 0) {
+        gaps.inner -= config.gaps.inner;
+    }
+    if (gaps.top != 0) {
+        gaps.top -= config.gaps.top;
+    }
+    if (gaps.right != 0) {
+        gaps.right -= config.gaps.right;
+    }
+    if (gaps.bottom != 0) {
+        gaps.bottom -= config.gaps.bottom;
+    }
+    if (gaps.left != 0) {
+        gaps.left -= config.gaps.left;
+    }
+
     Con *output = get_assigned_output(num, parsed_num);
     /* if an assignment is not found, we create this workspace on the current output */
     if (!output) {
