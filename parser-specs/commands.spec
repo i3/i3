@@ -96,6 +96,12 @@ state BORDER:
   '1pixel'
     -> call cmd_border("pixel", 1)
 
+state BORDER_WIDTH:
+  end
+    -> call cmd_border($border_style, -1)
+  border_width = number
+    -> call cmd_border($border_style, &border_width)
+
 # gaps inner|outer|horizontal|vertical|top|right|bottom|left [current] [set|plus|minus|toggle] <px>
 state GAPS:
   type = 'inner', 'outer', 'horizontal', 'vertical', 'top', 'right', 'bottom', 'left'
@@ -118,12 +124,6 @@ state GAPS_END:
       ->
   end
       -> call cmd_gaps($type, $scope, $mode, $value)
-
-state BORDER_WIDTH:
-  end
-    -> call cmd_border($border_style, -1)
-  border_width = number
-    -> call cmd_border($border_style, &border_width)
 
 # layout default|stacked|stacking|tabbed|splitv|splith
 # layout toggle [split|all]
