@@ -1456,8 +1456,8 @@ tiling_drag off
 [[gaps]]
 === Gaps
 
-“Gaps” are added spacing between windows (or split containers) and to the screen
-edges:
+Since i3 4.22, you can configure window gaps.
+“Gaps” are added spacing between windows (or split containers) and to the screen edges:
 
 image::gaps1920.png["Screenshot of i3 with gaps enabled (10 px inner gaps, 20 px outer gaps)",title="Gaps enabled (10 px inner gaps, 20 px outer gaps)"]
 
