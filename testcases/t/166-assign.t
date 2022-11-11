@@ -327,6 +327,42 @@ kill_all_windows;
 exit_gracefully($pid);
 
 #####################################################################
+# Test assignments to primary / nonprimary outputs
+#####################################################################
+$config = <<'EOT';
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+fake-outputs 1024x768+0+0P,1024x768+1024+0
+
+workspace primary output fake-0
+workspace nonprimary output fake-1
+
+assign [class="current"] → output current
+assign [class="^primary$"] → output primary
+assign [class="nonprimary"] → output nonprimary
+EOT
+
+$pid = launch_with_config($config);
+
+cmd 'workspace primary';
+open_special(wm_class => 'current');
+sync_with_i3;
+is_num_children('primary', 1, 'one window in current workspace');
+
+open_special(wm_class => 'nonprimary');
+sync_with_i3;
+is_num_children('nonprimary', 1, 'one child on nonprimary');
+
+cmd 'workspace nonprimary';
+open_special(wm_class => 'primary');
+sync_with_i3;
+is_num_children('primary', 2, 'two children on primary');
+
+kill_all_windows;
+exit_gracefully($pid);
+
+#####################################################################
 # regression test: dock clients with floating assignments should not crash
 # (instead, nothing should happen - dock clients can’t float)
 # ticket #501

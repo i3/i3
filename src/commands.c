@@ -1032,11 +1032,16 @@ typedef struct user_output_name {
 typedef TAILQ_HEAD(user_output_names_head, user_output_name) user_output_names_head;
 
 static void user_output_names_add(user_output_names_head *list, const char *name) {
-    if (strcmp(name, "next") == 0) {
-        /* "next" here works like a wildcard: It "expands" to all available
-         * outputs. */
+    const bool get_non_primary = (strcasecmp("nonprimary", name) == 0);
+    if (get_non_primary || strcmp(name, "next") == 0) {
+        /* "next" (or "nonprimary") here work like a wildcard: It "expands" to
+         * all available (or non-primary) outputs. */
         Output *output;
         TAILQ_FOREACH (output, &outputs, outputs) {
+            if (get_non_primary && output->primary) {
+                continue;
+            }
+
             user_output_name *co = scalloc(sizeof(user_output_name), 1);
             co->name = sstrdup(output_primary_name(output));
             TAILQ_INSERT_TAIL(list, co, user_output_names);
