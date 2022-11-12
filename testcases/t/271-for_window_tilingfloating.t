@@ -14,7 +14,10 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
-use i3test i3_config => <<EOT;
+use i3test i3_autostart => 0;
+use X11::XCB qw(PROP_MODE_REPLACE);
+
+my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 for_window [tiling] mark --add tiling
@@ -26,7 +29,8 @@ for_window [floating_from="auto"] mark --add floating_auto
 for_window [tiling_from="user"] mark --add tiling_user
 for_window [floating_from="user"] mark --add floating_user
 EOT
-use X11::XCB qw(PROP_MODE_REPLACE);
+
+my $pid = launch_with_config($config);
 
 ##############################################################
 # Check that the auto tiling / floating criteria work.
@@ -82,5 +86,46 @@ cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
 is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'B', 'floating_user' ], "Only 'floating_user' rule triggered");
 
 ##############################################################
+
+exit_gracefully($pid);
+
+################################################################################
+# Verify floating_from/tiling_from works as command criterion (issue #5258).
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+for_window [tiling] mark --add tiling
+for_window [floating] mark --add floating
+EOT
+
+$pid = launch_with_config($config);
+
+$tmp = fresh_workspace;
+$A = open_window;
+$B = open_floating_window;
+
+@nodes = @{get_ws($tmp)->{nodes}};
+cmp_ok(@nodes, '==', 1, 'one tiling container on this workspace');
+is_deeply($nodes[0]->{marks}, [ 'tiling' ], "mark set for 'tiling' criterion");
+
+@nodes = @{get_ws($tmp)->{floating_nodes}};
+cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
+is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'floating' ], "mark set for 'floating' criterion");
+
+cmd '[tiling_from="auto" con_mark="tiling"] mark --add tiling_auto';
+cmd '[floating_from="auto" con_mark="floating"] mark --add floating_auto';
+
+@nodes = @{get_ws($tmp)->{nodes}};
+cmp_ok(@nodes, '==', 1, 'one tiling container on this workspace');
+is_deeply($nodes[0]->{marks}, [ 'tiling', 'tiling_auto' ], "mark set for 'tiling' criterion");
+
+@nodes = @{get_ws($tmp)->{floating_nodes}};
+cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
+is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'floating', 'floating_auto' ], "mark set for 'floating' criterion");
+
+exit_gracefully($pid);
 
 done_testing;
