@@ -618,7 +618,10 @@ bool con_is_docked(Con *con) {
  *
  */
 Con *con_inside_floating(Con *con) {
-    assert(con != NULL);
+    if (con == NULL) {
+        return NULL;
+    }
+
     if (con->type == CT_FLOATING_CON)
         return con;
 

@@ -52,6 +52,11 @@ bool gaps_should_inset_con(Con *con, int children) {
         return false;
     }
 
+    /* Floating split containers should never have gaps inside them. */
+    if (con_inside_floating(con)) {
+        return false;
+    }
+
     const bool leaf_or_stacked_tabbed =
         con_is_leaf(con) ||
         (con->layout == L_STACKED || con->layout == L_TABBED);
