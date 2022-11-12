@@ -173,6 +173,8 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
                               bool use_threshold) {
     Con *output = con_get_output(first);
     DLOG("x = %d, width = %d\n", output->rect.x, output->rect.width);
+    DLOG("first = %p / %s\n", first, first->name);
+    DLOG("second = %p / %s\n", second, second->name);
 
     x_mask_event_mask(~XCB_EVENT_MASK_ENTER_WINDOW);
     xcb_flush(conn);
@@ -197,14 +199,31 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
     Rect helprect;
     helprect.x = second->rect.x;
     helprect.y = second->rect.y;
+    /* Resizes might happen between a split container and a leaf
+     * container. Because gaps happen *within* a split container, we need to
+     * work with (any) leaf window inside the split, so descend focused. */
+    Con *ffirst = con_descend_focused(first);
+    Con *fsecond = con_descend_focused(second);
     if (orientation == HORIZ) {
         helprect.width = logical_px(2);
         helprect.height = second->rect.height;
-        initial_position = second->rect.x;
+        const uint32_t ffirst_right = ffirst->rect.x + ffirst->rect.width;
+        const uint32_t gap = (fsecond->rect.x - ffirst_right);
+        const uint32_t middle = fsecond->rect.x - (gap / 2);
+        DLOG("ffirst->rect = {.x = %u, .width = %u}\n", ffirst->rect.x, ffirst->rect.width);
+        DLOG("fsecond->rect = {.x = %u, .width = %u}\n", fsecond->rect.x, fsecond->rect.width);
+        DLOG("gap = %u, middle = %u\n", gap, middle);
+        initial_position = middle;
     } else {
         helprect.width = second->rect.width;
         helprect.height = logical_px(2);
-        initial_position = second->rect.y;
+        const uint32_t ffirst_bottom = ffirst->rect.y + ffirst->rect.height;
+        const uint32_t gap = (fsecond->rect.y - ffirst_bottom);
+        const uint32_t middle = fsecond->rect.y - (gap / 2);
+        DLOG("ffirst->rect = {.y = %u, .height = %u}\n", ffirst->rect.y, ffirst->rect.height);
+        DLOG("fsecond->rect = {.y = %u, .height = %u}\n", fsecond->rect.y, fsecond->rect.height);
+        DLOG("gap = %u, middle = %u\n", gap, middle);
+        initial_position = middle;
     }
 
     mask = XCB_CW_BACK_PIXEL;
@@ -220,10 +239,10 @@ void resize_graphical_handler(Con *first, Con *second, orientation_t orientation
         xcb_map_window(conn, helpwin);
         if (orientation == HORIZ) {
             xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
-                             second->rect.x, event->root_y);
+                             initial_position, event->root_y);
         } else {
             xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
-                             event->root_x, second->rect.y);
+                             event->root_x, initial_position);
         }
     }
 
