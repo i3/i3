@@ -202,4 +202,35 @@ is_gaps();
 
 exit_gracefully($pid);
 
+################################################################################
+# Ensure floating split containers don’t get gaps (issue #5272).
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+gaps inner 10
+
+default_border pixel 0
+EOT
+
+$pid = launch_with_config($config);
+
+fresh_workspace;
+
+my $floating = open_floating_window;
+sync_with_i3;
+
+my $orig_rect = $floating->rect;
+cmd 'border pixel 0';
+sync_with_i3;
+is_deeply(scalar $floating->rect, $orig_rect, 'floating window position unchanged after border pixel 0');
+
+cmd 'layout stacking';
+sync_with_i3;
+is_deeply(scalar $floating->rect, $orig_rect, 'floating window position unchanged after border pixel 0');
+
+exit_gracefully($pid);
+
 done_testing;
