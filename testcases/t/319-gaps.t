@@ -18,6 +18,7 @@
 # Ticket: #3724
 
 use i3test i3_autostart => 0;
+use i3test::Util qw(slurp);
 
 my $config = <<EOT;
 # i3 config file (v4)
@@ -230,6 +231,55 @@ is_deeply(scalar $floating->rect, $orig_rect, 'floating window position unchange
 cmd 'layout stacking';
 sync_with_i3;
 is_deeply(scalar $floating->rect, $orig_rect, 'floating window position unchanged after border pixel 0');
+
+exit_gracefully($pid);
+
+################################################################################
+# Ensure existing workspaces pick up changes in gap assignments (issue #5257).
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+gaps inner 10
+
+default_border pixel 0
+EOT
+
+$pid = launch_with_config($config);
+
+cmd 'workspace 2';
+
+$left = open_window;
+$right = open_window;
+sync_with_i3;
+
+is_gaps();
+
+my $version = i3()->get_version()->recv;
+open(my $configfh, '>', $version->{'loaded_config_file_name'});
+say $configfh <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+# Increase gaps for (existing) workspace 2 to 16px
+workspace 2 gaps inner 16
+gaps inner 10
+
+default_border pixel 0
+EOT
+close($configfh);
+
+cmd 'reload';
+
+sync_with_i3;
+
+$inner_gaps = 16;
+$outer_gaps = 0;
+$total_gaps = $outer_gaps + $inner_gaps;
+
+is_gaps();
 
 exit_gracefully($pid);
 

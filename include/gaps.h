@@ -26,3 +26,16 @@ bool gaps_should_inset_con(Con *con, int children);
  * the container is not touching the edge of the screen in that direction.
  */
 bool gaps_has_adjacent_container(Con *con, direction_t direction);
+
+/**
+ * Returns the configured gaps for this workspace based on the workspace name,
+ * number, and configured workspace gap assignments.
+ */
+gaps_t gaps_for_workspace(Con *ws);
+
+/**
+ * Re-applies all workspace gap assignments to existing workspaces after
+ * reloading the configuration file.
+ *
+ */
+void gaps_reapply_workspace_assignments(void);

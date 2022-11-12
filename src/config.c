@@ -296,11 +296,11 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
         translate_keysyms();
         grab_all_keys(conn);
         regrab_all_buttons(conn);
+        gaps_reapply_workspace_assignments();
 
         /* Redraw the currently visible decorations on reload, so that the
          * possibly new drawing parameters changed. */
-        x_deco_recurse(croot);
-        xcb_flush(conn);
+        tree_render();
     }
 
     return result == 0;

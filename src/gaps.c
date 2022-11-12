@@ -110,3 +110,54 @@ bool gaps_has_adjacent_container(Con *con, direction_t direction) {
     /* For fullscreen containers, only consider the adjacent container if it is also fullscreen. */
     return con_has_parent(con, fullscreen) && con_has_parent(second, fullscreen);
 }
+
+/*
+ * Returns the configured gaps for this workspace based on the workspace name,
+ * number, and configured workspace gap assignments.
+ */
+gaps_t gaps_for_workspace(Con *ws) {
+    gaps_t gaps = (gaps_t){0, 0, 0, 0, 0};
+    struct Workspace_Assignment *assignment;
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+        if (strcmp(assignment->name, ws->name) == 0) {
+            gaps = assignment->gaps;
+            break;
+        } else if (ws->num != -1 && name_is_digits(assignment->name) && ws_name_to_number(assignment->name) == ws->num) {
+            gaps = assignment->gaps;
+        }
+    }
+
+    if (gaps.inner != 0) {
+        gaps.inner -= config.gaps.inner;
+    }
+    if (gaps.top != 0) {
+        gaps.top -= config.gaps.top;
+    }
+    if (gaps.right != 0) {
+        gaps.right -= config.gaps.right;
+    }
+    if (gaps.bottom != 0) {
+        gaps.bottom -= config.gaps.bottom;
+    }
+    if (gaps.left != 0) {
+        gaps.left -= config.gaps.left;
+    }
+
+    return gaps;
+}
+
+/*
+ * Re-applies all workspace gap assignments to existing workspaces after
+ * reloading the configuration file.
+ *
+ */
+void gaps_reapply_workspace_assignments(void) {
+    Con *output, *workspace = NULL;
+    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
+        Con *content = output_get_content(output);
+        TAILQ_FOREACH (workspace, &(content->nodes_head), nodes) {
+            DLOG("updating gap assignments for workspace %s\n", workspace->name);
+            workspace->gaps = gaps_for_workspace(workspace);
+        }
+    }
+}
