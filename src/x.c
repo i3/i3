@@ -618,8 +618,8 @@ void x_draw_decoration(Con *con) {
         goto copy_pixmaps;
 
     /* 4: paint the bar */
-    DLOG("con->deco_rect = (x=%d, y=%d, w=%d, h=%d)\n",
-         con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
+    DLOG("con->deco_rect = (x=%d, y=%d, w=%d, h=%d) for con->name=%s\n",
+         con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height, con->name);
     draw_util_rectangle(dest_surface, p->color->background,
                         con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
 
@@ -960,7 +960,7 @@ void x_push_node(Con *con) {
 
     /* The pixmap of a borderless leaf container will not be used except
      * for the titlebar in a stack or tabs (issue #1013). */
-    bool is_pixmap_needed = ((con_is_leaf(con) && con->border_style != BS_NONE) ||
+    bool is_pixmap_needed = ((con_is_leaf(con) && con_border_style(con) != BS_NONE) ||
                              con->layout == L_STACKED ||
                              con->layout == L_TABBED);
     DLOG("Con %p (layout %d), is_pixmap_needed = %s, rect.height = %d\n",

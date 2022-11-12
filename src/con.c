@@ -1700,7 +1700,7 @@ static bool has_outer_gaps(gaps_t gaps) {
  */
 bool con_draw_decoration_into_frame(Con *con) {
     return con_is_leaf(con) &&
-           con->border_style == BS_NORMAL &&
+           con_border_style(con) == BS_NORMAL &&
            (con->parent == NULL ||
             (con->parent->layout != L_TABBED &&
              con->parent->layout != L_STACKED));
@@ -1817,14 +1817,19 @@ int con_border_style(Con *con) {
         return BS_NONE;
     }
 
-    if (con->parent->layout == L_STACKED)
-        return (con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL);
+    if (con->parent != NULL) {
+        if (con->parent->layout == L_STACKED) {
+            return (con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL);
+        }
 
-    if (con->parent->layout == L_TABBED && con->border_style != BS_NORMAL)
-        return (con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL);
+        if (con->parent->layout == L_TABBED && con->border_style != BS_NORMAL) {
+            return (con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL);
+        }
 
-    if (con->parent->type == CT_DOCKAREA)
-        return BS_NONE;
+        if (con->parent->type == CT_DOCKAREA) {
+            return BS_NONE;
+        }
+    }
 
     return con->border_style;
 }
