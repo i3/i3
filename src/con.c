@@ -2579,3 +2579,18 @@ void con_merge_into(Con *old, Con *new) {
 
     tree_close_internal(old, DONT_KILL_WINDOW, false);
 }
+
+/*
+ * Returns true if the container is within any stacked/tabbed split container.
+ *
+ */
+bool con_inside_stacked_or_tabbed(Con *con) {
+    if (con->parent == NULL) {
+        return false;
+    }
+    if (con->parent->layout == L_STACKED ||
+        con->parent->layout == L_TABBED) {
+        return true;
+    }
+    return con_inside_stacked_or_tabbed(con->parent);
+}

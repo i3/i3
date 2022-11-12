@@ -163,4 +163,43 @@ is_gaps();
 
 exit_gracefully($pid);
 
+################################################################################
+# Ensure stacked/tabbed containers are properly inset even when they are part
+# of a splith/splitv container (issue #5261).
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+gaps inner 10
+
+default_border pixel 0
+EOT
+
+$pid = launch_with_config($config);
+
+fresh_workspace;
+
+my $helper = open_window;
+$right = open_window;
+sync_with_i3;
+cmd 'focus left';
+cmd 'splitv';
+$left = open_window;
+sync_with_i3;
+cmd 'splith';
+cmd 'layout stacked';
+sync_with_i3;
+$helper->destroy;
+sync_with_i3;
+
+$inner_gaps = 10;
+$outer_gaps = 0;
+$total_gaps = $outer_gaps + $inner_gaps;
+
+is_gaps();
+
+exit_gracefully($pid);
+
 done_testing;

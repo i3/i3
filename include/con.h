@@ -565,3 +565,9 @@ uint32_t con_rect_size_in_orientation(Con *con);
  *
  */
 void con_merge_into(Con *old, Con *new);
+
+/**
+ * Returns true if the container is within any stacked/tabbed split container.
+ *
+ */
+bool con_inside_stacked_or_tabbed(Con *con);

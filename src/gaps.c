@@ -47,20 +47,27 @@ gaps_t calculate_effective_gaps(Con *con) {
  * Decides whether the container should be inset.
  */
 bool gaps_should_inset_con(Con *con, int children) {
+    /* No parent? None of the conditionals below can be true. */
+    if (con->parent == NULL) {
+        return false;
+    }
+
+    const bool leaf_or_stacked_tabbed =
+        con_is_leaf(con) ||
+        (con->layout == L_STACKED || con->layout == L_TABBED);
+
     /* Inset direct children of the workspace that are leaf containers or
        stacked/tabbed containers. */
-    if (con->parent != NULL &&
-        con->parent->type == CT_WORKSPACE &&
-        (con_is_leaf(con) ||
-         (con->layout == L_STACKED || con->layout == L_TABBED))) {
+    if (leaf_or_stacked_tabbed &&
+        con->parent->type == CT_WORKSPACE) {
         return true;
     }
 
     /* Inset direct children of vertical or horizontal split containers at any
-       depth in the tree (only leaf containers, not split containers within
-       split containers, to avoid double insets). */
-    if (con_is_leaf(con) &&
-        con->parent != NULL &&
+       depth in the tree. Do not inset as soon as any parent is a stacked or
+       tabbed container, to avoid double insets. */
+    if (leaf_or_stacked_tabbed &&
+        !con_inside_stacked_or_tabbed(con) &&
         con->parent->type == CT_CON &&
         (con->parent->layout == L_SPLITH ||
          con->parent->layout == L_SPLITV)) {
