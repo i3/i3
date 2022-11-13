@@ -155,6 +155,17 @@ struct gaps_t {
     int left;
 };
 
+typedef enum {
+    GAPS_INNER = (1 << 0),
+    GAPS_TOP = (1 << 1),
+    GAPS_RIGHT = (1 << 2),
+    GAPS_BOTTOM = (1 << 3),
+    GAPS_LEFT = (1 << 4),
+    GAPS_VERTICAL = (GAPS_TOP | GAPS_BOTTOM),
+    GAPS_HORIZONTAL = (GAPS_RIGHT | GAPS_LEFT),
+    GAPS_OUTER = (GAPS_VERTICAL | GAPS_HORIZONTAL),
+} gaps_mask_t;
+
 /**
  * Focus wrapping modes.
  */
@@ -229,6 +240,7 @@ struct Workspace_Assignment {
     char *name;
     char *output;
     gaps_t gaps;
+    gaps_mask_t gaps_mask;
 
     TAILQ_ENTRY(Workspace_Assignment) ws_assignments;
 };

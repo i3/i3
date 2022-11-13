@@ -44,6 +44,10 @@ my $inner_gaps = 10;
 my $total_gaps = $outer_gaps + $inner_gaps;
 
 sub is_gaps {
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+
+    sync_with_i3;
+
     my $left_rect = $left->rect;
     my $right_rect = $right->rect;
 
@@ -79,12 +83,10 @@ is_gaps();
 fresh_workspace;
 cmd 'gaps outer current set 30px';
 cmd "workspace $tmp";
-sync_with_i3;
 is_gaps();
 
 # Verify global gaps do influence all workspaces
 cmd 'gaps outer all set 30px';
-sync_with_i3;
 
 $outer_gaps = 30;
 $total_gaps = $outer_gaps + $inner_gaps;
@@ -93,9 +95,12 @@ is_gaps();
 # Verify negative outer gaps compensate inner gaps, resulting only in gaps
 # in between adjacent windows or split containers, not towards the screen edges.
 cmd 'gaps outer all set -10px';
-sync_with_i3;
 
 sub is_gaps_in_between_only {
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+
+    sync_with_i3;
+
     my $left_rect = $left->rect;
     my $right_rect = $right->rect;
 
@@ -128,7 +133,6 @@ is_gaps_in_between_only();
 cmd 'gaps inner all set 6px';
 $inner_gaps = 6;
 $total_gaps = $outer_gaps + $inner_gaps;
-sync_with_i3;
 is_gaps_in_between_only();
 
 exit_gracefully($pid);
@@ -154,12 +158,10 @@ cmd 'workspace 2';
 
 $left = open_window;
 $right = open_window;
-sync_with_i3;
 
 $inner_gaps = 16;
 $outer_gaps = 0;
 $total_gaps = $outer_gaps + $inner_gaps;
-
 is_gaps();
 
 exit_gracefully($pid);
@@ -193,12 +195,10 @@ cmd 'splith';
 cmd 'layout stacked';
 sync_with_i3;
 $helper->destroy;
-sync_with_i3;
 
 $inner_gaps = 10;
 $outer_gaps = 0;
 $total_gaps = $outer_gaps + $inner_gaps;
-
 is_gaps();
 
 exit_gracefully($pid);
@@ -253,8 +253,6 @@ cmd 'workspace 2';
 
 $left = open_window;
 $right = open_window;
-sync_with_i3;
-
 is_gaps();
 
 my $version = i3()->get_version()->recv;
@@ -273,13 +271,90 @@ close($configfh);
 
 cmd 'reload';
 
-sync_with_i3;
-
 $inner_gaps = 16;
 $outer_gaps = 0;
 $total_gaps = $outer_gaps + $inner_gaps;
-
 is_gaps();
+
+exit_gracefully($pid);
+
+################################################################################
+# Ensure removing gaps from workspace works (issue #5282).
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+gaps inner 33
+gaps outer 22
+workspace 1 gaps outer 0
+workspace 1 gaps inner 0
+workspace 2 gaps outer 10
+workspace 2 gaps inner 0
+workspace 3 gaps outer 0
+workspace 3 gaps inner 10
+workspace 4 gaps left 10
+workspace 4 gaps top 20
+workspace 4 gaps inner 0
+workspace 4 gaps bottom 0
+workspace 4 gaps right 0
+
+default_border pixel 0
+EOT
+
+$pid = launch_with_config($config);
+
+# Everything disabled
+cmd 'workspace 1';
+kill_all_windows;
+$left = open_window;
+$right = open_window;
+
+$inner_gaps = 0;
+$total_gaps = 0;
+is_gaps();
+
+# Inner disabled
+cmd 'workspace 2';
+$left = open_window;
+$right = open_window;
+
+$inner_gaps = 0;
+$total_gaps = 10;
+is_gaps();
+
+# Outer disabled
+cmd 'workspace 3';
+$left = open_window;
+$right = open_window;
+
+$inner_gaps = 10;
+$total_gaps = 10;
+is_gaps();
+
+# More complicated example
+cmd 'workspace 4';
+$left = open_window;
+$right = open_window;
+sync_with_i3;
+
+my $left_rect = $left->rect;
+my $right_rect = $right->rect;
+is_deeply($left_rect, {
+x => 10,
+y => 20,
+width => $screen_width/2 - 10/2,
+height => $screen_height - 20,
+}, 'left window position and size matches gaps expectations');
+
+is_deeply($right_rect, {
+x => $left_rect->x + $left_rect->width,
+y => 20,
+width => $screen_width/2 - 10/2,
+height => $left_rect->height,
+}, 'right window position and size matches gaps expectations');
+
 
 exit_gracefully($pid);
 
