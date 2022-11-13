@@ -459,7 +459,9 @@ static border_style_t border_style_from_motif_value(uint32_t value) {
  *
  */
 bool window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style) {
-    assert(prop != NULL);
+    if (prop == NULL) {
+        return false;
+    }
     assert(motif_border_style != NULL);
 
     if (xcb_get_property_value_length(prop) == 0) {
