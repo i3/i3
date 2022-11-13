@@ -117,29 +117,35 @@ bool gaps_has_adjacent_container(Con *con, direction_t direction) {
  */
 gaps_t gaps_for_workspace(Con *ws) {
     gaps_t gaps = (gaps_t){0, 0, 0, 0, 0};
+    gaps_mask_t mask = 0;
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
         if (strcmp(assignment->name, ws->name) == 0) {
             gaps = assignment->gaps;
+            mask = assignment->gaps_mask;
             break;
         } else if (ws->num != -1 && name_is_digits(assignment->name) && ws_name_to_number(assignment->name) == ws->num) {
             gaps = assignment->gaps;
+            mask = assignment->gaps_mask;
         }
     }
+    if (mask == 0) {
+        return gaps;
+    }
 
-    if (gaps.inner != 0) {
+    if (mask & GAPS_INNER) {
         gaps.inner -= config.gaps.inner;
     }
-    if (gaps.top != 0) {
+    if (mask & GAPS_TOP) {
         gaps.top -= config.gaps.top;
     }
-    if (gaps.right != 0) {
+    if (mask & GAPS_RIGHT) {
         gaps.right -= config.gaps.right;
     }
-    if (gaps.bottom != 0) {
+    if (mask & GAPS_BOTTOM) {
         gaps.bottom -= config.gaps.bottom;
     }
-    if (gaps.left != 0) {
+    if (mask & GAPS_LEFT) {
         gaps.left -= config.gaps.left;
     }
 

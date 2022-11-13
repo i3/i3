@@ -231,143 +231,85 @@ CFGFUN(for_window, const char *command) {
     TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
 }
 
-static void create_gaps_assignment(const char *workspace, const char *scope, gaps_t gaps) {
+static void apply_gaps(gaps_t *gaps, gaps_mask_t mask, int value) {
+    if (gaps == NULL) {
+        return;
+    }
+    if (mask & GAPS_INNER) {
+        gaps->inner = value;
+    }
+    if (mask & GAPS_TOP) {
+        gaps->top = value;
+    }
+    if (mask & GAPS_RIGHT) {
+        gaps->right = value;
+    }
+    if (mask & GAPS_BOTTOM) {
+        gaps->bottom = value;
+    }
+    if (mask & GAPS_LEFT) {
+        gaps->left = value;
+    }
+}
+
+static void create_gaps_assignment(const char *workspace, const gaps_mask_t mask, const int pixels) {
+    if (mask == 0) {
+        return;
+    }
+
     DLOG("Setting gaps for workspace %s", workspace);
 
+    bool found = false;
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
         if (strcasecmp(assignment->name, workspace) == 0) {
-            if (!strcmp(scope, "inner")) {
-                assignment->gaps.inner = gaps.inner;
-            } else if (!strcmp(scope, "outer")) {
-                assignment->gaps.top = gaps.top;
-                assignment->gaps.right = gaps.right;
-                assignment->gaps.bottom = gaps.bottom;
-                assignment->gaps.left = gaps.left;
-            } else if (!strcmp(scope, "vertical")) {
-                assignment->gaps.top = gaps.top;
-                assignment->gaps.bottom = gaps.bottom;
-            } else if (!strcmp(scope, "horizontal")) {
-                assignment->gaps.right = gaps.right;
-                assignment->gaps.left = gaps.left;
-            } else if (!strcmp(scope, "top")) {
-                assignment->gaps.top = gaps.top;
-            } else if (!strcmp(scope, "right")) {
-                assignment->gaps.right = gaps.right;
-            } else if (!strcmp(scope, "bottom")) {
-                assignment->gaps.bottom = gaps.bottom;
-            } else if (!strcmp(scope, "left")) {
-                assignment->gaps.left = gaps.left;
-            } else {
-                ELOG("Invalid command, cannot process scope %s", scope);
-            }
-
-            return;
+            found = true;
+            break;
         }
     }
 
-    // Assignment does not yet exist, let's create it.
-    assignment = scalloc(1, sizeof(struct Workspace_Assignment));
-    assignment->name = sstrdup(workspace);
-    assignment->output = NULL;
-    if (!strcmp(scope, "inner")) {
-        assignment->gaps.inner = gaps.inner;
-    } else if (!strcmp(scope, "outer")) {
-        assignment->gaps.top = gaps.top;
-        assignment->gaps.right = gaps.right;
-        assignment->gaps.bottom = gaps.bottom;
-        assignment->gaps.left = gaps.left;
-    } else if (!strcmp(scope, "vertical")) {
-        assignment->gaps.top = gaps.top;
-        assignment->gaps.bottom = gaps.bottom;
-    } else if (!strcmp(scope, "horizontal")) {
-        assignment->gaps.right = gaps.right;
-        assignment->gaps.left = gaps.left;
-    } else if (!strcmp(scope, "top")) {
-        assignment->gaps.top = gaps.top;
-    } else if (!strcmp(scope, "right")) {
-        assignment->gaps.right = gaps.right;
-    } else if (!strcmp(scope, "bottom")) {
-        assignment->gaps.bottom = gaps.bottom;
-    } else if (!strcmp(scope, "left")) {
-        assignment->gaps.left = gaps.left;
-    } else {
-        ELOG("Invalid command, cannot process scope %s", scope);
+    /* Assignment does not yet exist, let's create it. */
+    if (!found) {
+        assignment = scalloc(1, sizeof(struct Workspace_Assignment));
+        assignment->name = sstrdup(workspace);
+        assignment->output = NULL;
+        TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
     }
-    TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
+
+    assignment->gaps_mask |= mask;
+    apply_gaps(&assignment->gaps, mask, pixels);
+}
+
+static gaps_mask_t gaps_scope_to_mask(const char *scope) {
+    if (!strcmp(scope, "inner")) {
+        return GAPS_INNER;
+    } else if (!strcmp(scope, "outer")) {
+        return GAPS_OUTER;
+    } else if (!strcmp(scope, "vertical")) {
+        return GAPS_VERTICAL;
+    } else if (!strcmp(scope, "horizontal")) {
+        return GAPS_HORIZONTAL;
+    } else if (!strcmp(scope, "top")) {
+        return GAPS_TOP;
+    } else if (!strcmp(scope, "right")) {
+        return GAPS_RIGHT;
+    } else if (!strcmp(scope, "bottom")) {
+        return GAPS_BOTTOM;
+    } else if (!strcmp(scope, "left")) {
+        return GAPS_LEFT;
+    }
+    ELOG("Invalid command, cannot process scope %s", scope);
+    return 0;
 }
 
 CFGFUN(gaps, const char *workspace, const char *scope, const long value) {
     int pixels = logical_px(value);
-    gaps_t gaps = (gaps_t){0, 0, 0, 0, 0};
-    if (!strcmp(scope, "inner")) {
-        if (workspace == NULL)
-            config.gaps.inner = pixels;
-        else {
-            gaps.inner = pixels;
-            create_gaps_assignment(workspace, scope, gaps);
-        }
-    } else if (!strcmp(scope, "outer")) {
-        if (workspace == NULL) {
-            config.gaps.top = pixels;
-            config.gaps.right = pixels;
-            config.gaps.bottom = pixels;
-            config.gaps.left = pixels;
-        } else {
-            gaps.top = pixels;
-            gaps.right = pixels;
-            gaps.bottom = pixels;
-            gaps.left = pixels;
-            create_gaps_assignment(workspace, scope, gaps);
-        }
-    } else if (!strcmp(scope, "vertical")) {
-        if (workspace == NULL) {
-            config.gaps.top = pixels;
-            config.gaps.bottom = pixels;
-        } else {
-            gaps.top = pixels;
-            gaps.bottom = pixels;
-            create_gaps_assignment(workspace, scope, gaps);
-        }
-    } else if (!strcmp(scope, "horizontal")) {
-        if (workspace == NULL) {
-            config.gaps.right = pixels;
-            config.gaps.left = pixels;
-        } else {
-            gaps.right = pixels;
-            gaps.left = pixels;
-            create_gaps_assignment(workspace, scope, gaps);
-        }
-    } else if (!strcmp(scope, "top")) {
-        if (workspace == NULL)
-            config.gaps.top = pixels;
-        else {
-            gaps.top = pixels;
-            create_gaps_assignment(workspace, scope, gaps);
-        }
-    } else if (!strcmp(scope, "right")) {
-        if (workspace == NULL)
-            config.gaps.right = pixels;
-        else {
-            gaps.right = pixels;
-            create_gaps_assignment(workspace, scope, gaps);
-        }
-    } else if (!strcmp(scope, "bottom")) {
-        if (workspace == NULL)
-            config.gaps.bottom = pixels;
-        else {
-            gaps.bottom = pixels;
-            create_gaps_assignment(workspace, scope, gaps);
-        }
-    } else if (!strcmp(scope, "left")) {
-        if (workspace == NULL)
-            config.gaps.left = pixels;
-        else {
-            gaps.left = pixels;
-            create_gaps_assignment(workspace, scope, gaps);
-        }
+    gaps_mask_t mask = gaps_scope_to_mask(scope);
+
+    if (workspace == NULL) {
+        apply_gaps(&config.gaps, mask, pixels);
     } else {
-        ELOG("Invalid command, cannot process scope %s", scope);
+        create_gaps_assignment(workspace, mask, pixels);
     }
 }
 
