@@ -86,6 +86,8 @@ workspace 5 output fake-0
 workspace 5:xxx output fake-1
 workspace 6:xxx output fake-0
 workspace 6 output fake-1
+workspace 7 output nonprimary primary
+workspace 8 output doesnotexist primary
 EOT
 
 $pid = launch_with_config($config);
@@ -98,7 +100,9 @@ do_test('5', 'fake-0', 'Numbered assignment ok');
 do_test('5:xxx', 'fake-1', 'Named assignment overrides number');
 do_test('6', 'fake-1', 'Numbered assignment ok');
 do_test('6:xxx', 'fake-0', 'Named assignment overrides number');
-do_test('7', 'fake-2', 'Numbered initialization for fake-2');
+do_test('7', 'fake-1', 'Non-primary output');
+do_test('8', 'fake-0', 'Primary output');
+do_test('9', 'fake-2', 'Numbered initialization for fake-2');
 
 cmd 'focus output fake-0, workspace foo';
 check_output('foo', 'fake-0', 'Workspace with only non-existing assigned outputs opened in current output');

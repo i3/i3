@@ -965,7 +965,7 @@ considered.
 *Syntax*:
 ------------------------------------------------------------
 assign <criteria> [→] [workspace] [number] <workspace>
-assign <criteria> [→] output left|right|up|down|primary|<output>
+assign <criteria> [→] output left|right|up|down|primary|nonprimary|<output>
 ------------------------------------------------------------
 
 *Examples*:
@@ -997,6 +997,9 @@ assign [class="^URxvt$"] → output right
 
 # Assign urxvt to the primary output
 assign [class="^URxvt$"] → output primary
+
+# Assign urxvt to the first non-primary output
+assign [class="^URxvt$"] → output nonprimary
 ----------------------
 
 Note that you might not have a primary output configured yet. To do so, run:
@@ -2423,7 +2426,7 @@ output::
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
 focus next|prev [sibling]
-focus output left|right|down|up|current|primary|next|<output1> [output2]…
+focus output left|right|down|up|current|primary|nonprimary|next|<output1> [output2]…
 ----------------------------------------------
 
 *Examples*:
@@ -2454,6 +2457,9 @@ bindsym $mod+x focus output HDMI-2
 
 # Focus the primary output
 bindsym $mod+x focus output primary
+
+# Cycle focus through non-primary outputs
+bindsym $mod+x focus output nonprimary
 
 # Cycle focus between outputs VGA1 and LVDS1 but not DVI0
 bindsym $mod+x move workspace to output VGA1 LVDS1
@@ -2719,8 +2725,8 @@ To move a container to another RandR output (addressed by names like +LVDS1+ or
 
 *Syntax*:
 -------------------------------------------------------------------------------------
-move container to output left|right|down|up|current|primary|next|<output1> [output2]…
-move workspace to output left|right|down|up|current|primary|next|<output1> [output2]…
+move container to output left|right|down|up|current|primary|nonprimary|next|<output1> [output2]…
+move workspace to output left|right|down|up|current|primary|nonprimary|next|<output1> [output2]…
 -------------------------------------------------------------------------------------
 
 *Examples*:
