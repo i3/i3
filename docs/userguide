@@ -891,12 +891,17 @@ set $m Mod1
 bindsym $m+Shift+r restart
 ------------------------
 
-Variables are directly replaced in the file when parsing. Variables expansion
-is not recursive so it is not possible to define a variable with a value
-containing another variable. There is no fancy handling and there are
-absolutely no plans to change this. If you need a more dynamic configuration
+Variables are directly replaced in the file when parsing. If you need a more dynamic configuration
 you should create a little script which generates a configuration file and run
 it before starting i3 (for example in your +~/.xsession+ file).
+
+You can also expand variables using already existing variables through sub-shelling
+
+*Example*:
+------------------------
+set $date $(date +'%Y-%m-%d_%H:%M:%S')
+set $ssout $$XDG_SCREENSHOTS_DIR/$$date.png
+------------------------
 
 Also see <<xresources>> to learn how to create variables based on resources
 loaded from the X resource database.
