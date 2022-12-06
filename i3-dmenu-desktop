@@ -46,9 +46,11 @@ sub slurp {
 
 my @entry_types;
 my $dmenu_cmd = 'dmenu -i';
+my $show_duplicates;
 my $result = GetOptions(
     'dmenu=s' => \$dmenu_cmd,
     'entry-type=s' => \@entry_types,
+    'show-duplicates' => \$show_duplicates,
     'version' => sub {
         say "dmenu-desktop 1.5 © 2012 Michael Stapelberg";
         exit 0;
@@ -292,7 +294,7 @@ for my $app (keys %apps) {
         }
 
         $choices{$name} = $app;
-        next;
+        next unless $show_duplicates;
     }
 
     if ((scalar grep { $_ eq 'command' } @entry_types) > 0) {
@@ -327,7 +329,7 @@ for my $app (keys %apps) {
         if (!(scalar grep { $_ eq lc(basename($command)) } @keys) > 0) {
             $choices{basename($command)} = $app;
         }
-        next;
+        next unless $show_duplicates;
     }
 
     if ((scalar grep { $_ eq 'filename' } @entry_types) > 0) {
@@ -518,7 +520,7 @@ system('i3-msg', $cmd) == 0 or die "Could not launch i3-msg: $?";
 
 =head1 SYNOPSIS
 
-    i3-dmenu-desktop [--dmenu='dmenu -i'] [--entry-type=name]
+    i3-dmenu-desktop [--dmenu='dmenu -i'] [--entry-type=name] [--show-duplicates]
 
 =head1 DESCRIPTION
 
@@ -569,10 +571,14 @@ version of dmenu.
 
 Display the (localized) "Name" (type = name), the command (type = command) or
 the (*.desktop) filename (type = filename) in dmenu. This option can be
-specified multiple times.
+specified multiple times. Duplicates will be removed, see '--show-duplicates'.
 
 Examples are "GNU Image Manipulation Program" (type = name), "gimp" (type =
 command), and "libreoffice-writer" (type = filename).
+
+=item B<--show-duplicates>
+
+Show duplicates if '--entry-type' is specified multiple times.
 
 =back
 
