@@ -133,7 +133,7 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig);
 /**
  * For the binding events, we send the serialized binding struct.
  */
-void ipc_send_binding_event(const char *event_type, Binding *bind);
+void ipc_send_binding_event(const char *event_type, Binding *bind, const char *modename);
 
 /**
  * Set the maximum duration that we allow for a connection with an unwriteable
