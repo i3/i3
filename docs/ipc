@@ -1099,6 +1099,8 @@ binding that ran a command because of user input. The +change (string)+ field
 indicates what sort of binding event was triggered (right now it will always be
 +"run"+ but may be expanded in the future).
 
+The +mode (string)+ field contains the name of the mode the binding was run in.
+
 The +binding (object)+ field contains details about the binding that was run:
 
 command (string)::
