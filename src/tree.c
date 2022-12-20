@@ -470,7 +470,11 @@ static Con *get_tree_next_workspace(Con *con, direction_t direction) {
         return NULL;
     }
 
-    Output *current_output = get_output_containing(con->rect.x, con->rect.y);
+    // Use the center of the container instead of the left/top edges, to make
+    // this work with negative gaps. See https://github.com/i3/i3/issues/5293
+    const uint32_t x = con->rect.x + (con->rect.width / 2);
+    const uint32_t y = con->rect.y + (con->rect.height / 2);
+    Output *current_output = get_output_containing(x, y);
     if (!current_output) {
         return NULL;
     }
