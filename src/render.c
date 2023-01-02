@@ -49,6 +49,41 @@ void render_con(Con *con) {
     DLOG("Rendering node %p / %s / layout %d / children %d\n", con, con->name,
          con->layout, params.children);
 
+    if (con->type == CT_WORKSPACE) {
+        gaps_t gaps = calculate_effective_gaps(con);
+        Rect inset = (Rect){
+            gaps.left,
+            gaps.top,
+            -(gaps.left + gaps.right),
+            -(gaps.top + gaps.bottom),
+        };
+        con->rect = rect_add(con->rect, inset);
+        params.rect = rect_add(params.rect, inset);
+        params.x += gaps.left;
+        params.y += gaps.top;
+    }
+
+    if (gaps_should_inset_con(con, params.children)) {
+        gaps_t gaps = calculate_effective_gaps(con);
+        Rect inset = (Rect){
+            gaps_has_adjacent_container(con, D_LEFT) ? gaps.inner / 2 : gaps.inner,
+            gaps_has_adjacent_container(con, D_UP) ? gaps.inner / 2 : gaps.inner,
+            gaps_has_adjacent_container(con, D_RIGHT) ? -(gaps.inner / 2) : -gaps.inner,
+            gaps_has_adjacent_container(con, D_DOWN) ? -(gaps.inner / 2) : -gaps.inner,
+        };
+        inset.width -= inset.x;
+        inset.height -= inset.y;
+
+        if (con->fullscreen_mode == CF_NONE) {
+            params.rect = rect_add(params.rect, inset);
+            con->rect = rect_add(con->rect, inset);
+        }
+        inset.height = 0;
+
+        params.x = con->rect.x;
+        params.y = con->rect.y;
+    }
+
     int i = 0;
     con->mapped = true;
 
@@ -56,17 +91,27 @@ void render_con(Con *con) {
     if (con->window) {
         /* depending on the border style, the rect of the child window
          * needs to be smaller */
-        Rect *inset = &(con->window_rect);
-        *inset = (Rect){0, 0, con->rect.width, con->rect.height};
+        Rect inset = (Rect){
+            .x = 0,
+            .y = 0,
+            .width = con->rect.width,
+            .height = con->rect.height,
+        };
         if (con->fullscreen_mode == CF_NONE) {
-            *inset = rect_add(*inset, con_border_style_rect(con));
+            DLOG("deco_rect.height = %d\n", con->deco_rect.height);
+            Rect bsr = con_border_style_rect(con);
+            DLOG("bsr at %dx%d with size %dx%d\n",
+                 bsr.x, bsr.y, bsr.width, bsr.height);
+
+            inset = rect_add(inset, bsr);
         }
 
         /* Obey x11 border */
-        inset->width -= (2 * con->border_width);
-        inset->height -= (2 * con->border_width);
+        inset.width -= (2 * con->border_width);
+        inset.height -= (2 * con->border_width);
 
-        *inset = rect_sanitize_dimensions(*inset);
+        inset = rect_sanitize_dimensions(inset);
+        con->window_rect = inset;
 
         /* NB: We used to respect resize increment size hints for tiling
          * windows up until commit 0db93d9 here. However, since all terminal
@@ -74,7 +119,8 @@ void render_con(Con *con) {
          * can (by providing their fake-transparency or background color), this
          * code was removed. See also https://bugs.i3wm.org/540 */
 
-        DLOG("child will be at %dx%d with size %dx%d\n", inset->x, inset->y, inset->width, inset->height);
+        DLOG("child will be at %dx%d with size %dx%d\n",
+             inset.x, inset.y, inset.width, inset.height);
     }
 
     /* Check for fullscreen nodes */
@@ -131,6 +177,18 @@ void render_con(Con *con) {
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
             x_raise_con(child);
             render_con(child);
+
+            /* render_con_split() sets the deco_rect width based on the rect
+             * width, but the render_con() call updates the rect width by
+             * applying gaps, so we need to update deco_rect. */
+            if (con->layout == L_SPLITH || con->layout == L_SPLITV) {
+                if (con_is_leaf(child)) {
+                    if (child->border_style == BS_NORMAL) {
+                        child->deco_rect.width = child->rect.width;
+                    }
+                }
+            }
+
             i++;
         }
 
@@ -353,11 +411,8 @@ static void render_con_split(Con *con, Con *child, render_params *p, int i) {
     if (con_is_leaf(child)) {
         if (child->border_style == BS_NORMAL) {
             /* TODO: make a function for relative coords? */
-            child->deco_rect.x = child->rect.x - con->rect.x;
-            child->deco_rect.y = child->rect.y - con->rect.y;
-
-            child->rect.y += p->deco_height;
-            child->rect.height -= p->deco_height;
+            child->deco_rect.x = 0;
+            child->deco_rect.y = 0;
 
             child->deco_rect.width = child->rect.width;
             child->deco_rect.height = p->deco_height;

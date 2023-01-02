@@ -515,6 +515,9 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         bar
         font
         mode
+        gaps
+        smart_borders
+        smart_gaps
         floating_minimum_size
         floating_maximum_size
         floating_modifier
@@ -581,7 +584,7 @@ client.focused          #4c7899 #285577 #ffffff #2e9ef4
 EOT
 
 $expected = <<'EOT';
-ERROR: CONFIG: Expected one of these tokens: 'none', 'vertical', 'horizontal', 'both', 'smart', '1', 'yes', 'true', 'on', 'enable', 'active'
+ERROR: CONFIG: Expected one of these tokens: 'none', 'vertical', 'horizontal', 'both', 'smart_no_gaps', 'smart', '1', 'yes', 'true', 'on', 'enable', 'active'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: hide_edge_borders FOOBAR
 ERROR: CONFIG:                             ^^^^^^
@@ -773,7 +776,7 @@ EOT
 $expected = <<'EOT';
 cfg_bar_start()
 cfg_bar_output(LVDS-1)
-ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'i3bar_command', 'status_command', 'socket_path', 'mode', 'hidden_state', 'id', 'modifier', 'wheel_up_cmd', 'wheel_down_cmd', 'bindsym', 'position', 'output', 'tray_output', 'tray_padding', 'font', 'separator_symbol', 'binding_mode_indicator', 'workspace_buttons', 'workspace_min_width', 'strip_workspace_numbers', 'strip_workspace_name', 'verbose', 'colors', '}'
+ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'i3bar_command', 'status_command', 'socket_path', 'mode', 'hidden_state', 'id', 'modifier', 'wheel_up_cmd', 'wheel_down_cmd', 'bindsym', 'position', 'output', 'tray_output', 'tray_padding', 'font', 'separator_symbol', 'binding_mode_indicator', 'workspace_buttons', 'workspace_min_width', 'strip_workspace_numbers', 'strip_workspace_name', 'verbose', 'height', 'padding', 'colors', '}'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: bar {
 ERROR: CONFIG: Line   2:     output LVDS-1

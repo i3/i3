@@ -160,4 +160,69 @@ is($tilewindow2->rect->width, $tiled[1]->{rect}->{width} - 2*2, 'second tiled bo
 
 exit_gracefully($pid);
 
+#####################################################################
+# 5: check that the borders are visible on a workspace with one tiled
+# window and edge gaps
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+new_window pixel 2
+new_float pixel 2
+gaps outer 5
+hide_edge_borders smart_no_gaps
+EOT
+
+$pid = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+
+$tilewindow = open_window;
+
+$wscontent = get_ws($tmp);
+
+@tiled = @{$wscontent->{nodes}};
+ok(@tiled == 1, 'one tiled container opened');
+is($tiled[0]->{current_border_width}, 2, 'tiled current border width set to 2');
+is($tilewindow->rect->width, $tiled[0]->{rect}->{width} - 2*2, 'single tiled border width 2');
+
+exit_gracefully($pid);
+
+#####################################################################
+# 5: check that the borders are hidden on a workspace with one tiled
+# window with no gaps
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+new_window pixel 2
+new_float pixel 2
+hide_edge_borders smart_no_gaps
+EOT
+
+$pid = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+
+$tilewindow = open_window;
+
+$wscontent = get_ws($tmp);
+
+@tiled = @{$wscontent->{nodes}};
+ok(@tiled == 1, 'one tiled container opened');
+is($tiled[0]->{current_border_width}, 2, 'tiled current border width set to 2');
+is($tilewindow->rect->width, $tiled[0]->{rect}->{width} - 2*0, 'single tiled border width 0');
+
+exit_gracefully($pid);
+
+
+
 done_testing;

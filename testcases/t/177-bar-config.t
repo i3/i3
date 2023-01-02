@@ -121,6 +121,12 @@ bar {
         urgent_workspace    #2f343a #900000 #ffffff
         binding_mode        #abc123 #123abc #ababab
     }
+
+    # old syntax for compatibility with i3-gaps
+    height 50
+    # new syntax: top right bottom left
+    #             y   width height x
+    padding 4px 2px 4px 2px
 }
 EOT
 
@@ -145,6 +151,14 @@ is_deeply($bar_config->{tray_outputs}, [ 'LVDS1', 'HDMI2' ], 'tray_output ok');
 is($bar_config->{tray_padding}, 0, 'tray_padding ok');
 is($bar_config->{font}, 'Terminus', 'font ok');
 is($bar_config->{socket_path}, '/tmp/foobar', 'socket_path ok');
+is($bar_config->{bar_height}, 50, 'bar_height ok');
+is_deeply($bar_config->{padding},
+	  {
+	      x => 2,
+	      y => 4,
+	      width => 2,
+	      height => 4,
+	  }, 'padding ok');
 is_deeply($bar_config->{colors},
     {
         background => '#ff0000',
@@ -168,6 +182,105 @@ is_deeply($bar_config->{colors},
         binding_mode_text => '#ababab',
         binding_mode_bg => '#123abc',
     }, 'colors ok');
+
+exit_gracefully($pid);
+
+#####################################################################
+# validate one-value padding directive
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bar {
+    # all padding is 25px
+    padding 25px
+}
+EOT
+
+$pid = launch_with_config($config);
+
+$i3 = i3(get_socket_path(0));
+$bars = $i3->get_bar_config()->recv;
+is(@$bars, 1, 'one bar configured');
+
+$bar_id = shift @$bars;
+
+$bar_config = $i3->get_bar_config($bar_id)->recv;
+is_deeply($bar_config->{padding},
+	  {
+	      x => 25,
+	      y => 25,
+	      width => 25,
+	      height => 25,
+	  }, 'padding ok');
+
+exit_gracefully($pid);
+
+#####################################################################
+# validate two-value padding directive
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bar {
+    # top and bottom padding is 25px, right and left padding is 50px
+    padding 25px 50px
+}
+EOT
+
+$pid = launch_with_config($config);
+
+$i3 = i3(get_socket_path(0));
+$bars = $i3->get_bar_config()->recv;
+is(@$bars, 1, 'one bar configured');
+
+$bar_id = shift @$bars;
+
+$bar_config = $i3->get_bar_config($bar_id)->recv;
+is_deeply($bar_config->{padding},
+	  {
+	      x => 50,
+	      y => 25,
+	      width => 50,
+	      height => 25,
+	  }, 'padding ok');
+
+exit_gracefully($pid);
+
+#####################################################################
+# validate three-value padding directive
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bar {
+    # top padding is 25px, right and left padding is 50px, bottom padding is 75px
+    padding 25px 50px 75px
+}
+EOT
+
+$pid = launch_with_config($config);
+
+$i3 = i3(get_socket_path(0));
+$bars = $i3->get_bar_config()->recv;
+is(@$bars, 1, 'one bar configured');
+
+$bar_id = shift @$bars;
+
+$bar_config = $i3->get_bar_config($bar_id)->recv;
+is_deeply($bar_config->{padding},
+	  {
+	      x => 50,
+	      y => 25,
+	      width => 50,
+	      height => 75,
+	  }, 'padding ok');
 
 exit_gracefully($pid);
 

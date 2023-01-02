@@ -19,6 +19,7 @@ config_t config;
 static char *cur_key;
 static bool parsing_bindings;
 static bool parsing_tray_outputs;
+static bool parsing_padding;
 
 /*
  * Parse a key.
@@ -38,12 +39,17 @@ static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t 
         parsing_tray_outputs = true;
     }
 
+    if (strcmp(cur_key, "padding") == 0) {
+        parsing_padding = true;
+    }
+
     return 1;
 }
 
 static int config_end_array_cb(void *params_) {
     parsing_bindings = false;
     parsing_tray_outputs = false;
+    parsing_padding = false;
     return 1;
 }
 
@@ -329,6 +335,35 @@ static int config_integer_cb(void *params_, long long val) {
         return 0;
     }
 
+    if (parsing_padding) {
+        if (strcmp(cur_key, "x") == 0) {
+            DLOG("padding.x = %lld\n", val);
+            config.padding.x = (uint32_t)val;
+            return 1;
+        }
+        if (strcmp(cur_key, "y") == 0) {
+            DLOG("padding.y = %lld\n", val);
+            config.padding.y = (uint32_t)val;
+            return 1;
+        }
+        if (strcmp(cur_key, "width") == 0) {
+            DLOG("padding.width = %lld\n", val);
+            config.padding.width = (uint32_t)val;
+            return 1;
+        }
+        if (strcmp(cur_key, "height") == 0) {
+            DLOG("padding.height = %lld\n", val);
+            config.padding.height = (uint32_t)val;
+            return 1;
+        }
+    }
+
+    if (!strcmp(cur_key, "bar_height")) {
+        DLOG("bar_height = %lld\n", val);
+        config.bar_height = (uint32_t)val;
+        return 1;
+    }
+
     if (!strcmp(cur_key, "tray_padding")) {
         DLOG("tray_padding = %lld\n", val);
         config.tray_padding = val;
@@ -353,8 +388,8 @@ static int config_integer_cb(void *params_, long long val) {
 /* A datastructure to pass all these callbacks to yajl */
 static yajl_callbacks outputs_callbacks = {
     .yajl_null = config_null_cb,
-    .yajl_boolean = config_boolean_cb,
     .yajl_integer = config_integer_cb,
+    .yajl_boolean = config_boolean_cb,
     .yajl_string = config_string_cb,
     .yajl_end_array = config_end_array_cb,
     .yajl_map_key = config_map_key_cb,

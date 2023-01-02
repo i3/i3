@@ -23,7 +23,7 @@ jobs:
       BALTO_TOKEN: ${{ secrets.BALTO_TOKEN }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: git fetch --prune --unshallow
     - name: construct container name
       run: |
@@ -62,7 +62,7 @@ jobs:
       if: ${{ failure() }}
     - name: build dist tarball
       run: |
-        docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf distbuild; mkdir distbuild && cd distbuild && meson .. -Ddocs=true -Dmans=true && ninja -v dist'
+        docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf distbuild; mkdir distbuild && cd distbuild && meson .. -Ddocs=true -Dmans=true && meson dist --no-tests'
     - name: build Debian packages
       run: |
         echo "::group::Debian amd64"
@@ -90,13 +90,13 @@ jobs:
     name: Check formatting
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: check & print release notes
       run: ./release-notes/generator.pl
     - name: Install dependencies
       run: |
-        sudo apt-get install -y clang-format-10
+        sudo apt-get install -y clang-format-12
     - name: Check formatting
-      run: clang-format-10 --dry-run --Werror $(git ls-files '*.c' '*.h')
+      run: clang-format-12 --dry-run --Werror $(git ls-files '*.c' '*.h')
     - name: Verify safe wrapper functions are used
       run: ./travis/check-safe-wrappers.sh

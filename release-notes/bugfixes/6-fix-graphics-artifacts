@@ -1,1 +1,0 @@
-avoid graphics artifacts when changing the layout tree by initializing surfaces to all black

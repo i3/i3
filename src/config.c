@@ -216,6 +216,12 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     /* Set default_orientation to NO_ORIENTATION for auto orientation. */
     config.default_orientation = NO_ORIENTATION;
 
+    config.gaps.inner = 0;
+    config.gaps.top = 0;
+    config.gaps.right = 0;
+    config.gaps.bottom = 0;
+    config.gaps.left = 0;
+
     /* Set default urgency reset delay to 500ms */
     if (config.workspace_urgency_timer == 0)
         config.workspace_urgency_timer = 0.5;
@@ -290,11 +296,11 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
         translate_keysyms();
         grab_all_keys(conn);
         regrab_all_buttons(conn);
+        gaps_reapply_workspace_assignments();
 
         /* Redraw the currently visible decorations on reload, so that the
          * possibly new drawing parameters changed. */
-        x_deco_recurse(croot);
-        xcb_flush(conn);
+        tree_render();
     }
 
     return result == 0;

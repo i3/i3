@@ -20,7 +20,7 @@ use i3test i3_config => <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
-fake-outputs 1024x768+0+0,1024x768+1024+0,1024x768+0+768,1024x768+1024+768
+fake-outputs 1024x768+0+0P,1024x768+1024+0,1024x768+0+768,1024x768+1024+768
 EOT
 
 ###############################################################################
@@ -62,6 +62,21 @@ for (my $i = 0; $i < 10; $i++) {
 
     my $out = $order[$i % 3];
     is(focused_output, "fake-$out", 'focus output next cycle');
+}
+
+###############################################################################
+# Use nonprimary to cycle outputs
+###############################################################################
+
+cmd 'focus output fake-0';
+is(focused_output, "fake-0", 'start from fake-0 which is the primary');
+
+my @order = (1, 2, 3);
+for (my $i = 0; $i < 10; $i++) {
+    cmd 'focus output nonprimary';
+
+    my $out = $order[$i % 3];
+    is(focused_output, "fake-$out", 'focus output nonprimary cycle');
 }
 
 done_testing;

@@ -85,6 +85,10 @@ Con *get_assigned_output(const char *name, long parsed_num) {
     Con *output = NULL;
     struct Workspace_Assignment *assignment;
     TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+        if (assignment->output == NULL) {
+            continue;
+        }
+
         if (name && strcmp(assignment->name, name) == 0) {
             DLOG("Found workspace name=\"%s\" assignment to output \"%s\"\n",
                  name, assignment->output);
@@ -156,6 +160,7 @@ Con *workspace_get(const char *num) {
     workspace->workspace_layout = config.default_layout;
     workspace->num = parsed_num;
     workspace->type = CT_WORKSPACE;
+    workspace->gaps = gaps_for_workspace(workspace);
 
     con_attach(workspace, output_get_content(output), false);
     _workspace_apply_default_orientation(workspace);
@@ -281,12 +286,15 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         ws->num = c;
         sasprintf(&(ws->name), "%d", c);
     }
+
     con_attach(ws, content, false);
 
     char *name;
     sasprintf(&name, "[i3 con] workspace %s", ws->name);
     x_set_name(ws, name);
     free(name);
+
+    ws->gaps = gaps_for_workspace(ws);
 
     ws->fullscreen_mode = CF_OUTPUT;
 

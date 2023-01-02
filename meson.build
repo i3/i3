@@ -6,7 +6,7 @@
 project(
   'i3',
   'c',
-  version: '4.21.1',
+  version: '4.22',
   default_options: [
     'c_std=c11',
     'warning_level=1',  # enable all warnings (-Wall)
@@ -166,6 +166,7 @@ install_data(
     'docs/refcard_style.css',
     'docs/logo-30.png',
     'docs/layout-saving-1.png',
+    'docs/gaps1920.png',
   ],
   install_dir: docdir,
 )
@@ -389,6 +390,7 @@ i3srcs = [
   'src/ewmh.c',
   'src/fake_outputs.c',
   'src/floating.c',
+  'src/gaps.c',
   'src/handlers.c',
   'src/ipc.c',
   'src/key_press.c',

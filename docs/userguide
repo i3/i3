@@ -778,19 +778,45 @@ default_border pixel 3
 === Hiding borders adjacent to the screen edges
 
 You can hide container borders adjacent to the screen edges using
-+hide_edge_borders+. This is useful if you are using scrollbars, or do not want
-to waste even two pixels in displayspace. The "smart" setting hides borders on
-workspaces with only one window visible, but keeps them on workspaces with
-multiple windows visible. Default is none.
++hide_edge_borders+ (the default is +none+). Hiding borders is useful if you are
+using scrollbars, or do not want to waste even two pixels in displayspace.
+
+The "smart" setting hides borders on workspaces with only one window visible,
+but keeps them on workspaces with multiple windows visible.
+
+The "smart_no_gaps" setting hides edge-specific borders of a container if the
+container is the only container on its workspace and the gaps to the screen edge
+are +0+.
 
 *Syntax*:
 -----------------------------------------------
-hide_edge_borders none|vertical|horizontal|both|smart
+hide_edge_borders none|vertical|horizontal|both|smart|smart_no_gaps
 -----------------------------------------------
 
 *Example*:
 ----------------------
 hide_edge_borders vertical
+----------------------
+
+[[_smart_borders]]
+=== Smart borders
+
+Smart borders will draw borders on windows only if there is more than one window
+in a workspace. This feature can also be enabled only if the gap size between
+window and screen edge is +0+.
+
+*Syntax*:
+-----------------------------------------------
+smart_borders on|off|no_gaps
+-----------------------------------------------
+
+*Example*:
+----------------------
+# Activate smart borders (always)
+smart_borders on
+
+# Activate smart borders (only when there are effectively no gaps)
+smart_borders no_gaps
 ----------------------
 
 [[for_window]]
@@ -939,7 +965,7 @@ considered.
 *Syntax*:
 ------------------------------------------------------------
 assign <criteria> [→] [workspace] [number] <workspace>
-assign <criteria> [→] output left|right|up|down|primary|<output>
+assign <criteria> [→] output left|right|up|down|primary|nonprimary|<output>
 ------------------------------------------------------------
 
 *Examples*:
@@ -971,6 +997,9 @@ assign [class="^URxvt$"] → output right
 
 # Assign urxvt to the primary output
 assign [class="^URxvt$"] → output primary
+
+# Assign urxvt to the first non-primary output
+assign [class="^URxvt$"] → output nonprimary
 ----------------------
 
 Note that you might not have a primary output configured yet. To do so, run:
@@ -1118,7 +1147,8 @@ client.background::
         which do not cover the whole area of this window expose the color. Note
         that this colorclass only takes a single color.
 
-Colors are in HTML hex format (#rrggbb), see the following example:
+Colors are in HTML hex format (#rrggbb, optionally #rrggbbaa), see the following
+example:
 
 *Examples (default colors)*:
 ----------------------------------------------------------------------
@@ -1426,6 +1456,80 @@ tiling_drag modifier titlebar
 tiling_drag off
 --------------------------------
 
+[[gaps]]
+=== Gaps
+
+Since i3 4.22, you can configure window gaps.
+“Gaps” are added spacing between windows (or split containers) and to the screen edges:
+
+image::gaps1920.png["Screenshot of i3 with gaps enabled (10 px inner gaps, 20 px outer gaps)",title="Gaps enabled (10 px inner gaps, 20 px outer gaps)"]
+
+You can configure two different kind of gaps:
+
+1. Inner gaps are space between two adjacent windows (or split containers).
+2. Outer gaps are space along the screen edges. You can configure each side
+   (left, right, top, bottom) separately.
+
+If you are familiar with HTML and CSS, you can think of inner gaps as `padding`,
+and of outer gaps as `margin`, applied to a `<div>` around your window or split
+container.
+
+Note that outer gaps are added to the inner gaps, meaning the total gap size
+between a screen edge and a window (or split container) will be the sum of outer
+and inner gaps.
+
+You can define gaps either globally or per workspace using the following
+syntax.
+
+*Syntax*:
+-----------------------
+# Inner gaps for all windows: space between two adjacent windows (or split containers).
+gaps inner <gap_size>[px]
+
+# Outer gaps for all windows: space along the screen edges.
+gaps outer|horizontal|vertical|top|left|bottom|right <gap_size>[px]
+
+# Inner and outer gaps for all windows on a specific workspace.
+# <ws> can be a workspace number or name.
+workspace <ws> gaps inner <gap_size>[px]
+workspace <ws> gaps outer|horizontal|vertical|top|left|bottom|right <gap_size>[px]
+
+# Enabling “Smart Gaps” means no gaps will be shown when there is
+# precisely one window or split container on the workspace.
+#
+# inverse_outer only enables outer gaps when there is exactly one
+# window or split container on the workspace.
+smart_gaps on|off|inverse_outer
+-----------------------
+
+Outer gaps can be configured for each side individually with the `top`, `left`,
+`bottom` and `right` directive. `horizontal` and `vertical` are shortcuts for
+`left`/`right` and `top`/`bottom`, respectively.
+
+*Example*:
+-------------------------------------------------
+# Configure 5px of space between windows and to the screen edges.
+gaps inner 5px
+
+# Configure an additional 5px of extra space to the screen edges,
+# for a total gap of 10px to the screen edges, and 5px between windows.
+gaps outer 5px
+
+# Overwrite gaps to 0, I need all the space I can get on workspace 3.
+workspace 3 gaps inner 0
+workspace 3 gaps outer 0
+
+# Only enable outer gaps when there is exactly one window or split container on the workspace.
+smart_gaps inverse_outer
+-------------------------------------------------
+
+Tip: Gaps can additionally be changed at runtime with the `gaps` command, see
+<<changing_gaps>>.
+
+Tip: You can find an
+https://github.com/Airblader/i3/wiki/Example-Configuration[example
+configuration] that uses modes to illustrate various gap configurations.
+
 == Configuring i3bar
 
 The bar at the bottom of your monitor is drawn by a separate process called
@@ -1545,7 +1649,7 @@ the windows key). The default value for the hidden_state is hide.
 mode dock|hide|invisible
 hidden_state hide|show
 modifier <Modifier>|none
-------------------------
+-------------------------
 
 *Example*:
 ----------------
@@ -1715,7 +1819,7 @@ tray_output none|primary|<output>
 ---------------------------------
 
 *Example*:
--------------------------
+----------------------------------
 # disable system tray
 bar {
     tray_output none
@@ -1730,7 +1834,7 @@ bar {
 bar {
     tray_output HDMI2
 }
--------------------------
+----------------------------------
 
 Note that you might not have a primary output configured yet. To do so, run:
 -------------------------
@@ -1754,10 +1858,10 @@ tray_padding <px> [px]
 -------------------------
 
 *Example*:
--------------------------
+---------------------------
 # Obey Fitts's law
 tray_padding 0
--------------------------
+---------------------------
 
 === Font
 
@@ -1895,8 +1999,8 @@ bar {
 
 === Colors
 
-As with i3, colors are in HTML hex format (#rrggbb). The following colors can
-be configured at the moment:
+As with i3, colors are in HTML hex format (#rrggbb, optionally #rrggbbaa). The
+following colors can be configured at the moment:
 
 background::
 	Background color of the bar.
@@ -1979,6 +2083,49 @@ while +#000000FF+ will be a fully opaque black (the same as +#000000+).
 
 Please note that due to the way the tray specification works, enabling this
 flag will cause all tray icons to have a transparent background.
+
+[[i3bar_padding]]
+=== Padding
+
+To make i3bar higher (without increasing the font size), and/or add padding to
+the left and right side of i3bar, you can use the +padding+ directive:
+
+*Syntax*:
+--------------------------------------
+bar {
+    # 2px left/right and 2px top/bottom padding
+    padding 2px
+
+    # 2px top/bottom padding, no left/right padding
+    padding 2px 0
+
+    # 2px top padding, no left/right padding, 4px bottom padding
+    padding 2px 0 4px
+
+    # four value syntax
+    padding top[px] right[px] bottom[px] left[px]
+}
+--------------------------------------
+
+*Examples*:
+--------------------------------------
+bar {
+    # 2px left/right and 2px top/bottom padding
+    padding 2px
+
+    # 2px top/bottom padding, no left/right padding
+    padding 2px 0
+
+    # 2px top padding, no left/right padding, 4px bottom padding
+    padding 2px 0 4px
+
+    # 2px top padding, 6px right padding, 4px bottom padding, 1px left padding
+    padding 2px 6px 4px 1px
+}
+--------------------------------------
+
+Note: As a convenience for users who migrate from i3-gaps to i3, the +height+
+directive from i3-gaps is supported by i3, but should be changed to +padding+.
 
 [[list_of_commands]]
 == List of commands
@@ -2279,7 +2426,7 @@ output::
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
 focus next|prev [sibling]
-focus output left|right|down|up|current|primary|next|<output1> [output2]…
+focus output left|right|down|up|current|primary|nonprimary|next|<output1> [output2]…
 ----------------------------------------------
 
 *Examples*:
@@ -2310,6 +2457,9 @@ bindsym $mod+x focus output HDMI-2
 
 # Focus the primary output
 bindsym $mod+x focus output primary
+
+# Cycle focus through non-primary outputs
+bindsym $mod+x focus output nonprimary
 
 # Cycle focus between outputs VGA1 and LVDS1 but not DVI0
 bindsym $mod+x move workspace to output VGA1 LVDS1
@@ -2574,9 +2724,9 @@ To move a container to another RandR output (addressed by names like +LVDS1+ or
 +right+, +up+ or +down+), there are two commands:
 
 *Syntax*:
-------------------------------------------------------------
-move container to output left|right|down|up|current|primary|next|<output1> [output2]…
-move workspace to output left|right|down|up|current|primary|next|<output1> [output2]…
+-------------------------------------------------------------------------------------
+move container to output left|right|down|up|current|primary|nonprimary|next|<output1> [output2]…
+move workspace to output left|right|down|up|current|primary|nonprimary|next|<output1> [output2]…
 -------------------------------------------------------------------------------------
 
 *Examples*:
@@ -2798,10 +2948,10 @@ Starting with i3 v4.20, you can optionally enable window icons either for
 specific windows or for all windows (using the <<for_window>> directive).
 
 *Syntax*:
------------------------------
+----------------------------------------
 title_window_icon <yes|no|toggle>
 title_window_icon <padding|toggle> <px>
-------------------------------
+----------------------------------------
 
 *Examples*:
 -------------------------------------------------------------------------------------
@@ -3002,6 +3152,35 @@ bindsym $mod+b bar mode hide bar-1
 bindsym $mod+Shift+b bar mode invisible bar-1
 ------------------------------------------------
 
+[[changing_gaps]]
+=== Changing gaps
+
+Gaps can be modified at runtime with the following command syntax:
+
+*Syntax*:
+-----------------------------------------------
+# Inner gaps: space between two adjacent windows (or split containers).
+gaps inner current|all set|plus|minus|toggle <gap_size_in_px>
+# Outer gaps: space along the screen edges.
+gaps outer|horizontal|vertical|top|right|bottom|left current|all set|plus|minus|toggle <gap_size_in_px>
+-----------------------------------------------
+
+With `current` or `all` you can change gaps either for only the currently
+focused or all currently existing workspaces (note that this does not affect the
+global configuration itself).
+
+*Examples*:
+----------------------------------------------
+gaps inner all set 20
+gaps outer current plus 5
+gaps horizontal current plus 40
+gaps outer current toggle 60
+
+for_window [class="vlc"] gaps inner 0, gaps outer 0
+----------------------------------------------
+
+To change the gaps for all windows, see the <<gaps>> configuration directive.
+
 [[multi_monitor]]
 == Multiple monitors
 
@@ -3035,7 +3214,8 @@ To help you get going if you have never used multiple monitors before, here is
 a short overview of the xrandr options which will probably be of interest to
 you. It is always useful to get an overview of the current screen configuration.
 Just run "xrandr" and you will get an output like the following:
--------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------------
 $ xrandr
 Screen 0: minimum 320 x 200, current 1280 x 800, maximum 8192 x 8192
 VGA1 disconnected (normal left inverted right x axis y axis)
@@ -3048,7 +3228,7 @@ LVDS1 connected 1280x800+0+0 (normal left inverted right x axis y axis) 261mm x 
    720x400        85.0
    640x400        85.1
    640x350        85.1
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
 
 Several things are important here: You can see that +LVDS1+ is connected (of
 course, it is the internal flat panel) but +VGA1+ is not. If you have a monitor
@@ -3060,12 +3240,15 @@ combined resolution of your monitors. By default, it is usually too low and has
 to be increased by editing +/etc/X11/xorg.conf+.
 
 So, say you connected VGA1 and want to use it as an additional screen:
+
 -------------------------------------------
 xrandr --output VGA1 --auto --left-of LVDS1
 -------------------------------------------
+
 This command makes xrandr try to find the native resolution of the device
 connected to +VGA1+ and configures it to the left of your internal flat panel.
 When running "xrandr" again, the output looks like this:
+
 -------------------------------------------------------------------------------
 $ xrandr
 Screen 0: minimum 320 x 200, current 2560 x 1024, maximum 8192 x 8192
@@ -3088,6 +3271,7 @@ LVDS1 connected 1280x800+1280+0 (normal left inverted right x axis y axis) 261mm
    640x400        85.1
    640x350        85.1
 -------------------------------------------------------------------------------
+
 Please note that i3 uses exactly the same API as xrandr does, so it will see
 only what you can see in xrandr.
 

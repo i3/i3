@@ -404,13 +404,20 @@ void handle_button_press(xcb_button_press_event_t *event) {
     }
 
     /* Check if the click was on the decoration of a child */
-    Con *child;
-    TAILQ_FOREACH_REVERSE (child, &(con->nodes_head), nodes_head, nodes) {
-        if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
-            continue;
+    if (con->window != NULL) {
+        if (rect_contains(con->deco_rect, event->event_x, event->event_y)) {
+            route_click(con, event, mod_pressed, CLICK_DECORATION);
+            return;
+        }
+    } else {
+        Con *child;
+        TAILQ_FOREACH_REVERSE (child, &(con->nodes_head), nodes_head, nodes) {
+            if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
+                continue;
 
-        route_click(child, event, mod_pressed, CLICK_DECORATION);
-        return;
+            route_click(child, event, mod_pressed, CLICK_DECORATION);
+            return;
+        }
     }
 
     if (event->child != XCB_NONE) {

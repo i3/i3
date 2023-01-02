@@ -245,6 +245,28 @@ static void dump_rect(yajl_gen gen, const char *name, Rect r) {
     y(map_close);
 }
 
+static void dump_gaps(yajl_gen gen, const char *name, gaps_t gaps) {
+    ystr(name);
+    y(map_open);
+    ystr("inner");
+    y(integer, gaps.inner);
+
+    // TODO: the i3ipc Python modules recognize gaps, but only inner/outer
+    // This is currently here to preserve compatibility with that
+    ystr("outer");
+    y(integer, gaps.top);
+
+    ystr("top");
+    y(integer, gaps.top);
+    ystr("right");
+    y(integer, gaps.right);
+    ystr("bottom");
+    y(integer, gaps.bottom);
+    ystr("left");
+    y(integer, gaps.left);
+    y(map_close);
+}
+
 static void dump_event_state_mask(yajl_gen gen, Binding *bind) {
     y(array_open);
     for (int i = 0; i < 20; i++) {
@@ -481,7 +503,15 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(integer, con->current_border_width);
 
     dump_rect(gen, "rect", con->rect);
-    dump_rect(gen, "deco_rect", con->deco_rect);
+    if (con_draw_decoration_into_frame(con)) {
+        Rect simulated_deco_rect = con->deco_rect;
+        simulated_deco_rect.x = con->rect.x - con->parent->rect.x;
+        simulated_deco_rect.y = con->rect.y - con->parent->rect.y;
+        dump_rect(gen, "deco_rect", simulated_deco_rect);
+        dump_rect(gen, "actual_deco_rect", con->deco_rect);
+    } else {
+        dump_rect(gen, "deco_rect", con->deco_rect);
+    }
     dump_rect(gen, "window_rect", con->window_rect);
     dump_rect(gen, "geometry", con->geometry);
 
@@ -504,6 +534,8 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     if (con->type == CT_WORKSPACE) {
         ystr("num");
         y(integer, con->num);
+
+        dump_gaps(gen, "gaps", con->gaps);
     }
 
     ystr("window");
@@ -796,6 +828,13 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
 
     YSTR_IF_SET(status_command);
     YSTR_IF_SET(font);
+
+    if (config->bar_height) {
+        ystr("bar_height");
+        y(integer, config->bar_height);
+    }
+
+    dump_rect(gen, "padding", config->padding);
 
     if (config->separator_symbol) {
         ystr("separator_symbol");
@@ -1639,7 +1678,7 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig) {
 /*
  * For the binding events, we send the serialized binding struct.
  */
-void ipc_send_binding_event(const char *event_type, Binding *bind) {
+void ipc_send_binding_event(const char *event_type, Binding *bind, const char *modename) {
     DLOG("Issue IPC binding %s event (sym = %s, code = %d)\n", event_type, bind->symbol, bind->keycode);
 
     setlocale(LC_NUMERIC, "C");
@@ -1650,6 +1689,13 @@ void ipc_send_binding_event(const char *event_type, Binding *bind) {
 
     ystr("change");
     ystr(event_type);
+
+    ystr("mode");
+    if (modename == NULL) {
+        ystr("default");
+    } else {
+        ystr(modename);
+    }
 
     ystr("binding");
     dump_binding(gen, bind);

@@ -355,29 +355,27 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
     free(event);
 }
 
-static void x_draw_title_border(Con *con, struct deco_render_params *p) {
-    assert(con->parent != NULL);
-
+static void x_draw_title_border(Con *con, struct deco_render_params *p, surface_t *dest_surface) {
     Rect *dr = &(con->deco_rect);
 
     /* Left */
-    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
+    draw_util_rectangle(dest_surface, p->color->border,
                         dr->x, dr->y, 1, dr->height);
 
     /* Right */
-    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
+    draw_util_rectangle(dest_surface, p->color->border,
                         dr->x + dr->width - 1, dr->y, 1, dr->height);
 
     /* Top */
-    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
+    draw_util_rectangle(dest_surface, p->color->border,
                         dr->x, dr->y, dr->width, 1);
 
     /* Bottom */
-    draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
+    draw_util_rectangle(dest_surface, p->color->border,
                         dr->x, dr->y + dr->height - 1, dr->width, 1);
 }
 
-static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p) {
+static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p, surface_t *dest_surface) {
     assert(con->parent != NULL);
 
     Rect *dr = &(con->deco_rect);
@@ -389,7 +387,7 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
         /* We actually only redraw the far right two pixels as that is the
          * distance we keep from the edge (not the entire border width).
          * Redrawing the entire border would cause text to be cut off. */
-        draw_util_rectangle(&(con->parent->frame_buffer), p->color->background,
+        draw_util_rectangle(dest_surface, p->color->background,
                             dr->x + dr->width - 2 * logical_px(1),
                             dr->y,
                             2 * logical_px(1),
@@ -397,7 +395,7 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
     }
 
     /* Redraw the border. */
-    x_draw_title_border(con, p);
+    x_draw_title_border(con, p, dest_surface);
 }
 
 /*
@@ -593,16 +591,24 @@ void x_draw_decoration(Con *con) {
         }
     }
 
+    surface_t *dest_surface = &(parent->frame_buffer);
+    if (con_draw_decoration_into_frame(con)) {
+        DLOG("using con->frame_buffer (for con->name=%s) as dest_surface\n", con->name);
+        dest_surface = &(con->frame_buffer);
+    } else {
+        DLOG("sticking to parent->frame_buffer = %p\n", dest_surface);
+    }
+    DLOG("dest_surface %p is %d x %d (id=0x%08x)\n", dest_surface, dest_surface->width, dest_surface->height, dest_surface->id);
+
     /* If the parent hasn't been set up yet, skip the decoration rendering
      * for now. */
-    if (parent->frame_buffer.id == XCB_NONE)
+    if (dest_surface->id == XCB_NONE)
         goto copy_pixmaps;
 
     /* For the first child, we clear the parent pixmap to ensure there's no
      * garbage left on there. This is important to avoid tearing when using
      * transparency. */
     if (con == TAILQ_FIRST(&(con->parent->nodes_head))) {
-        draw_util_clear_surface(&(con->parent->frame_buffer), COLOR_TRANSPARENT);
         FREE(con->parent->deco_render_params);
     }
 
@@ -612,11 +618,13 @@ void x_draw_decoration(Con *con) {
         goto copy_pixmaps;
 
     /* 4: paint the bar */
-    draw_util_rectangle(&(parent->frame_buffer), p->color->background,
+    DLOG("con->deco_rect = (x=%d, y=%d, w=%d, h=%d) for con->name=%s\n",
+         con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height, con->name);
+    draw_util_rectangle(dest_surface, p->color->background,
                         con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
 
     /* 5: draw title border */
-    x_draw_title_border(con, p);
+    x_draw_title_border(con, p, dest_surface);
 
     /* 6: draw the icon and title */
     int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
@@ -651,7 +659,7 @@ void x_draw_decoration(Con *con) {
                                     ? title_padding
                                     : deco_width - mark_width - title_padding;
 
-            draw_util_text(mark, &(parent->frame_buffer),
+            draw_util_text(mark, dest_surface,
                            p->color->text, p->color->background,
                            con->deco_rect.x + mark_offset_x,
                            con->deco_rect.y + text_offset_y, mark_width);
@@ -725,7 +733,7 @@ void x_draw_decoration(Con *con) {
             break;
     }
 
-    draw_util_text(title, &(parent->frame_buffer),
+    draw_util_text(title, dest_surface,
                    p->color->text, p->color->background,
                    con->deco_rect.x + title_offset_x,
                    con->deco_rect.y + text_offset_y,
@@ -733,7 +741,7 @@ void x_draw_decoration(Con *con) {
     if (has_icon) {
         draw_util_image(
             win->icon,
-            &(parent->frame_buffer),
+            dest_surface,
             con->deco_rect.x + icon_offset_x,
             con->deco_rect.y + logical_px(1),
             icon_size,
@@ -744,7 +752,7 @@ void x_draw_decoration(Con *con) {
         I3STRING_FREE(title);
     }
 
-    x_draw_decoration_after_title(con, p);
+    x_draw_decoration_after_title(con, p, dest_surface);
 copy_pixmaps:
     draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
 }
@@ -891,7 +899,7 @@ void x_push_node(Con *con) {
         FREE(state->name);
     }
 
-    if (con->window == NULL) {
+    if (con->window == NULL && (con->layout == L_STACKED || con->layout == L_TABBED)) {
         /* Calculate the height of all window decorations which will be drawn on to
          * this frame. */
         uint32_t max_y = 0, max_height = 0;
@@ -905,6 +913,9 @@ void x_push_node(Con *con) {
         rect.height = max_y + max_height;
         if (rect.height == 0)
             con->mapped = false;
+    } else if (con->window == NULL) {
+        /* not a stacked or tabbed split container */
+        con->mapped = false;
     }
 
     bool need_reshape = false;
@@ -949,10 +960,11 @@ void x_push_node(Con *con) {
 
     /* The pixmap of a borderless leaf container will not be used except
      * for the titlebar in a stack or tabs (issue #1013). */
-    bool is_pixmap_needed = (con->border_style != BS_NONE ||
-                             !con_is_leaf(con) ||
-                             con->parent->layout == L_STACKED ||
-                             con->parent->layout == L_TABBED);
+    bool is_pixmap_needed = ((con_is_leaf(con) && con_border_style(con) != BS_NONE) ||
+                             con->layout == L_STACKED ||
+                             con->layout == L_TABBED);
+    DLOG("Con %p (layout %d), is_pixmap_needed = %s, rect.height = %d\n",
+         con, con->layout, is_pixmap_needed ? "yes" : "no", con->rect.height);
 
     /* The root con and output cons will never require a pixmap. In particular for the
      * __i3 output, this will likely not work anyway because it might be ridiculously
@@ -999,6 +1011,7 @@ void x_push_node(Con *con) {
             int width = MAX((int32_t)rect.width, 1);
             int height = MAX((int32_t)rect.height, 1);
 
+            DLOG("creating %d x %d pixmap for con %p (con->frame_buffer.id = (pixmap_t)0x%08x) (con->frame.id (drawable_t)0x%08x)\n", width, height, con, con->frame_buffer.id, con->frame.id);
             xcb_create_pixmap(conn, win_depth, con->frame_buffer.id, con->frame.id, width, height);
             draw_util_surface_init(conn, &(con->frame_buffer), con->frame_buffer.id,
                                    get_visualtype_by_id(get_visualid_by_depth(win_depth)), width, height);

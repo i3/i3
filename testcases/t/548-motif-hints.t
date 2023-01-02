@@ -67,6 +67,7 @@ sub _change_motif_property {
         32, 5,
         pack('L5', 2, 0, $value, 0, 0),
     );
+    $x->flush;
 }
 
 sub open_window_with_motifs {

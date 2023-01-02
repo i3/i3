@@ -3,8 +3,8 @@
 
 set -eu
 
-export RELEASE_VERSION="4.20"
-export PREVIOUS_VERSION="4.19.2"
+export RELEASE_VERSION="4.21"
+export PREVIOUS_VERSION="4.20.1"
 export RELEASE_BRANCH="next"
 
 if [ ! -e "../i3.github.io" ]
@@ -17,6 +17,12 @@ fi
 if ! (cd ../i3.github.io && git pull)
 then
 	echo "Could not update ../i3.github.io repository"
+	exit 1
+fi
+
+if git diff-files --quiet --exit-code debian/changelog
+then
+	echo "Expected debian/changelog to be changed (containing the changelog for ${RELEASE_VERSION})."
 	exit 1
 fi
 
@@ -108,7 +114,7 @@ cp "${STARTDIR}/debian/changelog" i3/debian/changelog
 
 cat > ${TMPDIR}/Dockerfile <<EOT
 FROM debian:sid
-RUN sed -i 's,^deb \(.*\),deb \1\ndeb-src \1,g' /etc/apt/sources.list
+RUN echo deb-src http://deb.debian.org/debian sid main > /etc/apt/sources.list
 RUN apt-get update && apt-get install -y dpkg-dev devscripts
 COPY i3/i3-${RELEASE_VERSION}.tar.xz /usr/src/i3-wm_${RELEASE_VERSION}.orig.tar.xz
 WORKDIR /usr/src/
@@ -158,7 +164,7 @@ git add downloads/i3-${RELEASE_VERSION}.tar.xz*
 cp ${TMPDIR}/i3/RELEASE-NOTES-${RELEASE_VERSION} downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt
 git add downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt
 sed -i "s,<h2>Documentation for i3 v[^<]*</h2>,<h2>Documentation for i3 v${RELEASE_VERSION}</h2>,g" docs/index.html
-sed -i "s,<span style=\"margin-left: 2em; color: #c0c0c0\">[^<]*</span>,<span style=\"margin-left: 2em; color: #c0c0c0\">${RELEASE_VERSION}</span>,g" index.html
+sed -i "s,\(span class=\"version\">\)[^<]*\(</span>\),\1${RELEASE_VERSION}\2,g" index.html
 sed -i "s,The current stable version is .*$,The current stable version is ${RELEASE_VERSION}.,g" downloads/index.html
 sed -i "s,<tbody>,<tbody>\n  <tr>\n    <td>${RELEASE_VERSION}</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.xz\">i3-${RELEASE_VERSION}.tar.xz</a></td>\n    <td>$(LC_ALL=en_US.UTF-8 ls -lh ../i3/i3-${RELEASE_VERSION}.tar.xz | awk -F " " {'print $5'} | sed 's/K$/ KiB/g' | sed 's/M$/ MiB/g')</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.xz.asc\">signature</a></td>\n    <td>$(date +'%Y-%m-%d')</td>\n    <td><a href=\"/downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt\">release notes</a></td>\n  </tr>\n,g" downloads/index.html
 
@@ -184,7 +190,7 @@ git commit -a -m "update docs for ${RELEASE_VERSION}"
 
 git remote remove origin
 git remote add origin git@github.com:i3/i3.github.io.git
-git config --add remote.origin.push "+refs/heads/master:refs/heads/master"
+git config --add remote.origin.push "+refs/heads/main:refs/heads/main"
 
 ################################################################################
 # Section 4: prepare release announcement email
@@ -219,9 +225,6 @@ echo "  git push"
 echo ""
 echo "  cd ${TMPDIR}/i3.github.io"
 echo "  git push"
-echo ""
-echo "  cd ${TMPDIR}/debian"
-echo "  dput"
 echo ""
 echo "  cd ${TMPDIR}"
 echo "  sendmail -t < email.txt"

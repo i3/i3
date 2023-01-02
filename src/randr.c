@@ -48,13 +48,18 @@ static Output *get_output_by_id(xcb_randr_output_t id) {
  *
  */
 Output *get_output_by_name(const char *name, const bool require_active) {
+    const bool get_primary = (strcasecmp("primary", name) == 0);
+    const bool get_non_primary = (strcasecmp("nonprimary", name) == 0);
+
     Output *output;
-    bool get_primary = (strcasecmp("primary", name) == 0);
     TAILQ_FOREACH (output, &outputs, outputs) {
         if (require_active && !output->active) {
             continue;
         }
         if (output->primary && get_primary) {
+            return output;
+        }
+        if (!output->primary && get_non_primary) {
             return output;
         }
         struct output_name *output_name;

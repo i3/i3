@@ -10,23 +10,6 @@
 #include "all.h"
 static xcb_window_t create_drop_indicator(Rect rect);
 
-/*
- * Includes decoration (container title) to the container's rect. This way we
- * can find the correct drop target if the mouse is on a container's
- * decoration.
- *
- */
-static Rect con_rect_plus_deco_height(Con *con) {
-    Rect rect = con->rect;
-    rect.height += con->deco_rect.height;
-    if (rect.y < con->deco_rect.height) {
-        rect.y = 0;
-    } else {
-        rect.y -= con->deco_rect.height;
-    }
-    return rect;
-}
-
 static bool is_tiling_drop_target(Con *con) {
     if (!con_has_managed_window(con) ||
         con_is_floating(con) ||
@@ -90,7 +73,7 @@ bool has_drop_targets(void) {
 static Con *find_drop_target(uint32_t x, uint32_t y) {
     Con *con;
     TAILQ_FOREACH (con, &all_cons, all_cons) {
-        Rect rect = con_rect_plus_deco_height(con);
+        Rect rect = con->rect;
         if (!rect_contains(rect, x, y) ||
             !is_tiling_drop_target(con)) {
             continue;
@@ -186,7 +169,7 @@ DRAGGING_CB(drag_callback) {
         return;
     }
 
-    Rect rect = con_rect_plus_deco_height(target);
+    Rect rect = target->rect;
 
     direction_t direction = 0;
     drop_type_t drop_type = DT_CENTER;

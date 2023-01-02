@@ -843,6 +843,10 @@ CommandResult *run_binding(Binding *bind, Con *con) {
         sasprintf(&command, "[con_id=\"%p\"] %s", con, bind->command);
 
     Binding *bind_cp = binding_copy(bind);
+    /* The "mode" command might change the current mode, so back it up to
+     * correctly produce an event later. */
+    const char *modename = current_binding_mode;
+
     CommandResult *result = parse_command(command, NULL, NULL);
     free(command);
 
@@ -868,7 +872,7 @@ CommandResult *run_binding(Binding *bind, Con *con) {
         free(pageraction);
     }
 
-    ipc_send_binding_event("run", bind_cp);
+    ipc_send_binding_event("run", bind_cp, modename);
     binding_free(bind_cp);
 
     return result;

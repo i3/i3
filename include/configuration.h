@@ -268,6 +268,15 @@ struct Config {
     int number_barconfigs;
 
     tiling_drag_t tiling_drag;
+
+    /* Gap sizes */
+    gaps_t gaps;
+
+    /* Should single containers on a workspace receive a border? */
+    smart_borders_t smart_borders;
+
+    /* Disable gaps if there is only one container on the workspace */
+    smart_gaps_t smart_gaps;
 };
 
 /**
@@ -354,6 +363,11 @@ struct Barconfig {
 
     /** Enable verbose mode? Useful for debugging purposes. */
     bool verbose;
+
+    /** Defines the height of the bar in pixels. */
+    uint32_t bar_height;
+
+    struct Rect padding;
 
     struct bar_colors {
         char *background;
