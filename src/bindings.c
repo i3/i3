@@ -845,7 +845,7 @@ CommandResult *run_binding(Binding *bind, Con *con) {
     Binding *bind_cp = binding_copy(bind);
     /* The "mode" command might change the current mode, so back it up to
      * correctly produce an event later. */
-    const char *modename = current_binding_mode;
+    char *modename = sstrdup(current_binding_mode);
 
     CommandResult *result = parse_command(command, NULL, NULL);
     free(command);
@@ -873,6 +873,7 @@ CommandResult *run_binding(Binding *bind, Con *con) {
     }
 
     ipc_send_binding_event("run", bind_cp, modename);
+    FREE(modename);
     binding_free(bind_cp);
 
     return result;
