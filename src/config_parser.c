@@ -919,7 +919,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
             continuation = NULL;
         }
 
-        strncpy(buf + strlen(buf), buffer, strlen(buffer) + 1);
+        strcpy(buf + strlen(buf), buffer);
 
         /* Skip comments and empty lines. */
         if (skip_line || comment) {
@@ -1043,7 +1043,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
         } else {
             /* Copy until the next variable, then copy its value */
             strncpy(destwalk, walk, distance);
-            strncpy(destwalk + distance, nearest->value, strlen(nearest->value));
+            strcpy(destwalk + distance, nearest->value);
             walk += distance + strlen(nearest->key);
             destwalk += distance + strlen(nearest->value);
         }

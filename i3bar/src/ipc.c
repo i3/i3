@@ -340,8 +340,9 @@ int i3_send_msg(uint32_t type, const char *payload) {
     memcpy(walk, &type, sizeof(uint32_t));
     walk += sizeof(uint32_t);
 
-    if (payload != NULL)
-        strncpy(walk, payload, len);
+    if (payload != NULL) {
+        memcpy(walk, payload, len);
+    }
 
     swrite(i3_connection->fd, buffer, to_write);
 
