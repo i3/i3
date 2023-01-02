@@ -28,23 +28,13 @@ jobs:
     - name: construct container name
       run: |
         echo "BASENAME=i3wm/travis-base:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base.Dockerfile)" >> $GITHUB_ENV
-        echo "BASENAME_386=i3wm/travis-base-386:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base-386.Dockerfile)" >> $GITHUB_ENV
         echo "BASENAME_UBUNTU=i3wm/travis-base-ubuntu:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base-ubuntu.Dockerfile)" >> $GITHUB_ENV
-        echo "BASENAME_UBUNTU_386=i3wm/travis-base-ubuntu-386:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base-ubuntu-386.Dockerfile)" >> $GITHUB_ENV
     - name: fetch or build Docker container
       run: |
         docker pull ${{ env.BASENAME }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME }} travis/travis-base.Dockerfile
     - name: fetch or build extra Docker containers
       run: |
-        echo "::group::Ubuntu amd64"
         ./travis/skip-pkg.sh || docker pull ${{ env.BASENAME_UBUNTU }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME_UBUNTU }} travis/travis-base-ubuntu.Dockerfile
-        echo "::endgroup::"
-        echo "::group::Debian i386"
-        ./travis/skip-pkg.sh || docker pull ${{ env.BASENAME_386 }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME_386 }} travis/travis-base-386.Dockerfile
-        echo "::endgroup::"
-        echo "::group::Ubuntu i386"
-        ./travis/skip-pkg.sh || docker pull ${{ env.BASENAME_UBUNTU_386 }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME_UBUNTU_386 }} travis/travis-base-ubuntu-386.Dockerfile
-        echo "::endgroup::"
     - name: build i3
       run: |
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf build; mkdir -p build && cd build && CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Werror -fno-common -D_FORTIFY_SOURCE=2" meson setup .. -Ddocs=true -Dmans=true -Db_sanitize=address --buildtype=debugoptimized && ninja -v'
@@ -70,12 +60,6 @@ jobs:
         echo "::endgroup::"
         echo "::group::Ubuntu amd64"
         ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME_UBUNTU }} ./travis/debian-build.sh deb/ubuntu-amd64/DIST
-        echo "::endgroup::"
-        echo "::group::Debian i386"
-        ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME_386 }} linux32 ./travis/debian-build.sh deb/debian-i386/DIST
-        echo "::endgroup::"
-        echo "::group::Ubuntu i386"
-        ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME_UBUNTU_386 }} linux32 ./travis/debian-build.sh deb/ubuntu-i386/DIST
         echo "::endgroup::"
     - name: push Debian packages to balto
       run: |
