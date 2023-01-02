@@ -1,7 +1,7 @@
 # vim:ft=Dockerfile
 # Same as travis-base.Dockerfile, but without the test suite dependencies since
 # we only build Debian packages on Ubuntu, we don’t run the tests.
-FROM ubuntu:bionic
+FROM ubuntu:focal
 
 RUN echo force-unsafe-io > /etc/dpkg/dpkg.cfg.d/docker-apt-speedup
 # Paper over occasional network flakiness of some mirrors.
