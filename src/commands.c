@@ -1325,7 +1325,7 @@ void cmd_focus_direction(I3_CMD, const char *direction_str) {
     HANDLE_EMPTY_MATCH;
     CMD_FOCUS_WARN_CHILDREN;
 
-    direction_t direction;
+    direction_t direction = D_LEFT;
     position_t position;
     bool auto_direction = true;
     if (strcmp(direction_str, "prev") == 0) {

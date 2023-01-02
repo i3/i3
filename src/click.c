@@ -39,6 +39,9 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
         case BORDER_BOTTOM:
             search_direction = D_DOWN;
             break;
+        default:
+            ELOG("BUG: invalid border value %d\n", border);
+            return false;
     }
 
     bool res = resize_find_tiling_participants(&first, &second, search_direction, false);

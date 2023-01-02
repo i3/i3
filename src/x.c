@@ -731,6 +731,9 @@ void x_draw_decoration(Con *con) {
             /* Make sure the icon does not escape title boundaries */
             icon_offset_x = min(deco_width - icon_size - icon_padding - title_padding, title_offset_x + predict_text_width(title) + icon_padding);
             break;
+        default:
+            ELOG("BUG: invalid config.title_align value %d\n", config.title_align);
+            return;
     }
 
     draw_util_text(title, dest_surface,
