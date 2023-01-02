@@ -1002,10 +1002,11 @@ int main(int argc, char *argv[]) {
     char *log_stream_socket_path = get_process_filename("log-stream-socket");
     int log_socket = create_socket(log_stream_socket_path, &current_log_stream_socket_path);
     free(log_stream_socket_path);
+    struct ev_io *log_io = NULL;
     if (log_socket == -1) {
         ELOG("Could not create the log socket, i3-dump-log -f will not work\n");
     } else {
-        struct ev_io *log_io = scalloc(1, sizeof(struct ev_io));
+        log_io = scalloc(1, sizeof(struct ev_io));
         ev_io_init(log_io, log_new_client, log_socket, EV_READ);
         ev_io_start(main_loop, log_io);
     }
@@ -1013,12 +1014,13 @@ int main(int argc, char *argv[]) {
     /* Also handle the UNIX domain sockets passed via socket
      * activation. The parameter 0 means "do not remove the
      * environment variables", we need to be able to reexec. */
+    struct ev_io *socket_ipc_io = NULL;
     listen_fds = sd_listen_fds(0);
-    if (listen_fds < 0)
+    if (listen_fds < 0) {
         ELOG("socket activation: Error in sd_listen_fds\n");
-    else if (listen_fds == 0)
+    } else if (listen_fds == 0) {
         DLOG("socket activation: no sockets passed\n");
-    else {
+    } else {
         int flags;
         for (int fd = SD_LISTEN_FDS_START;
              fd < (SD_LISTEN_FDS_START + listen_fds);
@@ -1033,9 +1035,9 @@ int main(int argc, char *argv[]) {
                 ELOG("Could not disable FD_CLOEXEC on fd %d\n", fd);
             }
 
-            struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
-            ev_io_init(ipc_io, ipc_new_client, fd, EV_READ);
-            ev_io_start(main_loop, ipc_io);
+            socket_ipc_io = scalloc(1, sizeof(struct ev_io));
+            ev_io_init(socket_ipc_io, ipc_new_client, fd, EV_READ);
+            ev_io_start(main_loop, socket_ipc_io);
         }
     }
 
@@ -1198,4 +1200,10 @@ int main(int argc, char *argv[]) {
 
     sd_notify(1, "READY=1");
     ev_loop(main_loop, 0);
+
+    /* Free these heap allocations just to satisfy LeakSanitizer. */
+    FREE(ipc_io);
+    FREE(socket_ipc_io);
+    FREE(log_io);
+    FREE(xcb_watcher);
 }
