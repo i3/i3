@@ -739,7 +739,7 @@ static void dump_bar_bindings(yajl_gen gen, Barconfig *config) {
 
 static char *canonicalize_output_name(char *name) {
     /* Do not canonicalize special output names. */
-    if (strcasecmp(name, "primary") == 0) {
+    if (strcasecmp(name, "primary") == 0 || strcasecmp(name, "nonprimary") == 0) {
         return name;
     }
     Output *output = get_output_by_name(name, false);
