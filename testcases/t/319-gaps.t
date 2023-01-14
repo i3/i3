@@ -358,4 +358,63 @@ height => $left_rect->height,
 
 exit_gracefully($pid);
 
+################################################################################
+# Ensure per-workspace smart gaps works without default gaps
+################################################################################
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+workspace 1 smart_gaps enable
+workspace 1 gaps outer 10
+workspace 1 gaps inner 10
+
+workspace 3 smart_gaps inverse_outer
+workspace 3 gaps inner 10
+workspace 3 gaps outer 20
+
+default_border pixel 0
+EOT
+
+$pid = launch_with_config($config);
+
+# One window
+cmd 'workspace 1';
+kill_all_windows;
+my $single_window = open_window;
+is($screen_width, $single_window->rect->width, "single window width");
+kill_all_windows;
+
+# Two windows enable
+$left = open_window;
+$right = open_window;
+$inner_gaps = 10;
+$total_gaps = 20;
+is_gaps();
+
+# Smart gaps not applied to other workspaces
+cmd 'workspace 2';
+$left = open_window;
+$right = open_window;
+$inner_gaps = 0;
+$total_gaps = 0;
+is_gaps();
+kill_all_windows;
+
+# Single window inverse_outer
+cmd 'workspace 3';
+my $single_window = open_window;
+$total_gaps = 30;
+is($screen_width - 2 * $total_gaps, $single_window->rect->width, "single window width");
+kill_all_windows;
+
+# Two windows inverse_outer
+$left = open_window;
+$right = open_window;
+$inner_gaps = 10;
+$total_gaps = 10;
+is_gaps();
+
+exit_gracefully($pid);
+
 done_testing;

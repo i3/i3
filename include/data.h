@@ -241,6 +241,7 @@ struct Workspace_Assignment {
     char *output;
     gaps_t gaps;
     gaps_mask_t gaps_mask;
+    smart_gaps_t smart_gaps;
 
     TAILQ_ENTRY(Workspace_Assignment) ws_assignments;
 };
@@ -678,6 +679,7 @@ struct Con {
 
     /** Only applicable for containers of type CT_WORKSPACE. */
     gaps_t gaps;
+    smart_gaps_t smart_gaps;
 
     struct Con *parent;
 

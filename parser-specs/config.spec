@@ -333,6 +333,7 @@ state FOCUS_ON_WINDOW_ACTIVATION:
 
 # workspace <workspace> output <output>
 # workspace <workspace> gaps inner|outer <px>
+# workspace <workspace> smart_gaps on|off|inverse_outer
 state WORKSPACE:
   workspace = word
     -> WORKSPACE_COMMAND
@@ -342,6 +343,16 @@ state WORKSPACE_COMMAND:
       -> WORKSPACE_OUTPUT_WORD
   'gaps'
       -> GAPS
+  'smart_gaps'
+      -> SMART_GAPS_BY_WORKSPACE
+
+state SMART_GAPS_BY_WORKSPACE:
+  enabled = '1', 'yes', 'true', 'on', 'enable', 'active'
+      -> call cfg_smart_gaps_by_workspace($workspace, $enabled)
+  enabled = '0', 'no', 'false', 'off', 'disable', 'inactive'
+      -> call cfg_smart_gaps_by_workspace($workspace, $enabled)
+  enabled = 'inverse_outer'
+      -> call cfg_smart_gaps_by_workspace($workspace, $enabled)
 
 state WORKSPACE_OUTPUT_WORD:
   output = word
