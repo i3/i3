@@ -345,7 +345,6 @@ CFGFUN(smart_gaps_by_workspace, const char *workspace, const char *enable) {
 
     /* Assignment does not yet exist, let's create it. */
     if (!found) {
-        DLOG("assignment found");
         assignment = scalloc(1, sizeof(struct Workspace_Assignment));
         assignment->name = sstrdup(workspace);
         assignment->output = NULL;
