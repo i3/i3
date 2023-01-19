@@ -37,7 +37,7 @@ jobs:
         ./travis/skip-pkg.sh || docker pull ${{ env.BASENAME_UBUNTU }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME_UBUNTU }} travis/travis-base-ubuntu.Dockerfile
     - name: build i3
       run: |
-        docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf build; mkdir -p build && cd build && CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Werror -fno-common -D_FORTIFY_SOURCE=2" meson setup .. -Ddocs=true -Dmans=true -Db_sanitize=address --buildtype=debugoptimized && ninja -v'
+        docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf build; mkdir -p build && cd build && CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Werror -fno-common -D_FORTIFY_SOURCE=3" meson setup .. -Ddocs=true -Dmans=true -Db_sanitize=address --buildtype=debugoptimized && ninja -v'
     - name: check spelling
       run: |
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME }} ./travis/check-spelling.pl
