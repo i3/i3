@@ -902,6 +902,22 @@ void x_push_node(Con *con) {
         FREE(state->name);
     }
 
+    if (con != NULL && con->window != NULL) {
+        Rect r = {
+            con->current_border_width, /* left */
+            con->current_border_width, /* right */
+            con->current_border_width, /* top */
+            con->current_border_width  /* bottom */
+        };
+        xcb_change_property(
+            conn,
+            XCB_PROP_MODE_REPLACE,
+            con->window->id,
+            A__NET_FRAME_EXTENTS,
+            XCB_ATOM_CARDINAL, 32, 4,
+            &r);
+    }
+
     if (con->window == NULL && (con->layout == L_STACKED || con->layout == L_TABBED)) {
         /* Calculate the height of all window decorations which will be drawn on to
          * this frame. */
