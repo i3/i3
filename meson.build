@@ -86,6 +86,7 @@ if get_option('docs')
     'docs/wsbar',
     'docs/testsuite',
     'docs/i3bar-protocol',
+    'docs/i3bar-workspace-protocol',
     'docs/layout-saving',
   ]
   foreach m : doc_toc_inputs
@@ -135,6 +136,7 @@ else
 	'docs/wsbar.html',
 	'docs/testsuite.html',
 	'docs/i3bar-protocol.html',
+	'docs/i3bar-workspace-protocol.html',
 	'docs/layout-saving.html',
 	'docs/debugging.html',
       ],

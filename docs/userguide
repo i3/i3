@@ -1611,6 +1611,30 @@ bar {
 }
 -------------------------------------------------
 
+[[workspace_command]]
+=== Workspace buttons command
+
+Since i3 4.23, i3bar can run a program and use its +stdout+ output to define
+the workspace buttons displayed on the left hand side of the bar. With this
+feature, you can, for example, rename the buttons of workspaces, hide specific
+workspaces, always show a workspace button even if the workspace does not exist
+or change the order of the buttons.
+
+Also see <<status_command>> for the statusline option and
+https://i3wm.org/docs/i3bar-workspace-protocol.html for the detailed protocol.
+
+*Syntax*:
+------------------------
+workspace_command <command>
+------------------------
+
+*Example*:
+-------------------------------------------------
+bar {
+    workspace_command /path/to/script.sh
+}
+-------------------------------------------------
+
 === Display mode
 
 You can either have i3bar be visible permanently at one edge of the screen
