@@ -1611,6 +1611,30 @@ bar {
 }
 -------------------------------------------------
 
+[[workspace_command]]
+=== Workspace buttons command
+
+Since i3 4.23, i3bar can run a program and use its +stdout+ output to define
+the workspace buttons displayed on the left hand side of the bar. With this
+feature, you can, for example, rename the buttons of workspaces, hide specific
+workspaces, always show a workspace button even if the workspace does not exist
+or change the order of the buttons.
+
+Also see <<status_command>> for the statusline option and
+https://i3wm.org/docs/i3bar-workspace-protocol.html for the detailed protocol.
+
+*Syntax*:
+------------------------
+workspace_command <command>
+------------------------
+
+*Example*:
+-------------------------------------------------
+bar {
+    workspace_command /path/to/script.sh
+}
+-------------------------------------------------
+
 === Display mode
 
 You can either have i3bar be visible permanently at one edge of the screen
@@ -2397,6 +2421,9 @@ available:
 <criteria>::
     Sets focus to the container that matches the specified criteria.
     See <<command_criteria>>.
+workspace::
+    Sets focus to the workspace that contains the container that matches the
+    specified criteria.
 left|right|up|down::
         Sets focus to the nearest container in the given direction.
 parent::
@@ -2423,6 +2450,7 @@ output::
 *Syntax*:
 ----------------------------------------------
 <criteria> focus
+<criteria> focus workspace
 focus left|right|down|up
 focus parent|child|floating|tiling|mode_toggle
 focus next|prev [sibling]
@@ -2433,6 +2461,10 @@ focus output left|right|down|up|current|primary|nonprimary|next|<output1> [outpu
 -------------------------------------------------
 # Focus firefox
 bindsym $mod+F1 [class="Firefox"] focus
+
+# Focus the workspace where firefox is, without necessarily focusing firefox
+# itself.
+bindsym $mod+x [class="Firefox"] focus workspace
 
 # Focus container on the left, bottom, top, right
 bindsym $mod+j focus left
@@ -2462,7 +2494,7 @@ bindsym $mod+x focus output primary
 bindsym $mod+x focus output nonprimary
 
 # Cycle focus between outputs VGA1 and LVDS1 but not DVI0
-bindsym $mod+x move workspace to output VGA1 LVDS1
+bindsym $mod+x focus output VGA1 LVDS1
 -------------------------------------------------
 
 Note that you might not have a primary output configured yet. To do so, run:

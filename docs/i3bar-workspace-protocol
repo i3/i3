@@ -1,0 +1,184 @@
+i3bar workspace buttons protocol
+================================
+
+This document explains the protocol in which i3bar expects input for
+configuring workspace buttons. This feature is available since i3 version 4.23.
+
+The program defined by the +workspace_command+ configuration option for i3bar can
+modify the workspace buttons displayed by i3bar. The command should constantly
+print in its standard output a stream of messages following the protocol
+defined in this page.
+
+If you are looking for the status line protocol instead, see https://i3wm.org/docs/i3bar-protocol.html.
+
+== The protocol
+
+Each message should be a newline-delimited JSON array. The array is in the same
+format as the +GET_WORKSPACES+ ipc event, see
+https://i3wm.org/docs/ipc.html#_workspaces_reply.
+
+As an example, this is the output of the +i3-msg -t get_workspaces+ command:
+------------------------------
+[
+  {
+    "id": 94131549984064,
+    "num": 1,
+    "name": "1",
+    "visible": false,
+    "focused": false,
+    "output": "HDMI-A-0",
+    "urgent": false
+  },
+  {
+    "id": 94131550477584,
+    "num": 2,
+    "name": "2",
+    "visible": true,
+    "focused": true,
+    "output": "HDMI-A-0",
+    "urgent": false
+  },
+  {
+    "id": 94131550452704,
+    "num": 3,
+    "name": "3:some workspace",
+    "visible": false,
+    "focused": false,
+    "output": "HDMI-A-0",
+    "urgent": false
+  }
+]
+------------------------------
+
+Please note that this example was pretty printed for human consumption, with
+the +"rect"+ field removed. Workspace button commands should output each array
+in one line.
+
+Each element in the array represents a workspace. i3bar creates one workspace
+button for each element in the array. The order of these buttons is the same as
+the order of the elements in the array.
+
+In general, we recommend subscribing to the +workspace+ and +output+
+https://i3wm.org/docs/ipc.html#_workspace_event[events],
+fetching the current workspace information with +GET_WORKSPACES+, modifying the
+JSON array in the response according to your needs and then printing it to the
+standard output. However, you are free to build a new message from the ground
+up.
+
+=== Workspace objects in detail
+
+The documentation of +GET_WORKSPACES+ should be sufficient to understand the
+meaning of each property but here we provide extra notes for each property and
+its meaning with respect to i3bar.
+
+All properties but +name+ are optional.
+
+id (integer)::
+    If it is included it will be used to switch to that workspace when you
+    click the corresponding button. If it's not provided, the +name+ will be
+    used. You can use the +id+ field to present workspaces under a modified
+    name.
+num (integer)::
+    The only use of a workspace's number is if the +strip_workspace_numbers+
+    setting is enabled.
+name (string)::
+    The only required property. If an +id+ is provided you can freely change
+    the +name+ as you wish, effectively renaming the buttons of i3bar.
+visible (boolean)::
+    Defaults to +false+ if not included. +focused+ takes precedence over it,
+    however +visible+ is important for more than one monitors.
+focused (boolean)::
+    Defaults to +false+ if not included. Generally, exactly one of the
+    workspaces should be +focused+. If not, no button will have the
+    +focused_workspace+ color.
+urgent (boolean)::
+    Defaults to +false+ if not included.
+rect (map)::
+    Not used by i3bar but will be ignored.
+output (string)::
+    Defaults to the primary output if not included.
+
+== Examples
+
+These example scripts require the https://stedolan.github.io/jq/[jq] utility to
+be installed but otherwise just use the standard +i3-msg+ utility included with
+i3. However, you can write your own scripts in your preferred language, with
+the help of one of the
+https://i3wm.org/docs/ipc.html#_see_also_existing_libraries[pre-existing i3
+libraries]
+
+=== Base configuration
+
+------------------------------
+bar {
+  …
+  workspace_command /path/to/your/script.sh
+  …
+}
+------------------------------
+
+=== Re-create the default behaviour of i3bar
+
+Not very useful by itself but this will be the basic building block of all the
+following scripts. This one does not require +jq+.
+
+------------------------------
+#!/bin/sh
+i3-msg -t subscribe -m '["workspace", "output"]' | {
+    # Initially print the current workspaces before we receive any events. This
+    # avoids having an empty bar when starting up.
+    i3-msg -t get_workspaces;
+    # Then, while we receive events, update the workspace information.
+    while read; do i3-msg -t get_workspaces; done;
+}
+------------------------------
+
+=== Hide workspace named +foo+ unless if it is focused.
+
+------------------------------
+#!/bin/sh
+i3-msg -t subscribe -m '["workspace", "output"]' | {
+    i3-msg -t get_workspaces;
+    while read; do i3-msg -t get_workspaces; done;
+} | jq --unbuffered -c '[ .[] | select(.name != "foo" or .focused) ]'
+------------------------------
+
+Important! Make sure you use the +--unbuffered+ flag with +jq+, otherwise you
+might not get the changes in real-time but whenever they are flushed, which
+might mean that you are getting an empty bar until enough events are written.
+
+=== Show empty workspaces +foo+ and +bar+ on LVDS1 even if they do not exist at the moment.
+
+------------------------------
+#!/bin/sh
+i3-msg -t subscribe -m '["workspace", "output"]' | {
+    i3-msg -t get_workspaces;
+    while read; do i3-msg -t get_workspaces; done;
+} | jq --unbuffered -c '
+    def fake_ws(name): {
+        name: name,
+        output: "LVDS1",
+    };
+    . + [ fake_ws("foo"), fake_ws("bar") ] | unique_by(.name)
+'
+------------------------------
+
+=== Sort workspaces in reverse alphanumeric order
+
+------------------------------
+#!/bin/sh
+i3-msg -t subscribe -m '["workspace", "output"]' | {
+    i3-msg -t get_workspaces;
+    while read; do i3-msg -t get_workspaces; done;
+} | jq --unbuffered -c 'sort_by(.name) | reverse'
+------------------------------
+
+=== Append "foo" to the name of each workspace
+
+------------------------------
+#!/bin/sh
+i3-msg -t subscribe -m '["workspace", "output"]' | {
+    i3-msg -t get_workspaces;
+    while read; do i3-msg -t get_workspaces; done;
+} | jq --unbuffered -c '[ .[] | .name |= . + " foo" ]'
+------------------------------
