@@ -1459,7 +1459,7 @@ void cmd_focus_level(I3_CMD, const char *level) {
  * Implementation of 'focus'.
  *
  */
-void cmd_focus(I3_CMD) {
+void cmd_focus(I3_CMD, bool focus_workspace) {
     DLOG("current_match = %p\n", current_match);
 
     if (match_is_empty(current_match)) {
@@ -1481,11 +1481,12 @@ void cmd_focus(I3_CMD) {
         Con *ws = con_get_workspace(current->con);
         /* If no workspace could be found, this was a dock window.
          * Just skip it, you cannot focus dock windows. */
-        if (!ws)
+        if (!ws) {
             continue;
+        }
 
         /* In case this is a scratchpad window, call scratchpad_show(). */
-        if (ws == __i3_scratch) {
+        if (ws == __i3_scratch && !focus_workspace) {
             scratchpad_show(current->con);
             /* While for the normal focus case we can change focus multiple
              * times and only a single window ends up focused, we could show
@@ -1493,8 +1494,15 @@ void cmd_focus(I3_CMD) {
             break;
         }
 
-        LOG("focusing %p / %s\n", current->con, current->con->name);
-        con_activate_unblock(current->con);
+        if (focus_workspace) {
+            /* Show the workspace of the matched container, without necessarily
+             * focusing it. */
+            LOG("focusing workspace %p / %s - %p / %s\n", current->con, current->con->name, ws, ws->name);
+            workspace_show(ws);
+        } else {
+            LOG("focusing %p / %s\n", current->con, current->con->name);
+            con_activate_unblock(current->con);
+        }
     }
 
     cmd_output->needs_tree_render = true;
