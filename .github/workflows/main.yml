@@ -26,7 +26,6 @@ jobs:
     - name: construct container name
       run: |
         echo "BASENAME=i3wm/travis-base:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base.Dockerfile)" >> $GITHUB_ENV
-        echo "BASENAME_UBUNTU=i3wm/travis-base-ubuntu:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base-ubuntu.Dockerfile)" >> $GITHUB_ENV
     - name: fetch or build Docker container
       run: |
         docker pull ${{ env.BASENAME }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME }} travis/travis-base.Dockerfile
@@ -61,6 +60,10 @@ jobs:
     if: github.ref == 'refs/heads/next'
     steps:
     - uses: actions/checkout@v3
+    - name: construct container name
+      run: |
+        echo "BASENAME=i3wm/travis-base:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base.Dockerfile)" >> $GITHUB_ENV
+        echo "BASENAME_UBUNTU=i3wm/travis-base-ubuntu:$(date +'%Y-%m')-$(./travis/ha.sh travis/travis-base-ubuntu.Dockerfile)" >> $GITHUB_ENV
     - name: fetch or build extra Docker containers
       run: |
         docker pull ${{ env.BASENAME_UBUNTU }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME_UBUNTU }} travis/travis-base-ubuntu.Dockerfile
