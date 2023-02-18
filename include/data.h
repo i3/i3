@@ -20,6 +20,7 @@
 #include <cairo/cairo.h>
 
 #include "queue.h"
+#include "sparse_surface.h"
 
 /*
  * To get the big concept: There are helper structures like struct
@@ -660,7 +661,7 @@ struct Con {
 
     /* The surface used for the frame window. */
     surface_t frame;
-    surface_t frame_buffer;
+    sparse_surface_t frame_buffer;
     bool pixmap_recreated;
 
     enum {
