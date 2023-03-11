@@ -17,6 +17,10 @@
 extern xcb_visualtype_t *visual_type;
 
 void sparse_surface_free_one_side(xcb_connection_t *conn, sparse_surface_t *sparse_surface, sparse_surface_side side, bool clear_id);
+void surface_free(xcb_connection_t *conn,
+                  cairo_t **cr,
+                  xcb_gcontext_t gc,
+                  cairo_surface_t **surface);
 
 bool sparse_surface_initialized(sparse_surface_t *sparse_surface) {
     if (sparse_surface->side_surface[SPARSE_SURFACE_TOP].id == XCB_NONE &&
