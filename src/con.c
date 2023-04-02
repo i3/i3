@@ -1942,6 +1942,31 @@ void con_set_layout(Con *con, layout_t layout) {
         }
     }
 
+    if (con->type != CT_WORKSPACE && con->parent->type != CT_WORKSPACE &&
+        con_num_children(con) == 1 && con_num_children(con->parent) == 1) {
+        /* Special case: Avoid creating redundant containers (#3001):
+         * split h / v (tree_split()) will avoid creating new containers when
+         * the target container is already a single child in L_SPLITH /
+         * L_SPLITV. However, if the layout is tabbed / stacked, a new split is
+         * created. This means, however, that when the user continuously
+         * switches between split h/v and tabbed / stacked, an endless series
+         * of 1-child containers will be created. Since a single level of split
+         * containers on top of tabbed / stacked containers are useful, we want
+         * to avoid this situation here.
+         * Example of past behaviour: S[V[w]] -> S[S[w]] -> S[S[V[w]]] -> …
+         * Example of desired behaviour: S[V[w]] -> S[w] -> S[v[w]] -> …
+         * Therefore, when both the current & parent containers have a single
+         * child, we just close the redundant middle container and proceed with
+         * the parent. */
+        Con *parent = con->parent;
+        Con *child = TAILQ_FIRST(&(con->nodes_head));
+        con_detach(child);
+        con_attach(child, parent, true);
+        parent->last_split_layout = con->last_split_layout;
+        tree_close_internal(con, DONT_KILL_WINDOW, true);
+        con = parent;
+    }
+
     if (layout == L_DEFAULT) {
         /* Special case: the layout formerly known as "default" (in combination
          * with an orientation). Since we switched to splith/splitv layouts,
