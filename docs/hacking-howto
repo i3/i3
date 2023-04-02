@@ -14,7 +14,7 @@ you find necessary, please do not hesitate to contact me.
 <p>
 ++++
 This document is not 100% up to date. Specifically, everything up to and
-including <<data_structures>> has been updated recently. The rest might contain
+including <<startup>> has been updated recently. The rest might contain
 outdated information.
 ++++
 </p>
@@ -329,30 +329,26 @@ ensure that the operating system on which i3 is compiled has all the expected
 features, i3 comes with +include/queue.h+. On BSD systems, you can use +man
 queue(3)+. On Linux, you have to use google (or read the source).
 
-The lists used are +SLIST+ (single linked lists), +CIRCLEQ+ (circular
-queues) and +TAILQ+ (tail queues). Usually, only forward traversal is necessary,
-so an +SLIST+ works fine. If inserting elements at arbitrary positions or at
-the end of a list is necessary, a +TAILQ+ is used instead. However, for the
-windows inside a container, a +CIRCLEQ+ is necessary to go from the currently
-selected window to the window above/below.
+The lists used are +SLIST+ (single linked lists), +CIRCLEQ+ (circular queues)
+and +TAILQ+ (tail queues). Usually, +TAILQ+ is used which allows inserting
+elements at arbitrary positions or at the end of the list. If only forward
+traversal is necessary, an +SLIST+ can be used. +CIRCLEQ+ is used just to
+manage the X11 state of each window.
 
-== Naming conventions
+[[startup]]
+== Startup (src/main.c, main())
 
-There is a row of standard variables used in many events. The following names
-should be chosen for those:
-
- * +conn+ is the xcb_connection_t
- * +event+ is the event of the particular type
- * +con+ names a container
- * +current+ is a loop variable when using +TAILQ_FOREACH+ etc.
-
-== Startup (src/mainx.c, main())
+Among other things, the main() function does the following:
 
  * Establish the xcb connection
+ * Load the i3 config
  * Check for XKB extension on the separate X connection, load Xcursor
- * Check for RandR screens (with a fall-back to Xinerama)
+ * Set up EWMH hints
  * Grab the keycodes for which bindings exist
+ * Check for XRandR screens
  * Manage all existing windows
+ * Exec configured startup processes
+ * Start i3bar if configured
  * Enter the event loop
 
 == Keybindings
