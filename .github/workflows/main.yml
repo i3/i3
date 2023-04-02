@@ -84,8 +84,8 @@ jobs:
       run: ./release-notes/generator.pl
     - name: Install dependencies
       run: |
-        sudo apt-get install -y clang-format-12
+        sudo apt-get install -y clang-format-14
     - name: Check formatting
-      run: clang-format-12 --dry-run --Werror $(git ls-files '*.c' '*.h')
+      run: clang-format-14 --dry-run --Werror $(git ls-files '*.c' '*.h')
     - name: Verify safe wrapper functions are used
       run: ./travis/check-safe-wrappers.sh
