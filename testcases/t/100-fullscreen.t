@@ -185,7 +185,9 @@ cmd 'focus left';
 is($x->input_focus, $window->id, 'fullscreen window still focused');
 
 ################################################################################
-# Verify that changing workspace while in global fullscreen does not work.
+# Verify that changing workspace while in global fullscreen disables fullscreen
+# first.
+# See #2974
 ################################################################################
 
 $tmp = fresh_workspace;
@@ -197,11 +199,11 @@ is(focused_ws(), $tmp, 'workspace selected');
 
 $other = get_unused_workspace;
 cmd "workspace $other";
-is($x->input_focus, $window->id, 'window still focused');
-is(focused_ws(), $tmp, 'workspace still selected');
+isnt($x->input_focus, $window->id, 'window not focused anymore');
+is(focused_ws(), $other, 'workspace switched');
+is_num_fullscreen($other, 0, 'no fullscreen windows');
+is_num_fullscreen($tmp, 0, 'no fullscreen windows');
 
-# leave global fullscreen so that is does not interfere with the other tests
-$window->fullscreen(0);
 sync_with_i3;
 
 ################################################################################
