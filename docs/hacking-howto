@@ -34,30 +34,18 @@ Guide → Compiling a Meson project]. In case you’re unfamiliar:
 
 === Build system features
 
-* We use the +AX_ENABLE_BUILDDIR+ macro to enforce builds happening in a separate
-  directory. This is a prerequisite for the +AX_EXTEND_SRCDIR+ macro and building
-  in a separate directory is common practice anyway. In case this causes any
-  trouble when packaging i3 for your distribution, please open an issue.
+* +ninja test+ runs the i3 testsuite. See docs/testsuite for details.
 
-* +make check+ runs the i3 testsuite. See docs/testsuite for details.
+* +meson dist+ builds a release tarball and runs tests on the result.
 
-* +make distcheck+ (runs testsuite on +make dist+ result, tiny bit quicker
-  feedback cycle than waiting for the travis build to catch the issue).
+* +meson -Ddocs=true -Dmans=true+ will enable the options to build docs and
+  manpages. These options require additional dependencies that are normally not
+  required for users who just want to build i3.
 
-* +make uninstall+ (occasionally requested by users who compile from source)
-
-* +make+ will build manpages/docs by default if the tools are installed.
-  Conversely, manpages/docs are not tried to be built for users who don’t want
-  to install all these dependencies to get started hacking on i3. Manpages and
-  docs can be disabled with the +--disable-mans++ and ++--disable-docs++
-  configure options respectively.
-
-* non-release builds will enable address sanitizer by default. Use the
-  +--disable-sanitizers+ configure option to turn off all sanitizers, and see
-  +--help+ for available sanitizers.
-
-* Coverage reports are now generated using +make check-code-coverage+, which
-  requires specifying +--enable-code-coverage+ when calling configure.
+* +meson -Db_sanitize=address+ will enable the address sanitizer which is
+  disabled by default. A summary of memory leaks will be printed on program
+  exit. This can include false-positives. For other options of the +b_sanitize+
+  flag see https://mesonbuild.com/Builtin-options.html.
 
 == Pull requests
 
