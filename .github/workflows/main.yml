@@ -33,7 +33,7 @@ jobs:
       run: |
         docker pull ${{ env.BASENAME }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME }} travis/travis-base.Dockerfile
     - name: fetch or build extra Docker containers
-      if: github.ref == 'refs/heads/next'
+      if: github.ref == 'refs/heads/next' && matrix.compiler == 'gcc'
       run: |
         docker pull ${{ env.BASENAME_UBUNTU }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME_UBUNTU }} travis/travis-base-ubuntu.Dockerfile
     - name: build i3
@@ -55,7 +55,7 @@ jobs:
       run: |
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf distbuild; mkdir distbuild && cd distbuild && meson setup .. -Ddocs=true -Dmans=true && meson dist --no-tests'
     - name: build Debian packages
-      if: github.ref == 'refs/heads/next'
+      if: github.ref == 'refs/heads/next' && matrix.compiler == 'gcc'
       run: |
         echo "::group::Debian amd64"
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME }} ./travis/debian-build.sh deb/debian-amd64/DIST
@@ -64,15 +64,15 @@ jobs:
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME_UBUNTU }} ./travis/debian-build.sh deb/ubuntu-amd64/DIST
         echo "::endgroup::"
     - name: push Debian packages to balto
-      if: github.ref == 'refs/heads/next'
+      if: github.ref == 'refs/heads/next' && matrix.compiler == 'gcc'
       run: |
         travis/push-balto.sh
     - name: build docs
-      if: github.ref == 'refs/heads/next'
+      if: github.ref == 'refs/heads/next' && matrix.compiler == 'gcc'
       run: |
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME }} ./travis/docs.sh
     - name: push docs to GitHub pages
-      if: github.ref == 'refs/heads/next'
+      if: github.ref == 'refs/heads/next' && matrix.compiler == 'gcc'
       run: |
         travis/deploy-github-pages.sh
   formatting:
