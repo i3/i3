@@ -118,10 +118,9 @@ void startup_sequence_delete(struct Startup_Sequence *sequence) {
 }
 
 /*
- * Starts the given application by passing it through a shell. We use double
- * fork to avoid zombie processes. As the started application’s parent exits
- * (immediately), the application is reparented to init (process-id 1), which
- * correctly handles children, so we don’t have to do it :-).
+ * Starts the given application by passing it through a shell. Zombie processes
+ * will be collected by ev in the default loop, we don't have to manually
+ * deal with it.
  *
  * The shell used to start applications is the system's bourne shell (i.e.,
  * /bin/sh).
@@ -173,7 +172,8 @@ void start_application(const char *command, bool no_startup_id) {
 
     LOG("executing: %s\n", command);
     if (fork() == 0) {
-        /* Child process */
+        /* Child process.
+         * It will be reaped by ev, even though there is no corresponding ev_child */
         setsid();
         setrlimit(RLIMIT_CORE, &original_rlimit_core);
         /* Close all socket activation file descriptors explicitly, we disabled
@@ -186,18 +186,14 @@ void start_application(const char *command, bool no_startup_id) {
         unsetenv("LISTEN_PID");
         unsetenv("LISTEN_FDS");
         signal(SIGPIPE, SIG_DFL);
-        if (fork() == 0) {
-            /* Setup the environment variable(s) */
-            if (!no_startup_id)
-                sn_launcher_context_setup_child_process(context);
-            setenv("I3SOCK", current_socketpath, 1);
+        /* Setup the environment variable(s) */
+        if (!no_startup_id)
+            sn_launcher_context_setup_child_process(context);
+        setenv("I3SOCK", current_socketpath, 1);
 
-            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
-            /* not reached */
-        }
-        _exit(EXIT_SUCCESS);
+        execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
+        /* not reached */
     }
-    wait(0);
 
     if (!no_startup_id) {
         /* Change the pointer of the root window to indicate progress */
