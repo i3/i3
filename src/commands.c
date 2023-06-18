@@ -1578,7 +1578,6 @@ void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const ch
     owindow *current;
     HANDLE_EMPTY_MATCH;
 
-    Con *initially_focused = focused;
     direction_t direction = parse_direction(direction_str);
 
     const bool is_ppt = mode && strcmp(mode, "ppt") == 0;
@@ -1610,12 +1609,6 @@ void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const ch
             tree_move(current->con, direction);
             cmd_output->needs_tree_render = true;
         }
-    }
-
-    /* The move command should not disturb focus. con_exists is called because
-     * tree_move calls tree_flatten. */
-    if (focused != initially_focused && con_exists(initially_focused)) {
-        con_activate(initially_focused);
     }
 
     // XXX: default reply for now, make this a better reply
