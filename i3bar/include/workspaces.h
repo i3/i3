@@ -18,10 +18,10 @@ typedef struct i3_ws i3_ws;
 TAILQ_HEAD(ws_head, i3_ws);
 
 /*
- * Start parsing the received JSON string
+ * Parse the received JSON string
  *
  */
-void parse_workspaces_json(char *json);
+void parse_workspaces_json(const unsigned char *json, size_t size);
 
 /*
  * free() all workspace data structures
@@ -38,7 +38,6 @@ struct i3_ws {
     bool visible;             /* If the ws is currently visible on an output */
     bool focused;             /* If the ws is currently focused */
     bool urgent;              /* If the urgent hint of the ws is set */
-    rect rect;                /* The rect of the ws (not used (yet)) */
     struct i3_output *output; /* The current output of the ws */
 
     TAILQ_ENTRY(i3_ws) tailq; /* Pointer for the TAILQ-Macro */

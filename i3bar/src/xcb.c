@@ -334,7 +334,7 @@ static void hide_bars(void) {
         }
         xcb_unmap_window(xcb_connection, walk->bar.id);
     }
-    stop_child();
+    stop_children();
 }
 
 /*
@@ -351,7 +351,7 @@ static void unhide_bars(void) {
     uint32_t mask;
     uint32_t values[5];
 
-    cont_child();
+    cont_children();
 
     SLIST_FOREACH (walk, outputs, slist) {
         if (walk->bar.id == XCB_NONE) {
@@ -500,6 +500,49 @@ static int predict_button_width(int name_width) {
                logical_px(config.ws_min_width));
 }
 
+static char *quote_workspace_name(const char *in) {
+    /* To properly handle workspace names with double quotes in them, we need
+     * to escape the double quotes. We allocate a large enough buffer (twice
+     * the unescaped size is always enough), then we copy character by
+     * character. */
+    const size_t namelen = strlen(in);
+    const size_t len = namelen + strlen("workspace \"\"") + 1;
+    char *out = scalloc(2 * len, 1);
+    memcpy(out, "workspace \"", strlen("workspace \""));
+    size_t inpos, outpos;
+    for (inpos = 0, outpos = strlen("workspace \"");
+         inpos < namelen;
+         inpos++, outpos++) {
+        if (in[inpos] == '"' || in[inpos] == '\\') {
+            out[outpos] = '\\';
+            outpos++;
+        }
+        out[outpos] = in[inpos];
+    }
+    out[outpos] = '"';
+    return out;
+}
+
+static void focus_workspace(i3_ws *ws) {
+    char *buffer = NULL;
+    if (ws->id != 0) {
+        /* Workspace ID has higher precedence since the workspace_command is
+         * allowed to change workspace names as long as it provides a valid ID. */
+        sasprintf(&buffer, "[con_id=%lld] focus workspace", ws->id);
+        goto done;
+    }
+
+    if (ws->canonical_name == NULL) {
+        return;
+    }
+
+    buffer = quote_workspace_name(ws->canonical_name);
+
+done:
+    i3_send_msg(I3_IPC_MESSAGE_TYPE_RUN_COMMAND, buffer);
+    free(buffer);
+}
+
 /*
  * Handle a button press event (i.e. a mouse click on one of our bars).
  * We determine, whether the click occurred on a workspace button or if the scroll-
@@ -620,37 +663,7 @@ static void handle_button(xcb_button_press_event_t *event) {
             return;
     }
 
-    /* To properly handle workspace names with double quotes in them, we need
-     * to escape the double quotes. Unfortunately, that’s rather ugly in C: We
-     * first count the number of double quotes, then we allocate a large enough
-     * buffer, then we copy character by character. */
-    int num_quotes = 0;
-    size_t namelen = 0;
-    const char *utf8_name = cur_ws->canonical_name;
-    for (const char *walk = utf8_name; *walk != '\0'; walk++) {
-        if (*walk == '"' || *walk == '\\')
-            num_quotes++;
-        /* While we’re looping through the name anyway, we can save one
-         * strlen(). */
-        namelen++;
-    }
-
-    const size_t len = namelen + strlen("workspace \"\"") + 1;
-    char *buffer = scalloc(len + num_quotes, 1);
-    memcpy(buffer, "workspace \"", strlen("workspace \""));
-    size_t inpos, outpos;
-    for (inpos = 0, outpos = strlen("workspace \"");
-         inpos < namelen;
-         inpos++, outpos++) {
-        if (utf8_name[inpos] == '"' || utf8_name[inpos] == '\\') {
-            buffer[outpos] = '\\';
-            outpos++;
-        }
-        buffer[outpos] = utf8_name[inpos];
-    }
-    buffer[outpos] = '"';
-    i3_send_msg(I3_IPC_MESSAGE_TYPE_RUN_COMMAND, buffer);
-    free(buffer);
+    focus_workspace(cur_ws);
 }
 
 /*
@@ -674,9 +687,9 @@ static void handle_visibility_notify(xcb_visibility_notify_event_t *event) {
     }
 
     if (num_visible == 0) {
-        stop_child();
+        stop_children();
     } else {
-        cont_child();
+        cont_children();
     }
 }
 
@@ -1945,10 +1958,10 @@ void reconfig_windows(bool redraw_bars) {
                 /* Unmap the window, and draw it again when in dock mode */
                 umap_cookie = xcb_unmap_window_checked(xcb_connection, walk->bar.id);
                 if (config.hide_on_modifier == M_DOCK) {
-                    cont_child();
+                    cont_children();
                     map_cookie = xcb_map_window_checked(xcb_connection, walk->bar.id);
                 } else {
-                    stop_child();
+                    stop_children();
                 }
 
                 if (config.hide_on_modifier == M_HIDE) {

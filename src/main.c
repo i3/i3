@@ -579,7 +579,11 @@ int main(int argc, char *argv[]) {
 
     /* Initialize the libev event loop. This needs to be done before loading
      * the config file because the parser will install an ev_child watcher
-     * for the nagbar when config errors are found. */
+     * for the nagbar when config errors are found.
+     *
+     * Main loop must be ev's default loop because (at the moment of writing)
+     * only the default loop can handle ev_child events and reap zombies
+     * (the start_application routine relies on that too). */
     main_loop = EV_DEFAULT;
     if (main_loop == NULL)
         die("Could not initialize libev. Bad LIBEV_FLAGS?\n");

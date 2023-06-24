@@ -317,32 +317,25 @@ xsetroot -solid "#333333"
 # Enable core dumps in case something goes wrong
 ulimit -c unlimited
 
-# Start i3 and log to ~/.i3/logfile
-echo "Starting at $(date)" >> ~/.i3/logfile
-exec /usr/bin/i3 -V -d all >> ~/.i3/logfile
+# Start i3 and log to ~/.local/share/i3/log
+mkdir -p ~/.local/share/i3
+echo "Starting at $(date)" >> ~/.local/share/i3/log
+exec /usr/bin/i3 -V -d all >> ~/.local/share/i3/log
 -------------------------------------------------------------
 
 == ENVIRONMENT
 
 === I3SOCK
 
-This variable overwrites the IPC socket path (placed in
-/tmp/i3-%u.XXXXXX/ipc-socket.%p by default, where %u is replaced with your UNIX
-username, %p is replaced with i3’s PID and XXXXXX is a string of random
-characters from the portable filename character set (see mkdtemp(3))). The IPC
-socket is used by external programs like i3-msg(1) or i3bar(1).
-
-== TODO
-
-There is still lot of work to do. Please check our bugtracker for up-to-date
-information about tasks which are still not finished.
+This variable overwrites the IPC socket path (see userguide for default
+location). The IPC socket is used by external programs like i3-msg(1), i3bar(1)
+or user-made scripts.
 
 == SEE ALSO
 
 You should have a copy of the userguide (featuring nice screenshots/graphics
 which is why this is not integrated into this manpage), the debugging guide,
-and the "how to hack" guide. If you are building from source, run:
- +make -C docs+
+and the "how to hack" guide.
 
 You can also access these documents online at https://i3wm.org/
 

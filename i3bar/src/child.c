@@ -10,6 +10,7 @@
 #include "common.h"
 #include "yajl_utils.h"
 
+#include <ctype.h> /* isspace */
 #include <err.h>
 #include <errno.h>
 #include <ev.h>
@@ -27,14 +28,30 @@
 #include <yajl/yajl_parse.h>
 
 /* Global variables for child_*() */
-i3bar_child child = {0};
-#define DLOG_CHILD DLOG("%s: pid=%ld stopped=%d stop_signal=%d cont_signal=%d click_events=%d click_events_init=%d\n", \
-                        __func__, (long)child.pid, child.stopped, child.stop_signal, child.cont_signal, child.click_events, child.click_events_init)
+i3bar_child status_child = {0};
+i3bar_child ws_child = {0};
 
-/* stdin- and SIGCHLD-watchers */
-ev_io *stdin_io;
-int stdin_fd;
-ev_child *child_sig;
+#define DLOG_CHILD(c)                                                                                                              \
+    do {                                                                                                                           \
+        if ((c).pid == 0) {                                                                                                        \
+            DLOG("%s: child pid = 0\n", __func__);                                                                                 \
+        } else if ((c).pid == status_child.pid) {                                                                                  \
+            DLOG("%s: status_command: pid=%ld stopped=%d stop_signal=%d cont_signal=%d click_events=%d click_events_init=%d\n",    \
+                 __func__, (long)(c).pid, (c).stopped, (c).stop_signal, (c).cont_signal, (c).click_events, (c).click_events_init); \
+        } else if ((c).pid == ws_child.pid) {                                                                                      \
+            DLOG("%s: workspace_command: pid=%ld stopped=%d stop_signal=%d cont_signal=%d click_events=%d click_events_init=%d\n", \
+                 __func__, (long)(c).pid, (c).stopped, (c).stop_signal, (c).cont_signal, (c).click_events, (c).click_events_init); \
+        } else {                                                                                                                   \
+            ELOG("%s: unknown child, this should never happen "                                                                    \
+                 "pid=%ld stopped=%d stop_signal=%d cont_signal=%d click_events=%d click_events_init=%d\n",                        \
+                 __func__, (long)(c).pid, (c).stopped, (c).stop_signal, (c).cont_signal, (c).click_events, (c).click_events_init); \
+        }                                                                                                                          \
+    } while (0)
+#define DLOG_CHILDREN             \
+    do {                          \
+        DLOG_CHILD(status_child); \
+        DLOG_CHILD(ws_child);     \
+    } while (0)
 
 /* JSON parser for stdin */
 yajl_handle parser;
@@ -127,7 +144,7 @@ __attribute__((format(printf, 1, 2))) static void set_statusline_error(const cha
     TAILQ_INSERT_TAIL(&statusline_head, message_block, blocks);
 
 finish:
-    FREE(message);
+    free(message);
     va_end(args);
 }
 
@@ -135,22 +152,27 @@ finish:
  * Stop and free() the stdin- and SIGCHLD-watchers
  *
  */
-static void cleanup(void) {
-    if (stdin_io != NULL) {
-        ev_io_stop(main_loop, stdin_io);
-        FREE(stdin_io);
-        close(stdin_fd);
-        stdin_fd = 0;
-        close(child_stdin);
-        child_stdin = 0;
+static void cleanup(i3bar_child *c) {
+    DLOG_CHILD(*c);
+
+    if (c->stdin_io != NULL) {
+        ev_io_stop(main_loop, c->stdin_io);
+        FREE(c->stdin_io);
+
+        if (c->pid == status_child.pid) {
+            close(child_stdin);
+            child_stdin = 0;
+        }
+        close(c->stdin_fd);
     }
 
-    if (child_sig != NULL) {
-        ev_child_stop(main_loop, child_sig);
-        FREE(child_sig);
+    if (c->child_sig != NULL) {
+        ev_child_stop(main_loop, c->child_sig);
+        FREE(c->child_sig);
     }
 
-    memset(&child, 0, sizeof(i3bar_child));
+    FREE(c->pending_line);
+    memset(c, 0, sizeof(i3bar_child));
 }
 
 /*
@@ -362,15 +384,13 @@ static int stdin_end_array(void *context) {
  * Returns NULL on EOF.
  *
  */
-static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
-    int fd = watcher->fd;
-    int n = 0;
+static unsigned char *get_buffer(int fd, int *ret_buffer_len) {
     int rec = 0;
     int buffer_len = STDIN_CHUNK_SIZE;
     unsigned char *buffer = smalloc(buffer_len + 1);
     buffer[0] = '\0';
     while (1) {
-        n = read(fd, buffer + rec, buffer_len - rec);
+        const ssize_t n = read(fd, buffer + rec, buffer_len - rec);
         if (n == -1) {
             if (errno == EAGAIN) {
                 /* finish up */
@@ -390,10 +410,11 @@ static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
 
         if (rec == buffer_len) {
             buffer_len += STDIN_CHUNK_SIZE;
-            buffer = srealloc(buffer, buffer_len);
+            buffer = srealloc(buffer, buffer_len + 1);
         }
     }
-    if (*buffer == '\0') {
+    buffer[rec] = '\0';
+    if (buffer[0] == '\0') {
         FREE(buffer);
         rec = -1;
     }
@@ -443,13 +464,14 @@ static bool read_json_input(unsigned char *input, int length) {
  * in statusline
  *
  */
-static void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+static void stdin_io_cb(int fd) {
     int rec;
-    unsigned char *buffer = get_buffer(watcher, &rec);
-    if (buffer == NULL)
+    unsigned char *buffer = get_buffer(fd, &rec);
+    if (buffer == NULL) {
         return;
+    }
     bool has_urgent = false;
-    if (child.version > 0) {
+    if (status_child.version > 0) {
         has_urgent = read_json_input(buffer, rec);
     } else {
         read_flat_input((char *)buffer, rec);
@@ -463,22 +485,23 @@ static void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  * whether this is JSON or plain text
  *
  */
-static void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+static void stdin_io_first_line_cb(int fd) {
     int rec;
-    unsigned char *buffer = get_buffer(watcher, &rec);
-    if (buffer == NULL)
+    unsigned char *buffer = get_buffer(fd, &rec);
+    if (buffer == NULL) {
         return;
+    }
     DLOG("Detecting input type based on buffer *%.*s*\n", rec, buffer);
     /* Detect whether this is JSON or plain text. */
     unsigned int consumed = 0;
     /* At the moment, we don’t care for the version. This might change
      * in the future, but for now, we just discard it. */
-    parse_json_header(&child, buffer, rec, &consumed);
-    if (child.version > 0) {
-        /* If hide-on-modifier is set, we start of by sending the
-         * child a SIGSTOP, because the bars aren't mapped at start */
+    parse_json_header(&status_child, buffer, rec, &consumed);
+    if (status_child.version > 0) {
+        /* If hide-on-modifier is set, we start of by sending the status_child
+         * a SIGSTOP, because the bars aren't mapped at start */
         if (config.hide_on_modifier) {
-            stop_child();
+            stop_children();
         }
         draw_bars(read_json_input(buffer + consumed, rec - consumed));
     } else {
@@ -489,9 +512,133 @@ static void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int rev
         read_flat_input((char *)buffer, rec);
     }
     free(buffer);
-    ev_io_stop(main_loop, stdin_io);
-    ev_io_init(stdin_io, &stdin_io_cb, stdin_fd, EV_READ);
-    ev_io_start(main_loop, stdin_io);
+}
+
+static bool isempty(char *s) {
+    while (*s != '\0') {
+        if (!isspace(*s)) {
+            return false;
+        }
+        s++;
+    }
+    return true;
+}
+
+static char *append_string(const char *previous, const char *str) {
+    if (previous != NULL) {
+        char *result;
+        sasprintf(&result, "%s%s", previous, str);
+        return result;
+    }
+    return sstrdup(str);
+}
+
+static char *ws_last_json;
+
+static void ws_stdin_io_cb(int fd) {
+    int rec;
+    unsigned char *buffer = get_buffer(fd, &rec);
+    if (buffer == NULL) {
+        return;
+    }
+
+    gchar **strings = g_strsplit((const char *)buffer, "\n", 0);
+    for (int idx = 0; strings[idx] != NULL; idx++) {
+        if (ws_child.pending_line == NULL && isempty(strings[idx])) {
+            /* In the normal case where the buffer ends with '\n', the last
+             * string should be empty */
+            continue;
+        }
+
+        if (strings[idx + 1] == NULL) {
+            /* This is the last string but it is not empty, meaning that we have
+             * read data that is incomplete, save it for later. */
+            char *new = append_string(ws_child.pending_line, strings[idx]);
+            free(ws_child.pending_line);
+            ws_child.pending_line = new;
+            continue;
+        }
+
+        free(ws_last_json);
+        ws_last_json = append_string(ws_child.pending_line, strings[idx]);
+        FREE(ws_child.pending_line);
+
+        parse_workspaces_json((const unsigned char *)ws_last_json, strlen(ws_last_json));
+    }
+
+    g_strfreev(strings);
+    free(buffer);
+
+    draw_bars(false);
+}
+
+static void common_stdin_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+    if (watcher == status_child.stdin_io) {
+        if (status_child.version == (uint32_t)-1) {
+            stdin_io_first_line_cb(watcher->fd);
+        } else {
+            stdin_io_cb(watcher->fd);
+        }
+    } else if (watcher == ws_child.stdin_io) {
+        ws_stdin_io_cb(watcher->fd);
+    } else {
+        ELOG("Got callback for unknown watcher fd=%d\n", watcher->fd);
+    }
+}
+
+/*
+ * When workspace_command is enabled this function is used to re-parse the
+ * latest received JSON from the client.
+ */
+void repeat_last_ws_json(void) {
+    if (ws_last_json) {
+        DLOG("Repeating last workspace JSON\n");
+        parse_workspaces_json((const unsigned char *)ws_last_json, strlen(ws_last_json));
+    }
+}
+
+/*
+ * Wrapper around set_workspace_button_error to mimic the call of
+ * set_statusline_error.
+ */
+__attribute__((format(printf, 1, 2))) static void set_workspace_button_error_f(const char *format, ...) {
+    char *message;
+    va_list args;
+    va_start(args, format);
+    if (vasprintf(&message, format, args) == -1) {
+        goto finish;
+    }
+
+    set_workspace_button_error(message);
+
+finish:
+    free(message);
+    va_end(args);
+}
+
+/*
+ * Replaces the workspace buttons with an error message.
+ */
+void set_workspace_button_error(const char *message) {
+    free_workspaces();
+
+    char *name = NULL;
+    sasprintf(&name, "Error: %s", message);
+
+    i3_output *output;
+    SLIST_FOREACH (output, outputs, slist) {
+        i3_ws *fake_ws = scalloc(1, sizeof(i3_ws));
+        /* Don't set the canonical_name field to make this workspace unfocusable. */
+        fake_ws->name = i3string_from_utf8(name);
+        fake_ws->name_width = predict_text_width(fake_ws->name);
+        fake_ws->num = -1;
+        fake_ws->urgent = fake_ws->visible = true;
+        fake_ws->output = output;
+
+        TAILQ_INSERT_TAIL(output->workspaces, fake_ws, tailq);
+    }
+
+    free(name);
 }
 
 /*
@@ -501,27 +648,45 @@ static void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int rev
  *
  */
 static void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
-    int exit_status = WEXITSTATUS(watcher->rstatus);
+    const int exit_status = WEXITSTATUS(watcher->rstatus);
 
     ELOG("Child (pid: %d) unexpectedly exited with status %d\n",
-         child.pid,
+         watcher->pid,
          exit_status);
+
+    void (*error_function_pointer)(const char *, ...) = NULL;
+    const char *command_type = "";
+    i3bar_child *c = NULL;
+    if (watcher->pid == status_child.pid) {
+        command_type = "status_command";
+        error_function_pointer = set_statusline_error;
+        c = &status_child;
+    } else if (watcher->pid == ws_child.pid) {
+        command_type = "workspace_command";
+        error_function_pointer = set_workspace_button_error_f;
+        c = &ws_child;
+    } else {
+        ELOG("Unknown child pid, this should never happen\n");
+        return;
+    }
+    DLOG_CHILD(*c);
 
     /* this error is most likely caused by a user giving a nonexecutable or
      * nonexistent file, so we will handle those cases separately. */
-    if (exit_status == 126)
-        set_statusline_error("status_command is not executable (exit %d)", exit_status);
-    else if (exit_status == 127)
-        set_statusline_error("status_command not found or is missing a library dependency (exit %d)", exit_status);
-    else
-        set_statusline_error("status_command process exited unexpectedly (exit %d)", exit_status);
+    if (exit_status == 126) {
+        error_function_pointer("%s is not executable (exit %d)", command_type, exit_status);
+    } else if (exit_status == 127) {
+        error_function_pointer("%s not found or is missing a library dependency (exit %d)", command_type, exit_status);
+    } else {
+        error_function_pointer("%s process exited unexpectedly (exit %d)", command_type, exit_status);
+    }
 
-    cleanup();
+    cleanup(c);
     draw_bars(false);
 }
 
 static void child_write_output(void) {
-    if (child.click_events) {
+    if (status_child.click_events) {
         const unsigned char *output;
         size_t size;
         ssize_t n;
@@ -535,12 +700,47 @@ static void child_write_output(void) {
         yajl_gen_clear(gen);
 
         if (n == -1) {
-            child.click_events = false;
+            status_child.click_events = false;
             kill_child();
             set_statusline_error("child_write_output failed");
             draw_bars(false);
         }
     }
+}
+
+static pid_t sfork(void) {
+    const pid_t pid = fork();
+    if (pid == -1) {
+        ELOG("Couldn't fork(): %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    return pid;
+}
+
+static void spipe(int pipedes[2]) {
+    if (pipe(pipedes) == -1) {
+        err(EXIT_FAILURE, "pipe(pipe_in)");
+    }
+}
+
+static void exec_shell(char *command) {
+    execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char *)NULL);
+}
+
+static void setup_child_cb(i3bar_child *child) {
+    /* We set O_NONBLOCK because blocking is evil in event-driven software */
+    fcntl(child->stdin_fd, F_SETFL, O_NONBLOCK);
+
+    child->stdin_io = smalloc(sizeof(ev_io));
+    ev_io_init(child->stdin_io, &common_stdin_cb, child->stdin_fd, EV_READ);
+    ev_io_start(main_loop, child->stdin_io);
+
+    /* We must cleanup, if the child unexpectedly terminates */
+    child->child_sig = smalloc(sizeof(ev_child));
+    ev_child_init(child->child_sig, &child_sig_cb, child->pid, 0);
+    ev_child_start(main_loop, child->child_sig);
+
+    DLOG_CHILD(*child);
 }
 
 /*
@@ -553,8 +753,9 @@ static void child_write_output(void) {
  *
  */
 void start_child(char *command) {
-    if (command == NULL)
+    if (command == NULL) {
         return;
+    }
 
     /* Allocate a yajl parser which will be used to parse stdin. */
     static yajl_callbacks callbacks = {
@@ -568,69 +769,77 @@ void start_child(char *command) {
         .yajl_end_array = stdin_end_array,
     };
     parser = yajl_alloc(&callbacks, NULL, &parser_context);
-
     gen = yajl_gen_alloc(NULL);
 
     int pipe_in[2];  /* pipe we read from */
     int pipe_out[2]; /* pipe we write to */
+    spipe(pipe_in);
+    spipe(pipe_out);
 
-    if (pipe(pipe_in) == -1)
-        err(EXIT_FAILURE, "pipe(pipe_in)");
-    if (pipe(pipe_out) == -1)
-        err(EXIT_FAILURE, "pipe(pipe_out)");
+    status_child.pid = sfork();
+    if (status_child.pid == 0) {
+        /* Child-process. Reroute streams and start shell */
+        close(pipe_in[0]);
+        close(pipe_out[1]);
 
-    child.pid = fork();
-    switch (child.pid) {
-        case -1:
-            ELOG("Couldn't fork(): %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        case 0:
-            /* Child-process. Reroute streams and start shell */
+        dup2(pipe_in[1], STDOUT_FILENO);
+        dup2(pipe_out[0], STDIN_FILENO);
 
-            close(pipe_in[0]);
-            close(pipe_out[1]);
+        setpgid(status_child.pid, 0);
+        exec_shell(command);
+        return;
+    }
+    /* Parent-process. Reroute streams */
+    close(pipe_in[1]);
+    close(pipe_out[0]);
 
-            dup2(pipe_in[1], STDOUT_FILENO);
-            dup2(pipe_out[0], STDIN_FILENO);
+    status_child.stdin_fd = pipe_in[0];
+    child_stdin = pipe_out[1];
+    status_child.version = -1;
 
-            setpgid(child.pid, 0);
-            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char *)NULL);
-            return;
-        default:
-            /* Parent-process. Reroute streams */
+    setup_child_cb(&status_child);
+}
 
-            close(pipe_in[1]);
-            close(pipe_out[0]);
-
-            stdin_fd = pipe_in[0];
-            child_stdin = pipe_out[1];
-
-            break;
+/*
+ * Same as start_child but starts the configured client that manages workspace
+ * buttons.
+ *
+ */
+void start_ws_child(char *command) {
+    if (command == NULL) {
+        return;
     }
 
-    /* We set O_NONBLOCK because blocking is evil in event-driven software */
-    fcntl(stdin_fd, F_SETFL, O_NONBLOCK);
+    ws_child.stop_signal = SIGSTOP;
+    ws_child.cont_signal = SIGCONT;
 
-    stdin_io = smalloc(sizeof(ev_io));
-    ev_io_init(stdin_io, &stdin_io_first_line_cb, stdin_fd, EV_READ);
-    ev_io_start(main_loop, stdin_io);
+    int pipe_in[2]; /* pipe we read from */
+    spipe(pipe_in);
 
-    /* We must cleanup, if the child unexpectedly terminates */
-    child_sig = smalloc(sizeof(ev_child));
-    ev_child_init(child_sig, &child_sig_cb, child.pid, 0);
-    ev_child_start(main_loop, child_sig);
+    ws_child.pid = sfork();
+    if (ws_child.pid == 0) {
+        /* Child-process. Reroute streams and start shell */
+        close(pipe_in[0]);
+        dup2(pipe_in[1], STDOUT_FILENO);
 
-    atexit(kill_child_at_exit);
-    DLOG_CHILD;
+        setpgid(ws_child.pid, 0);
+        exec_shell(command);
+        return;
+    }
+    /* Parent-process. Reroute streams */
+    close(pipe_in[1]);
+    ws_child.stdin_fd = pipe_in[0];
+
+    setup_child_cb(&ws_child);
 }
 
 static void child_click_events_initialize(void) {
-    DLOG_CHILD;
+    DLOG_CHILD(status_child);
 
-    if (!child.click_events_init) {
+    if (!status_child.click_events_init) {
         yajl_gen_array_open(gen);
         child_write_output();
-        child.click_events_init = true;
+        status_child.click_events_init = true;
     }
 }
 
@@ -639,7 +848,7 @@ static void child_click_events_initialize(void) {
  *
  */
 void send_block_clicked(int button, const char *name, const char *instance, int x, int y, int x_rel, int y_rel, int out_x, int out_y, int width, int height, int mods) {
-    if (!child.click_events) {
+    if (!status_child.click_events) {
         return;
     }
 
@@ -706,35 +915,85 @@ void send_block_clicked(int button, const char *name, const char *instance, int 
     child_write_output();
 }
 
+static bool is_alive(i3bar_child *c) {
+    return c->pid > 0;
+}
+
+/*
+ * Returns true if the status child process is alive.
+ *
+ */
+bool status_child_is_alive(void) {
+    return is_alive(&status_child);
+}
+
+/*
+ * Returns true if the workspace child process is alive.
+ *
+ */
+bool ws_child_is_alive(void) {
+    return is_alive(&ws_child);
+}
+
 /*
  * kill()s the child process (if any). Called when exit()ing.
  *
  */
-void kill_child_at_exit(void) {
-    DLOG_CHILD;
+void kill_children_at_exit(void) {
+    DLOG_CHILDREN;
+    cont_children();
 
-    if (child.pid > 0) {
-        if (child.cont_signal > 0 && child.stopped)
-            killpg(child.pid, child.cont_signal);
-        killpg(child.pid, SIGTERM);
+    if (is_alive(&status_child)) {
+        killpg(status_child.pid, SIGTERM);
+    }
+    if (is_alive(&ws_child)) {
+        killpg(ws_child.pid, SIGTERM);
     }
 }
 
+static void cont_child(i3bar_child *c) {
+    if (is_alive(c) && c->cont_signal > 0 && c->stopped) {
+        c->stopped = false;
+        killpg(c->pid, c->cont_signal);
+    }
+}
+
+static void kill_and_wait(i3bar_child *c) {
+    DLOG_CHILD(*c);
+    if (!is_alive(c)) {
+        return;
+    }
+
+    cont_child(c);
+    killpg(c->pid, SIGTERM);
+    int status;
+    waitpid(c->pid, &status, 0);
+    cleanup(c);
+}
+
 /*
- * kill()s the child process (if existent) and closes and
- * free()s the stdin- and SIGCHLD-watchers
+ * kill()s the child process (if any) and closes and free()s the stdin- and
+ * SIGCHLD-watchers
  *
  */
 void kill_child(void) {
-    DLOG_CHILD;
+    kill_and_wait(&status_child);
+}
 
-    if (child.pid > 0) {
-        if (child.cont_signal > 0 && child.stopped)
-            killpg(child.pid, child.cont_signal);
-        killpg(child.pid, SIGTERM);
-        int status;
-        waitpid(child.pid, &status, 0);
-        cleanup();
+/*
+ * kill()s the workspace child process (if any) and closes and free()s the
+ * stdin- and SIGCHLD-watchers.
+ * Similar to kill_child.
+ *
+ */
+void kill_ws_child(void) {
+    kill_and_wait(&ws_child);
+}
+
+static void stop_child(i3bar_child *c) {
+    if (c->stop_signal > 0 && !c->stopped) {
+        c->stopped = true;
+        killpg(c->pid, c->stop_signal);
     }
 }
 
@@ -742,26 +1001,21 @@ void kill_child(void) {
  * Sends a SIGSTOP to the child process (if existent)
  *
  */
-void stop_child(void) {
-    DLOG_CHILD;
-
-    if (child.stop_signal > 0 && !child.stopped) {
-        child.stopped = true;
-        killpg(child.pid, child.stop_signal);
-    }
+void stop_children(void) {
+    DLOG_CHILDREN;
+    stop_child(&status_child);
+    stop_child(&ws_child);
 }
 
 /*
  * Sends a SIGCONT to the child process (if existent)
  *
  */
-void cont_child(void) {
-    DLOG_CHILD;
+void cont_children(void) {
+    DLOG_CHILDREN;
 
-    if (child.cont_signal > 0 && child.stopped) {
-        child.stopped = false;
-        killpg(child.pid, child.cont_signal);
-    }
+    cont_child(&status_child);
+    cont_child(&ws_child);
 }
 
 /*
@@ -769,5 +1023,5 @@ void cont_child(void) {
  *
  */
 bool child_want_click_events(void) {
-    return child.click_events;
+    return status_child.click_events;
 }

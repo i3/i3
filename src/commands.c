@@ -844,6 +844,13 @@ out:
     free(buf);
 }
 
+static void disable_global_fullscreen(void) {
+    Con *fs = con_get_fullscreen_con(croot, CF_GLOBAL);
+    if (fs) {
+        con_disable_fullscreen(fs);
+    }
+}
+
 /*
  * Implementation of 'workspace next|prev|next_on_output|prev_on_output'.
  *
@@ -853,10 +860,7 @@ void cmd_workspace(I3_CMD, const char *which) {
 
     DLOG("which=%s\n", which);
 
-    if (con_get_fullscreen_con(croot, CF_GLOBAL)) {
-        yerror("Cannot switch workspace while in global fullscreen");
-        return;
-    }
+    disable_global_fullscreen();
 
     if (strcmp(which, "next") == 0)
         ws = workspace_next();
@@ -885,10 +889,7 @@ void cmd_workspace(I3_CMD, const char *which) {
 void cmd_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_and_forth) {
     const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
 
-    if (con_get_fullscreen_con(croot, CF_GLOBAL)) {
-        yerror("Cannot switch workspace while in global fullscreen");
-        return;
-    }
+    disable_global_fullscreen();
 
     long parsed_num = ws_name_to_number(which);
     if (parsed_num == -1) {
@@ -920,10 +921,7 @@ void cmd_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_a
  *
  */
 void cmd_workspace_back_and_forth(I3_CMD) {
-    if (con_get_fullscreen_con(croot, CF_GLOBAL)) {
-        yerror("Cannot switch workspace while in global fullscreen");
-        return;
-    }
+    disable_global_fullscreen();
 
     workspace_back_and_forth();
 
@@ -944,10 +942,7 @@ void cmd_workspace_name(I3_CMD, const char *name, const char *_no_auto_back_and_
         return;
     }
 
-    if (con_get_fullscreen_con(croot, CF_GLOBAL)) {
-        yerror("Cannot switch workspace while in global fullscreen");
-        return;
-    }
+    disable_global_fullscreen();
 
     DLOG("should switch to workspace %s\n", name);
     if (!no_auto_back_and_forth && maybe_back_and_forth(cmd_output, name)) {
@@ -1459,7 +1454,7 @@ void cmd_focus_level(I3_CMD, const char *level) {
  * Implementation of 'focus'.
  *
  */
-void cmd_focus(I3_CMD) {
+void cmd_focus(I3_CMD, bool focus_workspace) {
     DLOG("current_match = %p\n", current_match);
 
     if (match_is_empty(current_match)) {
@@ -1481,11 +1476,12 @@ void cmd_focus(I3_CMD) {
         Con *ws = con_get_workspace(current->con);
         /* If no workspace could be found, this was a dock window.
          * Just skip it, you cannot focus dock windows. */
-        if (!ws)
+        if (!ws) {
             continue;
+        }
 
         /* In case this is a scratchpad window, call scratchpad_show(). */
-        if (ws == __i3_scratch) {
+        if (ws == __i3_scratch && !focus_workspace) {
             scratchpad_show(current->con);
             /* While for the normal focus case we can change focus multiple
              * times and only a single window ends up focused, we could show
@@ -1493,8 +1489,15 @@ void cmd_focus(I3_CMD) {
             break;
         }
 
-        LOG("focusing %p / %s\n", current->con, current->con->name);
-        con_activate_unblock(current->con);
+        if (focus_workspace) {
+            /* Show the workspace of the matched container, without necessarily
+             * focusing it. */
+            LOG("focusing workspace %p / %s - %p / %s\n", current->con, current->con->name, ws, ws->name);
+            workspace_show(ws);
+        } else {
+            LOG("focusing %p / %s\n", current->con, current->con->name);
+            con_activate_unblock(current->con);
+        }
     }
 
     cmd_output->needs_tree_render = true;

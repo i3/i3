@@ -128,8 +128,11 @@ static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click
     DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
     if (dest == CLICK_DECORATION) {
         return tiling_resize_for_border(con, BORDER_TOP, event, use_threshold);
+    } else if (dest == CLICK_BORDER) {
+        if (event->event_y >= 0 && event->event_y <= (int32_t)bsr.y &&
+            event->event_x >= (int32_t)bsr.x && event->event_x <= (int32_t)(con->rect.width + bsr.width))
+            return tiling_resize_for_border(con, BORDER_TOP, event, false);
     }
-
     if (event->event_x >= 0 && event->event_x <= (int32_t)bsr.x &&
         event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height))
         return tiling_resize_for_border(con, BORDER_LEFT, event, false);
@@ -218,6 +221,9 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
     /* 1: see if the user scrolled on the decoration of a stacked/tabbed con */
     if (in_stacked && dest == CLICK_DECORATION && is_scroll) {
         DLOG("Scrolling on a window decoration\n");
+        /* Correctly move workspace focus first, see: #5472 */
+        workspace_show(ws);
+
         /* Use the focused child of the tabbed / stacked container, not the
          * container the user scrolled on. */
         Con *current = TAILQ_FIRST(&(con->parent->focus_head));
