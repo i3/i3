@@ -241,7 +241,20 @@ static uint32_t predict_statusline_length(void) {
 }
 
 static uint32_t adjust_statusline_length(bool* used_short_text, uint32_t max_length) {
-    return predict_statusline_length();
+    uint32_t width;
+    struct status_block *block;
+
+    TAILQ_FOREACH (block, &statusline_head, blocks) {
+        width = predict_statusline_length();
+        if (width < max_length) {
+            break;
+        } else if (block->short_text != NULL) {
+            block->use_short_text = true;
+            *used_short_text = true;
+        }
+    }
+
+    return width;
 }
 
 /*
