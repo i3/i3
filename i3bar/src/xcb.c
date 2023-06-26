@@ -188,7 +188,7 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
     }
 }
 
-static uint32_t predict_statusline_length(bool* used_short_text) {
+static uint32_t predict_statusline_length(void) {
     uint32_t width = 0;
     struct status_block *block;
 
@@ -238,6 +238,10 @@ static uint32_t predict_statusline_length(bool* used_short_text) {
     }
 
     return width;
+}
+
+static uint32_t adjust_statusline_length(bool* used_short_text, uint32_t max_length) {
+    return predict_statusline_length();
 }
 
 /*
@@ -2055,9 +2059,6 @@ static void draw_button(surface_t *surface, color_t fg_color, color_t bg_color, 
 void draw_bars(bool unhide) {
     DLOG("Drawing bars...\n");
 
-    bool used_short_text;
-    uint32_t statusline_width = predict_statusline_length(&used_short_text);
-
     i3_output *outputs_walk;
     SLIST_FOREACH (outputs_walk, outputs, slist) {
         int workspace_width = logical_px(config.padding.x);
@@ -2132,6 +2133,9 @@ void draw_bars(bool unhide) {
             uint32_t hoff = logical_px(((workspace_width > 0) + (tray_width > 0)) * sb_hoff_px);
             uint32_t max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - hoff;
             uint32_t clip_left = 0;
+
+            bool used_short_text;
+            uint32_t statusline_width = adjust_statusline_length(&used_short_text, max_statusline_width);
 
             if (statusline_width > max_statusline_width) {
                 clip_left = statusline_width - max_statusline_width;
