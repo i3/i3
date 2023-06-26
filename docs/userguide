@@ -202,7 +202,8 @@ Floating windows are always on top of tiling windows.
 Since i3 4.21, it's possible to drag tiling containers using the mouse. The
 drag can be initiated either by dragging the window's titlebar or by pressing
 the <<floating_modifier>> and dragging the container while holding the
-left-click button.
+left-click button. See the <<config_tiling_drag>> option for configuring which
+action triggers the tiling drag.
 
 Once the drag is initiated and the cursor has left the original container, drop
 indicators are created according to the position of the cursor relatively to
@@ -1437,6 +1438,8 @@ bindsym Mod1+F fullscreen toggle
 === Tiling drag
 
 You can configure how to initiate the tiling drag feature (see <<tiling_drag>>).
+
+The default is +modifier+.
 
 *Syntax*:
 --------------------------------
