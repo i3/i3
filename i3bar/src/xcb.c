@@ -2153,6 +2153,12 @@ void draw_bars(bool unhide) {
             uint32_t max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - hoff;
             uint32_t clip_left = 0;
 
+            /* Reset short mode between outputs */
+            struct status_block *block;
+            TAILQ_FOREACH(block, &statusline_head, blocks) {
+                block->use_short = false;
+            }
+
             bool used_short_text;
             uint32_t statusline_width = adjust_statusline_length(&used_short_text, max_statusline_width);
 
