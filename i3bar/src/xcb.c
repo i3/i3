@@ -188,14 +188,14 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
     }
 }
 
-static uint32_t predict_statusline_length(void) {
+static uint32_t predict_statusline_length(bool* use_short_text) {
     uint32_t width = 0;
     struct status_block *block;
 
     TAILQ_FOREACH (block, &statusline_head, blocks) {
         i3String *text = block->full_text;
         struct status_block_render_desc *render = &block->full_render;
-        if (block->use_short_text && block->short_text != NULL) {
+        if (*use_short_text++ && block->short_text != NULL) {
             text = block->short_text;
             render = &block->short_render;
         }
@@ -240,17 +240,16 @@ static uint32_t predict_statusline_length(void) {
     return width;
 }
 
-static uint32_t adjust_statusline_length(bool* used_short_text, uint32_t max_length) {
+static uint32_t adjust_statusline_length(bool* use_short_text, uint32_t max_length) {
     uint32_t width;
     struct status_block *block;
 
     TAILQ_FOREACH (block, &statusline_head, blocks) {
-        width = predict_statusline_length();
+        width = predict_statusline_length(use_short_text);
         if (width < max_length) {
             break;
         } else if (block->short_text != NULL) {
-            block->use_short_text = true;
-            *used_short_text = true;
+            *use_short_text++ = true;
         }
     }
 
@@ -275,10 +274,11 @@ static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focu
     uint32_t x = 0 - clip_left;
 
     /* Draw the text of each block */
+    bool* use_short_text = output->statusline_short_text;
     TAILQ_FOREACH (block, &statusline_head, blocks) {
         i3String *text = block->full_text;
         struct status_block_render_desc *render = &block->full_render;
-        if (block->use_short_text && block->short_text != NULL) {
+        if (*use_short_text++ && block->short_text != NULL) {
             text = block->short_text;
             render = &block->short_render;
         }
@@ -480,10 +480,11 @@ static void child_handle_button(xcb_button_press_event_t *event, i3_output *outp
     /* x of the start of the current block relative to the statusline. */
     uint32_t last_block_x = 0;
     struct status_block *block;
+    bool* use_short_text = output->statusline_short_text;
     TAILQ_FOREACH (block, &statusline_head, blocks) {
         i3String *text;
         struct status_block_render_desc *render;
-        if (output->statusline_short_text && block->short_text != NULL) {
+        if (*use_short_text++ && block->short_text != NULL) {
             text = block->short_text;
             render = &block->short_render;
         } else {
@@ -2147,8 +2148,12 @@ void draw_bars(bool unhide) {
             uint32_t max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - hoff;
             uint32_t clip_left = 0;
 
-            bool used_short_text;
-            uint32_t statusline_width = adjust_statusline_length(&used_short_text, max_statusline_width);
+            extern size_t block_count;
+            if (outputs_walk->block_count < block_count) {
+                outputs_walk->statusline_short_text = srealloc(outputs_walk->statusline_short_text, block_count * sizeof(bool));
+                outputs_walk->block_count = block_count;
+            }
+            uint32_t statusline_width = adjust_statusline_length(outputs_walk->statusline_short_text, max_statusline_width);
 
             if (statusline_width > max_statusline_width) {
                 clip_left = statusline_width - max_statusline_width;
@@ -2163,7 +2168,6 @@ void draw_bars(bool unhide) {
                                    x_dest, 0, visible_statusline_width, (int16_t)bar_height);
 
             outputs_walk->statusline_width = statusline_width;
-            outputs_walk->statusline_short_text = used_short_text;
         }
     }
 
