@@ -370,6 +370,7 @@ static int stdin_end_map(void *context) {
 
     i3string_set_markup(new_block->full_text, new_block->pango_markup);
 
+    new_block->use_short = false;
     if (new_block->short_text != NULL) {
         i3string_set_markup(new_block->short_text, new_block->pango_markup);
     }
@@ -380,7 +381,7 @@ static int stdin_end_map(void *context) {
         TAILQ_INSERT_HEAD(&statusline_sorted, new_block, blocks);
     } else {
         struct status_block *block;
-        TAILQ_FOREACH(block, &statusline_sorted, blocks) {
+        TAILQ_FOREACH (block, &statusline_sorted, blocks) {
             if (new_block->length_priority > TAILQ_NEXT(block, blocks)->length_priority) {
                 TAILQ_INSERT_AFTER(&statusline_sorted, block, new_block, blocks);
                 break;

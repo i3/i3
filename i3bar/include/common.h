@@ -47,6 +47,7 @@ struct status_block {
     i3String *short_text;
 
     uint32_t length_priority;
+    bool use_short;
 
     char *color;
     char *background;
