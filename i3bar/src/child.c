@@ -8,6 +8,7 @@
  *
  */
 #include "common.h"
+#include "queue.h"
 #include "yajl_utils.h"
 
 #include <ctype.h> /* isspace */
@@ -78,6 +79,8 @@ struct statusline_head statusline_head = TAILQ_HEAD_INITIALIZER(statusline_head)
 /* Used temporarily while reading a statusline */
 struct statusline_head statusline_buffer = TAILQ_HEAD_INITIALIZER(statusline_buffer);
 size_t block_count;
+/* Blocks sorted by length priority */
+struct statusline_head statusline_sorted = TAILQ_HEAD_INITIALIZER(statusline_sorted);
 
 int child_stdin;
 
@@ -188,6 +191,7 @@ static int stdin_start_array(void *context) {
     // the blocks are still used by statusline_head, so we won't free the
     // resources here.
     clear_statusline(&statusline_buffer, false);
+    clear_statusline(&statusline_sorted, false);
     return 1;
 }
 
@@ -371,6 +375,18 @@ static int stdin_end_map(void *context) {
     }
 
     TAILQ_INSERT_TAIL(&statusline_buffer, new_block, blocks);
+
+    if (new_block->length_priority > TAILQ_FIRST(&statusline_sorted)->length_priority) {
+        TAILQ_INSERT_HEAD(&statusline_sorted, new_block, blocks);
+    } else {
+        struct status_block *block;
+        TAILQ_FOREACH(block, &statusline_sorted, blocks) {
+            if (new_block->length_priority > TAILQ_NEXT(block, blocks)->length_priority) {
+                TAILQ_INSERT_AFTER(&statusline_sorted, block, new_block, blocks);
+                break;
+            }
+        }
+    }
     return 1;
 }
 

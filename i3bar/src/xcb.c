@@ -244,7 +244,7 @@ static uint32_t adjust_statusline_length(bool* use_short_text, uint32_t max_leng
     uint32_t width;
     struct status_block *block;
 
-    TAILQ_FOREACH (block, &statusline_head, blocks) {
+    TAILQ_FOREACH (block, &statusline_sorted, blocks) {
         width = predict_statusline_length(use_short_text);
         if (width < max_length) {
             break;
