@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -211,6 +212,9 @@ static int stdin_start_map(void *context) {
     ctx->block.border_bottom = 1;
     ctx->block.border_left = 1;
 
+    /* By default, no block takes priority for short mode */
+    ctx->block.length_priority = 0;
+
     return 1;
 }
 
@@ -326,6 +330,10 @@ static int stdin_integer(void *context, long long val) {
     }
     if (strcasecmp(ctx->last_map_key, "border_left") == 0) {
         ctx->block.border_left = (uint32_t)val;
+        return 1;
+    }
+    if (strcasecmp(ctx->last_map_key, "length_priority") == 0) {
+        ctx->block.length_priority = (uint32_t)val;
         return 1;
     }
 
