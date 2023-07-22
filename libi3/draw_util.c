@@ -58,6 +58,8 @@ static xcb_gcontext_t get_gc(xcb_connection_t *conn, uint8_t depth, xcb_drawable
     }
 
     xcb_gcontext_t gc = xcb_generate_id(conn);
+    /* The drawable is only used to get the root and depth, thus the GC is not
+     * tied to the drawable and it can be re-used with different drawables. */
     xcb_void_cookie_t gc_cookie = xcb_create_gc_checked(conn, gc, drawable, 0, NULL);
 
     xcb_generic_error_t *error = xcb_request_check(conn, gc_cookie);
@@ -131,10 +133,6 @@ void draw_util_surface_free(xcb_connection_t *conn, surface_t *surface) {
     }
 
     if (surface->owns_gc) {
-        /* NOTE: This function is also called on uninitialised surface_t instances.
-         * The x11 error from xcb_free_gc(conn, XCB_NONE) is silently ignored
-         * elsewhere.
-         */
         xcb_free_gc(conn, surface->gc);
     }
     cairo_surface_destroy(surface->surface);
