@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# This script tries to start i3 via the i3-session systemd unit if it is loaded
+# and systemd is running, otherwise falls back to execing i3 directly.
+
+# Check if the i3-session systemd unit is loaded.
+UNIT_LOAD_STATE=$(systemctl show i3-session.service -P LoadState)
+if [[ $? != 0 || "${UNIT_LOAD_STATE}" != "loaded" ]]; then
+  # The unit is not loaded, or systemctl failed, so just start i3 normally.
+  exec i3
+fi
+
+# Start the i3 systemd session.
+systemctl start --user --wait i3-session.service

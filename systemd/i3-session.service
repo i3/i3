@@ -1,0 +1,11 @@
+[Unit]
+Description=i3 Session
+
+Requires=graphical-session-pre.target
+After=graphical-session-pre.target
+BindsTo=graphical-session.target
+Before=graphical-session.target
+
+[Service]
+Type=exec
+ExecStart=i3
