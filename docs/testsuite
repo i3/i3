@@ -36,8 +36,8 @@ that, but it will also be useful for every future change.
 
 Apart from this document, you should also have a look at:
 
-1. The "Modern Perl" book, which can be found at
-   http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+1. The "Modern Perl" book:
+   https://i3wm.org/downloads/modern_perl_a4.pdf
 2. The latest Perl documentation of the "i3test" (general testcase setup) and
    "i3test::Test" (additional test instructions) modules:
    https://build.i3wm.org/docs/lib-i3test.html respectively

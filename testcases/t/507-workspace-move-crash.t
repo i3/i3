@@ -11,7 +11,7 @@
 # • https://build.i3wm.org/docs/ipc.html
 #   (or docs/ipc)
 #
-# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+# • https://i3wm.org/downloads/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
 # Tests whether i3 crashes on cross-output moves with one workspace per output.
