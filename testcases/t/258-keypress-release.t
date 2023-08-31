@@ -11,7 +11,7 @@
 # • https://build.i3wm.org/docs/ipc.html
 #   (or docs/ipc)
 #
-# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+# • https://i3wm.org/downloads/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
 # Verifies that --release key bindings are not shadowed by non-release key

@@ -8,7 +8,7 @@
 # • https://build.i3wm.org/docs/lib-i3test.html
 #   (alternatively: perldoc ./testcases/lib/i3test.pm)
 #
-# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+# • https://i3wm.org/downloads/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 
 use i3test i3_config => <<EOT;
