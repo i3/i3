@@ -80,6 +80,7 @@ void match_copy(Match *dest, Match *src) {
     DUPLICATE_REGEX(instance);
     DUPLICATE_REGEX(window_role);
     DUPLICATE_REGEX(workspace);
+    DUPLICATE_REGEX(machine);
 }
 
 /*
