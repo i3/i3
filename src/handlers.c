@@ -422,6 +422,7 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
         } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(workspace))) {
             DLOG("Marking con = %p urgent\n", con);
             con_set_urgency(con, true);
+            con = remanage_window(con);
             tree_render();
         } else {
             DLOG("Ignoring request for con = %p.\n", con);
@@ -691,12 +692,16 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             }
         } else if (event->data.data32[1] == A__NET_WM_STATE_DEMANDS_ATTENTION) {
             /* Check if the urgent flag must be set or not */
-            if (event->data.data32[0] == _NET_WM_STATE_ADD)
+            if (event->data.data32[0] == _NET_WM_STATE_ADD) {
                 con_set_urgency(con, true);
-            else if (event->data.data32[0] == _NET_WM_STATE_REMOVE)
+                con = remanage_window(con);
+            } else if (event->data.data32[0] == _NET_WM_STATE_REMOVE) {
                 con_set_urgency(con, false);
-            else if (event->data.data32[0] == _NET_WM_STATE_TOGGLE)
+                con = remanage_window(con);
+            } else if (event->data.data32[0] == _NET_WM_STATE_TOGGLE) {
                 con_set_urgency(con, !con->urgent);
+                con = remanage_window(con);
+            }
         } else if (event->data.data32[1] == A__NET_WM_STATE_STICKY) {
             DLOG("Received a client message to modify _NET_WM_STATE_STICKY.\n");
             if (event->data.data32[0] == _NET_WM_STATE_ADD)
@@ -763,6 +768,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             } else if (config.focus_on_window_activation == FOWA_URGENT || (config.focus_on_window_activation == FOWA_SMART && !workspace_is_visible(ws))) {
                 DLOG("Marking con = %p urgent\n", con);
                 con_set_urgency(con, true);
+                con = remanage_window(con);
             } else
                 DLOG("Ignoring request for con = %p.\n", con);
         }
@@ -982,6 +988,7 @@ static bool handle_hints(Con *con, xcb_get_property_reply_t *reply) {
     bool urgency_hint;
     window_update_hints(con->window, reply, &urgency_hint);
     con_set_urgency(con, urgency_hint);
+    remanage_window(con);
     tree_render();
     return true;
 }
