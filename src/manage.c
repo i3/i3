@@ -371,10 +371,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     }
 
     DLOG("new container = %p\n", nc);
+    bool swallowed_by_placeholder = false;
     if (nc->window != NULL && nc->window != cwindow) {
         if (!restore_kill_placeholder(nc->window->id)) {
             DLOG("Uh?! Container without a placeholder, but with a window, has swallowed this to-be-managed window?!\n");
         } else {
+            swallowed_by_placeholder = true;
             /* Remove remaining criteria, the first swallowed window wins. */
             _remove_matches(nc);
         }
@@ -518,7 +520,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         }
     }
 
-    if (has_mwm_hints) {
+    if (has_mwm_hints && !swallowed_by_placeholder) {
         DLOG("MOTIF_WM_HINTS specifies decorations (border_style = %d)\n", motif_border_style);
         if (want_floating) {
             con_set_border_style(nc, motif_border_style, config.default_floating_border_width);
