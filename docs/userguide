@@ -2201,6 +2201,10 @@ bindsym $mod+x [class="(?i)firefox"] kill
 # kill only the About dialog from Firefox
 bindsym $mod+x [class="Firefox" window_role="About"] kill
 
+# kill all windows except for Firefox and Gnome Terminal.
+# case-insensitive and uses negative lookaheads, supported by PCRE
+bindsym $mod+x [class="^(?i)(?!firefox)(?!gnome-terminal).*"] kill
+
 # enable floating mode and move container to workspace 4
 for_window [class="^evil-app$"] floating enable, move container to workspace 4
 
