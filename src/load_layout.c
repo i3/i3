@@ -40,7 +40,7 @@ static int num_marks;
 struct pending_marks {
     char *mark;
     Con *con_to_be_marked;
-} * marks;
+} *marks;
 
 /* This list is used for reordering the focus stack after parsing the 'focus'
  * array. */
