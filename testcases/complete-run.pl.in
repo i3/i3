@@ -203,7 +203,7 @@ for my $display (@displays) {
 # Read previous timing information, if available. We will be able to roughly
 # predict the test duration and schedule a good order for the tests.
 my $timingsjson = slurp('.last_run_timings.json') if -e '.last_run_timings.json';
-%timings = %{decode_json($timingsjson)} if length($timingsjson) > 0;
+%timings = %{decode_json($timingsjson)} if length($timingsjson // '') > 0;
 
 # Re-order the files so that those which took the longest time in the previous
 # run will be started at the beginning to not delay the whole run longer than

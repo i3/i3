@@ -26,7 +26,8 @@ bar {
   # no font directive here, no i3-wide font configured (yet)
 }
 
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+# NOTE: iso99887 is invalid font specification, so it should always fallback
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso99887-9
 EOT
 
 my $i3 = i3(get_socket_path(0));
@@ -35,11 +36,7 @@ my $bars = $i3->get_bar_config()->recv;
 my $bar_id = shift @$bars;
 my $bar_config = $i3->get_bar_config($bar_id)->recv;
 
-# This should either load the font specified, or fallback to 'fixed'
-my %valid_fonts = map {; $_ => 1 } qw(
-    -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-    fixed
-);
-is($valid_fonts{ $bar_config->{font} }, 1, 'font ok');
+# This should fallback to 'fixed' due to nonexistent font set in config
+is($bar_config->{font}, 'fixed', 'font fallback ok');
 
 done_testing;
