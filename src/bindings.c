@@ -126,9 +126,9 @@ static bool binding_in_current_group(const Binding *bind) {
 
 static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint32_t keycode) {
     /* Grab the key in all combinations */
-#define GRAB_KEY(modifier)                                                                       \
-    do {                                                                                         \
-        xcb_grab_key(conn, 0, root, modifier, keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC); \
+#define GRAB_KEY(modifier)                                                                        \
+    do {                                                                                          \
+        xcb_grab_key(conn, 0, root, modifier, keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC); \
     } while (0)
     const int mods = (bind->event_state_mask & 0xFFFF);
     DLOG("Binding %p Grabbing keycode %d with event state mask 0x%x (mods 0x%x)\n",
@@ -166,7 +166,7 @@ void grab_all_keys(xcb_connection_t *conn) {
             const int keycode = binding_keycode->keycode;
             const int mods = (binding_keycode->modifiers & 0xFFFF);
             DLOG("Binding %p Grabbing keycode %d with mods %d\n", bind, keycode, mods);
-            xcb_grab_key(conn, 0, root, mods, keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+            xcb_grab_key(conn, 0, root, mods, keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
         }
     }
 }
