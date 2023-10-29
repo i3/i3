@@ -86,7 +86,7 @@ name (string)::
     the +name+ as you wish, effectively renaming the buttons of i3bar.
 visible (boolean)::
     Defaults to +false+ if not included. +focused+ takes precedence over it,
-    however +visible+ is important for more than one monitors.
+    however +visible+ is important for more than one monitor.
 focused (boolean)::
     Defaults to +false+ if not included. Generally, exactly one of the
     workspaces should be +focused+. If not, no button will have the
