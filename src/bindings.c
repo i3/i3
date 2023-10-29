@@ -631,6 +631,7 @@ void switch_mode(const char *new_mode) {
         current_binding_mode = mode->name;
         translate_keysyms();
         grab_all_keys(conn);
+        regrab_all_buttons(conn);
 
         /* Reset all B_UPON_KEYRELEASE_IGNORE_MODS bindings to avoid possibly
          * activating one of them. */
@@ -845,7 +846,7 @@ CommandResult *run_binding(Binding *bind, Con *con) {
     Binding *bind_cp = binding_copy(bind);
     /* The "mode" command might change the current mode, so back it up to
      * correctly produce an event later. */
-    const char *modename = current_binding_mode;
+    char *modename = sstrdup(current_binding_mode);
 
     CommandResult *result = parse_command(command, NULL, NULL);
     free(command);
@@ -873,6 +874,7 @@ CommandResult *run_binding(Binding *bind, Con *con) {
     }
 
     ipc_send_binding_event("run", bind_cp, modename);
+    FREE(modename);
     binding_free(bind_cp);
 
     return result;
@@ -1007,7 +1009,7 @@ bool load_keymap(void) {
 int *bindings_get_buttons_to_grab(void) {
     /* Let's make the reasonable assumption that there's no more than 25
      * buttons. */
-    int num_max = 25;
+    const int num_max = 25;
 
     int buffer[num_max];
     int num = 0;
@@ -1033,12 +1035,17 @@ int *bindings_get_buttons_to_grab(void) {
         }
 
         /* Avoid duplicates. */
+        bool exists = false;
         for (int i = 0; i < num; i++) {
-            if (buffer[i] == button)
-                continue;
+            if (buffer[i] == button) {
+                exists = true;
+                break;
+            }
         }
 
-        buffer[num++] = button;
+        if (!exists) {
+            buffer[num++] = button;
+        }
     }
     buffer[num++] = 0;
 

@@ -11,7 +11,7 @@
 # • https://build.i3wm.org/docs/ipc.html
 #   (or docs/ipc)
 #
-# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+# • https://i3wm.org/downloads/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
 # Verifies that bar config blocks get the i3-wide font configured,
@@ -34,6 +34,12 @@ my $bars = $i3->get_bar_config()->recv;
 
 my $bar_id = shift @$bars;
 my $bar_config = $i3->get_bar_config($bar_id)->recv;
-is($bar_config->{font}, 'fixed', 'font ok');
+
+# This should either load the font specified, or fallback to 'fixed'
+my %valid_fonts = map {; $_ => 1 } qw(
+    -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+    fixed
+);
+is($valid_fonts{ $bar_config->{font} }, 1, 'font ok');
 
 done_testing;

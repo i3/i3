@@ -572,6 +572,7 @@ typedef struct surface_t {
 
     /* A classic XCB graphics context. */
     xcb_gcontext_t gc;
+    bool owns_gc;
 
     int width;
     int height;
@@ -686,3 +687,9 @@ bool is_background_set(xcb_connection_t *conn, xcb_screen_t *screen);
  *
  */
 bool boolstr(const char *str);
+
+/**
+ * Get depth of visual specified by visualid
+ *
+ */
+uint16_t get_visual_depth(xcb_visualid_t visual_id);

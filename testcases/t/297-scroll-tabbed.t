@@ -11,15 +11,17 @@
 # • https://build.i3wm.org/docs/ipc.html
 #   (or docs/ipc)
 #
-# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+# • https://i3wm.org/downloads/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
 # Tests if scrolling the tab bar on a tabbed container works and verifies that
 # only one window is focused as a result.
 # Ticket: #3215 (PR)
 # Bug still in: 4.15-92-g666aa9e0
-use i3test;
+use i3test i3_autostart => 0;
 use i3test::XTEST;
+
+my $pid = launch_with_config('-default');
 
 sub scroll_down {
     # button5 = scroll down
@@ -80,5 +82,40 @@ is($x->input_focus, $first->id, 'Scrolling again doesn\'t focus the whole siblin
 cmd '[id=' . $outside->id . '] focus';
 scroll_up;
 is($x->input_focus, $first->id, 'Scrolling from outside the tabbed container works');
+
+exit_gracefully($pid);
+
+###############################################################################
+# Test that focus changes workspace correctly with 'focus_follows_mouse no'
+# See issue #5472.
+###############################################################################
+$pid = launch_with_config(<<EOT
+# i3 config file (v4)
+font font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+focus_follows_mouse no
+fake-outputs 1024x768+0+0,1024x768+1024+0
+EOT
+);
+
+my $ws1 = fresh_workspace(output => 0);
+$first = open_window;
+cmd 'layout tabbed';
+is($x->input_focus, $first->id, 'sanity check: window focused');
+open_window;
+
+my $ws2 = fresh_workspace(output => 1);
+ok(get_ws($ws2)->{focused}, 'sanity check: second workspace focused');
+
+# Decoration of top left window.
+$x->root->warp_pointer(3, 3);
+
+my @events = events_for( sub { scroll_up }, 'workspace');
+is($x->input_focus, $first->id, 'window focused');
+is(scalar @events, 1, 'Received 1 workspace event');
+is($events[0]->{change}, 'focus', 'Event has change = focus');
+is($events[0]->{current}->{name}, $ws1, 'new == ws1');
+is($events[0]->{old}->{name}, $ws2, 'old == ws2');
+
+exit_gracefully($pid);
 
 done_testing;

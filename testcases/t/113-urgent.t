@@ -11,7 +11,7 @@
 # • https://build.i3wm.org/docs/ipc.html
 #   (or docs/ipc)
 #
-# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+# • https://i3wm.org/downloads/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 
 use i3test i3_autostart => 0;
@@ -49,6 +49,8 @@ sub set_urgency {
 my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+for_window [urgent=latest class=special] focus
 
 force_display_urgency_hint 0ms
 EOT
@@ -359,6 +361,19 @@ for ($type = 1; $type <= 2; $type++) {
     @content = @{get_ws_content($tmp)};
     $win1_info = first { $_->{window} == $win1->id } @content;
     ok(!$win1_info->{urgent}, 'win1 window is not marked urgent after focusing');
+
+##############################################################################
+# 
+##############################################################################
+    $tmp = fresh_workspace;
+    $win1 = open_window(wm_class => 'special');
+    $win2 = open_window;
+    is($x->input_focus, $win2->id, 'second window has focus');
+
+    cmd 'nop hello';
+    set_urgency($win1, 1, $type);
+    sync_with_i3;
+    is($x->input_focus, $win1->id, 'first window got focus');
 
 ##############################################################################
 

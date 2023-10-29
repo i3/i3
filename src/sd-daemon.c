@@ -340,6 +340,11 @@ int sd_notify(int unset_environment, const char *state) {
         goto finish;
     }
 
+    if (strlen(e) > sizeof(sockaddr.un.sun_path)) {
+        r = -EINVAL;
+        goto finish;
+    }
+
     if ((fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0)) < 0) {
         r = -errno;
         goto finish;
@@ -347,7 +352,7 @@ int sd_notify(int unset_environment, const char *state) {
 
     memset(&sockaddr, 0, sizeof(sockaddr));
     sockaddr.sa.sa_family = AF_UNIX;
-    strncpy(sockaddr.un.sun_path, e, sizeof(sockaddr.un.sun_path));
+    strncpy(sockaddr.un.sun_path, e, sizeof(sockaddr.un.sun_path) - 1);
 
     if (sockaddr.un.sun_path[0] == '@')
         sockaddr.un.sun_path[0] = 0;

@@ -11,17 +11,19 @@
 # • https://build.i3wm.org/docs/ipc.html
 #   (or docs/ipc)
 #
-# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+# • https://i3wm.org/downloads/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
 # Test that setting and unsetting motif hints updates window decorations
 # accordingly, respecting user configuration.
 # Ticket: #3678
 # Ticket: #5149
+# Ticket: #5438
 # Bug still in: 4.21
+use File::Temp qw(tempfile);
 use List::Util qw(first);
-use i3test i3_autostart => 0;
 use X11::XCB qw(:all);
+use i3test i3_autostart => 0;
 
 my $use_floating;
 sub subtest_with_config {
@@ -71,10 +73,12 @@ sub _change_motif_property {
 }
 
 sub open_window_with_motifs {
-    my $value = shift;
+    my ($value, %args) = @_;
+
+    $args{kill_all} //= 1;
 
     # we don't need other windows anymore, simplifies get_border_style
-    kill_all_windows;
+    kill_all_windows if $args{kill_all};
 
     my $open = \&open_window;
     if ($use_floating) {
@@ -82,6 +86,7 @@ sub open_window_with_motifs {
     }
 
     my $window = $open->(
+        %args,
         before_map => sub {
             my ($window) = @_;
             _change_motif_property($window, $value);
@@ -117,7 +122,7 @@ sub is_border_style {
     }
 
     local $Test::Builder::Level = $Test::Builder::Level + 1;
-    is(get_border_style($window), $expected, $msg);
+    is(get_border_style, $expected, $msg);
 }
 
 ###############################################################################
@@ -201,5 +206,45 @@ is_border_style('none');
 change_motif_property(1);
 is_border_style('pixel', 'because of user maximum=pixel');
 };
+
+###############################################################################
+# Test with append_layout
+# See #5438
+###############################################################################
+
+$use_floating = 0;
+
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+EOT
+my $pid = launch_with_config($config);
+
+my ($fh, $filename) = tempfile(UNLINK => 1);
+print $fh <<'EOT';
+{
+	"nodes": [
+		{
+			"border": "none",
+			"swallows": [
+				{
+					"class": "^Special$"
+				}
+			],
+			"type": "con"
+		}
+	],
+	"type": "con"
+}
+EOT
+$fh->flush;
+cmd "append_layout $filename";
+
+# can't use get_border_style because append_layout creates a parent container
+is(@{get_ws(focused_ws)->{nodes}}[0]->{nodes}[0]->{border}, 'none', 'placeholder has border style none');
+
+$window = open_window_with_motifs(1, wm_class => 'Special', instance => 'Special', kill_all => 0);
+is(@{get_ws(focused_ws)->{nodes}}[0]->{nodes}[0]->{border}, 'none', 'window has border style none');
 
 done_testing;

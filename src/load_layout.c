@@ -40,7 +40,7 @@ static int num_marks;
 struct pending_marks {
     char *mark;
     Con *con_to_be_marked;
-} * marks;
+} *marks;
 
 /* This list is used for reordering the focus stack after parsing the 'focus'
  * array. */
@@ -351,17 +351,18 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         } else if (strcasecmp(last_key, "border") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "none") == 0)
-                json_node->border_style = BS_NONE;
-            else if (strcasecmp(buf, "1pixel") == 0) {
-                json_node->border_style = BS_PIXEL;
+            if (strcasecmp(buf, "none") == 0) {
+                json_node->max_user_border_style = json_node->border_style = BS_NONE;
+            } else if (strcasecmp(buf, "1pixel") == 0) {
+                json_node->max_user_border_style = json_node->border_style = BS_PIXEL;
                 json_node->current_border_width = 1;
-            } else if (strcasecmp(buf, "pixel") == 0)
-                json_node->border_style = BS_PIXEL;
-            else if (strcasecmp(buf, "normal") == 0)
-                json_node->border_style = BS_NORMAL;
-            else
+            } else if (strcasecmp(buf, "pixel") == 0) {
+                json_node->max_user_border_style = json_node->border_style = BS_PIXEL;
+            } else if (strcasecmp(buf, "normal") == 0) {
+                json_node->max_user_border_style = json_node->border_style = BS_NORMAL;
+            } else {
                 LOG("Unhandled \"border\": %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "type") == 0) {
             char *buf = NULL;

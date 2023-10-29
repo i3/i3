@@ -6,17 +6,17 @@
 project(
   'i3',
   'c',
-  version: '4.22',
+  version: '4.23',
   default_options: [
     'c_std=c11',
     'warning_level=1',  # enable all warnings (-Wall)
     # TODO(https://github.com/i3/i3/issues/4087): switch to
     # 'buildtype=debugoptimized',
   ],
-  # Ubuntu 18.04 (supported until 2023) has meson 0.45.
+  # Ubuntu 20.04 (supported until 2025) has meson 0.53.
   # We can revisit our minimum supported meson version
   # if it turns out to be too hard to maintain.
-  meson_version: '>=0.45.0',
+  meson_version: '>=0.47.0',
 )
 
 cc = meson.get_compiler('c')
@@ -86,6 +86,7 @@ if get_option('docs')
     'docs/wsbar',
     'docs/testsuite',
     'docs/i3bar-protocol',
+    'docs/i3bar-workspace-protocol',
     'docs/layout-saving',
   ]
   foreach m : doc_toc_inputs
@@ -125,7 +126,7 @@ if get_option('docs')
   endforeach
 
 else
-  if run_command('[', '-f', 'docs/hacking-howto.html', ']').returncode() == 0
+  if run_command('[', '-f', 'docs/hacking-howto.html', ']', check: false).returncode() == 0
     install_data(
       [
 	'docs/hacking-howto.html',
@@ -135,6 +136,7 @@ else
 	'docs/wsbar.html',
 	'docs/testsuite.html',
 	'docs/i3bar-protocol.html',
+	'docs/i3bar-workspace-protocol.html',
 	'docs/layout-saving.html',
 	'docs/debugging.html',
       ],
@@ -269,7 +271,7 @@ if get_option('mans')
   endforeach
 
 else
-  if run_command('[', '-f', 'man/i3.1', ']').returncode() == 0
+  if run_command('[', '-f', 'man/i3.1', ']', check: false).returncode() == 0
     install_data(
       [
 	'man/i3.1',

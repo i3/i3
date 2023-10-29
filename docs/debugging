@@ -147,16 +147,17 @@ After pressing "b" in the crash dialog, you will get a file called
 id (PID) and the second one is incremented each time you generate a backtrace,
 starting at 0.
 
-== Sending bug reports/debugging on IRC
+In Linux, if the backtrace just says +No stack.+, that's because gdb does not
+have necessary permissions to attach to a running process. You can fix that by
+running from a terminal (you can open a new tty, e.g. with ctrl-alt-F2):
 
-When sending bug reports, please attach the *whole* log file. Even if you think
-you found the section which clearly highlights the problem, additional
-information might be necessary to completely diagnose the problem.
+---------------------------------------------------------------------
+echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+---------------------------------------------------------------------
 
-When debugging with us in IRC, be prepared to use a so-called nopaste service
-such as https://pastebin.com because pasting large amounts of text in IRC
-sometimes leads to incomplete lines (servers have line length limitations) or
-flood kicks.
+Afterwards, try re-generating the stack trace. Note that this setting re-sets
+after reboot, see more info at
+https://www.kernel.org/doc/Documentation/security/Yama.txt.
 
 == Debugging i3bar
 
