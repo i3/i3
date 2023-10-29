@@ -1,3 +1,9 @@
+i3-wm (4.23-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Sun, 29 Oct 2023 15:42:11 +0100
+
 i3-wm (4.22-1) unstable; urgency=medium
 
   * New upstream release.
