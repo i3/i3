@@ -1493,7 +1493,7 @@ void cmd_focus(I3_CMD, bool focus_workspace) {
             /* Show the workspace of the matched container, without necessarily
              * focusing it. */
             LOG("focusing workspace %p / %s - %p / %s\n", current->con, current->con->name, ws, ws->name);
-            workspace_show(ws);
+            workspace_show(maybe_auto_back_and_forth_workspace(ws));
         } else {
             LOG("focusing %p / %s\n", current->con, current->con->name);
             con_activate_unblock(current->con);
