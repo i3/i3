@@ -512,8 +512,8 @@ your bindings in the same physical location on the keyboard, use keycodes.
 If you don’t switch layouts, and want a clean and simple config file, use
 keysyms.
 
-Some tools (such as +import+ or +xdotool+) might be unable to run upon a
-KeyPress event, because the keyboard/pointer is still grabbed. For these
+Some tools (such as +xdotool+) might be unable to run upon a
+KeyPress event, because the keyboard is still grabbed. For these
 situations, the +--release+ flag can be used, which will execute the command
 after the keys have been released.
 
