@@ -160,6 +160,7 @@ Con *workspace_get(const char *num) {
     workspace->workspace_layout = config.default_layout;
     workspace->num = parsed_num;
     workspace->type = CT_WORKSPACE;
+    workspace->smart_gaps = smart_gaps_for_workspace(workspace);
     workspace->gaps = gaps_for_workspace(workspace);
 
     con_attach(workspace, output_get_content(output), false);
@@ -294,6 +295,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
     x_set_name(ws, name);
     free(name);
 
+    ws->smart_gaps = smart_gaps_for_workspace(ws);
     ws->gaps = gaps_for_workspace(ws);
 
     ws->fullscreen_mode = CF_OUTPUT;

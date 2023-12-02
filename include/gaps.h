@@ -34,6 +34,12 @@ bool gaps_has_adjacent_container(Con *con, direction_t direction);
 gaps_t gaps_for_workspace(Con *ws);
 
 /**
+ * Returns the configured smart_gaps for this workspace based on the workspace name,
+ * number, and configured workspace gap assignments.
+ */
+smart_gaps_t smart_gaps_for_workspace(Con *ws);
+
+/**
  * Re-applies all workspace gap assignments to existing workspaces after
  * reloading the configuration file.
  *

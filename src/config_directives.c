@@ -320,11 +320,38 @@ CFGFUN(smart_borders, const char *enable) {
         config.smart_borders = boolstr(enable) ? SMART_BORDERS_ON : SMART_BORDERS_OFF;
 }
 
-CFGFUN(smart_gaps, const char *enable) {
+static smart_gaps_t smart_gaps_enable_to_type(const char *enable) {
     if (!strcmp(enable, "inverse_outer"))
-        config.smart_gaps = SMART_GAPS_INVERSE_OUTER;
+        return SMART_GAPS_INVERSE_OUTER;
     else
-        config.smart_gaps = boolstr(enable) ? SMART_GAPS_ON : SMART_GAPS_OFF;
+        return boolstr(enable) ? SMART_GAPS_ON : SMART_GAPS_OFF;
+}
+
+CFGFUN(smart_gaps, const char *enable) {
+    config.smart_gaps = smart_gaps_enable_to_type(enable);
+}
+
+CFGFUN(smart_gaps_by_workspace, const char *workspace, const char *enable) {
+    DLOG("Setting smart_gaps for workspace %s with %s...", workspace, enable);
+
+    bool found = false;
+    struct Workspace_Assignment *assignment;
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+        if (strcasecmp(assignment->name, workspace) == 0) {
+            found = true;
+            break;
+        }
+    }
+
+    /* Assignment does not yet exist, let's create it. */
+    if (!found) {
+        assignment = scalloc(1, sizeof(struct Workspace_Assignment));
+        assignment->name = sstrdup(workspace);
+        assignment->output = NULL;
+        TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
+    }
+
+    assignment->smart_gaps = smart_gaps_enable_to_type(enable);
 }
 
 CFGFUN(floating_minimum_size, const long width, const long height) {

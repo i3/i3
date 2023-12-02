@@ -22,8 +22,9 @@ gaps_t calculate_effective_gaps(Con *con) {
                      (con_num_children(workspace) == 1 &&
                       (TAILQ_FIRST(&(workspace->nodes_head))->layout == L_TABBED ||
                        TAILQ_FIRST(&(workspace->nodes_head))->layout == L_STACKED));
+    smart_gaps_t smart_gaps = workspace->smart_gaps ? workspace->smart_gaps : config.smart_gaps;
 
-    if (config.smart_gaps == SMART_GAPS_ON && one_child)
+    if (smart_gaps == SMART_GAPS_ON && one_child)
         return (gaps_t){0, 0, 0, 0, 0};
 
     gaps_t gaps = {
@@ -33,7 +34,7 @@ gaps_t calculate_effective_gaps(Con *con) {
         .bottom = 0,
         .left = 0};
 
-    if (config.smart_gaps != SMART_GAPS_INVERSE_OUTER || one_child) {
+    if (smart_gaps != SMART_GAPS_INVERSE_OUTER || one_child) {
         gaps.top = workspace->gaps.top + config.gaps.top;
         gaps.right = workspace->gaps.right + config.gaps.right;
         gaps.bottom = workspace->gaps.bottom + config.gaps.bottom;
@@ -152,6 +153,24 @@ gaps_t gaps_for_workspace(Con *ws) {
     return gaps;
 }
 
+/**
+ * Returns the configured smart_gaps for this workspace based on the workspace name,
+ * number, and configured workspace gap assignments.
+ */
+smart_gaps_t smart_gaps_for_workspace(Con *ws) {
+    smart_gaps_t smart_gaps = 0;
+    struct Workspace_Assignment *assignment;
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
+        if (strcmp(assignment->name, ws->name) == 0) {
+            smart_gaps = assignment->smart_gaps;
+            break;
+        } else if (ws->num != -1 && name_is_digits(assignment->name) && ws_name_to_number(assignment->name) == ws->num) {
+            smart_gaps = assignment->smart_gaps;
+        }
+    }
+    return smart_gaps;
+}
+
 /*
  * Re-applies all workspace gap assignments to existing workspaces after
  * reloading the configuration file.
@@ -164,6 +183,7 @@ void gaps_reapply_workspace_assignments(void) {
         TAILQ_FOREACH (workspace, &(content->nodes_head), nodes) {
             DLOG("updating gap assignments for workspace %s\n", workspace->name);
             workspace->gaps = gaps_for_workspace(workspace);
+            workspace->smart_gaps = smart_gaps_for_workspace(workspace);
         }
     }
 }
