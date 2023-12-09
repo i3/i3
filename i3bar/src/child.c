@@ -78,9 +78,9 @@ parser_ctx parser_context;
 struct statusline_head statusline_head = TAILQ_HEAD_INITIALIZER(statusline_head);
 /* Used temporarily while reading a statusline */
 struct statusline_head statusline_buffer = TAILQ_HEAD_INITIALIZER(statusline_buffer);
-size_t block_count;
+size_t block_count = 0;
 /* Blocks sorted by length priority */
-struct status_block **statusline_sorted;
+struct status_block **statusline_sorted = NULL;
 
 int child_stdin;
 
@@ -191,7 +191,6 @@ static int stdin_start_array(void *context) {
     // the blocks are still used by statusline_head, so we won't free the
     // resources here.
     clear_statusline(&statusline_buffer, false);
-    FREE(statusline_sorted);
     return 1;
 }
 
@@ -391,8 +390,13 @@ int compare_length_priority(const void *a, const void *b) {
 static int stdin_end_array(void *context) {
     DLOG("copying statusline_buffer to statusline_head\n");
     clear_statusline(&statusline_head, true);
-    block_count = copy_statusline(&statusline_buffer, &statusline_head);
-    statusline_sorted = smalloc(block_count * sizeof(struct status_block *));
+    size_t new_count = copy_statusline(&statusline_buffer, &statusline_head);
+    if (statusline_sorted == NULL) {
+        statusline_sorted = smalloc(block_count * sizeof(struct status_block *));
+    } else if (new_count > block_count) {
+        statusline_sorted = srealloc(statusline_sorted, new_count * sizeof(struct status_block *));
+        block_count = new_count;
+    }
 
     DLOG("dumping statusline:\n");
     struct status_block *current;
