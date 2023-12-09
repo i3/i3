@@ -242,20 +242,20 @@ static uint32_t predict_statusline_length(void) {
 
 static uint32_t adjust_statusline_length(bool *used_short_text, uint32_t max_length) {
     uint32_t width = 0;
-    struct status_block *block;
 
     // Switch the blocks to short mode in order of their length priority
-    TAILQ_FOREACH (block, &statusline_sorted, blocks) {
+    size_t idx = 0;
+    for (struct status_block **block = statusline_sorted; idx < block_count; idx++, block++) {
         // If this block has no short form, there is no point in checking if we need to switch;
         // however, we do have to compute the width at least once
-        if (block->short_text == NULL && width > 0) {
+        if ((*block)->short_text == NULL && width > 0) {
             continue;
         }
         width = predict_statusline_length();
         if (width < max_length) {
             break;
         } else {
-            block->use_short = true;
+            (*block)->use_short = true;
             *used_short_text = true;
         }
     }

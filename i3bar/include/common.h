@@ -83,7 +83,9 @@ struct status_block {
     TAILQ_ENTRY(status_block) blocks;
 };
 
-extern TAILQ_HEAD(statusline_head, status_block) statusline_head, statusline_sorted;
+extern TAILQ_HEAD(statusline_head, status_block) statusline_head;
+extern size_t block_count;
+extern struct status_block **statusline_sorted;
 
 #include "child.h"
 #include "ipc.h"

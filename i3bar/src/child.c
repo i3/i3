@@ -80,7 +80,7 @@ struct statusline_head statusline_head = TAILQ_HEAD_INITIALIZER(statusline_head)
 struct statusline_head statusline_buffer = TAILQ_HEAD_INITIALIZER(statusline_buffer);
 size_t block_count;
 /* Blocks sorted by length priority */
-struct statusline_head statusline_sorted = TAILQ_HEAD_INITIALIZER(statusline_sorted);
+struct status_block **statusline_sorted;
 
 int child_stdin;
 
@@ -191,7 +191,7 @@ static int stdin_start_array(void *context) {
     // the blocks are still used by statusline_head, so we won't free the
     // resources here.
     clear_statusline(&statusline_buffer, false);
-    clear_statusline(&statusline_sorted, false);
+    FREE(statusline_sorted);
     return 1;
 }
 
@@ -377,18 +377,11 @@ static int stdin_end_map(void *context) {
 
     TAILQ_INSERT_TAIL(&statusline_buffer, new_block, blocks);
 
-    if (TAILQ_FIRST(&statusline_sorted) == NULL || new_block->length_priority > TAILQ_FIRST(&statusline_sorted)->length_priority) {
-        TAILQ_INSERT_HEAD(&statusline_sorted, new_block, blocks);
-    } else {
-        struct status_block *block;
-        TAILQ_FOREACH (block, &statusline_sorted, blocks) {
-            if (TAILQ_NEXT(block, blocks) == NULL || new_block->length_priority > TAILQ_NEXT(block, blocks)->length_priority) {
-                TAILQ_INSERT_AFTER(&statusline_sorted, block, new_block, blocks);
-                break;
-            }
-        }
-    }
     return 1;
+}
+
+int compare_length_priority(const void *a, const void *b) {
+    return (*(struct status_block **)a)->length_priority - (*(struct status_block **)b)->length_priority;
 }
 
 /*
@@ -399,9 +392,16 @@ static int stdin_end_array(void *context) {
     DLOG("copying statusline_buffer to statusline_head\n");
     clear_statusline(&statusline_head, true);
     block_count = copy_statusline(&statusline_buffer, &statusline_head);
+    statusline_sorted = smalloc(block_count * sizeof(struct status_block *));
 
     DLOG("dumping statusline:\n");
     struct status_block *current;
+    struct status_block **dst = statusline_sorted;
+    TAILQ_FOREACH (current, &statusline_head, blocks) {
+        *dst = current;
+        dst++;
+    }
+    qsort(statusline_sorted, block_count, sizeof(struct status_block *), compare_length_priority);
     TAILQ_FOREACH (current, &statusline_head, blocks) {
         DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
         DLOG("short_text = %s\n", (current->short_text == NULL ? NULL : i3string_as_utf8(current->short_text)));
