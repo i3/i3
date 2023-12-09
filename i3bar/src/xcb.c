@@ -240,15 +240,15 @@ static uint32_t predict_statusline_length(void) {
     return width;
 }
 
-static uint32_t adjust_statusline_length(bool* used_short_text, uint32_t max_length) {
-    uint32_t width = -1;
+static uint32_t adjust_statusline_length(bool *used_short_text, uint32_t max_length) {
+    uint32_t width = 0;
     struct status_block *block;
 
     // Switch the blocks to short mode in order of their length priority
     TAILQ_FOREACH (block, &statusline_sorted, blocks) {
         // If this block has no short form, there is no point in checking if we need to switch;
         // however, we do have to compute the width at least once
-        if (block->short_text == NULL && width != -1) {
+        if (block->short_text == NULL && width > 0) {
             continue;
         }
         width = predict_statusline_length();
@@ -2155,7 +2155,7 @@ void draw_bars(bool unhide) {
 
             /* Reset short mode between outputs */
             struct status_block *block;
-            TAILQ_FOREACH(block, &statusline_head, blocks) {
+            TAILQ_FOREACH (block, &statusline_head, blocks) {
                 block->use_short = false;
             }
 
