@@ -377,12 +377,12 @@ static int stdin_end_map(void *context) {
 
     TAILQ_INSERT_TAIL(&statusline_buffer, new_block, blocks);
 
-    if (new_block->length_priority > TAILQ_FIRST(&statusline_sorted)->length_priority) {
+    if (TAILQ_FIRST(&statusline_sorted) == NULL || new_block->length_priority > TAILQ_FIRST(&statusline_sorted)->length_priority) {
         TAILQ_INSERT_HEAD(&statusline_sorted, new_block, blocks);
     } else {
         struct status_block *block;
         TAILQ_FOREACH (block, &statusline_sorted, blocks) {
-            if (new_block->length_priority > TAILQ_NEXT(block, blocks)->length_priority) {
+            if (TAILQ_NEXT(block, blocks) == NULL || new_block->length_priority > TAILQ_NEXT(block, blocks)->length_priority) {
                 TAILQ_INSERT_AFTER(&statusline_sorted, block, new_block, blocks);
                 break;
             }
