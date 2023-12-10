@@ -379,8 +379,8 @@ static int stdin_end_map(void *context) {
     return 1;
 }
 
-int compare_length_priority(const void *a, const void *b) {
-    return (*(struct status_block **)a)->length_priority - (*(struct status_block **)b)->length_priority;
+int descending_length_priority(const void *a, const void *b) {
+    return (*(struct status_block **)b)->length_priority - (*(struct status_block **)a)->length_priority;
 }
 
 /*
@@ -405,7 +405,7 @@ static int stdin_end_array(void *context) {
         *dst = current;
         dst++;
     }
-    qsort(statusline_sorted, block_count, sizeof(struct status_block *), compare_length_priority);
+    qsort(statusline_sorted, block_count, sizeof(struct status_block *), descending_length_priority);
     TAILQ_FOREACH (current, &statusline_head, blocks) {
         DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
         DLOG("short_text = %s\n", (current->short_text == NULL ? NULL : i3string_as_utf8(current->short_text)));
