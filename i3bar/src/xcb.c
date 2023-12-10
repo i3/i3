@@ -243,9 +243,6 @@ static uint32_t predict_statusline_length(void) {
 static uint32_t adjust_statusline_length(bool *used_short_text, uint32_t max_length) {
     uint32_t width = 0;
 
-    // Track the priority levels of shortened blocks
-    uint32_t min_shortened = UINT32_MAX;
-
     // Switch the blocks to short mode in order of their length priority
     size_t idx = 0;
     for (struct status_block **block = statusline_sorted; idx < block_count; idx++, block++) {
@@ -258,26 +255,16 @@ static uint32_t adjust_statusline_length(bool *used_short_text, uint32_t max_len
         if (width < max_length) {
             break;
         } else {
-            if ((*block)->length_priority < min_shortened) {
-                min_shortened = (*block)->length_priority;
-            }
             (*block)->use_short = true;
             *used_short_text = true;
-        }
-    }
 
-    // Shorten all blocks with equal or lesser priority than a previously shortened block
-    // If no priorities are set, this is equivalent to an all-or-nothing approach to block shortening
-    idx = 0;
-    bool changed = false;
-    for (struct status_block **block = statusline_sorted; idx < block_count; idx++, block++) {
-        if ((*block)->length_priority >= min_shortened) {
-            changed = !(*block)->use_short;
-            (*block)->use_short = true;
+            size_t idx2 = 0;
+            for (struct status_block **inner = statusline_sorted; idx2 < block_count; idx2++, inner++) {
+                if ((*inner)->length_priority >= (*block)->length_priority) {
+                    (*inner)->use_short = true;
+                }
+            }
         }
-    }
-    if (changed) {
-        width = predict_statusline_length();
     }
 
     return width;
