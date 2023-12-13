@@ -46,7 +46,6 @@ struct status_block {
     i3String *full_text;
     i3String *short_text;
 
-    uint32_t length_priority;
     bool use_short;
 
     char *color;
@@ -85,7 +84,6 @@ struct status_block {
 
 extern TAILQ_HEAD(statusline_head, status_block) statusline_head;
 extern size_t block_count;
-extern struct status_block **statusline_sorted;
 
 #include "child.h"
 #include "ipc.h"

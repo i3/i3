@@ -12,6 +12,7 @@
 #include <err.h>
 #include <ev.h>
 #include <i3/ipc.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -243,25 +244,27 @@ static uint32_t predict_statusline_length(void) {
 static uint32_t adjust_statusline_length(bool *used_short_text, uint32_t max_length) {
     uint32_t width = 0;
 
-    /* Switch the blocks to short mode in order of their length priority */
-    size_t idx = 0;
-    for (struct status_block **block = statusline_sorted; idx < block_count; idx++, block++) {
+    /* Switch the blocks to short mode */
+    struct status_block *block;
+    TAILQ_FOREACH (block, &statusline_head, blocks) {
         /* If this block has no short form, there is no point in checking if we need to switch;
          * however, we do have to compute the width at least once */
-        if ((*block)->short_text == NULL && width > 0) {
+        if (block->short_text == NULL && width > 0) {
             continue;
         }
         width = predict_statusline_length();
         if (width < max_length) {
             break;
-        } else if (!(*block)->use_short) {
-            (*block)->use_short = true;
+        } else if (!block->use_short) {
+            block->use_short = true;
             *used_short_text = true;
 
-            size_t idx2 = 0;
-            for (struct status_block **inner = statusline_sorted; idx2 < block_count; idx2++, inner++) {
-                if ((*inner)->length_priority >= (*block)->length_priority) {
-                    (*inner)->use_short = true;
+            if (block->name) {
+                struct status_block *other;
+                TAILQ_FOREACH (other, &statusline_head, blocks) {
+                    if (other->name && !strcmp(other->name, block->name)) {
+                        other->use_short = true;
+                    }
                 }
             }
         }
