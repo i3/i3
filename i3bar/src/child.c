@@ -379,7 +379,7 @@ static int stdin_end_map(void *context) {
     return 1;
 }
 
-int descending_length_priority(const void *a, const void *b) {
+static int descending_length_priority(const void *a, const void *b) {
     return (*(struct status_block **)b)->length_priority - (*(struct status_block **)a)->length_priority;
 }
 
