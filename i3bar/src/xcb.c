@@ -241,7 +241,7 @@ static uint32_t predict_statusline_length(void) {
     return width;
 }
 
-static uint32_t adjust_statusline_length(bool *used_short_text, uint32_t max_length) {
+static uint32_t adjust_statusline_length(uint32_t max_length) {
     uint32_t width = 0;
 
     /* Switch the blocks to short mode */
@@ -257,7 +257,6 @@ static uint32_t adjust_statusline_length(bool *used_short_text, uint32_t max_len
             break;
         } else if (!block->use_short) {
             block->use_short = true;
-            *used_short_text = true;
 
             if (block->name) {
                 struct status_block *other;
@@ -2169,8 +2168,7 @@ void draw_bars(bool unhide) {
                 block->use_short = false;
             }
 
-            bool used_short_text;
-            uint32_t statusline_width = adjust_statusline_length(&used_short_text, max_statusline_width);
+            uint32_t statusline_width = adjust_statusline_length(max_statusline_width);
 
             if (statusline_width > max_statusline_width) {
                 clip_left = statusline_width - max_statusline_width;
@@ -2185,7 +2183,6 @@ void draw_bars(bool unhide) {
                                    x_dest, 0, visible_statusline_width, (int16_t)bar_height);
 
             outputs_walk->statusline_width = statusline_width;
-            outputs_walk->statusline_short_text = used_short_text;
         }
     }
 

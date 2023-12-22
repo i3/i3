@@ -147,7 +147,6 @@ static int outputs_start_map_cb(void *params_) {
         new_output->visible = false;
         new_output->ws = 0,
         new_output->statusline_width = 0;
-        new_output->statusline_short_text = false;
         memset(&new_output->rect, 0, sizeof(rect));
         memset(&new_output->bar, 0, sizeof(surface_t));
         memset(&new_output->buffer, 0, sizeof(surface_t));
