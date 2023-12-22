@@ -189,48 +189,57 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
     }
 }
 
+static uint32_t predict_block_length(struct status_block *block) {
+    i3String *text = block->full_text;
+    struct status_block_render_desc *render = &block->full_render;
+    if (block->use_short && block->short_text != NULL) {
+        text = block->short_text;
+        render = &block->short_render;
+    }
+
+    if (i3string_get_num_bytes(text) == 0) {
+        return 0;
+    }
+
+    render->width = predict_text_width(text);
+    if (block->border) {
+        render->width += logical_px(block->border_left + block->border_right);
+    }
+
+    /* Compute offset and append for text alignment in min_width. */
+    if (block->min_width <= render->width) {
+        render->x_offset = 0;
+        render->x_append = 0;
+    } else {
+        uint32_t padding_width = block->min_width - render->width;
+        switch (block->align) {
+            case ALIGN_LEFT:
+                render->x_append = padding_width;
+                break;
+            case ALIGN_RIGHT:
+                render->x_offset = padding_width;
+                break;
+            case ALIGN_CENTER:
+                render->x_offset = padding_width / 2;
+                render->x_append = padding_width / 2 + padding_width % 2;
+                break;
+        }
+    }
+
+    return render->width + render->x_offset + render->x_append;
+}
+
 static uint32_t predict_statusline_length(void) {
     uint32_t width = 0;
     struct status_block *block;
 
     TAILQ_FOREACH (block, &statusline_head, blocks) {
-        i3String *text = block->full_text;
-        struct status_block_render_desc *render = &block->full_render;
-        if (block->use_short && block->short_text != NULL) {
-            text = block->short_text;
-            render = &block->short_render;
-        }
-
-        if (i3string_get_num_bytes(text) == 0) {
+        uint32_t block_width = predict_block_length(block);
+        if (block_width == 0) {
             continue;
         }
 
-        render->width = predict_text_width(text);
-        if (block->border) {
-            render->width += logical_px(block->border_left + block->border_right);
-        }
-
-        /* Compute offset and append for text alignment in min_width. */
-        if (block->min_width <= render->width) {
-            render->x_offset = 0;
-            render->x_append = 0;
-        } else {
-            uint32_t padding_width = block->min_width - render->width;
-            switch (block->align) {
-                case ALIGN_LEFT:
-                    render->x_append = padding_width;
-                    break;
-                case ALIGN_RIGHT:
-                    render->x_offset = padding_width;
-                    break;
-                case ALIGN_CENTER:
-                    render->x_offset = padding_width / 2;
-                    render->x_append = padding_width / 2 + padding_width % 2;
-                    break;
-            }
-        }
-
-        width += render->width + render->x_offset + render->x_append;
+        width += block_width;
 
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL) {
