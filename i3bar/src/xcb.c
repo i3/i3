@@ -226,7 +226,8 @@ static uint32_t predict_block_length(struct status_block *block) {
         }
     }
 
-    return render->width + render->x_offset + render->x_append;
+    block->render_length = render->width + render->x_offset + render->x_append;
+    return block->render_length;
 }
 
 static uint32_t predict_statusline_length(void) {
@@ -251,27 +252,30 @@ static uint32_t predict_statusline_length(void) {
 }
 
 static uint32_t adjust_statusline_length(uint32_t max_length) {
-    uint32_t width = 0;
+    uint32_t width = predict_statusline_length();
 
-    /* Switch the blocks to short mode */
+    /* Progressively switch the blocks to short mode */
     struct status_block *block;
     TAILQ_FOREACH (block, &statusline_head, blocks) {
-        /* If this block has no short form, there is no point in checking if we need to switch;
-         * however, we do have to compute the width at least once */
-        if (block->short_text == NULL && width > 0) {
+        if (block->short_text == NULL) {
             continue;
         }
-        width = predict_statusline_length();
         if (width < max_length) {
             break;
         } else if (!block->use_short) {
+            uint32_t full = block->render_length;
             block->use_short = true;
+            uint32_t diff = full - predict_block_length(block);
+            width -= diff;
 
             if (block->name) {
                 struct status_block *other;
                 TAILQ_FOREACH (other, &statusline_head, blocks) {
                     if (other->name && !strcmp(other->name, block->name)) {
+                        uint32_t full = other->render_length;
                         other->use_short = true;
+                        uint32_t diff = full - predict_block_length(other);
+                        width -= diff;
                     }
                 }
             }
