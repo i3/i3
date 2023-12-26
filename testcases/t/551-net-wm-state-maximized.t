@@ -19,15 +19,36 @@
 use i3test;
 use X11::XCB qw(:all);
 
+# Returns true if the given window is maximized in both directions.
+sub maximized_both {
+    my ($window) = @_;
+    return net_wm_state_contains($window, '_NET_WM_STATE_MAXIMIZED_VERT') &&
+           net_wm_state_contains($window, '_NET_WM_STATE_MAXIMIZED_HORZ');
+}
+
+# Returns true if the given window is maximized in neither direction.
+sub maximized_neither {
+    my ($window) = @_;
+    return !net_wm_state_contains($window, '_NET_WM_STATE_MAXIMIZED_VERT') &&
+           !net_wm_state_contains($window, '_NET_WM_STATE_MAXIMIZED_HORZ');
+}
+
 my $windowA;
 fresh_workspace;
 $windowA = open_window;
+ok(maximized_both($windowA), 'if there is just one window, it is maximized');
 
-ok(net_wm_state_contains($windowA, '_NET_WM_STATE_MAXIMIZED_VERT'),
-   'if there is just one window, it has _NET_WM_STATE_MAXIMIZED_VERT');
+cmd 'fullscreen enable';
+ok(maximized_neither($windowA), 'fullscreen windows are not maximized');
 
-ok(net_wm_state_contains($windowA, '_NET_WM_STATE_MAXIMIZED_HORZ'),
-   'if there is just one window, it has _NET_WM_STATE_MAXIMIZED_HORZ');
+cmd 'fullscreen disable';
+ok(maximized_both($windowA), 'disabling fullscreen sets maximized to true again');
+
+cmd 'floating enable';
+ok(maximized_neither($windowA), 'floating windows are not maximized');
+
+cmd 'floating disable';
+ok(maximized_both($windowA), 'disabling floating sets maximized to true again');
 
 # TODO: more coverage
 
