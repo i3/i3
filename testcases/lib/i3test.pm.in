@@ -54,6 +54,8 @@ our @EXPORT = qw(
     events_for
     listen_for_binding
     is_net_wm_state_focused
+    is_net_wm_state_maximized_vert
+    is_net_wm_state_maximized_horz
     cmp_tree
 );
 
@@ -1090,18 +1092,19 @@ sub listen_for_binding {
     return $command;
 }
 
-=head2 is_net_wm_state_focused
+=head2 net_wm_state_contains
 
-Returns true if the given window has the _NET_WM_STATE_FOCUSED atom.
+Returns true if the given window has the given _NET_WM_STATE atom.
 
-    ok(is_net_wm_state_focused($window), '_NET_WM_STATE_FOCUSED set');
+    ok(net_wm_state_contains($window, '_NET_WM_STATE_FOCUSED'),
+       '_NET_WM_STATE_FOCUSED set');
 
 =cut
-sub is_net_wm_state_focused {
-    my ($window) = @_;
+sub net_wm_state_contains {
+    my ($window, $atom_name) = @_;
 
     sync_with_i3;
-    my $atom = $x->atom(name => '_NET_WM_STATE_FOCUSED');
+    my $atom = $x->atom(name => $atom_name);
     my $cookie = $x->get_property(
         0,
         $window->{id},
@@ -1121,6 +1124,36 @@ sub is_net_wm_state_focused {
     }
 
     return 0;
+}
+
+=head2 is_net_wm_state_focused
+
+Returns true if the given window has the _NET_WM_STATE_FOCUSED atom.
+
+=cut
+sub is_net_wm_state_focused {
+    my ($window) = @_;
+    return net_wm_state_contains($window, '_NET_WM_STATE_FOCUSED');
+}
+
+=head2 is_net_wm_state_maximized_vert
+
+Returns true if the given window has the _NET_WM_STATE_MAXIMIZED_VERT atom.
+
+=cut
+sub is_net_wm_state_maximized_vert {
+    my ($window) = @_;
+    return net_wm_state_contains($window, '_NET_WM_STATE_MAXIMIZED_VERT');
+}
+
+=head2 is_net_wm_state_maximized_horz
+
+Returns true if the given window has the _NET_WM_STATE_MAXIMIZED_HORZ atom.
+
+=cut
+sub is_net_wm_state_maximized_horz {
+    my ($window) = @_;
+    return net_wm_state_contains($window, '_NET_WM_STATE_MAXIMIZED_HORZ');
 }
 
 =head2 cmp_tree([ $args ])

@@ -19,6 +19,7 @@
 use i3test;
 use X11::XCB qw(:all);
 
+# TODO: collapse this
 sub is_hidden {
     sync_with_i3;
     my $atom = $x->atom(name => '_NET_WM_STATE_HIDDEN');
