@@ -84,6 +84,17 @@ bool con_is_split(Con *con);
 bool con_is_hidden(Con *con);
 
 /**
+ * Returns true if the container is maximized in the given orientation.
+ *
+ * If the container is floating or fullscreen, it is not considered maximized.
+ * Otherwise, it is maximized if it doesn't share space with any other
+ * container in the given orientation. For example, if a workspace contains
+ * a single splitv container with three children, none of them are considered
+ * vertically maximized, but they are all considered horizontally maximized.
+ */
+bool con_is_maximized(Con *con, orientation_t orientation);
+
+/**
  * Returns whether the container or any of its children is sticky.
  *
  */

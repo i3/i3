@@ -23,10 +23,12 @@ my $windowA;
 fresh_workspace;
 $windowA = open_window;
 
-ok(!net_wm_state_contains($windowA, '_NET_WM_STATE_MAXIMIZED_VERT'),
-   'i3 does not currently set _NET_WM_STATE_MAXIMIZED_VERT');
+ok(net_wm_state_contains($windowA, '_NET_WM_STATE_MAXIMIZED_VERT'),
+   'if there is just one window, it has _NET_WM_STATE_MAXIMIZED_VERT');
 
-ok(!net_wm_state_contains($windowA, '_NET_WM_STATE_MAXIMIZED_HORZ'),
-   'i3 does not currently set _NET_WM_STATE_MAXIMIZED_HORZ');
+ok(net_wm_state_contains($windowA, '_NET_WM_STATE_MAXIMIZED_HORZ'),
+   'if there is just one window, it has _NET_WM_STATE_MAXIMIZED_HORZ');
+
+# TODO: more coverage
 
 done_testing;
