@@ -451,8 +451,7 @@ bool con_is_maximized(Con *con, orientation_t orientation) {
             assert(false);
     }
 
-    /* Go through all parents, stopping once we reach the workspace
-     * node. */
+    /* Go through all parents, stopping once we reach the workspace node. */
     Con *current = con;
     while (true) {
         Con *parent = current->parent;
