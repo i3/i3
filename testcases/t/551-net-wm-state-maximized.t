@@ -20,10 +20,13 @@ use i3test;
 use X11::XCB qw(:all);
 
 my $windowA;
-
 fresh_workspace;
 $windowA = open_window;
-ok(!is_net_wm_state_maximized_vert($windowA), 'i3 does not currently set _NET_WM_STATE_MAXIMIZED_VERT');
-ok(!is_net_wm_state_maximized_horz($windowA), 'i3 does not currently set _NET_WM_STATE_MAXIMIZED_HORZ');
+
+ok(!net_wm_state_contains($windowA, '_NET_WM_STATE_MAXIMIZED_VERT'),
+   'i3 does not currently set _NET_WM_STATE_MAXIMIZED_VERT');
+
+ok(!net_wm_state_contains($windowA, '_NET_WM_STATE_MAXIMIZED_HORZ'),
+   'i3 does not currently set _NET_WM_STATE_MAXIMIZED_HORZ');
 
 done_testing;

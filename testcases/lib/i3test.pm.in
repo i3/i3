@@ -53,9 +53,7 @@ our @EXPORT = qw(
     kill_all_windows
     events_for
     listen_for_binding
-    is_net_wm_state_focused
-    is_net_wm_state_maximized_vert
-    is_net_wm_state_maximized_horz
+    net_wm_state_contains
     cmp_tree
 );
 
@@ -1124,36 +1122,6 @@ sub net_wm_state_contains {
     }
 
     return 0;
-}
-
-=head2 is_net_wm_state_focused
-
-Returns true if the given window has the _NET_WM_STATE_FOCUSED atom.
-
-=cut
-sub is_net_wm_state_focused {
-    my ($window) = @_;
-    return net_wm_state_contains($window, '_NET_WM_STATE_FOCUSED');
-}
-
-=head2 is_net_wm_state_maximized_vert
-
-Returns true if the given window has the _NET_WM_STATE_MAXIMIZED_VERT atom.
-
-=cut
-sub is_net_wm_state_maximized_vert {
-    my ($window) = @_;
-    return net_wm_state_contains($window, '_NET_WM_STATE_MAXIMIZED_VERT');
-}
-
-=head2 is_net_wm_state_maximized_horz
-
-Returns true if the given window has the _NET_WM_STATE_MAXIMIZED_HORZ atom.
-
-=cut
-sub is_net_wm_state_maximized_horz {
-    my ($window) = @_;
-    return net_wm_state_contains($window, '_NET_WM_STATE_MAXIMIZED_HORZ');
 }
 
 =head2 cmp_tree([ $args ])
