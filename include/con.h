@@ -83,7 +83,7 @@ bool con_is_split(Con *con);
  */
 bool con_is_hidden(Con *con);
 
-/**
+/*
  * Returns true if the container is maximized in the given orientation.
  *
  * If the container is floating or fullscreen, it is not considered maximized.
@@ -91,6 +91,10 @@ bool con_is_hidden(Con *con);
  * container in the given orientation. For example, if a workspace contains
  * a single splitv container with three children, none of them are considered
  * vertically maximized, but they are all considered horizontally maximized.
+ *
+ * Passing "maximized" hints to the application can help it make the right
+ * choices about how to draw its borders. See discussion in
+ * https://github.com/i3/i3/pull/2380.
  */
 bool con_is_maximized(Con *con, orientation_t orientation);
 
