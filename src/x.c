@@ -259,9 +259,7 @@ static void _x_con_kill(Con *con) {
     }
 
     draw_util_surface_free(conn, &(con->frame));
-    draw_util_surface_free(conn, &(con->frame_buffer));
-    xcb_free_pixmap(conn, con->frame_buffer.id);
-    con->frame_buffer.id = XCB_NONE;
+    sparse_surface_free(conn, &(con->frame_buffer));
     state = state_for_frame(con->frame.id);
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_REMOVE(&old_state_head, state, old_state);
@@ -355,27 +353,27 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
     free(event);
 }
 
-static void x_draw_title_border(Con *con, struct deco_render_params *p, surface_t *dest_surface) {
+static void x_draw_title_border(Con *con, struct deco_render_params *p, sparse_surface_t *dest_surface) {
     Rect *dr = &(con->deco_rect);
 
     /* Left */
-    draw_util_rectangle(dest_surface, p->color->border,
-                        dr->x, dr->y, 1, dr->height);
+    sparse_surface_rectangle(dest_surface, p->color->border,
+                             dr->x, dr->y, 1, dr->height);
 
     /* Right */
-    draw_util_rectangle(dest_surface, p->color->border,
-                        dr->x + dr->width - 1, dr->y, 1, dr->height);
+    sparse_surface_rectangle(dest_surface, p->color->border,
+                             dr->x + dr->width - 1, dr->y, 1, dr->height);
 
     /* Top */
-    draw_util_rectangle(dest_surface, p->color->border,
-                        dr->x, dr->y, dr->width, 1);
+    sparse_surface_rectangle(dest_surface, p->color->border,
+                             dr->x, dr->y, dr->width, 1);
 
     /* Bottom */
-    draw_util_rectangle(dest_surface, p->color->border,
-                        dr->x, dr->y + dr->height - 1, dr->width, 1);
+    sparse_surface_rectangle(dest_surface, p->color->border,
+                             dr->x, dr->y + dr->height - 1, dr->width, 1);
 }
 
-static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p, surface_t *dest_surface) {
+static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p, sparse_surface_t *dest_surface) {
     assert(con->parent != NULL);
 
     Rect *dr = &(con->deco_rect);
@@ -387,11 +385,11 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
         /* We actually only redraw the far right two pixels as that is the
          * distance we keep from the edge (not the entire border width).
          * Redrawing the entire border would cause text to be cut off. */
-        draw_util_rectangle(dest_surface, p->color->background,
-                            dr->x + dr->width - 2 * logical_px(1),
-                            dr->y,
-                            2 * logical_px(1),
-                            dr->height);
+        sparse_surface_rectangle(dest_surface, p->color->background,
+                                 dr->x + dr->width - 2 * logical_px(1),
+                                 dr->y,
+                                 2 * logical_px(1),
+                                 dr->height);
     }
 
     /* Redraw the border. */
@@ -481,7 +479,7 @@ void x_draw_decoration(Con *con) {
     /* Skip containers whose pixmap has not yet been created (can happen when
      * decoration rendering happens recursively for a window for which
      * x_push_node() was not yet called) */
-    if (leaf && con->frame_buffer.id == XCB_NONE)
+    if (leaf && !sparse_surface_initialized(&(con->frame_buffer)))
         return;
 
     /* 1: build deco_params and compare with cache */
@@ -542,20 +540,20 @@ void x_draw_decoration(Con *con) {
     /* 2: draw the client.background, but only for the parts around the window_rect */
     if (con->window != NULL) {
         /* Clear visible windows before beginning to draw */
-        draw_util_clear_surface(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
+        sparse_surface_clear(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
 
         /* top area */
-        draw_util_rectangle(&(con->frame_buffer), config.client.background,
-                            0, 0, r->width, w->y);
+        sparse_surface_rectangle(&(con->frame_buffer), config.client.background,
+                                 0, 0, r->width, w->y);
         /* bottom area */
-        draw_util_rectangle(&(con->frame_buffer), config.client.background,
-                            0, w->y + w->height, r->width, r->height - (w->y + w->height));
+        sparse_surface_rectangle(&(con->frame_buffer), config.client.background,
+                                 0, w->y + w->height, r->width, r->height - (w->y + w->height));
         /* left area */
-        draw_util_rectangle(&(con->frame_buffer), config.client.background,
-                            0, 0, w->x, r->height);
+        sparse_surface_rectangle(&(con->frame_buffer), config.client.background,
+                                 0, 0, w->x, r->height);
         /* right area */
-        draw_util_rectangle(&(con->frame_buffer), config.client.background,
-                            w->x + w->width, 0, r->width - (w->x + w->width), r->height);
+        sparse_surface_rectangle(&(con->frame_buffer), config.client.background,
+                                 w->x + w->width, 0, r->width - (w->x + w->width), r->height);
     }
 
     /* 3: draw a rectangle in border color around the client */
@@ -566,11 +564,11 @@ void x_draw_decoration(Con *con) {
         xcb_rectangle_t rectangles[4];
         size_t rectangles_count = x_get_border_rectangles(con, rectangles);
         for (size_t i = 0; i < rectangles_count; i++) {
-            draw_util_rectangle(&(con->frame_buffer), p->color->child_border,
-                                rectangles[i].x,
-                                rectangles[i].y,
-                                rectangles[i].width,
-                                rectangles[i].height);
+            sparse_surface_rectangle(&(con->frame_buffer), p->color->child_border,
+                                     rectangles[i].x,
+                                     rectangles[i].y,
+                                     rectangles[i].width,
+                                     rectangles[i].height);
         }
 
         /* Highlight the side of the border at which the next window will be
@@ -582,27 +580,27 @@ void x_draw_decoration(Con *con) {
             TAILQ_PREV(con, nodes_head, nodes) == NULL &&
             con->parent->type != CT_FLOATING_CON) {
             if (p->parent_layout == L_SPLITH) {
-                draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
-                                    r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height);
+                sparse_surface_rectangle(&(con->frame_buffer), p->color->indicator,
+                                         r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height);
             } else if (p->parent_layout == L_SPLITV) {
-                draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
-                                    br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
+                sparse_surface_rectangle(&(con->frame_buffer), p->color->indicator,
+                                         br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
             }
         }
     }
 
-    surface_t *dest_surface = &(parent->frame_buffer);
+    sparse_surface_t *dest_surface = &(parent->frame_buffer);
     if (con_draw_decoration_into_frame(con)) {
         DLOG("using con->frame_buffer (for con->name=%s) as dest_surface\n", con->name);
         dest_surface = &(con->frame_buffer);
     } else {
         DLOG("sticking to parent->frame_buffer = %p\n", dest_surface);
     }
-    DLOG("dest_surface %p is %d x %d (id=0x%08x)\n", dest_surface, dest_surface->width, dest_surface->height, dest_surface->id);
+    DLOG("dest_surface %p is %d x %d (top id=0x%08x)\n", dest_surface, dest_surface->width, dest_surface->height, dest_surface->side_surface[0].id);
 
     /* If the parent hasn't been set up yet, skip the decoration rendering
      * for now. */
-    if (dest_surface->id == XCB_NONE)
+    if (!sparse_surface_initialized(dest_surface))
         goto copy_pixmaps;
 
     /* For the first child, we clear the parent pixmap to ensure there's no
@@ -620,8 +618,8 @@ void x_draw_decoration(Con *con) {
     /* 4: paint the bar */
     DLOG("con->deco_rect = (x=%d, y=%d, w=%d, h=%d) for con->name=%s\n",
          con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height, con->name);
-    draw_util_rectangle(dest_surface, p->color->background,
-                        con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
+    sparse_surface_rectangle(dest_surface, p->color->background,
+                             con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height);
 
     /* 5: draw title border */
     x_draw_title_border(con, p, dest_surface);
@@ -659,10 +657,10 @@ void x_draw_decoration(Con *con) {
                                     ? title_padding
                                     : deco_width - mark_width - title_padding;
 
-            draw_util_text(mark, dest_surface,
-                           p->color->text, p->color->background,
-                           con->deco_rect.x + mark_offset_x,
-                           con->deco_rect.y + text_offset_y, mark_width);
+            sparse_surface_text(mark, dest_surface,
+                                p->color->text, p->color->background,
+                                con->deco_rect.x + mark_offset_x,
+                                con->deco_rect.y + text_offset_y, mark_width);
             I3STRING_FREE(mark);
 
             mark_width += title_padding;
@@ -736,13 +734,13 @@ void x_draw_decoration(Con *con) {
             return;
     }
 
-    draw_util_text(title, dest_surface,
-                   p->color->text, p->color->background,
-                   con->deco_rect.x + title_offset_x,
-                   con->deco_rect.y + text_offset_y,
-                   deco_width - mark_width - 2 * title_padding - total_icon_space);
+    sparse_surface_text(title, dest_surface,
+                        p->color->text, p->color->background,
+                        con->deco_rect.x + title_offset_x,
+                        con->deco_rect.y + text_offset_y,
+                        deco_width - mark_width - 2 * title_padding - total_icon_space);
     if (has_icon) {
-        draw_util_image(
+        sparse_surface_image(
             win->icon,
             dest_surface,
             con->deco_rect.x + icon_offset_x,
@@ -757,7 +755,7 @@ void x_draw_decoration(Con *con) {
 
     x_draw_decoration_after_title(con, p, dest_surface);
 copy_pixmaps:
-    draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+    sparse_surface_copy(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
 }
 
 /*
@@ -782,7 +780,7 @@ void x_deco_recurse(Con *con) {
         }
 
         if (state->mapped) {
-            draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+            sparse_surface_copy(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
         }
     }
 
@@ -978,8 +976,8 @@ void x_push_node(Con *con) {
     bool fake_notify = false;
     /* Set new position if rect changed (and if height > 0) or if the pixmap
      * needs to be recreated */
-    if ((is_pixmap_needed && con->frame_buffer.id == XCB_NONE) || (!rect_equals(state->rect, rect) &&
-                                                                   rect.height > 0)) {
+    if ((is_pixmap_needed && !sparse_surface_initialized(&(con->frame_buffer))) || (!rect_equals(state->rect, rect) &&
+                                                                                    rect.height > 0)) {
         /* We first create the new pixmap, then render to it, set it as the
          * background and only afterwards change the window size. This reduces
          * flickering. */
@@ -989,20 +987,12 @@ void x_push_node(Con *con) {
 
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
-        if (!is_pixmap_needed && con->frame_buffer.id != XCB_NONE) {
-            draw_util_surface_free(conn, &(con->frame_buffer));
-            xcb_free_pixmap(conn, con->frame_buffer.id);
-            con->frame_buffer.id = XCB_NONE;
+        if (!is_pixmap_needed && sparse_surface_initialized(&(con->frame_buffer))) {
+            /* Free the sparse surface, and the ID as well */
+            sparse_surface_free(conn, &(con->frame_buffer));
         }
 
-        if (is_pixmap_needed && (has_rect_changed || con->frame_buffer.id == XCB_NONE)) {
-            if (con->frame_buffer.id == XCB_NONE) {
-                con->frame_buffer.id = xcb_generate_id(conn);
-            } else {
-                draw_util_surface_free(conn, &(con->frame_buffer));
-                xcb_free_pixmap(conn, con->frame_buffer.id);
-            }
-
+        if (is_pixmap_needed && (has_rect_changed || !sparse_surface_initialized(&(con->frame_buffer)))) {
             uint16_t win_depth = root_depth;
             if (con->window)
                 win_depth = con->window->depth;
@@ -1014,18 +1004,50 @@ void x_push_node(Con *con) {
             int width = MAX((int32_t)rect.width, 1);
             int height = MAX((int32_t)rect.height, 1);
 
-            DLOG("creating %d x %d pixmap for con %p (con->frame_buffer.id = (pixmap_t)0x%08x) (con->frame.id (drawable_t)0x%08x)\n", width, height, con, con->frame_buffer.id, con->frame.id);
-            xcb_create_pixmap(conn, win_depth, con->frame_buffer.id, con->frame.id, width, height);
-            draw_util_surface_init(conn, &(con->frame_buffer), con->frame_buffer.id,
-                                   get_visualtype_by_id(get_visualid_by_depth(win_depth)), width, height);
-            draw_util_clear_surface(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
+            DLOG("creating %d x %d pixmap for con %p (con->frame_buffer.side_surface[0].id = (pixmap_t)0x%08x) (con->frame.id (drawable_t)0x%08x)\n", width, height, con, con->frame_buffer.side_surface[0].id, con->frame.id);
+
+            int top_height;
+            int bottom_height;
+            int left_width;
+            int right_width;
+
+            if (con->window == NULL && (con->layout == L_STACKED || con->layout == L_TABBED)) {
+                /* No "holes" in this pixmap, it is just one pixmap (the stacked or tabbed top decoration) */
+                /* The pixmap size will be width, height */
+                top_height = 0;
+                bottom_height = 0;
+                left_width = 0;
+                right_width = 0;
+            } else {
+                /* Height of the top window border pixmap */
+                top_height = con->window_rect.y;
+
+                /* Height of the bottom window border pixmap */
+                bottom_height = (con->rect.height - con->window_rect.height) - top_height;
+
+                /* Width of the left window border pixmap */
+                left_width = con->window_rect.x;
+
+                /* Width of the right window border pixmap */
+                right_width = (con->rect.width - con->window_rect.width) - left_width;
+            }
+
+            /* Create the pixmaps for the top, bottom, left, and right window borders */
+            sparse_surface_create_and_init(conn, &(con->frame_buffer),
+                                           con->frame.id,
+                                           win_depth,
+                                           get_visualtype_by_id(get_visualid_by_depth(win_depth)),
+                                           width, height,
+                                           top_height, bottom_height, left_width, right_width);
+
+            sparse_surface_clear(&(con->frame_buffer), (color_t){.red = 0.0, .green = 0.0, .blue = 0.0});
 
             /* For the graphics context, we disable GraphicsExposure events.
              * Those will be sent when a CopyArea request cannot be fulfilled
              * properly due to parts of the source being unmapped or otherwise
              * unavailable. Since we always copy from pixmaps to windows, this
              * is not a concern for us. */
-            xcb_change_gc(conn, con->frame_buffer.gc, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){0});
+            sparse_surface_disable_graphics_exposure_events(conn, &(con->frame_buffer));
 
             draw_util_surface_set_size(&(con->frame), width, height);
             con->pixmap_recreated = true;
@@ -1049,8 +1071,8 @@ void x_push_node(Con *con) {
          * fast as possible) */
         xcb_flush(conn);
         xcb_set_window_rect(conn, con->frame.id, rect);
-        if (con->frame_buffer.id != XCB_NONE) {
-            draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+        if (sparse_surface_initialized(&(con->frame_buffer))) {
+            sparse_surface_copy(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
         }
         xcb_flush(conn);
 
@@ -1103,8 +1125,8 @@ void x_push_node(Con *con) {
         xcb_change_window_attributes(conn, con->frame.id, XCB_CW_EVENT_MASK, values);
 
         /* copy the pixmap contents to the frame window immediately after mapping */
-        if (con->frame_buffer.id != XCB_NONE) {
-            draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+        if (sparse_surface_initialized(&(con->frame_buffer))) {
+            sparse_surface_copy(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
         }
         xcb_flush(conn);
 

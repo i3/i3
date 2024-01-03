@@ -411,6 +411,7 @@ i3srcs = [
   'src/scratchpad.c',
   'src/sd-daemon.c',
   'src/sighandler.c',
+  'src/sparse_surface.c',
   'src/startup.c',
   'src/sync.c',
   'src/tiling_drag.c',
