@@ -434,8 +434,9 @@ bool con_is_hidden(Con *con) {
  */
 bool con_is_maximized(Con *con, orientation_t orientation) {
     /* Fullscreen containers are not considered maximized. */
-    if (con->fullscreen_mode != CF_NONE)
+    if (con->fullscreen_mode != CF_NONE) {
         return false;
+    }
 
     /* Look up the container layout which corresponds to the given
      * orientation. */
@@ -455,13 +456,13 @@ bool con_is_maximized(Con *con, orientation_t orientation) {
     Con *current = con;
     while (true) {
         Con *parent = current->parent;
-        if (parent == NULL || parent->type == CT_WORKSPACE)
+        if (parent == NULL || parent->type == CT_WORKSPACE) {
             /* We are done searching. We found no reason that the container
              * should not be considered maximized. */
             return true;
+        }
 
-        if (parent->layout == layout &&
-            con_num_children(parent) > 1) {
+        if (parent->layout == layout && con_num_children(parent) > 1) {
             /* The parent has a split in the indicated direction, which
              * means none of its children are maximized in that direction. */
             return false;
@@ -469,8 +470,9 @@ bool con_is_maximized(Con *con, orientation_t orientation) {
 
         /* Floating containers and their children are not considered
          * maximized. */
-        if (parent->type == CT_FLOATING_CON)
+        if (parent->type == CT_FLOATING_CON) {
             return false;
+        }
 
         current = parent;
     }

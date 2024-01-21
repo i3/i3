@@ -823,8 +823,9 @@ static void set_hidden_state(Con *con) {
  *
  */
 static void set_maximized_state(Con *con) {
-    if (!con->window)
+    if (!con->window) {
         return;
+    }
 
     con_state *state = state_for_frame(con->frame.id);
 
