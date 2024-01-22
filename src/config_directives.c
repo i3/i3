@@ -420,6 +420,8 @@ CFGFUN(mouse_warping, const char *value) {
         config.mouse_warping = POINTER_WARPING_NONE;
     else if (strcmp(value, "output") == 0)
         config.mouse_warping = POINTER_WARPING_OUTPUT;
+    else if (strcmp(value, "remembered") == 0)
+        config.mouse_warping = POINTER_WARPING_REMEMBERED;
 }
 
 CFGFUN(force_xinerama, const char *value) {

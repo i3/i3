@@ -144,7 +144,8 @@ typedef uint32_t i3_event_state_mask_t;
  */
 typedef enum {
     POINTER_WARPING_OUTPUT = 0,
-    POINTER_WARPING_NONE = 1
+    POINTER_WARPING_NONE = 1,
+    POINTER_WARPING_REMEMBERED = 2
 } warping_t;
 
 struct gaps_t {
@@ -416,6 +417,9 @@ struct xoutput {
 
     /** x, y, width, height */
     Rect rect;
+
+    /** remembered location of mouse pointer on this output */
+    int remembered_x, remembered_y;
 
     TAILQ_ENTRY(xoutput) outputs;
 };

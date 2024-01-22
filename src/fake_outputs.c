@@ -70,6 +70,8 @@ void fake_outputs_init(const char *output_spec) {
             new_output->rect.y = y;
             new_output->rect.width = width;
             new_output->rect.height = height;
+            new_output->remembered_x = -1;
+            new_output->remembered_y = -1;
             /* We always treat the screen at 0x0 as the primary screen */
             if (new_output->rect.x == 0 && new_output->rect.y == 0)
                 TAILQ_INSERT_HEAD(&outputs, new_output, outputs);
