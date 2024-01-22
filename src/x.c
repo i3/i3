@@ -41,6 +41,8 @@ typedef struct con_state {
     bool unmap_now;
     bool child_mapped;
     bool is_hidden;
+    bool is_maximized_vert;
+    bool is_maximized_horz;
 
     /* The con for which this state is. */
     Con *con;
@@ -817,6 +819,44 @@ static void set_hidden_state(Con *con) {
 }
 
 /*
+ * Sets or removes _NET_WM_STATE_MAXIMIZE_{HORZ, VERT} on con
+ *
+ */
+static void set_maximized_state(Con *con) {
+    if (!con->window) {
+        return;
+    }
+
+    con_state *state = state_for_frame(con->frame.id);
+
+    const bool con_maximized_horz = con_is_maximized(con, HORIZ);
+    if (con_maximized_horz != state->is_maximized_horz) {
+        DLOG("setting _NET_WM_STATE_MAXIMIZED_HORZ for con %p(%s) to %d\n", con, con->name, con_maximized_horz);
+
+        if (con_maximized_horz) {
+            xcb_add_property_atom(conn, con->window->id, A__NET_WM_STATE, A__NET_WM_STATE_MAXIMIZED_HORZ);
+        } else {
+            xcb_remove_property_atom(conn, con->window->id, A__NET_WM_STATE, A__NET_WM_STATE_MAXIMIZED_HORZ);
+        }
+
+        state->is_maximized_horz = con_maximized_horz;
+    }
+
+    const bool con_maximized_vert = con_is_maximized(con, VERT);
+    if (con_maximized_vert != state->is_maximized_vert) {
+        DLOG("setting _NET_WM_STATE_MAXIMIZED_VERT for con %p(%s) to %d\n", con, con->name, con_maximized_vert);
+
+        if (con_maximized_vert) {
+            xcb_add_property_atom(conn, con->window->id, A__NET_WM_STATE, A__NET_WM_STATE_MAXIMIZED_VERT);
+        } else {
+            xcb_remove_property_atom(conn, con->window->id, A__NET_WM_STATE, A__NET_WM_STATE_MAXIMIZED_VERT);
+        }
+
+        state->is_maximized_vert = con_maximized_vert;
+    }
+}
+
+/*
  * Set the container frame shape as the union of the window shape and the
  * shape of the frame borders.
  */
@@ -1121,6 +1161,7 @@ void x_push_node(Con *con) {
     }
 
     set_hidden_state(con);
+    set_maximized_state(con);
 
     /* Handle all children and floating windows of this node. We recurse
      * in focus order to display the focused client in a stack first when

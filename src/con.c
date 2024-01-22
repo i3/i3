@@ -420,6 +420,65 @@ bool con_is_hidden(Con *con) {
 }
 
 /*
+ * Returns true if the container is maximized in the given orientation.
+ *
+ * If the container is floating or fullscreen, it is not considered maximized.
+ * Otherwise, it is maximized if it doesn't share space with any other
+ * container in the given orientation. For example, if a workspace contains
+ * a single splitv container with three children, none of them are considered
+ * vertically maximized, but they are all considered horizontally maximized.
+ *
+ * Passing "maximized" hints to the application can help it make the right
+ * choices about how to draw its borders. See discussion in
+ * https://github.com/i3/i3/pull/2380.
+ */
+bool con_is_maximized(Con *con, orientation_t orientation) {
+    /* Fullscreen containers are not considered maximized. */
+    if (con->fullscreen_mode != CF_NONE) {
+        return false;
+    }
+
+    /* Look up the container layout which corresponds to the given
+     * orientation. */
+    layout_t layout;
+    switch (orientation) {
+        case HORIZ:
+            layout = L_SPLITH;
+            break;
+        case VERT:
+            layout = L_SPLITV;
+            break;
+        default:
+            assert(false);
+    }
+
+    /* Go through all parents, stopping once we reach the workspace node. */
+    Con *current = con;
+    while (true) {
+        Con *parent = current->parent;
+        if (parent == NULL || parent->type == CT_WORKSPACE) {
+            /* We are done searching. We found no reason that the container
+             * should not be considered maximized. */
+            return true;
+        }
+
+        if (parent->layout == layout && con_num_children(parent) > 1) {
+            /* The parent has a split in the indicated direction, which
+             * means none of its children are maximized in that direction. */
+            return false;
+        }
+
+        /* Floating containers and their children are not considered
+         * maximized. */
+        if (parent->type == CT_FLOATING_CON) {
+            return false;
+        }
+
+        current = parent;
+    }
+}
+
+/*
  * Returns whether the container or any of its children is sticky.
  *
  */

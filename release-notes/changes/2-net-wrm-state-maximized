@@ -1,0 +1,1 @@
+pass _NET_WM_STATE_MAXIMIZED_{HORZ, VERT} to tiled windows

@@ -53,7 +53,7 @@ our @EXPORT = qw(
     kill_all_windows
     events_for
     listen_for_binding
-    is_net_wm_state_focused
+    net_wm_state_contains
     cmp_tree
 );
 
@@ -1090,18 +1090,19 @@ sub listen_for_binding {
     return $command;
 }
 
-=head2 is_net_wm_state_focused
+=head2 net_wm_state_contains
 
-Returns true if the given window has the _NET_WM_STATE_FOCUSED atom.
+Returns true if the given window has the given _NET_WM_STATE atom.
 
-    ok(is_net_wm_state_focused($window), '_NET_WM_STATE_FOCUSED set');
+    ok(net_wm_state_contains($window, '_NET_WM_STATE_FOCUSED'),
+       '_NET_WM_STATE_FOCUSED set');
 
 =cut
-sub is_net_wm_state_focused {
-    my ($window) = @_;
+sub net_wm_state_contains {
+    my ($window, $atom_name) = @_;
 
     sync_with_i3;
-    my $atom = $x->atom(name => '_NET_WM_STATE_FOCUSED');
+    my $atom = $x->atom(name => $atom_name);
     my $cookie = $x->get_property(
         0,
         $window->{id},
