@@ -83,7 +83,7 @@ bool con_is_split(Con *con);
  */
 bool con_is_hidden(Con *con);
 
-/*
+/**
  * Returns true if the container is maximized in the given orientation.
  *
  * If the container is floating or fullscreen, it is not considered maximized.
