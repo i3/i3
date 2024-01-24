@@ -64,41 +64,60 @@ $winB = open_window;
 
 # Windows in stacked or tabbed containers are considered maximized.
 cmd 'layout stacking';
-ok(maximized_both($winA) && maximized_both($winB),
-   'stacking layout maximizes all windows');
+ok(maximized_both($winA), 'stacking layout maximizes all windows');
+ok(maximized_both($winB), 'stacking layout maximizes all windows');
 
 cmd 'layout tabbed';
-ok(maximized_both($winA) && maximized_both($winB),
-   'tabbed layout maximizes all windows');
+ok(maximized_both($winA), 'tabbed layout maximizes all windows');
+ok(maximized_both($winB), 'tabbed layout maximizes all windows');
 
 # Arrange the two windows with a vertical split.
 cmd 'layout splitv';
-ok(!maximized_vert($winA) && !maximized_vert($winB),
+ok(!maximized_vert($winA),
    'vertical split means children are not maximized vertically');
-ok(maximized_horz($winA) && maximized_horz($winB),
+ok(!maximized_vert($winB),
+   'vertical split means children are not maximized vertically');
+ok(maximized_horz($winA),
+   'children may still be maximized horizontally in a vertical split');
+ok(maximized_horz($winB),
    'children may still be maximized horizontally in a vertical split');
 
 # Arrange the two windows with a horizontal split.
 cmd 'layout splith';
-ok(maximized_vert($winA) && maximized_vert($winB),
+ok(maximized_vert($winA),
    'children may still be maximized vertically in a horizontal split');
-ok(!maximized_horz($winA) && !maximized_horz($winB),
+ok(maximized_vert($winB),
+   'children may still be maximized vertically in a horizontal split');
+ok(!maximized_horz($winA),
+   'horizontal split means children are not maximized horizontally');
+ok(!maximized_horz($winB),
    'horizontal split means children are not maximized horizontally');
 
 # Add a vertical split within the horizontal split, and open a third window.
 cmd 'split vertical';
 $winC = open_window;
 ok(maximized_vert($winA), 'winA still reaches from top to bottom');
-ok(!maximized_vert($winB) && !maximized_vert($winC),
+ok(!maximized_vert($winB),
    'winB and winC are split vertically, so they are not maximized vertically');
-ok(!maximized_horz($winA) && !maximized_horz($winB) && !maximized_horz($winC),
+ok(!maximized_vert($winC),
+   'winB and winC are split vertically, so they are not maximized vertically');
+ok(!maximized_horz($winA),
+   'horizontal split means children are not maximized horizontally');
+ok(!maximized_horz($winB),
+   'horizontal split means children are not maximized horizontally');
+ok(!maximized_horz($winC),
    'horizontal split means children are not maximized horizontally');
 
 # Change the vertical split container to a tabbed container.
 cmd 'layout tabbed';
-ok(maximized_vert($winA) && maximized_vert($winB) && maximized_vert($winC),
-   'all windows now reach from top to bottom');
-ok(!maximized_horz($winA) && !maximized_horz($winB) && !maximized_horz($winC),
+ok(maximized_vert($winA), 'all windows now reach from top to bottom');
+ok(maximized_vert($winB), 'all windows now reach from top to bottom');
+ok(maximized_vert($winC), 'all windows now reach from top to bottom');
+ok(!maximized_horz($winA),
+   'horizontal split means children are not maximized horizontally');
+ok(!maximized_horz($winB),
+   'horizontal split means children are not maximized horizontally');
+ok(!maximized_horz($winC),
    'horizontal split means children are not maximized horizontally');
 
 done_testing;
