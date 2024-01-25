@@ -456,7 +456,7 @@ bool con_is_maximized(Con *con, orientation_t orientation) {
     Con *current = con;
     while (true) {
         Con *parent = current->parent;
-        if (parent == NULL || parent->type == CT_WORKSPACE) {
+        if (parent == NULL || current->type == CT_WORKSPACE) {
             /* We are done searching. We found no reason that the container
              * should not be considered maximized. */
             return true;
