@@ -258,31 +258,31 @@ static uint32_t adjust_statusline_length(uint32_t max_length) {
     /* Progressively switch the blocks to short mode */
     struct status_block *block;
     TAILQ_FOREACH (block, &statusline_head, blocks) {
-        if (block->short_text == NULL) {
-            continue;
-        }
         if (width < max_length) {
             break;
-        } else if (!block->use_short) {
-            uint32_t full = block->render_length;
-            block->use_short = true;
-            predict_block_length(block);
-            uint32_t diff = full - block->render_length;
-            width -= diff;
+        }
+        /* Skip blocks that have no short form or are already in short form */
+        if (block->short_text == NULL || block->use_short) {
+            continue;
+        }
+        uint32_t full = block->render_length;
+        block->use_short = true;
+        predict_block_length(block);
+        uint32_t diff = full - block->render_length;
+        width -= diff;
 
-            /* Provide support for representing a single logical block using multiple JSON blocks:
-               if one block is shortened, ensure that all other blocks with the same name are also
-               shortened such that the entire logical block uses the short form text. */
-            if (block->name) {
-                struct status_block *other;
-                TAILQ_FOREACH (other, &statusline_head, blocks) {
-                    if (other->name && !strcmp(other->name, block->name)) {
-                        uint32_t full = other->render_length;
-                        other->use_short = true;
-                        predict_block_length(other);
-                        uint32_t diff = full - other->render_length;
-                        width -= diff;
-                    }
+        /* Provide support for representing a single logical block using multiple JSON blocks:
+           if one block is shortened, ensure that all other blocks with the same name are also
+           shortened such that the entire logical block uses the short form text. */
+        if (block->name) {
+            struct status_block *other;
+            TAILQ_FOREACH (other, &statusline_head, blocks) {
+                if (other->name && !strcmp(other->name, block->name)) {
+                    uint32_t full = other->render_length;
+                    other->use_short = true;
+                    predict_block_length(other);
+                    uint32_t diff = full - other->render_length;
+                    width -= diff;
                 }
             }
         }
