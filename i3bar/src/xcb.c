@@ -270,6 +270,9 @@ static uint32_t adjust_statusline_length(uint32_t max_length) {
             uint32_t diff = full - block->render_length;
             width -= diff;
 
+            /* Provide support for representing a single logical block using multiple JSON blocks:
+               if one block is shortened, ensure that all other blocks with the same name are also
+               shortened such that the entire logical block uses the short form text. */
             if (block->name) {
                 struct status_block *other;
                 TAILQ_FOREACH (other, &statusline_head, blocks) {
