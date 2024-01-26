@@ -86,16 +86,21 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
     new_binding->command = sstrdup(command);
     new_binding->event_state_mask = event_state_from_str(modifiers);
     int group_bits_set = 0;
-    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_1)
+    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_1) {
         group_bits_set++;
-    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_2)
+    }
+    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_2) {
         group_bits_set++;
-    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_3)
+    }
+    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_3) {
         group_bits_set++;
-    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_4)
+    }
+    if ((new_binding->event_state_mask >> 16) & I3_XKB_GROUP_MASK_4) {
         group_bits_set++;
-    if (group_bits_set > 1)
+    }
+    if (group_bits_set > 1) {
         ELOG("Keybinding has more than one Group specified, but your X server is always in precisely one group. The keybinding can never trigger.\n");
+    }
 
     struct Mode *mode = mode_from_name(modename, pango_markup);
     TAILQ_INSERT_TAIL(mode->bindings, new_binding, bindings);
@@ -107,8 +112,9 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
 
 static bool binding_in_current_group(const Binding *bind) {
     /* If no bits are set, the binding should be installed in every group. */
-    if ((bind->event_state_mask >> 16) == I3_XKB_GROUP_MASK_ANY)
+    if ((bind->event_state_mask >> 16) == I3_XKB_GROUP_MASK_ANY) {
         return true;
+    }
     switch (xkb_current_group) {
         case XCB_XKB_GROUP_1:
             return ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_1);
@@ -149,11 +155,13 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
 void grab_all_keys(xcb_connection_t *conn) {
     Binding *bind;
     TAILQ_FOREACH (bind, bindings, bindings) {
-        if (bind->input_type != B_KEYBOARD)
+        if (bind->input_type != B_KEYBOARD) {
             continue;
+        }
 
-        if (!binding_in_current_group(bind))
+        if (!binding_in_current_group(bind)) {
             continue;
+        }
 
         /* The easy case: the user specified a keycode directly. */
         if (bind->keycode > 0) {
@@ -182,8 +190,9 @@ void regrab_all_buttons(xcb_connection_t *conn) {
 
     Con *con;
     TAILQ_FOREACH (con, &all_cons, all_cons) {
-        if (con->window == NULL)
+        if (con->window == NULL) {
             continue;
+        }
 
         xcb_ungrab_button(conn, XCB_BUTTON_INDEX_ANY, con->window->id, XCB_BUTTON_MASK_ANY);
         xcb_grab_buttons(conn, con->window->id, buttons);
@@ -206,10 +215,12 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
         /* On a press event, we first reset all B_UPON_KEYRELEASE_IGNORE_MODS
          * bindings back to B_UPON_KEYRELEASE */
         TAILQ_FOREACH (bind, bindings, bindings) {
-            if (bind->input_type != input_type)
+            if (bind->input_type != input_type) {
                 continue;
-            if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
+            }
+            if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS) {
                 bind->release = B_UPON_KEYRELEASE;
+            }
         }
     }
 
@@ -386,18 +397,22 @@ static void add_keycode_if_matches(struct xkb_keymap *keymap, xkb_keycode_t key,
         /* Check if Shift was specified, and try resolving the symbol without
          * shift, so that “bindsym $mod+Shift+a nop” actually works. */
         const xkb_layout_index_t layout = xkb_state_key_get_layout(resolving->xkb_state, key);
-        if (layout == XKB_LAYOUT_INVALID)
+        if (layout == XKB_LAYOUT_INVALID) {
             return;
-        if (xkb_state_key_get_level(resolving->xkb_state, key, layout) > 1)
+        }
+        if (xkb_state_key_get_level(resolving->xkb_state, key, layout) > 1) {
             return;
+        }
         /* Skip the Shift fallback for keypad keys, otherwise one cannot bind
          * KP_1 independent of KP_End. */
-        if (sym >= XKB_KEY_KP_Space && sym <= XKB_KEY_KP_Equal)
+        if (sym >= XKB_KEY_KP_Space && sym <= XKB_KEY_KP_Equal) {
             return;
+        }
         numlock_state = resolving->xkb_state_numlock_no_shift;
         sym = xkb_state_key_get_one_sym(resolving->xkb_state_no_shift, key);
-        if (sym != resolving->keysym)
+        if (sym != resolving->keysym) {
             return;
+        }
     }
     Binding *bind = resolving->bind;
 
@@ -460,12 +475,13 @@ void translate_keysyms(void) {
         }
 
         xkb_layout_index_t group = XCB_XKB_GROUP_1;
-        if ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_2)
+        if ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_2) {
             group = XCB_XKB_GROUP_2;
-        else if ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_3)
+        } else if ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_3) {
             group = XCB_XKB_GROUP_3;
-        else if ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_4)
+        } else if ((bind->event_state_mask >> 16) & I3_XKB_GROUP_MASK_4) {
             group = XCB_XKB_GROUP_4;
+        }
 
         DLOG("Binding %p group = %d, event_state_mask = %d, &2 = %s, &3 = %s, &4 = %s\n",
              bind,
@@ -583,14 +599,17 @@ void translate_keysyms(void) {
             /* check for duplicate bindings */
             Binding *check;
             TAILQ_FOREACH (check, bindings, bindings) {
-                if (check == bind)
+                if (check == bind) {
                     continue;
-                if (check->symbol != NULL)
+                }
+                if (check->symbol != NULL) {
                     continue;
+                }
                 if (check->keycode != binding_keycode->keycode ||
                     check->event_state_mask != binding_keycode->modifiers ||
-                    check->release != bind->release)
+                    check->release != bind->release) {
                     continue;
+                }
                 has_errors = true;
                 ELOG("Duplicate keybinding in config file:\n  keysym = %s, keycode = %d, state_mask = 0x%x\n", bind->symbol, check->keycode, bind->event_state_mask);
             }
@@ -623,8 +642,9 @@ void switch_mode(const char *new_mode) {
     DLOG("Switching to mode %s\n", new_mode);
 
     SLIST_FOREACH (mode, &modes, modes) {
-        if (strcmp(mode->name, new_mode) != 0)
+        if (strcmp(mode->name, new_mode) != 0) {
             continue;
+        }
 
         ungrab_all_keys(conn);
         bindings = mode->bindings;
@@ -637,8 +657,9 @@ void switch_mode(const char *new_mode) {
          * activating one of them. */
         Binding *bind;
         TAILQ_FOREACH (bind, bindings, bindings) {
-            if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
+            if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS) {
                 bind->release = B_UPON_KEYRELEASE;
+            }
         }
 
         char *event_msg;
@@ -713,8 +734,9 @@ void reorder_bindings(void) {
     SLIST_FOREACH (mode, &modes, modes) {
         const bool current_mode = (mode->bindings == bindings);
         reorder_bindings_of_mode(mode);
-        if (current_mode)
+        if (current_mode) {
             bindings = mode->bindings;
+        }
     }
 }
 
@@ -791,10 +813,12 @@ void check_for_duplicate_bindings(struct context *context) {
 static Binding *binding_copy(Binding *bind) {
     Binding *ret = smalloc(sizeof(Binding));
     *ret = *bind;
-    if (bind->symbol != NULL)
+    if (bind->symbol != NULL) {
         ret->symbol = sstrdup(bind->symbol);
-    if (bind->command != NULL)
+    }
+    if (bind->command != NULL) {
         ret->command = sstrdup(bind->command);
+    }
     TAILQ_INIT(&(ret->keycodes_head));
     struct Binding_Keycode *binding_keycode;
     TAILQ_FOREACH (binding_keycode, &(bind->keycodes_head), keycodes) {
@@ -838,10 +862,11 @@ CommandResult *run_binding(Binding *bind, Con *con) {
     /* We need to copy the binding and command since “reload” may be part of
      * the command, and then the memory that bind points to may not contain the
      * same data anymore. */
-    if (con == NULL)
+    if (con == NULL) {
         command = sstrdup(bind->command);
-    else
+    } else {
         sasprintf(&command, "[con_id=\"%p\"] %s", con, bind->command);
+    }
 
     Binding *bind_cp = binding_copy(bind);
     /* The "mode" command might change the current mode, so back it up to
@@ -851,8 +876,9 @@ CommandResult *run_binding(Binding *bind, Con *con) {
     CommandResult *result = parse_command(command, NULL, NULL);
     free(command);
 
-    if (result->needs_tree_render)
+    if (result->needs_tree_render) {
         tree_render();
+    }
 
     if (result->parse_error) {
         char *pageraction;
@@ -886,8 +912,9 @@ static int fill_rmlvo_from_root(struct xkb_rule_names *xkb_names) {
 
     atom_reply = xcb_intern_atom_reply(
         conn, xcb_intern_atom(conn, 0, strlen("_XKB_RULES_NAMES"), "_XKB_RULES_NAMES"), NULL);
-    if (atom_reply == NULL)
+    if (atom_reply == NULL) {
         return -1;
+    }
 
     xcb_get_property_cookie_t prop_cookie;
     xcb_get_property_reply_t *prop_reply;
@@ -1021,12 +1048,14 @@ int *bindings_get_buttons_to_grab(void) {
 
     Binding *bind;
     TAILQ_FOREACH (bind, bindings, bindings) {
-        if (num + 1 == num_max)
+        if (num + 1 == num_max) {
             break;
+        }
 
         /* We are only interested in whole window mouse bindings. */
-        if (bind->input_type != B_MOUSE || !bind->whole_window)
+        if (bind->input_type != B_MOUSE || !bind->whole_window) {
             continue;
+        }
 
         long button;
         if (!parse_long(bind->symbol + (sizeof("button") - 1), &button, 10)) {

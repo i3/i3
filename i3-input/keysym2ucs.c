@@ -822,21 +822,23 @@ long keysym2ucs(xcb_keysym_t keysym) {
 
     /* first check for Latin-1 characters (1:1 mapping) */
     if ((keysym >= 0x0020 && keysym <= 0x007e) ||
-        (keysym >= 0x00a0 && keysym <= 0x00ff))
+        (keysym >= 0x00a0 && keysym <= 0x00ff)) {
         return keysym;
+    }
 
     /* also check for directly encoded 24-bit UCS characters */
-    if ((keysym & 0xff000000) == 0x01000000)
+    if ((keysym & 0xff000000) == 0x01000000) {
         return keysym & 0x00ffffff;
+    }
 
     /* binary search in table */
     while (max >= min) {
         mid = (min + max) / 2;
-        if (keysymtab[mid].keysym < keysym)
+        if (keysymtab[mid].keysym < keysym) {
             min = mid + 1;
-        else if (keysymtab[mid].keysym > keysym)
+        } else if (keysymtab[mid].keysym > keysym) {
             max = mid - 1;
-        else {
+        } else {
             /* found it */
             return keysymtab[mid].ucs;
         }

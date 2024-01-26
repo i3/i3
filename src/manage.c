@@ -48,20 +48,23 @@ void manage_existing_windows(xcb_window_t root) {
     xcb_get_window_attributes_cookie_t *cookies;
 
     /* Get the tree of windows whose parent is the root window (= all) */
-    if ((reply = xcb_query_tree_reply(conn, xcb_query_tree(conn, root), 0)) == NULL)
+    if ((reply = xcb_query_tree_reply(conn, xcb_query_tree(conn, root), 0)) == NULL) {
         return;
+    }
 
     len = xcb_query_tree_children_length(reply);
     cookies = smalloc(len * sizeof(*cookies));
 
     /* Request the window attributes for every window */
     children = xcb_query_tree_children(reply);
-    for (i = 0; i < len; ++i)
+    for (i = 0; i < len; ++i) {
         cookies[i] = xcb_get_window_attributes(conn, children[i]);
+    }
 
     /* Call manage_window with the attributes for every window */
-    for (i = 0; i < len; ++i)
+    for (i = 0; i < len; ++i) {
         manage_window(children[i], cookies[i], true);
+    }
 
     free(reply);
     free(cookies);
@@ -304,14 +307,16 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
             nc = con_descend_tiling_focused(assigned_ws);
             DLOG("focused on ws %s: %p / %s\n", assigned_ws->name, nc, nc->name);
-            if (nc->type == CT_WORKSPACE)
+            if (nc->type == CT_WORKSPACE) {
                 nc = tree_open_con(nc, cwindow);
-            else
+            } else {
                 nc = tree_open_con(nc->parent, cwindow);
+            }
 
             /* set the urgency hint on the window if the workspace is not visible */
-            if (!workspace_is_visible(assigned_ws))
+            if (!workspace_is_visible(assigned_ws)) {
                 urgency_hint = true;
+            }
         } else if (cwindow->wm_desktop != NET_WM_DESKTOP_NONE &&
                    cwindow->wm_desktop != NET_WM_DESKTOP_ALL &&
                    (wm_desktop_ws = ewmh_get_workspace_by_index(cwindow->wm_desktop)) != NULL) {
@@ -323,27 +328,30 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
                  wm_desktop_ws, wm_desktop_ws->name, cwindow->wm_desktop);
 
             nc = con_descend_tiling_focused(wm_desktop_ws);
-            if (nc->type == CT_WORKSPACE)
+            if (nc->type == CT_WORKSPACE) {
                 nc = tree_open_con(nc, cwindow);
-            else
+            } else {
                 nc = tree_open_con(nc->parent, cwindow);
+            }
         } else if (startup_ws) {
             /* If it was started on a specific workspace, we want to open it there. */
             DLOG("Using workspace on which this application was started (%s)\n", startup_ws);
             nc = con_descend_tiling_focused(workspace_get(startup_ws));
             DLOG("focused on ws %s: %p / %s\n", startup_ws, nc, nc->name);
-            if (nc->type == CT_WORKSPACE)
+            if (nc->type == CT_WORKSPACE) {
                 nc = tree_open_con(nc, cwindow);
-            else
+            } else {
                 nc = tree_open_con(nc->parent, cwindow);
+            }
         } else {
             /* If not, insert it at the currently focused position */
             if (focused->type == CT_CON && con_accepts_window(focused)) {
                 LOG("using current container, focused = %p, focused->name = %s\n",
                     focused, focused->name);
                 nc = focused;
-            } else
+            } else {
                 nc = tree_open_con(NULL, cwindow);
+            }
         }
 
         if ((assignment = assignment_for(cwindow, A_TO_OUTPUT))) {
@@ -407,8 +415,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
              * of an output, move the window to that output. This is
              * needed e.g. for LibreOffice Impress multi-monitor
              * presentations to work out of the box. */
-            if (output != NULL)
+            if (output != NULL) {
                 con_move_to_output(nc, output, false);
+            }
             con_toggle_fullscreen(nc, CF_OUTPUT);
         }
         fs = NULL;
@@ -466,8 +475,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         want_floating = true;
     }
 
-    if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_STICKY))
+    if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_STICKY)) {
         nc->sticky = true;
+    }
 
     /* We ignore the hint for an internal workspace because windows in the
      * scratchpad also have this value, but upon restarting i3 we don't want
@@ -500,16 +510,18 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     }
 
     /* dock clients cannot be floating, that makes no sense */
-    if (cwindow->dock)
+    if (cwindow->dock) {
         want_floating = false;
+    }
 
     /* Store the requested geometry. The width/height gets raised to at least
      * 75x50 when entering floating mode, which is the minimum size for a
      * window to be useful (smaller windows are usually overlays/toolbars/…
      * which are not managed by the wm anyways). We store the original geometry
      * here because it’s used for dock clients. */
-    if (nc->geometry.width == 0)
+    if (nc->geometry.width == 0) {
         nc->geometry = (Rect){geom->x, geom->y, geom->width, geom->height};
+    }
 
     if (want_floating) {
         DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);

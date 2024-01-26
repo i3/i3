@@ -61,12 +61,13 @@ static void free_configuration(void) {
 
     while (!TAILQ_EMPTY(&assignments)) {
         struct Assignment *assign = TAILQ_FIRST(&assignments);
-        if (assign->type == A_TO_WORKSPACE || assign->type == A_TO_WORKSPACE_NUMBER)
+        if (assign->type == A_TO_WORKSPACE || assign->type == A_TO_WORKSPACE_NUMBER) {
             FREE(assign->dest.workspace);
-        else if (assign->type == A_COMMAND)
+        } else if (assign->type == A_COMMAND) {
             FREE(assign->dest.command);
-        else if (assign->type == A_TO_OUTPUT)
+        } else if (assign->type == A_TO_OUTPUT) {
             FREE(assign->dest.output);
+        }
         match_free(&(assign->match));
         TAILQ_REMOVE(&assignments, assign, assignments);
         FREE(assign);
@@ -85,8 +86,9 @@ static void free_configuration(void) {
     while (!TAILQ_EMPTY(&barconfigs)) {
         barconfig = TAILQ_FIRST(&barconfigs);
         FREE(barconfig->id);
-        for (int c = 0; c < barconfig->num_outputs; c++)
+        for (int c = 0; c < barconfig->num_outputs; c++) {
             free(barconfig->outputs[c]);
+        }
 
         while (!TAILQ_EMPTY(&(barconfig->bar_bindings))) {
             struct Barbinding *binding = TAILQ_FIRST(&(barconfig->bar_bindings));
@@ -224,8 +226,9 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     config.gaps.left = 0;
 
     /* Set default urgency reset delay to 500ms */
-    if (config.workspace_urgency_timer == 0)
+    if (config.workspace_urgency_timer == 0) {
         config.workspace_urgency_timer = 0.5;
+    }
 
     config.focus_wrapping = FOCUS_WRAPPING_ON;
 

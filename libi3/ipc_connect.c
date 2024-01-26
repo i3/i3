@@ -55,8 +55,9 @@ int ipc_connect(const char *socket_path) {
  */
 int ipc_connect_impl(const char *socket_path) {
     int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
-    if (sockfd == -1)
+    if (sockfd == -1) {
         err(EXIT_FAILURE, "Could not create socket");
+    }
 
     (void)fcntl(sockfd, F_SETFD, FD_CLOEXEC);
 

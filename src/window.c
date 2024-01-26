@@ -49,10 +49,11 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop) {
     FREE(win->class_class);
 
     win->class_instance = sstrndup(new_class, prop_length);
-    if (class_class_index < prop_length)
+    if (class_class_index < prop_length) {
         win->class_class = sstrndup(new_class + class_class_index, prop_length - class_class_index);
-    else
+    } else {
         win->class_class = NULL;
+    }
     LOG("WM_CLASS changed to %s (instance), %s (class)\n",
         win->class_instance, win->class_class);
 
@@ -375,8 +376,9 @@ bool window_update_normal_hints(i3Window *win, xcb_get_property_reply_t *reply, 
  *
  */
 void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *urgency_hint) {
-    if (urgency_hint != NULL)
+    if (urgency_hint != NULL) {
         *urgency_hint = false;
+    }
 
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("WM_HINTS not set.\n");
@@ -397,8 +399,9 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *ur
         LOG("WM_HINTS.input changed to \"%d\"\n", hints.input);
     }
 
-    if (urgency_hint != NULL)
+    if (urgency_hint != NULL) {
         *urgency_hint = (xcb_icccm_wm_hints_get_urgency(&hints) != 0);
+    }
 
     free(prop);
 }

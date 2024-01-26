@@ -119,8 +119,9 @@ void parse_mode_json(const unsigned char *json, size_t size) {
     }
 
     /* We don't want to indicate default binding mode */
-    if (strcmp("default", i3string_as_utf8(params.mode->name)) == 0)
+    if (strcmp("default", i3string_as_utf8(params.mode->name)) == 0) {
         I3STRING_FREE(params.mode->name);
+    }
 
     /* Set the new binding mode */
     set_current_mode(&binding);

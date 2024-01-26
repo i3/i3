@@ -216,8 +216,9 @@ IPC_HANDLER(run_command) {
     CommandResult *result = parse_command(command, gen, client);
     free(command);
 
-    if (result->needs_tree_render)
+    if (result->needs_tree_render) {
         tree_render();
+    }
 
     command_result_free(result);
 
@@ -338,10 +339,11 @@ static void dump_binding(yajl_gen gen, Binding *bind) {
     ystr((const char *)(bind->input_type == B_KEYBOARD ? "keyboard" : "mouse"));
 
     ystr("symbol");
-    if (bind->symbol == NULL)
+    if (bind->symbol == NULL) {
         y(null);
-    else
+    } else {
         ystr(bind->symbol);
+    }
 
     ystr("command");
     ystr(bind->command);
@@ -386,13 +388,14 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     /* provided for backwards compatibility only. */
     ystr("orientation");
-    if (!con_is_split(con))
+    if (!con_is_split(con)) {
         ystr("none");
-    else {
-        if (con_orientation(con) == HORIZ)
+    } else {
+        if (con_orientation(con) == HORIZ) {
             ystr("horizontal");
-        else
+        } else {
             ystr("vertical");
+        }
     }
 
     ystr("scratchpad_state");
@@ -409,10 +412,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     }
 
     ystr("percent");
-    if (con->percent == 0.0)
+    if (con->percent == 0.0) {
         y(null);
-    else
+    } else {
         y(double, con->percent);
+    }
 
     ystr("urgent");
     y(bool, con->urgent);
@@ -516,12 +520,13 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     dump_rect(gen, "geometry", con->geometry);
 
     ystr("name");
-    if (con->window && con->window->name)
+    if (con->window && con->window->name) {
         ystr(i3string_as_utf8(con->window->name));
-    else if (con->name != NULL)
+    } else if (con->name != NULL) {
         ystr(con->name);
-    else
+    } else {
         y(null);
+    }
 
     if (con->title_format != NULL) {
         ystr("title_format");
@@ -539,10 +544,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     }
 
     ystr("window");
-    if (con->window)
+    if (con->window) {
         y(integer, con->window->id);
-    else
+    } else {
         y(null);
+    }
 
     ystr("window_type");
     if (con->window) {
@@ -571,8 +577,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         } else {
             ystr("unknown");
         }
-    } else
+    } else {
         y(null);
+    }
 
     if (con->window && !inplace_restart) {
         /* Window properties are useless to preserve when restarting because
@@ -600,10 +607,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         }
 
         ystr("transient_for");
-        if (con->window->transient_for == XCB_NONE)
+        if (con->window->transient_for == XCB_NONE) {
             y(null);
-        else
+        } else {
             y(integer, con->window->transient_for);
+        }
 
         y(map_close);
     }
@@ -660,8 +668,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     TAILQ_FOREACH (match, &(con->swallow_head), matches) {
         /* We will generate a new restart_mode match specification after this
          * loop, so skip this one. */
-        if (match->restart_mode)
+        if (match->restart_mode) {
             continue;
+        }
         y(map_open);
         if (match->dock != M_DONTCHECK) {
             ystr("dock");
@@ -714,8 +723,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 }
 
 static void dump_bar_bindings(yajl_gen gen, Barconfig *config) {
-    if (TAILQ_EMPTY(&(config->bar_bindings)))
+    if (TAILQ_EMPTY(&(config->bar_bindings))) {
         return;
+    }
 
     ystr("bindings");
     y(array_open);
@@ -821,10 +831,11 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     dump_bar_bindings(gen, config);
 
     ystr("position");
-    if (config->position == P_BOTTOM)
+    if (config->position == P_BOTTOM) {
         ystr("bottom");
-    else
+    } else {
         ystr("top");
+    }
 
     YSTR_IF_SET(status_command);
     YSTR_IF_SET(workspace_command);
@@ -925,8 +936,9 @@ IPC_HANDLER(get_workspaces) {
 
     Con *output;
     TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
-        if (con_is_internal(output))
+        if (con_is_internal(output)) {
             continue;
+        }
         Con *ws;
         TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) {
             assert(ws->type == CT_WORKSPACE);
@@ -1015,10 +1027,11 @@ IPC_HANDLER(get_outputs) {
 
         ystr("current_workspace");
         Con *ws = NULL;
-        if (output->con && (ws = con_get_fullscreen_con(output->con, CF_OUTPUT)))
+        if (output->con && (ws = con_get_fullscreen_con(output->con, CF_OUTPUT))) {
             ystr(ws->name);
-        else
+        } else {
             y(null);
+        }
 
         y(map_close);
     }
@@ -1137,8 +1150,9 @@ IPC_HANDLER(get_bar_config) {
     LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
     Barconfig *current, *config = NULL;
     TAILQ_FOREACH (current, &barconfigs, configs) {
-        if (strcmp(current->id, bar_id) != 0)
+        if (strcmp(current->id, bar_id) != 0) {
             continue;
+        }
 
         config = current;
         break;
@@ -1460,9 +1474,9 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
         return;
     }
 
-    if (message_type >= (sizeof(handlers) / sizeof(handler_t)))
+    if (message_type >= (sizeof(handlers) / sizeof(handler_t))) {
         DLOG("Unhandled message type: %d\n", message_type);
-    else {
+    } else {
         handler_t h = handlers[message_type];
         h(client, message, 0, message_length, message_type);
     }
@@ -1592,16 +1606,18 @@ yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old)
     ystr(change);
 
     ystr("current");
-    if (current == NULL)
+    if (current == NULL) {
         y(null);
-    else
+    } else {
         dump_node(gen, current, false);
+    }
 
     ystr("old");
-    if (old == NULL)
+    if (old == NULL) {
         y(null);
-    else
+    } else {
         dump_node(gen, old, false);
+    }
 
     y(map_close);
 

@@ -32,8 +32,9 @@ char *convert_ucs2_to_utf8(xcb_char2b_t *text, size_t num_glyphs) {
     if (utf8_conversion_descriptor == (iconv_t)-1) {
         /* Get a new conversion descriptor */
         utf8_conversion_descriptor = iconv_open("UTF-8", "UCS-2BE");
-        if (utf8_conversion_descriptor == (iconv_t)-1)
+        if (utf8_conversion_descriptor == (iconv_t)-1) {
             err(EXIT_FAILURE, "Error opening the conversion context");
+        }
     } else {
         /* Reset the existing conversion descriptor */
         iconv(utf8_conversion_descriptor, NULL, NULL, NULL, NULL);

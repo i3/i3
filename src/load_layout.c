@@ -233,8 +233,9 @@ static int json_end_array(void *ctx) {
             LOG("focus (reverse) %d\n", mapping->old_id);
             Con *con;
             TAILQ_FOREACH (con, &(json_node->focus_head), focused) {
-                if (con->old_id != mapping->old_id)
+                if (con->old_id != mapping->old_id) {
                     continue;
+                }
                 LOG("got it! %p\n", con);
                 /* Move this entry to the top of the focus list. */
                 TAILQ_REMOVE(&(json_node->focus_head), con, focused);
@@ -257,29 +258,37 @@ static int json_key(void *ctx, const unsigned char *val, size_t len) {
     FREE(last_key);
     last_key = scalloc(len + 1, 1);
     memcpy(last_key, val, len);
-    if (strcasecmp(last_key, "swallows") == 0)
+    if (strcasecmp(last_key, "swallows") == 0) {
         parsing_swallows = true;
+    }
 
-    if (strcasecmp(last_key, "gaps") == 0)
+    if (strcasecmp(last_key, "gaps") == 0) {
         parsing_gaps = true;
+    }
 
-    if (strcasecmp(last_key, "rect") == 0)
+    if (strcasecmp(last_key, "rect") == 0) {
         parsing_rect = true;
+    }
 
-    if (strcasecmp(last_key, "actual_deco_rect") == 0)
+    if (strcasecmp(last_key, "actual_deco_rect") == 0) {
         parsing_actual_deco_rect = true;
+    }
 
-    if (strcasecmp(last_key, "deco_rect") == 0)
+    if (strcasecmp(last_key, "deco_rect") == 0) {
         parsing_deco_rect = true;
+    }
 
-    if (strcasecmp(last_key, "window_rect") == 0)
+    if (strcasecmp(last_key, "window_rect") == 0) {
         parsing_window_rect = true;
+    }
 
-    if (strcasecmp(last_key, "geometry") == 0)
+    if (strcasecmp(last_key, "geometry") == 0) {
         parsing_geometry = true;
+    }
 
-    if (strcasecmp(last_key, "focus") == 0)
+    if (strcasecmp(last_key, "focus") == 0) {
         parsing_focus = true;
+    }
 
     if (strcasecmp(last_key, "marks") == 0) {
         num_marks = 0;
@@ -341,12 +350,13 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "none") == 0 ||
-                strcasecmp(buf, "horizontal") == 0)
+                strcasecmp(buf, "horizontal") == 0) {
                 json_node->last_split_layout = L_SPLITH;
-            else if (strcasecmp(buf, "vertical") == 0)
+            } else if (strcasecmp(buf, "vertical") == 0) {
                 json_node->last_split_layout = L_SPLITV;
-            else
+            } else {
                 LOG("Unhandled orientation: %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "border") == 0) {
             char *buf = NULL;
@@ -367,63 +377,67 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         } else if (strcasecmp(last_key, "type") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "root") == 0)
+            if (strcasecmp(buf, "root") == 0) {
                 json_node->type = CT_ROOT;
-            else if (strcasecmp(buf, "output") == 0)
+            } else if (strcasecmp(buf, "output") == 0) {
                 json_node->type = CT_OUTPUT;
-            else if (strcasecmp(buf, "con") == 0)
+            } else if (strcasecmp(buf, "con") == 0) {
                 json_node->type = CT_CON;
-            else if (strcasecmp(buf, "floating_con") == 0)
+            } else if (strcasecmp(buf, "floating_con") == 0) {
                 json_node->type = CT_FLOATING_CON;
-            else if (strcasecmp(buf, "workspace") == 0)
+            } else if (strcasecmp(buf, "workspace") == 0) {
                 json_node->type = CT_WORKSPACE;
-            else if (strcasecmp(buf, "dockarea") == 0)
+            } else if (strcasecmp(buf, "dockarea") == 0) {
                 json_node->type = CT_DOCKAREA;
-            else
+            } else {
                 LOG("Unhandled \"type\": %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "layout") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "default") == 0)
+            if (strcasecmp(buf, "default") == 0) {
                 /* This set above when we read "orientation". */
                 json_node->layout = json_node->last_split_layout;
-            else if (strcasecmp(buf, "stacked") == 0)
+            } else if (strcasecmp(buf, "stacked") == 0) {
                 json_node->layout = L_STACKED;
-            else if (strcasecmp(buf, "tabbed") == 0)
+            } else if (strcasecmp(buf, "tabbed") == 0) {
                 json_node->layout = L_TABBED;
-            else if (strcasecmp(buf, "dockarea") == 0)
+            } else if (strcasecmp(buf, "dockarea") == 0) {
                 json_node->layout = L_DOCKAREA;
-            else if (strcasecmp(buf, "output") == 0)
+            } else if (strcasecmp(buf, "output") == 0) {
                 json_node->layout = L_OUTPUT;
-            else if (strcasecmp(buf, "splith") == 0)
+            } else if (strcasecmp(buf, "splith") == 0) {
                 json_node->layout = L_SPLITH;
-            else if (strcasecmp(buf, "splitv") == 0)
+            } else if (strcasecmp(buf, "splitv") == 0) {
                 json_node->layout = L_SPLITV;
-            else
+            } else {
                 LOG("Unhandled \"layout\": %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "workspace_layout") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "default") == 0)
+            if (strcasecmp(buf, "default") == 0) {
                 json_node->workspace_layout = L_DEFAULT;
-            else if (strcasecmp(buf, "stacked") == 0)
+            } else if (strcasecmp(buf, "stacked") == 0) {
                 json_node->workspace_layout = L_STACKED;
-            else if (strcasecmp(buf, "tabbed") == 0)
+            } else if (strcasecmp(buf, "tabbed") == 0) {
                 json_node->workspace_layout = L_TABBED;
-            else
+            } else {
                 LOG("Unhandled \"workspace_layout\": %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "last_split_layout") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "splith") == 0)
+            if (strcasecmp(buf, "splith") == 0) {
                 json_node->last_split_layout = L_SPLITH;
-            else if (strcasecmp(buf, "splitv") == 0)
+            } else if (strcasecmp(buf, "splitv") == 0) {
                 json_node->last_split_layout = L_SPLITV;
-            else
+            } else {
                 LOG("Unhandled \"last_splitlayout\": %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "mark") == 0) {
             DLOG("Found deprecated key \"mark\".\n");
@@ -435,24 +449,26 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         } else if (strcasecmp(last_key, "floating") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "auto_off") == 0)
+            if (strcasecmp(buf, "auto_off") == 0) {
                 json_node->floating = FLOATING_AUTO_OFF;
-            else if (strcasecmp(buf, "auto_on") == 0)
+            } else if (strcasecmp(buf, "auto_on") == 0) {
                 json_node->floating = FLOATING_AUTO_ON;
-            else if (strcasecmp(buf, "user_off") == 0)
+            } else if (strcasecmp(buf, "user_off") == 0) {
                 json_node->floating = FLOATING_USER_OFF;
-            else if (strcasecmp(buf, "user_on") == 0)
+            } else if (strcasecmp(buf, "user_on") == 0) {
                 json_node->floating = FLOATING_USER_ON;
+            }
             free(buf);
         } else if (strcasecmp(last_key, "scratchpad_state") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "none") == 0)
+            if (strcasecmp(buf, "none") == 0) {
                 json_node->scratchpad_state = SCRATCHPAD_NONE;
-            else if (strcasecmp(buf, "fresh") == 0)
+            } else if (strcasecmp(buf, "fresh") == 0) {
                 json_node->scratchpad_state = SCRATCHPAD_FRESH;
-            else if (strcasecmp(buf, "changed") == 0)
+            } else if (strcasecmp(buf, "changed") == 0) {
                 json_node->scratchpad_state = SCRATCHPAD_CHANGED;
+            }
             free(buf);
         } else if (strcasecmp(last_key, "previous_workspace_name") == 0) {
             FREE(previous_workspace_name);
@@ -465,27 +481,33 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
 static int json_int(void *ctx, long long val) {
     LOG("int %lld for key %s\n", val, last_key);
     /* For backwards compatibility with i3 < 4.8 */
-    if (strcasecmp(last_key, "type") == 0)
+    if (strcasecmp(last_key, "type") == 0) {
         json_node->type = val;
+    }
 
-    if (strcasecmp(last_key, "fullscreen_mode") == 0)
+    if (strcasecmp(last_key, "fullscreen_mode") == 0) {
         json_node->fullscreen_mode = val;
+    }
 
-    if (strcasecmp(last_key, "num") == 0)
+    if (strcasecmp(last_key, "num") == 0) {
         json_node->num = val;
+    }
 
-    if (strcasecmp(last_key, "current_border_width") == 0)
+    if (strcasecmp(last_key, "current_border_width") == 0) {
         json_node->current_border_width = val;
+    }
 
     if (strcasecmp(last_key, "window_icon_padding") == 0) {
         json_node->window_icon_padding = val;
     }
 
-    if (strcasecmp(last_key, "depth") == 0)
+    if (strcasecmp(last_key, "depth") == 0) {
         json_node->depth = val;
+    }
 
-    if (!parsing_swallows && strcasecmp(last_key, "id") == 0)
+    if (!parsing_swallows && strcasecmp(last_key, "id") == 0) {
         json_node->old_id = val;
+    }
 
     if (parsing_focus) {
         struct focus_mapping *focus_mapping = scalloc(1, sizeof(struct focus_mapping));
@@ -495,22 +517,24 @@ static int json_int(void *ctx, long long val) {
 
     if (parsing_rect || parsing_window_rect || parsing_geometry) {
         Rect *r;
-        if (parsing_rect)
+        if (parsing_rect) {
             r = &(json_node->rect);
-        else if (parsing_window_rect)
+        } else if (parsing_window_rect) {
             r = &(json_node->window_rect);
-        else
+        } else {
             r = &(json_node->geometry);
-        if (strcasecmp(last_key, "x") == 0)
+        }
+        if (strcasecmp(last_key, "x") == 0) {
             r->x = val;
-        else if (strcasecmp(last_key, "y") == 0)
+        } else if (strcasecmp(last_key, "y") == 0) {
             r->y = val;
-        else if (strcasecmp(last_key, "width") == 0)
+        } else if (strcasecmp(last_key, "width") == 0) {
             r->width = val;
-        else if (strcasecmp(last_key, "height") == 0)
+        } else if (strcasecmp(last_key, "height") == 0) {
             r->height = val;
-        else
+        } else {
             ELOG("WARNING: unknown key %s in rect\n", last_key);
+        }
         DLOG("rect now: (%d, %d, %d, %d)\n",
              r->x, r->y, r->width, r->height);
     }
@@ -529,16 +553,17 @@ static int json_int(void *ctx, long long val) {
         }
     }
     if (parsing_gaps) {
-        if (strcasecmp(last_key, "inner") == 0)
+        if (strcasecmp(last_key, "inner") == 0) {
             json_node->gaps.inner = val;
-        else if (strcasecmp(last_key, "top") == 0)
+        } else if (strcasecmp(last_key, "top") == 0) {
             json_node->gaps.top = val;
-        else if (strcasecmp(last_key, "right") == 0)
+        } else if (strcasecmp(last_key, "right") == 0) {
             json_node->gaps.right = val;
-        else if (strcasecmp(last_key, "bottom") == 0)
+        } else if (strcasecmp(last_key, "bottom") == 0) {
             json_node->gaps.bottom = val;
-        else if (strcasecmp(last_key, "left") == 0)
+        } else if (strcasecmp(last_key, "left") == 0) {
             json_node->gaps.left = val;
+        }
     }
 
     return 1;
@@ -550,8 +575,9 @@ static int json_bool(void *ctx, int val) {
         to_focus = json_node;
     }
 
-    if (strcasecmp(last_key, "sticky") == 0)
+    if (strcasecmp(last_key, "sticky") == 0) {
         json_node->sticky = val;
+    }
 
     if (parsing_swallows) {
         if (strcasecmp(last_key, "restart_mode") == 0) {
@@ -585,12 +611,14 @@ static int json_determine_content_shallower(void *ctx) {
 }
 
 static int json_determine_content_string(void *ctx, const unsigned char *val, size_t len) {
-    if (strcasecmp(last_key, "type") != 0 || content_level > 1)
+    if (strcasecmp(last_key, "type") != 0 || content_level > 1) {
         return 1;
+    }
 
     DLOG("string = %.*s, last_key = %s\n", (int)len, val, last_key);
-    if (strncasecmp((const char *)val, "workspace", len) == 0)
+    if (strncasecmp((const char *)val, "workspace", len) == 0) {
         content_result = JSON_CONTENT_WORKSPACE;
+    }
     return 0;
 }
 
@@ -702,8 +730,9 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
     if (stat != yajl_status_ok) {
         unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, len);
         ELOG("JSON parsing error: %s\n", str);
-        if (errormsg != NULL)
+        if (errormsg != NULL) {
             *errormsg = sstrdup((const char *)str);
+        }
         yajl_free_error(hand, str);
         while (incomplete-- > 0) {
             Con *parent = json_node->parent;

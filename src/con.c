@@ -57,8 +57,9 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     TAILQ_INIT(&(new->swallow_head));
     TAILQ_INIT(&(new->marks_head));
 
-    if (parent != NULL)
+    if (parent != NULL) {
         con_attach(new, parent, false);
+    }
 
     return new;
 }
@@ -123,10 +124,11 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
                     }
                 }
                 /* we need to insert con after current, if current is not NULL */
-                if (current)
+                if (current) {
                     TAILQ_INSERT_BEFORE(current, con, nodes);
-                else
+                } else {
                     TAILQ_INSERT_TAIL(nodes_head, con, nodes);
+                }
             }
         }
         goto add_to_focus_head;
@@ -163,8 +165,9 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
         if (!ignore_focus) {
             /* Get the first tiling container in focus stack */
             TAILQ_FOREACH (loop, &(parent->focus_head), focused) {
-                if (loop->type == CT_FLOATING_CON)
+                if (loop->type == CT_FLOATING_CON) {
                     continue;
+                }
                 current = loop;
                 break;
             }
@@ -197,8 +200,9 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
         if (current != NULL && parent->type != CT_OUTPUT) {
             DLOG("Inserting con = %p after con %p\n", con, current);
             TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
-        } else
+        } else {
             TAILQ_INSERT_TAIL(nodes_head, con, nodes);
+        }
     }
 
 add_to_focus_head:
@@ -251,8 +255,9 @@ void con_focus(Con *con) {
     /* 2: exchange the position of the container in focus stack of the parent all the way up */
     TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
     TAILQ_INSERT_HEAD(&(con->parent->focus_head), con, focused);
-    if (con->parent->parent != NULL)
+    if (con->parent->parent != NULL) {
         con_focus(con->parent);
+    }
 
     focused = con;
     /* We can't blindly reset non-leaf containers since they might have
@@ -383,8 +388,9 @@ bool con_has_children(Con *con) {
  *
  */
 bool con_is_split(Con *con) {
-    if (con_is_leaf(con))
+    if (con_is_leaf(con)) {
         return false;
+    }
 
     switch (con->layout) {
         case L_DOCKAREA:
@@ -409,8 +415,9 @@ bool con_is_hidden(Con *con) {
     while (current != NULL && current->type != CT_WORKSPACE) {
         Con *parent = current->parent;
         if (parent != NULL && (parent->layout == L_TABBED || parent->layout == L_STACKED)) {
-            if (TAILQ_FIRST(&(parent->focus_head)) != current)
+            if (TAILQ_FIRST(&(parent->focus_head)) != current) {
                 return true;
+            }
         }
 
         current = parent;
@@ -483,13 +490,15 @@ bool con_is_maximized(Con *con, orientation_t orientation) {
  *
  */
 bool con_is_sticky(Con *con) {
-    if (con->sticky)
+    if (con->sticky) {
         return true;
+    }
 
     Con *child;
     TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
-        if (con_is_sticky(child))
+        if (con_is_sticky(child)) {
             return true;
+        }
     }
 
     return false;
@@ -502,8 +511,9 @@ bool con_is_sticky(Con *con) {
  */
 bool con_accepts_window(Con *con) {
     /* 1: workspaces never accept direct windows */
-    if (con->type == CT_WORKSPACE)
+    if (con->type == CT_WORKSPACE) {
         return false;
+    }
 
     if (con_is_split(con)) {
         DLOG("container %p does not accept windows, it is a split container.\n", con);
@@ -521,8 +531,9 @@ bool con_accepts_window(Con *con) {
  */
 Con *con_get_output(Con *con) {
     Con *result = con;
-    while (result != NULL && result->type != CT_OUTPUT)
+    while (result != NULL && result->type != CT_OUTPUT) {
         result = result->parent;
+    }
     /* We must be able to get an output because focus can never be set higher
      * in the tree (root node cannot be focused). */
     assert(result != NULL);
@@ -535,8 +546,9 @@ Con *con_get_output(Con *con) {
  */
 Con *con_get_workspace(Con *con) {
     Con *result = con;
-    while (result != NULL && result->type != CT_WORKSPACE)
+    while (result != NULL && result->type != CT_WORKSPACE) {
         result = result->parent;
+    }
     return result;
 }
 
@@ -548,8 +560,9 @@ Con *con_get_workspace(Con *con) {
 Con *con_parent_with_orientation(Con *con, orientation_t orientation) {
     DLOG("Searching for parent of Con %p with orientation %d\n", con, orientation);
     Con *parent = con->parent;
-    if (parent->type == CT_FLOATING_CON)
+    if (parent->type == CT_FLOATING_CON) {
         return NULL;
+    }
     while (con_orientation(parent) != orientation) {
         DLOG("Need to go one level further up\n");
         parent = parent->parent;
@@ -557,10 +570,12 @@ Con *con_parent_with_orientation(Con *con, orientation_t orientation) {
         if (parent &&
             (parent->type == CT_FLOATING_CON ||
              parent->type == CT_OUTPUT ||
-             (parent->parent && parent->parent->type == CT_OUTPUT)))
+             (parent->parent && parent->parent->type == CT_OUTPUT))) {
             parent = NULL;
-        if (parent == NULL)
+        }
+        if (parent == NULL) {
             break;
+        }
     }
     DLOG("Result: %p\n", parent);
     return parent;
@@ -662,11 +677,13 @@ bool con_is_floating(Con *con) {
  *
  */
 bool con_is_docked(Con *con) {
-    if (con->parent == NULL)
+    if (con->parent == NULL) {
         return false;
+    }
 
-    if (con->parent->type == CT_DOCKAREA)
+    if (con->parent->type == CT_DOCKAREA) {
         return true;
+    }
 
     return con_is_docked(con->parent);
 }
@@ -681,14 +698,17 @@ Con *con_inside_floating(Con *con) {
         return NULL;
     }
 
-    if (con->type == CT_FLOATING_CON)
+    if (con->type == CT_FLOATING_CON) {
         return con;
+    }
 
-    if (con->floating >= FLOATING_AUTO_ON)
+    if (con->floating >= FLOATING_AUTO_ON) {
         return con->parent;
+    }
 
-    if (con->type == CT_WORKSPACE || con->type == CT_OUTPUT)
+    if (con->type == CT_WORKSPACE || con->type == CT_OUTPUT) {
         return NULL;
+    }
 
     return con_inside_floating(con->parent);
 }
@@ -698,10 +718,12 @@ Con *con_inside_floating(Con *con) {
  *
  */
 bool con_inside_focused(Con *con) {
-    if (con == focused)
+    if (con == focused) {
         return true;
-    if (!con->parent)
+    }
+    if (!con->parent) {
         return false;
+    }
     return con_inside_focused(con->parent);
 }
 
@@ -785,8 +807,9 @@ Con *con_by_frame_id(xcb_window_t frame) {
 Con *con_by_mark(const char *mark) {
     Con *con;
     TAILQ_FOREACH (con, &all_cons, all_cons) {
-        if (con_has_mark(con, mark))
+        if (con_has_mark(con, mark)) {
             return con;
+        }
     }
 
     return NULL;
@@ -834,8 +857,9 @@ bool con_find_transient_for_window(Con *start, xcb_window_t target) {
 bool con_has_mark(Con *con, const char *mark) {
     mark_t *current;
     TAILQ_FOREACH (current, &(con->marks_head), marks) {
-        if (strcmp(current->name, mark) == 0)
+        if (strcmp(current->name, mark) == 0) {
             return true;
+        }
     }
 
     return false;
@@ -897,11 +921,13 @@ void con_unmark(Con *con, const char *name) {
     if (name == NULL) {
         DLOG("Unmarking all containers.\n");
         TAILQ_FOREACH (current, &all_cons, all_cons) {
-            if (con != NULL && current != con)
+            if (con != NULL && current != con) {
                 continue;
+            }
 
-            if (TAILQ_EMPTY(&(current->marks_head)))
+            if (TAILQ_EMPTY(&(current->marks_head))) {
                 continue;
+            }
 
             mark_t *mark;
             while (!TAILQ_EMPTY(&(current->marks_head))) {
@@ -928,8 +954,9 @@ void con_unmark(Con *con, const char *name) {
 
         mark_t *mark;
         TAILQ_FOREACH (mark, &(current->marks_head), marks) {
-            if (strcmp(mark->name, name) != 0)
+            if (strcmp(mark->name, name) != 0) {
                 continue;
+            }
 
             FREE(mark->name);
             TAILQ_REMOVE(&(current->marks_head), mark, marks);
@@ -952,28 +979,34 @@ Con *con_for_window(Con *con, i3Window *window, Match **store_match) {
 
     TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         TAILQ_FOREACH (match, &(child->swallow_head), matches) {
-            if (!match_matches_window(match, window))
+            if (!match_matches_window(match, window)) {
                 continue;
-            if (store_match != NULL)
+            }
+            if (store_match != NULL) {
                 *store_match = match;
+            }
             return child;
         }
         Con *result = con_for_window(child, window, store_match);
-        if (result != NULL)
+        if (result != NULL) {
             return result;
+        }
     }
 
     TAILQ_FOREACH (child, &(con->floating_head), floating_windows) {
         TAILQ_FOREACH (match, &(child->swallow_head), matches) {
-            if (!match_matches_window(match, window))
+            if (!match_matches_window(match, window)) {
                 continue;
-            if (store_match != NULL)
+            }
+            if (store_match != NULL) {
                 *store_match = match;
+            }
             return child;
         }
         Con *result = con_for_window(child, window, store_match);
-        if (result != NULL)
+        if (result != NULL) {
             return result;
+        }
     }
 
     return NULL;
@@ -1056,18 +1089,21 @@ int con_num_children(Con *con) {
  * this will return 2 instead of 1.
  */
 int con_num_visible_children(Con *con) {
-    if (con == NULL)
+    if (con == NULL) {
         return 0;
+    }
 
     int children = 0;
     Con *current = NULL;
     TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
         /* Visible leaf nodes are a child. */
-        if (!con_is_hidden(current) && con_is_leaf(current))
+        if (!con_is_hidden(current) && con_is_leaf(current)) {
             children++;
+        }
         /* All other containers need to be recursed. */
-        else
+        else {
             children += con_num_visible_children(current);
+        }
     }
 
     return children;
@@ -1078,11 +1114,13 @@ int con_num_visible_children(Con *con) {
  *
  */
 int con_num_windows(Con *con) {
-    if (con == NULL)
+    if (con == NULL) {
         return 0;
+    }
 
-    if (con_has_managed_window(con))
+    if (con_has_managed_window(con)) {
         return 1;
+    }
 
     int num = 0;
     Con *current = NULL;
@@ -1159,10 +1197,11 @@ void con_toggle_fullscreen(Con *con, int fullscreen_mode) {
 
     DLOG("toggling fullscreen for %p / %s\n", con, con->name);
 
-    if (con->fullscreen_mode == CF_NONE)
+    if (con->fullscreen_mode == CF_NONE) {
         con_enable_fullscreen(con, fullscreen_mode);
-    else
+    } else {
         con_disable_fullscreen(con);
+    }
 }
 
 /*
@@ -1182,8 +1221,9 @@ static void con_set_fullscreen_mode(Con *con, fullscreen_mode_t fullscreen_mode)
     /* update _NET_WM_STATE if this container has a window */
     /* TODO: when a window is assigned to a container which is already
      * fullscreened, this state needs to be pushed to the client, too */
-    if (con->window == NULL)
+    if (con->window == NULL) {
         return;
+    }
 
     if (con->fullscreen_mode != CF_NONE) {
         DLOG("Setting _NET_WM_STATE_FULLSCREEN for con = %p / window = %d.\n", con, con->window->id);
@@ -1213,10 +1253,11 @@ void con_enable_fullscreen(Con *con, fullscreen_mode_t fullscreen_mode) {
 
     assert(fullscreen_mode == CF_GLOBAL || fullscreen_mode == CF_OUTPUT);
 
-    if (fullscreen_mode == CF_GLOBAL)
+    if (fullscreen_mode == CF_GLOBAL) {
         DLOG("enabling global fullscreen for %p / %s\n", con, con->name);
-    else
+    } else {
         DLOG("enabling fullscreen for %p / %s\n", con, con->name);
+    }
 
     if (con->fullscreen_mode == fullscreen_mode) {
         DLOG("fullscreen already enabled for %p / %s\n", con, con->name);
@@ -1227,21 +1268,25 @@ void con_enable_fullscreen(Con *con, fullscreen_mode_t fullscreen_mode) {
 
     /* Disable any fullscreen container that would conflict the new one. */
     Con *fullscreen = con_get_fullscreen_con(croot, CF_GLOBAL);
-    if (fullscreen == NULL)
+    if (fullscreen == NULL) {
         fullscreen = con_get_fullscreen_con(con_ws, CF_OUTPUT);
-    if (fullscreen != NULL)
+    }
+    if (fullscreen != NULL) {
         con_disable_fullscreen(fullscreen);
+    }
 
     /* Set focus to new fullscreen container. Unless in global fullscreen mode
      * and on another workspace restore focus afterwards.
      * Switch to the container’s workspace if mode is global. */
     Con *cur_ws = con_get_workspace(focused);
     Con *old_focused = focused;
-    if (fullscreen_mode == CF_GLOBAL && cur_ws != con_ws)
+    if (fullscreen_mode == CF_GLOBAL && cur_ws != con_ws) {
         workspace_show(con_ws);
+    }
     con_activate(con);
-    if (fullscreen_mode != CF_GLOBAL && cur_ws != con_ws)
+    if (fullscreen_mode != CF_GLOBAL && cur_ws != con_ws) {
         con_activate(old_focused);
+    }
 
     con_set_fullscreen_mode(con, fullscreen_mode);
 }
@@ -1293,8 +1338,9 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
         }
 
         /* If there are no non-floating children, ignore the workspace. */
-        if (con_is_leaf(con))
+        if (con_is_leaf(con)) {
             return false;
+        }
 
         con = workspace_encapsulate(con);
         if (con == NULL) {
@@ -1349,8 +1395,9 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
          * to the coordinate space of the correct output */
         if (fix_coordinates && con->type == CT_FLOATING_CON) {
             floating_fix_coordinates(con, &(source_output->rect), &(dest_output->rect));
-        } else
+        } else {
             DLOG("Not fixing coordinates, fix_coordinates flag = %d\n", fix_coordinates);
+        }
     }
 
     /* If moving a fullscreen container and the destination already has a
@@ -1417,16 +1464,18 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
     /* Set focus only if con was on current workspace before moving.
      * Otherwise we would give focus to some window on different workspace. */
-    if (focus_next)
+    if (focus_next) {
         con_activate(con_descend_focused(focus_next));
+    }
 
     /* 8. If anything within the container is associated with a startup sequence,
      * delete it so child windows won't be created on the old workspace. */
     if (!con_is_leaf(con)) {
         Con *child;
         TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
-            if (!child->window)
+            if (!child->window) {
                 continue;
+            }
             startup_sequence_delete_by_window(child->window);
         }
     }
@@ -1648,8 +1697,9 @@ Con *con_next_focused(Con *con) {
  */
 Con *con_descend_focused(Con *con) {
     Con *next = con;
-    while (next != focused && !TAILQ_EMPTY(&(next->focus_head)))
+    while (next != focused && !TAILQ_EMPTY(&(next->focus_head))) {
         next = TAILQ_FIRST(&(next->focus_head));
+    }
     return next;
 }
 
@@ -1665,13 +1715,15 @@ Con *con_descend_tiling_focused(Con *con) {
     Con *next = con;
     Con *before;
     Con *child;
-    if (next == focused)
+    if (next == focused) {
         return next;
+    }
     do {
         before = next;
         TAILQ_FOREACH (child, &(next->focus_head), focused) {
-            if (child->type == CT_FLOATING_CON)
+            if (child->type == CT_FLOATING_CON) {
                 continue;
+            }
 
             next = child;
             break;
@@ -1696,10 +1748,11 @@ Con *con_descend_direction(Con *con, direction_t direction) {
         if (orientation == HORIZ) {
             /* If the direction is horizontal, we can use either the first
              * (D_RIGHT) or the last con (D_LEFT) */
-            if (direction == D_RIGHT)
+            if (direction == D_RIGHT) {
                 most = TAILQ_FIRST(&(con->nodes_head));
-            else
+            } else {
                 most = TAILQ_LAST(&(con->nodes_head), nodes_head);
+            }
         } else if (orientation == VERT) {
             /* Wrong orientation. We use the last focused con. Within that con,
              * we recurse to chose the left/right con or at least the last
@@ -1721,10 +1774,11 @@ Con *con_descend_direction(Con *con, direction_t direction) {
         if (orientation == VERT) {
             /* If the direction is vertical, we can use either the first
              * (D_DOWN) or the last con (D_UP) */
-            if (direction == D_UP)
+            if (direction == D_UP) {
                 most = TAILQ_LAST(&(con->nodes_head), nodes_head);
-            else
+            } else {
                 most = TAILQ_FIRST(&(con->nodes_head));
+            }
         } else if (orientation == HORIZ) {
             /* Wrong orientation. We use the last focused con. Within that con,
              * we recurse to chose the top/bottom con or at least the last
@@ -1742,8 +1796,9 @@ Con *con_descend_direction(Con *con, direction_t direction) {
         }
     }
 
-    if (!most)
+    if (!most) {
         return con;
+    }
     return con_descend_direction(most, direction);
 }
 
@@ -1773,8 +1828,9 @@ static Rect con_border_style_rect_without_title(Con *con) {
         (config.smart_borders == SMART_BORDERS_NO_GAPS && !has_outer_gaps(calculate_effective_gaps(con))) ||
         (config.hide_edge_borders == HEBM_SMART && con_num_visible_children(con_get_workspace(con)) <= 1) ||
         (config.hide_edge_borders == HEBM_SMART_NO_GAPS && con_num_visible_children(con_get_workspace(con)) <= 1 && !has_outer_gaps(calculate_effective_gaps(con)))) {
-        if (!con_is_floating(con))
+        if (!con_is_floating(con)) {
             return (Rect){0, 0, 0, 0};
+        }
     }
 
     adjacent_t borders_to_hide = ADJ_NONE;
@@ -1791,8 +1847,9 @@ static Rect con_border_style_rect_without_title(Con *con) {
     DLOG("Effective border width is set to: %d\n", border_width);
     /* Shortcut to avoid calling con_adjacent_borders() on dock containers. */
     int border_style = con_border_style(con);
-    if (border_style == BS_NONE)
+    if (border_style == BS_NONE) {
         return (Rect){0, 0, 0, 0};
+    }
     if (border_style == BS_NORMAL) {
         result = (Rect){border_width, 0, -(2 * border_width), -(border_width)};
     } else {
@@ -1848,18 +1905,23 @@ adjacent_t con_adjacent_borders(Con *con) {
     adjacent_t result = ADJ_NONE;
     /* Floating windows are never adjacent to any other window, so
        don’t hide their border(s). This prevents bug #998. */
-    if (con_is_floating(con))
+    if (con_is_floating(con)) {
         return result;
+    }
 
     Con *workspace = con_get_workspace(con);
-    if (con->rect.x == workspace->rect.x)
+    if (con->rect.x == workspace->rect.x) {
         result |= ADJ_LEFT_SCREEN_EDGE;
-    if (con->rect.x + con->rect.width == workspace->rect.x + workspace->rect.width)
+    }
+    if (con->rect.x + con->rect.width == workspace->rect.x + workspace->rect.width) {
         result |= ADJ_RIGHT_SCREEN_EDGE;
-    if (con->rect.y == workspace->rect.y)
+    }
+    if (con->rect.y == workspace->rect.y) {
         result |= ADJ_UPPER_SCREEN_EDGE;
-    if (con->rect.y + con->rect.height == workspace->rect.y + workspace->rect.height)
+    }
+    if (con->rect.y + con->rect.height == workspace->rect.y + workspace->rect.height) {
         result |= ADJ_LOWER_SCREEN_EDGE;
+    }
     return result;
 }
 
@@ -1946,14 +2008,16 @@ void con_set_layout(Con *con, layout_t layout) {
     /* Users can focus workspaces, but not any higher in the hierarchy.
      * Focus on the workspace is a special case, since in every other case, the
      * user means "change the layout of the parent split container". */
-    if (con->type != CT_WORKSPACE)
+    if (con->type != CT_WORKSPACE) {
         con = con->parent;
+    }
 
     /* We fill in last_split_layout when switching to a different layout
      * since there are many places in the code that don’t use
      * con_set_layout(). */
-    if (con->layout == L_SPLITH || con->layout == L_SPLITV)
+    if (con->layout == L_SPLITH || con->layout == L_SPLITV) {
         con->last_split_layout = con->layout;
+    }
 
     /* When the container type is CT_WORKSPACE, the user wants to change the
      * whole workspace into stacked/tabbed mode. To do this and still allow
@@ -2009,8 +2073,9 @@ void con_set_layout(Con *con, layout_t layout) {
          * splitv) in order to still do the same thing. */
         con->layout = con->last_split_layout;
         /* In case last_split_layout was not initialized… */
-        if (con->layout == L_DEFAULT)
+        if (con->layout == L_DEFAULT) {
             con->layout = L_SPLITH;
+        }
     } else {
         con->layout = layout;
     }
@@ -2029,8 +2094,9 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
     /* Users can focus workspaces, but not any higher in the hierarchy.
      * Focus on the workspace is a special case, since in every other case, the
      * user means "change the layout of the parent split container". */
-    if (con->type != CT_WORKSPACE)
+    if (con->type != CT_WORKSPACE) {
         parent = con->parent;
+    }
     DLOG("con_toggle_layout(%p, %s), parent = %p\n", con, toggle_mode, parent);
 
     const char delim[] = " ";
@@ -2088,22 +2154,24 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
             con_set_layout(con, new_layout);
         }
     } else if (strcasecmp(toggle_mode, "all") == 0 || strcasecmp(toggle_mode, "default") == 0) {
-        if (parent->layout == L_STACKED)
+        if (parent->layout == L_STACKED) {
             con_set_layout(con, L_TABBED);
-        else if (parent->layout == L_TABBED) {
-            if (strcasecmp(toggle_mode, "all") == 0)
+        } else if (parent->layout == L_TABBED) {
+            if (strcasecmp(toggle_mode, "all") == 0) {
                 con_set_layout(con, L_SPLITH);
-            else
+            } else {
                 con_set_layout(con, parent->last_split_layout);
+            }
         } else if (parent->layout == L_SPLITH || parent->layout == L_SPLITV) {
             if (strcasecmp(toggle_mode, "all") == 0) {
                 /* When toggling through all modes, we toggle between
                  * splith/splitv, whereas normally we just directly jump to
                  * stacked. */
-                if (parent->layout == L_SPLITH)
+                if (parent->layout == L_SPLITH) {
                     con_set_layout(con, L_SPLITV);
-                else
+                } else {
                     con_set_layout(con, L_STACKED);
+                }
             } else {
                 con_set_layout(con, L_STACKED);
             }
@@ -2242,13 +2310,15 @@ Rect con_minimum_size(Con *con) {
  */
 bool con_fullscreen_permits_focusing(Con *con) {
     /* No focus, no problem. */
-    if (!focused)
+    if (!focused) {
         return true;
+    }
 
     /* Find the first fullscreen ascendent. */
     Con *fs = focused;
-    while (fs && fs->fullscreen_mode == CF_NONE)
+    while (fs && fs->fullscreen_mode == CF_NONE) {
         fs = fs->parent;
+    }
 
     /* fs must be non-NULL since the workspace con doesn’t have CF_NONE and
      * there always has to be a workspace con in the hierarchy. */
@@ -2256,12 +2326,14 @@ bool con_fullscreen_permits_focusing(Con *con) {
     /* The most common case is we hit the workspace level. In this
      * situation, changing focus is also harmless. */
     assert(fs->fullscreen_mode != CF_NONE);
-    if (fs->type == CT_WORKSPACE)
+    if (fs->type == CT_WORKSPACE) {
         return true;
+    }
 
     /* Allow it if the container itself is the fullscreen container. */
-    if (con == fs)
+    if (con == fs) {
         return true;
+    }
 
     /* If fullscreen is per-output, the focus being in a different workspace is
      * sufficient to guarantee that change won't leave fullscreen in bad shape. */
@@ -2283,14 +2355,16 @@ bool con_fullscreen_permits_focusing(Con *con) {
 bool con_has_urgent_child(Con *con) {
     Con *child;
 
-    if (con_is_leaf(con))
+    if (con_is_leaf(con)) {
         return con->urgent;
+    }
 
     /* We are not interested in floating windows since they can only be
      * attached to a workspace → nodes_head instead of focus_head */
     TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
-        if (con_has_urgent_child(child))
+        if (con_has_urgent_child(child)) {
             return true;
+        }
     }
 
     return false;
@@ -2308,8 +2382,9 @@ void con_update_parents_urgency(Con *con) {
      * hierarchy than the workspace level. Unfortunately, since the content
      * container has type == CT_CON, that’s not easy to verify in the loop
      * below, so we need another condition to catch that case: */
-    if (con->type == CT_WORKSPACE)
+    if (con->type == CT_WORKSPACE) {
         return;
+    }
 
     bool new_urgency_value = con->urgent;
     while (parent && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
@@ -2318,8 +2393,9 @@ void con_update_parents_urgency(Con *con) {
         } else {
             /* We can only reset the urgency when the parent
              * has no other urgent children */
-            if (!con_has_urgent_child(parent))
+            if (!con_has_urgent_child(parent)) {
                 parent->urgent = false;
+            }
         }
         parent = parent->parent;
     }
@@ -2339,8 +2415,9 @@ void con_set_urgency(Con *con, bool urgent) {
 
     if (con->urgency_timer == NULL) {
         con->urgent = urgent;
-    } else
+    } else {
         DLOG("Discarding urgency WM_HINT because timer is running\n");
+    }
 
     if (con->window) {
         if (con->urgent) {
@@ -2356,8 +2433,9 @@ void con_set_urgency(Con *con, bool urgent) {
     Con *ws;
     /* Set the urgency flag on the workspace, if a workspace could be found
      * (for dock clients, that is not the case). */
-    if ((ws = con_get_workspace(con)) != NULL)
+    if ((ws = con_get_workspace(con)) != NULL) {
         workspace_update_urgent_flag(ws);
+    }
 
     if (con->urgent != old_urgent) {
         LOG("Urgency flag changed to %d\n", con->urgent);
@@ -2381,28 +2459,30 @@ char *con_get_tree_representation(Con *con) {
 
     /* end of recursion */
     if (con_is_leaf(con)) {
-        if (!con->window)
+        if (!con->window) {
             return sstrdup("nowin");
+        }
 
-        if (!con->window->class_instance)
+        if (!con->window->class_instance) {
             return sstrdup("noinstance");
+        }
 
         return sstrdup(con->window->class_instance);
     }
 
     char *buf;
     /* 1) add the Layout type to buf */
-    if (con->layout == L_DEFAULT)
+    if (con->layout == L_DEFAULT) {
         buf = sstrdup("D[");
-    else if (con->layout == L_SPLITV)
+    } else if (con->layout == L_SPLITV) {
         buf = sstrdup("V[");
-    else if (con->layout == L_SPLITH)
+    } else if (con->layout == L_SPLITH) {
         buf = sstrdup("H[");
-    else if (con->layout == L_TABBED)
+    } else if (con->layout == L_TABBED) {
         buf = sstrdup("T[");
-    else if (con->layout == L_STACKED)
+    } else if (con->layout == L_STACKED) {
         buf = sstrdup("S[");
-    else {
+    } else {
         ELOG("BUG: Code not updated to account for new layout type\n");
         assert(false);
     }

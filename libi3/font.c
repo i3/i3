@@ -96,10 +96,11 @@ static void draw_text_pango(const char *text, size_t text_len,
     pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
     pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
 
-    if (pango_markup)
+    if (pango_markup) {
         pango_layout_set_markup(layout, text, text_len);
-    else
+    } else {
         pango_layout_set_text(layout, text, text_len);
+    }
 
     /* Do the drawing */
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
@@ -131,10 +132,11 @@ static int predict_text_width_pango(const char *text, size_t text_len, bool pang
     gint width;
     pango_layout_set_font_description(layout, savedFont->specific.pango_desc);
 
-    if (pango_markup)
+    if (pango_markup) {
         pango_layout_set_markup(layout, text, text_len);
-    else
+    } else {
         pango_layout_set_text(layout, text, text_len);
+    }
 
     pango_cairo_update_layout(cr, layout);
     pango_layout_get_pixel_size(layout, &width, NULL);
@@ -214,10 +216,11 @@ i3Font load_font(const char *pattern, const bool fallback) {
             info_cookie = xcb_query_font(conn, font.specific.xcb.id);
 
             free(error);
-            if ((error = xcb_request_check(conn, font_cookie)) != NULL)
+            if ((error = xcb_request_check(conn, font_cookie)) != NULL) {
                 errx(EXIT_FAILURE, "Could open neither requested font nor fallbacks "
                                    "(fixed or -misc-*): X11 error %d",
                      error->error_code);
+            }
         }
     }
     free(error);
@@ -226,14 +229,16 @@ i3Font load_font(const char *pattern, const bool fallback) {
     LOG("Using X font %s\n", pattern);
 
     /* Get information (height/name) for this font */
-    if (!(font.specific.xcb.info = xcb_query_font_reply(conn, info_cookie, NULL)))
+    if (!(font.specific.xcb.info = xcb_query_font_reply(conn, info_cookie, NULL))) {
         errx(EXIT_FAILURE, "Could not load font \"%s\"", pattern);
+    }
 
     /* Get the font table, if possible */
-    if (xcb_query_font_char_infos_length(font.specific.xcb.info) == 0)
+    if (xcb_query_font_char_infos_length(font.specific.xcb.info) == 0) {
         font.specific.xcb.table = NULL;
-    else
+    } else {
         font.specific.xcb.table = xcb_query_font_char_infos(font.specific.xcb.info);
+    }
 
     /* Calculate the font height */
     font.height = font.specific.xcb.info->font_ascent + font.specific.xcb.info->font_descent;
@@ -258,8 +263,9 @@ void set_font(i3Font *font) {
  */
 void free_font(void) {
     /* if there is no saved font, simply return */
-    if (savedFont == NULL)
+    if (savedFont == NULL) {
         return;
+    }
 
     free(savedFont->pattern);
     switch (savedFont->type) {
@@ -340,8 +346,9 @@ static void draw_text_xcb(const xcb_char2b_t *text, size_t text_len, xcb_drawabl
         text_len -= chunk_size;
 
         /* Check if we're done */
-        if (text_len == 0)
+        if (text_len == 0) {
             break;
+        }
 
         /* Advance pos_x based on the predicted text width */
         x += predict_text_width_xcb(chunk, chunk_size);
@@ -405,8 +412,9 @@ static int xcb_query_text_width(const xcb_char2b_t *text, size_t text_len) {
 }
 
 static int predict_text_width_xcb(const xcb_char2b_t *input, size_t text_len) {
-    if (text_len == 0)
+    if (text_len == 0) {
         return 0;
+    }
 
     int width;
     if (savedFont->specific.xcb.table == NULL) {
@@ -427,8 +435,9 @@ static int predict_text_width_xcb(const xcb_char2b_t *input, size_t text_len) {
             if (row < font_info->min_byte1 ||
                 row > font_info->max_byte1 ||
                 col < font_info->min_char_or_byte2 ||
-                col > font_info->max_char_or_byte2)
+                col > font_info->max_char_or_byte2) {
                 continue;
+            }
 
             /* Don't you ask me, how this one works… (Merovius) */
             info = &font_table[((row - font_info->min_byte1) *

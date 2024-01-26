@@ -106,8 +106,9 @@ static bool any_randr_output_active(void) {
     Output *output;
 
     TAILQ_FOREACH (output, &outputs, outputs) {
-        if (output != root_output && !output->to_be_disabled && output->active)
+        if (output != root_output && !output->to_be_disabled && output->active) {
             return true;
+        }
     }
 
     return false;
@@ -121,13 +122,15 @@ static bool any_randr_output_active(void) {
 Output *get_output_containing(unsigned int x, unsigned int y) {
     Output *output;
     TAILQ_FOREACH (output, &outputs, outputs) {
-        if (!output->active)
+        if (!output->active) {
             continue;
+        }
         DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
              x, y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
         if (x >= output->rect.x && x < (output->rect.x + output->rect.width) &&
-            y >= output->rect.y && y < (output->rect.y + output->rect.height))
+            y >= output->rect.y && y < (output->rect.y + output->rect.height)) {
             return output;
+        }
     }
 
     return NULL;
@@ -155,14 +158,16 @@ Output *get_output_from_rect(Rect rect) {
 Output *get_output_with_dimensions(Rect rect) {
     Output *output;
     TAILQ_FOREACH (output, &outputs, outputs) {
-        if (!output->active)
+        if (!output->active) {
             continue;
+        }
         DLOG("comparing x=%d y=%d %dx%d with x=%d and y=%d %dx%d\n",
              rect.x, rect.y, rect.width, rect.height,
              output->rect.x, output->rect.y, output->rect.width, output->rect.height);
         if (rect.x == output->rect.x && rect.width == output->rect.width &&
-            rect.y == output->rect.y && rect.height == output->rect.height)
+            rect.y == output->rect.y && rect.height == output->rect.height) {
             return output;
+        }
     }
 
     return NULL;
@@ -182,8 +187,9 @@ Output *output_containing_rect(Rect rect) {
     long max_area = 0;
     Output *result = NULL;
     TAILQ_FOREACH (output, &outputs, outputs) {
-        if (!output->active)
+        if (!output->active) {
             continue;
+        }
         int lx_o = (int)output->rect.x, uy_o = (int)output->rect.y;
         int rx_o = (int)(output->rect.x + output->rect.width), by_o = (int)(output->rect.y + output->rect.height);
         DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
@@ -217,18 +223,20 @@ Output *get_output_next_wrap(direction_t direction, Output *current) {
     /* If no output can be found, wrap */
     if (!best) {
         direction_t opposite;
-        if (direction == D_RIGHT)
+        if (direction == D_RIGHT) {
             opposite = D_LEFT;
-        else if (direction == D_LEFT)
+        } else if (direction == D_LEFT) {
             opposite = D_RIGHT;
-        else if (direction == D_DOWN)
+        } else if (direction == D_DOWN) {
             opposite = D_UP;
-        else
+        } else {
             opposite = D_DOWN;
+        }
         best = get_output_next(opposite, current, FARTHEST_OUTPUT);
     }
-    if (!best)
+    if (!best) {
         best = current;
+    }
     DLOG("current = %s, best = %s\n", output_primary_name(current), output_primary_name(best));
     return best;
 }
@@ -250,8 +258,9 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
     Output *output,
         *best = NULL;
     TAILQ_FOREACH (output, &outputs, outputs) {
-        if (!output->active)
+        if (!output->active) {
             continue;
+        }
 
         other = &(output->rect);
 
@@ -260,17 +269,20 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
             /* Skip the output when it doesn’t overlap the other one’s y
              * coordinate at all. */
             if ((other->y + other->height) <= cur->y ||
-                (cur->y + cur->height) <= other->y)
+                (cur->y + cur->height) <= other->y) {
                 continue;
+            }
         } else if ((direction == D_DOWN && other->y > cur->y) ||
                    (direction == D_UP && other->y < cur->y)) {
             /* Skip the output when it doesn’t overlap the other one’s x
              * coordinate at all. */
             if ((other->x + other->width) <= cur->x ||
-                (cur->x + cur->width) <= other->x)
+                (cur->x + cur->width) <= other->x) {
                 continue;
-        } else
+            }
+        } else {
             continue;
+        }
 
         /* No candidate yet? Start with this one. */
         if (!best) {
@@ -340,8 +352,9 @@ void output_init_con(Output *output) {
     /* Search for a Con with that name directly below the root node. There
      * might be one from a restored layout. */
     TAILQ_FOREACH (current, &(croot->nodes_head), nodes) {
-        if (strcmp(current->name, output_primary_name(output)) != 0)
+        if (strcmp(current->name, output_primary_name(output)) != 0) {
             continue;
+        }
 
         con = current;
         reused = true;
@@ -546,14 +559,16 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
         TAILQ_FOREACH (workspace, &(content->nodes_head), nodes) {
             /* Workspaces with more than one child are left untouched because
              * we do not want to change an existing layout. */
-            if (con_num_children(workspace) > 1)
+            if (con_num_children(workspace) > 1) {
                 continue;
+            }
 
             workspace->layout = (output->rect.height > output->rect.width) ? L_SPLITV : L_SPLITH;
             DLOG("Setting workspace [%d,%s]'s layout to %d.\n", workspace->num, workspace->name, workspace->layout);
             if ((child = TAILQ_FIRST(&(workspace->nodes_head)))) {
-                if (child->layout == L_SPLITV || child->layout == L_SPLITH)
+                if (child->layout == L_SPLITV || child->layout == L_SPLITH) {
                     child->layout = workspace->layout;
+                }
                 DLOG("Setting child [%d,%s]'s layout to %d.\n", child->num, child->name, child->layout);
             }
         }
@@ -731,12 +746,14 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
      * position/size) */
     if (output->crtc == XCB_NONE) {
         if (!existing) {
-            if (new->primary)
+            if (new->primary) {
                 TAILQ_INSERT_HEAD(&outputs, new, outputs);
-            else
+            } else {
                 TAILQ_INSERT_TAIL(&outputs, new, outputs);
-        } else if (new->active)
+            }
+        } else if (new->active) {
             new->to_be_disabled = true;
+        }
         return;
     }
 
@@ -769,10 +786,11 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
      * need to insert the new output or we are done. */
     if (!updated || !existing) {
         if (!existing) {
-            if (new->primary)
+            if (new->primary) {
                 TAILQ_INSERT_HEAD(&outputs, new, outputs);
-            else
+            } else {
                 TAILQ_INSERT_TAIL(&outputs, new, outputs);
+            }
         }
         return;
     }
@@ -793,10 +811,11 @@ static void randr_query_outputs_14(void) {
     xcb_randr_get_output_primary_cookie_t pcookie;
     pcookie = xcb_randr_get_output_primary(conn, root);
 
-    if ((primary = xcb_randr_get_output_primary_reply(conn, pcookie, NULL)) == NULL)
+    if ((primary = xcb_randr_get_output_primary_reply(conn, pcookie, NULL)) == NULL) {
         ELOG("Could not get RandR primary output\n");
-    else
+    } else {
         DLOG("primary output is %08x\n", primary->output);
+    }
 
     xcb_randr_get_screen_resources_current_reply_t *res =
         xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL);
@@ -816,15 +835,17 @@ static void randr_query_outputs_14(void) {
 
     /* Request information for each output */
     xcb_randr_get_output_info_cookie_t ocookie[len];
-    for (int i = 0; i < len; i++)
+    for (int i = 0; i < len; i++) {
         ocookie[i] = xcb_randr_get_output_info(conn, randr_outputs[i], cts);
+    }
 
     /* Loop through all outputs available for this X11 screen */
     for (int i = 0; i < len; i++) {
         xcb_randr_get_output_info_reply_t *output;
 
-        if ((output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL)) == NULL)
+        if ((output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL)) == NULL) {
             continue;
+        }
 
         handle_output(conn, randr_outputs[i], output, cts, res);
         free(output);
@@ -930,20 +951,23 @@ void randr_query_outputs(void) {
     /* Check for clones, disable the clones and reduce the mode to the
      * lowest common mode */
     TAILQ_FOREACH (output, &outputs, outputs) {
-        if (!output->active || output->to_be_disabled)
+        if (!output->active || output->to_be_disabled) {
             continue;
+        }
         DLOG("output %p / %s, position (%d, %d), checking for clones\n",
              output, output_primary_name(output), output->rect.x, output->rect.y);
 
         for (other = output;
              other != TAILQ_END(&outputs);
              other = TAILQ_NEXT(other, outputs)) {
-            if (other == output || !other->active || other->to_be_disabled)
+            if (other == output || !other->active || other->to_be_disabled) {
                 continue;
+            }
 
             if (other->rect.x != output->rect.x ||
-                other->rect.y != output->rect.y)
+                other->rect.y != output->rect.y) {
                 continue;
+            }
 
             DLOG("output %p has the same position, its mode = %d x %d\n",
                  other, other->rect.width, other->rect.height);
@@ -1010,19 +1034,22 @@ void randr_query_outputs(void) {
 
     /* Just go through each active output and assign one workspace */
     TAILQ_FOREACH (output, &outputs, outputs) {
-        if (!output->active)
+        if (!output->active) {
             continue;
+        }
         Con *content = output_get_content(output->con);
-        if (!TAILQ_EMPTY(&(content->nodes_head)))
+        if (!TAILQ_EMPTY(&(content->nodes_head))) {
             continue;
+        }
         DLOG("Should add ws for output %s\n", output_primary_name(output));
         init_ws_for_output(output);
     }
 
     /* Focus the primary screen, if possible */
     TAILQ_FOREACH (output, &outputs, outputs) {
-        if (!output->primary || !output->con)
+        if (!output->primary || !output->con) {
             continue;
+        }
 
         DLOG("Focusing primary output %s\n", output_primary_name(output));
         Con *content = output_get_content(output->con);
@@ -1101,8 +1128,9 @@ void randr_init(int *event_base, const bool disable_randr15) {
 
     randr_query_outputs();
 
-    if (event_base != NULL)
+    if (event_base != NULL) {
         *event_base = extreply->first_event;
+    }
 
     xcb_randr_select_input(conn, root,
                            XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE |

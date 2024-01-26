@@ -86,7 +86,8 @@ out:
 out_atom:
     free(atom_reply);
 out_conn:
-    if (provided_conn == NULL)
+    if (provided_conn == NULL) {
         xcb_disconnect(conn);
+    }
     return content;
 }

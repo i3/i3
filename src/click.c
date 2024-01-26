@@ -95,23 +95,27 @@ static bool floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *eve
 
     if (to_right < to_left &&
         to_right < to_top &&
-        to_right < to_bottom)
+        to_right < to_bottom) {
         return tiling_resize_for_border(con, BORDER_RIGHT, event, false);
+    }
 
     if (to_left < to_right &&
         to_left < to_top &&
-        to_left < to_bottom)
+        to_left < to_bottom) {
         return tiling_resize_for_border(con, BORDER_LEFT, event, false);
+    }
 
     if (to_top < to_right &&
         to_top < to_left &&
-        to_top < to_bottom)
+        to_top < to_bottom) {
         return tiling_resize_for_border(con, BORDER_TOP, event, false);
+    }
 
     if (to_bottom < to_right &&
         to_bottom < to_left &&
-        to_bottom < to_top)
+        to_bottom < to_top) {
         return tiling_resize_for_border(con, BORDER_BOTTOM, event, false);
+    }
 
     return false;
 }
@@ -130,19 +134,23 @@ static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click
         return tiling_resize_for_border(con, BORDER_TOP, event, use_threshold);
     } else if (dest == CLICK_BORDER) {
         if (event->event_y >= 0 && event->event_y <= (int32_t)bsr.y &&
-            event->event_x >= (int32_t)bsr.x && event->event_x <= (int32_t)(con->rect.width + bsr.width))
+            event->event_x >= (int32_t)bsr.x && event->event_x <= (int32_t)(con->rect.width + bsr.width)) {
             return tiling_resize_for_border(con, BORDER_TOP, event, false);
+        }
     }
     if (event->event_x >= 0 && event->event_x <= (int32_t)bsr.x &&
-        event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height))
+        event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height)) {
         return tiling_resize_for_border(con, BORDER_LEFT, event, false);
+    }
 
     if (event->event_x >= (int32_t)(con->window_rect.x + con->window_rect.width) &&
-        event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height))
+        event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height)) {
         return tiling_resize_for_border(con, BORDER_RIGHT, event, false);
+    }
 
-    if (event->event_y >= (int32_t)(con->window_rect.y + con->window_rect.height))
+    if (event->event_y >= (int32_t)(con->window_rect.y + con->window_rect.height)) {
         return tiling_resize_for_border(con, BORDER_BOTTOM, event, false);
+    }
 
     return false;
 }
@@ -393,8 +401,9 @@ void handle_button_press(xcb_button_press_event_t *event) {
             Con *output, *ws;
             TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
                 if (con_is_internal(output) ||
-                    !rect_contains(output->rect, event->event_x, event->event_y))
+                    !rect_contains(output->rect, event->event_x, event->event_y)) {
                     continue;
+                }
 
                 ws = TAILQ_FIRST(&(output_get_content(output)->focus_head));
                 if (ws != con_get_workspace(focused)) {
@@ -421,8 +430,9 @@ void handle_button_press(xcb_button_press_event_t *event) {
     } else {
         Con *child;
         TAILQ_FOREACH_REVERSE (child, &(con->nodes_head), nodes_head, nodes) {
-            if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
+            if (!rect_contains(child->deco_rect, event->event_x, event->event_y)) {
                 continue;
+            }
 
             route_click(child, event, mod_pressed, CLICK_DECORATION);
             return;

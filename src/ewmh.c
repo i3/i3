@@ -138,8 +138,9 @@ static void ewmh_update_wm_desktop_recursively(Con *con, const uint32_t desktop)
         }
     }
 
-    if (!con_has_managed_window(con))
+    if (!con_has_managed_window(con)) {
         return;
+    }
 
     uint32_t wm_desktop = desktop;
     /* Sticky windows are only actually sticky when they are floating or inside
@@ -160,8 +161,9 @@ static void ewmh_update_wm_desktop_recursively(Con *con, const uint32_t desktop)
     }
 
     /* If this is the cached value, we don't need to do anything. */
-    if (con->window->wm_desktop == wm_desktop)
+    if (con->window->wm_desktop == wm_desktop) {
         return;
+    }
     con->window->wm_desktop = wm_desktop;
 
     const xcb_window_t window = con->window->id;
@@ -351,8 +353,9 @@ void ewmh_setup_hints(void) {
  *
  */
 Con *ewmh_get_workspace_by_index(uint32_t idx) {
-    if (idx == NET_WM_DESKTOP_NONE)
+    if (idx == NET_WM_DESKTOP_NONE) {
         return NULL;
+    }
 
     uint32_t current_index = 0;
 

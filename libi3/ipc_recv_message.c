@@ -36,8 +36,9 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
     uint32_t read_bytes = 0;
     while (read_bytes < to_read) {
         int n = read(sockfd, msg + read_bytes, to_read - read_bytes);
-        if (n == -1)
+        if (n == -1) {
             return -1;
+        }
         if (n == 0) {
             if (read_bytes == 0) {
                 return -2;
@@ -60,8 +61,9 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
     walk += strlen(I3_IPC_MAGIC);
     memcpy(reply_length, walk, sizeof(uint32_t));
     walk += sizeof(uint32_t);
-    if (message_type != NULL)
+    if (message_type != NULL) {
         memcpy(message_type, walk, sizeof(uint32_t));
+    }
 
     *reply = smalloc(*reply_length);
 
@@ -69,8 +71,9 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
     while (read_bytes < *reply_length) {
         const int n = read(sockfd, *reply + read_bytes, *reply_length - read_bytes);
         if (n == -1) {
-            if (errno == EINTR || errno == EAGAIN)
+            if (errno == EINTR || errno == EAGAIN) {
                 continue;
+            }
             return -1;
         }
         if (n == 0) {

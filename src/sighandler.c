@@ -48,8 +48,9 @@ static int margin = 4;
  */
 static int sighandler_backtrace(void) {
     char *tmpdir = getenv("TMPDIR");
-    if (tmpdir == NULL)
+    if (tmpdir == NULL) {
         tmpdir = "/tmp";
+    }
 
     pid_t pid_parent = getpid();
 
@@ -343,6 +344,7 @@ void setup_signal_handler(void) {
         sigaction(SIGILL, &action, NULL) == -1 ||
         sigaction(SIGABRT, &action, NULL) == -1 ||
         sigaction(SIGFPE, &action, NULL) == -1 ||
-        sigaction(SIGSEGV, &action, NULL) == -1)
+        sigaction(SIGSEGV, &action, NULL) == -1) {
         ELOG("Could not setup signal handler.\n");
+    }
 }

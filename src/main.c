@@ -134,9 +134,9 @@ static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
 
     while ((event = xcb_poll_for_event(conn)) != NULL) {
         if (event->response_type == 0) {
-            if (event_is_ignored(event->sequence, 0))
+            if (event_is_ignored(event->sequence, 0)) {
                 DLOG("Expected X11 Error received for sequence %x\n", event->sequence);
-            else {
+            } else {
                 xcb_generic_error_t *error = (xcb_generic_error_t *)event;
                 DLOG("X11 Error received (probably harmless)! sequence 0x%x, error_code = %d\n",
                      error->sequence, error->error_code);
@@ -322,8 +322,9 @@ int main(int argc, char *argv[]) {
     getrlimit(RLIMIT_CORE, &original_rlimit_core);
 
     /* Disable output buffering to make redirects in .xsession actually useful for debugging */
-    if (!isatty(fileno(stdout)))
+    if (!isatty(fileno(stdout))) {
         setbuf(stdout, NULL);
+    }
 
     srand(time(NULL));
 
@@ -506,20 +507,23 @@ int main(int argc, char *argv[]) {
         }
 
         int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
-        if (sockfd == -1)
+        if (sockfd == -1) {
             err(EXIT_FAILURE, "Could not create socket");
+        }
 
         struct sockaddr_un addr;
         memset(&addr, 0, sizeof(struct sockaddr_un));
         addr.sun_family = AF_LOCAL;
         strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
         FREE(socket_path);
-        if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0)
+        if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0) {
             err(EXIT_FAILURE, "Could not connect to i3");
+        }
 
         if (ipc_send_message(sockfd, strlen(payload), I3_IPC_MESSAGE_TYPE_RUN_COMMAND,
-                             (uint8_t *)payload) == -1)
+                             (uint8_t *)payload) == -1) {
             err(EXIT_FAILURE, "IPC: write()");
+        }
         FREE(payload);
 
         uint32_t reply_length;
@@ -527,12 +531,14 @@ int main(int argc, char *argv[]) {
         uint8_t *reply;
         int ret;
         if ((ret = ipc_recv_message(sockfd, &reply_type, &reply_length, &reply)) != 0) {
-            if (ret == -1)
+            if (ret == -1) {
                 err(EXIT_FAILURE, "IPC: read()");
+            }
             return 1;
         }
-        if (reply_type != I3_IPC_REPLY_TYPE_COMMAND)
+        if (reply_type != I3_IPC_REPLY_TYPE_COMMAND) {
             errx(EXIT_FAILURE, "IPC: received reply of type %d but expected %d (COMMAND)", reply_type, I3_IPC_REPLY_TYPE_COMMAND);
+        }
         printf("%.*s\n", reply_length, reply);
         FREE(reply);
         return 0;
@@ -556,14 +562,16 @@ int main(int argc, char *argv[]) {
             cwd_size = cwd_size * 2;
             cwd = srealloc(cwd, cwd_size);
         }
-        if (cwd_ret != NULL)
+        if (cwd_ret != NULL) {
             LOG("CORE DUMPS: Your current working directory is \"%s\".\n", cwd);
+        }
         int patternfd;
         if ((patternfd = open("/proc/sys/kernel/core_pattern", O_RDONLY)) >= 0) {
             memset(cwd, '\0', cwd_size);
-            if (read(patternfd, cwd, cwd_size) > 0)
+            if (read(patternfd, cwd, cwd_size) > 0) {
                 /* a trailing newline is included in cwd */
                 LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
+            }
             close(patternfd);
         }
         free(cwd);
@@ -572,8 +580,9 @@ int main(int argc, char *argv[]) {
     LOG("i3 %s starting\n", i3_version);
 
     conn = xcb_connect(NULL, &conn_screen);
-    if (xcb_connection_has_error(conn))
+    if (xcb_connection_has_error(conn)) {
         errx(EXIT_FAILURE, "Cannot open display");
+    }
 
     sndisplay = sn_xcb_display_new(conn, NULL, NULL);
 
@@ -585,8 +594,9 @@ int main(int argc, char *argv[]) {
      * only the default loop can handle ev_child events and reap zombies
      * (the start_application routine relies on that too). */
     main_loop = EV_DEFAULT;
-    if (main_loop == NULL)
+    if (main_loop == NULL) {
         die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
+    }
 
     root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
@@ -682,10 +692,11 @@ int main(int argc, char *argv[]) {
 
     if (config.ipc_socket_path == NULL) {
         /* Fall back to a file name in /tmp/ based on the PID */
-        if ((config.ipc_socket_path = getenv("I3SOCK")) == NULL)
+        if ((config.ipc_socket_path = getenv("I3SOCK")) == NULL) {
             config.ipc_socket_path = get_process_filename("ipc-socket");
-        else
+        } else {
             config.ipc_socket_path = sstrdup(config.ipc_socket_path);
+        }
     }
     /* Create the UNIX domain socket for IPC */
     int ipc_socket = create_socket(config.ipc_socket_path, &current_socketpath);
@@ -907,8 +918,9 @@ int main(int argc, char *argv[]) {
 
     xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
 
-    if (!load_keymap())
+    if (!load_keymap()) {
         die("Could not load keymap\n");
+    }
 
     translate_keysyms();
     grab_all_keys(conn);
@@ -925,14 +937,16 @@ int main(int argc, char *argv[]) {
             rmdir(dir);
         }
     }
-    if (needs_tree_init)
+    if (needs_tree_init) {
         tree_init(greply);
+    }
 
     free(greply);
 
     /* Setup fake outputs for testing */
-    if (fake_outputs == NULL && config.fake_outputs != NULL)
+    if (fake_outputs == NULL && config.fake_outputs != NULL) {
         fake_outputs = config.fake_outputs;
+    }
 
     if (fake_outputs != NULL) {
         fake_outputs_init(fake_outputs);
@@ -957,8 +971,9 @@ int main(int argc, char *argv[]) {
         TAILQ_FOREACH (con, &(croot->nodes_head), nodes) {
             Output *output;
             TAILQ_FOREACH (output, &outputs, outputs) {
-                if (output->active || strcmp(con->name, output_primary_name(output)) != 0)
+                if (output->active || strcmp(con->name, output_primary_name(output)) != 0) {
                     continue;
+                }
 
                 /* This will correctly correlate the output with its content
                  * container. We need to make the connection to properly
@@ -1102,8 +1117,9 @@ int main(int argc, char *argv[]) {
             /* We still need to handle MapRequests which are sent in the
              * timespan starting from when we register as a window manager and
              * this piece of code which drops events. */
-            if (type == XCB_MAP_REQUEST)
+            if (type == XCB_MAP_REQUEST) {
                 handle_event(type, event);
+            }
 
             free(event);
         }
@@ -1132,13 +1148,14 @@ int main(int argc, char *argv[]) {
     }
 
 #if defined(__OpenBSD__)
-    if (pledge("stdio rpath wpath cpath proc exec unix", NULL) == -1)
+    if (pledge("stdio rpath wpath cpath proc exec unix", NULL) == -1) {
         err(EXIT_FAILURE, "pledge");
+    }
 #endif
 
-    if (!disable_signalhandler)
+    if (!disable_signalhandler) {
         setup_signal_handler();
-    else {
+    } else {
         struct sigaction action;
 
         action.sa_sigaction = handle_core_signal;
@@ -1150,8 +1167,9 @@ int main(int argc, char *argv[]) {
             sigaction(SIGILL, &action, NULL) == -1 ||
             sigaction(SIGABRT, &action, NULL) == -1 ||
             sigaction(SIGFPE, &action, NULL) == -1 ||
-            sigaction(SIGSEGV, &action, NULL) == -1)
+            sigaction(SIGSEGV, &action, NULL) == -1) {
             ELOG("Could not setup signal handler.\n");
+        }
     }
 
     setup_term_handlers();

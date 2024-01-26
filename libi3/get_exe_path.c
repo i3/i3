@@ -83,8 +83,9 @@ char *get_exe_path(const char *argv0) {
     const char *component;
     char *str = path;
     while (1) {
-        if ((component = strtok(str, ":")) == NULL)
+        if ((component = strtok(str, ":")) == NULL) {
             break;
+        }
         str = NULL;
         free(destpath);
         sasprintf(&destpath, "%s/%s", component, argv0);

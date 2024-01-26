@@ -63,8 +63,9 @@ typedef struct tokenptr {
  */
 static void push_string(struct stack *stack, const char *identifier, char *str) {
     for (int c = 0; c < 10; c++) {
-        if (stack->stack[c].identifier != NULL)
+        if (stack->stack[c].identifier != NULL) {
             continue;
+        }
         /* Found a free slot, let’s store it here. */
         stack->stack[c].identifier = identifier;
         stack->stack[c].val.str = str;
@@ -106,10 +107,12 @@ static void push_long(struct stack *stack, const char *identifier, long num) {
 // TODO move to a common util
 static const char *get_string(struct stack *stack, const char *identifier) {
     for (int c = 0; c < 10; c++) {
-        if (stack->stack[c].identifier == NULL)
+        if (stack->stack[c].identifier == NULL) {
             break;
-        if (strcmp(identifier, stack->stack[c].identifier) == 0)
+        }
+        if (strcmp(identifier, stack->stack[c].identifier) == 0) {
             return stack->stack[c].val.str;
+        }
     }
     return NULL;
 }
@@ -117,10 +120,12 @@ static const char *get_string(struct stack *stack, const char *identifier) {
 // TODO move to a common util
 static long get_long(struct stack *stack, const char *identifier) {
     for (int c = 0; c < 10; c++) {
-        if (stack->stack[c].identifier == NULL)
+        if (stack->stack[c].identifier == NULL) {
             break;
-        if (strcmp(identifier, stack->stack[c].identifier) == 0)
+        }
+        if (strcmp(identifier, stack->stack[c].identifier) == 0) {
             return stack->stack[c].val.num;
+        }
     }
 
     return 0;
@@ -129,8 +134,9 @@ static long get_long(struct stack *stack, const char *identifier) {
 // TODO move to a common util
 static void clear_stack(struct stack *stack) {
     for (int c = 0; c < 10; c++) {
-        if (stack->stack[c].type == STACK_STR)
+        if (stack->stack[c].type == STACK_STR) {
             free(stack->stack[c].val.str);
+        }
         stack->stack[c].identifier = NULL;
         stack->stack[c].val.str = NULL;
         stack->stack[c].val.num = 0;
@@ -162,8 +168,9 @@ static void next_state(const cmdp_token *token) {
         state = subcommand_output.next_state;
         /* If any subcommand requires a tree_render(), we need to make the
          * whole parser result request a tree_render(). */
-        if (subcommand_output.needs_tree_render)
+        if (subcommand_output.needs_tree_render) {
             command_output.needs_tree_render = true;
+        }
         clear_stack(&stack);
         return;
     }
@@ -186,9 +193,11 @@ char *parse_string(const char **walk, bool as_word) {
     if (**walk == '"') {
         beginning++;
         (*walk)++;
-        for (; **walk != '\0' && **walk != '"'; (*walk)++)
-            if (**walk == '\\' && *(*walk + 1) != '\0')
+        for (; **walk != '\0' && **walk != '"'; (*walk)++) {
+            if (**walk == '\\' && *(*walk + 1) != '\0') {
                 (*walk)++;
+            }
+        }
     } else {
         if (!as_word) {
             /* For a string (starting with 's'), the delimiters are
@@ -197,8 +206,9 @@ char *parse_string(const char **walk, bool as_word) {
              * end a command. */
             while (**walk != ';' && **walk != ',' &&
                    **walk != '\0' && **walk != '\r' &&
-                   **walk != '\n')
+                   **walk != '\n') {
                 (*walk)++;
+            }
         } else {
             /* For a word, the delimiters are white space (' ' or
              * '\t'), closing square bracket (]), comma (,) and
@@ -206,12 +216,14 @@ char *parse_string(const char **walk, bool as_word) {
             while (**walk != ' ' && **walk != '\t' &&
                    **walk != ']' && **walk != ',' &&
                    **walk != ';' && **walk != '\r' &&
-                   **walk != '\n' && **walk != '\0')
+                   **walk != '\n' && **walk != '\0') {
                 (*walk)++;
+            }
         }
     }
-    if (*walk == beginning)
+    if (*walk == beginning) {
         return NULL;
+    }
 
     char *str = scalloc(*walk - beginning + 1, 1);
     /* We copy manually to handle escaping of characters. */
@@ -222,8 +234,9 @@ char *parse_string(const char **walk, bool as_word) {
         /* We only handle escaped double quotes and backslashes to not break
          * backwards compatibility with people using \w in regular expressions
          * etc. */
-        if (beginning[inpos] == '\\' && (beginning[inpos + 1] == '"' || beginning[inpos + 1] == '\\'))
+        if (beginning[inpos] == '\\' && (beginning[inpos + 1] == '"' || beginning[inpos + 1] == '\\')) {
             inpos++;
+        }
         str[outpos] = beginning[inpos];
     }
 
@@ -267,8 +280,9 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
         /* skip whitespace and newlines before every token */
         while ((*walk == ' ' || *walk == '\t' ||
                 *walk == '\r' || *walk == '\n') &&
-               *walk != '\0')
+               *walk != '\0') {
             walk++;
+        }
 
         cmdp_token_ptr *ptr = &(tokens[state]);
         token_handled = false;
@@ -295,12 +309,14 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                 errno = 0;
                 long int num = strtol(walk, &end, 10);
                 if ((errno == ERANGE && (num == LONG_MIN || num == LONG_MAX)) ||
-                    (errno != 0 && num == 0))
+                    (errno != 0 && num == 0)) {
                     continue;
+                }
 
                 /* No valid numbers found */
-                if (end == walk)
+                if (end == walk) {
                     continue;
+                }
 
                 if (token->identifier != NULL) {
                     push_long(&stack, token->identifier, num);
@@ -322,8 +338,9 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                     }
                     /* If we are at the end of a quoted string, skip the ending
                      * double quote. */
-                    if (*walk == '"')
+                    if (*walk == '"') {
                         walk++;
+                    }
                     next_state(token);
                     token_handled = true;
                     break;
@@ -340,8 +357,9 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                      * every command. */
 // TODO: make this testable
 #ifndef TEST_PARSER
-                    if (*walk == '\0' || *walk == ';')
+                    if (*walk == '\0' || *walk == ';') {
                         cmd_criteria_init(&current_match, &subcommand_output);
+                    }
 #endif
                     walk++;
                     break;
@@ -353,8 +371,9 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             /* Figure out how much memory we will need to fill in the names of
              * all tokens afterwards. */
             int tokenlen = 0;
-            for (c = 0; c < ptr->n; c++)
+            for (c = 0; c < ptr->n; c++) {
                 tokenlen += strlen(ptr->array[c].name) + strlen("'', ");
+            }
 
             /* Build up a decent error message. We include the problem, the
              * full input, and underline the position where the parser
@@ -392,8 +411,9 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             /* Contains the same amount of characters as 'input' has, but with
              * the unparsable part highlighted using ^ characters. */
             char *position = smalloc(len + 1);
-            for (const char *copywalk = input; *copywalk != '\0'; copywalk++)
+            for (const char *copywalk = input; *copywalk != '\0'; copywalk++) {
                 position[(copywalk - input)] = (copywalk >= walk ? '^' : ' ');
+            }
             position[len] = '\0';
 
             ELOG("%s\n", errormessage);
@@ -436,8 +456,9 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
  * Frees a CommandResult
  */
 void command_result_free(CommandResult *result) {
-    if (result == NULL)
+    if (result == NULL) {
         return;
+    }
 
     FREE(result->error_message);
     FREE(result);

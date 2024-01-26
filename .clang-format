@@ -1,13 +1,14 @@
-BasedOnStyle: google
+AllowShortBlocksOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
-AllowShortBlocksOnASingleLine: false
 AlwaysBreakBeforeMultilineStrings: false
-IndentWidth: 4
-PointerBindsToType: false
+BasedOnStyle: google
 ColumnLimit: 0
-SpaceBeforeParens: ControlStatements
-SortIncludes: false
 ForEachMacros: [ TAILQ_FOREACH, TAILQ_FOREACH_REVERSE, SLIST_FOREACH, CIRCLEQ_FOREACH, CIRCLEQ_FOREACH_REVERSE, NODES_FOREACH, NODES_FOREACH_REVERSE, FOREACH_NONINTERNAL]
+IndentWidth: 4
+InsertBraces: true
+PointerBindsToType: false
+SortIncludes: false
+SpaceBeforeParens: ControlStatements
 TypenameMacros: [ SLIST_HEAD, SLIST_ENTRY, LIST_HEAD, LIST_ENTRY, SIMPLEQ_HEAD, SIMPLEQ_ENTRY, TAILQ_HEAD, TAILQ_ENTRY, CIRCLEQ_HEAD, CIRCLEQ_ENTRY ]

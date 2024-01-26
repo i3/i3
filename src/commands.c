@@ -84,8 +84,9 @@ static bool maybe_back_and_forth(struct CommandResultIR *cmd_output, const char 
     Con *ws = con_get_workspace(focused);
 
     /* If we switched to a different workspace, do nothing */
-    if (strcmp(ws->name, name) != 0)
+    if (strcmp(ws->name, name) != 0) {
         return false;
+    }
 
     DLOG("This workspace is already focused.\n");
     if (config.workspace_auto_back_and_forth) {
@@ -102,8 +103,9 @@ static bool maybe_back_and_forth(struct CommandResultIR *cmd_output, const char 
 static Con *maybe_auto_back_and_forth_workspace(Con *workspace) {
     Con *current, *baf;
 
-    if (!config.workspace_auto_back_and_forth)
+    if (!config.workspace_auto_back_and_forth) {
         return workspace;
+    }
 
     current = con_get_workspace(focused);
 
@@ -206,8 +208,9 @@ void cmd_criteria_match_windows(I3_CMD) {
 
             mark_t *mark;
             TAILQ_FOREACH (mark, &(current->con->marks_head), marks) {
-                if (!regex_matches(current_match->mark, mark->name))
+                if (!regex_matches(current_match->mark, mark->name)) {
                     continue;
+                }
 
                 DLOG("match by mark\n");
                 matched_by_mark = true;
@@ -301,17 +304,17 @@ void cmd_move_con_to_workspace(I3_CMD, const char *which) {
 
     /* get the workspace */
     Con *ws;
-    if (strcmp(which, "next") == 0)
+    if (strcmp(which, "next") == 0) {
         ws = workspace_next();
-    else if (strcmp(which, "prev") == 0)
+    } else if (strcmp(which, "prev") == 0) {
         ws = workspace_prev();
-    else if (strcmp(which, "next_on_output") == 0)
+    } else if (strcmp(which, "next_on_output") == 0) {
         ws = workspace_next_on_output();
-    else if (strcmp(which, "prev_on_output") == 0)
+    } else if (strcmp(which, "prev_on_output") == 0) {
         ws = workspace_prev_on_output();
-    else if (strcmp(which, "current") == 0)
+    } else if (strcmp(which, "current") == 0) {
         ws = con_get_workspace(focused);
-    else {
+    } else {
         yerror("BUG: called with which=%s", which);
         return;
     }
@@ -521,8 +524,9 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *dir
     Con *child;
     TAILQ_FOREACH (child, &(current->parent->nodes_head), nodes) {
         LOG("child->percent = %f (child %p)\n", child->percent, child);
-        if (child->percent == 0.0)
+        if (child->percent == 0.0) {
             child->percent = percentage;
+        }
     }
 
     double new_current_percent;
@@ -559,8 +563,9 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *dir
     LOG("current->percent after = %f\n", current->percent);
 
     TAILQ_FOREACH (child, &(current->parent->nodes_head), nodes) {
-        if (child == current)
+        if (child == current) {
             continue;
+        }
         child->percent -= subtract_percent;
         LOG("child->percent after (%p) = %f\n", child, child->percent);
     }
@@ -808,8 +813,9 @@ void cmd_append_layout(I3_CMD, const char *cpath) {
          * container must not have any children (by definition).
          * Note that we explicitly check for workspaces, since they are okay for
          * this purpose, but con_accepts_window() returns false for workspaces. */
-        while (parent->type != CT_WORKSPACE && !con_accepts_window(parent))
+        while (parent->type != CT_WORKSPACE && !con_accepts_window(parent)) {
             parent = parent->parent;
+        }
     }
     DLOG("Appending to parent=%p instead of focused=%p\n", parent, focused);
     char *errormsg = NULL;
@@ -835,8 +841,9 @@ void cmd_append_layout(I3_CMD, const char *cpath) {
 
     restore_open_placeholder_windows(parent);
 
-    if (content == JSON_CONTENT_WORKSPACE)
+    if (content == JSON_CONTENT_WORKSPACE) {
         ipc_send_workspace_event("restored", parent, NULL);
+    }
 
     cmd_output->needs_tree_render = true;
 out:
@@ -862,15 +869,15 @@ void cmd_workspace(I3_CMD, const char *which) {
 
     disable_global_fullscreen();
 
-    if (strcmp(which, "next") == 0)
+    if (strcmp(which, "next") == 0) {
         ws = workspace_next();
-    else if (strcmp(which, "prev") == 0)
+    } else if (strcmp(which, "prev") == 0) {
         ws = workspace_prev();
-    else if (strcmp(which, "next_on_output") == 0)
+    } else if (strcmp(which, "next_on_output") == 0) {
         ws = workspace_next_on_output();
-    else if (strcmp(which, "prev_on_output") == 0)
+    } else if (strcmp(which, "prev_on_output") == 0) {
         ws = workspace_prev_on_output();
-    else {
+    } else {
         yerror("BUG: called with which=%s", which);
         return;
     }
@@ -1241,17 +1248,18 @@ void cmd_split(I3_CMD, const char *direction) {
  *
  */
 void cmd_kill(I3_CMD, const char *kill_mode_str) {
-    if (kill_mode_str == NULL)
+    if (kill_mode_str == NULL) {
         kill_mode_str = "window";
+    }
 
     DLOG("kill_mode=%s\n", kill_mode_str);
 
     int kill_mode;
-    if (strcmp(kill_mode_str, "window") == 0)
+    if (strcmp(kill_mode_str, "window") == 0) {
         kill_mode = KILL_WINDOW;
-    else if (strcmp(kill_mode_str, "client") == 0)
+    } else if (strcmp(kill_mode_str, "client") == 0) {
         kill_mode = KILL_CLIENT;
-    else {
+    } else {
         yerror("BUG: called with kill_mode=%s", kill_mode_str);
         return;
     }
@@ -1406,8 +1414,9 @@ void cmd_focus_window_mode(I3_CMD, const char *window_mode) {
     bool success = false;
     TAILQ_FOREACH (current, &(ws->focus_head), focused) {
         if ((to_floating && current->type != CT_FLOATING_CON) ||
-            (!to_floating && current->type == CT_FLOATING_CON))
+            (!to_floating && current->type == CT_FLOATING_CON)) {
             continue;
+        }
 
         con_activate_unblock(con_descend_focused(current));
         success = true;
@@ -1434,16 +1443,18 @@ void cmd_focus_level(I3_CMD, const char *level) {
      * focused container won't escape the fullscreen container. */
     if (strcmp(level, "parent") == 0) {
         if (focused && focused->parent) {
-            if (con_fullscreen_permits_focusing(focused->parent))
+            if (con_fullscreen_permits_focusing(focused->parent)) {
                 success = level_up();
-            else
+            } else {
                 ELOG("'focus parent': Currently in fullscreen, not going up\n");
+            }
         }
     }
 
     /* Focusing a child should always be allowed. */
-    else
+    else {
         success = level_down();
+    }
 
     cmd_output->needs_tree_render = success;
     // XXX: default reply for now, make this a better reply
@@ -1549,12 +1560,13 @@ void cmd_sticky(I3_CMD, const char *action) {
         DLOG("setting sticky for container = %p / %s\n", current->con, current->con->name);
 
         bool sticky = false;
-        if (strcmp(action, "enable") == 0)
+        if (strcmp(action, "enable") == 0) {
             sticky = true;
-        else if (strcmp(action, "disable") == 0)
+        } else if (strcmp(action, "disable") == 0) {
             sticky = false;
-        else if (strcmp(action, "toggle") == 0)
+        } else if (strcmp(action, "toggle") == 0) {
             sticky = !current->con->sticky;
+        }
 
         current->con->sticky = sticky;
         ewmh_update_sticky(current->con->window->id, sticky);
@@ -1653,15 +1665,16 @@ void cmd_layout(I3_CMD, const char *layout_str) {
 void cmd_layout_toggle(I3_CMD, const char *toggle_mode) {
     owindow *current;
 
-    if (toggle_mode == NULL)
+    if (toggle_mode == NULL) {
         toggle_mode = "default";
+    }
 
     DLOG("toggling layout (mode = %s)\n", toggle_mode);
 
     /* check if the match is empty, not if the result is empty */
-    if (match_is_empty(current_match))
+    if (match_is_empty(current_match)) {
         con_toggle_layout(focused, toggle_mode);
-    else {
+    } else {
         TAILQ_FOREACH (current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
             con_toggle_layout(current->con, toggle_mode);
@@ -1850,8 +1863,9 @@ void cmd_move_window_to_position(I3_CMD, long x, const char *mode_x, long y, con
         }
     }
 
-    if (!has_error)
+    if (!has_error) {
         ysuccess(true);
+    }
 }
 
 /*
@@ -1894,8 +1908,9 @@ void cmd_move_window_to_center(I3_CMD, const char *method) {
     }
 
     // XXX: default reply for now, make this a better reply
-    if (!has_error)
+    if (!has_error) {
         ysuccess(true);
+    }
 }
 
 /*
@@ -2215,15 +2230,15 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
 void cmd_bar_mode(I3_CMD, const char *bar_mode, const char *bar_id) {
     int mode = M_DOCK;
     bool toggle = false;
-    if (strcmp(bar_mode, "dock") == 0)
+    if (strcmp(bar_mode, "dock") == 0) {
         mode = M_DOCK;
-    else if (strcmp(bar_mode, "hide") == 0)
+    } else if (strcmp(bar_mode, "hide") == 0) {
         mode = M_HIDE;
-    else if (strcmp(bar_mode, "invisible") == 0)
+    } else if (strcmp(bar_mode, "invisible") == 0) {
         mode = M_INVISIBLE;
-    else if (strcmp(bar_mode, "toggle") == 0)
+    } else if (strcmp(bar_mode, "toggle") == 0) {
         toggle = true;
-    else {
+    } else {
         ELOG("Unknown bar mode \"%s\", this is a mismatch between code and parser spec.\n", bar_mode);
         assert(false);
     }
@@ -2274,13 +2289,13 @@ void cmd_bar_mode(I3_CMD, const char *bar_mode, const char *bar_id) {
 void cmd_bar_hidden_state(I3_CMD, const char *bar_hidden_state, const char *bar_id) {
     int hidden_state = S_SHOW;
     bool toggle = false;
-    if (strcmp(bar_hidden_state, "hide") == 0)
+    if (strcmp(bar_hidden_state, "hide") == 0) {
         hidden_state = S_HIDE;
-    else if (strcmp(bar_hidden_state, "show") == 0)
+    } else if (strcmp(bar_hidden_state, "show") == 0) {
         hidden_state = S_SHOW;
-    else if (strcmp(bar_hidden_state, "toggle") == 0)
+    } else if (strcmp(bar_hidden_state, "toggle") == 0) {
         toggle = true;
-    else {
+    } else {
         ELOG("Unknown bar state \"%s\", this is a mismatch between code and parser spec.\n", bar_hidden_state);
         assert(false);
     }
@@ -2329,14 +2344,14 @@ void cmd_bar_hidden_state(I3_CMD, const char *bar_hidden_state, const char *bar_
  *
  */
 void cmd_shmlog(I3_CMD, const char *argument) {
-    if (!strcmp(argument, "toggle"))
+    if (!strcmp(argument, "toggle")) {
         /* Toggle shm log, if size is not 0. If it is 0, set it to default. */
         shmlog_size = shmlog_size ? -shmlog_size : default_shmlog_size;
-    else if (!strcmp(argument, "on"))
+    } else if (!strcmp(argument, "on")) {
         shmlog_size = default_shmlog_size;
-    else if (!strcmp(argument, "off"))
+    } else if (!strcmp(argument, "off")) {
         shmlog_size = 0;
-    else {
+    } else {
         long new_size = 0;
         if (!parse_long(argument, &new_size, 0)) {
             yerror("Failed to parse %s into a shmlog size.", argument);
@@ -2410,11 +2425,11 @@ static bool gaps_update(gap_accessor get, const char *scope, const char *mode, i
     DLOG("global_gap_size=%d, current_value=%d\n", global_gap_size, current_value);
 
     bool reset = false;
-    if (strcmp(mode, "plus") == 0)
+    if (strcmp(mode, "plus") == 0) {
         current_value += pixels;
-    else if (strcmp(mode, "minus") == 0)
+    } else if (strcmp(mode, "minus") == 0) {
         current_value -= pixels;
-    else if (strcmp(mode, "set") == 0) {
+    } else if (strcmp(mode, "set") == 0) {
         current_value = pixels;
         reset = true;
     } else if (strcmp(mode, "toggle") == 0) {

@@ -226,8 +226,9 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 
     /* If modeswitch is currently active, we need to look in group 2 or 3,
      * respectively. */
-    if (modeswitch_active)
+    if (modeswitch_active) {
         col += 2;
+    }
 
     xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, col);
     if (sym == XK_Mode_switch) {
@@ -236,12 +237,14 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         return 1;
     }
 
-    if (sym == XK_Return)
+    if (sym == XK_Return) {
         finish_input();
+    }
 
     if (sym == XK_BackSpace) {
-        if (input_position == 0)
+        if (input_position == 0) {
             return 1;
+        }
 
         input_position--;
         free(glyphs_utf8[input_position]);
@@ -262,8 +265,9 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     printf("xcb_is_misc_function_key = %d\n", xcb_is_misc_function_key(sym));
     printf("xcb_is_modifier_key = %d\n", xcb_is_modifier_key(sym));
 
-    if (xcb_is_modifier_key(sym) || xcb_is_cursor_key(sym))
+    if (xcb_is_modifier_key(sym) || xcb_is_cursor_key(sym)) {
         return 1;
+    }
 
     printf("sym = %c (%d)\n", sym, sym);
 
@@ -287,8 +291,9 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     glyphs_utf8[input_position] = out;
     input_position++;
 
-    if (input_position == limit)
+    if (input_position == limit) {
         finish_input();
+    }
 
     handle_expose(NULL, conn, NULL);
     return 1;
@@ -442,8 +447,9 @@ int main(int argc, char *argv[]) {
 
     int screen;
     conn = xcb_connect(NULL, &screen);
-    if (!conn || xcb_connection_has_error(conn))
+    if (!conn || xcb_connection_has_error(conn)) {
         die("Cannot open display");
+    }
 
     sockfd = ipc_connect(socket_path);
 
@@ -456,8 +462,9 @@ int main(int argc, char *argv[]) {
     font = load_font(pattern ? pattern : "pango:monospace 8", true);
     set_font(&font);
 
-    if (prompt != NULL)
+    if (prompt != NULL) {
         prompt_offset = predict_text_width(prompt);
+    }
 
     const xcb_rectangle_t win_pos = get_window_position();
 

@@ -56,8 +56,9 @@ uint32_t get_colorpixel(const char *hex) {
     /* Lookup this colorpixel in the cache */
     struct Colorpixel *colorpixel;
     SLIST_FOREACH (colorpixel, &(colorpixels), colorpixels) {
-        if (strcmp(colorpixel->hex, hex) == 0)
+        if (strcmp(colorpixel->hex, hex) == 0) {
             return colorpixel->pixel;
+        }
     }
 
 #define RGB_8_TO_16(i) (65535 * ((i)&0xFF) / 255)

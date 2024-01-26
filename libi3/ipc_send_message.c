@@ -26,11 +26,13 @@ int ipc_send_message(int sockfd, const uint32_t message_size,
         .size = message_size,
         .type = message_type};
 
-    if (writeall(sockfd, ((void *)&header), sizeof(i3_ipc_header_t)) == -1)
+    if (writeall(sockfd, ((void *)&header), sizeof(i3_ipc_header_t)) == -1) {
         return -1;
+    }
 
-    if (writeall(sockfd, payload, message_size) == -1)
+    if (writeall(sockfd, payload, message_size) == -1) {
         return -1;
+    }
 
     return 0;
 }

@@ -126,9 +126,11 @@ static void start_application(const char *command) {
 }
 
 static button_t *get_button_at(int16_t x, int16_t y) {
-    for (int c = 0; c < buttoncnt; c++)
-        if (x >= (buttons[c].x) && x <= (buttons[c].x + buttons[c].width))
+    for (int c = 0; c < buttoncnt; c++) {
+        if (x >= (buttons[c].x) && x <= (buttons[c].x + buttons[c].width)) {
             return &buttons[c];
+        }
+    }
 
     return NULL;
 }
@@ -148,11 +150,13 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     printf("button released on x = %d, y = %d\n",
            event->event_x, event->event_y);
     /* If the user hits the close button, we exit(0) */
-    if (event->event_x >= btn_close.x && event->event_x < btn_close.x + btn_close.width)
+    if (event->event_x >= btn_close.x && event->event_x < btn_close.x + btn_close.width) {
         exit(0);
+    }
     button_t *button = get_button_at(event->event_x, event->event_y);
-    if (!button)
+    if (!button) {
         return;
+    }
 
     /* We need to create a custom script containing our actual command
      * since not every terminal emulator which is contained in
@@ -460,8 +464,9 @@ int main(int argc, char *argv[]) {
                        buttons[buttoncnt].action);
                 buttoncnt++;
                 printf("now %d buttons\n", buttoncnt);
-                if (optind < argc)
+                if (optind < argc) {
                     optind++;
+                }
                 break;
         }
     }
@@ -470,8 +475,9 @@ int main(int argc, char *argv[]) {
 
     int screens;
     if ((conn = xcb_connect(NULL, &screens)) == NULL ||
-        xcb_connection_has_error(conn))
+        xcb_connection_has_error(conn)) {
         die("Cannot open display");
+    }
 
 /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
@@ -508,8 +514,9 @@ int main(int argc, char *argv[]) {
     set_font(&font);
 
 #if defined(__OpenBSD__)
-    if (pledge("stdio rpath wpath cpath getpw proc exec", NULL) == -1)
+    if (pledge("stdio rpath wpath cpath getpw proc exec", NULL) == -1) {
         err(EXIT_FAILURE, "pledge");
+    }
 #endif
 
     /* Default values if we cannot determine the preferred window position. */

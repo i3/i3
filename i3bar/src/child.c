@@ -195,10 +195,11 @@ static int stdin_start_map(void *context) {
     memset(&(ctx->block), '\0', sizeof(struct status_block));
 
     /* Default width of the separator block. */
-    if (config.separator_symbol == NULL)
+    if (config.separator_symbol == NULL) {
         ctx->block.sep_block_width = logical_px(9);
-    else
+    } else {
         ctx->block.sep_block_width = logical_px(8) + separator_symbol_width;
+    }
 
     /* By default we draw all four borders if a border is set. */
     ctx->block.border_top = 1;
@@ -337,10 +338,12 @@ static int stdin_end_map(void *context) {
     memcpy(new_block, &(ctx->block), sizeof(struct status_block));
     /* Ensure we have a full_text set, so that when it is missing (or null),
      * i3bar doesn’t crash and the user gets an annoying message. */
-    if (!new_block->full_text)
+    if (!new_block->full_text) {
         new_block->full_text = i3string_from_utf8("SPEC VIOLATION: full_text is NULL!");
-    if (new_block->urgent)
+    }
+    if (new_block->urgent) {
         ctx->has_urgent = true;
+    }
 
     if (new_block->min_width_str) {
         i3String *text = i3string_from_utf8(new_block->min_width_str);
@@ -351,8 +354,9 @@ static int stdin_end_map(void *context) {
 
     i3string_set_markup(new_block->full_text, new_block->pango_markup);
 
-    if (new_block->short_text != NULL)
+    if (new_block->short_text != NULL) {
         i3string_set_markup(new_block->short_text, new_block->pango_markup);
+    }
 
     TAILQ_INSERT_TAIL(&statusline_buffer, new_block, blocks);
     return 1;
@@ -444,8 +448,9 @@ static bool read_json_input(unsigned char *input, int length) {
         char *message = (char *)yajl_get_error(parser, 0, input, length);
 
         /* strip the newline yajl adds to the error message */
-        if (message[strlen(message) - 1] == '\n')
+        if (message[strlen(message) - 1] == '\n') {
             message[strlen(message) - 1] = '\0';
+        }
 
         fprintf(stderr, "[i3bar] Could not parse JSON input (code = %d, message = %s): %.*s\n",
                 status, message, length, input);
@@ -694,8 +699,9 @@ static void child_write_output(void) {
         yajl_gen_get_buf(gen, &output, &size);
 
         n = writeall(child_stdin, output, size);
-        if (n != -1)
+        if (n != -1) {
             n = writeall(child_stdin, "\n", 1);
+        }
 
         yajl_gen_clear(gen);
 
@@ -871,20 +877,27 @@ void send_block_clicked(int button, const char *name, const char *instance, int 
 
     ystr("modifiers");
     yajl_gen_array_open(gen);
-    if (mods & XCB_MOD_MASK_SHIFT)
+    if (mods & XCB_MOD_MASK_SHIFT) {
         ystr("Shift");
-    if (mods & XCB_MOD_MASK_CONTROL)
+    }
+    if (mods & XCB_MOD_MASK_CONTROL) {
         ystr("Control");
-    if (mods & XCB_MOD_MASK_1)
+    }
+    if (mods & XCB_MOD_MASK_1) {
         ystr("Mod1");
-    if (mods & XCB_MOD_MASK_2)
+    }
+    if (mods & XCB_MOD_MASK_2) {
         ystr("Mod2");
-    if (mods & XCB_MOD_MASK_3)
+    }
+    if (mods & XCB_MOD_MASK_3) {
         ystr("Mod3");
-    if (mods & XCB_MOD_MASK_4)
+    }
+    if (mods & XCB_MOD_MASK_4) {
         ystr("Mod4");
-    if (mods & XCB_MOD_MASK_5)
+    }
+    if (mods & XCB_MOD_MASK_5) {
         ystr("Mod5");
+    }
     yajl_gen_array_close(gen);
 
     ystr("x");

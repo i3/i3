@@ -26,8 +26,9 @@ static void render_con_dockarea(Con *con, Con *child, render_params *p);
  */
 int render_deco_height(void) {
     int deco_height = config.font.height + 4;
-    if (config.font.height & 0x01)
+    if (config.font.height & 0x01) {
         ++deco_height;
+    }
     return deco_height;
 }
 
@@ -151,8 +152,9 @@ void render_con(Con *con) {
 
     if (con->layout == L_OUTPUT) {
         /* Skip i3-internal outputs */
-        if (con_is_internal(con))
+        if (con_is_internal(con)) {
             goto free_params;
+        }
         render_output(con);
     } else if (con->type == CT_ROOT) {
         render_root(con, fullscreen);
@@ -205,12 +207,13 @@ void render_con(Con *con) {
                 render_con(child);
             }
 
-            if (params.children != 1)
+            if (params.children != 1) {
                 /* Raise the stack con itself. This will put the stack
                  * decoration on top of every stack window. That way, when a
                  * new window is opened in the stack, the old window will not
                  * obscure part of the decoration (it’s unmapped afterwards). */
                 x_raise_con(con);
+            }
         }
     }
 
@@ -261,8 +264,9 @@ static void render_root(Con *con, Con *fullscreen) {
      * windows/containers so that they overlap on another output. */
     DLOG("Rendering floating windows:\n");
     TAILQ_FOREACH (output, &(con->nodes_head), nodes) {
-        if (con_is_internal(output))
+        if (con_is_internal(output)) {
             continue;
+        }
         /* Get the active workspace of that output */
         Con *content = output_get_content(output);
         if (!content || TAILQ_EMPTY(&(content->focus_head))) {
@@ -352,8 +356,9 @@ static void render_output(Con *con) {
     /* First pass: determine the height of all CT_DOCKAREAs (the sum of their
      * children) and figure out how many pixels we have left for the rest */
     TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
-        if (child->type != CT_DOCKAREA)
+        if (child->type != CT_DOCKAREA) {
             continue;
+        }
 
         child->rect.height = 0;
         TAILQ_FOREACH (dockchild, &(child->nodes_head), nodes) {

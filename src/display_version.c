@@ -100,27 +100,31 @@ void display_running_version(void) {
 
     int sockfd = ipc_connect(NULL);
     if (ipc_send_message(sockfd, 0, I3_IPC_MESSAGE_TYPE_GET_VERSION,
-                         (uint8_t *)"") == -1)
+                         (uint8_t *)"") == -1) {
         err(EXIT_FAILURE, "IPC: write()");
+    }
 
     uint32_t reply_length;
     uint32_t reply_type;
     uint8_t *reply;
     int ret;
     if ((ret = ipc_recv_message(sockfd, &reply_type, &reply_length, &reply)) != 0) {
-        if (ret == -1)
+        if (ret == -1) {
             err(EXIT_FAILURE, "IPC: read()");
+        }
         exit(EXIT_FAILURE);
     }
 
-    if (reply_type != I3_IPC_MESSAGE_TYPE_GET_VERSION)
+    if (reply_type != I3_IPC_MESSAGE_TYPE_GET_VERSION) {
         errx(EXIT_FAILURE, "Got reply type %d, but expected %d (GET_VERSION)", reply_type, I3_IPC_MESSAGE_TYPE_GET_VERSION);
+    }
 
     yajl_handle handle = yajl_alloc(&version_callbacks, NULL, NULL);
 
     yajl_status state = yajl_parse(handle, (const unsigned char *)reply, (int)reply_length);
-    if (state != yajl_status_ok)
+    if (state != yajl_status_ok) {
         errx(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
+    }
 
     printf("\r\x1b[K");
     printf("Running i3 version: %s (pid %s)\n", human_readable_version, pid_from_atom);
@@ -146,8 +150,9 @@ void display_running_version(void) {
         destpath_size = destpath_size * 2;
         destpath = srealloc(destpath, destpath_size);
     }
-    if (linksize == -1)
+    if (linksize == -1) {
         err(EXIT_FAILURE, "readlink(%s)", exepath);
+    }
 
     /* readlink() does not NULL-terminate strings, so we have to. */
     destpath[linksize] = '\0';
@@ -162,16 +167,18 @@ void display_running_version(void) {
         destpath_size = destpath_size * 2;
         destpath = srealloc(destpath, destpath_size);
     }
-    if (linksize == -1)
+    if (linksize == -1) {
         err(EXIT_FAILURE, "readlink(%s)", exepath);
+    }
 
     /* readlink() does not NULL-terminate strings, so we have to. */
     destpath[linksize] = '\0';
 
     /* Check if "(deleted)" is the readlink result. If so, the running version
      * does not match the file on disk. */
-    if (strstr(destpath, "(deleted)") != NULL)
+    if (strstr(destpath, "(deleted)") != NULL) {
         printf("RUNNING BINARY DIFFERENT FROM BINARY ON DISK!\n");
+    }
 
     /* Since readlink() might put a "(deleted)" somewhere in the buffer and
      * stripping that out seems hackish and ugly, we read the process’s argv[0]
@@ -180,10 +187,12 @@ void display_running_version(void) {
     sasprintf(&exepath, "/proc/%s/cmdline", pid_from_atom);
 
     int fd;
-    if ((fd = open(exepath, O_RDONLY)) == -1)
+    if ((fd = open(exepath, O_RDONLY)) == -1) {
         err(EXIT_FAILURE, "open(%s)", exepath);
-    if (read(fd, destpath, sizeof(destpath)) == -1)
+    }
+    if (read(fd, destpath, sizeof(destpath)) == -1) {
         err(EXIT_FAILURE, "read(%s)", exepath);
+    }
     close(fd);
 
     printf("The i3 binary you are running: %s\n", destpath);
