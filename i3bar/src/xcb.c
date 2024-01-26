@@ -189,7 +189,7 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
     }
 }
 
-static uint32_t predict_block_length(struct status_block *block) {
+static void predict_block_length(struct status_block *block) {
     i3String *text = block->full_text;
     struct status_block_render_desc *render = &block->full_render;
     if (block->use_short && block->short_text != NULL) {
@@ -198,7 +198,8 @@ static uint32_t predict_block_length(struct status_block *block) {
     }
 
     if (i3string_get_num_bytes(text) == 0) {
-        return 0;
+        block->render_length = 0;
+        return;
     }
 
     render->width = predict_text_width(text);
@@ -227,7 +228,6 @@ static uint32_t predict_block_length(struct status_block *block) {
     }
 
     block->render_length = render->width + render->x_offset + render->x_append;
-    return block->render_length;
 }
 
 static uint32_t predict_statusline_length(void) {
@@ -235,7 +235,8 @@ static uint32_t predict_statusline_length(void) {
     struct status_block *block;
 
     TAILQ_FOREACH (block, &statusline_head, blocks) {
-        uint32_t block_width = predict_block_length(block);
+        predict_block_length(block);
+        uint32_t block_width = block->render_length;
         if (block_width == 0) {
             continue;
         }
@@ -265,7 +266,8 @@ static uint32_t adjust_statusline_length(uint32_t max_length) {
         } else if (!block->use_short) {
             uint32_t full = block->render_length;
             block->use_short = true;
-            uint32_t diff = full - predict_block_length(block);
+            predict_block_length(block);
+            uint32_t diff = full - block->render_length;
             width -= diff;
 
             if (block->name) {
@@ -274,7 +276,8 @@ static uint32_t adjust_statusline_length(uint32_t max_length) {
                     if (other->name && !strcmp(other->name, block->name)) {
                         uint32_t full = other->render_length;
                         other->use_short = true;
-                        uint32_t diff = full - predict_block_length(other);
+                        predict_block_length(other);
+                        uint32_t diff = full - other->render_length;
                         width -= diff;
                     }
                 }
