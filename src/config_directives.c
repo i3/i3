@@ -133,33 +133,45 @@ i3_event_state_mask_t event_state_from_str(const char *str) {
     /* It might be better to use strtok() here, but the simpler strstr() should
      * do for now. */
     i3_event_state_mask_t result = 0;
-    if (str == NULL)
+    if (str == NULL) {
         return result;
-    if (strstr(str, "Mod1") != NULL)
+    }
+    if (strstr(str, "Mod1") != NULL) {
         result |= XCB_KEY_BUT_MASK_MOD_1;
-    if (strstr(str, "Mod2") != NULL)
+    }
+    if (strstr(str, "Mod2") != NULL) {
         result |= XCB_KEY_BUT_MASK_MOD_2;
-    if (strstr(str, "Mod3") != NULL)
+    }
+    if (strstr(str, "Mod3") != NULL) {
         result |= XCB_KEY_BUT_MASK_MOD_3;
-    if (strstr(str, "Mod4") != NULL)
+    }
+    if (strstr(str, "Mod4") != NULL) {
         result |= XCB_KEY_BUT_MASK_MOD_4;
-    if (strstr(str, "Mod5") != NULL)
+    }
+    if (strstr(str, "Mod5") != NULL) {
         result |= XCB_KEY_BUT_MASK_MOD_5;
+    }
     if (strstr(str, "Control") != NULL ||
-        strstr(str, "Ctrl") != NULL)
+        strstr(str, "Ctrl") != NULL) {
         result |= XCB_KEY_BUT_MASK_CONTROL;
-    if (strstr(str, "Shift") != NULL)
+    }
+    if (strstr(str, "Shift") != NULL) {
         result |= XCB_KEY_BUT_MASK_SHIFT;
+    }
 
-    if (strstr(str, "Group1") != NULL)
+    if (strstr(str, "Group1") != NULL) {
         result |= (I3_XKB_GROUP_MASK_1 << 16);
+    }
     if (strstr(str, "Group2") != NULL ||
-        strstr(str, "Mode_switch") != NULL)
+        strstr(str, "Mode_switch") != NULL) {
         result |= (I3_XKB_GROUP_MASK_2 << 16);
-    if (strstr(str, "Group3") != NULL)
+    }
+    if (strstr(str, "Group3") != NULL) {
         result |= (I3_XKB_GROUP_MASK_3 << 16);
-    if (strstr(str, "Group4") != NULL)
+    }
+    if (strstr(str, "Group4") != NULL) {
         result |= (I3_XKB_GROUP_MASK_4 << 16);
+    }
     return result;
 }
 
@@ -314,17 +326,19 @@ CFGFUN(gaps, const char *workspace, const char *scope, const long value) {
 }
 
 CFGFUN(smart_borders, const char *enable) {
-    if (!strcmp(enable, "no_gaps"))
+    if (!strcmp(enable, "no_gaps")) {
         config.smart_borders = SMART_BORDERS_NO_GAPS;
-    else
+    } else {
         config.smart_borders = boolstr(enable) ? SMART_BORDERS_ON : SMART_BORDERS_OFF;
+    }
 }
 
 CFGFUN(smart_gaps, const char *enable) {
-    if (!strcmp(enable, "inverse_outer"))
+    if (!strcmp(enable, "inverse_outer")) {
         config.smart_gaps = SMART_GAPS_INVERSE_OUTER;
-    else
+    } else {
         config.smart_gaps = boolstr(enable) ? SMART_GAPS_ON : SMART_GAPS_OFF;
+    }
 }
 
 CFGFUN(floating_minimum_size, const long width, const long height) {
@@ -342,22 +356,24 @@ CFGFUN(floating_modifier, const char *modifiers) {
 }
 
 CFGFUN(default_orientation, const char *orientation) {
-    if (strcmp(orientation, "horizontal") == 0)
+    if (strcmp(orientation, "horizontal") == 0) {
         config.default_orientation = HORIZ;
-    else if (strcmp(orientation, "vertical") == 0)
+    } else if (strcmp(orientation, "vertical") == 0) {
         config.default_orientation = VERT;
-    else
+    } else {
         config.default_orientation = NO_ORIENTATION;
+    }
 }
 
 CFGFUN(workspace_layout, const char *layout) {
-    if (strcmp(layout, "default") == 0)
+    if (strcmp(layout, "default") == 0) {
         config.default_layout = L_DEFAULT;
-    else if (strcmp(layout, "stacking") == 0 ||
-             strcmp(layout, "stacked") == 0)
+    } else if (strcmp(layout, "stacking") == 0 ||
+               strcmp(layout, "stacked") == 0) {
         config.default_layout = L_STACKED;
-    else
+    } else {
         config.default_layout = L_TABBED;
+    }
 }
 
 CFGFUN(default_border, const char *windowtype, const char *border, const long width) {
@@ -393,22 +409,23 @@ CFGFUN(default_border, const char *windowtype, const char *border, const long wi
 }
 
 CFGFUN(hide_edge_borders, const char *borders) {
-    if (strcmp(borders, "smart_no_gaps") == 0)
+    if (strcmp(borders, "smart_no_gaps") == 0) {
         config.hide_edge_borders = HEBM_SMART_NO_GAPS;
-    else if (strcmp(borders, "smart") == 0)
+    } else if (strcmp(borders, "smart") == 0) {
         config.hide_edge_borders = HEBM_SMART;
-    else if (strcmp(borders, "vertical") == 0)
+    } else if (strcmp(borders, "vertical") == 0) {
         config.hide_edge_borders = HEBM_VERTICAL;
-    else if (strcmp(borders, "horizontal") == 0)
+    } else if (strcmp(borders, "horizontal") == 0) {
         config.hide_edge_borders = HEBM_HORIZONTAL;
-    else if (strcmp(borders, "both") == 0)
+    } else if (strcmp(borders, "both") == 0) {
         config.hide_edge_borders = HEBM_BOTH;
-    else if (strcmp(borders, "none") == 0)
+    } else if (strcmp(borders, "none") == 0) {
         config.hide_edge_borders = HEBM_NONE;
-    else if (boolstr(borders))
+    } else if (boolstr(borders)) {
         config.hide_edge_borders = HEBM_VERTICAL;
-    else
+    } else {
         config.hide_edge_borders = HEBM_NONE;
+    }
 }
 
 CFGFUN(focus_follows_mouse, const char *value) {
@@ -416,10 +433,11 @@ CFGFUN(focus_follows_mouse, const char *value) {
 }
 
 CFGFUN(mouse_warping, const char *value) {
-    if (strcmp(value, "none") == 0)
+    if (strcmp(value, "none") == 0) {
         config.mouse_warping = POINTER_WARPING_NONE;
-    else if (strcmp(value, "output") == 0)
+    } else if (strcmp(value, "output") == 0) {
         config.mouse_warping = POINTER_WARPING_OUTPUT;
+    }
 }
 
 CFGFUN(force_xinerama, const char *value) {
@@ -469,15 +487,15 @@ CFGFUN(force_display_urgency_hint, const long duration_ms) {
 }
 
 CFGFUN(focus_on_window_activation, const char *mode) {
-    if (strcmp(mode, "smart") == 0)
+    if (strcmp(mode, "smart") == 0) {
         config.focus_on_window_activation = FOWA_SMART;
-    else if (strcmp(mode, "urgent") == 0)
+    } else if (strcmp(mode, "urgent") == 0) {
         config.focus_on_window_activation = FOWA_URGENT;
-    else if (strcmp(mode, "focus") == 0)
+    } else if (strcmp(mode, "focus") == 0) {
         config.focus_on_window_activation = FOWA_FOCUS;
-    else if (strcmp(mode, "none") == 0)
+    } else if (strcmp(mode, "none") == 0) {
         config.focus_on_window_activation = FOWA_NONE;
-    else {
+    } else {
         ELOG("Unknown focus_on_window_activation mode \"%s\", ignoring it.\n", mode);
         return;
     }
@@ -854,18 +872,19 @@ CFGFUN(bar_tray_padding, const long padding_px) {
 }
 
 CFGFUN(bar_color_single, const char *colorclass, const char *color) {
-    if (strcmp(colorclass, "background") == 0)
+    if (strcmp(colorclass, "background") == 0) {
         current_bar->colors.background = sstrdup(color);
-    else if (strcmp(colorclass, "separator") == 0)
+    } else if (strcmp(colorclass, "separator") == 0) {
         current_bar->colors.separator = sstrdup(color);
-    else if (strcmp(colorclass, "statusline") == 0)
+    } else if (strcmp(colorclass, "statusline") == 0) {
         current_bar->colors.statusline = sstrdup(color);
-    else if (strcmp(colorclass, "focused_background") == 0)
+    } else if (strcmp(colorclass, "focused_background") == 0) {
         current_bar->colors.focused_background = sstrdup(color);
-    else if (strcmp(colorclass, "focused_separator") == 0)
+    } else if (strcmp(colorclass, "focused_separator") == 0) {
         current_bar->colors.focused_separator = sstrdup(color);
-    else
+    } else {
         current_bar->colors.focused_statusline = sstrdup(color);
+    }
 }
 
 CFGFUN(bar_status_command, const char *command) {
@@ -909,8 +928,9 @@ CFGFUN(bar_start) {
 CFGFUN(bar_finish) {
     DLOG("\t new bar configuration finished, saving.\n");
     /* Generate a unique ID for this bar if not already configured */
-    if (current_bar->id == NULL)
+    if (current_bar->id == NULL) {
         sasprintf(&current_bar->id, "bar-%d", config.number_barconfigs);
+    }
 
     config.number_barconfigs++;
 

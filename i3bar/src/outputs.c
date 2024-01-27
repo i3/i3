@@ -112,8 +112,9 @@ static int outputs_string_cb(void *params_, const unsigned char *val, size_t len
         errno = 0;
         long parsed_num = strtol(copy, &end, 10);
         if (errno == 0 &&
-            (end && *end == '\0'))
+            (end && *end == '\0')) {
             params->outputs_walk->ws = parsed_num;
+        }
 
         FREE(copy);
         FREE(params->cur_key);

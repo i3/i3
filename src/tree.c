@@ -161,8 +161,9 @@ Con *tree_open_con(Con *con, i3Window *window) {
          * workspace. */
         if (con->type == CT_FLOATING_CON) {
             con = con_descend_tiling_focused(con->parent);
-            if (con->type != CT_WORKSPACE)
+            if (con->type != CT_WORKSPACE) {
                 con = con->parent;
+            }
         }
         DLOG("con = %p\n", con);
     }
@@ -293,8 +294,9 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
      * Rendering has to be avoided when dont_kill_parent is set (when
      * tree_close_internal calls itself recursively) because the tree is in a
      * non-renderable state during that time. */
-    if (!dont_kill_parent)
+    if (!dont_kill_parent) {
         tree_render();
+    }
 
     /* kill the X11 part of this container */
     x_con_kill(con);
@@ -313,8 +315,9 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
     }
 
     /* check if the parent container is empty now and close it */
-    if (!dont_kill_parent)
+    if (!dont_kill_parent) {
         CALL(parent, on_remove_child);
+    }
 
     return true;
 }
@@ -419,8 +422,9 @@ bool level_down(void) {
         if (child == TAILQ_END(&(next->focus_head))) {
             DLOG("cannot go down\n");
             return false;
-        } else
+        } else {
             next = TAILQ_FIRST(&(next->focus_head));
+        }
     }
 
     con_activate(next);
@@ -449,8 +453,9 @@ static void mark_unmapped(Con *con) {
  *
  */
 void tree_render(void) {
-    if (croot == NULL)
+    if (croot == NULL) {
         return;
+    }
 
     DLOG("-- BEGIN RENDERING --\n");
     /* Reset map state for all nodes in tree */
@@ -659,13 +664,15 @@ void tree_flatten(Con *con) {
     /* We only consider normal containers without windows */
     if (con->type != CT_CON ||
         parent->layout == L_OUTPUT || /* con == "content" */
-        con->window != NULL)
+        con->window != NULL) {
         goto recurse;
+    }
 
     /* Ensure it got only one child */
     child = TAILQ_FIRST(&(con->nodes_head));
-    if (child == NULL || TAILQ_NEXT(child, nodes) != NULL)
+    if (child == NULL || TAILQ_NEXT(child, nodes) != NULL) {
         goto recurse;
+    }
 
     DLOG("child = %p, con = %p, parent = %p\n", child, con, parent);
 
@@ -676,8 +683,9 @@ void tree_flatten(Con *con) {
         (con->layout != L_SPLITH && con->layout != L_SPLITV) ||
         (child->layout != L_SPLITH && child->layout != L_SPLITV) ||
         con_orientation(con) == con_orientation(child) ||
-        con_orientation(child) != con_orientation(parent))
+        con_orientation(child) != con_orientation(parent)) {
         goto recurse;
+    }
 
     DLOG("Alright, I have to flatten this situation now. Stay calm.\n");
     /* 1: save focus */

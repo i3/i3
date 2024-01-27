@@ -212,8 +212,9 @@ static void got_bar_config_update(const unsigned char *event, size_t size) {
     sasprintf(&expected_id, "\"id\":\"%s\"", config.bar_id);
     char *found_id = strstr((const char *)event, expected_id);
     FREE(expected_id);
-    if (found_id == NULL)
+    if (found_id == NULL) {
         return;
+    }
 
     /* reconfigure the bar based on the current outputs */
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);

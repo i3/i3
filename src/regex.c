@@ -45,8 +45,9 @@ struct regex *regex_new(const char *pattern) {
  *
  */
 void regex_free(struct regex *regex) {
-    if (!regex)
+    if (!regex) {
         return;
+    }
     FREE(regex->pattern);
     FREE(regex->regex);
     FREE(regex);

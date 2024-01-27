@@ -66,9 +66,11 @@ bool rect_equals(Rect a, Rect b) {
  */
 __attribute__((pure)) bool name_is_digits(const char *name) {
     /* positive integers and zero are interpreted as numbers */
-    for (size_t i = 0; i < strlen(name); i++)
-        if (!isdigit(name[i]))
+    for (size_t i = 0; i < strlen(name); i++) {
+        if (!isdigit(name[i])) {
             return false;
+        }
+    }
 
     return true;
 }
@@ -182,8 +184,8 @@ void exec_i3_utility(char *name, char *argv[]) {
  */
 static char **add_argument(char **original, char *opt_char, char *opt_arg, char *opt_name) {
     int num_args;
-    for (num_args = 0; original[num_args] != NULL; num_args++)
-        ;
+    for (num_args = 0; original[num_args] != NULL; num_args++) {
+    }
     char **result = scalloc(num_args + 3, sizeof(char *));
 
     /* copy the arguments, but skip the ones we'll replace */
@@ -196,8 +198,9 @@ static char **add_argument(char **original, char *opt_char, char *opt_arg, char 
         }
         if (!strcmp(original[i], opt_char) ||
             (opt_name && !strcmp(original[i], opt_name))) {
-            if (opt_arg)
+            if (opt_arg) {
                 skip_next = true;
+            }
             continue;
         }
         result[write_index++] = original[i];
@@ -230,8 +233,9 @@ static char *store_restart_layout(void) {
     char *filename;
     if (config.restart_state_path == NULL) {
         filename = get_process_filename("restart-state");
-        if (!filename)
+        if (!filename) {
             return NULL;
+        }
     } else {
         filename = resolve_tilde(config.restart_state_path);
     }
@@ -241,8 +245,9 @@ static char *store_restart_layout(void) {
     char *filenamecopy = sstrdup(filename);
     char *base = dirname(filenamecopy);
     DLOG("Creating \"%s\" for storing the restart layout\n", base);
-    if (mkdirp(base, DEFAULT_DIR_MODE) != 0)
+    if (mkdirp(base, DEFAULT_DIR_MODE) != 0) {
         ELOG("Could not create \"%s\" for storing the restart layout, layout will be lost.\n", base);
+    }
     free(filenamecopy);
 
     int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
@@ -310,8 +315,9 @@ void i3_restart(bool forget_layout) {
  *
  */
 char *pango_escape_markup(char *input) {
-    if (!font_is_pango())
+    if (!font_is_pango()) {
         return input;
+    }
 
     char *escaped = g_markup_escape_text(input, -1);
     FREE(input);
@@ -364,8 +370,9 @@ void start_nagbar(pid_t *nagbar_pid, char *argv[]) {
     }
 
     /* child */
-    if (*nagbar_pid == 0)
+    if (*nagbar_pid == 0) {
         exec_i3_utility("i3-nagbar", argv);
+    }
 
     DLOG("Starting i3-nagbar with PID %d\n", *nagbar_pid);
 
@@ -385,14 +392,17 @@ void start_nagbar(pid_t *nagbar_pid, char *argv[]) {
  *
  */
 void kill_nagbar(pid_t nagbar_pid, bool wait_for_it) {
-    if (nagbar_pid == -1)
+    if (nagbar_pid == -1) {
         return;
+    }
 
-    if (kill(nagbar_pid, SIGTERM) == -1)
+    if (kill(nagbar_pid, SIGTERM) == -1) {
         warn("kill(configerror_nagbar) failed");
+    }
 
-    if (!wait_for_it)
+    if (!wait_for_it) {
         return;
+    }
 
     /* When restarting, we don’t enter the ev main loop anymore and after the
      * exec(), our old pid is no longer watched. So, ev won’t handle SIGCHLD

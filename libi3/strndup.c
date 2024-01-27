@@ -20,8 +20,9 @@ char *strndup(const char *str, size_t n) {
     size_t len;
     char *copy;
 
-    for (len = 0; len < n && str[len]; len++)
+    for (len = 0; len < n && str[len]; len++) {
         continue;
+    }
 
     copy = smalloc(len + 1);
     memcpy(copy, str, len);

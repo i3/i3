@@ -110,8 +110,9 @@ void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_draw
     surface->width = width;
     surface->height = height;
 
-    if (visual == NULL)
+    if (visual == NULL) {
         visual = visual_type;
+    }
 
     surface->gc = get_gc(conn, get_visual_depth(visual->visual_id), drawable, &surface->owns_gc);
     surface->surface = cairo_xcb_surface_create(conn, surface->id, visual, width, height);

@@ -106,11 +106,13 @@ void parse_json_header(i3bar_child *child, const unsigned char *buffer, int leng
     yajl_status state = yajl_parse(handle, buffer, length);
     if (state != yajl_status_ok) {
         child_init(child);
-        if (consumed != NULL)
+        if (consumed != NULL) {
             *consumed = 0;
+        }
     } else {
-        if (consumed != NULL)
+        if (consumed != NULL) {
             *consumed = yajl_get_bytes_consumed(handle);
+        }
     }
 
     yajl_free(handle);

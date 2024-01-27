@@ -138,8 +138,9 @@ int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
 }
 
 static uint32_t get_sep_offset(struct status_block *block) {
-    if (!block->no_separator && block->sep_block_width > 0)
+    if (!block->no_separator && block->sep_block_width > 0) {
         return block->sep_block_width / 2 + block->sep_block_width % 2;
+    }
     return 0;
 }
 
@@ -147,12 +148,14 @@ static int get_tray_width(struct tc_head *trayclients) {
     trayclient *trayclient;
     int tray_width = 0;
     TAILQ_FOREACH_REVERSE (trayclient, trayclients, tc_head, tailq) {
-        if (!trayclient->mapped)
+        if (!trayclient->mapped) {
             continue;
+        }
         tray_width += icon_size + logical_px(config.tray_padding);
     }
-    if (tray_width > 0)
+    if (tray_width > 0) {
         tray_width += logical_px(tray_loff_px);
+    }
     return tray_width;
 }
 
@@ -165,8 +168,9 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
     color_t bar_bg = (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg);
 
     uint32_t sep_offset = get_sep_offset(block);
-    if (TAILQ_NEXT(block, blocks) == NULL || sep_offset == 0)
+    if (TAILQ_NEXT(block, blocks) == NULL || sep_offset == 0) {
         return;
+    }
 
     uint32_t center_x = x - sep_offset;
     if (config.separator_symbol == NULL) {
@@ -196,12 +200,14 @@ static uint32_t predict_statusline_length(bool use_short_text) {
             render = &block->short_render;
         }
 
-        if (i3string_get_num_bytes(text) == 0)
+        if (i3string_get_num_bytes(text) == 0) {
             continue;
+        }
 
         render->width = predict_text_width(text);
-        if (block->border)
+        if (block->border) {
             render->width += logical_px(block->border_left + block->border_right);
+        }
 
         /* Compute offset and append for text alignment in min_width. */
         if (block->min_width <= render->width) {
@@ -226,8 +232,9 @@ static uint32_t predict_statusline_length(bool use_short_text) {
         width += render->width + render->x_offset + render->x_append;
 
         /* If this is not the last block, add some pixels for a separator. */
-        if (TAILQ_NEXT(block, blocks) != NULL)
+        if (TAILQ_NEXT(block, blocks) != NULL) {
             width += block->sep_block_width;
+        }
     }
 
     return width;
@@ -259,8 +266,9 @@ static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focu
             render = &block->short_render;
         }
 
-        if (i3string_get_num_bytes(text) == 0)
+        if (i3string_get_num_bytes(text) == 0) {
             continue;
+        }
 
         color_t fg_color;
         if (block->urgent) {
@@ -284,10 +292,12 @@ static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focu
                 border_color = colors.urgent_ws_border;
                 bg_color = colors.urgent_ws_bg;
             } else {
-                if (block->border)
+                if (block->border) {
                     border_color = draw_util_hex_to_color(block->border);
-                if (block->background)
+                }
+                if (block->background) {
                     bg_color = draw_util_hex_to_color(block->background);
+                }
             }
 
             /* Draw the border. */
@@ -363,10 +373,11 @@ static void unhide_bars(void) {
                XCB_CONFIG_WINDOW_HEIGHT |
                XCB_CONFIG_WINDOW_STACK_MODE;
         values[0] = walk->rect.x;
-        if (config.position == POS_TOP)
+        if (config.position == POS_TOP) {
             values[1] = walk->rect.y;
-        else
+        } else {
             values[1] = walk->rect.y + walk->rect.h - bar_height;
+        }
         values[2] = walk->rect.w;
         values[3] = bar_height;
         values[4] = XCB_STACK_MODE_ABOVE;
@@ -434,8 +445,9 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
 static bool execute_custom_command(xcb_keycode_t input_code, bool event_is_release) {
     binding_t *binding;
     TAILQ_FOREACH (binding, &(config.bindings), bindings) {
-        if ((binding->input_code != input_code) || (binding->release != event_is_release))
+        if ((binding->input_code != input_code) || (binding->release != event_is_release)) {
             continue;
+        }
 
         i3_send_msg(I3_IPC_MESSAGE_TYPE_RUN_COMMAND, binding->command);
         return true;
@@ -575,13 +587,16 @@ static void handle_button(xcb_button_press_event_t *event) {
 
     TAILQ_FOREACH (ws_walk, walk->workspaces, tailq) {
         int w = predict_button_width(ws_walk->name_width);
-        if (x >= workspace_width && x <= workspace_width + w)
+        if (x >= workspace_width && x <= workspace_width + w) {
             clicked_ws = ws_walk;
-        if (ws_walk->visible)
+        }
+        if (ws_walk->visible) {
             cur_ws = ws_walk;
+        }
         workspace_width += w;
-        if (TAILQ_NEXT(ws_walk, tailq) != NULL)
+        if (TAILQ_NEXT(ws_walk, tailq) != NULL) {
             workspace_width += logical_px(ws_spacing_px);
+        }
     }
 
     if (child_want_click_events() && x > workspace_width) {
@@ -626,8 +641,9 @@ static void handle_button(xcb_button_press_event_t *event) {
              * If there is no more workspace, don’t even send the workspace
              * command, otherwise (with workspace auto_back_and_forth) we’d end
              * up on the wrong workspace. */
-            if (cur_ws == TAILQ_FIRST(walk->workspaces))
+            if (cur_ws == TAILQ_FIRST(walk->workspaces)) {
                 return;
+            }
 
             cur_ws = TAILQ_PREV(cur_ws, ws_head, tailq);
             break;
@@ -637,8 +653,9 @@ static void handle_button(xcb_button_press_event_t *event) {
              * If there is no more workspace, don’t even send the workspace
              * command, otherwise (with workspace auto_back_and_forth) we’d end
              * up on the wrong workspace. */
-            if (cur_ws == TAILQ_LAST(walk->workspaces, ws_head))
+            if (cur_ws == TAILQ_LAST(walk->workspaces, ws_head)) {
                 return;
+            }
 
             cur_ws = TAILQ_NEXT(cur_ws, tailq);
             break;
@@ -649,14 +666,16 @@ static void handle_button(xcb_button_press_event_t *event) {
              * workspace if it is not already focused */
             if (cur_ws == NULL) {
                 TAILQ_FOREACH (cur_ws, walk->workspaces, tailq) {
-                    if (cur_ws->visible && !cur_ws->focused)
+                    if (cur_ws->visible && !cur_ws->focused) {
                         break;
+                    }
                 }
             }
 
             /* if there is nothing to focus, we are done */
-            if (cur_ws == NULL)
+            if (cur_ws == NULL) {
                 return;
+            }
 
             break;
         default:
@@ -885,8 +904,9 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                 DLOG("xembed flags = %d\n", xembed[1]);
                 map_it = ((xembed[1] & XEMBED_MAPPED) == XEMBED_MAPPED);
                 xe_version = xembed[0];
-                if (xe_version > 1)
+                if (xe_version > 1) {
                     xe_version = 1;
+                }
                 free(xembedr);
             } else {
                 ELOG("Window %08x violates the XEMBED protocol, _XEMBED_INFO not set\n", client);
@@ -904,8 +924,9 @@ static void handle_client_message(xcb_client_message_event_t *event) {
                                                             output_for_tray->bar.id,
                                                             output_for_tray->rect.w - icon_size - logical_px(config.tray_padding),
                                                             logical_px(config.tray_padding));
-            if (xcb_request_failed(rcookie, "Could not reparent window. Maybe it is using an incorrect depth/visual?"))
+            if (xcb_request_failed(rcookie, "Could not reparent window. Maybe it is using an incorrect depth/visual?")) {
                 return;
+            }
 
             /* We reconfigure the window to use a reasonable size. The systray
              * specification explicitly says:
@@ -1104,17 +1125,20 @@ static void handle_configuration_change(xcb_window_t window) {
     trayclient *trayclient;
     i3_output *output;
     SLIST_FOREACH (output, outputs, slist) {
-        if (!output->active)
+        if (!output->active) {
             continue;
+        }
 
         int clients = 0;
         TAILQ_FOREACH_REVERSE (trayclient, output->trayclients, tc_head, tailq) {
-            if (!trayclient->mapped)
+            if (!trayclient->mapped) {
                 continue;
+            }
             clients++;
 
-            if (trayclient->win != window)
+            if (trayclient->win != window) {
                 continue;
+            }
 
             xcb_rectangle_t rect;
             rect.x = output->rect.w - (clients * (icon_size + logical_px(config.tray_padding)));
@@ -1361,8 +1385,9 @@ static void deregister_xkb_keyevents(void) {
  *
  */
 void init_xcb_late(char *fontname) {
-    if (fontname == NULL)
+    if (fontname == NULL) {
         fontname = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
+    }
 
     /* Load the font */
     font = load_font(fontname, true);
@@ -1390,13 +1415,15 @@ void init_xcb_late(char *fontname) {
     bar_height = default_px + padding_scaled;
     icon_size = bar_height - 2 * logical_px(config.tray_padding);
 
-    if (config.separator_symbol)
+    if (config.separator_symbol) {
         separator_symbol_width = predict_text_width(config.separator_symbol);
+    }
 
     xcb_flush(xcb_connection);
 
-    if (config.hide_on_modifier == M_HIDE)
+    if (config.hide_on_modifier == M_HIDE) {
         register_xkb_keyevents();
+    }
 }
 
 /*
@@ -1435,8 +1462,9 @@ static void init_tray(void) {
     char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
     snprintf(atomname, strlen("_NET_SYSTEM_TRAY_S") + 11, "_NET_SYSTEM_TRAY_S%d", screen);
     xcb_intern_atom_cookie_t tray_cookie;
-    if (tray_reply == NULL)
+    if (tray_reply == NULL) {
         tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
+    }
 
     /* tray support: we need a window to own the selection */
     selwin = xcb_generate_id(xcb_connection);
@@ -1603,8 +1631,9 @@ void get_atoms(void) {
  *
  */
 void kick_tray_clients(i3_output *output) {
-    if (TAILQ_EMPTY(output->trayclients))
+    if (TAILQ_EMPTY(output->trayclients)) {
         return;
+    }
 
     trayclient *trayclient;
     while (!TAILQ_EMPTY(output->trayclients)) {
@@ -1899,10 +1928,11 @@ void reconfig_windows(bool redraw_bars) {
                    XCB_CONFIG_WINDOW_HEIGHT |
                    XCB_CONFIG_WINDOW_STACK_MODE;
             values[0] = walk->rect.x;
-            if (config.position == POS_TOP)
+            if (config.position == POS_TOP) {
                 values[1] = walk->rect.y;
-            else
+            } else {
                 values[1] = walk->rect.y + walk->rect.h - bar_height;
+            }
             values[2] = walk->rect.w;
             values[3] = bar_height;
             values[4] = XCB_STACK_MODE_ABOVE;
@@ -2078,8 +2108,9 @@ void draw_bars(bool unhide) {
                             workspace_width, w, ws_walk->name_width, ws_walk->name);
 
                 workspace_width += w;
-                if (TAILQ_NEXT(ws_walk, tailq) != NULL)
+                if (TAILQ_NEXT(ws_walk, tailq) != NULL) {
                     workspace_width += logical_px(ws_spacing_px);
+                }
             }
         }
 

@@ -80,8 +80,9 @@ typedef struct tokenptr {
 static void push_string(struct stack *ctx, const char *identifier, const char *str) {
     for (int c = 0; c < 10; c++) {
         if (ctx->stack[c].identifier != NULL &&
-            strcmp(ctx->stack[c].identifier, identifier) != 0)
+            strcmp(ctx->stack[c].identifier, identifier) != 0) {
             continue;
+        }
         if (ctx->stack[c].identifier == NULL) {
             /* Found a free slot, let’s store it here. */
             ctx->stack[c].identifier = identifier;
@@ -128,28 +129,33 @@ static void push_long(struct stack *ctx, const char *identifier, long num) {
 
 static const char *get_string(struct stack *ctx, const char *identifier) {
     for (int c = 0; c < 10; c++) {
-        if (ctx->stack[c].identifier == NULL)
+        if (ctx->stack[c].identifier == NULL) {
             break;
-        if (strcmp(identifier, ctx->stack[c].identifier) == 0)
+        }
+        if (strcmp(identifier, ctx->stack[c].identifier) == 0) {
             return ctx->stack[c].val.str;
+        }
     }
     return NULL;
 }
 
 static long get_long(struct stack *ctx, const char *identifier) {
     for (int c = 0; c < 10; c++) {
-        if (ctx->stack[c].identifier == NULL)
+        if (ctx->stack[c].identifier == NULL) {
             break;
-        if (strcmp(identifier, ctx->stack[c].identifier) == 0)
+        }
+        if (strcmp(identifier, ctx->stack[c].identifier) == 0) {
             return ctx->stack[c].val.num;
+        }
     }
     return 0;
 }
 
 static void clear_stack(struct stack *ctx) {
     for (int c = 0; c < 10; c++) {
-        if (ctx->stack[c].type == STACK_STR)
+        if (ctx->stack[c].type == STACK_STR) {
             free(ctx->stack[c].val.str);
+        }
         ctx->stack[c].identifier = NULL;
         ctx->stack[c].val.str = NULL;
         ctx->stack[c].val.num = 0;
@@ -218,8 +224,9 @@ static const char *start_of_line(const char *walk, const char *beginning) {
 static char *single_line(const char *start) {
     char *result = sstrdup(start);
     char *end = strchr(result, '\n');
-    if (end != NULL)
+    if (end != NULL) {
         *end = '\0';
+    }
     return result;
 }
 
@@ -264,8 +271,9 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
     while ((size_t)(walk - input) <= len) {
         /* Skip whitespace before every token, newlines are relevant since they
          * separate configuration directives. */
-        while ((*walk == ' ' || *walk == '\t') && *walk != '\0')
+        while ((*walk == ' ' || *walk == '\t') && *walk != '\0') {
             walk++;
+        }
 
         cmdp_token_ptr *ptr = &(tokens[ctx->state]);
         token_handled = false;
@@ -292,12 +300,14 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
                 errno = 0;
                 long int num = strtol(walk, &end, 10);
                 if ((errno == ERANGE && (num == LONG_MIN || num == LONG_MAX)) ||
-                    (errno != 0 && num == 0))
+                    (errno != 0 && num == 0)) {
                     continue;
+                }
 
                 /* No valid numbers found */
-                if (end == walk)
+                if (end == walk) {
                     continue;
+                }
 
                 if (token->identifier != NULL) {
                     push_long(ctx->stack, token->identifier, num);
@@ -317,12 +327,14 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
                 if (*walk == '"') {
                     beginning++;
                     walk++;
-                    while (*walk != '\0' && (*walk != '"' || *(walk - 1) == '\\'))
+                    while (*walk != '\0' && (*walk != '"' || *(walk - 1) == '\\')) {
                         walk++;
+                    }
                 } else {
                     if (token->name[0] == 's') {
-                        while (*walk != '\0' && *walk != '\r' && *walk != '\n')
+                        while (*walk != '\0' && *walk != '\r' && *walk != '\n') {
                             walk++;
+                        }
                     } else {
                         /* For a word, the delimiters are white space (' ' or
                          * '\t'), closing square bracket (]), comma (,) and
@@ -330,8 +342,9 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
                         while (*walk != ' ' && *walk != '\t' &&
                                *walk != ']' && *walk != ',' &&
                                *walk != ';' && *walk != '\r' &&
-                               *walk != '\n' && *walk != '\0')
+                               *walk != '\n' && *walk != '\0') {
                             walk++;
+                        }
                     }
                 }
                 if (walk != beginning) {
@@ -344,8 +357,9 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
                         /* We only handle escaped double quotes to not break
                          * backwards compatibility with people using \w in
                          * regular expressions etc. */
-                        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"')
+                        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"') {
                             inpos++;
+                        }
                         str[outpos] = beginning[inpos];
                     }
                     if (token->identifier) {
@@ -354,8 +368,9 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
                     free(str);
                     /* If we are at the end of a quoted string, skip the ending
                      * double quote. */
-                    if (*walk == '"')
+                    if (*walk == '"') {
                         walk++;
+                    }
                     next_state(token, ctx);
                     token_handled = true;
                     break;
@@ -363,8 +378,9 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
             }
 
             if (strcmp(token->name, "line") == 0) {
-                while (*walk != '\0' && *walk != '\n' && *walk != '\r')
+                while (*walk != '\0' && *walk != '\n' && *walk != '\r') {
                     walk++;
+                }
                 next_state(token, ctx);
                 token_handled = true;
                 linecnt++;
@@ -394,8 +410,9 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
             /* Figure out how much memory we will need to fill in the names of
              * all tokens afterwards. */
             int tokenlen = 0;
-            for (c = 0; c < ptr->n; c++)
+            for (c = 0; c < ptr->n; c++) {
                 tokenlen += strlen(ptr->array[c].name) + strlen("'', ");
+            }
 
             /* Build up a decent error message. We include the problem, the
              * full input, and underline the position where the parser
@@ -415,8 +432,9 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
                 } else {
                     /* Skip error tokens in error messages, they are used
                      * internally only and might confuse users. */
-                    if (strcmp(token->name, "error") == 0)
+                    if (strcmp(token->name, "error") == 0) {
                         continue;
+                    }
                     /* Any other token is copied to the error message enclosed
                      * with angle brackets. */
                     *tokenwalk++ = '<';
@@ -443,8 +461,9 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
             const char *copywalk;
             for (copywalk = error_line;
                  *copywalk != '\n' && *copywalk != '\r' && *copywalk != '\0';
-                 copywalk++)
+                 copywalk++) {
                 position[(copywalk - error_line)] = (copywalk >= walk ? '^' : (*copywalk == '\t' ? '\t' : ' '));
+            }
             position[(copywalk - error_line)] = '\0';
 
             ELOG("CONFIG: %s\n", errormessage);
@@ -481,8 +500,9 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
             context->has_errors = true;
 
             /* Skip the rest of this line, but continue parsing. */
-            while ((size_t)(walk - input) <= len && *walk != '\n')
+            while ((size_t)(walk - input) <= len && *walk != '\n') {
                 walk++;
+            }
 
             free(position);
             free(errormessage);
@@ -495,8 +515,9 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
             for (int i = ctx->statelist_idx - 1; (i >= 0) && !error_token_found; i--) {
                 cmdp_token_ptr *errptr = &(tokens[ctx->statelist[i]]);
                 for (int j = 0; j < errptr->n; j++) {
-                    if (strcmp(errptr->array[j].name, "error") != 0)
+                    if (strcmp(errptr->array[j].name, "error") != 0) {
                         continue;
+                    }
                     next_state(&(errptr->array[j]), ctx);
                     error_token_found = true;
                     break;
@@ -599,18 +620,24 @@ static int detect_version(char *buf) {
         /* if this is a bind statement, we can check the command */
         if (strncasecmp(line, "bind", strlen("bind")) == 0) {
             char *bind = strchr(line, ' ');
-            if (bind == NULL)
+            if (bind == NULL) {
                 goto next;
-            while ((*bind == ' ' || *bind == '\t') && *bind != '\0')
+            }
+            while ((*bind == ' ' || *bind == '\t') && *bind != '\0') {
                 bind++;
-            if (*bind == '\0')
+            }
+            if (*bind == '\0') {
                 goto next;
-            if ((bind = strchr(bind, ' ')) == NULL)
+            }
+            if ((bind = strchr(bind, ' ')) == NULL) {
                 goto next;
-            while ((*bind == ' ' || *bind == '\t') && *bind != '\0')
+            }
+            while ((*bind == ' ' || *bind == '\t') && *bind != '\0') {
                 bind++;
-            if (*bind == '\0')
+            }
+            if (*bind == '\0') {
                 goto next;
+            }
             if (strncasecmp(bind, "layout", strlen("layout")) == 0 ||
                 strncasecmp(bind, "floating", strlen("floating")) == 0 ||
                 strncasecmp(bind, "workspace", strlen("workspace")) == 0 ||
@@ -793,8 +820,9 @@ static void upsert_variable(struct variables_head *variables, char *key, char *v
     /* ensure that the correct variable is matched in case of one being
      * the prefix of another */
     SLIST_FOREACH (test, variables, variables) {
-        if (strlen(new->key) >= strlen(test->key))
+        if (strlen(new->key) >= strlen(test->key)) {
             break;
+        }
         loc = test;
     }
 
@@ -893,11 +921,13 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
     bool invalid_sets = false;
 
     while (!feof(fstr)) {
-        if (!continuation)
+        if (!continuation) {
             continuation = buffer;
+        }
         if (fgets(continuation, sizeof(buffer) - (continuation - buffer), fstr) == NULL) {
-            if (feof(fstr))
+            if (feof(fstr)) {
                 break;
+            }
             return PARSE_FILE_FAILED;
         }
         if (buffer[strlen(buffer) - 1] != '\n' && !feof(fstr)) {
@@ -1027,8 +1057,9 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
         nearest = NULL;
         int distance = stbuf.st_size;
         SLIST_FOREACH (current, &(ctx->variables), variables) {
-            if (current->next_match == NULL)
+            if (current->next_match == NULL) {
                 continue;
+            }
             if ((current->next_match - walk) < distance) {
                 distance = (current->next_match - walk);
                 nearest = current;
@@ -1093,8 +1124,9 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
 
     if (ctx->use_nagbar && (context->has_errors || context->has_warnings || invalid_sets)) {
         ELOG("FYI: You are using i3 version %s\n", i3_version);
-        if (version == 3)
+        if (version == 3) {
             ELOG("Please convert your configfile first, then fix any remaining errors (see above).\n");
+        }
 
         start_config_error_nagbar(f, context->has_errors || invalid_sets);
     }

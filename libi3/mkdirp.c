@@ -18,8 +18,9 @@
  *
  */
 int mkdirp(const char *path, mode_t mode) {
-    if (mkdir(path, mode) == 0)
+    if (mkdir(path, mode) == 0) {
         return 0;
+    }
     if (errno == EEXIST) {
         struct stat st;
         /* Check that the named file actually is a directory. */
@@ -38,8 +39,9 @@ int mkdirp(const char *path, mode_t mode) {
     }
     char *copy = sstrdup(path);
     /* strip trailing slashes, if any */
-    while (copy[strlen(copy) - 1] == '/')
+    while (copy[strlen(copy) - 1] == '/') {
         copy[strlen(copy) - 1] = '\0';
+    }
 
     char *sep = strrchr(copy, '/');
     if (sep == NULL) {
@@ -48,8 +50,9 @@ int mkdirp(const char *path, mode_t mode) {
     }
     *sep = '\0';
     int result = -1;
-    if (mkdirp(copy, mode) == 0)
+    if (mkdirp(copy, mode) == 0) {
         result = mkdirp(path, mode);
+    }
     free(copy);
 
     return result;

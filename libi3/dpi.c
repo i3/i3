@@ -95,7 +95,8 @@ int logical_px(const int logical) {
      * systems to 96 dpi in order to get the behavior they expect/are used to,
      * but since we can easily detect this case in code, let’s do it for them.
      */
-    if ((dpi / 96.0) < 1.25)
+    if ((dpi / 96.0) < 1.25) {
         return logical;
+    }
     return ceil((dpi / 96.0) * logical);
 }

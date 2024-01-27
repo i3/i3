@@ -28,9 +28,9 @@ char *resolve_tilde(const char *path) {
     int res = glob(head, GLOB_TILDE, NULL, &globbuf);
     free(head);
     /* no match, or many wildcard matches are bad */
-    if (res == GLOB_NOMATCH || globbuf.gl_pathc != 1)
+    if (res == GLOB_NOMATCH || globbuf.gl_pathc != 1) {
         result = sstrdup(path);
-    else if (res != 0) {
+    } else if (res != 0) {
         err(EXIT_FAILURE, "glob() failed");
     } else {
         head = globbuf.gl_pathv[0];

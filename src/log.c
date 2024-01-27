@@ -94,9 +94,9 @@ static void store_log_markers(void) {
  */
 void init_logging(void) {
     if (!errorfilename) {
-        if (!(errorfilename = get_process_filename("errorlog")))
+        if (!(errorfilename = get_process_filename("errorlog"))) {
             fprintf(stderr, "Could not initialize errorlog\n");
-        else {
+        } else {
             errorfile = fopen(errorfilename, "w");
             if (!errorfile) {
                 fprintf(stderr, "Could not initialize errorlog on %s: %s\n",
@@ -121,10 +121,11 @@ void init_logging(void) {
     /* Start SHM logging if shmlog_size is > 0. shmlog_size is SHMLOG_SIZE by
      * default on development versions, and 0 on release versions. If it is
      * not > 0, the user has turned it off, so let's close the logbuffer. */
-    if (shmlog_size > 0 && logbuffer == NULL)
+    if (shmlog_size > 0 && logbuffer == NULL) {
         open_logbuffer();
-    else if (shmlog_size <= 0 && logbuffer)
+    } else if (shmlog_size <= 0 && logbuffer) {
         close_logbuffer();
+    }
     atexit(purge_zerobyte_logfile);
 }
 
@@ -292,8 +293,9 @@ static void vlog(const bool print, const char *fmt, va_list args) {
 
         store_log_markers();
 
-        if (print)
+        if (print) {
             fwrite(message, len, 1, stdout);
+        }
 
         log_broadcast_to_clients(message, len);
     }
@@ -307,8 +309,9 @@ static void vlog(const bool print, const char *fmt, va_list args) {
 void verboselog(char *fmt, ...) {
     va_list args;
 
-    if (!logbuffer && !verbose)
+    if (!logbuffer && !verbose) {
         return;
+    }
 
     va_start(args, fmt);
     vlog(verbose, fmt, args);
@@ -342,8 +345,9 @@ void errorlog(char *fmt, ...) {
 void debuglog(char *fmt, ...) {
     va_list args;
 
-    if (!logbuffer && !(debug_logging))
+    if (!logbuffer && !(debug_logging)) {
         return;
+    }
 
     va_start(args, fmt);
     vlog(debug_logging, fmt, args);
@@ -359,15 +363,18 @@ void purge_zerobyte_logfile(void) {
     struct stat st;
     char *slash;
 
-    if (!errorfilename)
+    if (!errorfilename) {
         return;
+    }
 
     /* don't delete the log file if it contains something */
-    if ((stat(errorfilename, &st)) == -1 || st.st_size > 0)
+    if ((stat(errorfilename, &st)) == -1 || st.st_size > 0) {
         return;
+    }
 
-    if (unlink(errorfilename) == -1)
+    if (unlink(errorfilename) == -1) {
         return;
+    }
 
     if ((slash = strrchr(errorfilename, '/')) != NULL) {
         *slash = '\0';

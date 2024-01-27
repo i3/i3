@@ -118,8 +118,9 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
             size_t offset = strspn(ws_name, ws_num);
 
             /* Also strip off the conventional ws name delimiter */
-            if (offset && ws_name[offset] == ':')
+            if (offset && ws_name[offset] == ':') {
                 offset += 1;
+            }
 
             if (config.strip_ws_numbers) {
                 /* Offset may be equal to length, in which case display the number */

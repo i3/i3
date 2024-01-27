@@ -208,9 +208,10 @@ static void open_placeholder_window(Con *con) {
         /* Set the same name as was stored in the layout file. While perhaps
          * slightly confusing in the first instant, this brings additional
          * clarity to which placeholder is waiting for which actual window. */
-        if (con->name != NULL)
+        if (con->name != NULL) {
             xcb_change_property(restore_conn, XCB_PROP_MODE_REPLACE, placeholder,
                                 A__NET_WM_NAME, A_UTF8_STRING, 8, strlen(con->name), con->name);
+        }
         DLOG("Created placeholder window 0x%08x for leaf container %p / %s\n",
              placeholder, con, con->name);
 
@@ -269,8 +270,9 @@ void restore_open_placeholder_windows(Con *parent) {
 bool restore_kill_placeholder(xcb_window_t placeholder) {
     placeholder_state *state;
     TAILQ_FOREACH (state, &state_head, state) {
-        if (state->window != placeholder)
+        if (state->window != placeholder) {
             continue;
+        }
 
         xcb_destroy_window(restore_conn, state->window);
         draw_util_surface_free(restore_conn, &(state->surface));
@@ -287,8 +289,9 @@ bool restore_kill_placeholder(xcb_window_t placeholder) {
 static void expose_event(xcb_expose_event_t *event) {
     placeholder_state *state;
     TAILQ_FOREACH (state, &state_head, state) {
-        if (state->window != event->window)
+        if (state->window != event->window) {
             continue;
+        }
 
         DLOG("refreshing window 0x%08x contents (con %p)\n", state->window, state->con);
 
@@ -309,8 +312,9 @@ static void expose_event(xcb_expose_event_t *event) {
 static void configure_notify(xcb_configure_notify_event_t *event) {
     placeholder_state *state;
     TAILQ_FOREACH (state, &state_head, state) {
-        if (state->window != event->window)
+        if (state->window != event->window) {
             continue;
+        }
 
         DLOG("ConfigureNotify: window 0x%08x has now width=%d, height=%d (con %p)\n",
              state->window, event->width, event->height, state->con);

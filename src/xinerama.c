@@ -68,10 +68,11 @@ static void query_screens(xcb_connection_t *conn) {
             s->rect.width = screen_info[screen].width;
             s->rect.height = screen_info[screen].height;
             /* We always treat the screen at 0x0 as the primary screen */
-            if (s->rect.x == 0 && s->rect.y == 0)
+            if (s->rect.x == 0 && s->rect.y == 0) {
                 TAILQ_INSERT_HEAD(&outputs, s, outputs);
-            else
+            } else {
                 TAILQ_INSERT_TAIL(&outputs, s, outputs);
+            }
             output_init_con(s);
             init_ws_for_output(s);
             num_screens++;
@@ -119,8 +120,9 @@ void xinerama_init(void) {
         if (reply == NULL || !reply->state) {
             DLOG("Xinerama is not active (in your X-Server), using root output.\n");
             use_root_output(conn);
-        } else
+        } else {
             query_screens(conn);
+        }
 
         FREE(reply);
     }

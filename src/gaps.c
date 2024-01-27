@@ -15,16 +15,18 @@
  */
 gaps_t calculate_effective_gaps(Con *con) {
     Con *workspace = con_get_workspace(con);
-    if (workspace == NULL)
+    if (workspace == NULL) {
         return (gaps_t){0, 0, 0, 0, 0};
+    }
 
     bool one_child = con_num_visible_children(workspace) <= 1 ||
                      (con_num_children(workspace) == 1 &&
                       (TAILQ_FIRST(&(workspace->nodes_head))->layout == L_TABBED ||
                        TAILQ_FIRST(&(workspace->nodes_head))->layout == L_STACKED));
 
-    if (config.smart_gaps == SMART_GAPS_ON && one_child)
+    if (config.smart_gaps == SMART_GAPS_ON && one_child) {
         return (gaps_t){0, 0, 0, 0, 0};
+    }
 
     gaps_t gaps = {
         .inner = (workspace->gaps.inner + config.gaps.inner),
@@ -90,22 +92,26 @@ bool gaps_should_inset_con(Con *con, int children) {
 bool gaps_has_adjacent_container(Con *con, direction_t direction) {
     Con *workspace = con_get_workspace(con);
     Con *fullscreen = con_get_fullscreen_con(workspace, CF_GLOBAL);
-    if (fullscreen == NULL)
+    if (fullscreen == NULL) {
         fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
+    }
 
     /* If this container is fullscreen by itself, there's no adjacent container. */
-    if (con == fullscreen)
+    if (con == fullscreen) {
         return false;
+    }
 
     Con *first = con;
     Con *second = NULL;
     bool found_neighbor = resize_find_tiling_participants(&first, &second, direction, false);
-    if (!found_neighbor)
+    if (!found_neighbor) {
         return false;
+    }
 
     /* If we have an adjacent container and nothing is fullscreen, we consider it. */
-    if (fullscreen == NULL)
+    if (fullscreen == NULL) {
         return true;
+    }
 
     /* For fullscreen containers, only consider the adjacent container if it is also fullscreen. */
     return con_has_parent(con, fullscreen) && con_has_parent(second, fullscreen);

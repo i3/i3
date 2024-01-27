@@ -157,8 +157,9 @@ static struct stack_entry stack[10];
 static void push_string(const char *identifier, const char *str) {
     for (int c = 0; c < 10; c++) {
         if (stack[c].identifier != NULL &&
-            strcmp(stack[c].identifier, identifier) != 0)
+            strcmp(stack[c].identifier, identifier) != 0) {
             continue;
+        }
         if (stack[c].identifier == NULL) {
             /* Found a free slot, let’s store it here. */
             stack[c].identifier = identifier;
@@ -184,8 +185,9 @@ static void push_string(const char *identifier, const char *str) {
 
 static void push_long(const char *identifier, long num) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].identifier != NULL)
+        if (stack[c].identifier != NULL) {
             continue;
+        }
         /* Found a free slot, let’s store it here. */
         stack[c].identifier = identifier;
         stack[c].val.num = num;
@@ -204,18 +206,21 @@ static void push_long(const char *identifier, long num) {
 
 static const char *get_string(const char *identifier) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].identifier == NULL)
+        if (stack[c].identifier == NULL) {
             break;
-        if (strcmp(identifier, stack[c].identifier) == 0)
+        }
+        if (strcmp(identifier, stack[c].identifier) == 0) {
             return stack[c].val.str;
+        }
     }
     return NULL;
 }
 
 static void clear_stack(void) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].type == STACK_STR)
+        if (stack[c].type == STACK_STR) {
             free(stack[c].val.str);
+        }
         stack[c].identifier = NULL;
         stack[c].val.str = NULL;
         stack[c].val.num = 0;
@@ -233,11 +238,13 @@ static bool keysym_used_on_other_key(KeySym sym, xcb_keycode_t except_keycode) {
         max_keycode = xcb_get_setup(conn)->max_keycode;
 
     for (i = min_keycode; i && i <= max_keycode; i++) {
-        if (i == except_keycode)
+        if (i == except_keycode) {
             continue;
+        }
         for (int level = 0; level < 4; level++) {
-            if (xcb_key_symbols_get_keysym(keysyms, i, level) != sym)
+            if (xcb_key_symbols_get_keysym(keysyms, i, level) != sym) {
                 continue;
+            }
             return true;
         }
     }
@@ -269,22 +276,27 @@ static char *next_state(const cmdp_token *token) {
              * qwerty (yes, that happens quite often). */
             const xkb_keysym_t *syms;
             int num = xkb_keymap_key_get_syms_by_level(xkb_keymap, keycode, 0, 0, &syms);
-            if (num == 0)
+            if (num == 0) {
                 errx(1, "xkb_keymap_key_get_syms_by_level returned no symbols for keycode %d", keycode);
-            if (!keysym_used_on_other_key(syms[0], keycode))
+            }
+            if (!keysym_used_on_other_key(syms[0], keycode)) {
                 level = 0;
+            }
         }
 
         const xkb_keysym_t *syms;
         int num = xkb_keymap_key_get_syms_by_level(xkb_keymap, keycode, 0, level, &syms);
-        if (num == 0)
+        if (num == 0) {
             errx(1, "xkb_keymap_key_get_syms_by_level returned no symbols for keycode %d", keycode);
-        if (num > 1)
+        }
+        if (num > 1) {
             printf("xkb_keymap_key_get_syms_by_level (keycode = %d) returned %d symbolsinstead of 1, using only the first one.\n", keycode, num);
+        }
 
         char str[4096];
-        if (xkb_keysym_get_name(syms[0], str, sizeof(str)) == -1)
+        if (xkb_keysym_get_name(syms[0], str, sizeof(str)) == -1) {
             errx(EXIT_FAILURE, "xkb_keysym_get_name(%u) failed", syms[0]);
+        }
         const char *release = get_string("release");
         char *res;
         char *modrep = (modifiers == NULL ? sstrdup("") : sstrdup(modifiers));
@@ -303,8 +315,9 @@ static char *next_state(const cmdp_token *token) {
     /* See if we are jumping back to a state in which we were in previously
      * (statelist contains INITIAL) and just move statelist_idx accordingly. */
     for (int i = 0; i < statelist_idx; i++) {
-        if (statelist[i] != _next_state)
+        if (statelist[i] != _next_state) {
             continue;
+        }
         statelist_idx = i + 1;
         return NULL;
     }
@@ -329,8 +342,9 @@ static char *rewrite_binding(const char *input) {
     while ((size_t)(walk - input) <= len) {
         /* Skip whitespace before every token, newlines are relevant since they
          * separate configuration directives. */
-        while ((*walk == ' ' || *walk == '\t') && *walk != '\0')
+        while ((*walk == ' ' || *walk == '\t') && *walk != '\0') {
             walk++;
+        }
 
         cmdp_token_ptr *ptr = &(tokens[state]);
         for (c = 0; c < ptr->n; c++) {
@@ -339,11 +353,13 @@ static char *rewrite_binding(const char *input) {
             /* A literal. */
             if (token->name[0] == '\'') {
                 if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
-                    if (token->identifier != NULL)
+                    if (token->identifier != NULL) {
                         push_string(token->identifier, token->name + 1);
+                    }
                     walk += strlen(token->name) - 1;
-                    if ((result = next_state(token)) != NULL)
+                    if ((result = next_state(token)) != NULL) {
                         return result;
+                    }
                     break;
                 }
                 continue;
@@ -355,20 +371,24 @@ static char *rewrite_binding(const char *input) {
                 errno = 0;
                 long int num = strtol(walk, &end, 10);
                 if ((errno == ERANGE && (num == LONG_MIN || num == LONG_MAX)) ||
-                    (errno != 0 && num == 0))
+                    (errno != 0 && num == 0)) {
                     continue;
+                }
 
                 /* No valid numbers found */
-                if (end == walk)
+                if (end == walk) {
                     continue;
+                }
 
-                if (token->identifier != NULL)
+                if (token->identifier != NULL) {
                     push_long(token->identifier, num);
+                }
 
                 /* Set walk to the first non-number character */
                 walk = end;
-                if ((result = next_state(token)) != NULL)
+                if ((result = next_state(token)) != NULL) {
                     return result;
+                }
                 break;
             }
 
@@ -379,12 +399,14 @@ static char *rewrite_binding(const char *input) {
                 if (*walk == '"') {
                     beginning++;
                     walk++;
-                    while (*walk != '\0' && (*walk != '"' || *(walk - 1) == '\\'))
+                    while (*walk != '\0' && (*walk != '"' || *(walk - 1) == '\\')) {
                         walk++;
+                    }
                 } else {
                     if (token->name[0] == 's') {
-                        while (*walk != '\0' && *walk != '\r' && *walk != '\n')
+                        while (*walk != '\0' && *walk != '\r' && *walk != '\n') {
                             walk++;
+                        }
                     } else {
                         /* For a word, the delimiters are white space (' ' or
                          * '\t'), closing square bracket (]), comma (,) and
@@ -392,8 +414,9 @@ static char *rewrite_binding(const char *input) {
                         while (*walk != ' ' && *walk != '\t' &&
                                *walk != ']' && *walk != ',' &&
                                *walk != ';' && *walk != '\r' &&
-                               *walk != '\n' && *walk != '\0')
+                               *walk != '\n' && *walk != '\0') {
                             walk++;
+                        }
                     }
                 }
                 if (walk != beginning) {
@@ -406,27 +429,32 @@ static char *rewrite_binding(const char *input) {
                         /* We only handle escaped double quotes to not break
                          * backwards compatibility with people using \w in
                          * regular expressions etc. */
-                        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"')
+                        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"') {
                             inpos++;
+                        }
                         str[outpos] = beginning[inpos];
                     }
-                    if (token->identifier)
+                    if (token->identifier) {
                         push_string(token->identifier, str);
+                    }
                     free(str);
                     /* If we are at the end of a quoted string, skip the ending
                      * double quote. */
-                    if (*walk == '"')
+                    if (*walk == '"') {
                         walk++;
-                    if ((result = next_state(token)) != NULL)
+                    }
+                    if ((result = next_state(token)) != NULL) {
                         return result;
+                    }
                     break;
                 }
             }
 
             if (strcmp(token->name, "end") == 0) {
                 if (*walk == '\0' || *walk == '\n' || *walk == '\r') {
-                    if ((result = next_state(token)) != NULL)
+                    if ((result = next_state(token)) != NULL) {
                         return result;
+                    }
                     /* To make sure we start with an appropriate matching data
                      * structure for commands which do *not* specify any
                      * criteria, we re-initialize the criteria system after
@@ -513,17 +541,19 @@ static int handle_expose(void) {
         txt(13, 10, "to abort", white, black);
 
         /* the not-selected modifier */
-        if (modifier == MOD_Mod4)
+        if (modifier == MOD_Mod4) {
             txt(5, 5, "<Alt>", white, black);
-        else
+        } else {
             txt(5, 4, "<Win>", white, black);
+        }
 
         /* the selected modifier */
         set_font(&bold_font);
-        if (modifier == MOD_Mod4)
+        if (modifier == MOD_Mod4) {
             txt(2, 4, "-> <Win>", white, black);
-        else
+        } else {
             txt(2, 5, "-> <Alt>", white, black);
+        }
 
         set_font(&font);
         txt(4, 9, "<Enter>", green, black);
@@ -562,8 +592,9 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
                                 strlen("i3: generate config"),
                                 "i3: generate config");
             xcb_flush(conn);
-        } else
+        } else {
             finish();
+        }
     }
 
     /* Swap between modifiers when up or down is pressed. */
@@ -573,8 +604,9 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     }
 
     /* cancel any time */
-    if (sym == XK_Escape)
+    if (sym == XK_Escape) {
         exit(0);
+    }
 
     /* Check if this is Mod1 or Mod4. The modmap contains Shift, Lock, Control,
      * Mod1, Mod2, Mod3, Mod4, Mod5 (in that order) */
@@ -583,8 +615,9 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     int mask = 3;
     for (int i = 0; i < modmap_reply->keycodes_per_modifier; i++) {
         xcb_keycode_t code = modmap[(mask * modmap_reply->keycodes_per_modifier) + i];
-        if (code == XCB_NONE)
+        if (code == XCB_NONE) {
             continue;
+        }
         printf("Modifier keycode for Mod1: 0x%02x\n", code);
         if (code == event->detail) {
             modifier = MOD_Mod1;
@@ -596,8 +629,9 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     mask = 6;
     for (int i = 0; i < modmap_reply->keycodes_per_modifier; i++) {
         xcb_keycode_t code = modmap[(mask * modmap_reply->keycodes_per_modifier) + i];
-        if (code == XCB_NONE)
+        if (code == XCB_NONE) {
             continue;
+        }
         printf("Modifier keycode for Mod4: 0x%02x\n", code);
         if (code == event->detail) {
             modifier = MOD_Mod4;
@@ -614,11 +648,13 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
  *
  */
 static void handle_button_press(xcb_button_press_event_t *event) {
-    if (current_step != STEP_GENERATE)
+    if (current_step != STEP_GENERATE) {
         return;
+    }
 
-    if (event->event_x < col_x(5) || event->event_x > col_x(10))
+    if (event->event_x < col_x(5) || event->event_x > col_x(10)) {
         return;
+    }
 
     if (event->event_y >= row_y(4) && event->event_y <= (row_y(4) + font.height)) {
         modifier = MOD_Mod4;
@@ -640,20 +676,24 @@ static void finish(void) {
 
     struct xkb_context *xkb_context;
 
-    if ((xkb_context = xkb_context_new(0)) == NULL)
+    if ((xkb_context = xkb_context_new(0)) == NULL) {
         errx(1, "could not create xkbcommon context");
+    }
 
     int32_t device_id = xkb_x11_get_core_keyboard_device_id(conn);
-    if ((xkb_keymap = xkb_x11_keymap_new_from_device(xkb_context, conn, device_id, 0)) == NULL)
+    if ((xkb_keymap = xkb_x11_keymap_new_from_device(xkb_context, conn, device_id, 0)) == NULL) {
         errx(1, "xkb_x11_keymap_new_from_device failed");
+    }
 
     FILE *kc_config = fopen(SYSCONFDIR "/i3/config.keycodes", "r");
-    if (kc_config == NULL)
+    if (kc_config == NULL) {
         err(1, "Could not open input file \"%s\"", SYSCONFDIR "/i3/config.keycodes");
+    }
 
     FILE *ks_config = fopen(config_path, "w");
-    if (ks_config == NULL)
+    if (ks_config == NULL) {
         err(1, "Could not open output config file \"%s\"", config_path);
+    }
     free(config_path);
 
     char *line = NULL;
@@ -684,8 +724,9 @@ static void finish(void) {
 #endif
         /* skip the warning block at the beginning of the input file */
         if (head_of_file &&
-            strncmp("# WARNING", line, strlen("# WARNING")) == 0)
+            strncmp("# WARNING", line, strlen("# WARNING")) == 0) {
             continue;
+        }
 
         head_of_file = false;
 
@@ -699,10 +740,11 @@ static void finish(void) {
 
         /* Set the modifier the user chose */
         if (strncmp(walk, "set $mod ", strlen("set $mod ")) == 0) {
-            if (modifier == MOD_Mod1)
+            if (modifier == MOD_Mod1) {
                 fputs("set $mod Mod1\n", ks_config);
-            else
+            } else {
                 fputs("set $mod Mod4\n", ks_config);
+            }
             continue;
         }
 
@@ -767,12 +809,13 @@ int main(int argc, char *argv[]) {
                 return 0;
             case 'm':
                 headless_run = true;
-                if (strcmp(optarg, "alt") == 0)
+                if (strcmp(optarg, "alt") == 0) {
                     modifier = MOD_Mod1;
-                else if (strcmp(optarg, "win") == 0)
+                } else if (strcmp(optarg, "win") == 0) {
                     modifier = MOD_Mod4;
-                else
+                } else {
                     err(EXIT_FAILURE, "Invalid modifier key %s", optarg);
+                }
                 break;
             case 'h':
                 printf("i3-config-wizard " I3_VERSION "\n");
@@ -789,8 +832,9 @@ int main(int argc, char *argv[]) {
     }
 
     /* Always write to $XDG_CONFIG_HOME/i3/config by default. */
-    if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL)
+    if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL) {
         xdg_config_home = "~/.config";
+    }
 
     xdg_config_home = resolve_tilde(xdg_config_home);
     sasprintf(&config_path, "%s/i3/config", xdg_config_home);
@@ -799,9 +843,11 @@ int main(int argc, char *argv[]) {
     char *config_dir;
     struct stat stbuf;
     sasprintf(&config_dir, "%s/i3", xdg_config_home);
-    if (stat(config_dir, &stbuf) != 0)
-        if (mkdirp(config_dir, DEFAULT_DIR_MODE) != 0)
+    if (stat(config_dir, &stbuf) != 0) {
+        if (mkdirp(config_dir, DEFAULT_DIR_MODE) != 0) {
             err(EXIT_FAILURE, "mkdirp(%s) failed", config_dir);
+        }
+    }
     free(config_dir);
     free(xdg_config_home);
 
@@ -815,8 +861,9 @@ int main(int argc, char *argv[]) {
 
     int screen;
     if ((conn = xcb_connect(NULL, &screen)) == NULL ||
-        xcb_connection_has_error(conn))
+        xcb_connection_has_error(conn)) {
         errx(1, "Cannot open display");
+    }
 
     if (xkb_x11_setup_xkb_extension(conn,
                                     XKB_X11_MIN_MAJOR_XKB_VERSION,
@@ -825,8 +872,9 @@ int main(int argc, char *argv[]) {
                                     NULL,
                                     NULL,
                                     &xkb_base_event,
-                                    &xkb_base_error) != 1)
+                                    &xkb_base_error) != 1) {
         errx(EXIT_FAILURE, "Could not setup XKB extension.");
+    }
 
     keysyms = xcb_key_symbols_alloc(conn);
     xcb_get_modifier_mapping_cookie_t modmap_cookie;
@@ -852,8 +900,9 @@ int main(int argc, char *argv[]) {
     root_screen = xcb_aux_get_screen(conn, screen);
     root = root_screen->root;
 
-    if (!(modmap_reply = xcb_get_modifier_mapping_reply(conn, modmap_cookie, NULL)))
+    if (!(modmap_reply = xcb_get_modifier_mapping_reply(conn, modmap_cookie, NULL))) {
         errx(EXIT_FAILURE, "Could not get modifier mapping");
+    }
 
     xcb_numlock_mask = get_mod_mask_for(XCB_NUM_LOCK, symbols, modmap_reply);
 

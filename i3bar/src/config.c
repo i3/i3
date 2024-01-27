@@ -76,8 +76,9 @@ static int config_null_cb(void *params_) {
 static int config_string_cb(void *params_, const unsigned char *val, size_t _len) {
     int len = (int)_len;
     /* The id and socket_path are ignored, we already know them. */
-    if (!strcmp(cur_key, "id") || !strcmp(cur_key, "socket_path"))
+    if (!strcmp(cur_key, "id") || !strcmp(cur_key, "socket_path")) {
         return 1;
+    }
 
     if (parsing_bindings) {
         if (strcmp(cur_key, "command") == 0) {

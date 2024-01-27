@@ -37,8 +37,9 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
 
     struct Startup_Sequence *current, *sequence = NULL;
     TAILQ_FOREACH (current, &startup_sequences, sequences) {
-        if (strcmp(current->id, id) != 0)
+        if (strcmp(current->id, id) != 0) {
             continue;
+        }
 
         sequence = current;
         break;
@@ -86,8 +87,9 @@ static int _prune_startup_sequences(void) {
             continue;
         }
 
-        if (current_time <= current->delete_at)
+        if (current_time <= current->delete_at) {
             continue;
+        }
 
         startup_sequence_delete(current);
     }
@@ -142,8 +144,9 @@ void start_application(const char *command, bool no_startup_id) {
          * spaces in the command), since we don’t want the parameters. */
         char *first_word = sstrdup(command);
         char *space = strchr(first_word, ' ');
-        if (space)
+        if (space) {
             *space = '\0';
+        }
         sn_launcher_context_initiate(context, "i3", first_word, last_timestamp);
         free(first_word);
 
@@ -187,8 +190,9 @@ void start_application(const char *command, bool no_startup_id) {
         unsetenv("LISTEN_FDS");
         signal(SIGPIPE, SIG_DFL);
         /* Setup the environment variable(s) */
-        if (!no_startup_id)
+        if (!no_startup_id) {
             sn_launcher_context_setup_child_process(context);
+        }
         setenv("I3SOCK", current_socketpath, 1);
 
         execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
@@ -214,8 +218,9 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
     const char *id = sn_startup_sequence_get_id(snsequence);
     struct Startup_Sequence *current, *sequence = NULL;
     TAILQ_FOREACH (current, &startup_sequences, sequences) {
-        if (strcmp(current->id, id) != 0)
+        if (strcmp(current->id, id) != 0) {
             continue;
+        }
 
         sequence = current;
         break;
@@ -255,8 +260,9 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
 void startup_sequence_rename_workspace(const char *old_name, const char *new_name) {
     struct Startup_Sequence *current;
     TAILQ_FOREACH (current, &startup_sequences, sequences) {
-        if (strcmp(current->workspace, old_name) != 0)
+        if (strcmp(current->workspace, old_name) != 0) {
             continue;
+        }
         DLOG("Renaming workspace \"%s\" to \"%s\" in startup sequence %s.\n",
              old_name, new_name, current->id);
         free(current->workspace);
@@ -275,8 +281,9 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
     if (startup_id_reply == NULL || xcb_get_property_value_length(startup_id_reply) == 0) {
         FREE(startup_id_reply);
         DLOG("No _NET_STARTUP_ID set on window 0x%08x\n", cwindow->id);
-        if (cwindow->leader == XCB_NONE)
+        if (cwindow->leader == XCB_NONE) {
             return NULL;
+        }
 
         /* This is a special case that causes the leader's startup sequence
          * to only be returned if it has never been mapped, useful primarily
@@ -311,8 +318,9 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
               (char *)xcb_get_property_value(startup_id_reply));
     struct Startup_Sequence *current, *sequence = NULL;
     TAILQ_FOREACH (current, &startup_sequences, sequences) {
-        if (strcmp(current->id, startup_id) != 0)
+        if (strcmp(current->id, startup_id) != 0) {
             continue;
+        }
 
         sequence = current;
         break;
@@ -342,8 +350,9 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
  */
 char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply) {
     struct Startup_Sequence *sequence = startup_sequence_get(cwindow, startup_id_reply, false);
-    if (sequence == NULL)
+    if (sequence == NULL) {
         return NULL;
+    }
 
     /* If the startup sequence's time span has elapsed, delete it. */
     time_t current_time = time(NULL);
