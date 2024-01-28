@@ -65,8 +65,6 @@ struct i3_output {
     surface_t statusline_buffer;
     /* How much of statusline_buffer's horizontal space was used on last statusline render. */
     int statusline_width;
-    /* Whether statusline block short texts where used on last statusline render. */
-    bool statusline_short_text;
     /* The actual window on which we draw. */
     surface_t bar;
 

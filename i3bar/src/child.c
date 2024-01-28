@@ -8,6 +8,7 @@
  *
  */
 #include "common.h"
+#include "queue.h"
 #include "yajl_utils.h"
 
 #include <ctype.h> /* isspace */
@@ -21,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -354,11 +356,13 @@ static int stdin_end_map(void *context) {
 
     i3string_set_markup(new_block->full_text, new_block->pango_markup);
 
+    new_block->use_short = false;
     if (new_block->short_text != NULL) {
         i3string_set_markup(new_block->short_text, new_block->pango_markup);
     }
 
     TAILQ_INSERT_TAIL(&statusline_buffer, new_block, blocks);
+
     return 1;
 }
 

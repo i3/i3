@@ -12,6 +12,7 @@
 #include <err.h>
 #include <ev.h>
 #include <i3/ipc.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -188,48 +189,59 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
     }
 }
 
-static uint32_t predict_statusline_length(bool use_short_text) {
+static void predict_block_length(struct status_block *block) {
+    i3String *text = block->full_text;
+    struct status_block_render_desc *render = &block->full_render;
+    if (block->use_short && block->short_text != NULL) {
+        text = block->short_text;
+        render = &block->short_render;
+    }
+
+    if (i3string_get_num_bytes(text) == 0) {
+        block->render_length = 0;
+        return;
+    }
+
+    render->width = predict_text_width(text);
+    if (block->border) {
+        render->width += logical_px(block->border_left + block->border_right);
+    }
+
+    /* Compute offset and append for text alignment in min_width. */
+    if (block->min_width <= render->width) {
+        render->x_offset = 0;
+        render->x_append = 0;
+    } else {
+        uint32_t padding_width = block->min_width - render->width;
+        switch (block->align) {
+            case ALIGN_LEFT:
+                render->x_append = padding_width;
+                break;
+            case ALIGN_RIGHT:
+                render->x_offset = padding_width;
+                break;
+            case ALIGN_CENTER:
+                render->x_offset = padding_width / 2;
+                render->x_append = padding_width / 2 + padding_width % 2;
+                break;
+        }
+    }
+
+    block->render_length = render->width + render->x_offset + render->x_append;
+}
+
+static uint32_t predict_statusline_length(void) {
     uint32_t width = 0;
     struct status_block *block;
 
     TAILQ_FOREACH (block, &statusline_head, blocks) {
-        i3String *text = block->full_text;
-        struct status_block_render_desc *render = &block->full_render;
-        if (use_short_text && block->short_text != NULL) {
-            text = block->short_text;
-            render = &block->short_render;
-        }
-
-        if (i3string_get_num_bytes(text) == 0) {
+        predict_block_length(block);
+        uint32_t block_width = block->render_length;
+        if (block_width == 0) {
             continue;
         }
 
-        render->width = predict_text_width(text);
-        if (block->border) {
-            render->width += logical_px(block->border_left + block->border_right);
-        }
-
-        /* Compute offset and append for text alignment in min_width. */
-        if (block->min_width <= render->width) {
-            render->x_offset = 0;
-            render->x_append = 0;
-        } else {
-            uint32_t padding_width = block->min_width - render->width;
-            switch (block->align) {
-                case ALIGN_LEFT:
-                    render->x_append = padding_width;
-                    break;
-                case ALIGN_RIGHT:
-                    render->x_offset = padding_width;
-                    break;
-                case ALIGN_CENTER:
-                    render->x_offset = padding_width / 2;
-                    render->x_append = padding_width / 2 + padding_width % 2;
-                    break;
-            }
-        }
-
-        width += render->width + render->x_offset + render->x_append;
+        width += block_width;
 
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL) {
@@ -240,10 +252,49 @@ static uint32_t predict_statusline_length(bool use_short_text) {
     return width;
 }
 
+static uint32_t switch_block_to_short(struct status_block *block) {
+    /* Skip blocks that have no short form or are already in short form */
+    if (block->short_text == NULL || block->use_short) {
+        return 0;
+    }
+    uint32_t full = block->render_length;
+    block->use_short = true;
+    predict_block_length(block);
+    return full - block->render_length;
+}
+
+static uint32_t adjust_statusline_length(uint32_t max_length) {
+    uint32_t width = predict_statusline_length();
+
+    /* Progressively switch the blocks to short mode */
+    struct status_block *block;
+    TAILQ_FOREACH (block, &statusline_head, blocks) {
+        if (width < max_length) {
+            break;
+        }
+        width -= switch_block_to_short(block);
+
+        /* Provide support for representing a single logical block using multiple
+         * JSON blocks: if one block is shortened, ensure that all other blocks
+         * with the same name are also shortened such that the entire logical block uses
+         * the short form text. */
+        if (block->name) {
+            struct status_block *other;
+            TAILQ_FOREACH (other, &statusline_head, blocks) {
+                if (other->name && !strcmp(other->name, block->name)) {
+                    width -= switch_block_to_short(other);
+                }
+            }
+        }
+    }
+
+    return width;
+}
+
 /*
  * Redraws the statusline to the output's statusline_buffer
  */
-static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_colors, bool use_short_text) {
+static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_colors) {
     struct status_block *block;
 
     color_t bar_color = (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg);
@@ -261,7 +312,7 @@ static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focu
     TAILQ_FOREACH (block, &statusline_head, blocks) {
         i3String *text = block->full_text;
         struct status_block_render_desc *render = &block->full_render;
-        if (use_short_text && block->short_text != NULL) {
+        if (block->use_short && block->short_text != NULL) {
             text = block->short_text;
             render = &block->short_render;
         }
@@ -466,7 +517,7 @@ static void child_handle_button(xcb_button_press_event_t *event, i3_output *outp
     TAILQ_FOREACH (block, &statusline_head, blocks) {
         i3String *text;
         struct status_block_render_desc *render;
-        if (output->statusline_short_text && block->short_text != NULL) {
+        if (block->use_short && block->short_text != NULL) {
             text = block->short_text;
             render = &block->short_render;
         } else {
@@ -2055,9 +2106,6 @@ static void draw_button(surface_t *surface, color_t fg_color, color_t bg_color, 
 void draw_bars(bool unhide) {
     DLOG("Drawing bars...\n");
 
-    uint32_t full_statusline_width = predict_statusline_length(false);
-    uint32_t short_statusline_width = predict_statusline_length(true);
-
     i3_output *outputs_walk;
     SLIST_FOREACH (outputs_walk, outputs, slist) {
         int workspace_width = logical_px(config.padding.x);
@@ -2132,27 +2180,28 @@ void draw_bars(bool unhide) {
             uint32_t hoff = logical_px(((workspace_width > 0) + (tray_width > 0)) * sb_hoff_px);
             uint32_t max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - hoff;
             uint32_t clip_left = 0;
-            uint32_t statusline_width = full_statusline_width;
-            bool use_short_text = false;
+
+            /* Reset short mode between outputs */
+            struct status_block *block;
+            TAILQ_FOREACH (block, &statusline_head, blocks) {
+                block->use_short = false;
+            }
+
+            uint32_t statusline_width = adjust_statusline_length(max_statusline_width);
 
             if (statusline_width > max_statusline_width) {
-                statusline_width = short_statusline_width;
-                use_short_text = true;
-                if (statusline_width > max_statusline_width) {
-                    clip_left = statusline_width - max_statusline_width;
-                }
+                clip_left = statusline_width - max_statusline_width;
             }
 
             int16_t visible_statusline_width = MIN(statusline_width, max_statusline_width);
             int x_dest = outputs_walk->rect.w - tray_width - logical_px((tray_width > 0) * sb_hoff_px) - visible_statusline_width;
             x_dest -= logical_px(config.padding.width);
 
-            draw_statusline(outputs_walk, clip_left, use_focus_colors, use_short_text);
+            draw_statusline(outputs_walk, clip_left, use_focus_colors);
             draw_util_copy_surface(&outputs_walk->statusline_buffer, &outputs_walk->buffer, 0, 0,
                                    x_dest, 0, visible_statusline_width, (int16_t)bar_height);
 
             outputs_walk->statusline_width = statusline_width;
-            outputs_walk->statusline_short_text = use_short_text;
         }
     }
 
