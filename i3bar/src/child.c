@@ -78,7 +78,6 @@ parser_ctx parser_context;
 struct statusline_head statusline_head = TAILQ_HEAD_INITIALIZER(statusline_head);
 /* Used temporarily while reading a statusline */
 struct statusline_head statusline_buffer = TAILQ_HEAD_INITIALIZER(statusline_buffer);
-size_t block_count = 0;
 
 int child_stdin;
 
@@ -106,16 +105,13 @@ void clear_statusline(struct statusline_head *head, bool free_resources) {
     }
 }
 
-static size_t copy_statusline(struct statusline_head *from, struct statusline_head *to) {
+static void copy_statusline(struct statusline_head *from, struct statusline_head *to) {
     struct status_block *current;
-    size_t count = 0;
     TAILQ_FOREACH (current, from, blocks) {
         struct status_block *new_block = smalloc(sizeof(struct status_block));
         memcpy(new_block, current, sizeof(struct status_block));
         TAILQ_INSERT_TAIL(to, new_block, blocks);
-        count++;
     }
-    return count;
 }
 
 /*
@@ -377,7 +373,7 @@ static int stdin_end_map(void *context) {
 static int stdin_end_array(void *context) {
     DLOG("copying statusline_buffer to statusline_head\n");
     clear_statusline(&statusline_head, true);
-    block_count = copy_statusline(&statusline_buffer, &statusline_head);
+    copy_statusline(&statusline_buffer, &statusline_head);
 
     DLOG("dumping statusline:\n");
     struct status_block *current;

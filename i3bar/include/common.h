@@ -84,7 +84,6 @@ struct status_block {
 };
 
 extern TAILQ_HEAD(statusline_head, status_block) statusline_head;
-extern size_t block_count;
 
 #include "child.h"
 #include "ipc.h"
