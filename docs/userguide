@@ -743,8 +743,11 @@ This option determines which border style *new* windows will have.  The default 
 +normal+. Note that default_floating_border applies only to windows which are starting out as
 floating windows, e.g., dialog windows, but not windows that are floated later on.
 
-Setting border style to +pixel+ eliminates title bars. The border style +normal+ allows you to
-adjust edge border width while keeping your title bar.
+Setting border style to +pixel+ eliminates title bars in split layouts. The border style
++normal+ allows you to adjust edge border width while keeping your title bar.
+
+The title bar is always visible in stacking and tabbed layouts, and this cannot be changed
+through configuration.
 
 *Syntax*:
 ---------------------------------------------
