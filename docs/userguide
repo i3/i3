@@ -792,6 +792,10 @@ The "smart_no_gaps" setting hides edge-specific borders of a container if the
 container is the only container on its workspace and the gaps to the screen edge
 are +0+.
 
+[[_smart_borders]]
++hide_edge_borders+ has replaced the old +smart_borders+ syntax. Use the former
+instead of the latter.
+
 *Syntax*:
 -----------------------------------------------
 hide_edge_borders none|vertical|horizontal|both|smart|smart_no_gaps
@@ -800,27 +804,6 @@ hide_edge_borders none|vertical|horizontal|both|smart|smart_no_gaps
 *Example*:
 ----------------------
 hide_edge_borders vertical
-----------------------
-
-[[_smart_borders]]
-=== Smart borders
-
-Smart borders will draw borders on windows only if there is more than one window
-in a workspace. This feature can also be enabled only if the gap size between
-window and screen edge is +0+.
-
-*Syntax*:
------------------------------------------------
-smart_borders on|off|no_gaps
------------------------------------------------
-
-*Example*:
-----------------------
-# Activate smart borders (always)
-smart_borders on
-
-# Activate smart borders (only when there are effectively no gaps)
-smart_borders no_gaps
 ----------------------
 
 [[for_window]]

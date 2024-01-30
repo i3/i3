@@ -327,9 +327,15 @@ CFGFUN(gaps, const char *workspace, const char *scope, const long value) {
 
 CFGFUN(smart_borders, const char *enable) {
     if (!strcmp(enable, "no_gaps")) {
-        config.smart_borders = SMART_BORDERS_NO_GAPS;
-    } else {
-        config.smart_borders = boolstr(enable) ? SMART_BORDERS_ON : SMART_BORDERS_OFF;
+        config.hide_edge_borders = HEBM_SMART_NO_GAPS;
+    } else if (boolstr(enable)) {
+        if (config.hide_edge_borders == HEBM_NONE) {
+            /* Only enable this if hide_edge_borders is at the default value as it otherwise takes precedence */
+            config.hide_edge_borders = HEBM_SMART;
+        } else {
+            ELOG("Both hide_edge_borders and smart_borders was used. "
+                 "Ignoring smart_borders as it is deprecated.\n");
+        }
     }
 }
 
@@ -808,12 +814,12 @@ static void bar_configure_binding(const char *button, const char *release, const
 }
 
 CFGFUN(bar_wheel_up_cmd, const char *command) {
-    ELOG("'wheel_up_cmd' is deprecated. Please us 'bindsym button4 %s' instead.\n", command);
+    ELOG("'wheel_up_cmd' is deprecated. Please use 'bindsym button4 %s' instead.\n", command);
     bar_configure_binding("button4", NULL, command);
 }
 
 CFGFUN(bar_wheel_down_cmd, const char *command) {
-    ELOG("'wheel_down_cmd' is deprecated. Please us 'bindsym button5 %s' instead.\n", command);
+    ELOG("'wheel_down_cmd' is deprecated. Please use 'bindsym button5 %s' instead.\n", command);
     bar_configure_binding("button5", NULL, command);
 }
 
