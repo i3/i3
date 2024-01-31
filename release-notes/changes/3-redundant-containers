@@ -1,0 +1,1 @@
+avoid creating redundant containers when switching between tabbed/stacked and split layouts
