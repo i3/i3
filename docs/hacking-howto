@@ -28,9 +28,9 @@ https://mesonbuild.com/[The Meson Build system]; see
 https://mesonbuild.com/Quick-guide.html#compiling-a-meson-project[Quickstart
 Guide → Compiling a Meson project]. In case you’re unfamiliar:
 
-    $ mkdir -p build && cd build
-    $ meson ..
-    $ ninja
+    mkdir -p build
+    meson setup build
+    meson compile -C build
 
 === Build system features
 
