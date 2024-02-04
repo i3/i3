@@ -1,0 +1,107 @@
+name: Bug Report
+description: Create a report to help us improve.
+labels: [bug]
+body:
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Welcome
+      options:
+        - label: Yes, I'm using the latest major release or the current development version. These are the only supported versions.
+          required: true
+        - label: Yes, I've searched similar issues and discussions on GitHub and didn't find any.
+          required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current Behavior
+      placeholder: |-
+        Describe the current behavior,
+        e.g., »When pressing Alt+j (focus left), the window above the current window is focused.«
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      placeholder: |-
+        Describe the desired behavior you expect after mitigation of the issue,
+        e.g., »The window left next to the current window should be focused.«
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Instructions
+      placeholder: |-
+        Please provide detailed instructions on how the bug can be reproduced.
+        E.g., »Open three windows in a V[A H[B C]] layout on a new workspace«
+    validations:
+      required: true
+
+  - type: textarea
+    id: version
+    attributes:
+      label: i3 version
+      description: |-
+        Paste the output of
+        ```
+        i3 --moreversion 2>&-
+        ```
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Config file
+      description: |-
+        Please include your (complete) i3 config with which the issue occurs.
+
+        If you would like to help debugging the issue, please try to reduce the config such that it is as close to the default config as possible while still reproducing the issue. This can help us bisect the root cause.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: distro
+    attributes:
+      label: Linux distribution & Version
+    validations:
+      required: true
+
+  - type: dropdown
+    id: compositor
+    attributes:
+      label: Are you using a compositor?
+      description: |-
+        Try running
+        ```shell
+        pidof picom
+        pidof compton
+        ```
+        If any IDs show up, you are running a compositor
+      options:
+        - I don't know
+        - I am sure I don't run any compositor
+        - picom
+        - compton
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: verbose-output
+    attributes:
+      label: Logfile
+      description: |-
+        Providing the URL to a logfile can help us trace the root cause of an issue much quicker. You can learn how to generate the logfile here:
+        https://i3wm.org/docs/debugging.html
+
+        Providing the logfile is optional.
+    validations:
+      required: false

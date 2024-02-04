@@ -1,4 +1,7 @@
 contact_links:
+  - name: Userguide
+    url: https://i3wm.org/docs/userguide.html
+    about: i3 User’s Guide
   - name: Ask a question or request support for using i3
     url: https://github.com/i3/i3/discussions/new
     about: Ask a question or request support for using i3
