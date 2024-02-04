@@ -31,8 +31,6 @@ Guide → Compiling a Meson project]. In case you’re unfamiliar:
     mkdir -p build
     meson setup build
     meson compile -C build
-    meson install -C build
-
 
 === Build system features
 
