@@ -1,0 +1,57 @@
+name: Feature request
+description: Suggest an idea for this project
+labels: [enhancement]
+body:
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Welcome
+      options:
+        - label: Yes, I've searched similar issues and discussions on GitHub and didn't find any.
+          required: true
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact
+      description: |-
+        Please note that at this point we focus on maintaining i3 and fixing bugs, and will rarely consider features which require further configuration or significant complexity.
+        In such cases you should consider and present specific benefits derived from adding this feature such that it can be weighed against the cost of additional complexity and maintenance.
+        Keep in mind that i3 provides a powerful way to interact with it through its IPC interface: https://i3wm.org/docs/ipc.html.
+      options:
+        - label: This feature requires new configuration and/or commands
+          required: false
+
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current Behavior
+      placeholder: |-
+        Describe the current behavior,
+        e.g., »When pressing Alt+j (focus left), the window above the current window is focused.«
+    validations:
+      required: true
+
+  - type: textarea
+    id: desired
+    attributes:
+      label: Desired Behavior
+      placeholder: |-
+        Describe the desired behavior you expect after mitigation of the issue,
+        e.g., »The window left next to the current window should be focused.«
+    validations:
+      required: true
+
+  - type: textarea
+    id: version
+    attributes:
+      label: i3 version
+      description: |-
+        Paste the output of
+        ```
+        i3 --moreversion 2>&-
+        ```
+      render: text
+    validations:
+      required: true
