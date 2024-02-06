@@ -68,11 +68,8 @@ cmd 'workspace D'; open_window;
 cmd 'workspace 4'; open_window;
 cmd 'workspace 5'; open_window;
 cmd 'workspace E'; open_window;
-# numbered w/ name workspaces must be created in reverse order compared to
-# other workspace types (because a new numbered w/ name workspace is prepended
-# to the list of similarly numbered workspaces).
-cmd 'workspace 8:e'; open_window;
 cmd 'workspace 8:d'; open_window;
+cmd 'workspace 8:e'; open_window;
 
 cmd 'focus output right';
 cmd 'workspace 1'; open_window;
@@ -83,19 +80,15 @@ cmd 'workspace F'; open_window;
 cmd 'workspace 6'; open_window;
 cmd 'workspace C'; open_window;
 cmd 'workspace 7'; open_window;
-# numbered w/ name workspaces must be created in reverse order compared to
-# other workspace types (because a new numbered w/ name workspace is prepended
-# to the list of similarly numbered workspaces).
-cmd 'workspace 8:c'; open_window;
-cmd 'workspace 8:b'; open_window;
 cmd 'workspace 8:a'; open_window;
+cmd 'workspace 8:b'; open_window;
+cmd 'workspace 8:c'; open_window;
 
 ################################################################################
 # Use workspace next and verify the correct order.
 # numbered -> numerical sort
 # numbered w/ names -> numerical sort. Workspaces with the same number but
-#     different names sort by output, followed by reverse creation time on each
-#     output.
+#     different names sort by output, followed by creation time on each output.
 # named -> sort by creation time
 ################################################################################
 cmd 'workspace 1';
