@@ -673,6 +673,60 @@ static void handle_expose_event(xcb_expose_event_t *event) {
 #define _NET_MOVERESIZE_WINDOW_WIDTH (1 << 10)
 #define _NET_MOVERESIZE_WINDOW_HEIGHT (1 << 11)
 
+static void handle_net_wm_state_change(Con *con, uint32_t change, uint32_t atom) {
+    if (atom == 0) {
+        return;
+    }
+
+    const char *debug_change = (change == _NET_WM_STATE_REMOVE ? "remove" : (change == _NET_WM_STATE_ADD ? "add" : "toggle"));
+
+    if (atom == A__NET_WM_STATE_FULLSCREEN) {
+        DLOG("Received a client message to %s _NET_WM_STATE_FULLSCREEN.\n", debug_change);
+
+        /* Check if the fullscreen state should be toggled */
+        if (change == _NET_WM_STATE_TOGGLE ||
+            (con->fullscreen_mode != CF_NONE && change == _NET_WM_STATE_REMOVE) ||
+            (con->fullscreen_mode == CF_NONE && change == _NET_WM_STATE_ADD)) {
+            DLOG("toggling fullscreen\n");
+            con_toggle_fullscreen(con, CF_OUTPUT);
+        }
+    } else if (atom == A__NET_WM_STATE_DEMANDS_ATTENTION) {
+        DLOG("Received a client message to %s _NET_WM_STATE_DEMANDS_ATTENTION.\n", debug_change);
+
+        /* Check if the urgent flag must be set or not */
+        if (change == _NET_WM_STATE_ADD) {
+            con_set_urgency(con, true);
+            con = remanage_window(con);
+        } else if (change == _NET_WM_STATE_REMOVE) {
+            con_set_urgency(con, false);
+            con = remanage_window(con);
+        } else if (change == _NET_WM_STATE_TOGGLE) {
+            con_set_urgency(con, !con->urgent);
+            con = remanage_window(con);
+        }
+    } else if (atom == A__NET_WM_STATE_STICKY) {
+        DLOG("Received a client message to %s _NET_WM_STATE_STICKY.\n", debug_change);
+
+        if (change == _NET_WM_STATE_ADD) {
+            con->sticky = true;
+        } else if (change == _NET_WM_STATE_REMOVE) {
+            con->sticky = false;
+        } else if (change == _NET_WM_STATE_TOGGLE) {
+            con->sticky = !con->sticky;
+        }
+
+        DLOG("New sticky status for con = %p is %i.\n", con, con->sticky);
+        ewmh_update_sticky(con->window->id, con->sticky);
+        output_push_sticky_windows(focused);
+        ewmh_update_wm_desktop();
+    } else {
+        DLOG("Unknown atom in ClientMessage to %s type %u\n", debug_change, atom);
+        return;
+    }
+
+    tree_render();
+}
+
 /*
  * Handle client messages (EWMH)
  *
@@ -686,11 +740,8 @@ static void handle_client_message(xcb_client_message_event_t *event) {
 
     LOG("ClientMessage for window 0x%08x\n", event->window);
     if (event->type == A__NET_WM_STATE) {
-        if (event->format != 32 ||
-            (event->data.data32[1] != A__NET_WM_STATE_FULLSCREEN &&
-             event->data.data32[1] != A__NET_WM_STATE_DEMANDS_ATTENTION &&
-             event->data.data32[1] != A__NET_WM_STATE_STICKY)) {
-            DLOG("Unknown atom in clientmessage of type %d\n", event->data.data32[1]);
+        if (event->format != 32) {
+            DLOG("Unknown format %d in ClientMessage\n", event->format);
             return;
         }
 
@@ -700,46 +751,9 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             return;
         }
 
-        if (event->data.data32[1] == A__NET_WM_STATE_FULLSCREEN) {
-            /* Check if the fullscreen state should be toggled */
-            if ((con->fullscreen_mode != CF_NONE &&
-                 (event->data.data32[0] == _NET_WM_STATE_REMOVE ||
-                  event->data.data32[0] == _NET_WM_STATE_TOGGLE)) ||
-                (con->fullscreen_mode == CF_NONE &&
-                 (event->data.data32[0] == _NET_WM_STATE_ADD ||
-                  event->data.data32[0] == _NET_WM_STATE_TOGGLE))) {
-                DLOG("toggling fullscreen\n");
-                con_toggle_fullscreen(con, CF_OUTPUT);
-            }
-        } else if (event->data.data32[1] == A__NET_WM_STATE_DEMANDS_ATTENTION) {
-            /* Check if the urgent flag must be set or not */
-            if (event->data.data32[0] == _NET_WM_STATE_ADD) {
-                con_set_urgency(con, true);
-                con = remanage_window(con);
-            } else if (event->data.data32[0] == _NET_WM_STATE_REMOVE) {
-                con_set_urgency(con, false);
-                con = remanage_window(con);
-            } else if (event->data.data32[0] == _NET_WM_STATE_TOGGLE) {
-                con_set_urgency(con, !con->urgent);
-                con = remanage_window(con);
-            }
-        } else if (event->data.data32[1] == A__NET_WM_STATE_STICKY) {
-            DLOG("Received a client message to modify _NET_WM_STATE_STICKY.\n");
-            if (event->data.data32[0] == _NET_WM_STATE_ADD) {
-                con->sticky = true;
-            } else if (event->data.data32[0] == _NET_WM_STATE_REMOVE) {
-                con->sticky = false;
-            } else if (event->data.data32[0] == _NET_WM_STATE_TOGGLE) {
-                con->sticky = !con->sticky;
-            }
-
-            DLOG("New sticky status for con = %p is %i.\n", con, con->sticky);
-            ewmh_update_sticky(con->window->id, con->sticky);
-            output_push_sticky_windows(focused);
-            ewmh_update_wm_desktop();
+        for (size_t i = 0; i < sizeof(event->data.data32) / sizeof(event->data.data32[0]) - 1; i++) {
+            handle_net_wm_state_change(con, event->data.data32[0], event->data.data32[i + 1]);
         }
-
-        tree_render();
     } else if (event->type == A__NET_ACTIVE_WINDOW) {
         if (event->format != 32) {
             return;
