@@ -14,11 +14,11 @@ keybindings (click to see the full-size image):
 
 *Keys to use with $mod (Alt):*
 
-image:keyboard-layer1.png["Keys to use with $mod (Alt)",width=600,link="keyboard-layer1.png"]
+image:keyboard-layer1.png["Keyboard with red Alt-key and 8 homerow keys in blue",width=600,link="keyboard-layer1.png"]
 
 *Keys to use with Shift+$mod:*
 
-image:keyboard-layer2.png["Keys to use with Shift+$mod",width=600,link="keyboard-layer2.png"]
+image:keyboard-layer2.png["Keyboard with red Alt- and Shift-keys and 8 homerow keys in blue",width=600,link="keyboard-layer2.png"]
 
 The red keys are the modifiers you need to press (by default), the blue keys
 are your homerow.
@@ -51,7 +51,7 @@ splitting the screen size in half. Depending on your monitor, i3 will put the
 created window beside the existing window (on wide displays) or below the
 existing window (rotated displays).
 
-image:two_terminals.png[Two terminals]
+image:two_terminals.png[Two terminals. One takes up the top half of the screen, the other the bottom half]
 
 To move the focus between the two terminals, you can use the arrow keys. For
 convenience, the arrows are also available directly on the
@@ -102,7 +102,10 @@ a single line which is vertically split.
 To switch modes, press +$mod+e+ for splith/splitv (it toggles), +$mod+s+ for
 stacking and +$mod+w+ for tabbed.
 
-image:modes.png[Container modes]
+image:modes.png[3 columns of terminals: 1st: one takes up top half, the other
+the bottom half of the column. 2nd: two titlebars on top of each other, only
+the contents of the bottom terminal visible. 3rd: two titlebars next to each
+other, only the contents of the left terminal visible]
 
 === Toggling fullscreen mode for a window
 
@@ -258,8 +261,10 @@ simple example is the workspace: When you start i3 with a single monitor, a
 single workspace and you open two terminal windows, you will end up with a tree
 like this:
 
-image::tree-layout2.png["layout2",float="right"]
-image::tree-shot4.png["shot4",title="Two terminals on standard workspace"]
+image::tree-layout2.png["Flowchart. \"Workspace 1\" on top, with 2 branches:
+\"left terminal\" and \"right terminal\"",float="right"]
+image::tree-shot4.png["Two terminals next to each other. The one on the left half
+is highlighted",title="Two terminals on standard workspace"]
 
 [[OrientationSplit]]
 === Orientation and Split Containers
@@ -273,7 +278,8 @@ layout of the workspace +Container+ is splith (most monitors are widescreen
 nowadays). If you change the layout to splitv (+$mod+v+ in the default config)
 and *then* open two terminals, i3 will configure your windows like this:
 
-image::tree-shot2.png["shot2",title="Vertical Workspace Orientation"]
+image::tree-shot2.png["Two terminals, one taking up the top half of the screen, the other 
+the bottom half",title="Vertical Workspace Orientation"]
 
 An interesting new feature of i3 since version 4 is the ability to split anything:
 Let’s assume you have two terminals on a workspace (with splith layout, that is
@@ -284,8 +290,12 @@ Instead, press +$mod+v+ to split the container with the splitv layout (to
 open a +Horizontal Split Container+, use +$mod+h+). Now you can open a new
 terminal and it will open below the current one:
 
-image::tree-layout1.png["Layout",float="right"]
-image::tree-shot1.png["shot",title="Vertical Split Container"]
+image::tree-layout1.png["Flowchart. Top box \"workspace 1\" splits into \"left terminal\"
+and grey coloured \"v-split\". \"v-split\" splits into \"top terminal\" and \"bottom
+terminal\". Red arrow points to \"bottom terminal\" with text \"in the tree, you are
+here now\"",float="right"]
+image::tree-shot1.png["3 terminals. One takes up the left half of the screen, the
+other two the right half. The terminal on the bottom (right) is highlighted",title="Vertical Split Container"]
 
 unfloat::[]
 
