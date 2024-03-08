@@ -830,13 +830,24 @@ static void handle_client_message(xcb_client_message_event_t *event) {
          * accurate.
          */
         DLOG("_NET_REQUEST_FRAME_EXTENTS for window 0x%08x\n", event->window);
+        
+        int border_width = config.default_border_width;
+        int border_height = config.default_border_width;
+        if (config.hide_edge_borders == HEBM_HORIZONTAL)
+            border_width = 0;
+        if (config.hide_edge_borders == HEBM_VERTICAL)
+            border_height = 0;
+        if (config.hide_edge_borders == HEBM_BOTH) {
+            border_width = 0;
+            border_height = 0;
+        }
 
         /* The reply data: approximate frame size */
         Rect r = {
-            config.default_border_width, /* left */
-            config.default_border_width, /* right */
-            render_deco_height(),        /* top */
-            config.default_border_width  /* bottom */
+            border_width, /* left */
+            border_width, /* right */
+            border_height > 0 ? render_deco_height() : 0, /* top */
+            border_height  /* bottom */
         };
         xcb_change_property(
             conn,
