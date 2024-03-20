@@ -239,7 +239,7 @@ static void handle_term_signal(struct ev_loop *loop, ev_signal *signal, int reve
  */
 static void setup_term_handlers(void) {
     static struct ev_signal signal_watchers[6];
-    size_t num_watchers = sizeof(signal_watchers) / sizeof(signal_watchers[0]);
+    const size_t num_watchers = sizeof(signal_watchers) / sizeof(signal_watchers[0]);
 
     /* We have to rely on libev functionality here and should not use
      * sigaction handlers because we need to invoke the exit handlers
