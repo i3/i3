@@ -252,7 +252,7 @@ static void setup_term_handlers(void) {
     ev_signal_init(&signal_watchers[2], handle_term_signal, SIGALRM);
     ev_signal_init(&signal_watchers[3], handle_term_signal, SIGTERM);
     ev_signal_init(&signal_watchers[4], handle_term_signal, SIGUSR1);
-    ev_signal_init(&signal_watchers[5], handle_term_signal, SIGUSR1);
+    ev_signal_init(&signal_watchers[5], handle_term_signal, SIGUSR2);
     for (size_t i = 0; i < num_watchers; i++) {
         ev_signal_start(main_loop, &signal_watchers[i]);
         /* The signal handlers should not block ev_run from returning
