@@ -347,6 +347,10 @@ CFGFUN(smart_gaps, const char *enable) {
     }
 }
 
+CFGFUN(border_radius, const long radius) {
+    config.border_radius = radius;
+}
+
 CFGFUN(floating_minimum_size, const long width, const long height) {
     config.floating_minimum_width = width;
     config.floating_minimum_height = height;
