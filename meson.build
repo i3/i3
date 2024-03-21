@@ -53,6 +53,9 @@ endif
 cdata.set('HAVE_STRNDUP', cc.has_function('strndup'))
 cdata.set('HAVE_MKDIRP', cc.has_function('mkdirp'))
 
+# Used in share/xsessions/i3.desktop.in to find i3-session-start.
+cdata.set('LIBEXECDIR', join_paths(get_option('prefix'), get_option('libexecdir')))
+
 # Instead of generating config.h directly, make vcs_tag generate it so that
 # @VCS_TAG@ is replaced.
 config_h_in = configure_file(
@@ -324,6 +327,8 @@ cairo_dep = dependency('cairo', version: '>=1.14.4', method: 'pkg-config')
 pangocairo_dep = dependency('pangocairo', method: 'pkg-config')
 glib_dep = dependency('glib-2.0', method: 'pkg-config')
 gobject_dep = dependency('gobject-2.0', method: 'pkg-config')
+
+systemd_dep = dependency('systemd', required: false)
 
 ev_dep = cc.find_library('ev')
 
@@ -597,11 +602,37 @@ install_subdir(
   install_dir: join_paths(get_option('sysconfdir'), 'i3'),
 )
 
-install_subdir(
-  'share/',
-  strip_directory: true,
+configure_file(
+  input: 'share/xsessions/i3.desktop.in',
+  output: 'i3.desktop',
+  configuration: cdata,
+  install: true,
+  install_dir: join_paths(get_option('datadir'), 'xsessions'),
+)
+
+install_data(
+  'share/applications/i3.desktop',
+  'share/xsessions/i3-with-shmlog.desktop',
+  rename: [
+    'applications/i3.desktop',
+    'xsessions/i3-with-shmlog.desktop',
+  ],
   install_dir: get_option('datadir'),
 )
+
+install_subdir(
+  'libexec/',
+  strip_directory: true,
+  install_dir: get_option('libexecdir'),
+)
+
+if systemd_dep.found()
+  install_subdir(
+    'systemd/',
+    strip_directory: true,
+    install_dir: systemd_dep.get_pkgconfig_variable('systemduserunitdir'),
+  )
+endif
 
 install_headers(
   'include/i3/ipc.h',

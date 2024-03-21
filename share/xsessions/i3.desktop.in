@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=i3
 Comment=improved dynamic tiling window manager
-Exec=i3
-TryExec=i3
+Exec=@LIBEXECDIR@/i3-session-start
+TryExec=@LIBEXECDIR@/i3-session-start
 Type=Application
 X-LightDM-DesktopName=i3
 DesktopNames=i3
