@@ -1126,6 +1126,24 @@ void x_push_node(Con *con) {
 
     set_shape_state(con, need_reshape);
 
+    /* Set _NET_FRAME_EXTENTS according to the actual decoration size. */
+    if (con != NULL && con->window != NULL) {
+        Rect bsr = con_border_style_rect(con);
+        Rect r = {
+            bsr.x,                  /* left */
+            0 - bsr.width - bsr.x,  /* right */
+            bsr.y,                  /* top */
+            0 - bsr.height - bsr.y  /* bottom */
+        };
+        xcb_change_property(
+            conn,
+            XCB_PROP_MODE_REPLACE,
+            con->window->id,
+            A__NET_FRAME_EXTENTS,
+            XCB_ATOM_CARDINAL, 32, 4,
+            &r);
+    }
+
     /* Map if map state changed, also ensure that the child window
      * is changed if we are mapped and there is a new, unmapped child window.
      * Unmaps are handled in x_push_node_unmaps(). */
