@@ -315,6 +315,11 @@ sub subscribe {
 
     # Register callbacks for each message type
     for my $key (keys %{$callbacks}) {
+        if (!exists $events{$key}) {
+            warn "Could not subscribe to event type '$key'." .
+            " Supported events are " . join(" ", sort keys %events), $/;
+            next;
+        }
         my $type = $events{$key};
         $self->{callbacks}->{$type} = $callbacks->{$key};
     }
