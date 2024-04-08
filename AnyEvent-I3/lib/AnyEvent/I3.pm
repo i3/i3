@@ -156,13 +156,19 @@ instance on the current DISPLAY which is almost always what you want.
 sub new {
     my ($class, $path) = @_;
 
-    $path = _call_i3('--get-socketpath') unless $path;
+    # We have I3SOCK now
+    $path ||= $ENV{I3SOCK};
+    $path ||= _call_i3('--get-socketpath');
 
     # Check if we need to resolve ~
     if ($path =~ /~/) {
         my $home = $ENV{HOME};
         confess "Could not get home directory" unless $home and -d $home;
         $path =~ s/~/$home/g;
+    }
+
+    if(!-S $path) {
+        die "$path is not a socket", $/;
     }
 
     bless { path => $path } => $class;
