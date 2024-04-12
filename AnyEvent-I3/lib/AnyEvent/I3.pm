@@ -8,7 +8,6 @@ use AnyEvent::Handle;
 use AnyEvent::Socket;
 use AnyEvent;
 use Encode;
-use Scalar::Util qw(tainted);
 use Carp;
 
 =head1 NAME
@@ -132,35 +131,10 @@ sub i3 {
     AnyEvent::I3->new(@_)
 }
 
-# Calls i3, even when running in taint mode.
 sub _call_i3 {
     my ($args) = @_;
 
-    my $path_tainted = tainted($ENV{PATH});
-    # This effectively circumvents taint mode checking for $ENV{PATH}. We
-    # do this because users might specify PATH explicitly to call i3 in a
-    # custom location (think ~/.bin/).
-    (local $ENV{PATH}) = ($ENV{PATH} =~ /(.*)/);
-
-    # In taint mode, we also need to remove all relative directories from
-    # PATH (like . or ../bin). We only do this in taint mode and warn the
-    # user, since this might break a real-world use case for some people.
-    if ($path_tainted) {
-        my @dirs = split /:/, $ENV{PATH};
-        my @filtered = grep !/^\./, @dirs;
-        if (scalar @dirs != scalar @filtered) {
-            $ENV{PATH} = join ':', @filtered;
-            warn qq|Removed relative directories from PATH because you | .
-                 qq|are running Perl with taint mode enabled. Remove -T | .
-                 qq|to be able to use relative directories in PATH. | .
-                 qq|New PATH is "$ENV{PATH}"|;
-        }
-    }
-    # Otherwise the qx() operator wont work:
-    delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
     chomp(my $result = qx(i3 $args));
-    # Circumventing taint mode again: the socket can be anywhere on the
-    # system and that’s okay.
     if ($result =~ /^([^\0]+)$/) {
         return $1;
     }
@@ -184,15 +158,9 @@ sub new {
 
     $path = _call_i3('--get-socketpath') unless $path;
 
-    # This is the old default path (v3.*). This fallback line can be removed in
-    # a year from now. -- Michael, 2012-07-09
-    $path ||= '~/.i3/ipc.sock';
-
     # Check if we need to resolve ~
     if ($path =~ /~/) {
-        # We use getpwuid() instead of $ENV{HOME} because the latter is tainted
-        # and thus produces warnings when running tests with perl -T
-        my $home = (getpwuid($<))[7];
+        my $home = $ENV{HOME};
         confess "Could not get home directory" unless $home and -d $home;
         $path =~ s/~/$home/g;
     }
