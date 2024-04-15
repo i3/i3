@@ -1599,8 +1599,9 @@ static void init_tray(void) {
  *
  */
 void init_tray_colors(void) {
-    /* Convert colors.bar_fg (#rrggbb) to 16-bit RGB */
-    const char *bar_fg = (config.colors.bar_fg ? config.colors.bar_fg : "#FFFFFF");
+    /* Convert colors.focus_bar_fg (#rrggbb) to 16-bit RGB
+     * Changed to focus_bar_fg so that system tray background takes focused background color*/
+    const char *bar_fg = (config.colors.focus_bar_fg ? config.colors.focus_bar_fg : "#FFFFFF");
 
     DLOG("Setting bar_fg = %s as _NET_SYSTEM_TRAY_COLORS\n", bar_fg);
 
