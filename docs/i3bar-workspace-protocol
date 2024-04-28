@@ -129,7 +129,7 @@ i3-msg -t subscribe -m '["workspace", "output"]' | {
     # avoids having an empty bar when starting up.
     i3-msg -t get_workspaces;
     # Then, while we receive events, update the workspace information.
-    while read; do i3-msg -t get_workspaces; done;
+    while read EVENT; do i3-msg -t get_workspaces; done;
 }
 ------------------------------
 
@@ -139,7 +139,7 @@ i3-msg -t subscribe -m '["workspace", "output"]' | {
 #!/bin/sh
 i3-msg -t subscribe -m '["workspace", "output"]' | {
     i3-msg -t get_workspaces;
-    while read; do i3-msg -t get_workspaces; done;
+    while read EVENT; do i3-msg -t get_workspaces; done;
 } | jq --unbuffered -c '[ .[] | select(.name != "foo" or .focused) ]'
 ------------------------------
 
@@ -153,7 +153,7 @@ might mean that you are getting an empty bar until enough events are written.
 #!/bin/sh
 i3-msg -t subscribe -m '["workspace", "output"]' | {
     i3-msg -t get_workspaces;
-    while read; do i3-msg -t get_workspaces; done;
+    while read EVENT; do i3-msg -t get_workspaces; done;
 } | jq --unbuffered -c '
     def fake_ws(name): {
         name: name,
@@ -169,7 +169,7 @@ i3-msg -t subscribe -m '["workspace", "output"]' | {
 #!/bin/sh
 i3-msg -t subscribe -m '["workspace", "output"]' | {
     i3-msg -t get_workspaces;
-    while read; do i3-msg -t get_workspaces; done;
+    while read EVENT; do i3-msg -t get_workspaces; done;
 } | jq --unbuffered -c 'sort_by(.name) | reverse'
 ------------------------------
 
@@ -179,6 +179,6 @@ i3-msg -t subscribe -m '["workspace", "output"]' | {
 #!/bin/sh
 i3-msg -t subscribe -m '["workspace", "output"]' | {
     i3-msg -t get_workspaces;
-    while read; do i3-msg -t get_workspaces; done;
+    while read EVENT; do i3-msg -t get_workspaces; done;
 } | jq --unbuffered -c '[ .[] | .name |= . + " foo" ]'
 ------------------------------
