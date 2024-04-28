@@ -330,6 +330,9 @@ void errorlog(char *fmt, ...) {
     va_end(args);
 
     /* also log to the error logfile, if opened */
+    if (!errorfile) {
+        return;
+    }
     va_start(args, fmt);
     vfprintf(errorfile, fmt, args);
     fflush(errorfile);
