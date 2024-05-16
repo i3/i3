@@ -76,29 +76,19 @@ used to install the testsuite. Many users prefer to use the more modern
 The tests additionally require +Xephyr(1)+ to run a nested X server. Install
 +xserver-xephyr+ on Debian or +xorg-server-xephyr+ on Arch Linux.
 
-.Installing testsuite dependencies using cpanminus (preferred)
+.Installing testsuite dependencies using cpanminus
 --------------------------------------------------------------------------------
-$ cd ~/i3/testcases
-$ sudo apt-get install cpanminus
-$ sudo cpanm .
+# Install testsuite system-level dependencies. Xvfb is optional but recommended.
+$ sudo apt-get install xcb-proto cpanminus xvfb xserver-xephyr
+# Install dependencies in ~/perl5 local library
+$ cpanm --local-lib=~/perl5 local::lib App::cpanminus Module::Install
+# Activate the local library
+$ eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
+$ cd ~/i3/testcases/
+$ cpanm .
 $ cd ~/i3/AnyEvent-I3
-$ sudo cpanm Module::Install
-$ sudo cpanm .
+$ cpanm .
 --------------------------------------------------------------------------------
-
-If you don’t want to use cpanminus for some reason, the same works with cpan:
-
-.Installing testsuite dependencies using cpan
---------------------------------------------------------------------------------
-$ cd ~/i3/testcases
-$ sudo cpan .
-$ cd ~/i3/AnyEvent-I3
-$ sudo cpan Module::Install
-$ sudo cpan .
---------------------------------------------------------------------------------
-
-In case you don’t have root permissions, you can also install into your home
-directory, see https://michael.stapelberg.de/cpan/
 
 === Mechanisms
 
@@ -119,14 +109,13 @@ tests are run under Xvfb.
 ---------------------------------------
 $ cd ~/i3
 
-$ mkdir -p build && cd build
+$ mkdir -p build
 
-$ meson ..
+$ meson setup build
+$ cd build
 
-$ ninja
+$ meson compile
 # output omitted because it is very long
-
-$ cd testcases
 
 $ ./complete-run.pl
 # output omitted because it is very long
@@ -134,33 +123,43 @@ All tests successful.
 Files=78, Tests=734, 27 wallclock secs ( 0.38 usr  0.48 sys + 17.65 cusr  3.21 csys = 21.72 CPU)
 Result: PASS
 
-$ ./complete-run.pl t/04-floating.t
-[:3] i3 startup: took 0.07s, status = 1
-[:3] Running t/04-floating.t with logfile testsuite-2011-09-24-16-06-04-4.0.2-226-g1eb011a/i3-log-for-04-floating.t
-[:3] t/04-floating.t finished
-[:3] killing i3
-output for t/04-floating.t:
-ok 1 - use X11::XCB::Window;
-ok 2 - The object isa X11::XCB::Window
-ok 3 - Window is mapped
-ok 4 - i3 raised the width to 75
-ok 5 - i3 raised the height to 50
-ok 6 - i3 did not map it to (0x0)
-ok 7 - The object isa X11::XCB::Window
-ok 8 - i3 let the width at 80
-ok 9 - i3 let the height at 90
-ok 10 - i3 mapped it to x=1
-ok 11 - i3 mapped it to y=18
-ok 12 - The object isa X11::XCB::Window
-ok 13 - i3 let the width at 80
-ok 14 - i3 let the height at 90
-1..14
+$ ./complete-run.pl t/005-floating.t
+Running tests under Xvfb display :99
+Starting 1 Xephyr instances, starting at :100...
+
+Rough time estimate for this run: 9.65 seconds
+
+Writing logfile to 'testsuite-2024-05-01-21-33-45-4.23-28-g5834b7e8/complete-run.log'...
+[:100] i3/testcases/t/005-floating.t: finished
+completed 0 of 1 tests
 
 All tests successful.
-Files=1, Tests=14,  0 wallclock secs ( 0.01 usr  0.00 sys +  0.19 cusr  0.03 csys =  0.23 CPU)
+Files=1, Tests=13,  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
 Result: PASS
 
-$ less latest/i3-log-for-04-floating.t
+The slowest tests are:
+	i3/testcases/t/005-floating.t with 0.07 seconds
+
+Test output:
+[:100] i3/testcases/t/005-floating.t: starting
+[:100] i3/testcases/t/005-floating.t: finished
+output for i3/testcases/t/005-floating.t:
+ok 1 - An object of class 'X11::XCB::Window' isa 'X11::XCB::Window'
+ok 2 - Window is mapped
+ok 3 - i3 raised the width to 75
+ok 4 - i3 raised the height to 50
+ok 5 - i3 did not map it to (0x0)
+ok 6 - An object of class 'X11::XCB::Window' isa 'X11::XCB::Window'
+ok 7 - i3 let the width at 80
+ok 8 - i3 let the height at 90
+ok 9 - i3 mapped it to x=20
+ok 10 - i3 mapped it to y=20
+ok 11 - An object of class 'X11::XCB::Window' isa 'X11::XCB::Window'
+ok 12 - i3 let the width at 80
+ok 13 - i3 let the height at 90
+1..13
+
+$ less latest/i3-log-for-005-floating.t
 ----------------------------------------
 
 If your attempt to run the tests with a bare call to ./complete-run.pl fails, try this:
@@ -172,37 +171,34 @@ $ ./complete-run.pl --parallel=1 --keep-xserver-output
 This will show the output of Xephyr, which is the X server implementation we
 use for testing.
 
-===== make command: +make check+
-Make check runs the i3 testsuite.
-You can still use ./testcases/complete-run.pl to get the interactive progress output.
+===== ninja command: +ninja test+
++ninja test+ runs the i3 testsuite.
+You can still use ./complete-run.pl to get the interactive progress output.
 
-.Example invocation of +make check+
+.Example invocation of +ninja test+
 ---------------------------------------
 $ cd ~/i3
 
-$ mkdir -p build && cd build
+$ mkdir -p build
 
-$ meson ..
+$ meson setup build
+$ cd build
 
-$ ninja
-# output omitted because it is very long
+$ ninja test
+[1/102] Generating config.h with a custom command
+[1/2] Running all tests.
+1/1 complete-run OK              34.39s
 
-$ make check
-# output omitted because it is very long
-PASS: testcases/complete-run.pl
-============================================================================
-Testsuite summary for i3 4.13
-============================================================================
-# TOTAL: 1
-# PASS:  1
-# SKIP:  0
-# XFAIL: 0
-# FAIL:  0
-# XPASS: 0
-# ERROR: 0
-============================================================================
+Ok:                 1
+Expected Fail:      0
+Fail:               0
+Unexpected Pass:    0
+Skipped:            0
+Timeout:            0
 
-$ less test-suite.log
+Full log written to i3/build/meson-logs/testlog.txt
+
+$ less latest/complete-run.log
 ----------------------------------------
 
 ==== Coverage testing
