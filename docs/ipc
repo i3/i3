@@ -10,15 +10,21 @@ workspace bar.
 
 The method of choice for IPC in our case is a unix socket because it has very
 little overhead on both sides and is usually available without headaches in
-most languages. In the default configuration file, the ipc-socket gets created
-in +/tmp/i3-%u.XXXXXX/ipc-socket.%p+ where +%u+ is your UNIX username, +%p+ is
-the PID of i3 and XXXXXX is a string of random characters from the portable
-filename character set (see mkdtemp(3)). You can get the socketpath from i3 by
-executing +i3 --get-socketpath+, which will print the path to the standard
-output (plus a newline).
+most languages.
+By default i3 will set the path of the IPC socket based on:
+1. The +ipc-socket+ configuration directive if it is used
+2. The +I3SOCK+ environmental variable if it is set
+3. +$XDG_RUNTIME_DIR/i3/ipc-socket.%p+ if the directory is available where +%p+
+is the PID of i3 and XXXXXX is a string of random characters
+4. +/tmp/i3-%u.XXXXXX/ipc-socket.%p+ where +%u+ is your UNIX username
 
-All i3 utilities, like +i3-msg+ and +i3-input+ will read the +I3_SOCKET_PATH+
-X11 property, stored on the X11 root window.
+You can get the socketpath from i3 by executing +i3 --get-socketpath+, which
+will print the path to the standard output (plus a newline) or by reading the
++I3SOCK+ environmental variable.
+
+All i3 utilities, like +i3-msg+ and +i3-input+ will determine the path of the
+IPC socket frome the +I3SOCK+ environmental variable if it is set or the
++I3_SOCKET_PATH+ X11 property, stored on the X11 root window.
 
 [WARNING]
 .Use an existing library!
