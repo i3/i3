@@ -37,7 +37,7 @@ int ipc_connect(const char *socket_path) {
     }
 
     if (path == NULL) {
-        path = sstrdup("/tmp/i3-ipc.sock");
+        err(EXIT_FAILURE, "Could not determine i3 socket path");
     }
 
     int sockfd = ipc_connect_impl(path);
