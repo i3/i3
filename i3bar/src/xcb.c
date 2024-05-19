@@ -632,7 +632,12 @@ static void handle_button(xcb_button_press_event_t *event) {
     /* During button release events, only check for custom commands. */
     const bool event_is_release = (event->response_type & ~0x80) == XCB_BUTTON_RELEASE;
 
-    int32_t x = event->event_x >= 0 ? event->event_x : 0;
+    const int x = (event->event_x >= 0 ? event->event_x : 0) - logical_px(config.padding.x);
+    if (x < 0) {
+        /* Ignore clicks in padding */
+        return;
+    }
+
     int workspace_width = 0;
     i3_ws *cur_ws = NULL, *clicked_ws = NULL, *ws_walk;
 
