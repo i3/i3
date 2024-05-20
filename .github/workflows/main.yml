@@ -39,6 +39,13 @@ jobs:
     - name: build i3
       run: |
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf build; mkdir -p build && cd build && CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Werror -fno-common -D_FORTIFY_SOURCE=3" meson setup .. -Ddocs=true -Dmans=true -Db_sanitize=address --buildtype=debugoptimized && ninja -v'
+    - name: Upload docs html for manual inspection
+      uses: actions/upload-artifact@v4
+      with:
+        name: i3-docs
+        path: |
+          build/*.html
+      if: matrix.compiler == 'gcc'
     - name: check spelling
       run: |
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME }} ./travis/check-spelling.pl
