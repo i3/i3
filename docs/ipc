@@ -12,10 +12,11 @@ The method of choice for IPC in our case is a unix socket because it has very
 little overhead on both sides and is usually available without headaches in
 most languages.
 By default i3 will set the path of the IPC socket based on:
+
 1. The +ipc-socket+ configuration directive if it is used
 2. The +I3SOCK+ environmental variable if it is set
 3. +$XDG_RUNTIME_DIR/i3/ipc-socket.%p+ if the directory is available where +%p+
-is the PID of i3 and XXXXXX is a string of random characters
+   is the PID of i3 and XXXXXX is a string of random characters
 4. +/tmp/i3-%u.XXXXXX/ipc-socket.%p+ where +%u+ is your UNIX username
 
 You can get the socketpath from i3 by executing +i3 --get-socketpath+, which
