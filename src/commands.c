@@ -1802,7 +1802,20 @@ void cmd_focus_output(I3_CMD, const char *name) {
         return;
     }
 
-    Output *current_output = get_output_for_con(TAILQ_FIRST(&owindows)->con);
+    /* Command critiera need to work for focus output left|right|up|down.
+     * We need to avoid using internal workspaces with get_output_for_con, so
+     * we go through all matched windows until we find a non-internal one. If
+     * there is no match, fall back to the focused one. */
+    owindow *current;
+    Con *con = focused;
+    TAILQ_FOREACH (current, &owindows, owindows) {
+        if (!con_is_internal(con_get_workspace(current->con))) {
+            con = current->con;
+            break;
+        }
+    }
+
+    Output *current_output = get_output_for_con(con);
     Output *target_output = user_output_names_find_next(&names, current_output);
     user_output_names_free(&names);
     bool success = false;

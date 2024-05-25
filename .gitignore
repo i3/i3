@@ -50,4 +50,3 @@ LAST_VERSION
 # it is up to you to arrange for it to be ignored by git,
 # e.g. by listing your directory in .git/info/exclude.
 /build
-
