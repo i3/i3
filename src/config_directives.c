@@ -361,6 +361,10 @@ CFGFUN(floating_modifier, const char *modifiers) {
     config.floating_modifier = event_state_from_str(modifiers);
 }
 
+CFGFUN(tiling_drag_swap_modifier, const char *modifiers) {
+    config.swap_modifier = event_state_from_str(modifiers);
+}
+
 CFGFUN(default_orientation, const char *orientation) {
     if (strcmp(orientation, "horizontal") == 0) {
         config.default_orientation = HORIZ;

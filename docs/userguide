@@ -216,6 +216,10 @@ Drop on container::
     This happens when the mouse is relatively near the center of a container.
     If the mouse is released, the result is exactly as if you had run the
     +move container to mark+ command. See <<move_to_mark>>.
+    If the swap modifier is pressed before initiating the drag (+tiling_drag
+    swap_modifier+ set to Shift by default), the containers are swapped
+    instead. In that case, the result is exactly as if you had run the +swap
+    container with mark+ command. See <<swapping_containers>>.
 Drop as sibling::
     This happens when the mouse is relatively near the edge of a container. If
     the mouse is released, the dragged container will become a sibling of the
@@ -1429,10 +1433,16 @@ You can configure how to initiate the tiling drag feature (see <<tiling_drag>>).
 
 The default is +modifier+.
 
+Since i3 4.24, you can configure a modifier key which, when pressed, will swap
+instead of moving containers when dropping directly onto another container.
+Defaults to +Shift+. Note that you have to be pressing both the floating
+modifer and the swap modifier before the drag is initiated.
+
 *Syntax*:
 --------------------------------
 tiling_drag off
 tiling_drag modifier|titlebar [modifier|titlebar]
+tiling_drag swap_modifier <modifier>
 --------------------------------
 
 *Examples*:
@@ -1445,6 +1455,14 @@ tiling_drag modifier titlebar
 
 # Disable tiling drag altogether
 tiling_drag off
+
+# Use Control to swap containers
+tiling_drag swap_modifier Control
+
+# Setting the swap_modifier to be the same key as the floating modifier will
+# always swap without the need to hold two keys
+floating_modifier Mod4
+tiling_drag swap_modifier Mod4
 --------------------------------
 
 [[gaps]]
@@ -2546,6 +2564,7 @@ bindsym $mod+c move absolute position center
 bindsym $mod+m move position mouse
 -------------------------------------------------------
 
+[[swapping_containers]]
 === Swapping containers
 
 Two containers can be swapped (i.e., move to each other's position) by using

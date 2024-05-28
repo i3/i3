@@ -166,7 +166,10 @@ static void allow_replay_pointer(xcb_timestamp_t time) {
  * functions for resizing/dragging.
  *
  */
-static void route_click(Con *con, xcb_button_press_event_t *event, const bool mod_pressed, const click_destination_t dest) {
+static void route_click(Con *con, xcb_button_press_event_t *event, const click_destination_t dest) {
+    const uint32_t mod = (config.floating_modifier & 0xFFFF);
+    const bool mod_pressed = (mod != 0 && (event->state & mod) == mod);
+
     DLOG("--> click properties: mod = %d, destination = %d\n", mod_pressed, dest);
     DLOG("--> OUTCOME = %p\n", con);
     DLOG("type = %d, name = %s\n", con->type, con->name);
@@ -375,11 +378,8 @@ void handle_button_press(xcb_button_press_event_t *event) {
 
     last_timestamp = event->time;
 
-    const uint32_t mod = (config.floating_modifier & 0xFFFF);
-    const bool mod_pressed = (mod != 0 && (event->state & mod) == mod);
-    DLOG("floating_mod = %d, detail = %d\n", mod_pressed, event->detail);
     if ((con = con_by_window_id(event->event))) {
-        route_click(con, event, mod_pressed, CLICK_INSIDE);
+        route_click(con, event, CLICK_INSIDE);
         return;
     }
 
@@ -424,7 +424,7 @@ void handle_button_press(xcb_button_press_event_t *event) {
     /* Check if the click was on the decoration of a child */
     if (con->window != NULL) {
         if (rect_contains(con->deco_rect, event->event_x, event->event_y)) {
-            route_click(con, event, mod_pressed, CLICK_DECORATION);
+            route_click(con, event, CLICK_DECORATION);
             return;
         }
     } else {
@@ -434,16 +434,16 @@ void handle_button_press(xcb_button_press_event_t *event) {
                 continue;
             }
 
-            route_click(child, event, mod_pressed, CLICK_DECORATION);
+            route_click(child, event, CLICK_DECORATION);
             return;
         }
     }
 
     if (event->child != XCB_NONE) {
         DLOG("event->child not XCB_NONE, so this is an event which originated from a click into the application, but the application did not handle it.\n");
-        route_click(con, event, mod_pressed, CLICK_INSIDE);
+        route_click(con, event, CLICK_INSIDE);
         return;
     }
 
-    route_click(con, event, mod_pressed, CLICK_BORDER);
+    route_click(con, event, CLICK_BORDER);
 }

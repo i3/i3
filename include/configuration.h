@@ -227,6 +227,9 @@ struct Config {
     /** The modifier which needs to be pressed in combination with your mouse
      * buttons to do things with floating windows (move, resize) */
     uint32_t floating_modifier;
+    /** The modifier which needs to be pressed in combination with the floating
+     * modifier and your mouse buttons to swap containers during tiling drag */
+    uint32_t swap_modifier;
 
     /** Maximum and minimum dimensions of a floating window */
     int32_t floating_maximum_width;

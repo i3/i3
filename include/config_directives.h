@@ -69,6 +69,7 @@ CFGFUN(no_focus);
 CFGFUN(ipc_socket, const char *path);
 CFGFUN(ipc_kill_timeout, const long timeout_ms);
 CFGFUN(tiling_drag, const char *value);
+CFGFUN(tiling_drag_swap_modifier, const char *modifiers);
 CFGFUN(restart_state, const char *path);
 CFGFUN(popup_during_fullscreen, const char *value);
 CFGFUN(color, const char *colorclass, const char *border, const char *background, const char *text, const char *indicator, const char *child_border);
