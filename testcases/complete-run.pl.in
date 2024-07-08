@@ -106,6 +106,8 @@ $ENV{PATH} = join(':',
     '@abs_top_builddir@',
     '@abs_top_srcdir@',
     $ENV{PATH});
+# Make sure we don't re-use the existing (developer's) i3 connection
+delete $ENV{I3SOCK};
 
 qx(Xephyr -help 2>&1);
 die "Xephyr was not found in your path. Please install Xephyr (xserver-xephyr on Debian)." if $?;
