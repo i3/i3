@@ -28,7 +28,6 @@ use X11::XCB qw/PROP_MODE_REPLACE/;
 ################################################################################
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Test with different dimensions than the i3 default.
@@ -50,7 +49,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 floating_minimum_size -1 x -1
@@ -72,7 +70,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Test with different dimensions than the i3 default.
@@ -93,7 +90,6 @@ exit_gracefully($pid);
 # opening a window which is bigger than the testsuite screen (1280x1024).
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
@@ -112,7 +108,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Test with different dimensions than the i3 default.
@@ -134,7 +129,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Test with different dimensions than the i3 default.
@@ -159,7 +153,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Test with different dimensions than the i3 default.
@@ -192,7 +185,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Test with different dimensions than the i3 default.
@@ -224,7 +216,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 

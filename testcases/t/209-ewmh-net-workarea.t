@@ -57,7 +57,6 @@ sub is_net_workarea_set {
 ok(is_net_workarea_set(), '_NET_WORKAREA is set before starting i3');
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 fake-outputs 1024x768+0+0
 EOT

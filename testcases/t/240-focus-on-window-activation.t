@@ -49,7 +49,6 @@ sub get_urgency_for_window_on_workspace {
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation urgent
@@ -75,7 +74,6 @@ exit_gracefully($pid);
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation urgent
@@ -103,7 +101,6 @@ exit_gracefully($pid);
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation focus
@@ -129,7 +126,6 @@ exit_gracefully($pid);
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation focus
@@ -157,7 +153,6 @@ exit_gracefully($pid);
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation none
@@ -183,7 +178,6 @@ exit_gracefully($pid);
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation none

@@ -19,7 +19,6 @@
 # Ticket: #6141
 # Bug still in: 4.23-47-gbe840af4
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 assign [class="class" window_type="some_type"] workspace 1
 assign [class="class" window_type="some_type"] output 1
 for_window [class="class" window_type="some_type"] workspace 1

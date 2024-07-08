@@ -19,7 +19,6 @@
 # Ticket: #2352
 # Bug still in: 4.14-72-g6411130c
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_wrapping no

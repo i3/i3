@@ -20,7 +20,6 @@ use X11::XCB qw(PROP_MODE_REPLACE);
 my (@nodes);
 
 my $config = <<'EOT';
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # test 1, test 2

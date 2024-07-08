@@ -64,7 +64,6 @@ sub test_workspace_assignment {
 #####################################################################
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
@@ -89,7 +88,6 @@ $window->destroy;
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 assign [class="special"] → targetws
 EOT
@@ -118,7 +116,6 @@ exit_gracefully($pid);
 #####################################################################
 
 my $config_numbered = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 assign [class="special"] → workspace number 2
 EOT
@@ -183,7 +180,6 @@ exit_gracefully($pid);
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 for_window [class="special"] floating enable
 EOT
@@ -210,7 +206,6 @@ exit_gracefully($pid);
 # test assignments to named outputs
 #####################################################################
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0,1024x768+1024+768,1024x768+0+768
@@ -275,7 +270,6 @@ exit_gracefully($pid);
 # Test assignments to outputs with relative names
 #####################################################################
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0,1024x768+1024+768,1024x768+0+768
@@ -330,7 +324,6 @@ exit_gracefully($pid);
 # Test assignments to primary / nonprimary outputs
 #####################################################################
 $config = <<'EOT';
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0P,1024x768+1024+0
@@ -385,7 +378,6 @@ sub i3nagbar_running {
 }
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 for_window [title="special"] floating enable
 EOT

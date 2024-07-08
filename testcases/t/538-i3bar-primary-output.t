@@ -21,7 +21,6 @@
 # Bug still in: 4.14-93-ga3a7d04a
 use i3test i3_autostart => 0;
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0P
@@ -44,7 +43,6 @@ exit_gracefully($pid);
 # Same but for "nonprimary"
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0P,1024x768+0+0

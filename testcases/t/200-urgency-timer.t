@@ -21,7 +21,6 @@
 
 use List::Util qw(first);
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 force_display_urgency_hint 500ms

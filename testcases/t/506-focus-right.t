@@ -83,7 +83,6 @@ sub test_focus_left_right {
 # +----+
 #
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1080x1920+0+0,1920x1080+1080+500
@@ -99,7 +98,6 @@ test_focus_left_right($config);
 # +----+
 #
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1080x1920+0+0,1920x200+1080+0
@@ -115,7 +113,6 @@ test_focus_left_right($config);
 # +----+--------+
 #
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1080x1920+0+0,1920x200+1080+1720
@@ -131,7 +128,6 @@ test_focus_left_right($config);
 # +----+--------+----+
 #
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1080x1920+0+0,1920x200+1080+1720,1080x1920+1280+0

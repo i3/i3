@@ -25,7 +25,6 @@ sub window_icon_padding {
 }
 
 my $config = <<"EOT";
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 my $pid = launch_with_config($config);
@@ -75,7 +74,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<"EOT";
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 for_window [class=".*"] title_window_icon padding 3px

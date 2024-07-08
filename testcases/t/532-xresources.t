@@ -24,7 +24,6 @@ sub get_marks {
 }
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # This isn't necessarily what X resources are intended for, but it'll do the

@@ -15,7 +15,6 @@
 #   (unless you are already familiar with Perl)
 
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # fake-1 under fake-0 to not interfere with left/right wrapping

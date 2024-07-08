@@ -32,7 +32,6 @@ sub subtest_with_config {
 
     subtest 'with tiling', sub {
     my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 default_border $style
@@ -46,7 +45,6 @@ EOT
 
     subtest 'with floating', sub {
     my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 default_border $some_other_style
@@ -215,7 +213,6 @@ is_border_style('pixel', 'because of user maximum=pixel');
 $use_floating = 0;
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 EOT

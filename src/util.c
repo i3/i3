@@ -147,19 +147,19 @@ bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
  *
  */
 void exec_i3_utility(char *name, char *argv[]) {
-    /* start the migration script, search PATH first */
-    char *migratepath = name;
-    argv[0] = migratepath;
-    execvp(migratepath, argv);
+    /* start the utility, search PATH first */
+    char *binary = name;
+    argv[0] = binary;
+    execvp(binary, argv);
 
-    /* if the script is not in path, maybe the user installed to a strange
+    /* if the utility is not in path, maybe the user installed to a strange
      * location and runs the i3 binary with an absolute path. We use
      * argv[0]’s dirname */
     char *pathbuf = sstrdup(start_argv[0]);
     char *dir = dirname(pathbuf);
-    sasprintf(&migratepath, "%s/%s", dir, name);
-    argv[0] = migratepath;
-    execvp(migratepath, argv);
+    sasprintf(&binary, "%s/%s", dir, name);
+    argv[0] = binary;
+    execvp(binary, argv);
 
 #if defined(__linux__)
     /* on linux, we have one more fall-back: dirname(/proc/self/exe) */
@@ -169,9 +169,9 @@ void exec_i3_utility(char *name, char *argv[]) {
         _exit(EXIT_FAILURE);
     }
     dir = dirname(buffer);
-    sasprintf(&migratepath, "%s/%s", dir, name);
-    argv[0] = migratepath;
-    execvp(migratepath, argv);
+    sasprintf(&binary, "%s/%s", dir, name);
+    argv[0] = binary;
+    execvp(binary, argv);
 #endif
 
     warn("Could not start %s", name);

@@ -45,7 +45,6 @@ sub launch_get_border {
 #####################################################################
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
@@ -64,7 +63,6 @@ print $fh $varconfig;
 $fh->flush;
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 include $filename
@@ -83,7 +81,6 @@ EOT
 $indirectfh->flush;
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 include $indirectfilename
@@ -103,7 +100,6 @@ EOT
 $indirectfh2->flush;
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 include $indirectfilename2
@@ -116,7 +112,6 @@ is(launch_get_border($config), 'none', 'no border');
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 include `echo $filename`
@@ -129,7 +124,6 @@ is(launch_get_border($config), 'none', 'no border');
 ################################################################################
 
 $config = <<'EOT';
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 include i3-`false`.conf
@@ -150,7 +144,6 @@ my $mode = 0055;
 chmod($mode, $permissiondenied);
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 include $permissiondenied
@@ -168,7 +161,6 @@ unlink($dangling);
 symlink("/dangling", $dangling);
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 include $dangling
@@ -190,7 +182,6 @@ EOT
 $varfh->flush;
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 set \$vartest special title
@@ -213,7 +204,6 @@ EOT
 $varfh->flush;
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 include $var
@@ -233,7 +223,6 @@ my ($wsfh, $ws) = tempfile(UNLINK => 1);
 $wsfh->flush;
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym 1 workspace 1: eggs
@@ -276,7 +265,6 @@ EOT
 $loopfh2->flush;
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # loop
@@ -293,7 +281,6 @@ is(launch_get_border($config), 'none', 'no border');
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 include $indirectfilename2
@@ -326,7 +313,6 @@ print $indirectfh3 $indirectconfig;
 $indirectfh3->flush;
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 set \$vartest special title

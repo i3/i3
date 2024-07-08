@@ -17,7 +17,6 @@
 # Verifies that command or config criteria does not match dock clients
 # Bug still in: 4.12-38-ge690e3d
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 for_window [class="dock"] move workspace current
 
 bar {

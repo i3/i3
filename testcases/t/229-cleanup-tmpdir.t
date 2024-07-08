@@ -23,7 +23,6 @@ use File::Temp qw(tempfile tempdir);
 use X11::XCB qw(:all);
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
@@ -113,7 +112,6 @@ $ENV{XDG_RUNTIME_DIR} = tempdir(CLEANUP => 1);
 
 my ($outfh, $outname) = tempfile('/tmp/i3-socket.XXXXXX', UNLINK => 1);
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 ipc-socket $outname
@@ -133,7 +131,6 @@ my ($outfh2, $outname2) = tempfile('/tmp/i3-socket.XXXXXX', UNLINK => 1);
 my $config_path = get_config_path();
 open(my $configfh, '>', $config_path);
 say $configfh <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 ipc-socket $outname2
 EOT

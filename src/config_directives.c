@@ -56,10 +56,6 @@ CFGFUN(include, const char *pattern) {
         memset(&stack, '\0', sizeof(struct stack));
         struct parser_ctx ctx = {
             .use_nagbar = result->ctx->use_nagbar,
-            /* The include mechanism was added in v4, so we can skip the
-             * auto-detection and get rid of the risk of detecting the wrong
-             * version in potentially very short include fragments: */
-            .assume_v4 = true,
             .stack = &stack,
             .variables = result->ctx->variables,
         };

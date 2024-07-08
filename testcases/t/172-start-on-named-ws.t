@@ -23,7 +23,6 @@ use i3test i3_autostart => 0;
 ##############################################################
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
@@ -39,7 +38,6 @@ exit_gracefully($pid);
 ##############################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym Mod1+1 workspace foobar
@@ -57,7 +55,6 @@ exit_gracefully($pid);
 ##############################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym Mod1+1 workspace "foobar"
@@ -75,7 +72,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym Mod1+1 workspace   3
@@ -93,7 +89,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym Mod1+1 workspace 3; exec foo
@@ -111,7 +106,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym Mod1+1 workspace 3
@@ -130,7 +124,6 @@ exit_gracefully($pid);
 ##############################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym Mod1+1 workspace --no-auto-back-and-forth number 3:three

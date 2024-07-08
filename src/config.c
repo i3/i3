@@ -267,7 +267,6 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     memset(&stack, '\0', sizeof(struct stack));
     struct parser_ctx ctx = {
         .use_nagbar = (load_type != C_VALIDATE),
-        .assume_v4 = false,
         .stack = &stack,
     };
     SLIST_INIT(&(ctx.variables));
