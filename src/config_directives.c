@@ -231,6 +231,10 @@ CFGFUN(exec, const char *exectype, const char *no_startup_id, const char *comman
 }
 
 CFGFUN(for_window, const char *command) {
+    if (current_match->error != NULL) {
+        ELOG("match has error: %s\n", current_match->error);
+        return;
+    }
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this for_window statement\n");
         return;
@@ -631,6 +635,10 @@ CFGFUN(color, const char *colorclass, const char *border, const char *background
 }
 
 CFGFUN(assign_output, const char *output) {
+    if (current_match->error != NULL) {
+        ELOG("match has error: %s\n", current_match->error);
+        return;
+    }
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this assignment\n");
         return;
@@ -650,6 +658,10 @@ CFGFUN(assign_output, const char *output) {
 }
 
 CFGFUN(assign, const char *workspace, bool is_number) {
+    if (current_match->error != NULL) {
+        ELOG("match has error: %s\n", current_match->error);
+        return;
+    }
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this assignment\n");
         return;
@@ -674,6 +686,10 @@ CFGFUN(assign, const char *workspace, bool is_number) {
 }
 
 CFGFUN(no_focus) {
+    if (current_match->error != NULL) {
+        ELOG("match has error: %s\n", current_match->error);
+        return;
+    }
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this assignment\n");
         return;
