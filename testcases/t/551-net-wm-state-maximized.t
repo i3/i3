@@ -57,10 +57,10 @@ subtest 'two windows in default layout', sub {
 };
 
 cmd 'fullscreen enable';
-ok(maximized_neither($winA), 'fullscreen windows are not maximized');
+ok(maximized_both($winA), 'fullscreen windows are maximized');
 
 cmd 'fullscreen disable';
-ok(maximized_both($winA), 'disabling fullscreen sets maximized to true again');
+ok(maximized_both($winA), 'disabling fullscreen retains maximized');
 
 cmd 'floating enable';
 ok(maximized_neither($winA), 'floating windows are not maximized');
