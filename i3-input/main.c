@@ -44,21 +44,22 @@ const int EXIT_ERROR = 2;
  * the command will be sent to i3 */
 static char *format;
 
-static int sockfd;
-static xcb_key_symbols_t *symbols;
 static bool modeswitch_active = false;
-static xcb_window_t win;
-static surface_t surface;
-static xcb_char2b_t glyphs_ucs[512];
+static bool verbose = false;
 static char *glyphs_utf8[512];
-static int input_position;
 static i3Font font;
 static i3String *prompt;
-static int prompt_offset = 0;
+static int input_position;
 static int limit;
-xcb_window_t root;
+static int prompt_offset = 0;
+static int sockfd;
+static surface_t surface;
+static xcb_char2b_t glyphs_ucs[512];
+static xcb_key_symbols_t *symbols;
+static xcb_window_t win;
 xcb_connection_t *conn;
 xcb_screen_t *root_screen;
+xcb_window_t root;
 
 /*
  * Having verboselog(), errorlog() and debuglog() is necessary when using libi3.
@@ -68,7 +69,7 @@ void verboselog(char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
-    vfprintf(stdout, fmt, args);
+    vfprintf(stderr, fmt, args);
     va_end(args);
 }
 
@@ -83,6 +84,16 @@ void errorlog(char *fmt, ...) {
 void debuglog(char *fmt, ...) {
 }
 
+#if defined(DLOG)
+#undef DLOG
+#endif
+#define DLOG(fmt, ...)                                                          \
+    do {                                                                        \
+        if (verbose) {                                                          \
+            fprintf(stderr, "[%s:%d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+        }                                                                       \
+    } while (0)
+
 /*
  * Concats the glyphs (either UCS-2 or UTF-8) to a single string, suitable for
  * rendering it (UCS-2) or sending it to i3 (UTF-8).
@@ -92,7 +103,7 @@ static uint8_t *concat_strings(char **glyphs, int max) {
     uint8_t *output = scalloc(max + 1, 4);
     uint8_t *walk = output;
     for (int c = 0; c < max; c++) {
-        printf("at %c\n", glyphs[c][0]);
+        DLOG("at %c\n", glyphs[c][0]);
         /* if the first byte is 0, this has to be UCS2 */
         if (glyphs[c][0] == '\0') {
             memcpy(walk, glyphs[c], 2);
@@ -102,7 +113,7 @@ static uint8_t *concat_strings(char **glyphs, int max) {
             walk += strlen(glyphs[c]);
         }
     }
-    printf("output = %s\n", output);
+    DLOG("output = %s\n", output);
     return output;
 }
 
@@ -112,7 +123,7 @@ static uint8_t *concat_strings(char **glyphs, int max) {
  *
  */
 static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t *event) {
-    printf("expose!\n");
+    DLOG("expose!\n");
 
     color_t border_color = draw_util_hex_to_color("#FF0000");
     color_t fg_color = draw_util_hex_to_color("#FFFFFF");
@@ -148,11 +159,11 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
  *
  */
 static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_event_t *event) {
-    printf("releasing %d, state raw = %d\n", event->detail, event->state);
+    DLOG("releasing %d, state raw = %d\n", event->detail, event->state);
 
     xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, event->state);
     if (sym == XK_Mode_switch) {
-        printf("Mode switch disabled\n");
+        DLOG("Mode switch disabled\n");
         modeswitch_active = false;
     }
 
@@ -161,6 +172,7 @@ static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_rel
 
 static void finish_input(void) {
     char *command = (char *)concat_strings(glyphs_utf8, input_position);
+    puts(command);
 
     /* count the occurrences of %s in the string */
     const size_t len = strlen(format);
@@ -170,7 +182,7 @@ static void finish_input(void) {
             cnt++;
         }
     }
-    printf("occurrences = %zu\n", cnt);
+    DLOG("occurrences = %zu\n", cnt);
 
     /* allocate space for the output */
     const size_t input_len = strlen(command);
@@ -194,11 +206,8 @@ static void finish_input(void) {
         }
     }
 
-    /* prefix the command if a prefix was specified on commandline */
-    printf("command = %s\n", full);
-
+    puts(full);
     int ret = ipc_send_message(sockfd, strlen(full), 0, (uint8_t *)full);
-
     free(full);
 
     exit(ret == 0 ? EXIT_OK : EXIT_ERROR);
@@ -214,7 +223,7 @@ static void finish_input(void) {
  *
  */
 static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
-    printf("Keypress %d, state raw = %d\n", event->detail, event->state);
+    DLOG("Keypress %d, state raw = %d\n", event->detail, event->state);
 
     // TODO: port the input handling code from i3lock once libxkbcommon ≥ 0.5.0
     // is available in distros.
@@ -232,7 +241,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 
     xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, col);
     if (sym == XK_Mode_switch) {
-        printf("Mode switch enabled\n");
+        DLOG("Mode switch enabled\n");
         modeswitch_active = true;
         return 1;
     }
@@ -257,24 +266,24 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     }
 
     /* TODO: handle all of these? */
-    printf("is_keypad_key = %d\n", xcb_is_keypad_key(sym));
-    printf("is_private_keypad_key = %d\n", xcb_is_private_keypad_key(sym));
-    printf("xcb_is_cursor_key = %d\n", xcb_is_cursor_key(sym));
-    printf("xcb_is_pf_key = %d\n", xcb_is_pf_key(sym));
-    printf("xcb_is_function_key = %d\n", xcb_is_function_key(sym));
-    printf("xcb_is_misc_function_key = %d\n", xcb_is_misc_function_key(sym));
-    printf("xcb_is_modifier_key = %d\n", xcb_is_modifier_key(sym));
+    DLOG("is_keypad_key = %d\n", xcb_is_keypad_key(sym));
+    DLOG("is_private_keypad_key = %d\n", xcb_is_private_keypad_key(sym));
+    DLOG("xcb_is_cursor_key = %d\n", xcb_is_cursor_key(sym));
+    DLOG("xcb_is_pf_key = %d\n", xcb_is_pf_key(sym));
+    DLOG("xcb_is_function_key = %d\n", xcb_is_function_key(sym));
+    DLOG("xcb_is_misc_function_key = %d\n", xcb_is_misc_function_key(sym));
+    DLOG("xcb_is_modifier_key = %d\n", xcb_is_modifier_key(sym));
 
     if (xcb_is_modifier_key(sym) || xcb_is_cursor_key(sym)) {
         return 1;
     }
 
-    printf("sym = %c (%d)\n", sym, sym);
+    DLOG("sym = %c (%d)\n", sym, sym);
 
     /* convert the keysym to UCS */
     uint16_t ucs = keysym2ucs(sym);
     if ((int16_t)ucs == -1) {
-        fprintf(stderr, "Keysym could not be converted to UCS, skipping\n");
+        ELOG("Keysym could not be converted to UCS, skipping\n");
         return 1;
     }
 
@@ -282,10 +291,10 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     inp.byte1 = (ucs & 0xff00) >> 2;
     inp.byte2 = (ucs & 0x00ff) >> 0;
 
-    printf("inp.byte1 = %02x, inp.byte2 = %02x\n", inp.byte1, inp.byte2);
+    DLOG("inp.byte1 = %02x, inp.byte2 = %02x\n", inp.byte1, inp.byte2);
     /* convert it to UTF-8 */
     char *out = convert_ucs2_to_utf8(&inp, 1);
-    printf("converted to %s\n", out);
+    DLOG("converted to %s\n", out);
 
     glyphs_ucs[input_position] = inp;
     glyphs_utf8[input_position] = out;
@@ -390,6 +399,7 @@ int main(int argc, char *argv[]) {
     static struct option long_options[] = {
         {"socket", required_argument, 0, 's'},
         {"version", no_argument, 0, 'v'},
+        {"verbose", no_argument, 0, 'V'},
         {"limit", required_argument, 0, 'l'},
         {"prompt", required_argument, 0, 'P'},
         {"prefix", required_argument, 0, 'p'},
@@ -398,7 +408,7 @@ int main(int argc, char *argv[]) {
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}};
 
-    char *options_string = "s:p:P:f:l:F:vh";
+    char *options_string = "s:p:P:f:l:F:vVh";
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (o) {
@@ -409,9 +419,12 @@ int main(int argc, char *argv[]) {
             case 'v':
                 printf("i3-input " I3_VERSION "\n");
                 return EXIT_OK;
+            case 'V':
+                verbose = true;
+                break;
             case 'p':
                 /* This option is deprecated, but will still work in i3 v4.1, 4.2 and 4.3 */
-                fprintf(stderr, "i3-input: WARNING: the -p option is DEPRECATED in favor of the -F (format) option\n");
+                ELOG("i3-input: WARNING: the -p option is DEPRECATED in favor of the -F (format) option\n");
                 FREE(format);
                 sasprintf(&format, "%s%%s", optarg);
                 break;
@@ -443,7 +456,7 @@ int main(int argc, char *argv[]) {
         format = "%s";
     }
 
-    printf("using format \"%s\"\n", format);
+    DLOG("using format \"%s\"\n", format);
 
     int screen;
     conn = xcb_connect(NULL, &screen);
@@ -508,7 +521,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
-        fprintf(stderr, "Could not grab keyboard, status = %d\n", reply->status);
+        ELOG("Could not grab keyboard, status = %d\n", reply->status);
         exit(EXIT_ERROR);
     }
 
@@ -517,7 +530,7 @@ int main(int argc, char *argv[]) {
     xcb_generic_event_t *event;
     while ((event = xcb_wait_for_event(conn)) != NULL) {
         if (event->response_type == 0) {
-            fprintf(stderr, "X11 Error received! sequence %x\n", event->sequence);
+            ELOG("X11 Error received! sequence %x\n", event->sequence);
             continue;
         }
 
