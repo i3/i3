@@ -1262,7 +1262,9 @@ void cmd_exec(I3_CMD, const char *nosn, const char *command) {
 
     TAILQ_FOREACH (current, &OWINDOWS, owindows) {
         DLOG("should execute %s, no_startup_id = %d\n", command, no_startup_id);
-        start_application(command, no_startup_id);
+        start_application(
+            command, no_startup_id,
+            current->con->window == NULL ? XCB_NONE : current->con->window->id);
     }
 
     ysuccess(true);

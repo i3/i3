@@ -129,8 +129,11 @@ void startup_sequence_delete(struct Startup_Sequence *sequence) {
  * The no_startup_id flag determines whether a startup notification context
  * (and ID) should be created, which is the default and encouraged behavior.
  *
+ * The window_id, if given, will be provided to the child process via the
+ * I3_WINDOW_ID environment variable.
+ *
  */
-void start_application(const char *command, bool no_startup_id) {
+void start_application(const char *command, bool no_startup_id, xcb_window_t window_id) {
     SnLauncherContext *context = NULL;
 
     if (!no_startup_id) {
@@ -193,6 +196,13 @@ void start_application(const char *command, bool no_startup_id) {
             sn_launcher_context_setup_child_process(context);
         }
         setenv("I3SOCK", current_socketpath, 1);
+
+        if (window_id != XCB_NONE) {
+            char *window_id_str;
+            sasprintf(&window_id_str, "%d", window_id);
+            setenv("I3_WINDOW_ID", window_id_str, 1);
+            free(window_id_str);
+        }
 
         execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
         err(EXIT_FAILURE, "execl return"); /* only reached on error */

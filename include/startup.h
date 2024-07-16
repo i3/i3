@@ -30,7 +30,7 @@
  * (and ID) should be created, which is the default and encouraged behavior.
  *
  */
-void start_application(const char *command, bool no_startup_id);
+void start_application(const char *command, bool no_startup_id, xcb_window_t window_id);
 
 /**
  * Deletes a startup sequence, ignoring whether its timeout has elapsed.
