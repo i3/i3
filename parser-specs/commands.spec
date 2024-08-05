@@ -1,6 +1,6 @@
 # vim:ts=2:sw=2:expandtab
 #
-# i3 - an improved dynamic tiling window manager
+# i3 - an improved tiling window manager
 # © 2009 Michael Stapelberg and contributors (see also: LICENSE)
 #
 # parser-specs/commands.spec: Specification file for generate-command-parser.pl

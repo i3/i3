@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * For more information on RandR, please see the X.org RandR specification at
