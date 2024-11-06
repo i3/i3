@@ -53,7 +53,7 @@ jobs:
       run: |
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} ./travis/run-tests.sh
     - name: Archive test logs
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: test-logs
         path: build/testsuite-*
