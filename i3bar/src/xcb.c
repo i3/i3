@@ -1517,8 +1517,9 @@ static void init_tray(void) {
     /* request the tray manager atom for the X11 display we are running on */
     /* The following line cannot use strlen as that makes compilation fail with
      * some versions of clang (-Wgnu-folding-constant): */
-    char atomname[18 /* strlen("_NET_SYSTEM_TRAY_S") */ + 11];
-    snprintf(atomname, strlen("_NET_SYSTEM_TRAY_S") + 11, "_NET_SYSTEM_TRAY_S%d", screen);
+    const size_t systray_len = strlen("_NET_SYSTEM_TRAY_S") + 11;
+    char atomname[systray_len];
+    snprintf(atomname, systray_len, "_NET_SYSTEM_TRAY_S%d", screen);
     xcb_intern_atom_cookie_t tray_cookie;
     if (tray_reply == NULL) {
         tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
