@@ -8,10 +8,26 @@
 # Distributions/packagers can enhance this script with a
 # distribution-specific mechanism to find the preferred pager.
 
-# The less -E and -F options exit immediately for short files, strip if present.
-case "$LESS" in
-  *[EF]*) LESS=`echo "$LESS" | tr -d EF`
-esac
+less_new=""
+for arg in $LESS; do
+    case "$arg" in
+        --*)
+            less_new="$less_new$arg "
+            ;;
+        -*)
+            # The less -E and -F options exit immediately for short files, strip
+            # if present.
+            arg_modified="$(printf '%s' "$arg" | tr -d EF)"
+            if [ "$arg_modified" != "-" ]; then
+                less_new="$less_new$arg_modified "
+            fi
+            ;;
+        *)
+            less_new="$less_new$arg "
+            ;;
+    esac
+done
+LESS="${less_new% }"
 
 # Hopefully one of these is installed (no flamewars about preference please!):
 # We don't use 'more' because it will exit if the file is too short.
