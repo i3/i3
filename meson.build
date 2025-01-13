@@ -326,6 +326,7 @@ glib_dep = dependency('glib-2.0', method: 'pkg-config')
 gobject_dep = dependency('gobject-2.0', method: 'pkg-config')
 
 ev_dep = cc.find_library('ev')
+yyjson = cc.find_library('yyjson')
 
 inc = include_directories('include')
 
@@ -486,6 +487,7 @@ common_deps = [
   gobject_dep,
   ev_dep,
   config_h,
+  yyjson,
 ]
 
 executable(

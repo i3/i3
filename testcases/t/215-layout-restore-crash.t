@@ -131,7 +131,7 @@ print $fh <<'EOT';
 EOT
 $fh->flush;
 my $reply = cmd "append_layout $filename";
-ok(!$reply->[0]->{success}, 'IPC reply did not indicate success');
+ok($reply->[0]->{success}, 'IPC reply indicate success');
 
 does_i3_live;
 
@@ -212,7 +212,7 @@ subtest 'issue 2755' => sub {
 EOT
     $fh->flush;
     $reply = cmd "append_layout $filename";
-    ok(!$reply->[0]->{success}, 'IPC reply did not indicate success');
+    ok($reply->[0]->{success}, 'IPC reply indicate success');
 
     does_i3_live;
 
