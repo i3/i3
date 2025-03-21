@@ -1114,7 +1114,7 @@ void x_push_node(Con *con) {
         fake_notify = true;
     }
 
-    /* dito, but for child windows */
+    /* ditto, but for child windows */
     if (con->window != NULL &&
         !rect_equals(state->window_rect, con->window_rect)) {
         DLOG("setting window rect (%d, %d, %d, %d)\n",

@@ -379,7 +379,7 @@ sub take_job {
             }
 
             # count lines before stripping eof-marker otherwise we might
-            # end up with for (1 .. 0) { } which would effectivly skip the loop
+            # end up with for (1 .. 0) { } which would effectively skip the loop
             my $lines = $buf =~ tr/\n//;
             my $t_eof = $buf =~ s/^$TestWorker::EOF$//m;
 

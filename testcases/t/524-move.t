@@ -69,7 +69,7 @@ cmd '[class="first"] move down';
 is_num_children('right-top', 0, 'no children on right-top');
 is_num_children('right-bottom', 2, 'two children on right-bottom');
 
-# Move the second windo onto the lower left workspace.
+# Move the second window onto the lower left workspace.
 cmd '[class="second"] move left, move left';
 is_num_children('right-bottom', 1, 'one child on right-bottom');
 is_num_children('left-bottom', 1, 'one on left-bottom');

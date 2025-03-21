@@ -24,7 +24,7 @@ will print the path to the standard output (plus a newline) or by reading the
 +I3SOCK+ environmental variable.
 
 All i3 utilities, like +i3-msg+ and +i3-input+ will determine the path of the
-IPC socket frome the +I3SOCK+ environmental variable if it is set or the
+IPC socket from the +I3SOCK+ environmental variable if it is set or the
 +I3_SOCKET_PATH+ X11 property, stored on the X11 root window.
 
 [WARNING]

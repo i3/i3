@@ -1802,7 +1802,7 @@ void cmd_focus_output(I3_CMD, const char *name) {
         return;
     }
 
-    /* Command critiera need to work for focus output left|right|up|down.
+    /* Command criteria need to work for focus output left|right|up|down.
      * We need to avoid using internal workspaces with get_output_for_con, so
      * we go through all matched windows until we find a non-internal one. If
      * there is no match, fall back to the focused one. */

@@ -1427,7 +1427,7 @@ The default is +modifier+.
 Since i3 4.24, you can configure a modifier key which, when pressed, will swap
 instead of moving containers when dropping directly onto another container.
 Defaults to +Shift+. Note that you have to be pressing both the floating
-modifer and the swap modifier before the drag is initiated.
+modifier and the swap modifier before the drag is initiated.
 
 *Syntax*:
 --------------------------------

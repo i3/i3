@@ -1221,7 +1221,7 @@ int main(int argc, char *argv[]) {
      *
      * Note that there is no race condition between raising the signal below and
      * entering the event loop later: the signal is just to notify libev that
-     * zombies might already be there. Actuall reaping will take place in the
+     * zombies might already be there. Actual reaping will take place in the
      * event loop anyway. */
     (void)raise(SIGCHLD);
 
