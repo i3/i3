@@ -1130,10 +1130,10 @@ void x_push_node(Con *con) {
     if (con != NULL && con->window != NULL) {
         Rect bsr = con_border_style_rect(con);
         Rect r = {
-            bsr.x,                  /* left */
-            0 - bsr.width - bsr.x,  /* right */
-            bsr.y,                  /* top */
-            0 - bsr.height - bsr.y  /* bottom */
+            bsr.x,                 /* left */
+            0 - bsr.width - bsr.x, /* right */
+            bsr.y,                 /* top */
+            0 - bsr.height - bsr.y /* bottom */
         };
         xcb_change_property(
             conn,
