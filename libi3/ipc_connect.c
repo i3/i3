@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
@@ -37,7 +37,7 @@ int ipc_connect(const char *socket_path) {
     }
 
     if (path == NULL) {
-        path = sstrdup("/tmp/i3-ipc.sock");
+        err(EXIT_FAILURE, "Could not determine i3 socket path");
     }
 
     int sockfd = ipc_connect_impl(path);

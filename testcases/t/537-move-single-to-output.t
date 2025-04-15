@@ -19,7 +19,6 @@
 # Ticket: #2466
 # Bug still in: 4.14-63-g75d11820
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 640x480+0+0,640x480+640+0

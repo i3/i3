@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * render.c: Renders (determines position/sizes) the layout tree, updating the
@@ -250,6 +250,26 @@ static int *precalculate_sizes(Con *con, render_params *p) {
     return sizes;
 }
 
+static bool fullscreen_blocks_floating_render(Con *fullscreen, Con *floating) {
+    if (fullscreen == NULL) {
+        return false;
+    }
+    /* Don’t render floating windows when there is a fullscreen window on that
+     * workspace. Necessary to make floating fullscreen work correctly (ticket
+     * #564). Exception to the above rule: popup_during_fullscreen smart|all. */
+    switch (config.popup_during_fullscreen) {
+        case PDF_LEAVE_FULLSCREEN:
+        case PDF_IGNORE:
+            return true;
+        case PDF_SMART:
+            return fullscreen->window == NULL ||
+                   !con_find_transient_for_window(con_descend_focused(floating), fullscreen->window->id);
+        case PDF_ALL:
+            return con_has_parent(fullscreen, floating);
+    }
+    return false; /* not reachable */
+}
+
 static void render_root(Con *con, Con *fullscreen) {
     Con *output;
     if (!fullscreen) {
@@ -277,24 +297,8 @@ static void render_root(Con *con, Con *fullscreen) {
         Con *fullscreen = con_get_fullscreen_covering_ws(workspace);
         Con *child;
         TAILQ_FOREACH (child, &(workspace->floating_head), floating_windows) {
-            if (fullscreen != NULL) {
-                /* Don’t render floating windows when there is a fullscreen
-                 * window on that workspace. Necessary to make floating
-                 * fullscreen work correctly (ticket #564). Exception to the
-                 * above rule: smart popup_during_fullscreen handling (popups
-                 * belonging to the fullscreen app will be rendered). */
-                if (config.popup_during_fullscreen != PDF_SMART || fullscreen->window == NULL) {
-                    continue;
-                }
-
-                Con *floating_child = con_descend_focused(child);
-                if (con_find_transient_for_window(floating_child, fullscreen->window->id)) {
-                    DLOG("Rendering floating child even though in fullscreen mode: "
-                         "floating->transient_for (0x%08x) --> fullscreen->id (0x%08x)\n",
-                         floating_child->window->transient_for, fullscreen->window->id);
-                } else {
-                    continue;
-                }
+            if (fullscreen_blocks_floating_render(fullscreen, child)) {
+                continue;
             }
             DLOG("floating child at (%d,%d) with %d x %d\n",
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);

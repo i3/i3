@@ -20,8 +20,6 @@
 # Ticket: #5031
 # Bug still in: 4.20-105-g4db383e4
 use i3test i3_config => <<'EOT';
-# i3 config file (v4)
-
 bar {
   # no font directive here, no i3-wide font configured (yet)
 }

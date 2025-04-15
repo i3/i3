@@ -27,7 +27,7 @@ https://mesonbuild.com/Quick-guide.html#compiling-a-meson-project
 In case you’re unfamiliar:
 
     $ mkdir -p build && cd build
-    $ meson ..
+    $ meson setup
     $ ninja
 
 Please make sure that i3-migrate-config-to-v4 and i3-config-wizard are

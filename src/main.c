@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * main.c: Initialization, main loop
@@ -239,7 +239,7 @@ static void handle_term_signal(struct ev_loop *loop, ev_signal *signal, int reve
  */
 static void setup_term_handlers(void) {
     static struct ev_signal signal_watchers[6];
-    size_t num_watchers = sizeof(signal_watchers) / sizeof(signal_watchers[0]);
+    const size_t num_watchers = sizeof(signal_watchers) / sizeof(signal_watchers[0]);
 
     /* We have to rely on libev functionality here and should not use
      * sigaction handlers because we need to invoke the exit handlers
@@ -252,7 +252,7 @@ static void setup_term_handlers(void) {
     ev_signal_init(&signal_watchers[2], handle_term_signal, SIGALRM);
     ev_signal_init(&signal_watchers[3], handle_term_signal, SIGTERM);
     ev_signal_init(&signal_watchers[4], handle_term_signal, SIGUSR1);
-    ev_signal_init(&signal_watchers[5], handle_term_signal, SIGUSR1);
+    ev_signal_init(&signal_watchers[5], handle_term_signal, SIGUSR2);
     for (size_t i = 0; i < num_watchers; i++) {
         ev_signal_start(main_loop, &signal_watchers[i]);
         /* The signal handlers should not block ev_run from returning
@@ -1147,12 +1147,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-#if defined(__OpenBSD__)
-    if (pledge("stdio rpath wpath cpath proc exec unix", NULL) == -1) {
-        err(EXIT_FAILURE, "pledge");
-    }
-#endif
-
     if (!disable_signalhandler) {
         setup_signal_handler();
     } else {
@@ -1219,6 +1213,17 @@ int main(int argc, char *argv[]) {
     /* Make sure to destroy the event loop to invoke the cleanup callbacks
      * when calling exit() */
     atexit(i3_exit);
+
+    /* There might be children who died before we initialized the event loop,
+     * e.g., when restarting i3 (see #5756).
+     * To not carry zombie children around, raise the signal to invite libev to
+     * reap them.
+     *
+     * Note that there is no race condition between raising the signal below and
+     * entering the event loop later: the signal is just to notify libev that
+     * zombies might already be there. Actual reaping will take place in the
+     * event loop anyway. */
+    (void)raise(SIGCHLD);
 
     sd_notify(1, "READY=1");
     ev_loop(main_loop, 0);

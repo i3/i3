@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * include/configuration.h: Contains all structs/variables for the configurable
@@ -227,6 +227,9 @@ struct Config {
     /** The modifier which needs to be pressed in combination with your mouse
      * buttons to do things with floating windows (move, resize) */
     uint32_t floating_modifier;
+    /** The modifier which needs to be pressed in combination with the floating
+     * modifier and your mouse buttons to swap containers during tiling drag */
+    uint32_t swap_modifier;
 
     /** Maximum and minimum dimensions of a floating window */
     int32_t floating_maximum_width;
@@ -262,6 +265,9 @@ struct Config {
 
         /* just ignore the popup, that is, don’t map it */
         PDF_IGNORE = 2,
+
+        /* display all floating windows */
+        PDF_ALL = 3,
     } popup_during_fullscreen;
 
     /* The number of currently parsed barconfigs */

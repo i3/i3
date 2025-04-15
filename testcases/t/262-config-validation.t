@@ -21,7 +21,6 @@ use POSIX ":sys_wait_h";
 use Time::HiRes qw(sleep);
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 invalid

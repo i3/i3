@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * config_directives.c: all config storing functions (see config_parser.c)
@@ -56,10 +56,6 @@ CFGFUN(include, const char *pattern) {
         memset(&stack, '\0', sizeof(struct stack));
         struct parser_ctx ctx = {
             .use_nagbar = result->ctx->use_nagbar,
-            /* The include mechanism was added in v4, so we can skip the
-             * auto-detection and get rid of the risk of detecting the wrong
-             * version in potentially very short include fragments: */
-            .assume_v4 = true,
             .stack = &stack,
             .variables = result->ctx->variables,
         };
@@ -231,6 +227,10 @@ CFGFUN(exec, const char *exectype, const char *no_startup_id, const char *comman
 }
 
 CFGFUN(for_window, const char *command) {
+    if (current_match->error != NULL) {
+        ELOG("match has error: %s\n", current_match->error);
+        return;
+    }
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this for_window statement\n");
         return;
@@ -359,6 +359,10 @@ CFGFUN(floating_maximum_size, const long width, const long height) {
 
 CFGFUN(floating_modifier, const char *modifiers) {
     config.floating_modifier = event_state_from_str(modifiers);
+}
+
+CFGFUN(tiling_drag_swap_modifier, const char *modifiers) {
+    config.swap_modifier = event_state_from_str(modifiers);
 }
 
 CFGFUN(default_orientation, const char *orientation) {
@@ -579,6 +583,8 @@ CFGFUN(popup_during_fullscreen, const char *value) {
         config.popup_during_fullscreen = PDF_IGNORE;
     } else if (strcmp(value, "leave_fullscreen") == 0) {
         config.popup_during_fullscreen = PDF_LEAVE_FULLSCREEN;
+    } else if (strcmp(value, "all") == 0) {
+        config.popup_during_fullscreen = PDF_ALL;
     } else {
         config.popup_during_fullscreen = PDF_SMART;
     }
@@ -625,6 +631,10 @@ CFGFUN(color, const char *colorclass, const char *border, const char *background
 }
 
 CFGFUN(assign_output, const char *output) {
+    if (current_match->error != NULL) {
+        ELOG("match has error: %s\n", current_match->error);
+        return;
+    }
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this assignment\n");
         return;
@@ -644,6 +654,10 @@ CFGFUN(assign_output, const char *output) {
 }
 
 CFGFUN(assign, const char *workspace, bool is_number) {
+    if (current_match->error != NULL) {
+        ELOG("match has error: %s\n", current_match->error);
+        return;
+    }
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this assignment\n");
         return;
@@ -668,6 +682,10 @@ CFGFUN(assign, const char *workspace, bool is_number) {
 }
 
 CFGFUN(no_focus) {
+    if (current_match->error != NULL) {
+        ELOG("match has error: %s\n", current_match->error);
+        return;
+    }
     if (match_is_empty(current_match)) {
         ELOG("Match is empty, ignoring this assignment\n");
         return;

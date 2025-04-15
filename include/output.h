@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * output.c: Output (monitor) related functions.
@@ -31,8 +31,10 @@ Output *get_output_from_string(Output *current_output, const char *output_str);
 char *output_primary_name(Output *output);
 
 /**
- * Returns the output for the given con.
- *
+ * Retrieves the output for a given container. Never returns NULL.
+ * There is an assertion that _will_ fail if the container is inside an
+ * internal workspace. Use con_is_internal() if needed before calling this
+ * function.
  */
 Output *get_output_for_con(Con *con);
 

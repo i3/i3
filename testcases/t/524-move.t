@@ -20,7 +20,6 @@
 # Bug still in: 4.10.1-40-g0ad097e
 use List::Util qw(first);
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0,1024x768+1024+768,1024x768+0+768
@@ -70,7 +69,7 @@ cmd '[class="first"] move down';
 is_num_children('right-top', 0, 'no children on right-top');
 is_num_children('right-bottom', 2, 'two children on right-bottom');
 
-# Move the second windo onto the lower left workspace.
+# Move the second window onto the lower left workspace.
 cmd '[class="second"] move left, move left';
 is_num_children('right-bottom', 1, 'one child on right-bottom');
 is_num_children('left-bottom', 1, 'one on left-bottom');

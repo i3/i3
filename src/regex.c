@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * regex.c: Interface to libPCRE (perl compatible regular expressions).
@@ -32,8 +32,8 @@ struct regex *regex_new(const char *pattern) {
     if (!(re->regex = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED, options, &errorcode, &offset, NULL))) {
         PCRE2_UCHAR buffer[256];
         pcre2_get_error_message(errorcode, buffer, sizeof(buffer));
-        ELOG("PCRE regular expression compilation failed at %lu: %s\n",
-             offset, buffer);
+        ELOG("PCRE regular expression compilation failed at %zu: %s\n",
+             (size_t)offset, buffer);
         regex_free(re);
         return NULL;
     }

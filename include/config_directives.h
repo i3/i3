@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * config_directives.h: all config storing functions (see config_parser.c)
@@ -69,6 +69,7 @@ CFGFUN(no_focus);
 CFGFUN(ipc_socket, const char *path);
 CFGFUN(ipc_kill_timeout, const long timeout_ms);
 CFGFUN(tiling_drag, const char *value);
+CFGFUN(tiling_drag_swap_modifier, const char *modifiers);
 CFGFUN(restart_state, const char *path);
 CFGFUN(popup_during_fullscreen, const char *value);
 CFGFUN(color, const char *colorclass, const char *border, const char *background, const char *text, const char *indicator, const char *child_border);

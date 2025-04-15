@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * output.c: Output (monitor) related functions.
@@ -54,6 +54,12 @@ char *output_primary_name(Output *output) {
     return SLIST_FIRST(&output->names_head)->name;
 }
 
+/*
+ * Retrieves the output for a given container. Never returns NULL.
+ * There is an assertion that _will_ fail if the container is inside an
+ * internal workspace. Use con_is_internal() if needed before calling this
+ * function.
+ */
 Output *get_output_for_con(Con *con) {
     Con *output_con = con_get_output(con);
     Output *output = get_output_by_name(output_con->name, true);

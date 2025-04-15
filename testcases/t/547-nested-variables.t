@@ -24,7 +24,6 @@ use i3test i3_autostart => 0;
 #######################################################################
 
 my $config = <<'EOT';
-# i3 config file (v4)
 set $long_variable_name_with_short_value 1
 set $$long_variable_name_with_short_value 2
 set $$$long_variable_name_with_short_value 3
@@ -50,7 +49,6 @@ exit_gracefully($pid);
 #######################################################################
 
 $config = <<'EOT';
-# i3 config file (v4)
 set $x 1
 set $$x 2
 EOT

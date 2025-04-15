@@ -897,7 +897,6 @@ tests which test specific config file directives.
   use i3test i3_autostart => 0;
 
   my $config = <<EOT;
-  # i3 config file (v4)
   for_window [class="borderless"] border none
   for_window [title="special borderless title"] border none
   EOT

@@ -319,7 +319,7 @@
             <dc:title>steckdenis</dc:title>
           </cc:Agent>
         </dc:creator>
-        <dc:description>Logo for I3, an improved dynamic tiling window manager: http://i3.zekjur.net/</dc:description>
+        <dc:description>Logo for i3 - an improved tiling window manager: http://i3.zekjur.net/</dc:description>
         <cc:license
            rdf:resource="http://creativecommons.org/licenses/by-sa/3.0/" />
       </cc:Work>

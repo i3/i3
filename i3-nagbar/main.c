@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-nagbar is a utility which displays a nag message, for example in the case
@@ -512,12 +512,6 @@ int main(int argc, char *argv[]) {
     init_dpi();
     font = load_font(pattern, true);
     set_font(&font);
-
-#if defined(__OpenBSD__)
-    if (pledge("stdio rpath wpath cpath getpw proc exec", NULL) == -1) {
-        err(EXIT_FAILURE, "pledge");
-    }
-#endif
 
     /* Default values if we cannot determine the preferred window position. */
     xcb_rectangle_t win_pos = (xcb_rectangle_t){50, 50, 500, font.height + 2 * MSG_PADDING + BAR_BORDER};

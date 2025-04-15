@@ -19,7 +19,6 @@
 # Ticket: #1484
 # Bug still in: 4.9.1-124-g856e1f9
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 workspace_layout tabbed
 EOT

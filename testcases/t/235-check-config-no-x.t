@@ -38,7 +38,6 @@ sub check_config {
 ################################################################################
 
 $cfg = <<EOT;
-# i3 config file (v4)
 i_am_an_unknown_config option
 EOT
 
@@ -51,7 +50,6 @@ like($out, qr/ERROR: *CONFIG: *[Ee]xpected.*tokens/, 'bogus config file');
 ################################################################################
 
 $cfg = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
@@ -64,7 +62,6 @@ is($out, "", 'valid config file');
 ################################################################################
 
 $cfg = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 bindsym Shift+a nop 1
 bindsym Shift+a nop 2
@@ -79,7 +76,6 @@ like($out, qr/ERROR: *Duplicate keybinding in config file/, 'duplicate keybindin
 ################################################################################
 
 $cfg = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 bindsym Shift+a nop 1
 EOT

@@ -21,7 +21,6 @@ use i3test i3_autostart => 0;
 use i3test::Util qw(slurp);
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 gaps inner 10
@@ -142,7 +141,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # This should result in a gap of 16px, not 26px
@@ -172,7 +170,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 gaps inner 10
@@ -208,7 +205,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 gaps inner 10
@@ -239,7 +235,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 gaps inner 10
@@ -258,7 +253,6 @@ is_gaps();
 my $version = i3()->get_version()->recv;
 open(my $configfh, '>', $version->{'loaded_config_file_name'});
 say $configfh <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Increase gaps for (existing) workspace 2 to 16px
@@ -283,7 +277,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 gaps inner 33

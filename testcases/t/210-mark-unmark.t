@@ -140,7 +140,7 @@ cmd 'focus left';
 cmd 'mark --toggle important';
 
 is_deeply(get_mark_for_window_on_workspace($tmp, $first), [ 'important' ], 'left container has the mark now');
-is_deeply(get_mark_for_window_on_workspace($tmp, $second), [], 'second containr no longer has the mark');
+is_deeply(get_mark_for_window_on_workspace($tmp, $second), [], 'second container no longer has the mark');
 
 ##############################################################
 # 9: try to mark two cons with the same mark and check that
@@ -155,7 +155,7 @@ my $result = cmd "[instance=iamnotunique] mark important";
 is($result->[0]->{success}, 0, 'command was unsuccessful');
 is($result->[0]->{error}, 'A mark must not be put onto more than one window', 'correct error is returned');
 is_deeply(get_mark_for_window_on_workspace($tmp, $first), [], 'first container is not marked');
-is_deeply(get_mark_for_window_on_workspace($tmp, $second), [], 'second containr is not marked');
+is_deeply(get_mark_for_window_on_workspace($tmp, $second), [], 'second container is not marked');
 
 ##############################################################
 

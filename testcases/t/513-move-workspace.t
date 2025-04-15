@@ -16,7 +16,6 @@
 #
 # Tests whether moving workspaces between outputs works correctly.
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0

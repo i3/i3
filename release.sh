@@ -67,7 +67,7 @@ git commit -a -m "release i3 ${RELEASE_VERSION}"
 git tag "${RELEASE_VERSION}" -m "release i3 ${RELEASE_VERSION}" --sign --local-user=0x4AC8EE1D
 
 mkdir build
-(cd build && meson .. && ninja dist)
+(cd build && meson setup && ninja dist)
 cp build/meson-dist/i3-${RELEASE_VERSION}.tar.xz .
 
 echo "Differences in the release tarball file lists:"

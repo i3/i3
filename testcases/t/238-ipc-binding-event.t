@@ -25,7 +25,6 @@ my @mods = ('Shift', 'Ctrl');
 my $binding_symbol = join("+", @mods) . "+$keysym";
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym $binding_symbol $command
@@ -88,7 +87,7 @@ SKIP: {
 	'binding');
     is(scalar @events, 3, 'Received 3 events');
 
-    is($events[0]->{mode}, 'default', 'Event for binding to enter new mode is atributed to default mode');
+    is($events[0]->{mode}, 'default', 'Event for binding to enter new mode is attributed to default mode');
     is($events[1]->{mode}, 'some-mode', 'Event for binding while in mode is attributed to the non-default mode');
     is($events[2]->{mode}, 'some-mode', 'Event for binding exiting mode is attributed to the non-default mode');
 

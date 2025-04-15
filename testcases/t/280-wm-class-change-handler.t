@@ -20,7 +20,6 @@
 # Ticket: #1052
 # Bug still in: 4.8-73-g6bf7f8e
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 for_window [class="Special"] mark special_class_mark
 EOT

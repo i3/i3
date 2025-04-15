@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * tiling_drag.c: Reposition tiled windows by dragging.
@@ -338,7 +338,15 @@ void tiling_drag(Con *con, xcb_button_press_event_t *event, bool use_threshold) 
         case DT_CENTER:
             /* Also handles workspaces.*/
             DLOG("drop to center of %p\n", target);
-            con_move_to_target(con, target);
+            const uint32_t mod = (config.swap_modifier & 0xFFFF);
+            const bool swap_pressed = (mod != 0 && (event->state & mod) == mod);
+            if (swap_pressed) {
+                if (!con_swap(con, target)) {
+                    return;
+                }
+            } else {
+                con_move_to_target(con, target);
+            }
             break;
         case DT_SIBLING:
             DLOG("drop %s %p\n", position_to_string(position), target);

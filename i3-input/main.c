@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-input/main.c: Utility which lets the user input commands and sends them
@@ -170,7 +170,7 @@ static void finish_input(void) {
             cnt++;
         }
     }
-    printf("occurrences = %ld\n", cnt);
+    printf("occurrences = %zu\n", cnt);
 
     /* allocate space for the output */
     const size_t input_len = strlen(command);
@@ -407,7 +407,7 @@ int main(int argc, char *argv[]) {
                 socket_path = sstrdup(optarg);
                 break;
             case 'v':
-                printf("i3-input " I3_VERSION);
+                printf("i3-input " I3_VERSION "\n");
                 return EXIT_OK;
             case 'p':
                 /* This option is deprecated, but will still work in i3 v4.1, 4.2 and 4.3 */

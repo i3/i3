@@ -45,7 +45,6 @@ sub launch_get_border {
 #####################################################################
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
@@ -56,7 +55,6 @@ is(launch_get_border($config), 'normal', 'normal border');
 #####################################################################
 
 $config = <<'EOT';
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 set $vartest special title
@@ -70,7 +68,6 @@ is(launch_get_border($config), 'none', 'no border');
 #####################################################################
 
 $config = <<'EOT';
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 set               $vartest             special title
@@ -84,7 +81,6 @@ is(launch_get_border($config), 'none', 'no border');
 #####################################################################
 
 $config = <<'EOT';
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 set $var normal title

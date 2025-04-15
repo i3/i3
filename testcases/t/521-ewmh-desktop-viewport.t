@@ -19,7 +19,6 @@
 # pairs for the upper left corner of the respective outputs of the workspaces
 # Ticket: #1241
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 workspace 0 output fake-0

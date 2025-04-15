@@ -18,7 +18,6 @@
 # errors when repeatedly hiding/showing, no matter what display resolution.
 #
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 683x768+0+0,1024x768+683+0

@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * i3 - an improved dynamic tiling window manager
+ * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * manage.c: Initially managing new windows (or existing ones on restart).
@@ -466,6 +466,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_DIALOG) ||
         xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_UTILITY) ||
         xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_TOOLBAR) ||
+        xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_NOTIFICATION) ||
         xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_SPLASH) ||
         xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_MODAL) ||
         (cwindow->max_width > 0 && cwindow->max_height > 0 &&
@@ -501,7 +502,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         if (config.popup_during_fullscreen == PDF_LEAVE_FULLSCREEN &&
             fs != NULL) {
             DLOG("There is a fullscreen window, leaving fullscreen mode\n");
-            con_toggle_fullscreen(fs, CF_OUTPUT);
+            con_disable_fullscreen(fs);
         } else if (config.popup_during_fullscreen == PDF_SMART &&
                    fs != NULL &&
                    fs->window != NULL) {
@@ -521,6 +522,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * here because it’s used for dock clients. */
     if (nc->geometry.width == 0) {
         nc->geometry = (Rect){geom->x, geom->y, geom->width, geom->height};
+    }
+
+    if (config.popup_during_fullscreen == PDF_ALL && want_floating && fs != NULL) {
+        set_focus = true;
     }
 
     if (want_floating) {
@@ -645,15 +650,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         xcb_discard_reply(conn, wm_user_time_cookie.sequence);
     }
 
-    if (set_focus) {
-        /* Even if the client doesn't want focus, we still need to focus the
-         * container to not break focus workflows. Our handling towards X will
-         * take care of not setting the input focus. However, one exception to
-         * this are clients using the globally active input model which we
-         * don't want to focus at all. */
-        if (nc->window->doesnt_accept_focus && !nc->window->needs_take_focus) {
-            set_focus = false;
-        }
+    /* Even if the client doesn't want focus, we still need to focus the
+     * container to not break focus workflows. Our handling towards X will take
+     * care of not setting the input focus. However, one exception to this are
+     * clients using the globally active input model which we don't want to
+     * focus at all. */
+    if (nc->window->doesnt_accept_focus && !nc->window->needs_take_focus) {
+        set_focus = false;
     }
 
     /* Defer setting focus after the 'new' event has been sent to ensure the

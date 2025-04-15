@@ -18,7 +18,6 @@
 # used with command criteria.
 # Bug still in: 4.10.4-349-gee5db87
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 800x600+0+0,800x600+800+0,800x600+0+600,800x600+800+600

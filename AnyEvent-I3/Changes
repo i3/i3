@@ -1,5 +1,14 @@
 Revision history for AnyEvent-I3
 
+0.19    2024-04-09
+
+   * use Carp for errors (includes stacktraces)
+   * introduce (preferred) RUN_COMMAND spelling
+   * migrate tooling to ExtUtils::MakeMaker
+   * implement the tick event
+   * introduce the sync IPC command
+   * introduce the GET_BINDING_STATE IPC command
+
 0.18    2017-08-19
 
    * support the GET_CONFIG command

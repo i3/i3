@@ -1,0 +1,62 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.24   │
+ └──────────────────────────────┘
+
+This is i3 v4.24. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+Aside from a number of bug fixes and detail improvements, the tiling drag
+feature has been extended to allow swapping containers with the mouse.
+See the swap_modifier in the userguide: 
+https://i3wm.org/docs/userguide.html
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.24        │
+ └────────────────────────────┘
+
+  • docs/userguide: add note to default_border about title bar in stacked/tabbed
+  • docs/userguide: fix focus output next example
+  • docs/hacking-howto: update build instructions
+  • docs/testsuite: update instructions
+  • docs/ipc: update section on IPC socket location
+  • docs/ipc: describe workspace events in more detail
+  • i3-sensible-terminal: add rio
+  • i3bar: use short-form text on a per-block basis
+  • reap zombie children when starting
+  • do not grab mouse pointer when executing bindings
+  • tiling drag: swap containers with the mouse
+  • disable automatic v3-to-v4 migration script
+  • pass _NET_WM_STATE_MAXIMIZED_{HORZ, VERT} (fixes tab bar in Google Chrome)
+  • avoid creating redundant containers when switching between layouts
+  • deprecate smart_borders in favour of hide_edge_borders smart/smart_no_gaps
+  • float windows of type _NET_WM_WINDOW_TYPE_NOTIFICATION by default
+  • add “popup_during_fullscreen all”
+  • mark fullscreen windows as maximized
+  • support multiple _NET_WM_STATE changes in one ClientMessage
+  • fix size_t format specifiers on 32-bit systems
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • i3bar: fix clicks when horizontal padding is used
+  • consider workspace_auto_back_and_forth in focus workspace
+  • workspace next/prev: do not skip identically numbered workspaces
+  • make order of numbered workspace consistent with non-numbered
+  • fix crash with focus output and command criteria matching scratchpad window
+  • fix crash when reloading config with invalid criteria
+  • fix error log related crash
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  a-kenji, Alessandro Vinciguerra, Bimba Laszlo, colona_, Eddie Lebow, Harimbola
+  Santatra, Junicchi, Malix, Nikolay Nechaev, Orestis Floros, rsgowman,
+  sethpollen, Seth Pollen, systec-awe, Tasos Sahanidis, Theo Buehler, Wesley
+  Schwengle, Yonas Yanfa, yuvallangerontheroad
+
+-- Michael Stapelberg, 2024-11-06

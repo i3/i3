@@ -28,7 +28,7 @@ rm -rf \
 
 mkdir build
 cd build
-meson .. -Dprefix=/usr -Ddocs=true -Dmans=true
+meson setup -Dprefix=/usr -Ddocs=true -Dmans=true
 ninja
 cp *.1 ../man/
 cp *.html ../docs/

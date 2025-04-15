@@ -5,7 +5,7 @@ v4.3, September 2012
 
 == NAME
 
-i3 - an improved dynamic, tiling window manager
+i3 - an improved tiling window manager
 
 == SYNOPSIS
 

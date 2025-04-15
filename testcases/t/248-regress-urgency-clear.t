@@ -19,7 +19,6 @@
 # Ticket: #1825
 # Bug still in: 4.10.3-253-g03799dd
 use i3test i3_config => <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 focus_on_window_activation urgent

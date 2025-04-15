@@ -26,7 +26,6 @@ SKIP: {
         ExtUtils::PkgConfig->atleast_version('xcb-xkb', '1.11');
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Same key, different numlock states.
@@ -218,7 +217,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym Mod4+Return nop Return
@@ -288,7 +286,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym KP_End nop KP_End
@@ -353,7 +350,6 @@ exit_gracefully($pid);
 ################################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bindsym --whole-window button4 nop button4

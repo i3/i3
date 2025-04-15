@@ -25,7 +25,6 @@ use i3test i3_autostart => 0;
 #####################################################################
 
 my $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
@@ -49,7 +48,6 @@ exit_gracefully($pid);
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 new_window 1pixel
@@ -76,7 +74,6 @@ exit_gracefully($pid);
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
@@ -102,7 +99,6 @@ exit_gracefully($pid);
 #####################################################################
 
 $config = <<EOT;
-# i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 new_float 1pixel
