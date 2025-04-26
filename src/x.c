@@ -769,7 +769,11 @@ void x_draw_decoration(Con *con) {
 
     x_draw_decoration_after_title(con, p, dest_surface);
 copy_pixmaps:
-    draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+    /* Only copy the container's buffer to its frame if the buffer exists and is initialized.
+     * Otherwise, draw_util_copy_surface would log an error when checking the source. */
+    if (con->frame_buffer.id != XCB_NONE) {
+        draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+    }
 }
 
 /*
