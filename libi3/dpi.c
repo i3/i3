@@ -45,7 +45,7 @@ void init_dpi(void) {
 
     char *endptr;
     double in_dpi = strtod(resource, &endptr);
-    if (in_dpi == HUGE_VAL || dpi < 0 || *endptr != '\0' || endptr == resource) {
+    if (in_dpi == HUGE_VAL || in_dpi < 0 || *endptr != '\0' || endptr == resource) {
         ELOG("Xft.dpi = %s is an invalid number and couldn't be parsed.\n", resource);
         dpi = 0;
         goto init_dpi_end;
