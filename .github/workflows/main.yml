@@ -20,7 +20,6 @@ jobs:
       DOCKER_EMAIL: ${{ secrets.DOCKER_EMAIL }}
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      BALTO_TOKEN: ${{ secrets.BALTO_TOKEN }}
 
     steps:
     - uses: actions/checkout@v4
@@ -70,10 +69,6 @@ jobs:
         echo "::group::Ubuntu amd64"
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${{ env.BASENAME_UBUNTU }} ./travis/debian-build.sh deb/ubuntu-amd64/DIST
         echo "::endgroup::"
-    - name: push Debian packages to balto
-      if: github.ref == 'refs/heads/next' && matrix.compiler == 'gcc'
-      run: |
-        travis/push-balto.sh
     - name: build docs
       if: github.ref == 'refs/heads/next' && matrix.compiler == 'gcc'
       run: |
