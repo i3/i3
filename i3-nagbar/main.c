@@ -503,7 +503,7 @@ int main(int argc, char *argv[]) {
     } else {
         /* Yellowish theme for warnings */
         color_button_background = draw_util_hex_to_color("#ffc100");
-        color_background = draw_util_hex_to_color("#ffa8000");
+        color_background = draw_util_hex_to_color("#ffa800");
         color_text = draw_util_hex_to_color("#000000");
         color_border = draw_util_hex_to_color("#ab7100");
         color_border_bottom = draw_util_hex_to_color("#ab7100");
