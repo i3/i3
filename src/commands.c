@@ -1190,6 +1190,7 @@ void cmd_floating(I3_CMD, const char *floating_mode) {
             DLOG("should toggle mode\n");
             toggle_floating_mode(current->con, false);
         } else {
+            assert(floating_mode != NULL); /* Compiler complains */
             DLOG("should switch mode to %s\n", floating_mode);
             if (strcmp(floating_mode, "enable") == 0) {
                 floating_enable(current->con, false);
