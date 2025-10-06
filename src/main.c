@@ -1033,7 +1033,6 @@ int main(int argc, char *argv[]) {
     /* Also handle the UNIX domain sockets passed via socket
      * activation. The parameter 0 means "do not remove the
      * environment variables", we need to be able to reexec. */
-    struct ev_io *socket_ipc_io = NULL;
     listen_fds = sd_listen_fds(0);
     if (listen_fds < 0) {
         ELOG("socket activation: Error in sd_listen_fds\n");
@@ -1054,9 +1053,10 @@ int main(int argc, char *argv[]) {
                 ELOG("Could not disable FD_CLOEXEC on fd %d\n", fd);
             }
 
-            socket_ipc_io = scalloc(1, sizeof(struct ev_io));
+            struct ev_io *socket_ipc_io = scalloc(1, sizeof(struct ev_io));
             ev_io_init(socket_ipc_io, ipc_new_client, fd, EV_READ);
             ev_io_start(main_loop, socket_ipc_io);
+            FREE(socket_ipc_io);
         }
     }
 
@@ -1230,7 +1230,6 @@ int main(int argc, char *argv[]) {
 
     /* Free these heap allocations just to satisfy LeakSanitizer. */
     FREE(ipc_io);
-    FREE(socket_ipc_io);
     FREE(log_io);
     FREE(xcb_watcher);
 }
