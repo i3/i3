@@ -50,7 +50,7 @@ uint32_t get_colorpixel(const char *hex) {
 
     /* Shortcut: if our screen is true color, no need to do a roundtrip to X11 */
     if (root_screen == NULL || root_screen->root_depth == 24 || root_screen->root_depth == 32) {
-        return (a << 24) | (r << 16 | g << 8 | b);
+        return ((uint32_t)a << 24) | ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
     }
 
     /* Lookup this colorpixel in the cache */
