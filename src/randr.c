@@ -757,12 +757,10 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         return;
     }
 
-    xcb_randr_get_crtc_info_cookie_t icookie;
-    icookie = xcb_randr_get_crtc_info(conn, output->crtc, cts);
+    const xcb_randr_get_crtc_info_cookie_t icookie = xcb_randr_get_crtc_info(conn, output->crtc, cts);
     if ((crtc = xcb_randr_get_crtc_info_reply(conn, icookie, NULL)) == NULL) {
         DLOG("Skipping output %s: could not get CRTC (%p)\n",
              output_primary_name(new), crtc);
-        free(new);
         return;
     }
 
