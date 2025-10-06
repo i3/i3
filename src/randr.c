@@ -660,9 +660,8 @@ static bool randr_query_outputs_15(void) {
                         struct output_name *output_name = scalloc(1, sizeof(struct output_name));
                         output_name->name = sstrdup(oname);
                         SLIST_INSERT_HEAD(&new->names_head, output_name, names);
-                    } else {
-                        free(oname);
                     }
+                    free(oname);
                 }
                 FREE(info);
             }
