@@ -551,30 +551,29 @@ int main(int argc, char *argv[]) {
     if (is_debug_build()) {
         struct rlimit limit = {RLIM_INFINITY, RLIM_INFINITY};
         setrlimit(RLIMIT_CORE, &limit);
+        LOG("CORE DUMPS: You are running a development version of i3, so coredumps were automatically enabled (ulimit -c unlimited).\n");
 
+#ifdef __linux__
         /* The following code is helpful, but not required. We thus don’t pay
          * much attention to error handling, non-linux or other edge cases. */
-        LOG("CORE DUMPS: You are running a development version of i3, so coredumps were automatically enabled (ulimit -c unlimited).\n");
-        size_t cwd_size = 1024;
-        char *cwd = smalloc(cwd_size);
-        char *cwd_ret;
-        while ((cwd_ret = getcwd(cwd, cwd_size)) == NULL && errno == ERANGE) {
-            cwd_size = cwd_size * 2;
-            cwd = srealloc(cwd, cwd_size);
-        }
-        if (cwd_ret != NULL) {
+        char *cwd = getcwd(NULL, 0);
+        if (cwd != NULL) {
             LOG("CORE DUMPS: Your current working directory is \"%s\".\n", cwd);
+            free(cwd);
         }
+        const size_t buffer_size = 1024;
+        char *buffer = scalloc(buffer_size, sizeof(char));
+
         int patternfd;
         if ((patternfd = open("/proc/sys/kernel/core_pattern", O_RDONLY)) >= 0) {
-            memset(cwd, '\0', cwd_size);
-            if (read(patternfd, cwd, cwd_size) > 0) {
-                /* a trailing newline is included in cwd */
-                LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
+            if (read(patternfd, buffer, buffer_size - 1) > 0) {
+                /* a trailing newline is included in buffer */
+                LOG("CORE DUMPS: Your core_pattern is: %s", buffer);
             }
             close(patternfd);
         }
-        free(cwd);
+        free(buffer);
+#endif
     }
 
     LOG("i3 %s starting\n", i3_version);

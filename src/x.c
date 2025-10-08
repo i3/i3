@@ -624,7 +624,7 @@ void x_draw_decoration(Con *con) {
 
     /* if this is a borderless/1pixel window, we don’t need to render the
      * decoration. */
-    if (p->border_style != BS_NORMAL) {
+    if (p->border_style != BS_NORMAL || con->deco_rect.width == 0 || con->deco_rect.height == 0) {
         goto copy_pixmaps;
     }
 

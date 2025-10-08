@@ -1178,12 +1178,12 @@ void cmd_move_con_to_mark(I3_CMD, const char *mark) {
  *
  */
 void cmd_floating(I3_CMD, const char *floating_mode) {
-    owindow *current;
-
+    assert(floating_mode != NULL); /* Compiler complains */
     DLOG("floating_mode=%s\n", floating_mode);
 
     HANDLE_EMPTY_MATCH;
 
+    owindow *current;
     TAILQ_FOREACH (current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
         if (strcmp(floating_mode, "toggle") == 0) {

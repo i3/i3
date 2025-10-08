@@ -56,6 +56,7 @@ is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'floating', 'floating_auto' ], "mark
 
 cmd '[id=' . $A->{id} . '] floating enable';
 cmd '[id=' . $B->{id} . '] floating disable';
+sync_with_i3;  # Assignments run based on the _I3_FLOATING_WINDOW property. No sync is race-y.
 
 @nodes = @{get_ws($tmp)->{nodes}};
 cmp_ok(@nodes, '==', 1, 'one tiling container on this workspace');
@@ -75,6 +76,7 @@ is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'tiling_auto', 'floating', 'floating
 # Use 'mark' to clear old marks
 cmd '[id=' . $A->{id} . '] mark A, floating disable';
 cmd '[id=' . $B->{id} . '] mark B, floating enable';
+sync_with_i3;
 
 @nodes = @{get_ws($tmp)->{nodes}};
 cmp_ok(@nodes, '==', 1, 'one tiling container on this workspace');
@@ -115,6 +117,7 @@ is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'floating' ], "mark set for 'floatin
 
 cmd '[tiling_from="auto" con_mark="tiling"] mark --add tiling_auto';
 cmd '[floating_from="auto" con_mark="floating"] mark --add floating_auto';
+sync_with_i3;
 
 @nodes = @{get_ws($tmp)->{nodes}};
 cmp_ok(@nodes, '==', 1, 'one tiling container on this workspace');

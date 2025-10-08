@@ -389,7 +389,7 @@ void tiling_drag(Con *con, xcb_button_press_event_t *event, bool use_threshold) 
             /* tree_move can change the focus */
             Con *old_focus = focused;
             tree_move(con, direction);
-            if (focused != old_focus) {
+            if (focused != old_focus && con_exists(old_focus)) {
                 con_activate(old_focus);
             }
             break;

@@ -660,9 +660,8 @@ static bool randr_query_outputs_15(void) {
                         struct output_name *output_name = scalloc(1, sizeof(struct output_name));
                         output_name->name = sstrdup(oname);
                         SLIST_INSERT_HEAD(&new->names_head, output_name, names);
-                    } else {
-                        free(oname);
                     }
+                    free(oname);
                 }
                 FREE(info);
             }
@@ -757,12 +756,10 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         return;
     }
 
-    xcb_randr_get_crtc_info_cookie_t icookie;
-    icookie = xcb_randr_get_crtc_info(conn, output->crtc, cts);
+    const xcb_randr_get_crtc_info_cookie_t icookie = xcb_randr_get_crtc_info(conn, output->crtc, cts);
     if ((crtc = xcb_randr_get_crtc_info_reply(conn, icookie, NULL)) == NULL) {
         DLOG("Skipping output %s: could not get CRTC (%p)\n",
              output_primary_name(new), crtc);
-        free(new);
         return;
     }
 
