@@ -735,6 +735,7 @@ static void spipe(int pipedes[2]) {
 
 static void exec_shell(char *command) {
     execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char *)NULL);
+    err(EXIT_FAILURE, "execl return"); /* only reached on error */
 }
 
 static void setup_child_cb(i3bar_child *child) {
@@ -834,7 +835,6 @@ void start_ws_child(char *command) {
 
         setpgid(ws_child.pid, 0);
         exec_shell(command);
-        return;
     }
     /* Parent-process. Reroute streams */
     close(pipe_in[1]);
