@@ -118,7 +118,7 @@ static void start_application(const char *command) {
         if (fork() == 0) {
             /* This is the child */
             execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
-            /* not reached */
+            err(EXIT_FAILURE, "execl return"); /* only reached on error */
         }
         exit(0);
     }

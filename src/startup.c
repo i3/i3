@@ -196,7 +196,7 @@ void start_application(const char *command, bool no_startup_id) {
         setenv("I3SOCK", current_socketpath, 1);
 
         execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
-        /* not reached */
+        err(EXIT_FAILURE, "execl return"); /* only reached on error */
     }
 
     if (!no_startup_id) {
