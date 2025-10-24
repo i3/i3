@@ -24,6 +24,7 @@
  *
  */
 #include "all.h"
+#include "parser_util.h"
 
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) (command_output.json_gen != NULL ? yajl_gen_##x(command_output.json_gen, ##__VA_ARGS__) : 0)
@@ -55,93 +56,6 @@ typedef struct tokenptr {
 } cmdp_token_ptr;
 
 #include "GENERATED_command_tokens.h"
-
-/*
- * Pushes a string (identified by 'identifier') on the stack. We simply use a
- * single array, since the number of entries we have to store is very small.
- *
- */
-static void push_string(struct stack *stack, const char *identifier, char *str) {
-    for (int c = 0; c < 10; c++) {
-        if (stack->stack[c].identifier != NULL) {
-            continue;
-        }
-        /* Found a free slot, let’s store it here. */
-        stack->stack[c].identifier = identifier;
-        stack->stack[c].val.str = str;
-        stack->stack[c].type = STACK_STR;
-        return;
-    }
-
-    /* When we arrive here, the stack is full. This should not happen and
-     * means there’s either a bug in this parser or the specification
-     * contains a command with more than 10 identified tokens. */
-    fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
-                    "in the code, or a new command which contains more than "
-                    "10 identified tokens.\n");
-    exit(EXIT_FAILURE);
-}
-
-// TODO move to a common util
-static void push_long(struct stack *stack, const char *identifier, long num) {
-    for (int c = 0; c < 10; c++) {
-        if (stack->stack[c].identifier != NULL) {
-            continue;
-        }
-
-        stack->stack[c].identifier = identifier;
-        stack->stack[c].val.num = num;
-        stack->stack[c].type = STACK_LONG;
-        return;
-    }
-
-    /* When we arrive here, the stack is full. This should not happen and
-     * means there’s either a bug in this parser or the specification
-     * contains a command with more than 10 identified tokens. */
-    fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
-                    "in the code, or a new command which contains more than "
-                    "10 identified tokens.\n");
-    exit(EXIT_FAILURE);
-}
-
-// TODO move to a common util
-static const char *get_string(struct stack *stack, const char *identifier) {
-    for (int c = 0; c < 10; c++) {
-        if (stack->stack[c].identifier == NULL) {
-            break;
-        }
-        if (strcmp(identifier, stack->stack[c].identifier) == 0) {
-            return stack->stack[c].val.str;
-        }
-    }
-    return NULL;
-}
-
-// TODO move to a common util
-static long get_long(struct stack *stack, const char *identifier) {
-    for (int c = 0; c < 10; c++) {
-        if (stack->stack[c].identifier == NULL) {
-            break;
-        }
-        if (strcmp(identifier, stack->stack[c].identifier) == 0) {
-            return stack->stack[c].val.num;
-        }
-    }
-
-    return 0;
-}
-
-// TODO move to a common util
-static void clear_stack(struct stack *stack) {
-    for (int c = 0; c < 10; c++) {
-        if (stack->stack[c].type == STACK_STR) {
-            free(stack->stack[c].val.str);
-        }
-        stack->stack[c].identifier = NULL;
-        stack->stack[c].val.str = NULL;
-        stack->stack[c].val.num = 0;
-    }
-}
 
 /*******************************************************************************
  * The parser itself.
@@ -293,7 +207,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             if (token->name[0] == '\'') {
                 if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
                     if (token->identifier != NULL) {
-                        push_string(&stack, token->identifier, sstrdup(token->name + 1));
+                        push_string(&stack, token->identifier, token->name + 1);
                     }
                     walk += strlen(token->name) - 1;
                     next_state(token);
@@ -336,6 +250,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                     if (token->identifier) {
                         push_string(&stack, token->identifier, str);
                     }
+                    free(str);
                     /* If we are at the end of a quoted string, skip the ending
                      * double quote. */
                     if (*walk == '"') {

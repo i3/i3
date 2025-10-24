@@ -13,25 +13,10 @@
 
 #include <yajl/yajl_gen.h>
 
+#include "parser_util.h"
+
 SLIST_HEAD(variables_head, Variable);
 extern pid_t config_error_nagbar_pid;
-
-struct stack_entry {
-    /* Just a pointer, not dynamically allocated. */
-    const char *identifier;
-    enum {
-        STACK_STR = 0,
-        STACK_LONG = 1,
-    } type;
-    union {
-        char *str;
-        long num;
-    } val;
-};
-
-struct stack {
-    struct stack_entry stack[10];
-};
 
 struct parser_ctx {
     bool use_nagbar;

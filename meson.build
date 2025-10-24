@@ -403,6 +403,7 @@ i3srcs = [
   'src/match.c',
   'src/move.c',
   'src/output.c',
+  'src/parser_util.c',
   'src/randr.c',
   'src/regex.c',
   'src/render.c',
@@ -685,6 +686,7 @@ executable(
   'test.commands_parser',
   [
     'src/commands_parser.c',
+    'src/parser_util.c',
     command_parser,
   ],
   include_directories: inc,
@@ -697,6 +699,7 @@ executable(
   'test.config_parser',
   [
     'src/config_parser.c',
+    'src/parser_util.c',
     config_parser,
   ],
   include_directories: inc,
