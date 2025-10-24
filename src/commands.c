@@ -144,24 +144,9 @@ static owindows_head owindows;
  *
  */
 void cmd_criteria_init(I3_CMD) {
-    Con *con;
-    owindow *ow;
-
     DLOG("Initializing criteria, current_match = %p\n", current_match);
     match_free(current_match);
     match_init(current_match);
-    while (!TAILQ_EMPTY(&owindows)) {
-        ow = TAILQ_FIRST(&owindows);
-        TAILQ_REMOVE(&owindows, ow, owindows);
-        free(ow);
-    }
-    TAILQ_INIT(&owindows);
-    /* copy all_cons */
-    TAILQ_FOREACH (con, &all_cons, all_cons) {
-        ow = smalloc(sizeof(owindow));
-        ow->con = con;
-        TAILQ_INSERT_TAIL(&owindows, ow, owindows);
-    }
 }
 
 /*
@@ -170,21 +155,20 @@ void cmd_criteria_init(I3_CMD) {
  *
  */
 void cmd_criteria_match_windows(I3_CMD) {
-    owindow *next, *current;
-
     DLOG("match specification finished, matching...\n");
-    /* copy the old list head to iterate through it and start with a fresh
-     * list which will contain only matching windows */
-    struct owindows_head old = owindows;
-    TAILQ_INIT(&owindows);
-    for (next = TAILQ_FIRST(&old); next != TAILQ_END(&old);) {
-        /* make a copy of the next pointer and advance the pointer to the
-         * next element as we are going to invalidate the element’s
-         * next/prev pointers by calling TAILQ_INSERT_TAIL later */
-        current = next;
-        next = TAILQ_NEXT(next, owindows);
 
-        DLOG("checking if con %p / %s matches\n", current->con, current->con->name);
+    /* Clear old queue */
+    while (!TAILQ_EMPTY(&owindows)) {
+        owindow *ow = TAILQ_FIRST(&owindows);
+        TAILQ_REMOVE(&owindows, ow, owindows);
+        free(ow);
+    }
+    TAILQ_INIT(&owindows);
+
+    /* Go through all cons and find matches */
+    Con *con;
+    TAILQ_FOREACH (con, &all_cons, all_cons) {
+        DLOG("checking if con %p / %s matches\n", con, con->name);
 
         /* We use this flag to prevent matching on window-less containers if
          * only window-specific criteria were specified. */
@@ -193,21 +177,20 @@ void cmd_criteria_match_windows(I3_CMD) {
         if (current_match->con_id != NULL) {
             accept_match = true;
 
-            if (current_match->con_id == current->con) {
+            if (current_match->con_id == con) {
                 DLOG("con_id matched.\n");
             } else {
                 DLOG("con_id does not match.\n");
-                FREE(current);
                 continue;
             }
         }
 
-        if (current_match->mark != NULL && !TAILQ_EMPTY(&(current->con->marks_head))) {
+        if (current_match->mark != NULL && !TAILQ_EMPTY(&(con->marks_head))) {
             accept_match = true;
             bool matched_by_mark = false;
 
             mark_t *mark;
-            TAILQ_FOREACH (mark, &(current->con->marks_head), marks) {
+            TAILQ_FOREACH (mark, &(con->marks_head), marks) {
                 if (!regex_matches(current_match->mark, mark->name)) {
                     continue;
                 }
@@ -219,32 +202,26 @@ void cmd_criteria_match_windows(I3_CMD) {
 
             if (!matched_by_mark) {
                 DLOG("mark does not match.\n");
-                FREE(current);
                 continue;
             }
         }
 
-        if (current->con->window != NULL) {
-            if (match_matches_window(current_match, current->con->window)) {
+        if (con->window != NULL) {
+            if (match_matches_window(current_match, con->window)) {
                 DLOG("matches window!\n");
                 accept_match = true;
             } else {
                 DLOG("doesn't match\n");
-                FREE(current);
                 continue;
             }
         }
 
         if (accept_match) {
-            TAILQ_INSERT_TAIL(&owindows, current, owindows);
-        } else {
-            FREE(current);
-            continue;
+            DLOG("matching: %p / %s\n", con, con->name);
+            owindow *ow = smalloc(sizeof(owindow));
+            ow->con = con;
+            TAILQ_INSERT_TAIL(&owindows, ow, owindows);
         }
-    }
-
-    TAILQ_FOREACH (current, &owindows, owindows) {
-        DLOG("matching: %p / %s\n", current->con, current->con->name);
     }
 }
 
