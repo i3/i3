@@ -182,24 +182,28 @@ Output *get_output_with_dimensions(Rect rect) {
  */
 Output *output_containing_rect(Rect rect) {
     Output *output;
-    int lx = rect.x, uy = rect.y;
-    int rx = rect.x + rect.width, by = rect.y + rect.height;
-    long max_area = 0;
+    const int lx = rect.x;
+    const int uy = rect.y;
+    const int rx = rect.x + rect.width;
+    const int by = rect.y + rect.height;
     Output *result = NULL;
     TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active) {
             continue;
         }
-        int lx_o = (int)output->rect.x, uy_o = (int)output->rect.y;
-        int rx_o = (int)(output->rect.x + output->rect.width), by_o = (int)(output->rect.y + output->rect.height);
+        const int lx_o = (int)output->rect.x;
+        const int uy_o = (int)output->rect.y;
+        const int rx_o = (int)(output->rect.x + output->rect.width);
+        const int by_o = (int)(output->rect.y + output->rect.height);
         DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
              rect.x, rect.y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
-        int left = max(lx, lx_o);
-        int right = min(rx, rx_o);
-        int bottom = min(by, by_o);
-        int top = max(uy, uy_o);
+        const int left = max(lx, lx_o);
+        const int right = min(rx, rx_o);
+        const int bottom = min(by, by_o);
+        const int top = max(uy, uy_o);
         if (left < right && bottom > top) {
-            long area = (right - left) * (bottom - top);
+            const long max_area = 0;
+            const long area = (right - left) * (bottom - top);
             if (area > max_area) {
                 result = output;
             }

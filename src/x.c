@@ -776,12 +776,12 @@ copy_pixmaps:
  *
  */
 void x_deco_recurse(Con *con) {
-    Con *current;
     bool leaf = TAILQ_EMPTY(&(con->nodes_head)) &&
                 TAILQ_EMPTY(&(con->floating_head));
-    con_state *state = state_for_frame(con->frame.id);
+    const con_state *state = state_for_frame(con->frame.id);
 
     if (!leaf) {
+        Con *current;
         TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
             x_deco_recurse(current);
         }

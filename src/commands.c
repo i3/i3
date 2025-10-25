@@ -1658,8 +1658,6 @@ void cmd_layout(I3_CMD, const char *layout_str) {
  *
  */
 void cmd_layout_toggle(I3_CMD, const char *toggle_mode) {
-    owindow *current;
-
     if (toggle_mode == NULL) {
         toggle_mode = "default";
     }
@@ -1670,6 +1668,7 @@ void cmd_layout_toggle(I3_CMD, const char *toggle_mode) {
     if (match_is_empty(current_match)) {
         con_toggle_layout(focused, toggle_mode);
     } else {
+        owindow *current;
         TAILQ_FOREACH (current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
             con_toggle_layout(current->con, toggle_mode);
@@ -1971,12 +1970,12 @@ void cmd_move_scratchpad(I3_CMD) {
  */
 void cmd_scratchpad_show(I3_CMD) {
     DLOG("should show scratchpad window\n");
-    owindow *current;
     bool result = false;
 
     if (match_is_empty(current_match)) {
         result = scratchpad_show(NULL);
     } else {
+        owindow *current;
         TAILQ_FOREACH (current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
             result |= scratchpad_show(current->con);

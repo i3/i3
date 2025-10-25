@@ -912,12 +912,10 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         DLOG("_NET_SYSTEM_TRAY_OPCODE received\n");
         /* event->data.data32[0] is the timestamp */
         uint32_t op = event->data.data32[1];
-        uint32_t mask;
         uint32_t values[2];
         if (op == SYSTEM_TRAY_REQUEST_DOCK) {
-            xcb_window_t client = event->data.data32[2];
-
-            mask = XCB_CW_EVENT_MASK;
+            const xcb_window_t client = event->data.data32[2];
+            uint32_t mask = XCB_CW_EVENT_MASK;
 
             /* Needed to get the most recent value of XEMBED_MAPPED. */
             values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE;
