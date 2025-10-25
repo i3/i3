@@ -252,18 +252,15 @@ Output *get_output_next_wrap(direction_t direction, Output *current) {
  * specified (note that “current” counts as such an output).
  *
  */
-Output *get_output_next(direction_t direction, Output *current, output_close_far_t close_far) {
-    Rect *cur = &(current->rect),
-         *other;
-    Output *output,
-        *best = NULL;
+Output *get_output_next(const direction_t direction, Output *current, output_close_far_t close_far) {
+    const Rect *cur = &(current->rect);
+    Output *output, *best = NULL;
     TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active) {
             continue;
         }
 
-        other = &(output->rect);
-
+        const Rect *other = &(output->rect);
         if ((direction == D_RIGHT && other->x > cur->x) ||
             (direction == D_LEFT && other->x < cur->x)) {
             /* Skip the output when it doesn’t overlap the other one’s y
@@ -539,10 +536,10 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
     assert(output->con != NULL);
     output->con->rect = output->rect;
 
-    Con *content, *workspace, *child;
+    Con *workspace, *child;
 
     /* Point content to the container of the workspaces */
-    content = output_get_content(output->con);
+    const Con *content = output_get_content(output->con);
 
     /* Fix the position of all floating windows on this output.
      * The 'rect' of each workspace will be updated in src/render.c. */
@@ -803,10 +800,8 @@ static void randr_query_outputs_14(void) {
     DLOG("Querying outputs using RandR ≤ 1.4\n");
 
     /* Get screen resources (primary output, crtcs, outputs, modes) */
-    xcb_randr_get_screen_resources_current_cookie_t rcookie;
-    rcookie = xcb_randr_get_screen_resources_current(conn, root);
-    xcb_randr_get_output_primary_cookie_t pcookie;
-    pcookie = xcb_randr_get_output_primary(conn, root);
+    const xcb_randr_get_screen_resources_current_cookie_t rcookie = xcb_randr_get_screen_resources_current(conn, root);
+    const xcb_randr_get_output_primary_cookie_t pcookie = xcb_randr_get_output_primary(conn, root);
 
     if ((primary = xcb_randr_get_output_primary_reply(conn, pcookie, NULL)) == NULL) {
         ELOG("Could not get RandR primary output\n");
@@ -868,10 +863,9 @@ static void move_content(Con *con) {
 
     /* 2: iterate through workspaces and re-assign them, fixing the coordinates
      * of floating containers as we go */
-    Con *current;
-    Con *old_content = output_get_content(con);
+    const Con *old_content = output_get_content(con);
     while (!TAILQ_EMPTY(&(old_content->nodes_head))) {
-        current = TAILQ_FIRST(&(old_content->nodes_head));
+        Con *current = TAILQ_FIRST(&(old_content->nodes_head));
         if (current != next && TAILQ_EMPTY(&(current->focus_head))) {
             /* the workspace is empty and not focused, get rid of it */
             DLOG("Getting rid of current = %p / %s (empty, unfocused)\n", current, current->name);
@@ -903,12 +897,10 @@ static void move_content(Con *con) {
             continue;
         }
         DLOG("Handling dock con %p\n", child);
-        Con *dock;
         while (!TAILQ_EMPTY(&(child->nodes_head))) {
-            dock = TAILQ_FIRST(&(child->nodes_head));
-            Con *nc;
             Match *match;
-            nc = con_for_window(first, dock->window, &match);
+            Con *dock = TAILQ_FIRST(&(child->nodes_head));
+            Con *nc = con_for_window(first, dock->window, &match);
             DLOG("Moving dock client %p to nc %p\n", dock, nc);
             con_detach(dock);
             DLOG("Re-attaching\n");
@@ -928,8 +920,6 @@ static void move_content(Con *con) {
  *
  */
 void randr_query_outputs(void) {
-    Output *output, *other;
-
     if (!randr_query_outputs_15()) {
         randr_query_outputs_14();
     }
@@ -947,6 +937,7 @@ void randr_query_outputs(void) {
 
     /* Check for clones, disable the clones and reduce the mode to the
      * lowest common mode */
+    Output *output;
     TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active || output->to_be_disabled) {
             continue;
@@ -954,7 +945,7 @@ void randr_query_outputs(void) {
         DLOG("output %p / %s, position (%d, %d), checking for clones\n",
              output, output_primary_name(output), output->rect.x, output->rect.y);
 
-        for (other = output;
+        for (Output *other = output;
              other != TAILQ_END(&outputs);
              other = TAILQ_NEXT(other, outputs)) {
             if (other == output || !other->active || other->to_be_disabled) {
@@ -1006,8 +997,7 @@ void randr_query_outputs(void) {
      * those mentioned #3767 e.g. when a CT_OUTPUT is created from an in-place
      * restart's layout but the output is disabled by a randr query happening
      * at the same time. */
-    Con *con;
-    for (con = TAILQ_FIRST(&(croot->nodes_head)); con;) {
+    for (Con *con = TAILQ_FIRST(&(croot->nodes_head)); con;) {
         Con *next = TAILQ_NEXT(con, nodes);
         if (!con_is_internal(con) && get_output_by_name(con->name, true) == NULL) {
             DLOG("No output %s found, moving its old content to first output\n", con->name);
@@ -1094,13 +1084,11 @@ static void fallback_to_root_output(void) {
  *
  */
 void randr_init(int *event_base, const bool disable_randr15) {
-    const xcb_query_extension_reply_t *extreply;
-
     root_output = create_root_output(conn);
     TAILQ_INSERT_TAIL(&outputs, root_output, outputs);
 
-    extreply = xcb_get_extension_data(conn, &xcb_randr_id);
-    if (!extreply->present) {
+    const xcb_query_extension_reply_t *extension_reply = xcb_get_extension_data(conn, &xcb_randr_id);
+    if (!extension_reply->present) {
         DLOG("RandR is not present, activating root output.\n");
         fallback_to_root_output();
         return;
@@ -1126,7 +1114,7 @@ void randr_init(int *event_base, const bool disable_randr15) {
     randr_query_outputs();
 
     if (event_base != NULL) {
-        *event_base = extreply->first_event;
+        *event_base = extension_reply->first_event;
     }
 
     xcb_randr_select_input(conn, root,

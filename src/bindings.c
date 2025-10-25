@@ -102,7 +102,7 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
         ELOG("Keybinding has more than one Group specified, but your X server is always in precisely one group. The keybinding can never trigger.\n");
     }
 
-    struct Mode *mode = mode_from_name(modename, pango_markup);
+    const struct Mode *mode = mode_from_name(modename, pango_markup);
     TAILQ_INSERT_TAIL(mode->bindings, new_binding, bindings);
 
     TAILQ_INIT(&(new_binding->keycodes_head));
@@ -243,7 +243,7 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
          * keycode */
         bool found_keycode = false;
         if (input_type == B_KEYBOARD && bind->symbol != NULL) {
-            xcb_keycode_t input_keycode = (xcb_keycode_t)input_code;
+            const xcb_keycode_t input_keycode = (xcb_keycode_t)input_code;
             struct Binding_Keycode *binding_keycode;
             TAILQ_FOREACH (binding_keycode, &(bind->keycodes_head), keycodes) {
                 const uint32_t modifiers_mask = (binding_keycode->modifiers & 0x0000FFFF);

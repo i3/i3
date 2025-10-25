@@ -1039,9 +1039,8 @@ Con *workspace_encapsulate(Con *ws) {
 
     DLOG("Moving children of workspace %p / %s into container %p\n",
          ws, ws->name, new);
-    Con *child;
     while (!TAILQ_EMPTY(&(ws->nodes_head))) {
-        child = TAILQ_FIRST(&(ws->nodes_head));
+        Con *child = TAILQ_FIRST(&(ws->nodes_head));
         con_detach(child);
         con_attach(child, new, true);
     }

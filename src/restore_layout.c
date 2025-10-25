@@ -89,9 +89,8 @@ void restore_connect(void) {
         ev_io_stop(main_loop, xcb_watcher);
         ev_prepare_stop(main_loop, xcb_prepare);
 
-        placeholder_state *state;
         while (!TAILQ_EMPTY(&state_head)) {
-            state = TAILQ_FIRST(&state_head);
+            placeholder_state *state = TAILQ_FIRST(&state_head);
             TAILQ_REMOVE(&state_head, state, state);
             free(state);
         }

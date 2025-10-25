@@ -20,7 +20,6 @@
 #include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -279,7 +278,7 @@ static int parse_restart_fd(void) {
 int main(int argc, char *argv[]) {
     /* Keep a symbol pointing to the I3_VERSION string constant so that we have
      * it in gdb backtraces. */
-    static const char *_i3_version __attribute__((used)) = I3_VERSION;
+    static const char *_i3_version = I3_VERSION;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
@@ -539,7 +538,7 @@ int main(int argc, char *argv[]) {
         if (reply_type != I3_IPC_REPLY_TYPE_COMMAND) {
             errx(EXIT_FAILURE, "IPC: received reply of type %d but expected %d (COMMAND)", reply_type, I3_IPC_REPLY_TYPE_COMMAND);
         }
-        printf("%.*s\n", reply_length, reply);
+        printf("%.*s\n", reply_length, (char *)reply);
         FREE(reply);
         return 0;
     }
@@ -576,7 +575,7 @@ int main(int argc, char *argv[]) {
 #endif
     }
 
-    LOG("i3 %s starting\n", i3_version);
+    LOG("i3 %s starting\n", _i3_version);
 
     conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn)) {
@@ -991,23 +990,23 @@ int main(int argc, char *argv[]) {
 
     scratchpad_fix_resolution();
 
-    xcb_query_pointer_reply_t *pointerreply;
     Output *output = NULL;
-    if (!(pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL))) {
+    xcb_query_pointer_reply_t *pointer_reply = xcb_query_pointer_reply(conn, pointercookie, NULL);
+    if (!pointer_reply) {
         ELOG("Could not query pointer position, using first screen\n");
     } else {
-        DLOG("Pointer at %d, %d\n", pointerreply->root_x, pointerreply->root_y);
-        output = get_output_containing(pointerreply->root_x, pointerreply->root_y);
+        DLOG("Pointer at %d, %d\n", pointer_reply->root_x, pointer_reply->root_y);
+        output = get_output_containing(pointer_reply->root_x, pointer_reply->root_y);
         if (!output) {
             ELOG("ERROR: No screen at (%d, %d), starting on the first screen\n",
-                 pointerreply->root_x, pointerreply->root_y);
+                 pointer_reply->root_x, pointer_reply->root_y);
         }
     }
     if (!output) {
         output = get_first_output();
     }
     con_activate(con_descend_focused(output_get_content(output->con)));
-    free(pointerreply);
+    free(pointer_reply);
 
     tree_render();
 

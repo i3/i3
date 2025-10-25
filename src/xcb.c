@@ -104,14 +104,13 @@ void send_take_focus(xcb_window_t window, xcb_timestamp_t timestamp) {
  * Configures the given window to have the size/position specified by given rect
  *
  */
-void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r) {
-    xcb_void_cookie_t cookie;
-    cookie = xcb_configure_window(conn, window,
-                                  XCB_CONFIG_WINDOW_X |
-                                      XCB_CONFIG_WINDOW_Y |
-                                      XCB_CONFIG_WINDOW_WIDTH |
-                                      XCB_CONFIG_WINDOW_HEIGHT,
-                                  &(r.x));
+void xcb_set_window_rect(xcb_connection_t *conn, const xcb_window_t window, Rect r) {
+    xcb_void_cookie_t cookie = xcb_configure_window(conn, window,
+                                                    XCB_CONFIG_WINDOW_X |
+                                                        XCB_CONFIG_WINDOW_Y |
+                                                        XCB_CONFIG_WINDOW_WIDTH |
+                                                        XCB_CONFIG_WINDOW_HEIGHT,
+                                                    &(r.x));
     /* ignore events which are generated because we configured a window */
     add_ignore_event(cookie.sequence, -1);
 }
@@ -205,9 +204,7 @@ xcb_visualid_t get_visualid_by_depth(uint16_t depth) {
             continue;
         }
 
-        xcb_visualtype_iterator_t visual_iter;
-
-        visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
+        xcb_visualtype_iterator_t visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
         if (!visual_iter.rem) {
             continue;
         }

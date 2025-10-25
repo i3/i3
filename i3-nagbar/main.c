@@ -242,7 +242,7 @@ static int button_draw(button_t *button, int position) {
  * be called from the code with event == NULL or from X with event != NULL.
  *
  */
-static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
+static int handle_expose(xcb_connection_t *conn) {
     /* draw background */
     draw_util_clear_surface(&bar, color_background);
     /* draw message */
@@ -633,7 +633,7 @@ int main(int argc, char *argv[]) {
         switch (type) {
             case XCB_EXPOSE:
                 if (((xcb_expose_event_t *)event)->count == 0) {
-                    handle_expose(conn, (xcb_expose_event_t *)event);
+                    handle_expose(conn);
                 }
 
                 break;

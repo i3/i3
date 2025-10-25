@@ -192,9 +192,8 @@ static void ipc_send_shutdown_event(shutdown_reason_t reason) {
 void ipc_shutdown(shutdown_reason_t reason, int exempt_fd) {
     ipc_send_shutdown_event(reason);
 
-    ipc_client *current;
     while (!TAILQ_EMPTY(&all_clients)) {
-        current = TAILQ_FIRST(&all_clients);
+        ipc_client *current = TAILQ_FIRST(&all_clients);
         if (current->fd != exempt_fd) {
             shutdown(current->fd, SHUT_RDWR);
         }
@@ -1235,20 +1234,15 @@ static int add_subscription(void *extra, const unsigned char *s,
  *
  */
 IPC_HANDLER(subscribe) {
-    yajl_handle p;
-    yajl_status stat;
-
     /* Setup the JSON parser */
     static yajl_callbacks callbacks = {
         .yajl_string = add_subscription,
     };
 
-    p = yalloc(&callbacks, (void *)client);
-    stat = yajl_parse(p, (const unsigned char *)message, message_size);
+    const yajl_handle p = yalloc(&callbacks, client);
+    const yajl_status stat = yajl_parse(p, message, message_size);
     if (stat != yajl_status_ok) {
-        unsigned char *err;
-        err = yajl_get_error(p, true, (const unsigned char *)message,
-                             message_size);
+        unsigned char *err = yajl_get_error(p, true, message, message_size);
         ELOG("YAJL parse error: %s\n", err);
         yajl_free_error(p, err);
 
@@ -1371,24 +1365,18 @@ static int _sync_json_int(void *extra, long long val) {
 }
 
 IPC_HANDLER(sync) {
-    yajl_handle p;
-    yajl_status stat;
-
     /* Setup the JSON parser */
     static yajl_callbacks callbacks = {
         .yajl_map_key = _sync_json_key,
         .yajl_integer = _sync_json_int,
     };
 
-    struct sync_state state;
-    memset(&state, '\0', sizeof(struct sync_state));
-    p = yalloc(&callbacks, (void *)&state);
-    stat = yajl_parse(p, (const unsigned char *)message, message_size);
+    struct sync_state state = {0};
+    yajl_handle p = yalloc(&callbacks, &state);
+    yajl_status stat = yajl_parse(p, message, message_size);
     FREE(state.last_key);
     if (stat != yajl_status_ok) {
-        unsigned char *err;
-        err = yajl_get_error(p, true, (const unsigned char *)message,
-                             message_size);
+        unsigned char *err = yajl_get_error(p, true, message, message_size);
         ELOG("YAJL parse error: %s\n", err);
         yajl_free_error(p, err);
 

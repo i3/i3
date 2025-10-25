@@ -596,12 +596,11 @@ void window_update_icon(i3Window *win, xcb_get_property_reply_t *prop) {
     uint32_t *icon = smalloc(len * 4);
 
     for (uint64_t i = 0; i < len; i++) {
-        uint8_t r, g, b, a;
         const uint32_t pixel = data[2 + i];
-        a = (pixel >> 24) & 0xff;
-        r = (pixel >> 16) & 0xff;
-        g = (pixel >> 8) & 0xff;
-        b = (pixel >> 0) & 0xff;
+        const uint8_t a = (pixel >> 24) & 0xff;
+        uint8_t r = (pixel >> 16) & 0xff;
+        uint8_t g = (pixel >> 8) & 0xff;
+        uint8_t b = (pixel >> 0) & 0xff;
 
         /* Cairo uses premultiplied alpha */
         r = (r * a) / 0xff;

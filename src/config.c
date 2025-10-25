@@ -42,9 +42,8 @@ static void free_configuration(void) {
     /* First ungrab the keys */
     ungrab_all_keys(conn);
 
-    struct Mode *mode;
     while (!SLIST_EMPTY(&modes)) {
-        mode = SLIST_FIRST(&modes);
+        struct Mode *mode = SLIST_FIRST(&modes);
         FREE(mode->name);
 
         /* Clear the old binding list */
@@ -82,9 +81,8 @@ static void free_configuration(void) {
     }
 
     /* Clear bar configs */
-    Barconfig *barconfig;
     while (!TAILQ_EMPTY(&barconfigs)) {
-        barconfig = TAILQ_FIRST(&barconfigs);
+        Barconfig *barconfig = TAILQ_FIRST(&barconfigs);
         FREE(barconfig->id);
         for (int c = 0; c < barconfig->num_outputs; c++) {
             free(barconfig->outputs[c]);
