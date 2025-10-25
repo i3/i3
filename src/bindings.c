@@ -907,20 +907,17 @@ CommandResult *run_binding(Binding *bind, Con *con) {
 }
 
 static int fill_rmlvo_from_root(struct xkb_rule_names *xkb_names) {
-    xcb_intern_atom_reply_t *atom_reply;
     size_t content_max_words = 256;
 
-    atom_reply = xcb_intern_atom_reply(
+    xcb_intern_atom_reply_t *atom_reply = xcb_intern_atom_reply(
         conn, xcb_intern_atom(conn, 0, strlen("_XKB_RULES_NAMES"), "_XKB_RULES_NAMES"), NULL);
     if (atom_reply == NULL) {
         return -1;
     }
 
-    xcb_get_property_cookie_t prop_cookie;
-    xcb_get_property_reply_t *prop_reply;
-    prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
-                                             XCB_GET_PROPERTY_TYPE_ANY, 0, content_max_words);
-    prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
+    xcb_get_property_cookie_t prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
+                                                                       XCB_GET_PROPERTY_TYPE_ANY, 0, content_max_words);
+    xcb_get_property_reply_t *prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
     if (prop_reply == NULL) {
         free(atom_reply);
         return -1;

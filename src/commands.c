@@ -101,16 +101,13 @@ static bool maybe_back_and_forth(struct CommandResultIR *cmd_output, const char 
  * forth is enabled, in which case the back_and_forth workspace is returned.
  */
 static Con *maybe_auto_back_and_forth_workspace(Con *workspace) {
-    Con *current, *baf;
-
     if (!config.workspace_auto_back_and_forth) {
         return workspace;
     }
 
-    current = con_get_workspace(focused);
-
+    const Con *current = con_get_workspace(focused);
     if (current == workspace) {
-        baf = workspace_back_and_forth_get();
+        Con *baf = workspace_back_and_forth_get();
         if (baf != NULL) {
             DLOG("Substituting workspace with back_and_forth, as it is focused.\n");
             return baf;
@@ -170,14 +167,14 @@ void cmd_criteria_init(I3_CMD) {
  *
  */
 void cmd_criteria_match_windows(I3_CMD) {
-    owindow *next, *current;
+    owindow *current;
 
     DLOG("match specification finished, matching...\n");
     /* copy the old list head to iterate through it and start with a fresh
      * list which will contain only matching windows */
-    struct owindows_head old = owindows;
+    const owindows_head old = owindows;
     TAILQ_INIT(&owindows);
-    for (next = TAILQ_FIRST(&old); next != TAILQ_END(&old);) {
+    for (owindow *next = TAILQ_FIRST(&old); next != TAILQ_END(&old);) {
         /* make a copy of the next pointer and advance the pointer to the
          * next element as we are going to invalidate the element’s
          * next/prev pointers by calling TAILQ_INSERT_TAIL later */
@@ -530,7 +527,6 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *dir
     }
 
     double new_current_percent;
-    double subtract_percent;
     if (ppt != 0.0) {
         new_current_percent = current->percent + ppt;
     } else {
@@ -538,7 +534,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *dir
         ppt = (double)px / (double)con_rect_size_in_orientation(current->parent);
         new_current_percent = current->percent + ppt;
     }
-    subtract_percent = ppt / (children - 1);
+    const double subtract_percent = ppt / (children - 1);
     if (ppt < 0.0 && new_current_percent < percent_for_1px(current)) {
         yerror("Not resizing, container would end with less than 1px");
         return false;
@@ -1093,9 +1089,8 @@ static Output *user_output_names_find_next(user_output_names_head *names, Output
 }
 
 static void user_output_names_free(user_output_names_head *names) {
-    user_output_name *uo;
     while (!TAILQ_EMPTY(names)) {
-        uo = TAILQ_FIRST(names);
+        user_output_name *uo = TAILQ_FIRST(names);
         free(uo->name);
         TAILQ_REMOVE(names, uo, user_output_names);
         free(uo);

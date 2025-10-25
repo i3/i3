@@ -687,9 +687,8 @@ static char *get_resource(char *name) {
  *
  */
 void free_variables(struct parser_ctx *ctx) {
-    struct Variable *current;
     while (!SLIST_EMPTY(&(ctx->variables))) {
-        current = SLIST_FIRST(&(ctx->variables));
+        struct Variable *current = SLIST_FIRST(&(ctx->variables));
         FREE(current->key);
         FREE(current->value);
         SLIST_REMOVE_HEAD(&(ctx->variables), variables);
@@ -705,7 +704,6 @@ void free_variables(struct parser_ctx *ctx) {
 parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFile *included_file) {
     int fd;
     struct stat stbuf;
-    char *buf;
     FILE *fstr;
     char buffer[4096], key[512], value[4096], *continuation = NULL;
 
@@ -730,7 +728,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
         return PARSE_FILE_FAILED;
     }
 
-    buf = scalloc(stbuf.st_size + 1, 1);
+    char *buf = scalloc(stbuf.st_size + 1, 1);
 
     if ((fstr = fdopen(fd, "r")) == NULL) {
         return PARSE_FILE_FAILED;
@@ -844,16 +842,15 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
 
     /* For every custom variable, see how often it occurs in the file and
      * how much extra bytes it requires when replaced. */
-    struct Variable *current, *nearest;
+    struct Variable *current;
     int extra_bytes = 0;
     /* We need to copy the buffer because we need to invalidate the
      * variables (otherwise we will count them twice, which is bad when
      * 'extra' is negative) */
     char *bufcopy = sstrdup(buf);
     SLIST_FOREACH (current, &(ctx->variables), variables) {
-        int extra = (strlen(current->value) - strlen(current->key));
-        char *next;
-        for (next = bufcopy;
+        const int extra = (strlen(current->value) - strlen(current->key));
+        for (char *next = bufcopy;
              next < (bufcopy + stbuf.st_size) &&
              (next = strcasestr(next, current->key)) != NULL;) {
             /* We need to invalidate variables completely (otherwise we may count
@@ -870,15 +867,15 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
 
     /* Then, allocate a new buffer and copy the file over to the new one,
      * but replace occurrences of our variables */
-    char *walk = buf, *destwalk;
+    const char *walk = buf;
     char *new = scalloc(stbuf.st_size + extra_bytes + 1, 1);
-    destwalk = new;
+    char *destwalk = new;
     while (walk < (buf + stbuf.st_size)) {
         /* Find the next variable */
         SLIST_FOREACH (current, &(ctx->variables), variables) {
             current->next_match = strcasestr(walk, current->key);
         }
-        nearest = NULL;
+        struct Variable *nearest = NULL;
         int distance = stbuf.st_size;
         SLIST_FOREACH (current, &(ctx->variables), variables) {
             if (current->next_match == NULL) {

@@ -281,9 +281,7 @@ static void handle_mapping_notify(xcb_mapping_notify_event_t *event) {
  *
  */
 static void handle_map_request(xcb_map_request_event_t *event) {
-    xcb_get_window_attributes_cookie_t cookie;
-
-    cookie = xcb_get_window_attributes_unchecked(conn, event->window);
+    xcb_get_window_attributes_cookie_t cookie = xcb_get_window_attributes_unchecked(conn, event->window);
 
     DLOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
     add_ignore_event(event->sequence, -1);
