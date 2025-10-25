@@ -510,8 +510,7 @@ int main(int argc, char *argv[]) {
             err(EXIT_FAILURE, "Could not create socket");
         }
 
-        struct sockaddr_un addr;
-        memset(&addr, 0, sizeof(struct sockaddr_un));
+        struct sockaddr_un addr = {0};
         addr.sun_family = AF_LOCAL;
         strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
         FREE(socket_path);
@@ -790,8 +789,7 @@ int main(int argc, char *argv[]) {
         union {
             xcb_client_message_event_t message;
             char storage[32];
-        } event;
-        memset(&event, 0, sizeof(event));
+        } event = {0};
         event.message.response_type = XCB_CLIENT_MESSAGE;
         event.message.window = root_screen->root;
         event.message.format = 32;

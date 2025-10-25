@@ -52,8 +52,7 @@ CFGFUN(include, const char *pattern) {
         file->path = sstrdup(resolved_path);
         TAILQ_INSERT_TAIL(&included_files, file, files);
 
-        struct stack stack;
-        memset(&stack, '\0', sizeof(struct stack));
+        struct stack stack = {0};
         struct parser_ctx ctx = {
             .use_nagbar = result->ctx->use_nagbar,
             .stack = &stack,

@@ -138,9 +138,8 @@ int sd_is_fifo(int fd, const char *path) {
     }
 
     if (path) {
-        struct stat st_path;
+        struct stat st_path = {0};
 
-        memset(&st_path, 0, sizeof(st_path));
         if (stat(path, &st_path) < 0) {
             if (errno == ENOENT || errno == ENOTDIR) {
                 return 0;

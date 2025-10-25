@@ -261,8 +261,7 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     TAILQ_INSERT_TAIL(&included_files, file, files);
 
     LOG("Parsing configfile %s\n", resolved_path);
-    struct stack stack;
-    memset(&stack, '\0', sizeof(struct stack));
+    struct stack stack = {0};
     struct parser_ctx ctx = {
         .use_nagbar = (load_type != C_VALIDATE),
         .stack = &stack,
