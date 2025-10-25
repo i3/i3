@@ -280,7 +280,7 @@ static void handle_mapping_notify(xcb_mapping_notify_event_t *event) {
  * A new window appeared on the screen (=was mapped), so let’s manage it.
  *
  */
-static void handle_map_request(xcb_map_request_event_t *event) {
+static void handle_map_request(const xcb_map_request_event_t *event) {
     xcb_get_window_attributes_cookie_t cookie = xcb_get_window_attributes_unchecked(conn, event->window);
 
     DLOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
@@ -627,7 +627,7 @@ static bool handle_windowname_change_legacy(Con *con, xcb_get_property_reply_t *
 static bool handle_windowrole_change(Con *con, xcb_get_property_reply_t *prop) {
     window_update_role(con->window, prop);
 
-    con = remanage_window(con);
+    remanage_window(con);
 
     return true;
 }

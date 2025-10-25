@@ -46,7 +46,7 @@ int listen_fds;
 
 /* We keep the xcb_prepare watcher around to be able to enable and disable it
  * temporarily for drag_pointer(). */
-static struct ev_prepare *xcb_prepare;
+static ev_prepare *xcb_prepare;
 
 char **start_argv;
 
@@ -116,7 +116,7 @@ I3_REST_ATOMS_XMACRO
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
  *
  */
-static void xcb_got_event(EV_P_ struct ev_io *w, int revents) {
+static void xcb_got_event(EV_P_ ev_io *w, int revents) {
     /* empty, because xcb_prepare_cb are used */
 }
 
@@ -145,8 +145,7 @@ static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
         }
 
         /* Strip off the highest bit (set if the event is generated) */
-        int type = (event->response_type & 0x7F);
-
+        const int type = (event->response_type & 0x7F);
         handle_event(type, event);
 
         free(event);
@@ -237,7 +236,7 @@ static void handle_term_signal(struct ev_loop *loop, ev_signal *signal, int reve
  *
  */
 static void setup_term_handlers(void) {
-    static struct ev_signal signal_watchers[6];
+    static ev_signal signal_watchers[6];
     const size_t num_watchers = sizeof(signal_watchers) / sizeof(signal_watchers[0]);
 
     /* We have to rely on libev functionality here and should not use
@@ -1009,7 +1008,7 @@ int main(int argc, char *argv[]) {
     tree_render();
 
     /* Listen to the IPC socket for clients */
-    struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
+    ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
     ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
     ev_io_start(main_loop, ipc_io);
 
@@ -1017,11 +1016,11 @@ int main(int argc, char *argv[]) {
     char *log_stream_socket_path = get_process_filename("log-stream-socket");
     int log_socket = create_socket(log_stream_socket_path, &current_log_stream_socket_path);
     free(log_stream_socket_path);
-    struct ev_io *log_io = NULL;
+    ev_io *log_io = NULL;
     if (log_socket == -1) {
         ELOG("Could not create the log socket, i3-dump-log -f will not work\n");
     } else {
-        log_io = scalloc(1, sizeof(struct ev_io));
+        log_io = scalloc(1, sizeof(ev_io));
         ev_io_init(log_io, log_new_client, log_socket, EV_READ);
         ev_io_start(main_loop, log_io);
     }
@@ -1029,7 +1028,7 @@ int main(int argc, char *argv[]) {
     /* Also handle the UNIX domain sockets passed via socket
      * activation. The parameter 0 means "do not remove the
      * environment variables", we need to be able to reexec. */
-    struct ev_io *socket_ipc_io = NULL;
+    ev_io *socket_ipc_io = NULL;
     listen_fds = sd_listen_fds(0);
     if (listen_fds < 0) {
         ELOG("socket activation: Error in sd_listen_fds\n");
@@ -1050,7 +1049,7 @@ int main(int argc, char *argv[]) {
                 ELOG("Could not disable FD_CLOEXEC on fd %d\n", fd);
             }
 
-            socket_ipc_io = scalloc(1, sizeof(struct ev_io));
+            socket_ipc_io = scalloc(1, sizeof(ev_io));
             ev_io_init(socket_ipc_io, ipc_new_client, fd, EV_READ);
             ev_io_start(main_loop, socket_ipc_io);
         }
@@ -1073,8 +1072,8 @@ int main(int argc, char *argv[]) {
     /* Set the ewmh desktop properties. */
     ewmh_update_desktop_properties();
 
-    struct ev_io *xcb_watcher = scalloc(1, sizeof(struct ev_io));
-    xcb_prepare = scalloc(1, sizeof(struct ev_prepare));
+    ev_io *xcb_watcher = scalloc(1, sizeof(struct ev_io));
+    xcb_prepare = scalloc(1, sizeof(ev_prepare));
 
     ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);
@@ -1108,7 +1107,7 @@ int main(int argc, char *argv[]) {
             }
 
             /* Strip off the highest bit (set if the event is generated) */
-            int type = (event->response_type & 0x7F);
+            const int type = (event->response_type & 0x7F);
 
             /* We still need to handle MapRequests which are sent in the
              * timespan starting from when we register as a window manager and

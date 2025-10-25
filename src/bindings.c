@@ -680,11 +680,11 @@ static int reorder_binding_cmp(const void *a, const void *b) {
     Binding *second = *((Binding **)b);
     if (first->event_state_mask < second->event_state_mask) {
         return 1;
-    } else if (first->event_state_mask == second->event_state_mask) {
-        return 0;
-    } else {
-        return -1;
     }
+    if (first->event_state_mask == second->event_state_mask) {
+        return 0;
+    }
+    return -1;
 }
 
 static void reorder_bindings_of_mode(struct Mode *mode) {
@@ -942,7 +942,7 @@ static int fill_rmlvo_from_root(struct xkb_rule_names *xkb_names) {
         return -1;
     }
 
-    const char *walk = (const char *)xcb_get_property_value(prop_reply);
+    const char *walk = xcb_get_property_value(prop_reply);
     int remaining = xcb_get_property_value_length(prop_reply);
     for (int i = 0; i < 5 && remaining > 0; i++) {
         const int len = strnlen(walk, remaining);

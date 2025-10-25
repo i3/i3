@@ -440,13 +440,14 @@ static border_style_t border_style_from_motif_value(uint32_t value) {
         }
 
         return BS_NORMAL;
-    } else if (value & MWM_DECOR_TITLE) {
-        return BS_NORMAL;
-    } else if (value & MWM_DECOR_BORDER) {
-        return BS_PIXEL;
-    } else {
-        return BS_NONE;
     }
+    if (value & MWM_DECOR_TITLE) {
+        return BS_NORMAL;
+    }
+    if (value & MWM_DECOR_BORDER) {
+        return BS_PIXEL;
+    }
+    return BS_NONE;
 }
 
 /*
@@ -481,7 +482,7 @@ bool window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, bo
      * (64-bits long on amd64 for example). On the other hand,
      * xcb_get_property_value() behaves strictly according to documentation,
      * i.e. returns 32-bit data fields. */
-    uint32_t *motif_hints = (uint32_t *)xcb_get_property_value(prop);
+    uint32_t *motif_hints = xcb_get_property_value(prop);
 
     if (motif_hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS) {
         *motif_border_style = border_style_from_motif_value(motif_hints[MWM_HINTS_DECORATIONS_FIELD]);
@@ -530,7 +531,7 @@ void window_update_icon(i3Window *win, xcb_get_property_reply_t *prop) {
     }
 
     uint32_t prop_value_len = xcb_get_property_value_length(prop);
-    uint32_t *prop_value = (uint32_t *)xcb_get_property_value(prop);
+    uint32_t *prop_value = xcb_get_property_value(prop);
 
     /* Find an icon matching the preferred size.
      * If there is no such icon, take the smallest icon having at least

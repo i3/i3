@@ -37,13 +37,13 @@ static TAILQ_HEAD(state_head, placeholder_state) state_head =
 
 static xcb_connection_t *restore_conn;
 
-static struct ev_io *xcb_watcher;
-static struct ev_prepare *xcb_prepare;
+static ev_io *xcb_watcher;
+static ev_prepare *xcb_prepare;
 
 static void restore_handle_event(int type, xcb_generic_event_t *event);
 
 /* Documentation for these functions can be found in src/main.c, starting at xcb_got_event */
-static void restore_xcb_got_event(EV_P_ struct ev_io *w, int revents) {
+static void restore_xcb_got_event(EV_P_ ev_io *w, int revents) {
 }
 
 static void restore_xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
@@ -116,8 +116,8 @@ void restore_connect(void) {
         errx(EXIT_FAILURE, "Cannot open display");
     }
 
-    xcb_watcher = scalloc(1, sizeof(struct ev_io));
-    xcb_prepare = scalloc(1, sizeof(struct ev_prepare));
+    xcb_watcher = scalloc(1, sizeof(ev_io));
+    xcb_prepare = scalloc(1, sizeof(ev_prepare));
 
     ev_io_init(xcb_watcher, restore_xcb_got_event, xcb_get_file_descriptor(restore_conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);

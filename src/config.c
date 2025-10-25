@@ -11,8 +11,6 @@
 #include "all.h"
 
 #include <libgen.h>
-#include <unistd.h>
-
 #include <xkbcommon/xkbcommon.h>
 
 char *current_configpath = NULL;
@@ -59,7 +57,7 @@ static void free_configuration(void) {
     }
 
     while (!TAILQ_EMPTY(&assignments)) {
-        struct Assignment *assign = TAILQ_FIRST(&assignments);
+        Assignment *assign = TAILQ_FIRST(&assignments);
         if (assign->type == A_TO_WORKSPACE || assign->type == A_TO_WORKSPACE_NUMBER) {
             FREE(assign->dest.workspace);
         } else if (assign->type == A_COMMAND) {

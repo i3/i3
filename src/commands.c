@@ -409,16 +409,18 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *no_
 static direction_t parse_direction(const char *str) {
     if (strcmp(str, "left") == 0) {
         return D_LEFT;
-    } else if (strcmp(str, "right") == 0) {
-        return D_RIGHT;
-    } else if (strcmp(str, "up") == 0) {
-        return D_UP;
-    } else if (strcmp(str, "down") == 0) {
-        return D_DOWN;
-    } else {
-        ELOG("Invalid direction. This is a parser bug.\n");
-        assert(false);
     }
+    if (strcmp(str, "right") == 0) {
+        return D_RIGHT;
+    }
+    if (strcmp(str, "up") == 0) {
+        return D_UP;
+    }
+    if (strcmp(str, "down") == 0) {
+        return D_DOWN;
+    }
+    ELOG("Invalid direction. This is a parser bug.\n");
+    assert(false);
 }
 
 static void cmd_resize_floating(I3_CMD, const char *direction_str, Con *floating_con, int px) {
@@ -1050,7 +1052,6 @@ static void user_output_names_add(user_output_names_head *list, const char *name
     user_output_name *co = scalloc(sizeof(user_output_name), 1);
     co->name = sstrdup(name);
     TAILQ_INSERT_TAIL(list, co, user_output_names);
-    return;
 }
 
 static Output *user_output_names_find_next(user_output_names_head *names, Output *current_output) {
@@ -1342,7 +1343,7 @@ void cmd_focus_direction(I3_CMD, const char *direction_str) {
             continue;
         }
         if (auto_direction) {
-            orientation_t o = con_orientation(current->con->parent);
+            const orientation_t o = con_orientation(current->con->parent);
             direction = direction_from_orientation_position(o, position);
         }
         tree_next(current->con, direction);

@@ -147,7 +147,7 @@ void floating_check_size(Con *floating_con, bool prefer_height) {
              * this case according to the ICCCM. */
             double width = floating_con->rect.width - window->base_width - border_rect.width;
             double height = floating_con->rect.height - window->base_height - border_rect.height;
-            const double ar = (double)width / (double)height;
+            const double ar = width / height;
             double new_ar = -1;
             if (min_ar > 0 && ar < min_ar) {
                 new_ar = min_ar;

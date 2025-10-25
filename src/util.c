@@ -85,17 +85,21 @@ bool layout_from_name(const char *layout_str, layout_t *out) {
     if (strcmp(layout_str, "default") == 0) {
         *out = L_DEFAULT;
         return true;
-    } else if (strcasecmp(layout_str, "stacked") == 0 ||
+    }
+    if (strcasecmp(layout_str, "stacked") == 0 ||
                strcasecmp(layout_str, "stacking") == 0) {
         *out = L_STACKED;
         return true;
-    } else if (strcasecmp(layout_str, "tabbed") == 0) {
+    }
+    if (strcasecmp(layout_str, "tabbed") == 0) {
         *out = L_TABBED;
         return true;
-    } else if (strcasecmp(layout_str, "splitv") == 0) {
+    }
+    if (strcasecmp(layout_str, "splitv") == 0) {
         *out = L_SPLITV;
         return true;
-    } else if (strcasecmp(layout_str, "splith") == 0) {
+    }
+    if (strcasecmp(layout_str, "splith") == 0) {
         *out = L_SPLITH;
         return true;
     }

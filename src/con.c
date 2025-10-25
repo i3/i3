@@ -2242,7 +2242,6 @@ static void con_on_remove_child(Con *con) {
     if (children == 0) {
         DLOG("Container empty, closing\n");
         tree_close_internal(con, DONT_KILL_WINDOW, false);
-        return;
     }
 }
 

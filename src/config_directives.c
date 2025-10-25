@@ -294,19 +294,26 @@ static void create_gaps_assignment(const char *workspace, const gaps_mask_t mask
 static gaps_mask_t gaps_scope_to_mask(const char *scope) {
     if (!strcmp(scope, "inner")) {
         return GAPS_INNER;
-    } else if (!strcmp(scope, "outer")) {
+    }
+    if (!strcmp(scope, "outer")) {
         return GAPS_OUTER;
-    } else if (!strcmp(scope, "vertical")) {
+    }
+    if (!strcmp(scope, "vertical")) {
         return GAPS_VERTICAL;
-    } else if (!strcmp(scope, "horizontal")) {
+    }
+    if (!strcmp(scope, "horizontal")) {
         return GAPS_HORIZONTAL;
-    } else if (!strcmp(scope, "top")) {
+    }
+    if (!strcmp(scope, "top")) {
         return GAPS_TOP;
-    } else if (!strcmp(scope, "right")) {
+    }
+    if (!strcmp(scope, "right")) {
         return GAPS_RIGHT;
-    } else if (!strcmp(scope, "bottom")) {
+    }
+    if (!strcmp(scope, "bottom")) {
         return GAPS_BOTTOM;
-    } else if (!strcmp(scope, "left")) {
+    }
+    if (!strcmp(scope, "left")) {
         return GAPS_LEFT;
     }
     ELOG("Invalid command, cannot process scope %s", scope);
@@ -941,7 +948,7 @@ CFGFUN(bar_strip_workspace_name, const char *value) {
 }
 
 CFGFUN(bar_start) {
-    current_bar = scalloc(1, sizeof(struct Barconfig));
+    current_bar = scalloc(1, sizeof(Barconfig));
     TAILQ_INIT(&(current_bar->bar_bindings));
     TAILQ_INIT(&(current_bar->tray_outputs));
     current_bar->tray_padding = 2;

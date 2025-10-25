@@ -9,8 +9,8 @@
  */
 #include "all.h"
 
-struct Con *croot;
-struct Con *focused;
+Con *croot;
+Con *focused;
 
 struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
 

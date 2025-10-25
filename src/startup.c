@@ -150,7 +150,7 @@ void start_application(const char *command, bool no_startup_id) {
         free(first_word);
 
         /* Trigger a timeout after 60 seconds */
-        struct ev_timer *timeout = scalloc(1, sizeof(struct ev_timer));
+        ev_timer *timeout = scalloc(1, sizeof(struct ev_timer));
         ev_timer_init(timeout, startup_timeout, 60.0, 0.);
         timeout->data = context;
         ev_timer_start(main_loop, timeout);

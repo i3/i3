@@ -33,13 +33,17 @@ Con *output_get_content(Con *output) {
 Output *get_output_from_string(Output *current_output, const char *output_str) {
     if (strcasecmp(output_str, "current") == 0) {
         return get_output_for_con(focused);
-    } else if (strcasecmp(output_str, "left") == 0) {
+    }
+    if (strcasecmp(output_str, "left") == 0) {
         return get_output_next_wrap(D_LEFT, current_output);
-    } else if (strcasecmp(output_str, "right") == 0) {
+    }
+    if (strcasecmp(output_str, "right") == 0) {
         return get_output_next_wrap(D_RIGHT, current_output);
-    } else if (strcasecmp(output_str, "up") == 0) {
+    }
+    if (strcasecmp(output_str, "up") == 0) {
         return get_output_next_wrap(D_UP, current_output);
-    } else if (strcasecmp(output_str, "down") == 0) {
+    }
+    if (strcasecmp(output_str, "down") == 0) {
         return get_output_next_wrap(D_DOWN, current_output);
     }
 

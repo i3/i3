@@ -396,7 +396,7 @@ char *current_log_stream_socket_path = NULL;
  * the list of log clients.
  *
  */
-void log_new_client(EV_P_ struct ev_io *w, int revents) {
+void log_new_client(EV_P_ ev_io *w, int revents) {
     struct sockaddr_un peer;
     socklen_t len = sizeof(struct sockaddr_un);
     int fd;

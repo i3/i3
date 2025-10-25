@@ -179,7 +179,7 @@ void x_con_init(Con *con) {
                         (strlen("i3-frame") + 1) * 2,
                         "i3-frame\0i3-frame\0");
 
-    struct con_state *state = scalloc(1, sizeof(struct con_state));
+    con_state *state = scalloc(1, sizeof(struct con_state));
     state->id = con->frame.id;
     state->mapped = false;
     state->initial = true;
@@ -197,7 +197,7 @@ void x_con_init(Con *con) {
  *
  */
 void x_reinit(Con *con) {
-    struct con_state *state;
+    con_state *state;
 
     if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state not found\n");
@@ -217,7 +217,7 @@ void x_reinit(Con *con) {
  *
  */
 void x_reparent_child(Con *con, Con *old) {
-    struct con_state *state;
+    con_state *state;
     if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state for con not found\n");
         return;
@@ -232,7 +232,7 @@ void x_reparent_child(Con *con, Con *old) {
  *
  */
 void x_move_win(Con *src, Con *dest) {
-    struct con_state *state_src, *state_dest;
+    con_state *state_src, *state_dest;
 
     if ((state_src = state_for_frame(src->frame.id)) == NULL) {
         ELOG("window state for src not found\n");
@@ -903,7 +903,7 @@ static void set_shape_state(Con *con, bool need_reshape) {
         return;
     }
 
-    struct con_state *state;
+    con_state *state;
     if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state for con %p not found\n", con);
         return;
@@ -1504,8 +1504,7 @@ void x_raise_con(const Con *con) {
  *
  */
 void x_set_name(Con *con, const char *name) {
-    struct con_state *state;
-
+    con_state *state;
     if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state not found\n");
         return;
@@ -1578,8 +1577,7 @@ void x_mask_event_mask(uint32_t mask) {
  * Enables or disables nonrectangular shape of the container frame.
  */
 void x_set_shape(Con *con, xcb_shape_sk_t kind, bool enable) {
-    struct con_state *state;
-    if ((state = state_for_frame(con->frame.id)) == NULL) {
+    if (state_for_frame(con->frame.id) == NULL) {
         ELOG("window state for con %p not found\n", con);
         return;
     }

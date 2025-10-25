@@ -155,7 +155,7 @@ static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
 }
 
 static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
-    struct drag_x11_cb *dragloop = (struct drag_x11_cb *)w->data;
+    struct drag_x11_cb *dragloop = w->data;
     while (!drain_drag_events(EV_A, dragloop)) {
         /* repeatedly drain events: draining might produce additional ones */
     }
