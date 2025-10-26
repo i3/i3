@@ -71,7 +71,7 @@ Rect rect_sanitize_dimensions(Rect rect);
  * Returns true if the name consists of only digits.
  *
  */
-bool name_is_digits(const char *name) __attribute__ ((__pure__));
+bool name_is_digits(const char *name) __attribute__((__pure__));
 
 /**
  * Set 'out' to the layout_t value for the given layout. The function
@@ -170,28 +170,28 @@ ssize_t slurp(const char *path, char **buf);
  * Convert a direction to its corresponding orientation.
  *
  */
-orientation_t orientation_from_direction(direction_t direction) __attribute__ ((__const__));
+orientation_t orientation_from_direction(direction_t direction) __attribute__((__const__));
 
 /**
  * Convert a direction to its corresponding position.
  *
  */
-position_t position_from_direction(direction_t direction) __attribute__ ((__const__));
+position_t position_from_direction(direction_t direction) __attribute__((__const__));
 
 /**
  * Convert orientation and position to the corresponding direction.
  *
  */
-direction_t direction_from_orientation_position(orientation_t orientation, position_t position)  __attribute__ ((__const__));
+direction_t direction_from_orientation_position(orientation_t orientation, position_t position) __attribute__((__const__));
 
 /**
  * Converts direction to a string representation.
  *
  */
-const char *direction_to_string(direction_t direction) __attribute__ ((__const__));
+const char *direction_to_string(direction_t direction) __attribute__((__const__));
 
 /**
  * Converts position to a string representation.
  *
  */
-const char *position_to_string(position_t position) __attribute__ ((__const__));
+const char *position_to_string(position_t position) __attribute__((__const__));

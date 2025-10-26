@@ -21,42 +21,42 @@
 #include <sys/cdefs.h>
 #endif
 
-__attribute__ ((__const__)) int min(const int a, const int b) {
+__attribute__((__const__)) int min(const int a, const int b) {
     return (a < b ? a : b);
 }
 
-__attribute__ ((__const__)) int max(const int a, const int b) {
+__attribute__((__const__)) int max(const int a, const int b) {
     return (a > b ? a : b);
 }
 
-__attribute__ ((__const__))bool rect_contains(const Rect rect, const uint32_t x, const uint32_t y) {
+__attribute__((__const__)) bool rect_contains(const Rect rect, const uint32_t x, const uint32_t y) {
     return (x >= rect.x &&
             x <= (rect.x + rect.width) &&
             y >= rect.y &&
             y <= (rect.y + rect.height));
 }
 
-__attribute__ ((__const__))Rect rect_add(const Rect a, const Rect b) {
+__attribute__((__const__)) Rect rect_add(const Rect a, const Rect b) {
     return (Rect){a.x + b.x,
                   a.y + b.y,
                   a.width + b.width,
                   a.height + b.height};
 }
 
-__attribute__ ((__const__))Rect rect_sub(const Rect a, const Rect b) {
+__attribute__((__const__)) Rect rect_sub(const Rect a, const Rect b) {
     return (Rect){a.x - b.x,
                   a.y - b.y,
                   a.width - b.width,
                   a.height - b.height};
 }
 
-__attribute__ ((__const__))Rect rect_sanitize_dimensions(Rect rect) {
+__attribute__((__const__)) Rect rect_sanitize_dimensions(Rect rect) {
     rect.width = (int32_t)rect.width <= 0 ? 1 : rect.width;
     rect.height = (int32_t)rect.height <= 0 ? 1 : rect.height;
     return rect;
 }
 
-__attribute__ ((__const__)) bool rect_equals(const Rect a, const Rect b) {
+__attribute__((__const__)) bool rect_equals(const Rect a, const Rect b) {
     return a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height;
 }
 
