@@ -37,7 +37,7 @@ jobs:
         docker pull ${{ env.BASENAME_UBUNTU }} || ./travis/docker-build-and-push.sh ${{ env.BASENAME_UBUNTU }} travis/travis-base-ubuntu.Dockerfile
     - name: build i3
       run: |
-        docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf build; mkdir -p build && cd build && CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Werror -fno-common -D_FORTIFY_SOURCE=3" meson setup .. -Ddocs=true -Dmans=true -Db_sanitize="address,undefined" --buildtype=debugoptimized && ninja -v'
+        docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${{ env.BASENAME }} /bin/sh -c 'rm -rf build; mkdir -p build && cd build && CFLAGS="-Wformat -Wformat-security -Wall -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Wsuggest-attribute=pure -Wsuggest-attribute=const -Wsuggest-attribute=format -Werror -fno-common -D_FORTIFY_SOURCE=3" meson setup .. -Ddocs=true -Dmans=true -Db_sanitize="address,undefined" --buildtype=debugoptimized && ninja -v'
     - name: Upload docs html for manual inspection
       uses: actions/upload-artifact@v4
       with:
@@ -86,8 +86,8 @@ jobs:
       run: ./release-notes/generator.pl
     - name: Install dependencies
       run: |
-        sudo apt-get install -y clang-format-15
+        sudo apt-get install -y clang-format-20
     - name: Check formatting
-      run: clang-format-15 --dry-run --Werror $(git ls-files '*.c' '*.h')
+      run: clang-format-20 --dry-run --Werror $(git ls-files '*.c' '*.h')
     - name: Verify safe wrapper functions are used
       run: ./travis/check-safe-wrappers.sh

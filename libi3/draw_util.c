@@ -12,7 +12,6 @@
 #include <string.h>
 
 #include <xcb/xcb.h>
-#include <xcb/xcb_aux.h>
 
 /* The default visual_type to use if none is specified when creating the surface. Must be defined globally. */
 extern xcb_visualtype_t *visual_type;
@@ -83,7 +82,7 @@ static xcb_gcontext_t get_gc(xcb_connection_t *conn, uint8_t depth, xcb_drawable
  * Get depth of visual specified by visualid
  *
  */
-uint16_t get_visual_depth(xcb_visualid_t visual_id) {
+uint16_t get_visual_depth(const xcb_visualid_t visual_id) {
     xcb_depth_iterator_t depth_iter;
 
     depth_iter = xcb_screen_allowed_depths_iterator(root_screen);

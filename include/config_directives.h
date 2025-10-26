@@ -17,7 +17,7 @@
  * A utility function to convert a string containing the group and modifiers to
  * the corresponding bit mask.
  */
-i3_event_state_mask_t event_state_from_str(const char *str);
+i3_event_state_mask_t event_state_from_str(const char *str) __attribute__ ((__pure__));
 
 /** The beginning of the prototype for every cfg_ function. */
 #define I3_CFG Match *current_match, struct ConfigResultIR *result

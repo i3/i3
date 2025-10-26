@@ -591,7 +591,7 @@ static void focus_workspace(i3_ws *ws) {
     if (ws->id != 0) {
         /* Workspace ID has higher precedence since the workspace_command is
          * allowed to change workspace names as long as it provides a valid ID. */
-        sasprintf(&buffer, "[con_id=%lld] focus workspace", ws->id);
+        sasprintf(&buffer, "[con_id=%lu] focus workspace", ws->id);
         goto done;
     }
 

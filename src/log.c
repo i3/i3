@@ -229,7 +229,7 @@ void set_debug_logging(const bool _debug_logging) {
  * This is to be called by *LOG() which includes filename/linenumber/function.
  *
  */
-static void vlog(const bool print, const char *fmt, va_list args) {
+__attribute__((format(printf, 2, 0))) static void vlog(const bool print, const char *fmt, va_list args) {
     /* Precisely one page to not consume too much memory but to hold enough
      * data to be useful. */
     static char message[4096];

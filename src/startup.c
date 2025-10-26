@@ -297,7 +297,7 @@ struct Startup_Sequence *startup_sequence_get(const i3Window *cwindow,
         DLOG("Checking leader window 0x%08x\n", cwindow->leader);
 
         const xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, cwindow->leader,
-                                                            A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
+                                                                  A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
         startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
 
         if (startup_id_reply == NULL ||
@@ -366,7 +366,7 @@ char *startup_workspace_for_window(const i3Window *cwindow, xcb_get_property_rep
  */
 void startup_sequence_delete_by_window(const i3Window *win) {
     const xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win->id, A__NET_STARTUP_ID,
-                                                        XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
+                                                              XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
     xcb_get_property_reply_t *startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
 
     struct Startup_Sequence *sequence = startup_sequence_get(win, startup_id_reply, true);

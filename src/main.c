@@ -762,7 +762,7 @@ int main(int argc, char *argv[]) {
         xcb_set_selection_owner(conn, wm_sn_selection_owner, wm_sn, last_timestamp);
 
         if (selection_reply && selection_reply->owner != XCB_NONE) {
-            int check_rounds = 150;            /* Wait for a maximum of 15 seconds */
+            int check_rounds = 150; /* Wait for a maximum of 15 seconds */
             xcb_get_geometry_reply_t *geom_reply = NULL;
 
             DLOG("waiting for old WM_Sn selection owner to exit");

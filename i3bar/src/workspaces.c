@@ -152,7 +152,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
     if (!strcmp(params->cur_key, "output")) {
         /* We add the ws to the TAILQ of the output, it belongs to */
         char *output_name = NULL;
-        sasprintf(&output_name, "%.*s", len, val);
+        sasprintf(&output_name, "%.*s", (int)len, val);
 
         i3_output *target = get_output_by_name(output_name);
         i3_ws *ws = params->workspaces_walk;
@@ -220,7 +220,7 @@ static int workspaces_end_map_cb(void *params_) {
 static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
     struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
     FREE(params->cur_key);
-    sasprintf(&(params->cur_key), "%.*s", keyLen, keyVal);
+    sasprintf(&(params->cur_key), "%.*s", (int)keyLen, keyVal);
     return 1;
 }
 

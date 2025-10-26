@@ -819,7 +819,7 @@ void cmd_append_layout(I3_CMD, const char *cpath) {
     char *errormsg = NULL;
     tree_append_json(parent, buf, len, &errormsg);
     if (errormsg != NULL) {
-        yerror(errormsg);
+        yerror("%s", errormsg);
         free(errormsg);
         /* Note that we continue executing since tree_append_json() has
          * side-effects — user-provided layouts can be partly valid, partly
