@@ -39,7 +39,7 @@ jobs:
       run: |
         CFLAGS="-Wformat -Wformat-security -Wall -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Werror -fno-common -D_FORTIFY_SOURCE=3"
         if [ "${{ matrix.compiler }}" = "gcc" ]; then
-          export CFLAGS="$CFLAGS -Wsuggest-attribute=pure -Wsuggest-attribute=const -Wsuggest-attribute=format"
+          CFLAGS="$CFLAGS -Wsuggest-attribute=pure -Wsuggest-attribute=const -Wsuggest-attribute=format"
         fi
         export CFLAGS
         docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC -e CFLAGS ${{ env.BASENAME }} /bin/sh -c 'rm -rf build; mkdir -p build && cd build && meson setup .. -Ddocs=true -Dmans=true -Db_sanitize="address,undefined" --buildtype=debugoptimized && ninja -v'
