@@ -19,7 +19,6 @@ struct workspaces_json_params {
     struct ws_head *workspaces;
     i3_ws *workspaces_walk;
     char *cur_key;
-    bool need_output;
     bool parsing_rect;
 };
 
@@ -27,8 +26,8 @@ struct workspaces_json_params {
  * Parse a boolean value (visible, focused, urgent)
  *
  */
-static int workspaces_boolean_cb(void *params_, int val) {
-    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
+static int workspaces_boolean_cb(void *params_, const int val) {
+    struct workspaces_json_params *params = params_;
 
     if (!strcmp(params->cur_key, "visible")) {
         params->workspaces_walk->visible = val;
@@ -57,8 +56,8 @@ static int workspaces_boolean_cb(void *params_, int val) {
  * Parse an integer (num or the rect)
  *
  */
-static int workspaces_integer_cb(void *params_, long long val) {
-    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
+static int workspaces_integer_cb(void *params_, const long long val) {
+    struct workspaces_json_params *params = params_;
 
     if (!strcmp(params->cur_key, "id")) {
         params->workspaces_walk->id = val;
@@ -101,8 +100,8 @@ static int workspaces_integer_cb(void *params_, long long val) {
  * Parse a string (name, output)
  *
  */
-static int workspaces_string_cb(void *params_, const unsigned char *val, size_t len) {
-    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
+static int workspaces_string_cb(void *params_, const unsigned char *val, const size_t len) {
+    struct workspaces_json_params *params = params_;
 
     if (!strcmp(params->cur_key, "name")) {
         const char *ws_name = (const char *)val;
@@ -124,9 +123,9 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
 
             if (config.strip_ws_numbers) {
                 /* Offset may be equal to length, in which case display the number */
-                params->workspaces_walk->name = (offset < len
-                                                     ? i3string_from_markup_with_length(ws_name + offset, len - offset)
-                                                     : i3string_from_markup(ws_num));
+                params->workspaces_walk->name = offset < len
+                                                    ? i3string_from_markup_with_length(ws_name + offset, len - offset)
+                                                    : i3string_from_markup(ws_num);
             } else {
                 params->workspaces_walk->name = i3string_from_markup(ws_num);
             }
@@ -161,7 +160,6 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
             TAILQ_INSERT_TAIL(ws->output->workspaces, ws, tailq);
         }
 
-        params->need_output = false;
         FREE(output_name);
         FREE(params->cur_key);
 
@@ -176,14 +174,13 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
  *
  */
 static int workspaces_start_map_cb(void *params_) {
-    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
+    struct workspaces_json_params *params = params_;
 
     if (params->cur_key == NULL) {
         i3_ws *new_workspace = scalloc(1, sizeof(i3_ws));
         new_workspace->num = -1;
 
         params->workspaces_walk = new_workspace;
-        params->need_output = true;
         params->parsing_rect = false;
     } else {
         params->parsing_rect = true;
@@ -193,15 +190,26 @@ static int workspaces_start_map_cb(void *params_) {
 }
 
 static int workspaces_end_map_cb(void *params_) {
-    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
-    i3_ws *ws = params->workspaces_walk;
-    const bool parsing_rect = params->parsing_rect;
-    params->parsing_rect = false;
+    struct workspaces_json_params *params = params_;
 
-    if (parsing_rect || !ws || !ws->name || !params->need_output) {
+    if (params->parsing_rect) {
+        params->parsing_rect = false;
         return 1;
     }
 
+    i3_ws *ws = params->workspaces_walk;
+    if (!ws || ws->output) {
+        return 1; /* workspace already assigned to output */
+    }
+
+    if (!ws->name || SLIST_EMPTY(outputs)) { /* Invalid state */
+        I3STRING_FREE(ws->name);
+        FREE(ws->canonical_name);
+        FREE(params->workspaces_walk);
+        return 1;
+    }
+
+    /* Handle no output case */
     ws->output = get_output_by_name("primary");
     if (ws->output == NULL) {
         ws->output = SLIST_FIRST(outputs);
@@ -217,14 +225,14 @@ static int workspaces_end_map_cb(void *params_) {
  * Essentially we just save it in the parsing state
  *
  */
-static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
-    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
+static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, const size_t keyLen) {
+    struct workspaces_json_params *params = params_;
     FREE(params->cur_key);
-    sasprintf(&(params->cur_key), "%.*s", keyLen, keyVal);
+    sasprintf(&params->cur_key, "%.*s", keyLen, keyVal);
     return 1;
 }
 
-/* A datastructure to pass all these callbacks to yajl */
+/* A data structure to pass all these callbacks to yajl */
 static yajl_callbacks workspaces_callbacks = {
     .yajl_boolean = workspaces_boolean_cb,
     .yajl_integer = workspaces_integer_cb,
@@ -238,12 +246,12 @@ static yajl_callbacks workspaces_callbacks = {
  * Parse the received JSON string
  *
  */
-void parse_workspaces_json(const unsigned char *json, size_t size) {
+void parse_workspaces_json(const unsigned char *json, const size_t size) {
     free_workspaces();
 
     struct workspaces_json_params params = {0};
-    yajl_handle handle = yajl_alloc(&workspaces_callbacks, NULL, (void *)&params);
-    yajl_status state = yajl_parse(handle, json, size);
+    const yajl_handle handle = yajl_alloc(&workspaces_callbacks, NULL, &params);
+    const yajl_status state = yajl_parse(handle, json, size);
 
     /* FIXME: Proper error handling for JSON parsing */
     switch (state) {
@@ -252,7 +260,7 @@ void parse_workspaces_json(const unsigned char *json, size_t size) {
         case yajl_status_client_canceled:
         case yajl_status_error: {
             unsigned char *err = yajl_get_error(handle, 1, json, size);
-            ELOG("Could not parse workspaces reply, error:\n%s\njson:---%s---\n", err, json);
+            ELOG("Could not parse workspaces reply, error:\n%s\njson:---%s---\n", (char *)err, (char *)json);
             yajl_free_error(handle, err);
 
             if (config.workspace_command) {

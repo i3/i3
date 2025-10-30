@@ -283,7 +283,7 @@ static void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
      * we have to expect */
     uint32_t rec = 0;
     while (rec < header_len) {
-        int n = read(fd, header + rec, header_len - rec);
+        const int n = read(fd, header + rec, header_len - rec);
         if (n == -1) {
             ELOG("read() failed: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
@@ -292,10 +292,11 @@ static void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
             /* EOF received. Since i3 will restart i3bar instances as appropriate,
              * we exit here. */
             DLOG("EOF received, exiting...\n");
+            clean_xcb();
+            free(header);
 #ifdef I3_ASAN_ENABLED
             __lsan_do_leak_check();
 #endif
-            clean_xcb();
             exit(EXIT_SUCCESS);
         }
         rec += n;

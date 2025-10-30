@@ -1931,6 +1931,7 @@ void reconfig_windows(bool redraw_bars) {
                                                8,
                                                len,
                                                class);
+            free(class);
 
             char *name;
             sasprintf(&name, "i3bar for output %s", walk->name);

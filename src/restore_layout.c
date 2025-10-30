@@ -144,7 +144,9 @@ static void update_placeholder_contents(placeholder_state *state) {
 #define APPEND_REGEX(re_name)                                                                                                                        \
     do {                                                                                                                                             \
         if (swallows->re_name != NULL) {                                                                                                             \
+            char *old_serialized = serialized;                                                                                                       \
             sasprintf(&serialized, "%s%s" #re_name "=\"%s\"", (serialized ? serialized : "["), (serialized ? " " : ""), swallows->re_name->pattern); \
+            free(old_serialized);                                                                                                                    \
         }                                                                                                                                            \
     } while (0)
 
@@ -159,7 +161,9 @@ static void update_placeholder_contents(placeholder_state *state) {
             continue;
         }
 
+        char *old_serialized = serialized;
         sasprintf(&serialized, "%s]", serialized);
+        free(old_serialized);
         DLOG("con %p (placeholder 0x%08x) line %d: %s\n", state->con, state->window, n, serialized);
 
         i3String *str = i3string_from_utf8(serialized);
