@@ -4,7 +4,7 @@
  * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * config_parser.c: hand-written parser to parse configuration directives.
+ * config_parser.c: handwritten parser to parse configuration directives.
  *
  * See also src/commands_parser.c for rationale on why we use a custom parser.
  *
@@ -127,7 +127,7 @@ static void push_long(struct stack *ctx, const char *identifier, long num) {
     exit(EXIT_FAILURE);
 }
 
-static const char *get_string(struct stack *ctx, const char *identifier) {
+static const char *get_string(const struct stack *ctx, const char *identifier) {
     for (int c = 0; c < 10; c++) {
         if (ctx->stack[c].identifier == NULL) {
             break;
@@ -139,7 +139,7 @@ static const char *get_string(struct stack *ctx, const char *identifier) {
     return NULL;
 }
 
-static long get_long(struct stack *ctx, const char *identifier) {
+static long get_long(const struct stack *ctx, const char *identifier) {
     for (int c = 0; c < 10; c++) {
         if (ctx->stack[c].identifier == NULL) {
             break;
@@ -408,7 +408,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
 
         if (!token_handled) {
             /* Figure out how much memory we will need to fill in the names of
-             * all tokens afterwards. */
+             * all tokens afterward. */
             int tokenlen = 0;
             for (c = 0; c < ptr->n; c++) {
                 tokenlen += strlen(ptr->array[c].name) + strlen("'', ");
@@ -657,7 +657,7 @@ static void upsert_variable(struct variables_head *variables, char *key, char *v
     }
 }
 
-static char *get_resource(char *name) {
+static char *get_resource(const char *name) {
     if (conn == NULL) {
         return NULL;
     }
@@ -697,53 +697,53 @@ void free_variables(struct parser_ctx *ctx) {
     }
 }
 
-/*
- * Parses the given file by first replacing the variables, then calling
- * parse_config and possibly launching i3-nagbar.
- *
- */
-parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFile *included_file) {
-    int fd;
-    struct stat stbuf;
-    char *buf;
-    FILE *fstr;
-    char buffer[4096], key[512], value[4096], *continuation = NULL;
-
-    char *old_dir = getcwd(NULL, 0);
+static bool try_chdir(const char *path) {
+    bool result = true;
     char *dir = NULL;
     /* dirname(3) might modify the buffer, so make a copy: */
-    char *dirbuf = sstrdup(f);
+    char *dirbuf = sstrdup(path);
     if ((dir = dirname(dirbuf)) != NULL) {
         LOG("Changing working directory to config file directory %s\n", dir);
         if (chdir(dir) == -1) {
             ELOG("chdir(%s) failed: %s\n", dir, strerror(errno));
-            return PARSE_FILE_FAILED;
+            result = false;
         }
     }
-    free(dirbuf);
+    FREE(dirbuf);
+    return result;
+}
 
+static parse_file_result_t parse_file_inner(struct parser_ctx *ctx, const char *f, IncludedFile *included_file) {
+    if (!try_chdir(f)) {
+        return PARSE_FILE_FAILED;
+    }
+
+    int fd;
     if ((fd = open(f, O_RDONLY)) == -1) {
         return PARSE_FILE_FAILED;
     }
 
+    struct stat stbuf;
     if (fstat(fd, &stbuf) == -1) {
+        close(fd);
         return PARSE_FILE_FAILED;
     }
 
-    buf = scalloc(stbuf.st_size + 1, 1);
-
+    FILE *fstr;
     if ((fstr = fdopen(fd, "r")) == NULL) {
         return PARSE_FILE_FAILED;
     }
 
     included_file->raw_contents = scalloc(stbuf.st_size + 1, 1);
     if ((ssize_t)fread(included_file->raw_contents, 1, stbuf.st_size, fstr) != stbuf.st_size) {
+        fclose(fstr);
         return PARSE_FILE_FAILED;
     }
     rewind(fstr);
 
+    char buffer[4096], key[512], value[4096], *continuation = NULL;
     bool invalid_sets = false;
-
+    char *buf = scalloc(stbuf.st_size + 1, 1);
     while (!feof(fstr)) {
         if (!continuation) {
             continuation = buffer;
@@ -752,6 +752,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
             if (feof(fstr)) {
                 break;
             }
+            fclose(fstr);
             return PARSE_FILE_FAILED;
         }
         if (buffer[strlen(buffer) - 1] != '\n' && !feof(fstr)) {
@@ -834,7 +835,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
             continue;
         }
     }
-    fclose(fstr);
+    fclose(fstr); /* No need to close(fd) */
 
     if (database != NULL) {
         xcb_xrm_database_free(database);
@@ -844,7 +845,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
 
     /* For every custom variable, see how often it occurs in the file and
      * how much extra bytes it requires when replaced. */
-    struct Variable *current, *nearest;
+    struct Variable *current;
     int extra_bytes = 0;
     /* We need to copy the buffer because we need to invalidate the
      * variables (otherwise we will count them twice, which is bad when
@@ -852,8 +853,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
     char *bufcopy = sstrdup(buf);
     SLIST_FOREACH (current, &(ctx->variables), variables) {
         int extra = (strlen(current->value) - strlen(current->key));
-        char *next;
-        for (next = bufcopy;
+        for (char *next = bufcopy;
              next < (bufcopy + stbuf.st_size) &&
              (next = strcasestr(next, current->key)) != NULL;) {
             /* We need to invalidate variables completely (otherwise we may count
@@ -870,15 +870,15 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
 
     /* Then, allocate a new buffer and copy the file over to the new one,
      * but replace occurrences of our variables */
-    char *walk = buf, *destwalk;
+    char *walk = buf;
     char *new = scalloc(stbuf.st_size + extra_bytes + 1, 1);
-    destwalk = new;
+    char *destwalk = new;
     while (walk < (buf + stbuf.st_size)) {
         /* Find the next variable */
         SLIST_FOREACH (current, &(ctx->variables), variables) {
             current->next_match = strcasestr(walk, current->key);
         }
-        nearest = NULL;
+        struct Variable *nearest = NULL;
         int distance = stbuf.st_size;
         SLIST_FOREACH (current, &(ctx->variables), variables) {
             if (current->next_match == NULL) {
@@ -927,15 +927,28 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
     free(new);
     free(buf);
 
-    if (chdir(old_dir) == -1) {
-        ELOG("chdir(%s) failed: %s\n", old_dir, strerror(errno));
-        return PARSE_FILE_FAILED;
-    }
-    free(old_dir);
     if (has_errors) {
         return PARSE_FILE_CONFIG_ERRORS;
     }
     return PARSE_FILE_SUCCESS;
+}
+
+/*
+ * Parses the given file by first replacing the variables, then calling
+ * parse_config and possibly launching i3-nagbar.
+ *
+ */
+parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFile *included_file) {
+    char *old_dir = getcwd(NULL, 0);
+
+    parse_file_result_t result = parse_file_inner(ctx, f, included_file);
+
+    if (chdir(old_dir) == -1) {
+        ELOG("chdir(%s) failed: %s\n", old_dir, strerror(errno));
+        result = PARSE_FILE_FAILED;
+    }
+    free(old_dir);
+    return result;
 }
 
 #endif
