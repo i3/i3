@@ -85,13 +85,13 @@ static void next_state(const cmdp_token *token) {
         if (subcommand_output.needs_tree_render) {
             command_output.needs_tree_render = true;
         }
-        clear_stack(&stack);
+        parser_clear_stack(&stack);
         return;
     }
 
     state = token->next_state;
     if (state == INITIAL) {
-        clear_stack(&stack);
+        parser_clear_stack(&stack);
     }
 }
 
@@ -101,7 +101,7 @@ static void next_state(const cmdp_token *token) {
  * workspace commands.
  *
  */
-char *parse_string(const char **walk, bool as_word) {
+char *parse_string(const char **walk, const bool as_word) {
     const char *beginning = *walk;
     /* Handle quoted strings (or words). */
     if (**walk == '"') {
@@ -198,7 +198,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             walk++;
         }
 
-        cmdp_token_ptr *ptr = &(tokens[state]);
+        const cmdp_token_ptr *ptr = &(tokens[state]);
         token_handled = false;
         for (c = 0; c < ptr->n; c++) {
             token = &(ptr->array[c]);
@@ -207,7 +207,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             if (token->name[0] == '\'') {
                 if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
                     if (token->identifier != NULL) {
-                        push_string(&stack, token->identifier, token->name + 1);
+                        parser_push_string(&stack, token->identifier, token->name + 1);
                     }
                     walk += strlen(token->name) - 1;
                     next_state(token);
@@ -221,7 +221,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                 /* Handle numbers. We only accept decimal numbers for now. */
                 char *end = NULL;
                 errno = 0;
-                long int num = strtol(walk, &end, 10);
+                const long int num = strtol(walk, &end, 10);
                 if ((errno == ERANGE && (num == LONG_MIN || num == LONG_MAX)) ||
                     (errno != 0 && num == 0)) {
                     continue;
@@ -233,7 +233,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                 }
 
                 if (token->identifier != NULL) {
-                    push_long(&stack, token->identifier, num);
+                    parser_push_long(&stack, token->identifier, num);
                 }
 
                 /* Set walk to the first non-number character */
@@ -248,7 +248,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                 char *str = parse_string(&walk, (token->name[0] != 's'));
                 if (str != NULL) {
                     if (token->identifier) {
-                        push_string(&stack, token->identifier, str);
+                        parser_push_string(&stack, token->identifier, str);
                     }
                     free(str);
                     /* If we are at the end of a quoted string, skip the ending
@@ -356,7 +356,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             y(map_close);
 
             free(position);
-            clear_stack(&stack);
+            parser_clear_stack(&stack);
             break;
         }
     }

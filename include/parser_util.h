@@ -32,28 +32,28 @@ struct stack {
  * string will be appended, separated by a comma.
  *
  */
-void push_string(struct stack *stack, const char *identifier, const char *str);
+void parser_push_string(struct stack *stack, const char *identifier, const char *str);
 
 /**
  * Pushes a long (identified by 'identifier') on the stack.
  *
  */
-void push_long(struct stack *stack, const char *identifier, long num);
+void parser_push_long(struct stack *stack, const char *identifier, long num);
 
 /**
  * Returns the string with the given identifier.
  *
  */
-const char *get_string(const struct stack *stack, const char *identifier);
+const char *parser_get_string(const struct stack *stack, const char *identifier);
 
 /**
  * Returns the long with the given identifier.
  *
  */
-long get_long(const struct stack *stack, const char *identifier);
+long parser_get_long(const struct stack *stack, const char *identifier);
 
 /**
  * Clears the stack.
  *
  */
-void clear_stack(struct stack *stack);
+void parser_clear_stack(struct stack *stack);

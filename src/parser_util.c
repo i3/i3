@@ -15,7 +15,7 @@
  * single array, since the number of entries we have to store is very small.
  *
  */
-void push_string(struct stack *stack, const char *identifier, const char *str) {
+void parser_push_string(struct stack *stack, const char *identifier, const char *str) {
     for (int c = 0; c < 10; c++) {
         if (stack->stack[c].identifier != NULL &&
             strcmp(stack->stack[c].identifier, identifier) != 0) {
@@ -44,7 +44,7 @@ void push_string(struct stack *stack, const char *identifier, const char *str) {
     exit(EXIT_FAILURE);
 }
 
-void push_long(struct stack *stack, const char *identifier, const long num) {
+void parser_push_long(struct stack *stack, const char *identifier, const long num) {
     for (int c = 0; c < 10; c++) {
         if (stack->stack[c].identifier != NULL) {
             continue;
@@ -65,7 +65,7 @@ void push_long(struct stack *stack, const char *identifier, const long num) {
     exit(EXIT_FAILURE);
 }
 
-const char *get_string(const struct stack *stack, const char *identifier) {
+const char *parser_get_string(const struct stack *stack, const char *identifier) {
     for (int c = 0; c < 10; c++) {
         if (stack->stack[c].identifier == NULL) {
             break;
@@ -77,7 +77,7 @@ const char *get_string(const struct stack *stack, const char *identifier) {
     return NULL;
 }
 
-long get_long(const struct stack *stack, const char *identifier) {
+long parser_get_long(const struct stack *stack, const char *identifier) {
     for (int c = 0; c < 10; c++) {
         if (stack->stack[c].identifier == NULL) {
             break;
@@ -89,7 +89,7 @@ long get_long(const struct stack *stack, const char *identifier) {
     return 0;
 }
 
-void clear_stack(struct stack *stack) {
+void parser_clear_stack(struct stack *stack) {
     for (int c = 0; c < 10; c++) {
         if (stack->stack[c].type == STACK_STR) {
             free(stack->stack[c].val.str);

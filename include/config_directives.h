@@ -43,7 +43,7 @@ CFGFUN(include, const char *pattern);
 CFGFUN(font, const char *font);
 CFGFUN(exec, const char *exectype, const char *no_startup_id, const char *command);
 CFGFUN(for_window, const char *command);
-CFGFUN(gaps, const char *workspace, const char *type, const long value);
+CFGFUN(gaps, const char *workspace, const char *scope, const long value);
 CFGFUN(smart_borders, const char *enable);
 CFGFUN(smart_gaps, const char *enable);
 CFGFUN(floating_minimum_size, const long width, const long height);
@@ -79,7 +79,7 @@ CFGFUN(default_border, const char *windowtype, const char *border, const long wi
 CFGFUN(workspace, const char *workspace, const char *output);
 CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command);
 
-CFGFUN(enter_mode, const char *pango_markup, const char *mode);
+CFGFUN(enter_mode, const char *pango_markup, const char *modename);
 CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *border, const char *whole_window, const char *exclude_titlebar, const char *command);
 
 CFGFUN(bar_font, const char *font);
@@ -103,7 +103,7 @@ CFGFUN(bar_i3bar_command, const char *i3bar_command);
 CFGFUN(bar_color, const char *colorclass, const char *border, const char *background, const char *text);
 CFGFUN(bar_socket_path, const char *socket_path);
 CFGFUN(bar_tray_output, const char *output);
-CFGFUN(bar_tray_padding, const long spacing_px);
+CFGFUN(bar_tray_padding, const long padding_px);
 CFGFUN(bar_color_single, const char *colorclass, const char *color);
 CFGFUN(bar_status_command, const char *command);
 CFGFUN(bar_workspace_command, const char *command);
