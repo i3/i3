@@ -327,7 +327,7 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         sasprintf(&mark, "%.*s", (int)len, val);
 
         marks = srealloc(marks, (++num_marks) * sizeof(struct pending_marks));
-        marks[num_marks - 1].mark = sstrdup(mark);
+        marks[num_marks - 1].mark = mark;
         marks[num_marks - 1].con_to_be_marked = json_node;
     } else {
         if (strcasecmp(last_key, "name") == 0) {

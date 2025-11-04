@@ -81,6 +81,7 @@ CFGFUN(include, const char *pattern) {
                 assert(false);
                 break;
         }
+        result->ctx->variables = ctx.variables; /* In case head was modified */
     }
     wordfree(&p);
 }
