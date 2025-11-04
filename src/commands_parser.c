@@ -26,9 +26,9 @@
 #include "all.h"
 #include "parser_util.h"
 
-// Macros to make the YAJL API a bit easier to use.
-#define y(x, ...) (command_output.json_gen != NULL ? yajl_gen_##x(command_output.json_gen, ##__VA_ARGS__) : 0)
-#define ystr(str) (command_output.json_gen != NULL ? yajl_gen_string(command_output.json_gen, (unsigned char *)str, strlen(str)) : 0)
+/* Macros to make the YAJL API a bit easier to use. */
+#define y(x, ...) (cmd_ctx.command_output.json_gen != NULL ? yajl_gen_##x(cmd_ctx.command_output.json_gen, ##__VA_ARGS__) : 0)
+#define ystr(str) (cmd_ctx.command_output.json_gen != NULL ? yajl_gen_string(cmd_ctx.command_output.json_gen, (unsigned char *)str, strlen(str)) : 0)
 
 /*******************************************************************************
  * The data structures used for parsing. Essentially the current state and a
@@ -61,37 +61,28 @@ typedef struct tokenptr {
  * The parser itself.
  ******************************************************************************/
 
-static cmdp_state state;
-static Match current_match;
-/*******************************************************************************
- * The (small) stack where identified literals are stored during the parsing
- * of a single command (like $workspace).
- ******************************************************************************/
-static struct stack stack;
-static struct CommandResultIR subcommand_output;
-static struct CommandResultIR command_output;
-
 #include "GENERATED_command_call.h"
 
-static void next_state(const cmdp_token *token) {
+static void next_state(const cmdp_token *token, struct cmd_parser_ctx *cmd_ctx) {
     if (token->next_state == __CALL) {
-        subcommand_output.json_gen = command_output.json_gen;
-        subcommand_output.client = command_output.client;
-        subcommand_output.needs_tree_render = false;
-        GENERATED_call(&current_match, &stack, token->extra.call_identifier, &subcommand_output);
-        state = subcommand_output.next_state;
+        cmd_ctx->subcommand_output.ctx = cmd_ctx;
+        cmd_ctx->subcommand_output.json_gen = cmd_ctx->command_output.json_gen;
+        cmd_ctx->subcommand_output.client = cmd_ctx->command_output.client;
+        cmd_ctx->subcommand_output.needs_tree_render = false;
+        GENERATED_call(&cmd_ctx->current_match, &cmd_ctx->stack, token->extra.call_identifier, &cmd_ctx->subcommand_output);
+        cmd_ctx->state = cmd_ctx->subcommand_output.next_state;
         /* If any subcommand requires a tree_render(), we need to make the
          * whole parser result request a tree_render(). */
-        if (subcommand_output.needs_tree_render) {
-            command_output.needs_tree_render = true;
+        if (cmd_ctx->subcommand_output.needs_tree_render) {
+            cmd_ctx->command_output.needs_tree_render = true;
         }
-        parser_clear_stack(&stack);
+        parser_clear_stack(&cmd_ctx->stack);
         return;
     }
 
-    state = token->next_state;
-    if (state == INITIAL) {
-        parser_clear_stack(&stack);
+    cmd_ctx->state = token->next_state;
+    if (cmd_ctx->state == INITIAL) {
+        parser_clear_stack(&cmd_ctx->stack);
     }
 }
 
@@ -166,16 +157,21 @@ char *parse_string(const char **walk, const bool as_word) {
  */
 CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client) {
     DLOG("COMMAND: *%.4000s*\n", input);
-    state = INITIAL;
+    struct cmd_parser_ctx cmd_ctx = {0};
+
+    cmd_ctx.state = INITIAL;
     CommandResult *result = scalloc(1, sizeof(CommandResult));
 
-    command_output.client = client;
+    cmd_ctx.command_output.ctx = &cmd_ctx;
+    cmd_ctx.command_output.client = client;
+    // TODO: is this needed?
+    cmd_ctx.subcommand_output.ctx = &cmd_ctx;  /* Initialize early so cmd_criteria_match_windows can use it */
 
     /* A YAJL JSON generator used for formatting replies. */
-    command_output.json_gen = gen;
+    cmd_ctx.command_output.json_gen = gen;
 
     y(array_open);
-    command_output.needs_tree_render = false;
+    cmd_ctx.command_output.needs_tree_render = false;
 
     const char *walk = input;
     const size_t len = strlen(input);
@@ -185,7 +181,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
 
 // TODO: make this testable
 #ifndef TEST_PARSER
-    cmd_criteria_init(&current_match, &subcommand_output);
+    cmd_criteria_init(&cmd_ctx.current_match, &cmd_ctx.subcommand_output);
 #endif
 
     /* The "<=" operator is intentional: We also handle the terminating 0-byte
@@ -198,7 +194,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             walk++;
         }
 
-        const cmdp_token_ptr *ptr = &(tokens[state]);
+        const cmdp_token_ptr *ptr = &(tokens[cmd_ctx.state]);
         token_handled = false;
         for (c = 0; c < ptr->n; c++) {
             token = &(ptr->array[c]);
@@ -207,10 +203,10 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             if (token->name[0] == '\'') {
                 if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
                     if (token->identifier != NULL) {
-                        parser_push_string(&stack, token->identifier, token->name + 1);
+                        parser_push_string(&cmd_ctx.stack, token->identifier, token->name + 1);
                     }
                     walk += strlen(token->name) - 1;
-                    next_state(token);
+                    next_state(token, &cmd_ctx);
                     token_handled = true;
                     break;
                 }
@@ -233,12 +229,12 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                 }
 
                 if (token->identifier != NULL) {
-                    parser_push_long(&stack, token->identifier, num);
+                    parser_push_long(&cmd_ctx.stack, token->identifier, num);
                 }
 
                 /* Set walk to the first non-number character */
                 walk = end;
-                next_state(token);
+                next_state(token, &cmd_ctx);
                 token_handled = true;
                 break;
             }
@@ -248,7 +244,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                 char *str = parse_string(&walk, (token->name[0] != 's'));
                 if (str != NULL) {
                     if (token->identifier) {
-                        parser_push_string(&stack, token->identifier, str);
+                        parser_push_string(&cmd_ctx.stack, token->identifier, str);
                     }
                     free(str);
                     /* If we are at the end of a quoted string, skip the ending
@@ -256,7 +252,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
                     if (*walk == '"') {
                         walk++;
                     }
-                    next_state(token);
+                    next_state(token, &cmd_ctx);
                     token_handled = true;
                     break;
                 }
@@ -264,7 +260,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
 
             if (strcmp(token->name, "end") == 0) {
                 if (*walk == '\0' || *walk == ',' || *walk == ';') {
-                    next_state(token);
+                    next_state(token, &cmd_ctx);
                     token_handled = true;
                     /* To make sure we start with an appropriate matching
                      * datastructure for commands which do *not* specify any
@@ -273,7 +269,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
 // TODO: make this testable
 #ifndef TEST_PARSER
                     if (*walk == '\0' || *walk == ';') {
-                        cmd_criteria_init(&current_match, &subcommand_output);
+                        cmd_criteria_init(&cmd_ctx.current_match, &cmd_ctx.subcommand_output);
                     }
 #endif
                     walk++;
@@ -356,14 +352,20 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             y(map_close);
 
             free(position);
-            parser_clear_stack(&stack);
+            parser_clear_stack(&cmd_ctx.stack);
             break;
         }
     }
 
     y(array_close);
 
-    result->needs_tree_render = command_output.needs_tree_render;
+    result->needs_tree_render = cmd_ctx.command_output.needs_tree_render;
+    /* Clean up owindows entries */
+    while (!TAILQ_EMPTY(&cmd_ctx.owindows)) {
+        struct owindow *ow = TAILQ_FIRST(&cmd_ctx.owindows);
+        TAILQ_REMOVE(&cmd_ctx.owindows, ow, owindows);
+        free(ow);
+    }
     return result;
 }
 
