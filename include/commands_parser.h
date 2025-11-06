@@ -20,10 +20,10 @@
  * will be performed). Used to build the TAILQ owindows.
  *
  */
-struct owindow {
+typedef struct owindow {
     Con *con;
     TAILQ_ENTRY(owindow) owindows;
-};
+} owindow;
 
 /**
  * Holds an intermediate representation of the result of a call to any command.
