@@ -96,8 +96,7 @@ int main(int argc, char *argv[]) {
         {"follow", no_argument, 0, 'f'},
 #endif
         {"help", no_argument, 0, 'h'},
-        {0, 0, 0, 0}
-    };
+        {0, 0, 0, 0}};
 
 #if !defined(__OpenBSD__)
     char *options_string = "s:vfVh";

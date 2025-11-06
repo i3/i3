@@ -96,7 +96,7 @@
     }
 
 #define SLIST_HEAD_INITIALIZER(head) \
-    { NULL }
+    {NULL}
 
 #define SLIST_ENTRY(type)                         \
     struct {                                      \
@@ -174,7 +174,7 @@
     }
 
 #define LIST_HEAD_INITIALIZER(head) \
-    { NULL }
+    {NULL}
 
 #define LIST_ENTRY(type)                                              \
     struct {                                                          \
@@ -256,7 +256,7 @@
     }
 
 #define SIMPLEQ_HEAD_INITIALIZER(head) \
-    { NULL, &(head).sqh_first }
+    {NULL, &(head).sqh_first}
 
 #define SIMPLEQ_ENTRY(type)                       \
     struct {                                      \
@@ -322,7 +322,7 @@
     }
 
 #define TAILQ_HEAD_INITIALIZER(head) \
-    { NULL, &(head).tqh_first }
+    {NULL, &(head).tqh_first}
 
 #define TAILQ_ENTRY(type)                                              \
     struct {                                                           \
@@ -447,9 +447,7 @@
 
 #define CIRCLEQ_HEAD_INITIALIZER(head) \
     {                                  \
-        CIRCLEQ_END(&head)             \
-        , CIRCLEQ_END(&head)           \
-    }
+        CIRCLEQ_END(&head), CIRCLEQ_END(&head)}
 
 #define CIRCLEQ_ENTRY(type)                           \
     struct {                                          \

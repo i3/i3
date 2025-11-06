@@ -61,7 +61,7 @@ uint32_t get_colorpixel(const char *hex) {
         }
     }
 
-#define RGB_8_TO_16(i) (65535 * ((i)&0xFF) / 255)
+#define RGB_8_TO_16(i) (65535 * ((i) & 0xFF) / 255)
     int r16 = RGB_8_TO_16(r);
     int g16 = RGB_8_TO_16(g);
     int b16 = RGB_8_TO_16(b);
