@@ -277,7 +277,7 @@ static int parse_restart_fd(void) {
 int main(int argc, char *argv[]) {
     /* Keep a symbol pointing to the I3_VERSION string constant so that we have
      * it in gdb backtraces. */
-    static const char *_i3_version = I3_VERSION;
+    static const char *_i3_version __attribute__((used)) = I3_VERSION;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
