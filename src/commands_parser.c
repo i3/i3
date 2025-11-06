@@ -164,7 +164,6 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
 
     cmd_ctx.command_output.ctx = &cmd_ctx;
     cmd_ctx.command_output.client = client;
-    cmd_ctx.subcommand_output.ctx = &cmd_ctx;  /* Initialize early so cmd_criteria_match_windows can use it */
 
     /* A YAJL JSON generator used for formatting replies. */
     cmd_ctx.command_output.json_gen = gen;
