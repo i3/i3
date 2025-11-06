@@ -60,16 +60,12 @@ struct cmd_parser_ctx {
     int state;
     Match current_match;
 
-    /*******************************************************************************
-     * The (small) stack where identified literals are stored during the parsing
-     * of a single command (like $workspace).
-     ******************************************************************************/
+    /* The (small) stack where identified literals are stored during the parsing
+     * of a single command (like $workspace). */
     struct stack stack;
 
-    /*******************************************************************************
-     * List of operation windows (windows on which operations will be performed).
-     * Used to build the TAILQ owindows.
-     ******************************************************************************/
+    /* List of operation windows (windows on which operations will be performed).
+     * Used to build the TAILQ owindows. */
     struct owindows_head owindows;
 
     struct CommandResultIR subcommand_output;
