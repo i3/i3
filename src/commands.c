@@ -1764,7 +1764,7 @@ void cmd_focus_output(I3_CMD, const char *name) {
 
     HANDLE_EMPTY_MATCH;
 
-        if (TAILQ_EMPTY(&OWINDOWS)) {
+    if (TAILQ_EMPTY(&OWINDOWS)) {
         ysuccess(true);
         return;
     }
