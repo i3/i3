@@ -158,7 +158,7 @@ char *sstrndup(const char *str, size_t size);
  * there is no more memory available)
  *
  */
-int sasprintf(char **strp, const char *fmt, ...);
+int sasprintf(char **strp, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 
 /**
  * Wrapper around correct write which returns -1 (meaning that
@@ -186,7 +186,7 @@ ssize_t swrite(int fd, const void *buf, size_t count);
  * Like strcasecmp but considers the case where either string is NULL.
  *
  */
-int strcasecmp_nullable(const char *a, const char *b);
+int strcasecmp_nullable(const char *a, const char *b) __attribute__((pure));
 
 /**
  * Build an i3String from an UTF-8 encoded string.
@@ -240,12 +240,10 @@ void i3string_free(i3String *str);
  * to prevent accidentally using freed memory.
  *
  */
-#define I3STRING_FREE(str)      \
-    do {                        \
-        if (str != NULL) {      \
-            i3string_free(str); \
-            str = NULL;         \
-        }                       \
+#define I3STRING_FREE(str)  \
+    do {                    \
+        i3string_free(str); \
+        str = NULL;         \
     } while (0)
 
 /**
@@ -506,7 +504,7 @@ void init_dpi(void);
  * This function returns the value of the DPI setting.
  *
  */
-long get_dpi_value(void);
+long get_dpi_value(void) __attribute__((pure));
 
 /**
  * Convert a logical amount of pixels (e.g. 2 pixels on a “standard” 96 DPI
@@ -514,7 +512,7 @@ long get_dpi_value(void);
  * screen, e.g. 5 pixels on a 227 DPI MacBook Pro 13" Retina screen.
  *
  */
-int logical_px(const int logical);
+int logical_px(int logical) __attribute__((pure));
 
 /**
  * This function resolves ~ in pathnames.

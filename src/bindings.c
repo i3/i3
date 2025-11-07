@@ -102,7 +102,7 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
         ELOG("Keybinding has more than one Group specified, but your X server is always in precisely one group. The keybinding can never trigger.\n");
     }
 
-    struct Mode *mode = mode_from_name(modename, pango_markup);
+    const struct Mode *mode = mode_from_name(modename, pango_markup);
     TAILQ_INSERT_TAIL(mode->bindings, new_binding, bindings);
 
     TAILQ_INIT(&(new_binding->keycodes_head));
@@ -243,7 +243,7 @@ static Binding *get_binding(i3_event_state_mask_t state_filtered, bool is_releas
          * keycode */
         bool found_keycode = false;
         if (input_type == B_KEYBOARD && bind->symbol != NULL) {
-            xcb_keycode_t input_keycode = (xcb_keycode_t)input_code;
+            const xcb_keycode_t input_keycode = (xcb_keycode_t)input_code;
             struct Binding_Keycode *binding_keycode;
             TAILQ_FOREACH (binding_keycode, &(bind->keycodes_head), keycodes) {
                 const uint32_t modifiers_mask = (binding_keycode->modifiers & 0x0000FFFF);
@@ -680,11 +680,11 @@ static int reorder_binding_cmp(const void *a, const void *b) {
     Binding *second = *((Binding **)b);
     if (first->event_state_mask < second->event_state_mask) {
         return 1;
-    } else if (first->event_state_mask == second->event_state_mask) {
-        return 0;
-    } else {
-        return -1;
     }
+    if (first->event_state_mask == second->event_state_mask) {
+        return 0;
+    }
+    return -1;
 }
 
 static void reorder_bindings_of_mode(struct Mode *mode) {
@@ -907,20 +907,17 @@ CommandResult *run_binding(Binding *bind, Con *con) {
 }
 
 static int fill_rmlvo_from_root(struct xkb_rule_names *xkb_names) {
-    xcb_intern_atom_reply_t *atom_reply;
     size_t content_max_words = 256;
 
-    atom_reply = xcb_intern_atom_reply(
+    xcb_intern_atom_reply_t *atom_reply = xcb_intern_atom_reply(
         conn, xcb_intern_atom(conn, 0, strlen("_XKB_RULES_NAMES"), "_XKB_RULES_NAMES"), NULL);
     if (atom_reply == NULL) {
         return -1;
     }
 
-    xcb_get_property_cookie_t prop_cookie;
-    xcb_get_property_reply_t *prop_reply;
-    prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
-                                             XCB_GET_PROPERTY_TYPE_ANY, 0, content_max_words);
-    prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
+    xcb_get_property_cookie_t prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
+                                                                       XCB_GET_PROPERTY_TYPE_ANY, 0, content_max_words);
+    xcb_get_property_reply_t *prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
     if (prop_reply == NULL) {
         free(atom_reply);
         return -1;
@@ -945,7 +942,7 @@ static int fill_rmlvo_from_root(struct xkb_rule_names *xkb_names) {
         return -1;
     }
 
-    const char *walk = (const char *)xcb_get_property_value(prop_reply);
+    const char *walk = xcb_get_property_value(prop_reply);
     int remaining = xcb_get_property_value_length(prop_reply);
     for (int i = 0; i < 5 && remaining > 0; i++) {
         const int len = strnlen(walk, remaining);

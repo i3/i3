@@ -18,6 +18,7 @@ void run_assignments(i3Window *window) {
     DLOG("Checking if any assignments match this window\n");
 
     bool needs_tree_render = false;
+    const Assignment *old_first_assignment = TAILQ_FIRST(&assignments);
 
     /* Check if any assignments match */
     Assignment *current;
@@ -59,6 +60,14 @@ void run_assignments(i3Window *window) {
         }
 
         command_result_free(result);
+
+        /* Prevent crash: if the assigned command included a reload, the
+         * assignments array was re-initialized, which will lead to a SEGFAULT
+         * if we continue.
+         */
+        if (old_first_assignment != TAILQ_FIRST(&assignments)) {
+            break;
+        }
     }
 
     /* If any of the commands required re-rendering, we will do that now. */

@@ -9,23 +9,16 @@
  */
 #pragma once
 
-#include <config.h>
-
-#include <sys/time.h>
 #include <sys/resource.h>
 
 #include <xcb/shape.h>
 #include <xcb/xcb_keysyms.h>
-#include <xcb/xkb.h>
-
-#include <X11/XKBlib.h>
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
 
 #include "queue.h"
 #include "data.h"
-#include "xcb.h"
 
 /** Git commit identifier, from version.c */
 extern const char *i3_version;
@@ -75,5 +68,4 @@ extern xcb_colormap_t colormap;
 extern bool xkb_supported, shape_supported;
 extern xcb_window_t root;
 extern struct ev_loop *main_loop;
-extern bool only_check_config;
 extern bool force_xinerama;

@@ -118,7 +118,7 @@ static void start_application(const char *command) {
         if (fork() == 0) {
             /* This is the child */
             execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
-            /* not reached */
+            err(EXIT_FAILURE, "execl return"); /* only reached on error */
         }
         exit(0);
     }
@@ -242,7 +242,7 @@ static int button_draw(button_t *button, int position) {
  * be called from the code with event == NULL or from X with event != NULL.
  *
  */
-static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
+static int handle_expose(xcb_connection_t *conn) {
     /* draw background */
     draw_util_clear_surface(&bar, color_background);
     /* draw message */
@@ -503,7 +503,7 @@ int main(int argc, char *argv[]) {
     } else {
         /* Yellowish theme for warnings */
         color_button_background = draw_util_hex_to_color("#ffc100");
-        color_background = draw_util_hex_to_color("#ffa8000");
+        color_background = draw_util_hex_to_color("#ffa800");
         color_text = draw_util_hex_to_color("#000000");
         color_border = draw_util_hex_to_color("#ab7100");
         color_border_bottom = draw_util_hex_to_color("#ab7100");
@@ -633,7 +633,7 @@ int main(int argc, char *argv[]) {
         switch (type) {
             case XCB_EXPOSE:
                 if (((xcb_expose_event_t *)event)->count == 0) {
-                    handle_expose(conn, (xcb_expose_event_t *)event);
+                    handle_expose(conn);
                 }
 
                 break;

@@ -5,7 +5,7 @@
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * startup.c: Startup notification code. Ensures a startup notification context
- *            is setup when launching applications. We store the current
+ *            is set up when launching applications. We store the current
  *            workspace to open windows in that startup notification context on
  *            the appropriate workspace.
  *
@@ -71,15 +71,14 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
  *
  */
 static int _prune_startup_sequences(void) {
-    time_t current_time = time(NULL);
+    const time_t current_time = time(NULL);
     int active_sequences = 0;
 
     /* Traverse the list and delete everything which was marked for deletion 30
      * seconds ago or earlier. */
-    struct Startup_Sequence *current, *next;
-    for (next = TAILQ_FIRST(&startup_sequences);
+    for (struct Startup_Sequence *next = TAILQ_FIRST(&startup_sequences);
          next != TAILQ_END(&startup_sequences);) {
-        current = next;
+        struct Startup_Sequence *current = next;
         next = TAILQ_NEXT(next, sequences);
 
         if (current->delete_at == 0) {
@@ -151,7 +150,7 @@ void start_application(const char *command, bool no_startup_id) {
         free(first_word);
 
         /* Trigger a timeout after 60 seconds */
-        struct ev_timer *timeout = scalloc(1, sizeof(struct ev_timer));
+        ev_timer *timeout = scalloc(1, sizeof(struct ev_timer));
         ev_timer_init(timeout, startup_timeout, 60.0, 0.);
         timeout->data = context;
         ev_timer_start(main_loop, timeout);
@@ -196,7 +195,7 @@ void start_application(const char *command, bool no_startup_id) {
         setenv("I3SOCK", current_socketpath, 1);
 
         execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, NULL);
-        /* not reached */
+        err(EXIT_FAILURE, "execl return"); /* only reached on error */
     }
 
     if (!no_startup_id) {
@@ -210,12 +209,10 @@ void start_application(const char *command, bool no_startup_id) {
  *
  */
 void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
-    SnStartupSequence *snsequence;
-
-    snsequence = sn_monitor_event_get_startup_sequence(event);
+    SnStartupSequence *sn_startup_sequence = sn_monitor_event_get_startup_sequence(event);
 
     /* Get the corresponding internal startup sequence */
-    const char *id = sn_startup_sequence_get_id(snsequence);
+    const char *id = sn_startup_sequence_get_id(sn_startup_sequence);
     struct Startup_Sequence *current, *sequence = NULL;
     TAILQ_FOREACH (current, &startup_sequences, sequences) {
         if (strcmp(current->id, id) != 0) {
@@ -233,7 +230,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
 
     switch (sn_monitor_event_get_type(event)) {
         case SN_MONITOR_EVENT_COMPLETED:
-            DLOG("startup sequence %s completed\n", sn_startup_sequence_get_id(snsequence));
+            DLOG("startup sequence %s completed\n", sn_startup_sequence_get_id(sn_startup_sequence));
 
             /* Mark the given sequence for deletion in 30 seconds. */
             time_t current_time = time(NULL);
@@ -274,7 +271,7 @@ void startup_sequence_rename_workspace(const char *old_name, const char *new_nam
  * Gets the stored startup sequence for the _NET_STARTUP_ID of a given window.
  *
  */
-struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
+struct Startup_Sequence *startup_sequence_get(const i3Window *cwindow,
                                               xcb_get_property_reply_t *startup_id_reply, bool ignore_mapped_leader) {
     /* The _NET_STARTUP_ID is only needed during this function, so we get it
      * here and don’t save it in the 'cwindow'. */
@@ -299,10 +296,8 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
 
         DLOG("Checking leader window 0x%08x\n", cwindow->leader);
 
-        xcb_get_property_cookie_t cookie;
-
-        cookie = xcb_get_property(conn, false, cwindow->leader,
-                                  A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
+        const xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, cwindow->leader,
+                                                                  A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
         startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
 
         if (startup_id_reply == NULL ||
@@ -348,7 +343,7 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
  * Returns NULL otherwise.
  *
  */
-char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply) {
+char *startup_workspace_for_window(const i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply) {
     struct Startup_Sequence *sequence = startup_sequence_get(cwindow, startup_id_reply, false);
     if (sequence == NULL) {
         return NULL;
@@ -369,16 +364,12 @@ char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *
  * Deletes the startup sequence for a window if it exists.
  *
  */
-void startup_sequence_delete_by_window(i3Window *win) {
-    struct Startup_Sequence *sequence;
-    xcb_get_property_cookie_t cookie;
-    xcb_get_property_reply_t *startup_id_reply;
+void startup_sequence_delete_by_window(const i3Window *win) {
+    const xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win->id, A__NET_STARTUP_ID,
+                                                              XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
+    xcb_get_property_reply_t *startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
 
-    cookie = xcb_get_property(conn, false, win->id, A__NET_STARTUP_ID,
-                              XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
-    startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
-
-    sequence = startup_sequence_get(win, startup_id_reply, true);
+    struct Startup_Sequence *sequence = startup_sequence_get(win, startup_id_reply, true);
     if (sequence != NULL) {
         startup_sequence_delete(sequence);
     }

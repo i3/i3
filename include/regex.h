@@ -35,4 +35,4 @@ void regex_free(struct regex *regex);
  * be visible without debug logging.
  *
  */
-bool regex_matches(struct regex *regex, const char *input);
+bool regex_matches(const struct regex *regex, const char *input);

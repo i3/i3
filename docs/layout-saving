@@ -17,17 +17,10 @@ You can save the layout of either a single workspace or an entire output (e.g.
 LVDS1). Of course, you can repeat this step multiple times if you want to
 save/restore multiple workspaces/outputs.
 
-+i3-save-tree(1)+ is a tool to save the layout.
-
-Perl modules `+AnyEvent::I3`+ and `+JSON::XS`+ are required for using it. You can install these modules with:
-
---------------------------
-cpan AnyEvent::I3 JSON::XS
---------------------------
-
-+i3-save-tree(1)+ will print a JSON representation of i3’s internal layout data structures to
-stdout. Typically, you may want to take a quick look at the output, then save
-it to a file and tweak it a little bit:
++i3-save-tree(1)+ is a tool to save the layout. It will print a JSON
+representation of i3’s internal layout data structures to stdout. Typically,
+you may want to take a quick look at the output, then save it to a file and
+tweak it a little bit:
 
 ---------------------------------------------------
 i3-save-tree --workspace 1 > ~/.i3/workspace-1.json

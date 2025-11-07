@@ -102,7 +102,7 @@ static uint8_t *concat_strings(char **glyphs, int max) {
             walk += strlen(glyphs[c]);
         }
     }
-    printf("output = %s\n", output);
+    printf("output = %s\n", (char *)output);
     return output;
 }
 
@@ -111,7 +111,7 @@ static uint8_t *concat_strings(char **glyphs, int max) {
  * be called from the code with event == NULL or from X with event != NULL.
  *
  */
-static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t *event) {
+static int handle_expose(xcb_connection_t *conn) {
     printf("expose!\n");
 
     color_t border_color = draw_util_hex_to_color("#FF0000");
@@ -249,7 +249,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         input_position--;
         free(glyphs_utf8[input_position]);
 
-        handle_expose(NULL, conn, NULL);
+        handle_expose(conn);
         return 1;
     }
     if (sym == XK_Escape) {
@@ -295,7 +295,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         finish_input();
     }
 
-    handle_expose(NULL, conn, NULL);
+    handle_expose(conn);
     return 1;
 }
 
@@ -518,11 +518,12 @@ int main(int argc, char *argv[]) {
     while ((event = xcb_wait_for_event(conn)) != NULL) {
         if (event->response_type == 0) {
             fprintf(stderr, "X11 Error received! sequence %x\n", event->sequence);
+            free(event);
             continue;
         }
 
         /* Strip off the highest bit (set if the event is generated) */
-        int type = (event->response_type & 0x7F);
+        const int type = (event->response_type & 0x7F);
 
         switch (type) {
             case XCB_KEY_PRESS:
@@ -535,9 +536,10 @@ int main(int argc, char *argv[]) {
 
             case XCB_EXPOSE:
                 if (((xcb_expose_event_t *)event)->count == 0) {
-                    handle_expose(NULL, conn, (xcb_expose_event_t *)event);
+                    handle_expose(conn);
                 }
-
+                break;
+            default:
                 break;
         }
 
