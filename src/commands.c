@@ -16,7 +16,7 @@
 
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) (cmd_output->json_gen != NULL ? yajl_gen_##x(cmd_output->json_gen, ##__VA_ARGS__) : 0)
-#define ystr(str) (cmd_output->json_gen != NULL ? yajl_gen_string(cmd_output->json_gen, (unsigned char *)str, strlen(str)) : 0)
+#define ystr(str) (cmd_output->json_gen != NULL ? yajl_gen_string(cmd_output->json_gen, (unsigned char *)(str), strlen((str))) : 0)
 #define ysuccess(success)                   \
     do {                                    \
         if (cmd_output->json_gen != NULL) { \
@@ -220,7 +220,7 @@ void cmd_criteria_add(I3_CMD, const char *ctype, const char *cvalue) {
     match_parse_property(current_match, ctype, cvalue);
 }
 
-static void move_matches_to_workspace(struct owindows_head *owindows, Con *ws) {
+static void move_matches_to_workspace(const struct owindows_head *owindows, Con *ws) {
     owindow *current;
     TAILQ_FOREACH (current, owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
@@ -448,7 +448,7 @@ static void cmd_resize_floating(I3_CMD, const char *direction_str, Con *floating
     }
 }
 
-static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *direction, int px, int ppt) {
+static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *direction, int px, const int ppt) {
     Con *second = NULL;
     Con *first = current;
     const direction_t search_direction = parse_direction(direction);
@@ -467,7 +467,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *direct
     return resize_neighboring_cons(first, second, px, ppt);
 }
 
-static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *direction, int px, double ppt) {
+static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *direction, const int px, double ppt) {
     LOG("width/height resize\n");
 
     /* get the appropriate current container (skip stacked/tabbed cons) */
@@ -587,7 +587,7 @@ void cmd_resize(I3_CMD, const char *way, const char *direction, long resize_px, 
     ysuccess(true);
 }
 
-static bool resize_set_tiling(I3_CMD, Con *target, orientation_t resize_orientation, bool is_ppt, long target_size) {
+static bool resize_set_tiling(I3_CMD, Con *target, const orientation_t resize_orientation, const bool is_ppt, const long target_size) {
     direction_t search_direction;
     char *mode;
     if (resize_orientation == HORIZ) {
@@ -669,7 +669,7 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
     ysuccess(success);
 }
 
-static int border_width_from_style(border_style_t border_style, long border_width, Con *con) {
+static int border_width_from_style(const border_style_t border_style, const long border_width, Con *con) {
     if (border_style == BS_NONE) {
         return 0;
     }
@@ -693,7 +693,7 @@ static int border_width_from_style(border_style_t border_style, long border_widt
  * Implementation of 'border normal|pixel [<n>]', 'border none|1pixel|toggle'.
  *
  */
-void cmd_border(I3_CMD, const char *border_style_str, long border_width) {
+void cmd_border(I3_CMD, const char *border_style_str, const long border_width) {
     DLOG("border style should be changed to %s with border width %ld\n", border_style_str, border_width);
     owindow *current;
 
@@ -857,8 +857,8 @@ void cmd_workspace(I3_CMD, const char *which) {
  * Implementation of 'workspace [--no-auto-back-and-forth] number <name>'
  *
  */
-void cmd_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_and_forth) {
-    const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
+void cmd_workspace_number(I3_CMD, const char *which, const char *no_auto_back_and_forth_str) {
+    const bool no_auto_back_and_forth = (no_auto_back_and_forth_str != NULL);
 
     disable_global_fullscreen();
 
@@ -905,8 +905,8 @@ void cmd_workspace_back_and_forth(I3_CMD) {
  * Implementation of 'workspace [--no-auto-back-and-forth] <name>'
  *
  */
-void cmd_workspace_name(I3_CMD, const char *name, const char *_no_auto_back_and_forth) {
-    const bool no_auto_back_and_forth = (_no_auto_back_and_forth != NULL);
+void cmd_workspace_name(I3_CMD, const char *name, const char *no_auto_back_and_forth_str) {
+    const bool no_auto_back_and_forth = (no_auto_back_and_forth_str != NULL);
 
     if (strncasecmp(name, "__", strlen("__")) == 0) {
         yerror("You cannot switch to the i3-internal workspaces (\"%s\").", name);
@@ -1020,7 +1020,7 @@ static void user_output_names_add(user_output_names_head *list, const char *name
     TAILQ_INSERT_TAIL(list, co, user_output_names);
 }
 
-static Output *user_output_names_find_next(user_output_names_head *names, Output *current_output) {
+static Output *user_output_names_find_next(const user_output_names_head *names, Output *current_output) {
     Output *target_output = NULL;
     user_output_name *uo;
     TAILQ_FOREACH (uo, names, user_output_names) {
@@ -1068,7 +1068,7 @@ static void user_output_names_free(user_output_names_head *names) {
  * Implementation of 'move [window|container|workspace] [to] output <strings>'.
  *
  */
-void cmd_move_con_to_output(I3_CMD, const char *name, bool move_workspace) {
+void cmd_move_con_to_output(I3_CMD, const char *name, const bool move_workspace) {
     /* Initialize a data structure that is used to save multiple user-specified
      * output names since this function is called multiple types for each
      * command call. */
@@ -1428,7 +1428,7 @@ void cmd_focus_level(I3_CMD, const char *level) {
  * Implementation of 'focus'.
  *
  */
-void cmd_focus(I3_CMD, bool focus_workspace) {
+void cmd_focus(I3_CMD, const bool focus_workspace) {
     DLOG("current_match = %p\n", current_match);
 
     if (match_is_empty(current_match)) {
@@ -1549,7 +1549,7 @@ void cmd_sticky(I3_CMD, const char *action) {
  * Implementation of 'move <direction> [<amount> [px|ppt]]'.
  *
  */
-void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const char *mode) {
+void cmd_move_direction(I3_CMD, const char *direction_str, const long amount, const char *mode) {
     owindow *current;
     HANDLE_EMPTY_MATCH;
 
@@ -1807,7 +1807,7 @@ void cmd_focus_output(I3_CMD, const char *name) {
  * Implementation of 'move [window|container] [to] [absolute] position [<pos_x> [px|ppt] <pos_y> [px|ppt]]
  *
  */
-void cmd_move_window_to_position(I3_CMD, long x, const char *mode_x, long y, const char *mode_y) {
+void cmd_move_window_to_position(I3_CMD, const long x, const char *mode_x, const long y, const char *mode_y) {
     bool has_error = false;
 
     owindow *current;
@@ -2171,9 +2171,9 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
      * Instead, we loop through the available workspaces and only focus
      * previously_focused if we still find it. */
     if (previously_focused_content) {
-        Con *workspace = NULL;
-        GREP_FIRST(workspace, previously_focused_content, child == previously_focused);
-        can_restore_focus &= (workspace != NULL);
+        const Con *ws = NULL;
+        GREP_FIRST(ws, previously_focused_content, child == previously_focused);
+        can_restore_focus &= (ws != NULL);
     }
 
     if (can_restore_focus) {
@@ -2388,7 +2388,7 @@ static int *gaps_right(gaps_t *gaps) {
 
 typedef int *(*gap_accessor)(gaps_t *);
 
-static bool gaps_update(gap_accessor get, const char *scope, const char *mode, int pixels) {
+static bool gaps_update(const gap_accessor get, const char *scope, const char *mode, const int pixels) {
     DLOG("gaps_update(scope=%s, mode=%s, pixels=%d)\n", scope, mode, pixels);
     Con *workspace = con_get_workspace(focused);
 
