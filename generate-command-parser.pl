@@ -147,11 +147,12 @@ for my $state (@keys) {
         $next_state ||= 'INITIAL';
         my $fmt = $cmd;
         # Replace the references to identified literals (like $workspace) with
-        # calls to get_string(). Also replaces state names (like FOR_WINDOW)
-        # with their ID (useful for cfg_criteria_init(FOR_WINDOW) e.g.).
+        # calls to parser_get_string(). Also replaces state names (like
+        # FOR_WINDOW) with their ID (useful for cfg_criteria_init(FOR_WINDOW)
+        # e.g.).
         $cmd =~ s/$_/$statenum{$_}/g for @keys;
-        $cmd =~ s/\$([a-z_]+)/get_string(stack, "$1")/g;
-        $cmd =~ s/\&([a-z_]+)/get_long(stack, "$1")/g;
+        $cmd =~ s/\$([a-z_]+)/parser_get_string(stack, "$1")/g;
+        $cmd =~ s/\&([a-z_]+)/parser_get_long(stack, "$1")/g;
         # For debugging/testing, we print the call using printf() and thus need
         # to generate a format string. The format uses %d for <number>s,
         # literal numbers or state IDs and %s for NULL, <string>s and literal

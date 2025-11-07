@@ -4,7 +4,7 @@
  * i3 - an improved tiling window manager
  * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * config_parser.c: hand-written parser to parse configuration directives.
+ * config_parser.c: handwritten parser to parse configuration directives.
  *
  * See also src/commands_parser.c for rationale on why we use a custom parser.
  *
@@ -72,96 +72,6 @@ typedef struct tokenptr {
 
 #include "GENERATED_config_tokens.h"
 
-/*
- * Pushes a string (identified by 'identifier') on the stack. We simply use a
- * single array, since the number of entries we have to store is very small.
- *
- */
-static void push_string(struct stack *ctx, const char *identifier, const char *str) {
-    for (int c = 0; c < 10; c++) {
-        if (ctx->stack[c].identifier != NULL &&
-            strcmp(ctx->stack[c].identifier, identifier) != 0) {
-            continue;
-        }
-        if (ctx->stack[c].identifier == NULL) {
-            /* Found a free slot, let’s store it here. */
-            ctx->stack[c].identifier = identifier;
-            ctx->stack[c].val.str = sstrdup(str);
-            ctx->stack[c].type = STACK_STR;
-        } else {
-            /* Append the value. */
-            char *prev = ctx->stack[c].val.str;
-            sasprintf(&(ctx->stack[c].val.str), "%s,%s", prev, str);
-            free(prev);
-        }
-        return;
-    }
-
-    /* When we arrive here, the stack is full. This should not happen and
-     * means there’s either a bug in this parser or the specification
-     * contains a command with more than 10 identified tokens. */
-    fprintf(stderr, "BUG: config_parser stack full. This means either a bug "
-                    "in the code, or a new command which contains more than "
-                    "10 identified tokens.\n");
-    exit(EXIT_FAILURE);
-}
-
-static void push_long(struct stack *ctx, const char *identifier, long num) {
-    for (int c = 0; c < 10; c++) {
-        if (ctx->stack[c].identifier != NULL) {
-            continue;
-        }
-        /* Found a free slot, let’s store it here. */
-        ctx->stack[c].identifier = identifier;
-        ctx->stack[c].val.num = num;
-        ctx->stack[c].type = STACK_LONG;
-        return;
-    }
-
-    /* When we arrive here, the stack is full. This should not happen and
-     * means there’s either a bug in this parser or the specification
-     * contains a command with more than 10 identified tokens. */
-    fprintf(stderr, "BUG: config_parser stack full. This means either a bug "
-                    "in the code, or a new command which contains more than "
-                    "10 identified tokens.\n");
-    exit(EXIT_FAILURE);
-}
-
-static const char *get_string(struct stack *ctx, const char *identifier) {
-    for (int c = 0; c < 10; c++) {
-        if (ctx->stack[c].identifier == NULL) {
-            break;
-        }
-        if (strcmp(identifier, ctx->stack[c].identifier) == 0) {
-            return ctx->stack[c].val.str;
-        }
-    }
-    return NULL;
-}
-
-static long get_long(struct stack *ctx, const char *identifier) {
-    for (int c = 0; c < 10; c++) {
-        if (ctx->stack[c].identifier == NULL) {
-            break;
-        }
-        if (strcmp(identifier, ctx->stack[c].identifier) == 0) {
-            return ctx->stack[c].val.num;
-        }
-    }
-    return 0;
-}
-
-static void clear_stack(struct stack *ctx) {
-    for (int c = 0; c < 10; c++) {
-        if (ctx->stack[c].type == STACK_STR) {
-            free(ctx->stack[c].val.str);
-        }
-        ctx->stack[c].identifier = NULL;
-        ctx->stack[c].val.str = NULL;
-        ctx->stack[c].val.num = 0;
-    }
-}
-
 /*******************************************************************************
  * The parser itself.
  ******************************************************************************/
@@ -180,12 +90,12 @@ static void next_state(const cmdp_token *token, struct parser_ctx *ctx) {
             ctx->has_errors = true;
         }
         _next_state = subcommand_output.next_state;
-        clear_stack(ctx->stack);
+        parser_clear_stack(ctx->stack);
     }
 
     ctx->state = _next_state;
     if (ctx->state == INITIAL) {
-        clear_stack(ctx->stack);
+        parser_clear_stack(ctx->stack);
     }
 
     /* See if we are jumping back to a state in which we were in previously
@@ -236,7 +146,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
     const char *dumpwalk = input;
     int linecnt = 1;
     while (*dumpwalk != '\0') {
-        char *next_nl = strchr(dumpwalk, '\n');
+        const char *next_nl = strchr(dumpwalk, '\n');
         if (next_nl != NULL) {
             DLOG("CONFIG(line %3d): %.*s\n", linecnt, (int)(next_nl - dumpwalk), dumpwalk);
             dumpwalk = next_nl + 1;
@@ -275,7 +185,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
             walk++;
         }
 
-        cmdp_token_ptr *ptr = &(tokens[ctx->state]);
+        const cmdp_token_ptr *ptr = &(tokens[ctx->state]);
         token_handled = false;
         for (c = 0; c < ptr->n; c++) {
             token = &(ptr->array[c]);
@@ -284,7 +194,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
             if (token->name[0] == '\'') {
                 if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
                     if (token->identifier != NULL) {
-                        push_string(ctx->stack, token->identifier, token->name + 1);
+                        parser_push_string(ctx->stack, token->identifier, token->name + 1);
                     }
                     walk += strlen(token->name) - 1;
                     next_state(token, ctx);
@@ -298,7 +208,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
                 /* Handle numbers. We only accept decimal numbers for now. */
                 char *end = NULL;
                 errno = 0;
-                long int num = strtol(walk, &end, 10);
+                const long int num = strtol(walk, &end, 10);
                 if ((errno == ERANGE && (num == LONG_MIN || num == LONG_MAX)) ||
                     (errno != 0 && num == 0)) {
                     continue;
@@ -310,7 +220,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
                 }
 
                 if (token->identifier != NULL) {
-                    push_long(ctx->stack, token->identifier, num);
+                    parser_push_long(ctx->stack, token->identifier, num);
                 }
 
                 /* Set walk to the first non-number character */
@@ -363,7 +273,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
                         str[outpos] = beginning[inpos];
                     }
                     if (token->identifier) {
-                        push_string(ctx->stack, token->identifier, str);
+                        parser_push_string(ctx->stack, token->identifier, str);
                     }
                     free(str);
                     /* If we are at the end of a quoted string, skip the ending
@@ -408,7 +318,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
 
         if (!token_handled) {
             /* Figure out how much memory we will need to fill in the names of
-             * all tokens afterwards. */
+             * all tokens afterward. */
             int tokenlen = 0;
             for (c = 0; c < ptr->n; c++) {
                 tokenlen += strlen(ptr->array[c].name) + strlen("'', ");
@@ -488,7 +398,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
             free(error_copy);
             /* Print context lines *after* the error, if any. */
             for (int i = 0; i < 2; i++) {
-                char *error_line_end = strchr(error_line, '\n');
+                const char *error_line_end = strchr(error_line, '\n');
                 if (error_line_end != NULL && *(error_line_end + 1) != '\0') {
                     error_line = error_line_end + 1;
                     error_copy = single_line(error_line);
@@ -506,14 +416,14 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
 
             free(position);
             free(errormessage);
-            clear_stack(ctx->stack);
+            parser_clear_stack(ctx->stack);
 
             /* To figure out in which state to go (e.g. MODE or INITIAL),
              * we find the nearest state which contains an <error> token
              * and follow that one. */
             bool error_token_found = false;
             for (int i = ctx->statelist_idx - 1; (i >= 0) && !error_token_found; i--) {
-                cmdp_token_ptr *errptr = &(tokens[ctx->statelist[i]]);
+                const cmdp_token_ptr *errptr = &(tokens[ctx->statelist[i]]);
                 for (int j = 0; j < errptr->n; j++) {
                     if (strcmp(errptr->array[j].name, "error") != 0) {
                         continue;
@@ -594,7 +504,7 @@ int main(int argc, char *argv[]) {
 /**
  * Launch nagbar to indicate errors in the configuration file.
  */
-void start_config_error_nagbar(const char *configpath, bool has_errors) {
+void start_config_error_nagbar(const char *configpath, const bool has_errors) {
     char *editaction, *pageraction;
     sasprintf(&editaction, "i3-sensible-editor \"%s\" && i3-msg reload\n", configpath);
     sasprintf(&pageraction, "i3-sensible-pager \"%s\"\n", errorfilename);
@@ -657,7 +567,7 @@ static void upsert_variable(struct variables_head *variables, char *key, char *v
     }
 }
 
-static char *get_resource(char *name) {
+static char *get_resource(const char *name) {
     if (conn == NULL) {
         return NULL;
     }
@@ -696,52 +606,53 @@ void free_variables(struct parser_ctx *ctx) {
     }
 }
 
-/*
- * Parses the given file by first replacing the variables, then calling
- * parse_config and possibly launching i3-nagbar.
- *
- */
-parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFile *included_file) {
-    int fd;
-    struct stat stbuf;
-    FILE *fstr;
-    char buffer[4096], key[512], value[4096], *continuation = NULL;
-
-    char *old_dir = getcwd(NULL, 0);
+static bool try_chdir(const char *path) {
+    bool result = true;
     char *dir = NULL;
     /* dirname(3) might modify the buffer, so make a copy: */
-    char *dirbuf = sstrdup(f);
+    char *dirbuf = sstrdup(path);
     if ((dir = dirname(dirbuf)) != NULL) {
         LOG("Changing working directory to config file directory %s\n", dir);
         if (chdir(dir) == -1) {
             ELOG("chdir(%s) failed: %s\n", dir, strerror(errno));
-            return PARSE_FILE_FAILED;
+            result = false;
         }
     }
-    free(dirbuf);
+    FREE(dirbuf);
+    return result;
+}
 
+static parse_file_result_t parse_file_inner(struct parser_ctx *ctx, const char *f, IncludedFile *included_file) {
+    if (!try_chdir(f)) {
+        return PARSE_FILE_FAILED;
+    }
+
+    int fd;
     if ((fd = open(f, O_RDONLY)) == -1) {
         return PARSE_FILE_FAILED;
     }
 
+    struct stat stbuf;
     if (fstat(fd, &stbuf) == -1) {
+        close(fd);
         return PARSE_FILE_FAILED;
     }
 
-    char *buf = scalloc(stbuf.st_size + 1, 1);
-
+    FILE *fstr;
     if ((fstr = fdopen(fd, "r")) == NULL) {
         return PARSE_FILE_FAILED;
     }
 
     included_file->raw_contents = scalloc(stbuf.st_size + 1, 1);
     if ((ssize_t)fread(included_file->raw_contents, 1, stbuf.st_size, fstr) != stbuf.st_size) {
+        fclose(fstr);
         return PARSE_FILE_FAILED;
     }
     rewind(fstr);
 
+    char buffer[4096], key[512], value[4096], *continuation = NULL;
     bool invalid_sets = false;
-
+    char *buf = scalloc(stbuf.st_size + 1, 1);
     while (!feof(fstr)) {
         if (!continuation) {
             continuation = buffer;
@@ -750,6 +661,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
             if (feof(fstr)) {
                 break;
             }
+            fclose(fstr);
             return PARSE_FILE_FAILED;
         }
         if (buffer[strlen(buffer) - 1] != '\n' && !feof(fstr)) {
@@ -832,7 +744,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
             continue;
         }
     }
-    fclose(fstr);
+    fclose(fstr); /* No need to close(fd) */
 
     if (database != NULL) {
         xcb_xrm_database_free(database);
@@ -856,7 +768,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
             /* We need to invalidate variables completely (otherwise we may count
              * the same variable more than once, thus causing buffer overflow or
              * allocation failure) with spaces (variable names cannot contain spaces) */
-            char *end = next + strlen(current->key);
+            const char *end = next + strlen(current->key);
             while (next < end) {
                 *next++ = ' ';
             }
@@ -875,7 +787,7 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
         SLIST_FOREACH (current, &(ctx->variables), variables) {
             current->next_match = strcasestr(walk, current->key);
         }
-        struct Variable *nearest = NULL;
+        const struct Variable *nearest = NULL;
         int distance = stbuf.st_size;
         SLIST_FOREACH (current, &(ctx->variables), variables) {
             if (current->next_match == NULL) {
@@ -924,15 +836,28 @@ parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFi
     free(new);
     free(buf);
 
-    if (chdir(old_dir) == -1) {
-        ELOG("chdir(%s) failed: %s\n", old_dir, strerror(errno));
-        return PARSE_FILE_FAILED;
-    }
-    free(old_dir);
     if (has_errors) {
         return PARSE_FILE_CONFIG_ERRORS;
     }
     return PARSE_FILE_SUCCESS;
+}
+
+/*
+ * Parses the given file by first replacing the variables, then calling
+ * parse_config and possibly launching i3-nagbar.
+ *
+ */
+parse_file_result_t parse_file(struct parser_ctx *ctx, const char *f, IncludedFile *included_file) {
+    char *old_dir = getcwd(NULL, 0);
+
+    parse_file_result_t result = parse_file_inner(ctx, f, included_file);
+
+    if (chdir(old_dir) == -1) {
+        ELOG("chdir(%s) failed: %s\n", old_dir, strerror(errno));
+        result = PARSE_FILE_FAILED;
+    }
+    free(old_dir);
+    return result;
 }
 
 #endif

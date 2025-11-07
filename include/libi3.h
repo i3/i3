@@ -240,12 +240,10 @@ void i3string_free(i3String *str);
  * to prevent accidentally using freed memory.
  *
  */
-#define I3STRING_FREE(str)      \
-    do {                        \
-        if (str != NULL) {      \
-            i3string_free(str); \
-            str = NULL;         \
-        }                       \
+#define I3STRING_FREE(str)  \
+    do {                    \
+        i3string_free(str); \
+        str = NULL;         \
     } while (0)
 
 /**
