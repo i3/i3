@@ -81,7 +81,7 @@
  *
  */
 static bool maybe_back_and_forth(struct CommandResultIR *cmd_output, const char *name) {
-    Con *ws = con_get_workspace(focused);
+    const Con *ws = con_get_workspace(focused);
 
     /* If we switched to a different workspace, do nothing */
     if (strcmp(ws->name, name) != 0) {
@@ -345,7 +345,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, const char *which, const char *no_
 
     LOG("should move window to workspace %s\n", which);
 
-    long parsed_num = ws_name_to_number(which);
+    const long parsed_num = ws_name_to_number(which);
     if (parsed_num == -1) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
         yerror("Could not parse number \"%s\"", which);
@@ -390,8 +390,8 @@ static direction_t parse_direction(const char *str) {
 }
 
 static void cmd_resize_floating(I3_CMD, const char *direction_str, Con *floating_con, int px) {
-    Rect old_rect = floating_con->rect;
-    Con *focused_con = con_descend_focused(floating_con);
+    const Rect old_rect = floating_con->rect;
+    const Con *focused_con = con_descend_focused(floating_con);
 
     direction_t direction;
     if (strcmp(direction_str, "height") == 0) {
@@ -401,7 +401,7 @@ static void cmd_resize_floating(I3_CMD, const char *direction_str, Con *floating
     } else {
         direction = parse_direction(direction_str);
     }
-    orientation_t orientation = orientation_from_direction(direction);
+    const orientation_t orientation = orientation_from_direction(direction);
 
     /* ensure that resize will take place even if pixel increment is smaller than
      * height increment or width increment.
@@ -451,9 +451,9 @@ static void cmd_resize_floating(I3_CMD, const char *direction_str, Con *floating
 static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *direction, int px, int ppt) {
     Con *second = NULL;
     Con *first = current;
-    direction_t search_direction = parse_direction(direction);
+    const direction_t search_direction = parse_direction(direction);
 
-    bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
+    const bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
     if (!res) {
         yerror("No second container found in this direction.");
         return false;
@@ -472,17 +472,17 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *dir
 
     /* get the appropriate current container (skip stacked/tabbed cons) */
     Con *dummy = NULL;
-    direction_t search_direction = (strcmp(direction, "width") == 0 ? D_LEFT : D_DOWN);
-    bool search_result = resize_find_tiling_participants(&current, &dummy, search_direction, true);
+    const direction_t search_direction = (strcmp(direction, "width") == 0 ? D_LEFT : D_DOWN);
+    const bool search_result = resize_find_tiling_participants(&current, &dummy, search_direction, true);
     if (search_result == false) {
         yerror("Failed to find appropriate tiling containers for resize operation");
         return false;
     }
 
     /* get the default percentage */
-    int children = con_num_children(current->parent);
+    const int children = con_num_children(current->parent);
     LOG("ins. %d children\n", children);
-    double percentage = 1.0 / children;
+    const double percentage = 1.0 / children;
     LOG("default percentage = %f\n", percentage);
 
     /* Ensure all the other children have a percentage set. */
@@ -634,7 +634,7 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
     TAILQ_FOREACH (current, &OWINDOWS, owindows) {
         Con *floating_con;
         if ((floating_con = con_inside_floating(current->con))) {
-            Con *output = con_get_output(floating_con);
+            const Con *output = con_get_output(floating_con);
             if (cwidth == 0) {
                 cwidth = floating_con->rect.width;
             } else if (mode_width && strcmp(mode_width, "ppt") == 0) {
@@ -653,12 +653,12 @@ void cmd_resize_set(I3_CMD, long cwidth, const char *mode_width, long cheight, c
             }
 
             if (cwidth > 0) {
-                bool is_ppt = mode_width && strcmp(mode_width, "ppt") == 0;
+                const bool is_ppt = mode_width && strcmp(mode_width, "ppt") == 0;
                 success &= resize_set_tiling(current_match, cmd_output, current->con,
                                              HORIZ, is_ppt, cwidth);
             }
             if (cheight > 0) {
-                bool is_ppt = mode_height && strcmp(mode_height, "ppt") == 0;
+                const bool is_ppt = mode_height && strcmp(mode_height, "ppt") == 0;
                 success &= resize_set_tiling(current_match, cmd_output, current->con,
                                              VERT, is_ppt, cheight);
             }
@@ -761,7 +761,7 @@ void cmd_append_layout(I3_CMD, const char *cpath) {
         goto out;
     }
 
-    json_content_t content = json_determine_content(buf, len);
+    const json_content_t content = json_determine_content(buf, len);
     LOG("JSON content = %d\n", content);
     if (content == JSON_CONTENT_UNKNOWN) {
         ELOG("Could not determine the contents of \"%s\", not loading.\n", path);
@@ -862,7 +862,7 @@ void cmd_workspace_number(I3_CMD, const char *which, const char *_no_auto_back_a
 
     disable_global_fullscreen();
 
-    long parsed_num = ws_name_to_number(which);
+    const long parsed_num = ws_name_to_number(which);
     if (parsed_num == -1) {
         yerror("Could not parse initial part of \"%s\" as a number.", which);
         return;
@@ -934,7 +934,7 @@ void cmd_workspace_name(I3_CMD, const char *name, const char *_no_auto_back_and_
 void cmd_mark(I3_CMD, const char *mark, const char *mode, const char *toggle) {
     HANDLE_EMPTY_MATCH;
 
-    owindow *current = TAILQ_FIRST(&OWINDOWS);
+    const owindow *current = TAILQ_FIRST(&OWINDOWS);
     if (current == NULL) {
         yerror("Given criteria don't match a window");
         return;
@@ -948,7 +948,7 @@ void cmd_mark(I3_CMD, const char *mark, const char *mode, const char *toggle) {
 
     DLOG("matching: %p / %s\n", current->con, current->con->name);
 
-    mark_mode_t mark_mode = (mode == NULL || strcmp(mode, "--replace") == 0) ? MM_REPLACE : MM_ADD;
+    const mark_mode_t mark_mode = (mode == NULL || strcmp(mode, "--replace") == 0) ? MM_REPLACE : MM_ADD;
     if (toggle != NULL) {
         con_mark_toggle(current->con, mark, mark_mode);
     } else {
@@ -1244,7 +1244,7 @@ void cmd_kill(I3_CMD, const char *kill_mode_str) {
  *
  */
 void cmd_exec(I3_CMD, const char *nosn, const char *command) {
-    bool no_startup_id = (nosn != NULL);
+    const bool no_startup_id = (nosn != NULL);
 
     HANDLE_EMPTY_MATCH;
 
@@ -1372,7 +1372,7 @@ void cmd_focus_window_mode(I3_CMD, const char *window_mode) {
         to_floating = false;
     }
 
-    Con *ws = con_get_workspace(focused);
+    const Con *ws = con_get_workspace(focused);
     Con *current;
     bool success = false;
     TAILQ_FOREACH (current, &(ws->focus_head), focused) {
@@ -1444,7 +1444,7 @@ void cmd_focus(I3_CMD, bool focus_workspace) {
 
     CMD_FOCUS_WARN_CHILDREN;
 
-    Con *__i3_scratch = workspace_get("__i3_scratch");
+    const Con *__i3_scratch = workspace_get("__i3_scratch");
     owindow *current;
     TAILQ_FOREACH (current, &OWINDOWS, owindows) {
         Con *ws = con_get_workspace(current->con);
@@ -1484,7 +1484,7 @@ void cmd_focus(I3_CMD, bool focus_workspace) {
  *
  */
 void cmd_fullscreen(I3_CMD, const char *action, const char *fullscreen_mode) {
-    fullscreen_mode_t mode = strcmp(fullscreen_mode, "global") == 0 ? CF_GLOBAL : CF_OUTPUT;
+    const fullscreen_mode_t mode = strcmp(fullscreen_mode, "global") == 0 ? CF_GLOBAL : CF_OUTPUT;
     DLOG("%s fullscreen, mode = %s\n", action, fullscreen_mode);
     owindow *current;
 
@@ -1553,7 +1553,7 @@ void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const ch
     owindow *current;
     HANDLE_EMPTY_MATCH;
 
-    direction_t direction = parse_direction(direction_str);
+    const direction_t direction = parse_direction(direction_str);
 
     const bool is_ppt = mode && strcmp(mode, "ppt") == 0;
 
@@ -1562,7 +1562,7 @@ void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const ch
         if (con_is_floating(current->con)) {
             DLOG("floating move with %ld %s\n", amount, mode);
             Rect newrect = current->con->parent->rect;
-            Con *output = con_get_output(current->con);
+            const Con *output = con_get_output(current->con);
 
             switch (direction) {
                 case D_LEFT:
@@ -1778,7 +1778,7 @@ void cmd_focus_output(I3_CMD, const char *name) {
     }
 
     Output *current_output = get_output_for_con(con);
-    Output *target_output = user_output_names_find_next(&names, current_output);
+    const Output *target_output = user_output_names_find_next(&names, current_output);
     user_output_names_free(&names);
     bool success = false;
     if (target_output) {
@@ -1826,7 +1826,7 @@ void cmd_move_window_to_position(I3_CMD, long x, const char *mode_x, long y, con
         }
 
         Rect newrect = current->con->parent->rect;
-        Con *output = con_get_output(current->con);
+        const Con *output = con_get_output(current->con);
 
         newrect.x = mode_x && strcmp(mode_x, "ppt") == 0 ? output->rect.width * ((double)x / 100.0) : x;
         newrect.y = mode_y && strcmp(mode_y, "ppt") == 0 ? output->rect.height * ((double)y / 100.0) : y;
@@ -2006,7 +2006,7 @@ void cmd_swap(I3_CMD, const char *mode, const char *arg) {
     }
 
     DLOG("Swapping %p with %p.\n", match->con, con);
-    bool result = con_swap(match->con, con);
+    const bool result = con_swap(match->con, con);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -2133,7 +2133,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
         return;
     }
 
-    Con *check_dest = get_existing_workspace_by_name(new_name);
+    const Con *check_dest = get_existing_workspace_by_name(new_name);
 
     /* If check_dest == workspace, the user might be changing the case of the
      * workspace, or it might just be a no-op. */
@@ -2153,7 +2153,7 @@ void cmd_rename_workspace(I3_CMD, const char *old_name, const char *new_name) {
 
     /* By re-attaching, the sort order will be correct afterwards. */
     Con *previously_focused = focused;
-    Con *previously_focused_content = focused->type == CT_WORKSPACE ? focused->parent : NULL;
+    const Con *previously_focused_content = focused->type == CT_WORKSPACE ? focused->parent : NULL;
     Con *parent = workspace->parent;
     con_detach(workspace);
     con_attach(workspace, parent, false);
@@ -2351,7 +2351,7 @@ void cmd_shmlog(I3_CMD, const char *argument) {
  *
  */
 void cmd_debuglog(I3_CMD, const char *argument) {
-    bool logging = get_debug_logging();
+    const bool logging = get_debug_logging();
     if (!strcmp(argument, "toggle")) {
         LOG("%s debug logging\n", logging ? "Disabling" : "Enabling");
         set_debug_logging(!logging);
@@ -2435,7 +2435,7 @@ static bool gaps_update(gap_accessor get, const char *scope, const char *mode, i
         Con *output = NULL;
         TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
             Con *cur_ws = NULL;
-            Con *content = output_get_content(output);
+            const Con *content = output_get_content(output);
             TAILQ_FOREACH (cur_ws, &(content->nodes_head), nodes) {
                 int *gaps_value = get(&(cur_ws->gaps));
                 DLOG("current gaps_value = %d\n", *gaps_value);
@@ -2473,7 +2473,7 @@ static bool gaps_update(gap_accessor get, const char *scope, const char *mode, i
  *
  */
 void cmd_gaps(I3_CMD, const char *type, const char *scope, const char *mode, const char *value) {
-    int pixels = logical_px(atoi(value));
+    const int pixels = logical_px(atoi(value));
 
     if (!strcmp(type, "inner")) {
         if (!gaps_update(gaps_inner, scope, mode, pixels)) {
