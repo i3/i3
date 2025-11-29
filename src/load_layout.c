@@ -51,7 +51,7 @@ struct focus_mapping {
 static TAILQ_HEAD(focus_mappings_head, focus_mapping) focus_mappings =
     TAILQ_HEAD_INITIALIZER(focus_mappings);
 
-static int json_start_map() {
+static int json_start_map(void) {
     LOG("start of map, last_key = %s\n", last_key);
     if (parsing_swallows) {
         LOG("creating new swallow\n");
@@ -88,7 +88,7 @@ static int json_start_map() {
     return 1;
 }
 
-static int json_end_map() {
+static int json_end_map(void) {
     LOG("end of map\n");
     if (!parsing_swallows &&
         !parsing_rect &&
@@ -213,7 +213,7 @@ static int json_end_map() {
     return 1;
 }
 
-static int json_end_array() {
+static int json_end_array(void) {
     LOG("end of array\n");
     if (!parsing_swallows && !parsing_focus && !parsing_marks) {
         con_fix_percent(json_node);
@@ -668,6 +668,9 @@ static void traverse_and_invoke_callbacks(yyjson_val *node) {
         while ((key = yyjson_obj_iter_next(&iter))) {
             yyjson_val *val = yyjson_obj_iter_get_val(key);
             const char *key_str = yyjson_get_str(key);
+            if (key_str == NULL) {
+                continue;  // Skip invalid keys
+            }
 
             json_key(key_str, yyjson_get_len(key));  // Call key callback
             traverse_and_invoke_callbacks(val);       // Recurse into value
@@ -688,7 +691,7 @@ static void traverse_and_invoke_callbacks(yyjson_val *node) {
     }
 }
 
-char* json_parse_all(const char *js, const size_t len) {
+static char *json_parse_all(const char *js, const size_t len) {
     char *hdr = (char *)js;
     size_t size = len;
     const yyjson_read_flag flg = YYJSON_READ_ALLOW_COMMENTS | YYJSON_READ_ALLOW_TRAILING_COMMAS | YYJSON_READ_STOP_WHEN_DONE;

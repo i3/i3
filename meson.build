@@ -566,7 +566,7 @@ executable(
   'i3-msg/main.c',
   install: true,
   include_directories: inc,
-  dependencies: common_deps,
+  dependencies: [common_deps, yyjson],
   link_with: libi3,
 )
 
