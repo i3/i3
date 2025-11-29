@@ -16,6 +16,19 @@
 
 #include <yyjson.h>
 
+/* Simple JSON access macros - return default if missing or wrong type */
+#define json_opt(obj, key, type, def)                                        \
+    ({                                                                       \
+        yyjson_val *_v = yyjson_obj_get(obj, key);                           \
+        (_v && yyjson_is_##type(_v)) ? unsafe_yyjson_get_##type(_v) : (def); \
+    })
+
+#define json_opt_val(obj, key, type)                                         \
+    ({                                                                       \
+        yyjson_val *_v = yyjson_obj_get(obj, key);                           \
+        (_v && yyjson_is_##type(_v)) ? _v : NULL;                            \
+    })
+
 struct outputs_head *outputs;
 
 static void clear_output(i3_output *output) {
@@ -42,16 +55,12 @@ static void parse_output_object(yyjson_val *output_obj) {
     }
 
     i3_output *new_output = smalloc(sizeof(i3_output));
-    new_output->name = NULL;
-    new_output->active = false;
-    new_output->primary = false;
-    new_output->visible = false;
-    new_output->ws = 0;
-    new_output->statusline_width = 0;
     memset(&new_output->rect, 0, sizeof(rect));
     memset(&new_output->bar, 0, sizeof(surface_t));
     memset(&new_output->buffer, 0, sizeof(surface_t));
     memset(&new_output->statusline_buffer, 0, sizeof(surface_t));
+    new_output->statusline_width = 0;
+    new_output->visible = false;
 
     new_output->workspaces = smalloc(sizeof(struct ws_head));
     TAILQ_INIT(new_output->workspaces);
@@ -59,25 +68,13 @@ static void parse_output_object(yyjson_val *output_obj) {
     new_output->trayclients = smalloc(sizeof(struct tc_head));
     TAILQ_INIT(new_output->trayclients);
 
-    /* Parse name */
-    yyjson_val *name_val = yyjson_obj_get(output_obj, "name");
-    if (name_val && yyjson_is_str(name_val)) {
-        new_output->name = sstrdup(unsafe_yyjson_get_str(name_val));
-    }
+    const char *name = json_opt(output_obj, "name", str, NULL);
+    new_output->name = name ? sstrdup(name) : NULL;
+    new_output->active = json_opt(output_obj, "active", bool, false);
+    new_output->primary = json_opt(output_obj, "primary", bool, false);
 
-    /* Parse active */
-    yyjson_val *active_val = yyjson_obj_get(output_obj, "active");
-    if (active_val && yyjson_is_bool(active_val)) {
-        new_output->active = unsafe_yyjson_get_bool(active_val);
-    }
-
-    /* Parse primary */
-    yyjson_val *primary_val = yyjson_obj_get(output_obj, "primary");
-    if (primary_val && yyjson_is_bool(primary_val)) {
-        new_output->primary = unsafe_yyjson_get_bool(primary_val);
-    }
-
-    /* Parse current_workspace */
+    /* Parse current_workspace - can be int or string */
+    new_output->ws = 0;
     yyjson_val *ws_val = yyjson_obj_get(output_obj, "current_workspace");
     if (ws_val) {
         if (yyjson_is_int(ws_val)) {
@@ -94,24 +91,12 @@ static void parse_output_object(yyjson_val *output_obj) {
     }
 
     /* Parse rect */
-    yyjson_val *rect_val = yyjson_obj_get(output_obj, "rect");
-    if (rect_val && yyjson_is_obj(rect_val)) {
-        yyjson_val *x_val = yyjson_obj_get(rect_val, "x");
-        if (x_val && yyjson_is_int(x_val)) {
-            new_output->rect.x = unsafe_yyjson_get_int(x_val);
-        }
-        yyjson_val *y_val = yyjson_obj_get(rect_val, "y");
-        if (y_val && yyjson_is_int(y_val)) {
-            new_output->rect.y = unsafe_yyjson_get_int(y_val);
-        }
-        yyjson_val *w_val = yyjson_obj_get(rect_val, "width");
-        if (w_val && yyjson_is_int(w_val)) {
-            new_output->rect.w = unsafe_yyjson_get_int(w_val);
-        }
-        yyjson_val *h_val = yyjson_obj_get(rect_val, "height");
-        if (h_val && yyjson_is_int(h_val)) {
-            new_output->rect.h = unsafe_yyjson_get_int(h_val);
-        }
+    yyjson_val *rect_val = json_opt_val(output_obj, "rect", obj);
+    if (rect_val) {
+        new_output->rect.x = json_opt(rect_val, "x", int, 0);
+        new_output->rect.y = json_opt(rect_val, "y", int, 0);
+        new_output->rect.w = json_opt(rect_val, "width", int, 0);
+        new_output->rect.h = json_opt(rect_val, "height", int, 0);
     }
 
     /* See if we actually handle that output */

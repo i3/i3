@@ -14,6 +14,13 @@
 
 #include <yyjson.h>
 
+/* Simple JSON access macros - return default if missing or wrong type */
+#define json_opt(obj, key, type, def)                                        \
+    ({                                                                       \
+        yyjson_val *_v = yyjson_obj_get(obj, key);                           \
+        (_v && yyjson_is_##type(_v)) ? unsafe_yyjson_get_##type(_v) : (def); \
+    })
+
 /*
  * Parse a single workspace object
  */
@@ -23,43 +30,17 @@ static void parse_workspace_object(yyjson_val *ws_obj) {
     }
 
     i3_ws *new_workspace = scalloc(1, sizeof(i3_ws));
-    new_workspace->num = -1;
-
-    /* Parse id */
-    yyjson_val *id_val = yyjson_obj_get(ws_obj, "id");
-    if (id_val && yyjson_is_int(id_val)) {
-        new_workspace->id = unsafe_yyjson_get_int(id_val);
-    }
-
-    /* Parse num */
-    yyjson_val *num_val = yyjson_obj_get(ws_obj, "num");
-    if (num_val && yyjson_is_int(num_val)) {
-        new_workspace->num = unsafe_yyjson_get_int(num_val);
-    }
-
-    /* Parse visible */
-    yyjson_val *visible_val = yyjson_obj_get(ws_obj, "visible");
-    if (visible_val && yyjson_is_bool(visible_val)) {
-        new_workspace->visible = unsafe_yyjson_get_bool(visible_val);
-    }
-
-    /* Parse focused */
-    yyjson_val *focused_val = yyjson_obj_get(ws_obj, "focused");
-    if (focused_val && yyjson_is_bool(focused_val)) {
-        new_workspace->focused = unsafe_yyjson_get_bool(focused_val);
-    }
-
-    /* Parse urgent */
-    yyjson_val *urgent_val = yyjson_obj_get(ws_obj, "urgent");
-    if (urgent_val && yyjson_is_bool(urgent_val)) {
-        new_workspace->urgent = unsafe_yyjson_get_bool(urgent_val);
-    }
+    new_workspace->id = json_opt(ws_obj, "id", int, 0);
+    new_workspace->num = json_opt(ws_obj, "num", int, -1);
+    new_workspace->visible = json_opt(ws_obj, "visible", bool, false);
+    new_workspace->focused = json_opt(ws_obj, "focused", bool, false);
+    new_workspace->urgent = json_opt(ws_obj, "urgent", bool, false);
 
     /* Parse name */
     yyjson_val *name_val = yyjson_obj_get(ws_obj, "name");
-    if (name_val && yyjson_is_str(name_val)) {
+    if (yyjson_is_str(name_val)) {
         const char *ws_name = unsafe_yyjson_get_str(name_val);
-        size_t len = unsafe_yyjson_get_len(name_val);
+        const size_t len = unsafe_yyjson_get_len(name_val);
         new_workspace->canonical_name = sstrndup(ws_name, len);
 
         if ((config.strip_ws_numbers || config.strip_ws_name) && new_workspace->num >= 0) {
@@ -100,9 +81,8 @@ static void parse_workspace_object(yyjson_val *ws_obj) {
     }
 
     /* Parse output and add to output's workspace list */
-    yyjson_val *output_val = yyjson_obj_get(ws_obj, "output");
-    if (output_val && yyjson_is_str(output_val)) {
-        const char *output_name = unsafe_yyjson_get_str(output_val);
+    const char *output_name = json_opt(ws_obj, "output", str, NULL);
+    if (output_name) {
         i3_output *target = get_output_by_name((char *)output_name);
         if (target != NULL) {
             new_workspace->output = target;

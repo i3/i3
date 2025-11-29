@@ -15,11 +15,12 @@
 
 #include <yyjson.h>
 
-static void child_init(i3bar_child *child) {
-    child->version = 0;
-    child->stop_signal = SIGSTOP;
-    child->cont_signal = SIGCONT;
-}
+/* Simple JSON access macro - return default if missing or wrong type */
+#define json_opt(obj, key, type, def)                                        \
+    ({                                                                       \
+        yyjson_val *_v = yyjson_obj_get(obj, key);                           \
+        (_v && yyjson_is_##type(_v)) ? unsafe_yyjson_get_##type(_v) : (def); \
+    })
 
 /*
  * Parse the JSON protocol header to determine protocol version and features.
@@ -30,7 +31,10 @@ static void child_init(i3bar_child *child) {
  *
  */
 void parse_json_header(i3bar_child *child, const unsigned char *buffer, int length, unsigned int *consumed) {
-    child_init(child);
+    child->version = 0;
+    child->stop_signal = SIGSTOP;
+    child->cont_signal = SIGCONT;
+    child->click_events = false;
 
     /* YYJSON_READ_STOP_WHEN_DONE allows trailing content after the JSON object */
     yyjson_read_err err;
@@ -47,25 +51,10 @@ void parse_json_header(i3bar_child *child, const unsigned char *buffer, int leng
     yyjson_val *root = yyjson_doc_get_root(doc);
 
     if (yyjson_is_obj(root)) {
-        yyjson_val *version_val = yyjson_obj_get(root, "version");
-        if (version_val && yyjson_is_int(version_val)) {
-            child->version = unsafe_yyjson_get_int(version_val);
-        }
-
-        yyjson_val *stop_signal_val = yyjson_obj_get(root, "stop_signal");
-        if (stop_signal_val && yyjson_is_int(stop_signal_val)) {
-            child->stop_signal = unsafe_yyjson_get_int(stop_signal_val);
-        }
-
-        yyjson_val *cont_signal_val = yyjson_obj_get(root, "cont_signal");
-        if (cont_signal_val && yyjson_is_int(cont_signal_val)) {
-            child->cont_signal = unsafe_yyjson_get_int(cont_signal_val);
-        }
-
-        yyjson_val *click_events_val = yyjson_obj_get(root, "click_events");
-        if (click_events_val && yyjson_is_bool(click_events_val)) {
-            child->click_events = unsafe_yyjson_get_bool(click_events_val);
-        }
+        child->version = json_opt(root, "version", int, 0);
+        child->stop_signal = json_opt(root, "stop_signal", int, SIGSTOP);
+        child->cont_signal = json_opt(root, "cont_signal", int, SIGCONT);
+        child->click_events = json_opt(root, "click_events", bool, false);
     }
 
     if (consumed != NULL) {

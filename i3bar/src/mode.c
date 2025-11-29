@@ -14,6 +14,13 @@
 
 #include <yyjson.h>
 
+/* Simple JSON access macros - return default if missing or wrong type */
+#define json_opt(obj, key, type, def)                                        \
+    ({                                                                       \
+        yyjson_val *_v = yyjson_obj_get(obj, key);                           \
+        (_v && yyjson_is_##type(_v)) ? unsafe_yyjson_get_##type(_v) : (def); \
+    })
+
 /*
  * Parse the received JSON string
  *
@@ -33,19 +40,9 @@ void parse_mode_json(const unsigned char *json, size_t size) {
         exit(EXIT_FAILURE);
     }
 
-    const char *change = NULL;
-    bool pango_markup = false;
-
-    yyjson_val *change_val = yyjson_obj_get(root, "change");
-    if (change_val && yyjson_is_str(change_val)) {
-        change = unsafe_yyjson_get_str(change_val);
-    }
-
-    yyjson_val *markup_val = yyjson_obj_get(root, "pango_markup");
-    if (markup_val && yyjson_is_bool(markup_val)) {
-        pango_markup = unsafe_yyjson_get_bool(markup_val);
-        DLOG("Setting pango_markup to %d.\n", pango_markup);
-    }
+    const char *change = json_opt(root, "change", str, NULL);
+    bool pango_markup = json_opt(root, "pango_markup", bool, false);
+    DLOG("pango_markup = %d\n", pango_markup);
 
     mode binding = {0};
 
