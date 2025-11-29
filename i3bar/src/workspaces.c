@@ -134,9 +134,10 @@ static void parse_workspace_object(yyjson_val *ws_obj) {
 void parse_workspaces_json(const unsigned char *json, const size_t size) {
     free_workspaces();
 
-    yyjson_doc *doc = yyjson_read((const char *)json, size, 0);
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)json, size, 0, NULL, &err);
     if (!doc) {
-        ELOG("Could not parse workspaces reply, json:---%.*s---\n", (int)size, (char *)json);
+        ELOG("JSON parse error for workspaces: %s (at position %zu), json:---%.*s---\n", err.msg, err.pos, (int)size, (char *)json);
         if (config.workspace_command) {
             kill_ws_child();
             set_workspace_button_error("Could not parse workspace_command's JSON");

@@ -85,9 +85,10 @@ void display_running_version(void) {
         errx(EXIT_FAILURE, "Got reply type %d, but expected %d (GET_VERSION)", reply_type, I3_IPC_MESSAGE_TYPE_GET_VERSION);
     }
 
-    yyjson_doc *doc = yyjson_read((const char *)reply, reply_length, 0);
+    yyjson_read_err json_err;
+    yyjson_doc *doc = yyjson_read_opts((char *)reply, reply_length, 0, NULL, &json_err);
     if (!doc) {
-        errx(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
+        errx(EXIT_FAILURE, "JSON parse error: %s (at position %zu). reply is %.*s", json_err.msg, json_err.pos, (int)reply_length, reply);
     }
 
     yyjson_val *root = yyjson_doc_get_root(doc);

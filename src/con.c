@@ -11,7 +11,6 @@
  */
 #include "all.h"
 
-
 static void con_on_remove_child(Con *con);
 
 /*

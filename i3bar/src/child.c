@@ -154,8 +154,8 @@ static void cleanup(i3bar_child *c) {
     memset(c, 0, sizeof(i3bar_child));
 }
 
-static char* get_string(yyjson_val *obj, const char* key) {
-    const char* str = yyjson_get_str(yyjson_obj_get(obj, key));
+static char *get_string(yyjson_val *obj, const char *key) {
+    const char *str = yyjson_get_str(yyjson_obj_get(obj, key));
     if (str != NULL && strlen(str) > 0) {
         return sstrdup(str);
     }
@@ -196,8 +196,8 @@ static void parse_status_block(yyjson_val *block_obj, bool *has_urgent) {
 
     yyjson_val *min_width_val = yyjson_obj_get(block_obj, "min_width");
     if (min_width_val) {
-        const char* min_width = yyjson_get_str(min_width_val);
-        if (min_width){
+        const char *min_width = yyjson_get_str(min_width_val);
+        if (min_width) {
             block.min_width_str = sstrdup(min_width);
         } else {
             block.min_width = yyjson_get_int(min_width_val);
@@ -380,9 +380,10 @@ static bool read_json_input(const char *input, int length) {
     }
 
     /* YYJSON_READ_STOP_WHEN_DONE allows trailing content (like newlines) */
-    yyjson_doc *doc = yyjson_read(input, length, YYJSON_READ_STOP_WHEN_DONE);
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)input, length, YYJSON_READ_STOP_WHEN_DONE, NULL, &err);
     if (!doc) {
-        fprintf(stderr, "[i3bar] Could not parse JSON input: %.*s\n", length, input);
+        fprintf(stderr, "[i3bar] JSON parse error: %s (at position %zu): %.*s\n", err.msg, err.pos, length, input);
         set_statusline_error("Could not parse JSON");
         draw_bars(false);
         return false;
@@ -650,7 +651,6 @@ static void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     cleanup(c);
     draw_bars(false);
 }
-
 
 static pid_t sfork(void) {
     const pid_t pid = fork();

@@ -55,8 +55,10 @@ static int exit_code = 0;
  * Returns true on success, false on JSON parse error.
  */
 static bool parse_reply(const char *reply, size_t reply_length) {
-    yyjson_doc *doc = yyjson_read(reply, reply_length, 0);
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)reply, reply_length, 0, NULL, &err);
     if (!doc) {
+        fprintf(stderr, "JSON parse error: %s (at position %zu)\n", err.msg, err.pos);
         return false;
     }
 
@@ -71,9 +73,7 @@ static bool parse_reply(const char *reply, size_t reply_length) {
                 continue;
             }
 
-            yyjson_val *success_val = yyjson_obj_get(result, "success");
-            bool success = success_val && yyjson_get_bool(success_val);
-
+            const bool success = yyjson_get_bool(yyjson_obj_get(result, "success"));
             if (!success) {
                 yyjson_val *input_val = yyjson_obj_get(result, "input");
                 yyjson_val *errorposition_val = yyjson_obj_get(result, "errorposition");
@@ -102,8 +102,10 @@ static bool parse_reply(const char *reply, size_t reply_length) {
  * Returns true on success, false on JSON parse error.
  */
 static bool parse_config_reply(const char *reply, size_t reply_length) {
-    yyjson_doc *doc = yyjson_read(reply, reply_length, 0);
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)reply, reply_length, 0, NULL, &err);
     if (!doc) {
+        fprintf(stderr, "JSON parse error: %s (at position %zu)\n", err.msg, err.pos);
         return false;
     }
 

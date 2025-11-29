@@ -10,7 +10,6 @@
  */
 #include "all.h"
 
-
 /*
  * Stores a copy of the name of the last used workspace for the workspace
  * back-and-forth switching.

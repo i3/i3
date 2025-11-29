@@ -15,25 +15,25 @@
 #include <unistd.h>
 
 // Macros to make the yyjson API a bit easier to use.
-#define ysuccess(success)                                                         \
-    do {                                                                          \
-        if (cmd_output->json_doc != NULL && cmd_output->json_arr != NULL) {       \
-            yyjson_mut_val *_obj = yyjson_mut_obj(cmd_output->json_doc);           \
+#define ysuccess(success)                                                            \
+    do {                                                                             \
+        if (cmd_output->json_doc != NULL && cmd_output->json_arr != NULL) {          \
+            yyjson_mut_val *_obj = yyjson_mut_obj(cmd_output->json_doc);             \
             yyjson_mut_obj_add_bool(cmd_output->json_doc, _obj, "success", success); \
-            yyjson_mut_arr_add_val(cmd_output->json_arr, _obj);                    \
-        }                                                                          \
+            yyjson_mut_arr_add_val(cmd_output->json_arr, _obj);                      \
+        }                                                                            \
     } while (0)
-#define yerror(format, ...)                                                       \
-    do {                                                                          \
-        if (cmd_output->json_doc != NULL && cmd_output->json_arr != NULL) {       \
-            char *message;                                                        \
-            sasprintf(&message, format, ##__VA_ARGS__);                           \
-            yyjson_mut_val *_obj = yyjson_mut_obj(cmd_output->json_doc);           \
-            yyjson_mut_obj_add_bool(cmd_output->json_doc, _obj, "success", false); \
+#define yerror(format, ...)                                                          \
+    do {                                                                             \
+        if (cmd_output->json_doc != NULL && cmd_output->json_arr != NULL) {          \
+            char *message;                                                           \
+            sasprintf(&message, format, ##__VA_ARGS__);                              \
+            yyjson_mut_val *_obj = yyjson_mut_obj(cmd_output->json_doc);             \
+            yyjson_mut_obj_add_bool(cmd_output->json_doc, _obj, "success", false);   \
             yyjson_mut_obj_add_strcpy(cmd_output->json_doc, _obj, "error", message); \
-            yyjson_mut_arr_add_val(cmd_output->json_arr, _obj);                    \
-            free(message);                                                        \
-        }                                                                          \
+            yyjson_mut_arr_add_val(cmd_output->json_arr, _obj);                      \
+            free(message);                                                           \
+        }                                                                            \
     } while (0)
 
 /** If an error occurred during parsing of the criteria, we want to exit instead

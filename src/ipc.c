@@ -790,11 +790,11 @@ static yyjson_mut_val *dump_bar_config(yyjson_mut_doc *doc, Barconfig *config) {
 
     yyjson_mut_val *colors = yyjson_mut_obj(doc);
 
-#define ADD_COLOR_IF_SET(name)                                         \
-    do {                                                               \
-        if (config->colors.name) {                                     \
+#define ADD_COLOR_IF_SET(name)                                               \
+    do {                                                                     \
+        if (config->colors.name) {                                           \
             yyjson_mut_obj_add_str(doc, colors, #name, config->colors.name); \
-        }                                                              \
+        }                                                                    \
     } while (0)
 
     ADD_COLOR_IF_SET(background);
@@ -1069,9 +1069,10 @@ IPC_HANDLER(get_binding_modes) {
  *
  */
 IPC_HANDLER(subscribe) {
-    yyjson_doc *req_doc = yyjson_read((const char *)message, message_size, 0);
+    yyjson_read_err err;
+    yyjson_doc *req_doc = yyjson_read_opts((char *)message, message_size, 0, NULL, &err);
     if (!req_doc) {
-        ELOG("YYJSON parse error for subscribe\n");
+        ELOG("JSON parse error for subscribe: %s (at position %zu)\n", err.msg, err.pos);
         const char *reply = "{\"success\":false}";
         ipc_send_client_message(client, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
         return;
@@ -1188,9 +1189,10 @@ IPC_HANDLER(send_tick) {
 }
 
 IPC_HANDLER(sync) {
-    yyjson_doc *req_doc = yyjson_read((const char *)message, message_size, 0);
+    yyjson_read_err err;
+    yyjson_doc *req_doc = yyjson_read_opts((char *)message, message_size, 0, NULL, &err);
     if (!req_doc) {
-        ELOG("YYJSON parse error for sync\n");
+        ELOG("JSON parse error for sync: %s (at position %zu)\n", err.msg, err.pos);
         const char *reply = "{\"success\":false}";
         ipc_send_client_message(client, strlen(reply), I3_IPC_REPLY_TYPE_SYNC, (const uint8_t *)reply);
         return;

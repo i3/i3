@@ -155,9 +155,10 @@ static void parse_output_object(yyjson_val *output_obj) {
  *
  */
 void parse_outputs_json(const unsigned char *json, size_t size) {
-    yyjson_doc *doc = yyjson_read((const char *)json, size, 0);
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)json, size, 0, NULL, &err);
     if (!doc) {
-        ELOG("Could not parse outputs reply!\n");
+        ELOG("JSON parse error for outputs: %s (at position %zu)\n", err.msg, err.pos);
         exit(EXIT_FAILURE);
     }
 

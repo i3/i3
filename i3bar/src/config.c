@@ -138,13 +138,13 @@ static void parse_colors(yyjson_val *colors_obj) {
         return;
     }
 
-#define PARSE_COLOR(json_name, struct_name)                                \
-    do {                                                                   \
-        yyjson_val *val = yyjson_obj_get(colors_obj, #json_name);           \
-        if (val && yyjson_is_str(val)) {                                   \
+#define PARSE_COLOR(json_name, struct_name)                                     \
+    do {                                                                        \
+        yyjson_val *val = yyjson_obj_get(colors_obj, #json_name);               \
+        if (val && yyjson_is_str(val)) {                                        \
             DLOG(#json_name " = " #struct_name " = %s\n", yyjson_get_str(val)); \
-            config.colors.struct_name = sstrdup(yyjson_get_str(val));       \
-        }                                                                  \
+            config.colors.struct_name = sstrdup(yyjson_get_str(val));           \
+        }                                                                       \
     } while (0)
 
     PARSE_COLOR(statusline, bar_fg);
@@ -180,9 +180,10 @@ void parse_config_json(const unsigned char *json, size_t size) {
     TAILQ_INIT(&(config.bindings));
     TAILQ_INIT(&(config.tray_outputs));
 
-    yyjson_doc *doc = yyjson_read((const char *)json, size, 0);
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)json, size, 0, NULL, &err);
     if (!doc) {
-        ELOG("Could not parse config reply!\n");
+        ELOG("JSON parse error for config: %s (at position %zu)\n", err.msg, err.pos);
         exit(EXIT_FAILURE);
     }
 
@@ -397,7 +398,7 @@ void parse_config_json(const unsigned char *json, size_t size) {
  *
  */
 void parse_get_first_i3bar_config(const unsigned char *json, size_t size) {
-    yyjson_doc *doc = yyjson_read((const char *)json, size, 0);
+    yyjson_doc *doc = yyjson_read_opts((char *)json, size, 0, NULL, NULL);
     if (!doc) {
         return;
     }

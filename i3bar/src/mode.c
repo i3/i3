@@ -19,9 +19,10 @@
  *
  */
 void parse_mode_json(const unsigned char *json, size_t size) {
-    yyjson_doc *doc = yyjson_read((const char *)json, size, 0);
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)json, size, 0, NULL, &err);
     if (!doc) {
-        ELOG("Could not parse mode event!\n");
+        ELOG("JSON parse error for mode event: %s (at position %zu)\n", err.msg, err.pos);
         exit(EXIT_FAILURE);
     }
 

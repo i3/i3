@@ -35,7 +35,7 @@ void parse_json_header(i3bar_child *child, const unsigned char *buffer, int leng
     /* YYJSON_READ_STOP_WHEN_DONE allows trailing content after the JSON object */
     yyjson_read_err err;
     yyjson_doc *doc = yyjson_read_opts((char *)buffer, length,
-                                        YYJSON_READ_STOP_WHEN_DONE, NULL, &err);
+                                       YYJSON_READ_STOP_WHEN_DONE, NULL, &err);
 
     if (!doc) {
         if (consumed != NULL) {

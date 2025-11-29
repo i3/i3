@@ -673,8 +673,8 @@ static void traverse_and_invoke_callbacks(yyjson_val *node) {
                 continue;  // Skip invalid keys
             }
 
-            json_key(key_str, unsafe_yyjson_get_len(key));  // Call key callback
-            traverse_and_invoke_callbacks(val);       // Recurse into value
+            json_key(key_str, unsafe_yyjson_get_len(key));  /* Call key callback */
+            traverse_and_invoke_callbacks(val);             /* Recurse into value */
         }
 
         json_end_map();
