@@ -9,6 +9,7 @@
  */
 
 #include "all.h"
+#include "yyjson_utils.h"
 
 #include <ev.h>
 #include <fcntl.h>
@@ -157,7 +158,7 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
 /*
  * For shutdown events, we send the reason for the shutdown.
  */
-static void ipc_send_shutdown_event(shutdown_reason_t reason) {
+static void ipc_send_shutdown_event(const shutdown_reason_t reason) {
     yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
     yyjson_mut_val *root = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, root);
@@ -166,7 +167,7 @@ static void ipc_send_shutdown_event(shutdown_reason_t reason) {
     yyjson_mut_obj_add_str(doc, root, "change", change_str);
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
     ipc_send_event("shutdown", I3_IPC_EVENT_SHUTDOWN, payload);
     free(payload);
     yyjson_mut_doc_free(doc);
@@ -212,18 +213,10 @@ IPC_HANDLER(run_command) {
     command_result_free(result);
 
     size_t length;
-    char *reply = yyjson_mut_write(doc, 0, &length);
-
-    if (reply == NULL) {
-        ELOG("yyjson_mut_write returned NULL, falling back to empty array\n");
-        const char *fallback = "[]";
-        ipc_send_client_message(client, strlen(fallback), I3_IPC_REPLY_TYPE_COMMAND,
-                                (const uint8_t *)fallback);
-    } else {
-        ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_COMMAND,
-                                (const uint8_t *)reply);
-        free(reply);
-    }
+    char *reply = json_write(doc, &length);
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_COMMAND,
+                            (const uint8_t *)reply);
+    free(reply);
     yyjson_mut_doc_free(doc);
 }
 
@@ -843,7 +836,7 @@ IPC_HANDLER(tree) {
     setlocale(LC_NUMERIC, "");
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_TREE, (const uint8_t *)payload);
     free(payload);
@@ -886,7 +879,7 @@ IPC_HANDLER(get_workspaces) {
     }
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_WORKSPACES, (const uint8_t *)payload);
     free(payload);
@@ -923,7 +916,7 @@ IPC_HANDLER(get_outputs) {
     }
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_OUTPUTS, (const uint8_t *)payload);
     free(payload);
@@ -949,7 +942,7 @@ IPC_HANDLER(get_marks) {
     }
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_MARKS, (const uint8_t *)payload);
     free(payload);
@@ -983,7 +976,7 @@ IPC_HANDLER(get_version) {
     yyjson_mut_obj_add_val(doc, obj, "included_config_file_names", included_arr);
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_VERSION, (const uint8_t *)payload);
     free(payload);
@@ -1009,7 +1002,7 @@ IPC_HANDLER(get_bar_config) {
         }
 
         size_t length;
-        char *payload = yyjson_mut_write(doc, 0, &length);
+        char *payload = json_write(doc, &length);
 
         ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, (const uint8_t *)payload);
         free(payload);
@@ -1045,7 +1038,7 @@ IPC_HANDLER(get_bar_config) {
     }
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, (const uint8_t *)payload);
     free(payload);
@@ -1067,7 +1060,7 @@ IPC_HANDLER(get_binding_modes) {
     }
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_BINDING_MODES, (const uint8_t *)payload);
     free(payload);
@@ -1167,7 +1160,7 @@ IPC_HANDLER(get_config) {
     yyjson_mut_obj_add_val(doc, obj, "included_configs", included_arr);
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_CONFIG, (const uint8_t *)payload);
     free(payload);
@@ -1187,7 +1180,7 @@ IPC_HANDLER(send_tick) {
     yyjson_mut_obj_add_strn(doc, obj, "payload", (const char *)message, message_size);
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_event("tick", I3_IPC_EVENT_TICK, payload);
     free(payload);
@@ -1238,7 +1231,7 @@ IPC_HANDLER(get_binding_state) {
     yyjson_mut_obj_add_str(doc, obj, "name", current_binding_mode);
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_GET_BINDING_STATE, (const uint8_t *)payload);
     free(payload);
@@ -1399,7 +1392,7 @@ void ipc_send_workspace_event(const char *change, Con *current, Con *old) {
     setlocale(LC_NUMERIC, "");
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, payload);
 
@@ -1424,7 +1417,7 @@ void ipc_send_window_event(const char *property, Con *con) {
     yyjson_mut_obj_add_val(doc, obj, "container", dump_node(doc, con, false));
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_event("window", I3_IPC_EVENT_WINDOW, payload);
     free(payload);
@@ -1443,7 +1436,7 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig) {
     yyjson_mut_doc_set_root(doc, bar_obj);
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_event("barconfig_update", I3_IPC_EVENT_BARCONFIG_UPDATE, payload);
     free(payload);
@@ -1474,7 +1467,7 @@ void ipc_send_binding_event(const char *event_type, Binding *bind, const char *m
     yyjson_mut_obj_add_val(doc, obj, "binding", dump_binding(doc, bind));
 
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     ipc_send_event("binding", I3_IPC_EVENT_BINDING, payload);
 

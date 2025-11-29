@@ -518,7 +518,7 @@ executable(
   ],
   install: true,
   include_directories: include_directories('include', 'i3bar/include'),
-  dependencies: [common_deps, yyjson],
+  dependencies: [common_deps],
   link_with: libi3,
 )
 
@@ -564,7 +564,7 @@ executable(
   'i3-msg/main.c',
   install: true,
   include_directories: inc,
-  dependencies: [common_deps, yyjson],
+  dependencies: [common_deps],
   link_with: libi3,
 )
 
