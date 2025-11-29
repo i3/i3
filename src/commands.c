@@ -30,7 +30,7 @@
             sasprintf(&message, format, ##__VA_ARGS__);                           \
             yyjson_mut_val *_obj = yyjson_mut_obj(cmd_output->json_doc);           \
             yyjson_mut_obj_add_bool(cmd_output->json_doc, _obj, "success", false); \
-            yyjson_mut_obj_add_str(cmd_output->json_doc, _obj, "error", message);  \
+            yyjson_mut_obj_add_strcpy(cmd_output->json_doc, _obj, "error", message); \
             yyjson_mut_arr_add_val(cmd_output->json_arr, _obj);                    \
             free(message);                                                        \
         }                                                                          \
