@@ -34,7 +34,7 @@ typedef enum {
 json_content_t json_determine_content(const char *buf, const size_t len);
 
 /**
- * Returns true if the provided JSON could be parsed by yajl.
+ * Returns true if the provided JSON could be parsed successfully.
  *
  */
 bool json_validate(const char *buf, const size_t len);

@@ -17,7 +17,7 @@
 │ util-keysyms⁴│ 0.3.8  │ 0.4.0  │ https://xcb.freedesktop.org/dist/                           │
 │ util-xrm⁴    │ 1.0.0  │ 1.0.0  │ https://github.com/Airblader/xcb-util-xrm/                  │
 │ libev        │ 4.0    │ 4.19   │ http://libev.schmorp.de/                                    │
-│ yajl         │ 2.0.1  │ 2.1.0  │ https://lloyd.github.com/yajl/                              │
+│ yyjson       │ 0.8.0  │ 0.10.0 │ https://github.com/ibireme/yyjson/                          │
 │ asciidoc     │ 8.3.0  │ 8.6.9  │ http://www.methods.co.nz/asciidoc/                          │
 │ xmlto        │ 0.0.23 │ 0.0.23 │ http://www.methods.co.nz/asciidoc/                          │
 │ Pod::Simple² │ 3.22   │ 3.22   │ http://search.cpan.org/dist/Pod-Simple/                     │

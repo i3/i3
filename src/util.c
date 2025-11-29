@@ -455,7 +455,7 @@ ssize_t slurp(const char *path, char **buf) {
         return -1;
     }
     /* Allocate one extra NUL byte to make the buffer usable with C string
-     * functions. yajl doesn’t need this, but this makes slurp safer. */
+     * functions. This makes slurp safer. */
     *buf = scalloc(stbuf.st_size + 1, 1);
     size_t n = fread(*buf, 1, stbuf.st_size, f);
     fclose(f);

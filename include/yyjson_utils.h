@@ -15,7 +15,7 @@
 
 /*
  * Helper macros for yyjson JSON generation.
- * These provide a similar interface to the old yajl macros but use yyjson.
+ * These provide convenience macros for yyjson.
  */
 
 /* Create a new mutable document */

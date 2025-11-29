@@ -597,7 +597,7 @@ static int json_double(double val) {
 }
 
 /*
- * Returns true if the provided JSON could be parsed by yajl.
+ * Returns true if the provided JSON could be parsed successfully.
  *
  */
 bool json_validate(const char *buf, const size_t len) {
