@@ -64,9 +64,8 @@ int child_stdin;
  * If free_resources is set, the fields of each status block will be free'd.
  */
 void clear_statusline(struct statusline_head *head, bool free_resources) {
-    struct status_block *first;
     while (!TAILQ_EMPTY(head)) {
-        first = TAILQ_FIRST(head);
+        struct status_block *first = TAILQ_FIRST(head);
         if (free_resources) {
             I3STRING_FREE(first->full_text);
             I3STRING_FREE(first->short_text);
@@ -83,7 +82,7 @@ void clear_statusline(struct statusline_head *head, bool free_resources) {
     }
 }
 
-static void copy_statusline(struct statusline_head *from, struct statusline_head *to) {
+static void copy_statusline(const struct statusline_head *from, struct statusline_head *to) {
     struct status_block *current;
     TAILQ_FOREACH (current, from, blocks) {
         struct status_block *new_block = smalloc(sizeof(struct status_block));
@@ -157,7 +156,7 @@ static void cleanup(i3bar_child *c) {
 
 static char* get_string(yyjson_val *obj, const char* key) {
     const char* str = yyjson_get_str(yyjson_obj_get(obj, key));
-    if (str != NULL) {
+    if (str != NULL && strlen(str) > 0) {
         return sstrdup(str);
     }
     return NULL;
@@ -187,6 +186,9 @@ static void parse_status_block(yyjson_val *block_obj, bool *has_urgent) {
     }
 
     block.color = get_string(block_obj, "color");
+    if (block.color && strlen(block.color) < 1) {
+        ELOG("block.color: %s\n", block.color);
+    }
     block.background = get_string(block_obj, "background");
     block.border = get_string(block_obj, "border");
     block.name = get_string(block_obj, "name");
@@ -294,10 +296,10 @@ static void parse_status_block(yyjson_val *block_obj, bool *has_urgent) {
  * Returns NULL on EOF.
  *
  */
-static unsigned char *get_buffer(int fd, int *ret_buffer_len) {
+static char *get_buffer(int fd, int *ret_buffer_len) {
     int rec = 0;
     int buffer_len = STDIN_CHUNK_SIZE;
-    unsigned char *buffer = smalloc(buffer_len + 1);
+    char *buffer = smalloc(buffer_len + 1);
     buffer[0] = '\0';
     while (1) {
         const ssize_t n = read(fd, buffer + rec, buffer_len - rec);
@@ -347,15 +349,15 @@ static void read_flat_input(char *buffer, int length) {
     first->full_text = i3string_from_utf8(buffer);
 }
 
-static bool read_json_input(unsigned char *input, int length) {
+static bool read_json_input(const char *input, int length) {
     bool has_urgent = false;
 
     /* The i3bar protocol sends a continuous stream formatted as an infinite
      * JSON array: first '[', then each update is '[{...}]' or ',[{...}]'.
      * Skip leading whitespace and protocol framing characters. */
     while (length > 0) {
-        unsigned char c = input[0];
-        if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',') {
+        char c = input[0];
+        if (isspace(c) || c == ',') {
             /* Skip whitespace and commas */
             input++;
             length--;
@@ -378,7 +380,7 @@ static bool read_json_input(unsigned char *input, int length) {
     }
 
     /* YYJSON_READ_STOP_WHEN_DONE allows trailing content (like newlines) */
-    yyjson_doc *doc = yyjson_read((const char *)input, length, YYJSON_READ_STOP_WHEN_DONE);
+    yyjson_doc *doc = yyjson_read(input, length, YYJSON_READ_STOP_WHEN_DONE);
     if (!doc) {
         fprintf(stderr, "[i3bar] Could not parse JSON input: %.*s\n", length, input);
         set_statusline_error("Could not parse JSON");
@@ -430,7 +432,7 @@ static bool read_json_input(unsigned char *input, int length) {
  */
 static void stdin_io_cb(int fd) {
     int rec;
-    unsigned char *buffer = get_buffer(fd, &rec);
+    char *buffer = get_buffer(fd, &rec);
     if (buffer == NULL) {
         return;
     }
@@ -438,20 +440,20 @@ static void stdin_io_cb(int fd) {
     if (status_child.version > 0) {
         has_urgent = read_json_input(buffer, rec);
     } else {
-        read_flat_input((char *)buffer, rec);
+        read_flat_input(buffer, rec);
     }
     free(buffer);
     draw_bars(has_urgent);
 }
 
 /*
- * Callbalk for stdin first line. We read the first line to detect
+ * Callback for stdin first line. We read the first line to detect
  * whether this is JSON or plain text
  *
  */
 static void stdin_io_first_line_cb(int fd) {
     int rec;
-    unsigned char *buffer = get_buffer(fd, &rec);
+    char *buffer = get_buffer(fd, &rec);
     if (buffer == NULL) {
         return;
     }
@@ -460,7 +462,7 @@ static void stdin_io_first_line_cb(int fd) {
     unsigned int consumed = 0;
     /* At the moment, we don't care for the version. This might change
      * in the future, but for now, we just discard it. */
-    parse_json_header(&status_child, buffer, rec, &consumed);
+    parse_json_header(&status_child, (unsigned char *)buffer, rec, &consumed);
     if (status_child.version > 0) {
         /* If hide-on-modifier is set, we start of by sending the status_child
          * a SIGSTOP, because the bars aren't mapped at start */
@@ -473,12 +475,12 @@ static void stdin_io_first_line_cb(int fd) {
          * full_text pointer later. */
         struct status_block *new_block = scalloc(1, sizeof(struct status_block));
         TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
-        read_flat_input((char *)buffer, rec);
+        read_flat_input(buffer, rec);
     }
     free(buffer);
 }
 
-static bool isempty(char *s) {
+static bool isempty(const char *s) {
     while (*s != '\0') {
         if (!isspace(*s)) {
             return false;
@@ -501,12 +503,12 @@ static char *ws_last_json;
 
 static void ws_stdin_io_cb(int fd) {
     int rec;
-    unsigned char *buffer = get_buffer(fd, &rec);
+    char *buffer = get_buffer(fd, &rec);
     if (buffer == NULL) {
         return;
     }
 
-    gchar **strings = g_strsplit((const char *)buffer, "\n", 0);
+    gchar **strings = g_strsplit(buffer, "\n", 0);
     for (int idx = 0; strings[idx] != NULL; idx++) {
         if (ws_child.pending_line == NULL && isempty(strings[idx])) {
             /* In the normal case where the buffer ends with '\n', the last
@@ -619,7 +621,7 @@ static void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
          exit_status);
 
     __attribute__((format(printf, 1, 2))) void (*error_function_pointer)(const char *, ...) = NULL;
-    const char *command_type = "";
+    const char *command_type;
     i3bar_child *c = NULL;
     if (watcher->pid == status_child.pid) {
         command_type = "status_command";
@@ -854,7 +856,7 @@ void send_block_clicked(int button, const char *name, const char *instance, int 
     yyjson_mut_doc_free(doc);
 }
 
-static bool is_alive(i3bar_child *c) {
+static bool is_alive(const i3bar_child *c) {
     return c->pid > 0;
 }
 
