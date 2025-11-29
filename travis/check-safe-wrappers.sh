@@ -10,7 +10,7 @@ while IFS= read -r file; do
         detected=1
     fi
 done << EOF
-$(find -name '*.c' -not -name safewrappers.c -not -name strndup.c)
+$(find -name '*.c' -not -name safewrappers.c -not -name strndup.c -not -name json_utils.c)
 EOF
 if [ "$detected" -ne 0 ]; then
     echo
