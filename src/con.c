@@ -11,7 +11,6 @@
  */
 #include "all.h"
 
-#include <locale.h>
 
 static void con_on_remove_child(Con *con);
 
@@ -2222,17 +2221,15 @@ static void con_on_remove_child(Con *con) {
             LOG("Closing old workspace (%p / %s), it is empty\n", con, con->name);
 
             /* Marshal the event before closing since the workspace will be freed */
-            setlocale(LC_NUMERIC, "C");
-            yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+            yyjson_mut_doc *doc = json_new();
             yyjson_mut_val *obj = yyjson_mut_obj(doc);
             yyjson_mut_doc_set_root(doc, obj);
             yyjson_mut_obj_add_str(doc, obj, "change", "empty");
             yyjson_mut_obj_add_val(doc, obj, "current", dump_node(doc, con, false));
             yyjson_mut_obj_add_null(doc, obj, "old");
-            setlocale(LC_NUMERIC, "");
 
             size_t length;
-            char *payload = yyjson_mut_write(doc, 0, &length);
+            char *payload = json_write(doc, &length);
 
             tree_close_internal(con, DONT_KILL_WINDOW, false);
 

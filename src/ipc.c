@@ -13,7 +13,6 @@
 #include <ev.h>
 #include <fcntl.h>
 #include <libgen.h>
-#include <locale.h>
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -828,11 +827,9 @@ static yyjson_mut_val *dump_bar_config(yyjson_mut_doc *doc, Barconfig *config) {
 }
 
 IPC_HANDLER(tree) {
-    setlocale(LC_NUMERIC, "C");
     yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *root = dump_node(doc, croot, false);
     yyjson_mut_doc_set_root(doc, root);
-    setlocale(LC_NUMERIC, "");
 
     size_t length;
     char *payload = json_write(doc, &length);
@@ -1369,7 +1366,6 @@ ipc_client *ipc_new_client_on_fd(EV_P_ int fd) {
  * previously focused workspace in "old".
  */
 void ipc_send_workspace_event(const char *change, Con *current, Con *old) {
-    setlocale(LC_NUMERIC, "C");
     yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, obj);
@@ -1388,8 +1384,6 @@ void ipc_send_workspace_event(const char *change, Con *current, Con *old) {
         yyjson_mut_obj_add_val(doc, obj, "old", dump_node(doc, old, false));
     }
 
-    setlocale(LC_NUMERIC, "");
-
     size_t length;
     char *payload = json_write(doc, &length);
 
@@ -1407,7 +1401,6 @@ void ipc_send_window_event(const char *property, Con *con) {
     DLOG("Issue IPC window %s event (con = %p, window = 0x%08x)\n",
          property, con, (con->window ? con->window->id : XCB_WINDOW_NONE));
 
-    setlocale(LC_NUMERIC, "C");
     yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, obj);
@@ -1421,7 +1414,6 @@ void ipc_send_window_event(const char *property, Con *con) {
     ipc_send_event("window", I3_IPC_EVENT_WINDOW, payload);
     free(payload);
     yyjson_mut_doc_free(doc);
-    setlocale(LC_NUMERIC, "");
 }
 
 /*
@@ -1429,7 +1421,6 @@ void ipc_send_window_event(const char *property, Con *con) {
  */
 void ipc_send_barconfig_update_event(Barconfig *barconfig) {
     DLOG("Issue barconfig_update event for id = %s\n", barconfig->id);
-    setlocale(LC_NUMERIC, "C");
     yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *bar_obj = dump_bar_config(doc, barconfig);
     yyjson_mut_doc_set_root(doc, bar_obj);
@@ -1440,7 +1431,6 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig) {
     ipc_send_event("barconfig_update", I3_IPC_EVENT_BARCONFIG_UPDATE, payload);
     free(payload);
     yyjson_mut_doc_free(doc);
-    setlocale(LC_NUMERIC, "");
 }
 
 /*
@@ -1448,8 +1438,6 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig) {
  */
 void ipc_send_binding_event(const char *event_type, Binding *bind, const char *modename) {
     DLOG("Issue IPC binding %s event (sym = %s, code = %d)\n", event_type, bind->symbol, bind->keycode);
-
-    setlocale(LC_NUMERIC, "C");
 
     yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
@@ -1472,7 +1460,6 @@ void ipc_send_binding_event(const char *event_type, Binding *bind, const char *m
 
     free(payload);
     yyjson_mut_doc_free(doc);
-    setlocale(LC_NUMERIC, "");
 }
 
 /*

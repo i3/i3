@@ -10,7 +10,6 @@
  */
 #include "all.h"
 
-#include <locale.h>
 #include <yyjson.h>
 
 /* TODO: refactor the whole parsing thing */

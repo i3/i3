@@ -14,7 +14,6 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <libgen.h>
-#include <locale.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #if defined(__OpenBSD__)
@@ -218,16 +217,12 @@ static char **add_argument(char **original, char *opt_char, char *opt_arg, char 
 }
 
 static char *store_restart_layout(void) {
-    setlocale(LC_NUMERIC, "C");
-
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *root = dump_node(doc, croot, true);
     yyjson_mut_doc_set_root(doc, root);
 
-    setlocale(LC_NUMERIC, "");
-
     size_t length;
-    char *payload = yyjson_mut_write(doc, 0, &length);
+    char *payload = json_write(doc, &length);
 
     /* create a temporary file if one hasn't been specified, or just
      * resolve the tildes in the specified path */
