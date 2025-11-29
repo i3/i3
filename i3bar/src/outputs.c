@@ -62,28 +62,28 @@ static void parse_output_object(yyjson_val *output_obj) {
     /* Parse name */
     yyjson_val *name_val = yyjson_obj_get(output_obj, "name");
     if (name_val && yyjson_is_str(name_val)) {
-        new_output->name = sstrdup(yyjson_get_str(name_val));
+        new_output->name = sstrdup(unsafe_yyjson_get_str(name_val));
     }
 
     /* Parse active */
     yyjson_val *active_val = yyjson_obj_get(output_obj, "active");
     if (active_val && yyjson_is_bool(active_val)) {
-        new_output->active = yyjson_get_bool(active_val);
+        new_output->active = unsafe_yyjson_get_bool(active_val);
     }
 
     /* Parse primary */
     yyjson_val *primary_val = yyjson_obj_get(output_obj, "primary");
     if (primary_val && yyjson_is_bool(primary_val)) {
-        new_output->primary = yyjson_get_bool(primary_val);
+        new_output->primary = unsafe_yyjson_get_bool(primary_val);
     }
 
     /* Parse current_workspace */
     yyjson_val *ws_val = yyjson_obj_get(output_obj, "current_workspace");
     if (ws_val) {
         if (yyjson_is_int(ws_val)) {
-            new_output->ws = yyjson_get_int(ws_val);
+            new_output->ws = unsafe_yyjson_get_int(ws_val);
         } else if (yyjson_is_str(ws_val)) {
-            const char *ws_str = yyjson_get_str(ws_val);
+            const char *ws_str = unsafe_yyjson_get_str(ws_val);
             char *end;
             errno = 0;
             long parsed_num = strtol(ws_str, &end, 10);
@@ -98,19 +98,19 @@ static void parse_output_object(yyjson_val *output_obj) {
     if (rect_val && yyjson_is_obj(rect_val)) {
         yyjson_val *x_val = yyjson_obj_get(rect_val, "x");
         if (x_val && yyjson_is_int(x_val)) {
-            new_output->rect.x = yyjson_get_int(x_val);
+            new_output->rect.x = unsafe_yyjson_get_int(x_val);
         }
         yyjson_val *y_val = yyjson_obj_get(rect_val, "y");
         if (y_val && yyjson_is_int(y_val)) {
-            new_output->rect.y = yyjson_get_int(y_val);
+            new_output->rect.y = unsafe_yyjson_get_int(y_val);
         }
         yyjson_val *w_val = yyjson_obj_get(rect_val, "width");
         if (w_val && yyjson_is_int(w_val)) {
-            new_output->rect.w = yyjson_get_int(w_val);
+            new_output->rect.w = unsafe_yyjson_get_int(w_val);
         }
         yyjson_val *h_val = yyjson_obj_get(rect_val, "height");
         if (h_val && yyjson_is_int(h_val)) {
-            new_output->rect.h = yyjson_get_int(h_val);
+            new_output->rect.h = unsafe_yyjson_get_int(h_val);
         }
     }
 

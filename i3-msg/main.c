@@ -80,13 +80,13 @@ static bool parse_reply(const char *reply, size_t reply_length) {
                 yyjson_val *error_val = yyjson_obj_get(result, "error");
 
                 if (input_val && yyjson_is_str(input_val)) {
-                    fprintf(stderr, "ERROR: Your command: %s\n", yyjson_get_str(input_val));
+                    fprintf(stderr, "ERROR: Your command: %s\n", unsafe_yyjson_get_str(input_val));
                 }
                 if (errorposition_val && yyjson_is_str(errorposition_val)) {
-                    fprintf(stderr, "ERROR:               %s\n", yyjson_get_str(errorposition_val));
+                    fprintf(stderr, "ERROR:               %s\n", unsafe_yyjson_get_str(errorposition_val));
                 }
                 if (error_val && yyjson_is_str(error_val)) {
-                    fprintf(stderr, "ERROR: %s\n", yyjson_get_str(error_val));
+                    fprintf(stderr, "ERROR: %s\n", unsafe_yyjson_get_str(error_val));
                 }
                 exit_code = 2;
             }
@@ -114,7 +114,7 @@ static bool parse_config_reply(const char *reply, size_t reply_length) {
     if (yyjson_is_obj(root)) {
         yyjson_val *config_val = yyjson_obj_get(root, "config");
         if (config_val && yyjson_is_str(config_val)) {
-            fprintf(stdout, "%s", yyjson_get_str(config_val));
+            fprintf(stdout, "%s", unsafe_yyjson_get_str(config_val));
         }
     }
 

@@ -38,12 +38,12 @@ void parse_mode_json(const unsigned char *json, size_t size) {
 
     yyjson_val *change_val = yyjson_obj_get(root, "change");
     if (change_val && yyjson_is_str(change_val)) {
-        change = yyjson_get_str(change_val);
+        change = unsafe_yyjson_get_str(change_val);
     }
 
     yyjson_val *markup_val = yyjson_obj_get(root, "pango_markup");
     if (markup_val && yyjson_is_bool(markup_val)) {
-        pango_markup = yyjson_get_bool(markup_val);
+        pango_markup = unsafe_yyjson_get_bool(markup_val);
         DLOG("Setting pango_markup to %d.\n", pango_markup);
     }
 

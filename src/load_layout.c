@@ -635,7 +635,7 @@ json_content_t json_determine_content(const char *buf, const size_t len) {
 
     yyjson_val *type_val = yyjson_obj_get(root, "type");
     if (type_val && yyjson_is_str(type_val)) {
-        const char *type = yyjson_get_str(type_val);
+        const char *type = unsafe_yyjson_get_str(type_val);
         if (strcmp(type, "workspace") == 0) {
             yyjson_doc_free(doc);
             return JSON_CONTENT_WORKSPACE;
@@ -673,8 +673,8 @@ static void traverse_and_invoke_callbacks(yyjson_val *node) {
                 continue;  // Skip invalid keys
             }
 
-            json_key(key_str, unsafe_yyjson_get_len(key));  /* Call key callback */
-            traverse_and_invoke_callbacks(val);             /* Recurse into value */
+            json_key(key_str, unsafe_yyjson_get_len(key)); /* Call key callback */
+            traverse_and_invoke_callbacks(val);            /* Recurse into value */
         }
 
         json_end_map();

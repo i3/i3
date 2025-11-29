@@ -49,22 +49,22 @@ void parse_json_header(i3bar_child *child, const unsigned char *buffer, int leng
     if (yyjson_is_obj(root)) {
         yyjson_val *version_val = yyjson_obj_get(root, "version");
         if (version_val && yyjson_is_int(version_val)) {
-            child->version = yyjson_get_int(version_val);
+            child->version = unsafe_yyjson_get_int(version_val);
         }
 
         yyjson_val *stop_signal_val = yyjson_obj_get(root, "stop_signal");
         if (stop_signal_val && yyjson_is_int(stop_signal_val)) {
-            child->stop_signal = yyjson_get_int(stop_signal_val);
+            child->stop_signal = unsafe_yyjson_get_int(stop_signal_val);
         }
 
         yyjson_val *cont_signal_val = yyjson_obj_get(root, "cont_signal");
         if (cont_signal_val && yyjson_is_int(cont_signal_val)) {
-            child->cont_signal = yyjson_get_int(cont_signal_val);
+            child->cont_signal = unsafe_yyjson_get_int(cont_signal_val);
         }
 
         yyjson_val *click_events_val = yyjson_obj_get(root, "click_events");
         if (click_events_val && yyjson_is_bool(click_events_val)) {
-            child->click_events = yyjson_get_bool(click_events_val);
+            child->click_events = unsafe_yyjson_get_bool(click_events_val);
         }
     }
 

@@ -15,7 +15,7 @@
 
 #include <yyjson.h>
 
-config_t config;
+config_t config = {0};
 
 /*
  * Parse the bindings array
@@ -33,22 +33,12 @@ static void parse_bindings(yyjson_val *bindings_arr) {
         }
 
         binding_t *binding = scalloc(1, sizeof(binding_t));
-
-        yyjson_val *input_code = yyjson_obj_get(binding_obj, "input_code");
-        if (input_code && yyjson_is_int(input_code)) {
-            binding->input_code = yyjson_get_int(input_code);
+        binding->input_code = yyjson_get_int(yyjson_obj_get(binding_obj, "input_code"));
+        const char *cmd = yyjson_get_str(yyjson_obj_get(binding_obj, "command"));
+        if (cmd) {
+            binding->command = sstrdup(cmd);
         }
-
-        yyjson_val *command = yyjson_obj_get(binding_obj, "command");
-        if (command && yyjson_is_str(command)) {
-            binding->command = sstrdup(yyjson_get_str(command));
-        }
-
-        yyjson_val *release = yyjson_obj_get(binding_obj, "release");
-        if (release && yyjson_is_bool(release)) {
-            binding->release = yyjson_get_bool(release);
-        }
-
+        binding->release = yyjson_get_bool(yyjson_obj_get(binding_obj, "release"));
         TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
     }
 }
@@ -67,8 +57,8 @@ static void parse_tray_outputs(yyjson_val *tray_arr) {
         if (!yyjson_is_str(output_val)) {
             continue;
         }
-        const char *output = yyjson_get_str(output_val);
-        size_t len = yyjson_get_len(output_val);
+        const char *output = unsafe_yyjson_get_str(output_val);
+        size_t len = unsafe_yyjson_get_len(output_val);
         DLOG("Adding tray_output = %.*s to the list.\n", (int)len, output);
         tray_output_t *tray_output = scalloc(1, sizeof(tray_output_t));
         tray_output->output = sstrdup(output);
@@ -90,8 +80,8 @@ static void parse_outputs(yyjson_val *outputs_arr) {
         if (!yyjson_is_str(output_val)) {
             continue;
         }
-        const char *output = yyjson_get_str(output_val);
-        size_t len = yyjson_get_len(output_val);
+        const char *output = unsafe_yyjson_get_str(output_val);
+        size_t len = unsafe_yyjson_get_len(output_val);
         DLOG("+output %.*s\n", (int)len, output);
         int new_num_outputs = config.num_outputs + 1;
         config.outputs = srealloc(config.outputs, sizeof(char *) * new_num_outputs);
@@ -107,27 +97,12 @@ static void parse_padding(yyjson_val *padding_obj) {
     if (!yyjson_is_obj(padding_obj)) {
         return;
     }
-
-    yyjson_val *x_val = yyjson_obj_get(padding_obj, "x");
-    if (x_val && yyjson_is_int(x_val)) {
-        config.padding.x = yyjson_get_int(x_val);
-        DLOG("padding.x = %d\n", config.padding.x);
-    }
-    yyjson_val *y_val = yyjson_obj_get(padding_obj, "y");
-    if (y_val && yyjson_is_int(y_val)) {
-        config.padding.y = yyjson_get_int(y_val);
-        DLOG("padding.y = %d\n", config.padding.y);
-    }
-    yyjson_val *width_val = yyjson_obj_get(padding_obj, "width");
-    if (width_val && yyjson_is_int(width_val)) {
-        config.padding.width = yyjson_get_int(width_val);
-        DLOG("padding.width = %d\n", config.padding.width);
-    }
-    yyjson_val *height_val = yyjson_obj_get(padding_obj, "height");
-    if (height_val && yyjson_is_int(height_val)) {
-        config.padding.height = yyjson_get_int(height_val);
-        DLOG("padding.height = %d\n", config.padding.height);
-    }
+    config.padding.x = yyjson_get_int(yyjson_obj_get(padding_obj, "x"));
+    config.padding.y = yyjson_get_int(yyjson_obj_get(padding_obj, "y"));
+    config.padding.width = yyjson_get_int(yyjson_obj_get(padding_obj, "width"));
+    config.padding.height = yyjson_get_int(yyjson_obj_get(padding_obj, "height"));
+    DLOG("padding = {x=%d, y=%d, width=%d, height=%d}\n",
+         config.padding.x, config.padding.y, config.padding.width, config.padding.height);
 }
 
 /*
@@ -138,13 +113,13 @@ static void parse_colors(yyjson_val *colors_obj) {
         return;
     }
 
-#define PARSE_COLOR(json_name, struct_name)                                     \
-    do {                                                                        \
-        yyjson_val *val = yyjson_obj_get(colors_obj, #json_name);               \
-        if (val && yyjson_is_str(val)) {                                        \
-            DLOG(#json_name " = " #struct_name " = %s\n", yyjson_get_str(val)); \
-            config.colors.struct_name = sstrdup(yyjson_get_str(val));           \
-        }                                                                       \
+#define PARSE_COLOR(json_name, struct_name)                                            \
+    do {                                                                               \
+        yyjson_val *val = yyjson_obj_get(colors_obj, #json_name);                      \
+        if (val && yyjson_is_str(val)) {                                               \
+            DLOG(#json_name " = " #struct_name " = %s\n", unsafe_yyjson_get_str(val)); \
+            config.colors.struct_name = sstrdup(unsafe_yyjson_get_str(val));           \
+        }                                                                              \
     } while (0)
 
     PARSE_COLOR(statusline, bar_fg);
@@ -196,7 +171,7 @@ void parse_config_json(const unsigned char *json, size_t size) {
 
     /* Check if id is null (bar config not found) */
     yyjson_val *id_val = yyjson_obj_get(root, "id");
-    if (id_val && yyjson_is_null(id_val)) {
+    if (yyjson_is_null(id_val)) {
         ELOG("No such bar config. Use 'i3-msg -t get_bar_config' to get the available configs.\n");
         ELOG("Are you starting i3bar by hand? You should not:\n");
         ELOG("Configure a 'bar' block in your i3 config and i3 will launch i3bar automatically.\n");
@@ -205,9 +180,8 @@ void parse_config_json(const unsigned char *json, size_t size) {
     }
 
     /* Parse mode */
-    yyjson_val *mode_val = yyjson_obj_get(root, "mode");
-    if (mode_val && yyjson_is_str(mode_val)) {
-        const char *mode = yyjson_get_str(mode_val);
+    const char *mode = yyjson_get_str(yyjson_obj_get(root, "mode"));
+    if (mode) {
         DLOG("mode = %s\n", mode);
         if (strcmp(mode, "dock") == 0) {
             config.hide_on_modifier = M_DOCK;
@@ -219,21 +193,20 @@ void parse_config_json(const unsigned char *json, size_t size) {
     }
 
     /* Parse hidden_state */
-    yyjson_val *hidden_val = yyjson_obj_get(root, "hidden_state");
-    if (hidden_val && yyjson_is_str(hidden_val)) {
-        const char *hidden = yyjson_get_str(hidden_val);
+    const char *hidden = yyjson_get_str(yyjson_obj_get(root, "hidden_state"));
+    if (hidden) {
         DLOG("hidden_state = %s\n", hidden);
         config.hidden_state = (strcmp(hidden, "hide") == 0) ? S_HIDE : S_SHOW;
     }
 
     /* Parse modifier - can be int or string for backwards compatibility */
     yyjson_val *modifier_val = yyjson_obj_get(root, "modifier");
-    if (modifier_val) {
-        if (yyjson_is_int(modifier_val)) {
-            config.modifier = yyjson_get_int(modifier_val);
-            DLOG("modifier = %d\n", config.modifier);
-        } else if (yyjson_is_str(modifier_val)) {
-            const char *mod = yyjson_get_str(modifier_val);
+    if (yyjson_is_int(modifier_val)) {
+        config.modifier = unsafe_yyjson_get_int(modifier_val);
+        DLOG("modifier = %d\n", config.modifier);
+    } else {
+        const char *mod = yyjson_get_str(modifier_val);
+        if (mod) {
             DLOG("modifier = %s\n", mod);
             if (strcmp(mod, "none") == 0) {
                 config.modifier = XCB_NONE;
@@ -256,124 +229,85 @@ void parse_config_json(const unsigned char *json, size_t size) {
     }
 
     /* Parse position */
-    yyjson_val *position_val = yyjson_obj_get(root, "position");
-    if (position_val && yyjson_is_str(position_val)) {
-        const char *pos = yyjson_get_str(position_val);
+    const char *pos = yyjson_get_str(yyjson_obj_get(root, "position"));
+    if (pos) {
         DLOG("position = %s\n", pos);
         config.position = (strcmp(pos, "top") == 0) ? POS_TOP : POS_BOT;
     }
 
     /* Parse status_command */
-    yyjson_val *status_cmd = yyjson_obj_get(root, "status_command");
-    if (status_cmd && yyjson_is_str(status_cmd)) {
-        const char *cmd = yyjson_get_str(status_cmd);
-        DLOG("status_command = %s\n", cmd);
-        config.command = sstrdup(cmd);
+    const char *status_cmd = yyjson_get_str(yyjson_obj_get(root, "status_command"));
+    if (status_cmd) {
+        DLOG("status_command = %s\n", status_cmd);
+        config.command = sstrdup(status_cmd);
     }
 
     /* Parse workspace_command */
-    yyjson_val *ws_cmd = yyjson_obj_get(root, "workspace_command");
-    if (ws_cmd && yyjson_is_str(ws_cmd)) {
-        const char *cmd = yyjson_get_str(ws_cmd);
-        DLOG("workspace_command = %s\n", cmd);
-        config.workspace_command = sstrdup(cmd);
+    const char *ws_cmd = yyjson_get_str(yyjson_obj_get(root, "workspace_command"));
+    if (ws_cmd) {
+        DLOG("workspace_command = %s\n", ws_cmd);
+        config.workspace_command = sstrdup(ws_cmd);
     }
 
     /* Parse font */
-    yyjson_val *font_val = yyjson_obj_get(root, "font");
-    if (font_val && yyjson_is_str(font_val)) {
-        const char *font = yyjson_get_str(font_val);
+    const char *font = yyjson_get_str(yyjson_obj_get(root, "font"));
+    if (font) {
         DLOG("font = %s\n", font);
         FREE(config.fontname);
         config.fontname = sstrdup(font);
     }
 
     /* Parse separator_symbol */
-    yyjson_val *sep_val = yyjson_obj_get(root, "separator_symbol");
-    if (sep_val && yyjson_is_str(sep_val)) {
-        const char *sep = yyjson_get_str(sep_val);
+    const char *sep = yyjson_get_str(yyjson_obj_get(root, "separator_symbol"));
+    if (sep) {
         DLOG("separator = %s\n", sep);
         I3STRING_FREE(config.separator_symbol);
         config.separator_symbol = i3string_from_utf8(sep);
     }
 
-    /* Parse bar_height */
-    yyjson_val *bar_height = yyjson_obj_get(root, "bar_height");
-    if (bar_height && yyjson_is_int(bar_height)) {
-        config.bar_height = yyjson_get_int(bar_height);
-        DLOG("bar_height = %d\n", config.bar_height);
-    }
-
-    /* Parse tray_padding */
-    yyjson_val *tray_padding = yyjson_obj_get(root, "tray_padding");
-    if (tray_padding && yyjson_is_int(tray_padding)) {
-        config.tray_padding = yyjson_get_int(tray_padding);
-        DLOG("tray_padding = %d\n", config.tray_padding);
-    }
-
-    /* Parse workspace_min_width */
-    yyjson_val *ws_min = yyjson_obj_get(root, "workspace_min_width");
-    if (ws_min && yyjson_is_int(ws_min)) {
-        config.ws_min_width = yyjson_get_int(ws_min);
-        DLOG("workspace_min_width = %d\n", config.ws_min_width);
-    }
+    /* Parse integer options */
+    config.bar_height = yyjson_get_int(yyjson_obj_get(root, "bar_height"));
+    config.tray_padding = yyjson_get_int(yyjson_obj_get(root, "tray_padding"));
+    config.ws_min_width = yyjson_get_int(yyjson_obj_get(root, "workspace_min_width"));
+    DLOG("bar_height=%d, tray_padding=%d, workspace_min_width=%d\n",
+         config.bar_height, config.tray_padding, config.ws_min_width);
 
     /* Parse boolean options */
-    yyjson_val *binding_mode = yyjson_obj_get(root, "binding_mode_indicator");
-    if (binding_mode && yyjson_is_bool(binding_mode)) {
-        config.disable_binding_mode_indicator = !yyjson_get_bool(binding_mode);
-        DLOG("binding_mode_indicator = %d\n", !config.disable_binding_mode_indicator);
+    config.disable_binding_mode_indicator = !yyjson_get_bool(yyjson_obj_get(root, "binding_mode_indicator"));
+    config.disable_ws = !yyjson_get_bool(yyjson_obj_get(root, "workspace_buttons"));
+    config.strip_ws_numbers = yyjson_get_bool(yyjson_obj_get(root, "strip_workspace_numbers"));
+    config.strip_ws_name = yyjson_get_bool(yyjson_obj_get(root, "strip_workspace_name"));
+    if (!config.verbose) {
+        config.verbose = yyjson_get_bool(yyjson_obj_get(root, "verbose"));
     }
-
-    yyjson_val *ws_buttons = yyjson_obj_get(root, "workspace_buttons");
-    if (ws_buttons && yyjson_is_bool(ws_buttons)) {
-        config.disable_ws = !yyjson_get_bool(ws_buttons);
-        DLOG("workspace_buttons = %d\n", !config.disable_ws);
-    }
-
-    yyjson_val *strip_nums = yyjson_obj_get(root, "strip_workspace_numbers");
-    if (strip_nums && yyjson_is_bool(strip_nums)) {
-        config.strip_ws_numbers = yyjson_get_bool(strip_nums);
-        DLOG("strip_workspace_numbers = %d\n", config.strip_ws_numbers);
-    }
-
-    yyjson_val *strip_name = yyjson_obj_get(root, "strip_workspace_name");
-    if (strip_name && yyjson_is_bool(strip_name)) {
-        config.strip_ws_name = yyjson_get_bool(strip_name);
-        DLOG("strip_workspace_name = %d\n", config.strip_ws_name);
-    }
-
-    yyjson_val *verbose = yyjson_obj_get(root, "verbose");
-    if (verbose && yyjson_is_bool(verbose) && !config.verbose) {
-        config.verbose = yyjson_get_bool(verbose);
-        DLOG("verbose = %d\n", config.verbose);
-    }
+    DLOG("binding_mode_indicator=%d, workspace_buttons=%d, strip_ws_numbers=%d, strip_ws_name=%d, verbose=%d\n",
+         !config.disable_binding_mode_indicator, !config.disable_ws, config.strip_ws_numbers, config.strip_ws_name, config.verbose);
 
     /* Parse backwards-compat wheel commands */
-    yyjson_val *wheel_up = yyjson_obj_get(root, "wheel_up_cmd");
-    if (wheel_up && yyjson_is_str(wheel_up)) {
-        DLOG("wheel_up_cmd = %s\n", yyjson_get_str(wheel_up));
+    const char *wheel_up = yyjson_get_str(yyjson_obj_get(root, "wheel_up_cmd"));
+    if (wheel_up) {
+        DLOG("wheel_up_cmd = %s\n", wheel_up);
         binding_t *binding = scalloc(1, sizeof(binding_t));
         binding->input_code = 4;
-        binding->command = sstrdup(yyjson_get_str(wheel_up));
+        binding->command = sstrdup(wheel_up);
         TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
     }
 
-    yyjson_val *wheel_down = yyjson_obj_get(root, "wheel_down_cmd");
-    if (wheel_down && yyjson_is_str(wheel_down)) {
-        DLOG("wheel_down_cmd = %s\n", yyjson_get_str(wheel_down));
+    const char *wheel_down = yyjson_get_str(yyjson_obj_get(root, "wheel_down_cmd"));
+    if (wheel_down) {
+        DLOG("wheel_down_cmd = %s\n", wheel_down);
         binding_t *binding = scalloc(1, sizeof(binding_t));
         binding->input_code = 5;
-        binding->command = sstrdup(yyjson_get_str(wheel_down));
+        binding->command = sstrdup(wheel_down);
         TAILQ_INSERT_TAIL(&(config.bindings), binding, bindings);
     }
 
     /* Parse deprecated single tray_output */
-    yyjson_val *tray_output = yyjson_obj_get(root, "tray_output");
-    if (tray_output && yyjson_is_str(tray_output)) {
-        DLOG("Found deprecated key tray_output %s.\n", yyjson_get_str(tray_output));
+    const char *tray_output = yyjson_get_str(yyjson_obj_get(root, "tray_output"));
+    if (tray_output) {
+        DLOG("Found deprecated key tray_output %s.\n", tray_output);
         tray_output_t *to = scalloc(1, sizeof(tray_output_t));
-        to->output = sstrdup(yyjson_get_str(tray_output));
+        to->output = sstrdup(tray_output);
         TAILQ_INSERT_TAIL(&(config.tray_outputs), to, tray_outputs);
     }
 
@@ -407,7 +341,7 @@ void parse_get_first_i3bar_config(const unsigned char *json, size_t size) {
     if (yyjson_is_arr(root)) {
         yyjson_val *first = yyjson_arr_get_first(root);
         if (first && yyjson_is_str(first)) {
-            config.bar_id = sstrdup(yyjson_get_str(first));
+            config.bar_id = sstrdup(unsafe_yyjson_get_str(first));
         }
     }
 

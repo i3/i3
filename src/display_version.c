@@ -98,12 +98,12 @@ void display_running_version(void) {
     if (yyjson_is_obj(root)) {
         yyjson_val *hr_val = yyjson_obj_get(root, "human_readable");
         if (hr_val && yyjson_is_str(hr_val)) {
-            human_readable_version = sstrdup(yyjson_get_str(hr_val));
+            human_readable_version = sstrdup(unsafe_yyjson_get_str(hr_val));
         }
 
         yyjson_val *lcfn_val = yyjson_obj_get(root, "loaded_config_file_name");
         if (lcfn_val && yyjson_is_str(lcfn_val)) {
-            loaded_config_file_name = sstrdup(yyjson_get_str(lcfn_val));
+            loaded_config_file_name = sstrdup(unsafe_yyjson_get_str(lcfn_val));
         }
 
         yyjson_val *icfn_val = yyjson_obj_get(root, "included_config_file_names");
@@ -113,7 +113,7 @@ void display_running_version(void) {
             yyjson_arr_foreach(icfn_val, idx, max, val) {
                 if (yyjson_is_str(val)) {
                     IncludedFile *file = scalloc(1, sizeof(IncludedFile));
-                    file->path = sstrdup(yyjson_get_str(val));
+                    file->path = sstrdup(unsafe_yyjson_get_str(val));
                     TAILQ_INSERT_TAIL(&included_files, file, files);
                 }
             }
