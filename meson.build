@@ -520,7 +520,7 @@ executable(
   ],
   install: true,
   include_directories: include_directories('include', 'i3bar/include'),
-  dependencies: common_deps,
+  dependencies: [common_deps, yyjson],
   link_with: libi3,
 )
 

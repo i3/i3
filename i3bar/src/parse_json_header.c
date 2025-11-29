@@ -13,65 +13,7 @@
 #include <signal.h>
 #include <string.h>
 
-#include <yajl/yajl_parse.h>
-
-static enum {
-    KEY_VERSION,
-    KEY_STOP_SIGNAL,
-    KEY_CONT_SIGNAL,
-    KEY_CLICK_EVENTS,
-    NO_KEY
-} current_key;
-
-static int header_integer(void *ctx, long long val) {
-    i3bar_child *child = ctx;
-
-    switch (current_key) {
-        case KEY_VERSION:
-            child->version = val;
-            break;
-        case KEY_STOP_SIGNAL:
-            child->stop_signal = val;
-            break;
-        case KEY_CONT_SIGNAL:
-            child->cont_signal = val;
-            break;
-        default:
-            break;
-    }
-
-    return 1;
-}
-
-static int header_boolean(void *ctx, int val) {
-    i3bar_child *child = ctx;
-
-    switch (current_key) {
-        case KEY_CLICK_EVENTS:
-            child->click_events = val;
-            break;
-        default:
-            break;
-    }
-
-    return 1;
-}
-
-#define CHECK_KEY(name) (stringlen == strlen(name) && \
-                         STARTS_WITH((const char *)stringval, stringlen, name))
-
-static int header_map_key(void *ctx, const unsigned char *stringval, size_t stringlen) {
-    if (CHECK_KEY("version")) {
-        current_key = KEY_VERSION;
-    } else if (CHECK_KEY("stop_signal")) {
-        current_key = KEY_STOP_SIGNAL;
-    } else if (CHECK_KEY("cont_signal")) {
-        current_key = KEY_CONT_SIGNAL;
-    } else if (CHECK_KEY("click_events")) {
-        current_key = KEY_CLICK_EVENTS;
-    }
-    return 1;
-}
+#include <yyjson.h>
 
 static void child_init(i3bar_child *child) {
     child->version = 0;
@@ -88,32 +30,47 @@ static void child_init(i3bar_child *child) {
  *
  */
 void parse_json_header(i3bar_child *child, const unsigned char *buffer, int length, unsigned int *consumed) {
-    static yajl_callbacks version_callbacks = {
-        .yajl_boolean = header_boolean,
-        .yajl_integer = header_integer,
-        .yajl_map_key = &header_map_key,
-    };
-
     child_init(child);
 
-    current_key = NO_KEY;
+    /* YYJSON_READ_STOP_WHEN_DONE allows trailing content after the JSON object */
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)buffer, length,
+                                        YYJSON_READ_STOP_WHEN_DONE, NULL, &err);
 
-    yajl_handle handle = yajl_alloc(&version_callbacks, NULL, child);
-    /* Allow trailing garbage. yajl 1 always behaves that way anyways, but for
-     * yajl 2, we need to be explicit. */
-    yajl_config(handle, yajl_allow_trailing_garbage, 1);
-
-    yajl_status state = yajl_parse(handle, buffer, length);
-    if (state != yajl_status_ok) {
-        child_init(child);
+    if (!doc) {
         if (consumed != NULL) {
             *consumed = 0;
         }
-    } else {
-        if (consumed != NULL) {
-            *consumed = yajl_get_bytes_consumed(handle);
+        return;
+    }
+
+    yyjson_val *root = yyjson_doc_get_root(doc);
+
+    if (yyjson_is_obj(root)) {
+        yyjson_val *version_val = yyjson_obj_get(root, "version");
+        if (version_val && yyjson_is_int(version_val)) {
+            child->version = yyjson_get_int(version_val);
+        }
+
+        yyjson_val *stop_signal_val = yyjson_obj_get(root, "stop_signal");
+        if (stop_signal_val && yyjson_is_int(stop_signal_val)) {
+            child->stop_signal = yyjson_get_int(stop_signal_val);
+        }
+
+        yyjson_val *cont_signal_val = yyjson_obj_get(root, "cont_signal");
+        if (cont_signal_val && yyjson_is_int(cont_signal_val)) {
+            child->cont_signal = yyjson_get_int(cont_signal_val);
+        }
+
+        yyjson_val *click_events_val = yyjson_obj_get(root, "click_events");
+        if (click_events_val && yyjson_is_bool(click_events_val)) {
+            child->click_events = yyjson_get_bool(click_events_val);
         }
     }
 
-    yajl_free(handle);
+    if (consumed != NULL) {
+        *consumed = yyjson_doc_get_read_size(doc);
+    }
+
+    yyjson_doc_free(doc);
 }
