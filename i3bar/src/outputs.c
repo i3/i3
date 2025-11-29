@@ -23,10 +23,10 @@
         (_v && yyjson_is_##type(_v)) ? unsafe_yyjson_get_##type(_v) : (def); \
     })
 
-#define json_opt_val(obj, key, type)                                         \
-    ({                                                                       \
-        yyjson_val *_v = yyjson_obj_get(obj, key);                           \
-        (_v && yyjson_is_##type(_v)) ? _v : NULL;                            \
+#define json_opt_val(obj, key, type)               \
+    ({                                             \
+        yyjson_val *_v = yyjson_obj_get(obj, key); \
+        (_v && yyjson_is_##type(_v)) ? _v : NULL;  \
     })
 
 struct outputs_head *outputs;
