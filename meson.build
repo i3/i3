@@ -323,7 +323,7 @@ cairo_dep = dependency('cairo', version: '>=1.14.4', method: 'pkg-config')
 pangocairo_dep = dependency('pangocairo', method: 'pkg-config')
 glib_dep = dependency('glib-2.0', method: 'pkg-config')
 gobject_dep = dependency('gobject-2.0', method: 'pkg-config')
-yyjson_dep = dependency('yyjson', method: 'pkg-config')
+yyjson_dep = dependency('yyjson', version: '>=0.7.0', method: 'pkg-config')
 
 ev_dep = cc.find_library('ev')
 
