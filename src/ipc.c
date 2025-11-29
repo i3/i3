@@ -9,7 +9,6 @@
  */
 
 #include "all.h"
-#include "yyjson_utils.h"
 
 #include <ev.h>
 #include <fcntl.h>
@@ -159,7 +158,7 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
  * For shutdown events, we send the reason for the shutdown.
  */
 static void ipc_send_shutdown_event(const shutdown_reason_t reason) {
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *root = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, root);
 
@@ -201,7 +200,7 @@ IPC_HANDLER(run_command) {
      * message_size bytes out of the buffer */
     char *command = sstrndup((const char *)message, message_size);
     LOG("IPC: received: *%.4000s*\n", command);
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
 
     CommandResult *result = parse_command(command, doc, client);
     free(command);
@@ -830,7 +829,7 @@ static yyjson_mut_val *dump_bar_config(yyjson_mut_doc *doc, Barconfig *config) {
 
 IPC_HANDLER(tree) {
     setlocale(LC_NUMERIC, "C");
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *root = dump_node(doc, croot, false);
     yyjson_mut_doc_set_root(doc, root);
     setlocale(LC_NUMERIC, "");
@@ -849,7 +848,7 @@ IPC_HANDLER(tree) {
  *
  */
 IPC_HANDLER(get_workspaces) {
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *arr = yyjson_mut_arr(doc);
     yyjson_mut_doc_set_root(doc, arr);
 
@@ -892,7 +891,7 @@ IPC_HANDLER(get_workspaces) {
  *
  */
 IPC_HANDLER(get_outputs) {
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *arr = yyjson_mut_arr(doc);
     yyjson_mut_doc_set_root(doc, arr);
 
@@ -929,7 +928,7 @@ IPC_HANDLER(get_outputs) {
  *
  */
 IPC_HANDLER(get_marks) {
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *arr = yyjson_mut_arr(doc);
     yyjson_mut_doc_set_root(doc, arr);
 
@@ -954,7 +953,7 @@ IPC_HANDLER(get_marks) {
  *
  */
 IPC_HANDLER(get_version) {
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, obj);
 
@@ -989,7 +988,7 @@ IPC_HANDLER(get_version) {
  *
  */
 IPC_HANDLER(get_bar_config) {
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
 
     /* If no ID was passed, we return a JSON array with all IDs */
     if (message_size == 0) {
@@ -1050,7 +1049,7 @@ IPC_HANDLER(get_bar_config) {
  *
  */
 IPC_HANDLER(get_binding_modes) {
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *arr = yyjson_mut_arr(doc);
     yyjson_mut_doc_set_root(doc, arr);
 
@@ -1142,7 +1141,7 @@ IPC_HANDLER(subscribe) {
  * Returns the raw last loaded i3 configuration file contents.
  */
 IPC_HANDLER(get_config) {
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, obj);
 
@@ -1172,7 +1171,7 @@ IPC_HANDLER(get_config) {
  * synchronization point in event-related tests.
  */
 IPC_HANDLER(send_tick) {
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, obj);
 
@@ -1224,7 +1223,7 @@ IPC_HANDLER(sync) {
 }
 
 IPC_HANDLER(get_binding_state) {
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, obj);
 
@@ -1371,7 +1370,7 @@ ipc_client *ipc_new_client_on_fd(EV_P_ int fd) {
  */
 void ipc_send_workspace_event(const char *change, Con *current, Con *old) {
     setlocale(LC_NUMERIC, "C");
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, obj);
 
@@ -1409,7 +1408,7 @@ void ipc_send_window_event(const char *property, Con *con) {
          property, con, (con->window ? con->window->id : XCB_WINDOW_NONE));
 
     setlocale(LC_NUMERIC, "C");
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, obj);
 
@@ -1431,7 +1430,7 @@ void ipc_send_window_event(const char *property, Con *con) {
 void ipc_send_barconfig_update_event(Barconfig *barconfig) {
     DLOG("Issue barconfig_update event for id = %s\n", barconfig->id);
     setlocale(LC_NUMERIC, "C");
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *bar_obj = dump_bar_config(doc, barconfig);
     yyjson_mut_doc_set_root(doc, bar_obj);
 
@@ -1452,7 +1451,7 @@ void ipc_send_binding_event(const char *event_type, Binding *bind, const char *m
 
     setlocale(LC_NUMERIC, "C");
 
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, obj);
 

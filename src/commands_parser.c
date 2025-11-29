@@ -348,8 +348,8 @@ CommandResult *parse_command(const char *input, yyjson_mut_doc *doc, ipc_client 
                  * errors. i3-nagbar is spawned upon keypresses only for parser
                  * errors. */
                 yyjson_mut_obj_add_bool(cmd_ctx.command_output.json_doc, error_obj, "parse_error", true);
-                yyjson_mut_obj_add_str(cmd_ctx.command_output.json_doc, error_obj, "error", errormessage);
-                yyjson_mut_obj_add_str(cmd_ctx.command_output.json_doc, error_obj, "input", input);
+                yyjson_mut_obj_add_strcpy(cmd_ctx.command_output.json_doc, error_obj, "error", errormessage);
+                yyjson_mut_obj_add_strcpy(cmd_ctx.command_output.json_doc, error_obj, "input", input);
                 yyjson_mut_obj_add_strcpy(cmd_ctx.command_output.json_doc, error_obj, "errorposition", position);
                 add_json_result(&cmd_ctx.command_output, error_obj);
             }
