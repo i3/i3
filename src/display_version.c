@@ -14,41 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 
-static bool human_readable_key;
-static bool loaded_config_file_name_key;
-static bool included_config_file_names;
-
-static char *human_readable_version;
-static char *loaded_config_file_name;
-
-static int version_string(void *ctx, const unsigned char *val, size_t len) {
-    if (human_readable_key) {
-        sasprintf(&human_readable_version, "%.*s", (int)len, val);
-    }
-    if (loaded_config_file_name_key) {
-        sasprintf(&loaded_config_file_name, "%.*s", (int)len, val);
-    }
-    if (included_config_file_names) {
-        IncludedFile *file = scalloc(1, sizeof(IncludedFile));
-        sasprintf(&(file->path), "%.*s", (int)len, val);
-        TAILQ_INSERT_TAIL(&included_files, file, files);
-    }
-    return 1;
-}
-
-static int version_map_key(void *ctx, const unsigned char *stringval, size_t stringlen) {
-#define KEY_MATCHES(x) (stringlen == strlen(x) && strncmp((const char *)stringval, x, strlen(x)) == 0)
-    human_readable_key = KEY_MATCHES("human_readable");
-    loaded_config_file_name_key = KEY_MATCHES("loaded_config_file_name");
-    included_config_file_names = KEY_MATCHES("included_config_file_names");
-#undef KEY_MATCHES
-    return 1;
-}
-
-static yajl_callbacks version_callbacks = {
-    .yajl_string = version_string,
-    .yajl_map_key = version_map_key,
-};
+#include <yyjson.h>
 
 static void print_config_path(const char *path, const char *role) {
     struct stat sb;
@@ -69,7 +35,7 @@ static void print_config_path(const char *path, const char *role) {
 /*
  * Connects to i3 to find out the currently running version. Useful since it
  * might be different from the version compiled into this binary (maybe the
- * user didn’t correctly install i3 or forgot to restart it).
+ * user didn't correctly install i3 or forgot to restart it).
  *
  * The output looks like this:
  * Running i3 version: 4.2-202-gb8e782c (2012-08-12, branch "next") (pid 14804)
@@ -119,15 +85,44 @@ void display_running_version(void) {
         errx(EXIT_FAILURE, "Got reply type %d, but expected %d (GET_VERSION)", reply_type, I3_IPC_MESSAGE_TYPE_GET_VERSION);
     }
 
-    yajl_handle handle = yajl_alloc(&version_callbacks, NULL, NULL);
-
-    yajl_status state = yajl_parse(handle, reply, (int)reply_length);
-    if (state != yajl_status_ok) {
+    yyjson_doc *doc = yyjson_read((const char *)reply, reply_length, 0);
+    if (!doc) {
         errx(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
     }
 
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    char *human_readable_version = NULL;
+    char *loaded_config_file_name = NULL;
+
+    if (yyjson_is_obj(root)) {
+        yyjson_val *hr_val = yyjson_obj_get(root, "human_readable");
+        if (hr_val && yyjson_is_str(hr_val)) {
+            human_readable_version = sstrdup(yyjson_get_str(hr_val));
+        }
+
+        yyjson_val *lcfn_val = yyjson_obj_get(root, "loaded_config_file_name");
+        if (lcfn_val && yyjson_is_str(lcfn_val)) {
+            loaded_config_file_name = sstrdup(yyjson_get_str(lcfn_val));
+        }
+
+        yyjson_val *icfn_val = yyjson_obj_get(root, "included_config_file_names");
+        if (icfn_val && yyjson_is_arr(icfn_val)) {
+            size_t idx, max;
+            yyjson_val *val;
+            yyjson_arr_foreach(icfn_val, idx, max, val) {
+                if (yyjson_is_str(val)) {
+                    IncludedFile *file = scalloc(1, sizeof(IncludedFile));
+                    file->path = sstrdup(yyjson_get_str(val));
+                    TAILQ_INSERT_TAIL(&included_files, file, files);
+                }
+            }
+        }
+    }
+
+    yyjson_doc_free(doc);
+
     printf("\r\x1b[K");
-    printf("Running i3 version: %s (pid %s)\n", human_readable_version, pid_from_atom);
+    printf("Running i3 version: %s (pid %s)\n", human_readable_version ? human_readable_version : "unknown", pid_from_atom);
 
     if (loaded_config_file_name) {
         printf("Loaded i3 config:\n");
@@ -181,7 +176,7 @@ void display_running_version(void) {
     }
 
     /* Since readlink() might put a "(deleted)" somewhere in the buffer and
-     * stripping that out seems hackish and ugly, we read the process’s argv[0]
+     * stripping that out seems hackish and ugly, we read the process's argv[0]
      * instead. */
     free(exepath);
     sasprintf(&exepath, "/proc/%s/cmdline", pid_from_atom);
@@ -201,7 +196,8 @@ void display_running_version(void) {
     free(destpath);
 #endif
 
-    yajl_free(handle);
+    free(human_readable_version);
+    free(loaded_config_file_name);
     free(reply);
     free(pid_from_atom);
 }
