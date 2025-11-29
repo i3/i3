@@ -318,7 +318,6 @@ xcb_util_wm_dep = dependency('xcb-icccm', method: 'pkg-config')
 xcb_util_xrm_dep = dependency('xcb-xrm', method: 'pkg-config')
 xkbcommon_dep = dependency('xkbcommon', method: 'pkg-config')
 xkbcommon_x11_dep = dependency('xkbcommon-x11', method: 'pkg-config')
-yajl_dep = dependency('yajl', method: 'pkg-config')
 libpcre_dep = dependency('libpcre2-8', version: '>=10', method: 'pkg-config')
 cairo_dep = dependency('cairo', version: '>=1.14.4', method: 'pkg-config')
 pangocairo_dep = dependency('pangocairo', method: 'pkg-config')
@@ -479,7 +478,6 @@ common_deps = [
   xcb_util_xrm_dep,
   xkbcommon_dep,
   xkbcommon_x11_dep,
-  yajl_dep,
   libpcre_dep,
   cairo_dep,
   pangocairo_dep,
