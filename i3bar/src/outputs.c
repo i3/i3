@@ -14,161 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <yajl/yajl_parse.h>
+#include <yyjson.h>
 
-/* A datatype to pass through the callbacks to save the state */
-struct outputs_json_params {
-    i3_output *outputs_walk;
-    char *cur_key;
-    bool in_rect;
-};
-
-/*
- * Parse a null value (current_workspace)
- *
- */
-static int outputs_null_cb(void *params_) {
-    struct outputs_json_params *params = (struct outputs_json_params *)params_;
-
-    FREE(params->cur_key);
-
-    return 1;
-}
-
-/*
- * Parse a boolean value (active)
- *
- */
-static int outputs_boolean_cb(void *params_, int val) {
-    struct outputs_json_params *params = (struct outputs_json_params *)params_;
-
-    if (!strcmp(params->cur_key, "active")) {
-        params->outputs_walk->active = val;
-        FREE(params->cur_key);
-        return 1;
-    }
-
-    if (!strcmp(params->cur_key, "primary")) {
-        params->outputs_walk->primary = val;
-        FREE(params->cur_key);
-        return 1;
-    }
-
-    return 0;
-}
-
-/*
- * Parse an integer (current_workspace or the rect)
- *
- */
-static int outputs_integer_cb(void *params_, long long val) {
-    struct outputs_json_params *params = (struct outputs_json_params *)params_;
-
-    if (!strcmp(params->cur_key, "current_workspace")) {
-        params->outputs_walk->ws = (int)val;
-        FREE(params->cur_key);
-        return 1;
-    }
-
-    if (!strcmp(params->cur_key, "x")) {
-        params->outputs_walk->rect.x = (int)val;
-        FREE(params->cur_key);
-        return 1;
-    }
-
-    if (!strcmp(params->cur_key, "y")) {
-        params->outputs_walk->rect.y = (int)val;
-        FREE(params->cur_key);
-        return 1;
-    }
-
-    if (!strcmp(params->cur_key, "width")) {
-        params->outputs_walk->rect.w = (int)val;
-        FREE(params->cur_key);
-        return 1;
-    }
-
-    if (!strcmp(params->cur_key, "height")) {
-        params->outputs_walk->rect.h = (int)val;
-        FREE(params->cur_key);
-        return 1;
-    }
-
-    return 0;
-}
-
-/*
- * Parse a string (name)
- *
- */
-static int outputs_string_cb(void *params_, const unsigned char *val, size_t len) {
-    struct outputs_json_params *params = (struct outputs_json_params *)params_;
-
-    if (!strcmp(params->cur_key, "current_workspace")) {
-        char *copy = NULL;
-        sasprintf(&copy, "%.*s", (int)len, val);
-
-        char *end;
-        errno = 0;
-        long parsed_num = strtol(copy, &end, 10);
-        if (errno == 0 &&
-            (end && *end == '\0')) {
-            params->outputs_walk->ws = parsed_num;
-        }
-
-        FREE(copy);
-        FREE(params->cur_key);
-        return 1;
-    }
-
-    if (strcmp(params->cur_key, "name")) {
-        return 0;
-    }
-
-    sasprintf(&(params->outputs_walk->name), "%.*s", (int)len, val);
-
-    FREE(params->cur_key);
-    return 1;
-}
-
-/*
- * We hit the start of a JSON map (rect or a new output)
- *
- */
-static int outputs_start_map_cb(void *params_) {
-    struct outputs_json_params *params = (struct outputs_json_params *)params_;
-    i3_output *new_output = NULL;
-
-    if (params->cur_key == NULL) {
-        new_output = smalloc(sizeof(i3_output));
-        new_output->name = NULL;
-        new_output->active = false;
-        new_output->primary = false;
-        new_output->visible = false;
-        new_output->ws = 0,
-        new_output->statusline_width = 0;
-        memset(&new_output->rect, 0, sizeof(rect));
-        memset(&new_output->bar, 0, sizeof(surface_t));
-        memset(&new_output->buffer, 0, sizeof(surface_t));
-        memset(&new_output->statusline_buffer, 0, sizeof(surface_t));
-
-        new_output->workspaces = smalloc(sizeof(struct ws_head));
-        TAILQ_INIT(new_output->workspaces);
-
-        new_output->trayclients = smalloc(sizeof(struct tc_head));
-        TAILQ_INIT(new_output->trayclients);
-
-        params->outputs_walk = new_output;
-
-        return 1;
-    }
-
-    if (!strcmp(params->cur_key, "rect")) {
-        params->in_rect = true;
-    }
-
-    return 1;
-}
+struct outputs_head *outputs;
 
 static void clear_output(i3_output *output) {
     FREE(output->name);
@@ -176,81 +24,6 @@ static void clear_output(i3_output *output) {
     FREE(output->trayclients);
 }
 
-/*
- * We hit the end of a map (rect or a new output)
- *
- */
-static int outputs_end_map_cb(void *params_) {
-    struct outputs_json_params *params = (struct outputs_json_params *)params_;
-    if (params->in_rect) {
-        params->in_rect = false;
-        /* Ignore the end of a rect */
-        return 1;
-    }
-
-    /* See if we actually handle that output */
-    if (config.num_outputs > 0) {
-        const bool is_primary = params->outputs_walk->primary;
-        bool handle_output = false;
-        for (int c = 0; c < config.num_outputs; c++) {
-            if ((strcasecmp(params->outputs_walk->name, config.outputs[c]) == 0) ||
-                (strcasecmp(config.outputs[c], "primary") == 0 && is_primary) ||
-                (strcasecmp(config.outputs[c], "nonprimary") == 0 && !is_primary)) {
-                handle_output = true;
-                break;
-            }
-        }
-        if (!handle_output) {
-            DLOG("Ignoring output \"%s\", not configured to handle it.\n",
-                 params->outputs_walk->name);
-            clear_output(params->outputs_walk);
-            FREE(params->outputs_walk);
-            FREE(params->cur_key);
-            return 1;
-        }
-    }
-
-    i3_output *target = get_output_by_name(params->outputs_walk->name);
-
-    if (target == NULL) {
-        SLIST_INSERT_HEAD(outputs, params->outputs_walk, slist);
-    } else {
-        target->active = params->outputs_walk->active;
-        target->primary = params->outputs_walk->primary;
-        target->ws = params->outputs_walk->ws;
-        target->rect = params->outputs_walk->rect;
-
-        clear_output(params->outputs_walk);
-        FREE(params->outputs_walk);
-    }
-    return 1;
-}
-
-/*
- * Parse a key.
- *
- * Essentially we just save it in the parsing state
- *
- */
-static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
-    struct outputs_json_params *params = (struct outputs_json_params *)params_;
-    FREE(params->cur_key);
-    sasprintf(&(params->cur_key), "%.*s", (int)keyLen, keyVal);
-    return 1;
-}
-
-/* A datastructure to pass all these callbacks to yajl */
-static yajl_callbacks outputs_callbacks = {
-    .yajl_null = outputs_null_cb,
-    .yajl_boolean = outputs_boolean_cb,
-    .yajl_integer = outputs_integer_cb,
-    .yajl_string = outputs_string_cb,
-    .yajl_start_map = outputs_start_map_cb,
-    .yajl_map_key = outputs_map_key_cb,
-    .yajl_end_map = outputs_end_map_cb,
-};
-
-struct outputs_head *outputs;
 /*
  * Initiate the outputs list
  *
@@ -261,31 +34,147 @@ void init_outputs(void) {
 }
 
 /*
+ * Parse a single output object
+ */
+static void parse_output_object(yyjson_val *output_obj) {
+    if (!yyjson_is_obj(output_obj)) {
+        return;
+    }
+
+    i3_output *new_output = smalloc(sizeof(i3_output));
+    new_output->name = NULL;
+    new_output->active = false;
+    new_output->primary = false;
+    new_output->visible = false;
+    new_output->ws = 0;
+    new_output->statusline_width = 0;
+    memset(&new_output->rect, 0, sizeof(rect));
+    memset(&new_output->bar, 0, sizeof(surface_t));
+    memset(&new_output->buffer, 0, sizeof(surface_t));
+    memset(&new_output->statusline_buffer, 0, sizeof(surface_t));
+
+    new_output->workspaces = smalloc(sizeof(struct ws_head));
+    TAILQ_INIT(new_output->workspaces);
+
+    new_output->trayclients = smalloc(sizeof(struct tc_head));
+    TAILQ_INIT(new_output->trayclients);
+
+    /* Parse name */
+    yyjson_val *name_val = yyjson_obj_get(output_obj, "name");
+    if (name_val && yyjson_is_str(name_val)) {
+        new_output->name = sstrdup(yyjson_get_str(name_val));
+    }
+
+    /* Parse active */
+    yyjson_val *active_val = yyjson_obj_get(output_obj, "active");
+    if (active_val && yyjson_is_bool(active_val)) {
+        new_output->active = yyjson_get_bool(active_val);
+    }
+
+    /* Parse primary */
+    yyjson_val *primary_val = yyjson_obj_get(output_obj, "primary");
+    if (primary_val && yyjson_is_bool(primary_val)) {
+        new_output->primary = yyjson_get_bool(primary_val);
+    }
+
+    /* Parse current_workspace */
+    yyjson_val *ws_val = yyjson_obj_get(output_obj, "current_workspace");
+    if (ws_val) {
+        if (yyjson_is_int(ws_val)) {
+            new_output->ws = yyjson_get_int(ws_val);
+        } else if (yyjson_is_str(ws_val)) {
+            const char *ws_str = yyjson_get_str(ws_val);
+            char *end;
+            errno = 0;
+            long parsed_num = strtol(ws_str, &end, 10);
+            if (errno == 0 && (end && *end == '\0')) {
+                new_output->ws = parsed_num;
+            }
+        }
+    }
+
+    /* Parse rect */
+    yyjson_val *rect_val = yyjson_obj_get(output_obj, "rect");
+    if (rect_val && yyjson_is_obj(rect_val)) {
+        yyjson_val *x_val = yyjson_obj_get(rect_val, "x");
+        if (x_val && yyjson_is_int(x_val)) {
+            new_output->rect.x = yyjson_get_int(x_val);
+        }
+        yyjson_val *y_val = yyjson_obj_get(rect_val, "y");
+        if (y_val && yyjson_is_int(y_val)) {
+            new_output->rect.y = yyjson_get_int(y_val);
+        }
+        yyjson_val *w_val = yyjson_obj_get(rect_val, "width");
+        if (w_val && yyjson_is_int(w_val)) {
+            new_output->rect.w = yyjson_get_int(w_val);
+        }
+        yyjson_val *h_val = yyjson_obj_get(rect_val, "height");
+        if (h_val && yyjson_is_int(h_val)) {
+            new_output->rect.h = yyjson_get_int(h_val);
+        }
+    }
+
+    /* See if we actually handle that output */
+    if (config.num_outputs > 0) {
+        const bool is_primary = new_output->primary;
+        bool handle_output = false;
+        for (int c = 0; c < config.num_outputs; c++) {
+            if ((strcasecmp(new_output->name, config.outputs[c]) == 0) ||
+                (strcasecmp(config.outputs[c], "primary") == 0 && is_primary) ||
+                (strcasecmp(config.outputs[c], "nonprimary") == 0 && !is_primary)) {
+                handle_output = true;
+                break;
+            }
+        }
+        if (!handle_output) {
+            DLOG("Ignoring output \"%s\", not configured to handle it.\n",
+                 new_output->name);
+            clear_output(new_output);
+            FREE(new_output);
+            return;
+        }
+    }
+
+    i3_output *target = get_output_by_name(new_output->name);
+
+    if (target == NULL) {
+        SLIST_INSERT_HEAD(outputs, new_output, slist);
+    } else {
+        target->active = new_output->active;
+        target->primary = new_output->primary;
+        target->ws = new_output->ws;
+        target->rect = new_output->rect;
+
+        clear_output(new_output);
+        FREE(new_output);
+    }
+}
+
+/*
  * Parse the received JSON string
  *
  */
 void parse_outputs_json(const unsigned char *json, size_t size) {
-    struct outputs_json_params params;
-    params.outputs_walk = NULL;
-    params.cur_key = NULL;
-    params.in_rect = false;
-
-    yajl_handle handle = yajl_alloc(&outputs_callbacks, NULL, (void *)&params);
-    yajl_status state = yajl_parse(handle, json, size);
-
-    /* FIXME: Proper errorhandling for JSON-parsing */
-    switch (state) {
-        case yajl_status_ok:
-            break;
-        case yajl_status_client_canceled:
-        case yajl_status_error:
-            ELOG("Could not parse outputs reply!\n");
-            exit(EXIT_FAILURE);
-            break;
+    yyjson_doc *doc = yyjson_read((const char *)json, size, 0);
+    if (!doc) {
+        ELOG("Could not parse outputs reply!\n");
+        exit(EXIT_FAILURE);
     }
 
-    yajl_free(handle);
-    free(params.cur_key);
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    if (!yyjson_is_arr(root)) {
+        ELOG("Could not parse outputs reply: not an array\n");
+        yyjson_doc_free(doc);
+        exit(EXIT_FAILURE);
+    }
+
+    size_t idx, max;
+    yyjson_val *output_obj;
+    yyjson_arr_foreach(root, idx, max, output_obj) {
+        parse_output_object(output_obj);
+    }
+
+    yyjson_doc_free(doc);
 }
 
 /*
