@@ -137,7 +137,7 @@ void *scalloc(size_t num, size_t size) __attribute__((returns_nonnull));
  * that there is no more memory available).
  *
  */
-void *srealloc(void *ptr, size_t size) __attribute__((returns_nonnull));
+void *srealloc(void *ptr, size_t size);
 
 /**
  * Safe-wrapper around strdup which exits if malloc returns NULL (meaning that

@@ -155,6 +155,14 @@ static void cleanup(i3bar_child *c) {
     memset(c, 0, sizeof(i3bar_child));
 }
 
+static char* get_string(yyjson_val *obj, const char* key) {
+    const char* str = yyjson_get_str(yyjson_obj_get(obj, key));
+    if (str != NULL) {
+        return sstrdup(str);
+    }
+    return NULL;
+}
+
 /*
  * Parse a single status block from JSON
  */
@@ -165,75 +173,41 @@ static void parse_status_block(yyjson_val *block_obj, bool *has_urgent) {
 
     struct status_block block = {0};
 
-    /* Default width of the separator block. */
-    if (config.separator_symbol == NULL) {
-        block.sep_block_width = logical_px(9);
-    } else {
-        block.sep_block_width = logical_px(8) + separator_symbol_width;
-    }
-
-    /* By default we draw all four borders if a border is set. */
-    block.border_top = 1;
-    block.border_right = 1;
-    block.border_bottom = 1;
-    block.border_left = 1;
-
     /* Parse string fields */
     yyjson_val *full_text = yyjson_obj_get(block_obj, "full_text");
-    if (full_text && yyjson_is_str(full_text)) {
+    if (yyjson_is_str(full_text)) {
         block.full_text = i3string_from_markup_with_length(
-            yyjson_get_str(full_text), yyjson_get_len(full_text));
+            unsafe_yyjson_get_str(full_text), unsafe_yyjson_get_len(full_text));
     }
 
     yyjson_val *short_text = yyjson_obj_get(block_obj, "short_text");
-    if (short_text && yyjson_is_str(short_text)) {
+    if (yyjson_is_str(short_text)) {
         block.short_text = i3string_from_markup_with_length(
-            yyjson_get_str(short_text), yyjson_get_len(short_text));
+            unsafe_yyjson_get_str(short_text), unsafe_yyjson_get_len(short_text));
     }
 
-    yyjson_val *color = yyjson_obj_get(block_obj, "color");
-    if (color && yyjson_is_str(color)) {
-        block.color = sstrdup(yyjson_get_str(color));
-    }
-
-    yyjson_val *background = yyjson_obj_get(block_obj, "background");
-    if (background && yyjson_is_str(background)) {
-        block.background = sstrdup(yyjson_get_str(background));
-    }
-
-    yyjson_val *border = yyjson_obj_get(block_obj, "border");
-    if (border && yyjson_is_str(border)) {
-        block.border = sstrdup(yyjson_get_str(border));
-    }
-
-    yyjson_val *name = yyjson_obj_get(block_obj, "name");
-    if (name && yyjson_is_str(name)) {
-        block.name = sstrdup(yyjson_get_str(name));
-    }
-
-    yyjson_val *instance = yyjson_obj_get(block_obj, "instance");
-    if (instance && yyjson_is_str(instance)) {
-        block.instance = sstrdup(yyjson_get_str(instance));
-    }
+    block.color = get_string(block_obj, "color");
+    block.background = get_string(block_obj, "background");
+    block.border = get_string(block_obj, "border");
+    block.name = get_string(block_obj, "name");
+    block.instance = get_string(block_obj, "instance");
 
     yyjson_val *min_width_val = yyjson_obj_get(block_obj, "min_width");
     if (min_width_val) {
-        if (yyjson_is_str(min_width_val)) {
-            block.min_width_str = sstrdup(yyjson_get_str(min_width_val));
-        } else if (yyjson_is_int(min_width_val)) {
+        const char* min_width = yyjson_get_str(min_width_val);
+        if (min_width){
+            block.min_width_str = sstrdup(min_width);
+        } else {
             block.min_width = yyjson_get_int(min_width_val);
         }
     }
 
-    yyjson_val *markup = yyjson_obj_get(block_obj, "markup");
-    if (markup && yyjson_is_str(markup)) {
-        const char *m = yyjson_get_str(markup);
-        block.pango_markup = (strcasecmp(m, "pango") == 0);
-    }
+    const char *markup = yyjson_get_str(yyjson_obj_get(block_obj, "markup"));
+    block.pango_markup = markup && (strcasecmp(markup, "pango") == 0);
 
     yyjson_val *align = yyjson_obj_get(block_obj, "align");
-    if (align && yyjson_is_str(align)) {
-        const char *a = yyjson_get_str(align);
+    if (yyjson_is_str(align)) {
+        const char *a = unsafe_yyjson_get_str(align);
         if (strcmp(a, "center") == 0) {
             block.align = ALIGN_CENTER;
         } else if (strcmp(a, "right") == 0) {
@@ -244,40 +218,44 @@ static void parse_status_block(yyjson_val *block_obj, bool *has_urgent) {
     }
 
     /* Parse boolean fields */
-    yyjson_val *urgent = yyjson_obj_get(block_obj, "urgent");
-    if (urgent && yyjson_is_bool(urgent)) {
-        block.urgent = yyjson_get_bool(urgent);
-    }
+    block.urgent = yyjson_get_bool(yyjson_obj_get(block_obj, "urgent"));
+    block.no_separator = yyjson_is_false(yyjson_obj_get(block_obj, "separator"));
 
-    yyjson_val *separator = yyjson_obj_get(block_obj, "separator");
-    if (separator && yyjson_is_bool(separator)) {
-        block.no_separator = !yyjson_get_bool(separator);
-    }
+    /* Parse integer fields. */
 
-    /* Parse integer fields */
+    /* By default, we draw all four borders if a border is set. */
+    block.border_top = 1;
+    block.border_right = 1;
+    block.border_bottom = 1;
+    block.border_left = 1;
+
     yyjson_val *sep_width = yyjson_obj_get(block_obj, "separator_block_width");
-    if (sep_width && yyjson_is_int(sep_width)) {
-        block.sep_block_width = yyjson_get_int(sep_width);
+    if (yyjson_is_int(sep_width)) {
+        block.sep_block_width = unsafe_yyjson_get_int(sep_width);
+    } else if (config.separator_symbol == NULL) {
+        block.sep_block_width = logical_px(9);
+    } else {
+        block.sep_block_width = logical_px(8) + separator_symbol_width;
     }
 
     yyjson_val *border_top = yyjson_obj_get(block_obj, "border_top");
-    if (border_top && yyjson_is_int(border_top)) {
-        block.border_top = yyjson_get_int(border_top);
+    if (yyjson_is_int(border_top)) {
+        block.border_top = unsafe_yyjson_get_int(border_top);
     }
 
     yyjson_val *border_right = yyjson_obj_get(block_obj, "border_right");
-    if (border_right && yyjson_is_int(border_right)) {
-        block.border_right = yyjson_get_int(border_right);
+    if (yyjson_is_int(border_right)) {
+        block.border_right = unsafe_yyjson_get_int(border_right);
     }
 
     yyjson_val *border_bottom = yyjson_obj_get(block_obj, "border_bottom");
-    if (border_bottom && yyjson_is_int(border_bottom)) {
-        block.border_bottom = yyjson_get_int(border_bottom);
+    if (yyjson_is_int(border_bottom)) {
+        block.border_bottom = unsafe_yyjson_get_int(border_bottom);
     }
 
     yyjson_val *border_left = yyjson_obj_get(block_obj, "border_left");
-    if (border_left && yyjson_is_int(border_left)) {
-        block.border_left = yyjson_get_int(border_left);
+    if (yyjson_is_int(border_left)) {
+        block.border_left = unsafe_yyjson_get_int(border_left);
     }
 
     /* Create the new block */
@@ -372,7 +350,35 @@ static void read_flat_input(char *buffer, int length) {
 static bool read_json_input(unsigned char *input, int length) {
     bool has_urgent = false;
 
-    yyjson_doc *doc = yyjson_read((const char *)input, length, 0);
+    /* The i3bar protocol sends a continuous stream formatted as an infinite
+     * JSON array: first '[', then each update is '[{...}]' or ',[{...}]'.
+     * Skip leading whitespace and protocol framing characters. */
+    while (length > 0) {
+        unsigned char c = input[0];
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',') {
+            /* Skip whitespace and commas */
+            input++;
+            length--;
+        } else if (c == '[' && length > 1 && input[1] != '{') {
+            /* Skip '[' only if it's NOT followed by '{' (infinite array opener) */
+            input++;
+            length--;
+        } else {
+            break;
+        }
+    }
+
+    if (length == 0) {
+        return false;
+    }
+
+    /* Skip the closing bracket of the infinite array (sent on shutdown) */
+    if (input[0] == ']') {
+        return false;
+    }
+
+    /* YYJSON_READ_STOP_WHEN_DONE allows trailing content (like newlines) */
+    yyjson_doc *doc = yyjson_read((const char *)input, length, YYJSON_READ_STOP_WHEN_DONE);
     if (!doc) {
         fprintf(stderr, "[i3bar] Could not parse JSON input: %.*s\n", length, input);
         set_statusline_error("Could not parse JSON");
@@ -783,7 +789,7 @@ void send_block_clicked(int button, const char *name, const char *instance, int 
 
     child_click_events_initialize();
 
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
     yyjson_mut_val *obj = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, obj);
 
@@ -831,20 +837,18 @@ void send_block_clicked(int button, const char *name, const char *instance, int 
     yyjson_mut_obj_add_int(doc, obj, "height", height);
 
     size_t size;
-    char *output = yyjson_mut_write(doc, 0, &size);
-    if (output != NULL) {
-        ssize_t n = writeall(child_stdin, output, size);
-        if (n != -1) {
-            n = writeall(child_stdin, ",\n", 2);
-        }
-        free(output);
+    char *output = json_write(doc, &size);
+    ssize_t n = writeall(child_stdin, output, size);
+    if (n != -1) {
+        n = writeall(child_stdin, ",\n", 2);
+    }
+    free(output);
 
-        if (n == -1) {
-            status_child.click_events = false;
-            kill_child();
-            set_statusline_error("child_write_output failed");
-            draw_bars(false);
-        }
+    if (n == -1) {
+        status_child.click_events = false;
+        kill_child();
+        set_statusline_error("child_write_output failed");
+        draw_bars(false);
     }
 
     yyjson_mut_doc_free(doc);

@@ -26,13 +26,6 @@
 #include "all.h"
 #include "parser_util.h"
 
-/* Helper to add JSON object to array if json_doc is set */
-static inline void add_json_result(struct CommandResultIR *output, yyjson_mut_val *obj) {
-    if (output->json_doc != NULL && output->json_arr != NULL && obj != NULL) {
-        yyjson_mut_arr_add_val(output->json_arr, obj);
-    }
-}
-
 /*******************************************************************************
  * The data structures used for parsing. Essentially the current state and a
  * list of tokens for that state.
@@ -351,7 +344,7 @@ CommandResult *parse_command(const char *input, yyjson_mut_doc *doc, ipc_client 
                 yyjson_mut_obj_add_strcpy(cmd_ctx.command_output.json_doc, error_obj, "error", errormessage);
                 yyjson_mut_obj_add_strcpy(cmd_ctx.command_output.json_doc, error_obj, "input", input);
                 yyjson_mut_obj_add_strcpy(cmd_ctx.command_output.json_doc, error_obj, "errorposition", position);
-                add_json_result(&cmd_ctx.command_output, error_obj);
+                yyjson_mut_arr_add_val(cmd_ctx.command_output.json_arr, error_obj);
             }
 
             free(position);
@@ -417,7 +410,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Syntax: %s <command>\n", argv[0]);
         return 1;
     }
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc *doc = json_new();
 
     CommandResult *result = parse_command(argv[1], doc, NULL);
 
