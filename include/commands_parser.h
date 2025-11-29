@@ -11,7 +11,7 @@
 
 #include <config.h>
 
-#include <yajl/yajl_gen.h>
+#include <yyjson.h>
 #include "parser_util.h"
 #include "queue.h"
 
@@ -34,8 +34,11 @@ struct CommandResultIR {
     /* The parser context this command is executing in. */
     struct cmd_parser_ctx *ctx;
 
-    /* The JSON generator to append a reply to (may be NULL). */
-    yajl_gen json_gen;
+    /* The JSON document for building a reply (may be NULL). */
+    yyjson_mut_doc *json_doc;
+
+    /* The JSON array to append command results to (may be NULL). */
+    yyjson_mut_val *json_arr;
 
     /* The IPC client connection which sent this command (may be NULL, e.g. for
        key bindings). */
@@ -96,13 +99,13 @@ struct CommandResult {
 char *parse_string(const char **walk, bool as_word);
 
 /**
- * Parses and executes the given command. If a caller-allocated yajl_gen is
- * passed, a json reply will be generated in the format specified by the ipc
+ * Parses and executes the given command. If a caller-allocated yyjson_mut_doc
+ * is passed, a json reply will be generated in the format specified by the ipc
  * protocol. Pass NULL if no json reply is required.
  *
  * Free the returned CommandResult with command_result_free().
  */
-CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client);
+CommandResult *parse_command(const char *input, yyjson_mut_doc *doc, ipc_client *client);
 
 /**
  * Frees a CommandResult

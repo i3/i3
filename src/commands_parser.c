@@ -26,9 +26,12 @@
 #include "all.h"
 #include "parser_util.h"
 
-/* Macros to make the YAJL API a bit easier to use. */
-#define y(x, ...) (cmd_ctx.command_output.json_gen != NULL ? yajl_gen_##x(cmd_ctx.command_output.json_gen, ##__VA_ARGS__) : 0)
-#define ystr(str) (cmd_ctx.command_output.json_gen != NULL ? yajl_gen_string(cmd_ctx.command_output.json_gen, (unsigned char *)str, strlen(str)) : 0)
+/* Helper to add JSON object to array if json_doc is set */
+static inline void add_json_result(struct CommandResultIR *output, yyjson_mut_val *obj) {
+    if (output->json_doc != NULL && output->json_arr != NULL && obj != NULL) {
+        yyjson_mut_arr_add_val(output->json_arr, obj);
+    }
+}
 
 /*******************************************************************************
  * The data structures used for parsing. Essentially the current state and a
@@ -66,7 +69,8 @@ typedef struct tokenptr {
 static void next_state(const cmdp_token *token, struct cmd_parser_ctx *cmd_ctx) {
     if (token->next_state == __CALL) {
         cmd_ctx->subcommand_output.ctx = cmd_ctx;
-        cmd_ctx->subcommand_output.json_gen = cmd_ctx->command_output.json_gen;
+        cmd_ctx->subcommand_output.json_doc = cmd_ctx->command_output.json_doc;
+        cmd_ctx->subcommand_output.json_arr = cmd_ctx->command_output.json_arr;
         cmd_ctx->subcommand_output.client = cmd_ctx->command_output.client;
         cmd_ctx->subcommand_output.needs_tree_render = false;
         GENERATED_call(&cmd_ctx->current_match, &cmd_ctx->stack, token->extra.call_identifier, &cmd_ctx->subcommand_output);
@@ -149,13 +153,13 @@ char *parse_string(const char **walk, const bool as_word) {
 }
 
 /*
- * Parses and executes the given command. If a caller-allocated yajl_gen is
- * passed, a json reply will be generated in the format specified by the ipc
+ * Parses and executes the given command. If a caller-allocated yyjson_mut_doc
+ * is passed, a json reply will be generated in the format specified by the ipc
  * protocol. Pass NULL if no json reply is required.
  *
  * Free the returned CommandResult with command_result_free().
  */
-CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client) {
+CommandResult *parse_command(const char *input, yyjson_mut_doc *doc, ipc_client *client) {
     DLOG("COMMAND: *%.4000s*\n", input);
     struct cmd_parser_ctx cmd_ctx = {0};
 
@@ -165,10 +169,14 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
     cmd_ctx.command_output.ctx = &cmd_ctx;
     cmd_ctx.command_output.client = client;
 
-    /* A YAJL JSON generator used for formatting replies. */
-    cmd_ctx.command_output.json_gen = gen;
-
-    y(array_open);
+    /* A yyjson document and array used for formatting replies. */
+    cmd_ctx.command_output.json_doc = doc;
+    yyjson_mut_val *root_arr = NULL;
+    if (doc != NULL) {
+        root_arr = yyjson_mut_arr(doc);
+        yyjson_mut_doc_set_root(doc, root_arr);
+    }
+    cmd_ctx.command_output.json_arr = root_arr;
     cmd_ctx.command_output.needs_tree_render = false;
 
     const char *walk = input;
@@ -333,29 +341,24 @@ CommandResult *parse_command(const char *input, yajl_gen gen, ipc_client *client
             result->error_message = errormessage;
 
             /* Format this error message as a JSON reply. */
-            y(map_open);
-            ystr("success");
-            y(bool, false);
-            /* We set parse_error to true to distinguish this from other
-             * errors. i3-nagbar is spawned upon keypresses only for parser
-             * errors. */
-            ystr("parse_error");
-            y(bool, true);
-            ystr("error");
-            ystr(errormessage);
-            ystr("input");
-            ystr(input);
-            ystr("errorposition");
-            ystr(position);
-            y(map_close);
+            if (cmd_ctx.command_output.json_doc != NULL) {
+                yyjson_mut_val *error_obj = yyjson_mut_obj(cmd_ctx.command_output.json_doc);
+                yyjson_mut_obj_add_bool(cmd_ctx.command_output.json_doc, error_obj, "success", false);
+                /* We set parse_error to true to distinguish this from other
+                 * errors. i3-nagbar is spawned upon keypresses only for parser
+                 * errors. */
+                yyjson_mut_obj_add_bool(cmd_ctx.command_output.json_doc, error_obj, "parse_error", true);
+                yyjson_mut_obj_add_str(cmd_ctx.command_output.json_doc, error_obj, "error", errormessage);
+                yyjson_mut_obj_add_str(cmd_ctx.command_output.json_doc, error_obj, "input", input);
+                yyjson_mut_obj_add_str(cmd_ctx.command_output.json_doc, error_obj, "errorposition", position);
+                add_json_result(&cmd_ctx.command_output, error_obj);
+            }
 
             free(position);
             parser_clear_stack(&cmd_ctx.stack);
             break;
         }
     }
-
-    y(array_close);
 
     result->needs_tree_render = cmd_ctx.command_output.needs_tree_render;
     /* Clean up owindows entries */
@@ -414,12 +417,12 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Syntax: %s <command>\n", argv[0]);
         return 1;
     }
-    yajl_gen gen = yajl_gen_alloc(NULL);
+    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
 
-    CommandResult *result = parse_command(argv[1], gen, NULL);
+    CommandResult *result = parse_command(argv[1], doc, NULL);
 
     command_result_free(result);
 
-    yajl_gen_free(gen);
+    yyjson_mut_doc_free(doc);
 }
 #endif

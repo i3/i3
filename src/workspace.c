@@ -9,7 +9,8 @@
  *
  */
 #include "all.h"
-#include "yajl_utils.h"
+
+#include <locale.h>
 
 /*
  * Stores a copy of the name of the last used workspace for the workspace
@@ -531,15 +532,25 @@ void workspace_show(Con *workspace) {
         /* check if this workspace is currently visible */
         if (!workspace_is_visible(old)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
-            yajl_gen gen = ipc_marshal_workspace_event("empty", old, NULL);
+
+            /* Marshal the event before closing since the workspace will be freed */
+            setlocale(LC_NUMERIC, "C");
+            yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+            yyjson_mut_val *obj = yyjson_mut_obj(doc);
+            yyjson_mut_doc_set_root(doc, obj);
+            yyjson_mut_obj_add_str(doc, obj, "change", "empty");
+            yyjson_mut_obj_add_val(doc, obj, "current", dump_node(doc, old, false));
+            yyjson_mut_obj_add_null(doc, obj, "old");
+            setlocale(LC_NUMERIC, "");
+
+            size_t length;
+            char *payload = yyjson_mut_write(doc, 0, &length);
+
             tree_close_internal(old, DONT_KILL_WINDOW, false);
 
-            const unsigned char *payload;
-            ylength length;
-            y(get_buf, &payload, &length);
-            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
-
-            y(free);
+            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, payload);
+            free(payload);
+            yyjson_mut_doc_free(doc);
 
             /* Avoid calling output_push_sticky_windows later with a freed container. */
             if (old == old_focus) {
