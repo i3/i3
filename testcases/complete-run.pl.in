@@ -331,9 +331,6 @@ exit ($aggregator->failed > 0);
 # When a test completes and @done contains $num entries, the $cv condvar gets
 # triggered to finish testing.
 #
-# Timeout for individual tests in seconds
-use constant TEST_TIMEOUT => 120;
-
 sub take_job {
     my ($worker, $cv, $tests) = @_;
 
@@ -355,38 +352,6 @@ sub take_job {
     my $ipc = $worker->{ipc};
 
     my $w;
-    my $timeout_w;
-
-    # Timeout watcher to kill hung tests
-    my $timeout_secs = TEST_TIMEOUT;
-    $timeout_w = AnyEvent->timer(
-        after => $timeout_secs,
-        cb => sub {
-            Log status($display, "$test: TIMEOUT after ${timeout_secs}s");
-            $output .= "not ok - test timed out after ${timeout_secs} seconds\n";
-            $timings{$test} = time() - $timings{$test};
-            status_completed(scalar @done);
-
-            # Add a fake failed result to the parser
-            my $fake_output = "not ok 1 - test timed out after ${timeout_secs} seconds\n1..1\n";
-            my $fake_parser = TAP::Parser->new({
-                source => do { open(my $fh, '<', \$fake_output); $fh },
-            });
-            $fake_parser->next while defined $fake_parser->next;
-
-            $aggregator->add($test, $fake_parser);
-            push @done, [ $test, $output ];
-
-            undef $w;
-            undef $timeout_w;
-
-            # Kill the worker's i3 process and restart
-            worker_next($worker, undef);
-
-            take_job($worker, $cv, $tests);
-        }
-    );
-
     $w = AnyEvent->io(
         fh => $ipc,
         poll => 'r',
@@ -436,9 +401,6 @@ sub take_job {
             }
 
             return unless $t_eof;
-
-            # Cancel the timeout since the test completed
-            undef $timeout_w;
 
             Log status($display, "$test: finished");
             $timings{$test} = time() - $timings{$test};
