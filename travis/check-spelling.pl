@@ -27,11 +27,11 @@ my $exitcode = 0;
 # Whitelist for spelling errors in manpages, in case the spell checker has
 # false-positives.
 my $binary_spelling_exceptions = [
-    #'exmaple', # Example for how to add entries to this whitelist.
     'betwen', # asan_flags.inc contains this spelling error.
     'dissassemble', # https://reviews.llvm.org/D93902
     'oT', # lintian finds this in build/i3bar when built with clang?!
     'ot', # lintian finds this in build/i3-config-wizard when built with clang?!
+    'y y', # found in build/i3
 ];
 my @binaries = qw(
     build/i3
