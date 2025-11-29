@@ -31,7 +31,7 @@ my $binary_spelling_exceptions = [
     'dissassemble', # https://reviews.llvm.org/D93902
     'oT', # lintian finds this in build/i3bar when built with clang?!
     'ot', # lintian finds this in build/i3-config-wizard when built with clang?!
-    'y y', # found in build/i3
+    'y', # found in build/i3
 ];
 my @binaries = qw(
     build/i3
