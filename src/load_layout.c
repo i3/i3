@@ -647,17 +647,19 @@ json_content_t json_determine_content(const char *buf, const size_t len) {
 }
 
 static void traverse_and_invoke_callbacks(yyjson_val *node) {
-    /* TODO: use unsafe_ inside checks */
-    if (yyjson_is_bool(node)) {
-        json_bool(yyjson_get_bool(node));
-    } else if (yyjson_is_int(node)) {
-        json_int(yyjson_get_int(node));
-    } else if (yyjson_is_real(node)) {
-        json_double(yyjson_get_real(node));
-    } else if (yyjson_is_str(node)) {
-        const char *str = yyjson_get_str(node);
-        json_string(str, yyjson_get_len(node));
-    } else if (yyjson_is_obj(node)) {
+    if (!node) {
+        return;
+    }
+    if (unsafe_yyjson_is_bool(node)) {
+        json_bool(unsafe_yyjson_get_bool(node));
+    } else if (unsafe_yyjson_is_int(node)) {
+        json_int(unsafe_yyjson_get_int(node));
+    } else if (unsafe_yyjson_is_real(node)) {
+        json_double(unsafe_yyjson_get_real(node));
+    } else if (unsafe_yyjson_is_str(node)) {
+        const char *str = unsafe_yyjson_get_str(node);
+        json_string(str, unsafe_yyjson_get_len(node));
+    } else if (unsafe_yyjson_is_obj(node)) {
         json_start_map();
 
         yyjson_obj_iter iter;
@@ -666,21 +668,21 @@ static void traverse_and_invoke_callbacks(yyjson_val *node) {
         yyjson_val *key;
         while ((key = yyjson_obj_iter_next(&iter))) {
             yyjson_val *val = yyjson_obj_iter_get_val(key);
-            const char *key_str = yyjson_get_str(key);
+            const char *key_str = unsafe_yyjson_get_str(key);
             if (key_str == NULL) {
                 continue;  // Skip invalid keys
             }
 
-            json_key(key_str, yyjson_get_len(key));  // Call key callback
+            json_key(key_str, unsafe_yyjson_get_len(key));  // Call key callback
             traverse_and_invoke_callbacks(val);       // Recurse into value
         }
 
         json_end_map();
-    } else if (yyjson_is_arr(node)) {
+    } else if (unsafe_yyjson_is_arr(node)) {
         yyjson_arr_iter iter;
         yyjson_arr_iter_init(node, &iter);
 
-        const size_t max = yyjson_arr_size(node);
+        const size_t max = unsafe_yyjson_get_len(node);
         for (size_t idx = 0; idx < max; idx++) {
             yyjson_val *val = yyjson_arr_iter_next(&iter);
             traverse_and_invoke_callbacks(val);  // Recurse into array element
