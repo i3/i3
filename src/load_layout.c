@@ -52,6 +52,20 @@ struct focus_mapping {
 static TAILQ_HEAD(focus_mappings_head, focus_mapping) focus_mappings =
     TAILQ_HEAD_INITIALIZER(focus_mappings);
 
+static void apply_pending_marks(void) {
+    for (int i = 0; i < num_marks; i++) {
+        Con *con = marks[i].con_to_be_marked;
+        char *mark = marks[i].mark;
+        if (con) {
+            con_mark(con, mark, MM_ADD);
+        }
+        free(mark);
+    }
+
+    FREE(marks);
+    num_marks = 0;
+}
+
 static int json_start_map(void *ctx) {
     LOG("start of map, last_key = %s\n", last_key);
     if (parsing_swallows) {
@@ -162,18 +176,6 @@ static int json_end_map(void *ctx) {
             }
 
             floating_check_size(json_node, false);
-        }
-
-        if (num_marks > 0) {
-            for (int i = 0; i < num_marks; i++) {
-                Con *con = marks[i].con_to_be_marked;
-                char *mark = marks[i].mark;
-                con_mark(con, mark, MM_ADD);
-                free(mark);
-            }
-
-            FREE(marks);
-            num_marks = 0;
         }
 
         LOG("attaching\n");
@@ -291,7 +293,6 @@ static int json_key(void *ctx, const unsigned char *val, size_t len) {
     }
 
     if (strcasecmp(last_key, "marks") == 0) {
-        num_marks = 0;
         parsing_marks = true;
     }
 
@@ -725,6 +726,7 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
     parsing_geometry = false;
     parsing_focus = false;
     parsing_marks = false;
+    num_marks = 0;
     setlocale(LC_NUMERIC, "C");
     const yajl_status stat = yajl_parse(hand, (const unsigned char *)buf, len);
     if (stat != yajl_status_ok) {
@@ -740,6 +742,11 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
             if (json_node == to_focus) {
                 to_focus = NULL;
             }
+            for (int i = 0; i < num_marks; i++) {
+                if (json_node == marks[i].con_to_be_marked) {
+                    marks[i].con_to_be_marked = NULL;
+                }
+            }
             con_free(json_node);
             json_node = parent;
         }
@@ -753,6 +760,8 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
     setlocale(LC_NUMERIC, "");
     yajl_complete_parse(hand);
     yajl_free(hand);
+
+    apply_pending_marks();
 
     if (to_focus) {
         con_activate(to_focus);
