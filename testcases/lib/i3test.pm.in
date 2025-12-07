@@ -173,6 +173,9 @@ use Time::HiRes qw(sleep);
 use i3test::Test;
 __
     $tester->BAIL_OUT("$@") if $@;
+    require feature;
+    require strict;
+    require warnings;
     feature->import(":5.10");
     strict->import;
     warnings->import;
