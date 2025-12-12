@@ -36,6 +36,8 @@
 #include "i3-atoms_NET_SUPPORTED.xmacro.h"
 #include "i3-atoms_rest.xmacro.h"
 
+locale_t numericC;
+
 /* The original value of RLIMIT_CORE when i3 was started. We need to restore
  * this before starting any other process, since we set RLIMIT_CORE to
  * RLIM_INFINITY for i3 debugging versions. */
@@ -314,6 +316,7 @@ int main(int argc, char *argv[]) {
     int option_index = 0, opt;
 
     setlocale(LC_ALL, "");
+    numericC = newlocale(LC_NUMERIC_MASK, "C", 0);
 
     /* Get the RLIMIT_CORE limit at startup time to restore this before
      * starting processes. */
