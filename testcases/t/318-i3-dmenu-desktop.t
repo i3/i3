@@ -39,7 +39,7 @@ mkfifo("$tmpdir/fifo", 0600) or BAIL_OUT "Could not create FIFO: $!";
 
 open(my $i3msg_dump, '>', "$tmpdir/i3-msg");
 say $i3msg_dump <<EOT;
-#!/usr/bin/env perl
+#!/usr/bin/env $^X
 use strict;
 use warnings;
 use JSON::XS qw(encode_json);
