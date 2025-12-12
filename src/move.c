@@ -293,6 +293,7 @@ void tree_move(Con *con, direction_t direction) {
             if (con_is_floating(con)) {
                 /* this is a floating con, we just disable floating */
                 floating_disable(con);
+                run_assignments(con->window);
                 return;
             }
             if (con_inside_floating(con)) {

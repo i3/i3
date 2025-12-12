@@ -85,7 +85,6 @@ void render_con(Con *con) {
         params.y = con->rect.y;
     }
 
-    int i = 0;
     con->mapped = true;
 
     /* if this container contains a window, set the coordinates */
@@ -159,6 +158,7 @@ void render_con(Con *con) {
     } else if (con->type == CT_ROOT) {
         render_root(con, fullscreen);
     } else {
+        int i = 0;
         Con *child;
         TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
             assert(params.children > 0);
@@ -231,9 +231,9 @@ static int *precalculate_sizes(Con *con, render_params *p) {
 
     Con *child;
     int i = 0, assigned = 0;
-    int total = con_rect_size_in_orientation(con);
+    const int total = con_rect_size_in_orientation(con);
     TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
-        double percentage = child->percent > 0.0 ? child->percent : 1.0 / p->children;
+        const double percentage = child->percent > 0.0 ? child->percent : 1.0 / p->children;
         assigned += sizes[i++] = lround(percentage * total);
     }
     assert(assigned == total ||

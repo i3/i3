@@ -36,15 +36,12 @@ static Output *get_screen_at(unsigned int x, unsigned int y) {
  *
  */
 static void query_screens(xcb_connection_t *conn) {
-    xcb_xinerama_query_screens_reply_t *reply;
-    xcb_xinerama_screen_info_t *screen_info;
-
-    reply = xcb_xinerama_query_screens_reply(conn, xcb_xinerama_query_screens_unchecked(conn), NULL);
+    xcb_xinerama_query_screens_reply_t *reply = xcb_xinerama_query_screens_reply(conn, xcb_xinerama_query_screens_unchecked(conn), NULL);
     if (!reply) {
         ELOG("Couldn't get Xinerama screens\n");
         return;
     }
-    screen_info = xcb_xinerama_query_screens_screen_info(reply);
+    const xcb_xinerama_screen_info_t *screen_info = xcb_xinerama_query_screens_screen_info(reply);
     int screens = xcb_xinerama_query_screens_screen_info_length(reply);
 
     for (int screen = 0; screen < screens; screen++) {
@@ -114,8 +111,7 @@ void xinerama_init(void) {
         DLOG("Xinerama extension not found, using root output.\n");
         use_root_output(conn);
     } else {
-        xcb_xinerama_is_active_reply_t *reply;
-        reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
+        xcb_xinerama_is_active_reply_t *reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
 
         if (reply == NULL || !reply->state) {
             DLOG("Xinerama is not active (in your X-Server), using root output.\n");

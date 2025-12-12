@@ -21,42 +21,42 @@
 #include <sys/cdefs.h>
 #endif
 
-int min(int a, int b) {
+__attribute__((__const__)) int min(const int a, const int b) {
     return (a < b ? a : b);
 }
 
-int max(int a, int b) {
+__attribute__((__const__)) int max(const int a, const int b) {
     return (a > b ? a : b);
 }
 
-bool rect_contains(Rect rect, uint32_t x, uint32_t y) {
+__attribute__((__const__)) bool rect_contains(const Rect rect, const uint32_t x, const uint32_t y) {
     return (x >= rect.x &&
             x <= (rect.x + rect.width) &&
             y >= rect.y &&
             y <= (rect.y + rect.height));
 }
 
-Rect rect_add(Rect a, Rect b) {
+__attribute__((__const__)) Rect rect_add(const Rect a, const Rect b) {
     return (Rect){a.x + b.x,
                   a.y + b.y,
                   a.width + b.width,
                   a.height + b.height};
 }
 
-Rect rect_sub(Rect a, Rect b) {
+__attribute__((__const__)) Rect rect_sub(const Rect a, const Rect b) {
     return (Rect){a.x - b.x,
                   a.y - b.y,
                   a.width - b.width,
                   a.height - b.height};
 }
 
-Rect rect_sanitize_dimensions(Rect rect) {
+__attribute__((__const__)) Rect rect_sanitize_dimensions(Rect rect) {
     rect.width = (int32_t)rect.width <= 0 ? 1 : rect.width;
     rect.height = (int32_t)rect.height <= 0 ? 1 : rect.height;
     return rect;
 }
 
-bool rect_equals(Rect a, Rect b) {
+__attribute__((__const__)) bool rect_equals(const Rect a, const Rect b) {
     return a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height;
 }
 
@@ -85,17 +85,21 @@ bool layout_from_name(const char *layout_str, layout_t *out) {
     if (strcmp(layout_str, "default") == 0) {
         *out = L_DEFAULT;
         return true;
-    } else if (strcasecmp(layout_str, "stacked") == 0 ||
-               strcasecmp(layout_str, "stacking") == 0) {
+    }
+    if (strcasecmp(layout_str, "stacked") == 0 ||
+        strcasecmp(layout_str, "stacking") == 0) {
         *out = L_STACKED;
         return true;
-    } else if (strcasecmp(layout_str, "tabbed") == 0) {
+    }
+    if (strcasecmp(layout_str, "tabbed") == 0) {
         *out = L_TABBED;
         return true;
-    } else if (strcasecmp(layout_str, "splitv") == 0) {
+    }
+    if (strcasecmp(layout_str, "splitv") == 0) {
         *out = L_SPLITV;
         return true;
-    } else if (strcasecmp(layout_str, "splith") == 0) {
+    }
+    if (strcasecmp(layout_str, "splith") == 0) {
         *out = L_SPLITH;
         return true;
     }

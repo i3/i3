@@ -179,7 +179,7 @@ void x_con_init(Con *con) {
                         (strlen("i3-frame") + 1) * 2,
                         "i3-frame\0i3-frame\0");
 
-    struct con_state *state = scalloc(1, sizeof(struct con_state));
+    con_state *state = scalloc(1, sizeof(struct con_state));
     state->id = con->frame.id;
     state->mapped = false;
     state->initial = true;
@@ -197,7 +197,7 @@ void x_con_init(Con *con) {
  *
  */
 void x_reinit(Con *con) {
-    struct con_state *state;
+    con_state *state;
 
     if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state not found\n");
@@ -217,7 +217,7 @@ void x_reinit(Con *con) {
  *
  */
 void x_reparent_child(Con *con, Con *old) {
-    struct con_state *state;
+    con_state *state;
     if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state for con not found\n");
         return;
@@ -232,7 +232,7 @@ void x_reparent_child(Con *con, Con *old) {
  *
  */
 void x_move_win(Con *src, Con *dest) {
-    struct con_state *state_src, *state_dest;
+    con_state *state_src, *state_dest;
 
     if ((state_src = state_for_frame(src->frame.id)) == NULL) {
         ELOG("window state for src not found\n");
@@ -254,8 +254,6 @@ void x_move_win(Con *src, Con *dest) {
 }
 
 static void _x_con_kill(Con *con) {
-    con_state *state;
-
     if (con->colormap != XCB_NONE) {
         xcb_free_colormap(conn, con->colormap);
     }
@@ -264,7 +262,7 @@ static void _x_con_kill(Con *con) {
     draw_util_surface_free(conn, &(con->frame_buffer));
     xcb_free_pixmap(conn, con->frame_buffer.id);
     con->frame_buffer.id = XCB_NONE;
-    state = state_for_frame(con->frame.id);
+    con_state *state = state_for_frame(con->frame.id);
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_REMOVE(&old_state_head, state, old_state);
     TAILQ_REMOVE(&initial_mapping_head, state, initial_mapping_order);
@@ -303,11 +301,10 @@ void x_con_reframe(Con *con) {
  *
  */
 bool window_supports_protocol(xcb_window_t window, xcb_atom_t atom) {
-    xcb_get_property_cookie_t cookie;
     xcb_icccm_get_wm_protocols_reply_t protocols;
     bool result = false;
 
-    cookie = xcb_icccm_get_wm_protocols(conn, window, A_WM_PROTOCOLS);
+    xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_protocols(conn, window, A_WM_PROTOCOLS);
     if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) != 1) {
         return false;
     }
@@ -624,7 +621,7 @@ void x_draw_decoration(Con *con) {
 
     /* if this is a borderless/1pixel window, we don’t need to render the
      * decoration. */
-    if (p->border_style != BS_NORMAL) {
+    if (p->border_style != BS_NORMAL || con->deco_rect.width == 0 || con->deco_rect.height == 0) {
         goto copy_pixmaps;
     }
 
@@ -779,12 +776,12 @@ copy_pixmaps:
  *
  */
 void x_deco_recurse(Con *con) {
-    Con *current;
     bool leaf = TAILQ_EMPTY(&(con->nodes_head)) &&
                 TAILQ_EMPTY(&(con->floating_head));
-    con_state *state = state_for_frame(con->frame.id);
+    const con_state *state = state_for_frame(con->frame.id);
 
     if (!leaf) {
+        Con *current;
         TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
             x_deco_recurse(current);
         }
@@ -906,7 +903,7 @@ static void set_shape_state(Con *con, bool need_reshape) {
         return;
     }
 
-    struct con_state *state;
+    con_state *state;
     if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state for con %p not found\n", con);
         return;
@@ -941,10 +938,9 @@ static void set_shape_state(Con *con, bool need_reshape) {
  */
 void x_push_node(Con *con) {
     Con *current;
-    con_state *state;
     Rect rect = con->rect;
 
-    state = state_for_frame(con->frame.id);
+    con_state *state = state_for_frame(con->frame.id);
 
     if (state->name != NULL) {
         DLOG("pushing name %s for con %p\n", state->name, con);
@@ -1216,15 +1212,12 @@ void x_push_node(Con *con) {
  */
 static void x_push_node_unmaps(Con *con) {
     Con *current;
-    con_state *state;
-
-    state = state_for_frame(con->frame.id);
+    con_state *state = state_for_frame(con->frame.id);
 
     /* map/unmap if map state changed, also ensure that the child window
      * is changed if we are mapped *and* in initial state (meaning the
      * container was empty before, but now got a child) */
     if (state->unmap_now) {
-        xcb_void_cookie_t cookie;
         if (con->window != NULL) {
             /* Set WM_STATE_WITHDRAWN, it seems like Java apps need it */
             long data[] = {XCB_ICCCM_WM_STATE_WITHDRAWN, XCB_NONE};
@@ -1232,7 +1225,7 @@ static void x_push_node_unmaps(Con *con) {
                                 A_WM_STATE, A_WM_STATE, 32, 2, data);
         }
 
-        cookie = xcb_unmap_window(conn, con->frame.id);
+        const xcb_void_cookie_t cookie = xcb_unmap_window(conn, con->frame.id);
         DLOG("unmapping container %p / %s (serial %d)\n", con, con->name, cookie.sequence);
         /* we need to increase ignore_unmap for this container (if it
          * contains a window) and for every window "under" this one which
@@ -1498,10 +1491,8 @@ void x_push_changes(Con *con) {
  * next call to x_push_changes() will make the change visible in X11.
  *
  */
-void x_raise_con(Con *con) {
-    con_state *state;
-    state = state_for_frame(con->frame.id);
-
+void x_raise_con(const Con *con) {
+    con_state *state = state_for_frame(con->frame.id);
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_INSERT_HEAD(&state_head, state, state);
 }
@@ -1513,8 +1504,7 @@ void x_raise_con(Con *con) {
  *
  */
 void x_set_name(Con *con, const char *name) {
-    struct con_state *state;
-
+    con_state *state;
     if ((state = state_for_frame(con->frame.id)) == NULL) {
         ELOG("window state not found\n");
         return;
@@ -1587,8 +1577,7 @@ void x_mask_event_mask(uint32_t mask) {
  * Enables or disables nonrectangular shape of the container frame.
  */
 void x_set_shape(Con *con, xcb_shape_sk_t kind, bool enable) {
-    struct con_state *state;
-    if ((state = state_for_frame(con->frame.id)) == NULL) {
+    if (state_for_frame(con->frame.id) == NULL) {
         ELOG("window state for con %p not found\n", con);
         return;
     }

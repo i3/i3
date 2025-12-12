@@ -59,15 +59,12 @@ void regex_free(struct regex *regex) {
  * be visible without debug logging.
  *
  */
-bool regex_matches(struct regex *regex, const char *input) {
-    pcre2_match_data *match_data;
-    int rc;
-
-    match_data = pcre2_match_data_create_from_pattern(regex->regex, NULL);
+bool regex_matches(const struct regex *regex, const char *input) {
+    pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(regex->regex, NULL);
 
     /* We use strlen() because pcre_exec() expects the length of the input
      * string in bytes */
-    rc = pcre2_match(regex->regex, (PCRE2_SPTR)input, strlen(input), 0, 0, match_data, NULL);
+    const int rc = pcre2_match(regex->regex, (PCRE2_SPTR)input, strlen(input), 0, 0, match_data, NULL);
     pcre2_match_data_free(match_data);
     if (rc > 0) {
         LOG("Regular expression \"%s\" matches \"%s\"\n",

@@ -9,8 +9,8 @@
  */
 #include "all.h"
 
-struct Con *croot;
-struct Con *focused;
+Con *croot;
+Con *focused;
 
 struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
 
@@ -200,17 +200,16 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
     }
 
     DLOG("closing %p, kill_window = %d\n", con, kill_window);
-    Con *child, *nextchild;
     bool abort_kill = false;
     /* We cannot use TAILQ_FOREACH because the children get deleted
      * in their parent’s nodes_head */
-    for (child = TAILQ_FIRST(&(con->nodes_head)); child;) {
-        nextchild = TAILQ_NEXT(child, nodes);
+    for (Con *child = TAILQ_FIRST(&(con->nodes_head)); child;) {
+        Con *next_child = TAILQ_NEXT(child, nodes);
         DLOG("killing child=%p\n", child);
         if (!tree_close_internal(child, kill_window, true)) {
             abort_kill = true;
         }
-        child = nextchild;
+        child = next_child;
     }
 
     if (abort_kill) {
@@ -222,42 +221,40 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
         if (kill_window != DONT_KILL_WINDOW) {
             x_window_kill(con->window->id, kill_window);
             return false;
-        } else {
-            xcb_void_cookie_t cookie;
-            /* Ignore any further events by clearing the event mask,
-             * unmap the window,
-             * then reparent it to the root window. */
-            xcb_change_window_attributes(conn, con->window->id,
-                                         XCB_CW_EVENT_MASK, (uint32_t[]){XCB_NONE});
-            xcb_unmap_window(conn, con->window->id);
-            cookie = xcb_reparent_window(conn, con->window->id, root, con->rect.x, con->rect.y);
-
-            /* Ignore X11 errors for the ReparentWindow request.
-             * X11 Errors are returned when the window was already destroyed */
-            add_ignore_event(cookie.sequence, 0);
-
-            /* We are no longer handling this window, thus set WM_STATE to
-             * WM_STATE_WITHDRAWN (see ICCCM 4.1.3.1) */
-            long data[] = {XCB_ICCCM_WM_STATE_WITHDRAWN, XCB_NONE};
-            cookie = xcb_change_property(conn, XCB_PROP_MODE_REPLACE,
-                                         con->window->id, A_WM_STATE, A_WM_STATE, 32, 2, data);
-
-            /* Remove the window from the save set. All windows in the save set
-             * will be mapped when i3 closes its connection (e.g. when
-             * restarting). This is not what we want, since some apps keep
-             * unmapped windows around and don’t expect them to suddenly be
-             * mapped. See https://bugs.i3wm.org/1617 */
-            xcb_change_save_set(conn, XCB_SET_MODE_DELETE, con->window->id);
-
-            /* Stop receiving ShapeNotify events. */
-            if (shape_supported) {
-                xcb_shape_select_input(conn, con->window->id, false);
-            }
-
-            /* Ignore X11 errors for the ReparentWindow request.
-             * X11 Errors are returned when the window was already destroyed */
-            add_ignore_event(cookie.sequence, 0);
         }
+        /* Ignore any further events by clearing the event mask,
+         * unmap the window,
+         * then reparent it to the root window. */
+        xcb_change_window_attributes(conn, con->window->id,
+                                     XCB_CW_EVENT_MASK, (uint32_t[]){XCB_NONE});
+        xcb_unmap_window(conn, con->window->id);
+        xcb_void_cookie_t cookie = xcb_reparent_window(conn, con->window->id, root, con->rect.x, con->rect.y);
+
+        /* Ignore X11 errors for the ReparentWindow request.
+         * X11 Errors are returned when the window was already destroyed */
+        add_ignore_event(cookie.sequence, 0);
+
+        /* We are no longer handling this window, thus set WM_STATE to
+         * WM_STATE_WITHDRAWN (see ICCCM 4.1.3.1) */
+        long data[] = {XCB_ICCCM_WM_STATE_WITHDRAWN, XCB_NONE};
+        cookie = xcb_change_property(conn, XCB_PROP_MODE_REPLACE,
+                                     con->window->id, A_WM_STATE, A_WM_STATE, 32, 2, data);
+
+        /* Remove the window from the save set. All windows in the save set
+         * will be mapped when i3 closes its connection (e.g. when
+         * restarting). This is not what we want, since some apps keep
+         * unmapped windows around and don’t expect them to suddenly be
+         * mapped. See https://bugs.i3wm.org/1617 */
+        xcb_change_save_set(conn, XCB_SET_MODE_DELETE, con->window->id);
+
+        /* Stop receiving ShapeNotify events. */
+        if (shape_supported) {
+            xcb_shape_select_input(conn, con->window->id, false);
+        }
+
+        /* Ignore X11 errors for the ReparentWindow request.
+         * X11 Errors are returned when the window was already destroyed */
+        add_ignore_event(cookie.sequence, 0);
         ipc_send_window_event("close", con);
         window_free(con->window);
         con->window = NULL;

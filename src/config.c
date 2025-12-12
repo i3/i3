@@ -11,8 +11,6 @@
 #include "all.h"
 
 #include <libgen.h>
-#include <unistd.h>
-
 #include <xkbcommon/xkbcommon.h>
 
 char *current_configpath = NULL;
@@ -42,9 +40,8 @@ static void free_configuration(void) {
     /* First ungrab the keys */
     ungrab_all_keys(conn);
 
-    struct Mode *mode;
     while (!SLIST_EMPTY(&modes)) {
-        mode = SLIST_FIRST(&modes);
+        struct Mode *mode = SLIST_FIRST(&modes);
         FREE(mode->name);
 
         /* Clear the old binding list */
@@ -60,7 +57,7 @@ static void free_configuration(void) {
     }
 
     while (!TAILQ_EMPTY(&assignments)) {
-        struct Assignment *assign = TAILQ_FIRST(&assignments);
+        Assignment *assign = TAILQ_FIRST(&assignments);
         if (assign->type == A_TO_WORKSPACE || assign->type == A_TO_WORKSPACE_NUMBER) {
             FREE(assign->dest.workspace);
         } else if (assign->type == A_COMMAND) {
@@ -82,9 +79,8 @@ static void free_configuration(void) {
     }
 
     /* Clear bar configs */
-    Barconfig *barconfig;
     while (!TAILQ_EMPTY(&barconfigs)) {
-        barconfig = TAILQ_FIRST(&barconfigs);
+        Barconfig *barconfig = TAILQ_FIRST(&barconfigs);
         FREE(barconfig->id);
         for (int c = 0; c < barconfig->num_outputs; c++) {
             free(barconfig->outputs[c]);
@@ -263,8 +259,7 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     TAILQ_INSERT_TAIL(&included_files, file, files);
 
     LOG("Parsing configfile %s\n", resolved_path);
-    struct stack stack;
-    memset(&stack, '\0', sizeof(struct stack));
+    struct stack stack = {0};
     struct parser_ctx ctx = {
         .use_nagbar = (load_type != C_VALIDATE),
         .stack = &stack,
@@ -286,8 +281,8 @@ bool load_configuration(const char *override_configpath, config_load_t load_type
     }
 
     /* Make bar config blocks without a configured font use the i3-wide font. */
-    Barconfig *current;
     if (load_type != C_VALIDATE) {
+        Barconfig *current;
         TAILQ_FOREACH (current, &barconfigs, configs) {
             if (current->font != NULL) {
                 continue;

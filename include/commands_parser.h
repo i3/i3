@@ -12,6 +12,18 @@
 #include <config.h>
 
 #include <yajl/yajl_gen.h>
+#include "parser_util.h"
+#include "queue.h"
+
+/**
+ * Helper data structure for an operation window (window on which the operation
+ * will be performed). Used to build the TAILQ owindows.
+ *
+ */
+typedef struct owindow {
+    Con *con;
+    TAILQ_ENTRY(owindow) owindows;
+} owindow;
 
 /**
  * Holds an intermediate representation of the result of a call to any command.
@@ -19,6 +31,9 @@
  * internally use this struct when calling cmd_floating and cmd_border.
  */
 struct CommandResultIR {
+    /* The parser context this command is executing in. */
+    struct cmd_parser_ctx *ctx;
+
     /* The JSON generator to append a reply to (may be NULL). */
     yajl_gen json_gen;
 
@@ -33,6 +48,28 @@ struct CommandResultIR {
 
     /* Whether the command requires calling tree_render. */
     bool needs_tree_render;
+};
+
+/* Define the owindows head structure here so it's complete */
+TAILQ_HEAD(owindows_head, owindow);
+
+/**
+ * Context structure for the command parser, making it re-entrant.
+ */
+struct cmd_parser_ctx {
+    int state;
+    Match current_match;
+
+    /* The (small) stack where identified literals are stored during the parsing
+     * of a single command (like $workspace). */
+    struct stack stack;
+
+    /* List of operation windows (windows on which operations will be performed).
+     * Used to build the TAILQ owindows. */
+    struct owindows_head owindows;
+
+    struct CommandResultIR subcommand_output;
+    struct CommandResultIR command_output;
 };
 
 typedef struct CommandResult CommandResult;

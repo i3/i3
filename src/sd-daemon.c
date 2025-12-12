@@ -44,8 +44,8 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-int sd_listen_fds(int unset_environment) {
-    int r, fd;
+int sd_listen_fds(const int unset_environment) {
+    int r;
     const char *e;
     char *p = NULL;
     unsigned long l;
@@ -92,7 +92,7 @@ int sd_listen_fds(int unset_environment) {
         goto finish;
     }
 
-    for (fd = SD_LISTEN_FDS_START; fd < SD_LISTEN_FDS_START + (int)l; fd++) {
+    for (int fd = SD_LISTEN_FDS_START; fd < SD_LISTEN_FDS_START + (int)l; fd++) {
         int flags;
 
         if ((flags = fcntl(fd, F_GETFD)) < 0) {
@@ -138,9 +138,8 @@ int sd_is_fifo(int fd, const char *path) {
     }
 
     if (path) {
-        struct stat st_path;
+        struct stat st_path = {0};
 
-        memset(&st_path, 0, sizeof(st_path));
         if (stat(path, &st_path) < 0) {
             if (errno == ENOENT || errno == ENOTDIR) {
                 return 0;
@@ -434,10 +433,9 @@ int sd_notifyf(int unset_environment, const char *format, ...) {
 #else
     va_list ap;
     char *p = NULL;
-    int r;
 
     va_start(ap, format);
-    r = vasprintf(&p, format, ap);
+    int r = vasprintf(&p, format, ap);
     va_end(ap);
 
     if (r < 0 || !p) {

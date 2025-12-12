@@ -9,8 +9,6 @@
  */
 #pragma once
 
-#include "all.h"
-
 /**
  * Tiling drag initiation modes.
  */
