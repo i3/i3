@@ -25,6 +25,9 @@ my $pid = launch_with_config('-default');
 sub net_frame_extents {
     my ($window) = @_;
 
+    # Ensure the previous i3 command has reached X11.
+    sync_with_i3;
+
     my $cookie = $x->get_property(
         0,
         $window->{id},
