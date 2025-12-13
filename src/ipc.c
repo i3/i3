@@ -9,19 +9,16 @@
  */
 
 #include "all.h"
-#include "yajl_utils.h"
 
 #include <ev.h>
 #include <fcntl.h>
 #include <libgen.h>
-#include <locale.h>
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
 
-#include <yajl/yajl_gen.h>
-#include <yajl/yajl_parse.h>
+#include <yyjson.h>
 
 char *current_socketpath = NULL;
 
@@ -159,27 +156,19 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
 /*
  * For shutdown events, we send the reason for the shutdown.
  */
-static void ipc_send_shutdown_event(shutdown_reason_t reason) {
-    yajl_gen gen = ygenalloc();
-    y(map_open);
+static void ipc_send_shutdown_event(const shutdown_reason_t reason) {
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *root = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, root);
 
-    ystr("change");
+    const char *change_str = (reason == SHUTDOWN_REASON_RESTART) ? "restart" : "exit";
+    yyjson_mut_obj_add_str(doc, root, "change", change_str);
 
-    if (reason == SHUTDOWN_REASON_RESTART) {
-        ystr("restart");
-    } else if (reason == SHUTDOWN_REASON_EXIT) {
-        ystr("exit");
-    }
-
-    y(map_close);
-
-    const unsigned char *payload;
-    ylength length;
-
-    y(get_buf, &payload, &length);
-    ipc_send_event("shutdown", I3_IPC_EVENT_SHUTDOWN, (const char *)payload);
-
-    y(free);
+    size_t length;
+    char *payload = json_write(doc, &length);
+    ipc_send_event("shutdown", I3_IPC_EVENT_SHUTDOWN, payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -210,9 +199,9 @@ IPC_HANDLER(run_command) {
      * message_size bytes out of the buffer */
     char *command = sstrndup((const char *)message, message_size);
     LOG("IPC: received: *%.4000s*\n", command);
-    yajl_gen gen = yajl_gen_alloc(NULL);
+    yyjson_mut_doc *doc = json_new();
 
-    CommandResult *result = parse_command(command, gen, client);
+    CommandResult *result = parse_command(command, doc, client);
     free(command);
 
     if (result->needs_tree_render) {
@@ -221,448 +210,419 @@ IPC_HANDLER(run_command) {
 
     command_result_free(result);
 
-    const unsigned char *reply;
-    ylength length;
-    yajl_gen_get_buf(gen, &reply, &length);
-
+    size_t length;
+    char *reply = json_write(doc, &length);
     ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_COMMAND,
                             (const uint8_t *)reply);
-
-    yajl_gen_free(gen);
+    free(reply);
+    yyjson_mut_doc_free(doc);
 }
 
-static void dump_rect(yajl_gen gen, const char *name, Rect r) {
-    ystr(name);
-    y(map_open);
-    ystr("x");
-    y(integer, (int32_t)r.x);
-    ystr("y");
-    y(integer, (int32_t)r.y);
-    ystr("width");
-    y(integer, r.width);
-    ystr("height");
-    y(integer, r.height);
-    y(map_close);
+static yyjson_mut_val *dump_rect(yyjson_mut_doc *doc, Rect r) {
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
+    yyjson_mut_obj_add_int(doc, obj, "x", (int32_t)r.x);
+    yyjson_mut_obj_add_int(doc, obj, "y", (int32_t)r.y);
+    yyjson_mut_obj_add_int(doc, obj, "width", r.width);
+    yyjson_mut_obj_add_int(doc, obj, "height", r.height);
+    return obj;
 }
 
-static void dump_gaps(yajl_gen gen, const char *name, gaps_t gaps) {
-    ystr(name);
-    y(map_open);
-    ystr("inner");
-    y(integer, gaps.inner);
-
+static yyjson_mut_val *dump_gaps(yyjson_mut_doc *doc, gaps_t gaps) {
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
+    yyjson_mut_obj_add_int(doc, obj, "inner", gaps.inner);
     // TODO: the i3ipc Python modules recognize gaps, but only inner/outer
     // This is currently here to preserve compatibility with that
-    ystr("outer");
-    y(integer, gaps.top);
-
-    ystr("top");
-    y(integer, gaps.top);
-    ystr("right");
-    y(integer, gaps.right);
-    ystr("bottom");
-    y(integer, gaps.bottom);
-    ystr("left");
-    y(integer, gaps.left);
-    y(map_close);
+    yyjson_mut_obj_add_int(doc, obj, "outer", gaps.top);
+    yyjson_mut_obj_add_int(doc, obj, "top", gaps.top);
+    yyjson_mut_obj_add_int(doc, obj, "right", gaps.right);
+    yyjson_mut_obj_add_int(doc, obj, "bottom", gaps.bottom);
+    yyjson_mut_obj_add_int(doc, obj, "left", gaps.left);
+    return obj;
 }
 
-static void dump_event_state_mask(yajl_gen gen, Binding *bind) {
-    y(array_open);
+static yyjson_mut_val *dump_event_state_mask(yyjson_mut_doc *doc, Binding *bind) {
+    yyjson_mut_val *arr = yyjson_mut_arr(doc);
     for (int i = 0; i < 20; i++) {
         if (bind->event_state_mask & (1 << i)) {
             switch (1 << i) {
                 case XCB_KEY_BUT_MASK_SHIFT:
-                    ystr("shift");
+                    yyjson_mut_arr_add_str(doc, arr, "shift");
                     break;
                 case XCB_KEY_BUT_MASK_LOCK:
-                    ystr("lock");
+                    yyjson_mut_arr_add_str(doc, arr, "lock");
                     break;
                 case XCB_KEY_BUT_MASK_CONTROL:
-                    ystr("ctrl");
+                    yyjson_mut_arr_add_str(doc, arr, "ctrl");
                     break;
                 case XCB_KEY_BUT_MASK_MOD_1:
-                    ystr("Mod1");
+                    yyjson_mut_arr_add_str(doc, arr, "Mod1");
                     break;
                 case XCB_KEY_BUT_MASK_MOD_2:
-                    ystr("Mod2");
+                    yyjson_mut_arr_add_str(doc, arr, "Mod2");
                     break;
                 case XCB_KEY_BUT_MASK_MOD_3:
-                    ystr("Mod3");
+                    yyjson_mut_arr_add_str(doc, arr, "Mod3");
                     break;
                 case XCB_KEY_BUT_MASK_MOD_4:
-                    ystr("Mod4");
+                    yyjson_mut_arr_add_str(doc, arr, "Mod4");
                     break;
                 case XCB_KEY_BUT_MASK_MOD_5:
-                    ystr("Mod5");
+                    yyjson_mut_arr_add_str(doc, arr, "Mod5");
                     break;
                 case XCB_KEY_BUT_MASK_BUTTON_1:
-                    ystr("Button1");
+                    yyjson_mut_arr_add_str(doc, arr, "Button1");
                     break;
                 case XCB_KEY_BUT_MASK_BUTTON_2:
-                    ystr("Button2");
+                    yyjson_mut_arr_add_str(doc, arr, "Button2");
                     break;
                 case XCB_KEY_BUT_MASK_BUTTON_3:
-                    ystr("Button3");
+                    yyjson_mut_arr_add_str(doc, arr, "Button3");
                     break;
                 case XCB_KEY_BUT_MASK_BUTTON_4:
-                    ystr("Button4");
+                    yyjson_mut_arr_add_str(doc, arr, "Button4");
                     break;
                 case XCB_KEY_BUT_MASK_BUTTON_5:
-                    ystr("Button5");
+                    yyjson_mut_arr_add_str(doc, arr, "Button5");
                     break;
                 case (I3_XKB_GROUP_MASK_1 << 16):
-                    ystr("Group1");
+                    yyjson_mut_arr_add_str(doc, arr, "Group1");
                     break;
                 case (I3_XKB_GROUP_MASK_2 << 16):
-                    ystr("Group2");
+                    yyjson_mut_arr_add_str(doc, arr, "Group2");
                     break;
                 case (I3_XKB_GROUP_MASK_3 << 16):
-                    ystr("Group3");
+                    yyjson_mut_arr_add_str(doc, arr, "Group3");
                     break;
                 case (I3_XKB_GROUP_MASK_4 << 16):
-                    ystr("Group4");
+                    yyjson_mut_arr_add_str(doc, arr, "Group4");
                     break;
             }
         }
     }
-    y(array_close);
+    return arr;
 }
 
-static void dump_binding(yajl_gen gen, Binding *bind) {
-    y(map_open);
-    ystr("input_code");
-    y(integer, bind->keycode);
+static yyjson_mut_val *dump_binding(yyjson_mut_doc *doc, Binding *bind) {
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
 
-    ystr("input_type");
-    ystr((const char *)(bind->input_type == B_KEYBOARD ? "keyboard" : "mouse"));
+    yyjson_mut_obj_add_int(doc, obj, "input_code", bind->keycode);
+    yyjson_mut_obj_add_str(doc, obj, "input_type",
+                           bind->input_type == B_KEYBOARD ? "keyboard" : "mouse");
 
-    ystr("symbol");
     if (bind->symbol == NULL) {
-        y(null);
+        yyjson_mut_obj_add_null(doc, obj, "symbol");
     } else {
-        ystr(bind->symbol);
+        yyjson_mut_obj_add_str(doc, obj, "symbol", bind->symbol);
     }
 
-    ystr("command");
-    ystr(bind->command);
+    yyjson_mut_obj_add_str(doc, obj, "command", bind->command);
 
     // This key is only provided for compatibility, new programs should use
     // event_state_mask instead.
-    ystr("mods");
-    dump_event_state_mask(gen, bind);
+    yyjson_mut_obj_add_val(doc, obj, "mods", dump_event_state_mask(doc, bind));
+    yyjson_mut_obj_add_val(doc, obj, "event_state_mask", dump_event_state_mask(doc, bind));
 
-    ystr("event_state_mask");
-    dump_event_state_mask(gen, bind);
-
-    y(map_close);
+    return obj;
 }
 
-void dump_node(yajl_gen gen, Con *con, bool inplace_restart) {
-    y(map_open);
-    ystr("id");
-    y(integer, (uintptr_t)con);
+yyjson_mut_val *dump_node(yyjson_mut_doc *doc, Con *con, bool inplace_restart) {
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
 
-    ystr("type");
+    yyjson_mut_obj_add_uint(doc, obj, "id", (uintptr_t)con);
+
+    const char *type_str;
     switch (con->type) {
         case CT_ROOT:
-            ystr("root");
+            type_str = "root";
             break;
         case CT_OUTPUT:
-            ystr("output");
+            type_str = "output";
             break;
         case CT_CON:
-            ystr("con");
+            type_str = "con";
             break;
         case CT_FLOATING_CON:
-            ystr("floating_con");
+            type_str = "floating_con";
             break;
         case CT_WORKSPACE:
-            ystr("workspace");
+            type_str = "workspace";
             break;
         case CT_DOCKAREA:
-            ystr("dockarea");
+            type_str = "dockarea";
+            break;
+        default:
+            type_str = "unknown";
             break;
     }
+    yyjson_mut_obj_add_str(doc, obj, "type", type_str);
 
     /* provided for backwards compatibility only. */
-    ystr("orientation");
+    const char *orientation_str;
     if (!con_is_split(con)) {
-        ystr("none");
+        orientation_str = "none";
     } else {
-        if (con_orientation(con) == HORIZ) {
-            ystr("horizontal");
-        } else {
-            ystr("vertical");
-        }
+        orientation_str = (con_orientation(con) == HORIZ) ? "horizontal" : "vertical";
     }
+    yyjson_mut_obj_add_str(doc, obj, "orientation", orientation_str);
 
-    ystr("scratchpad_state");
+    const char *scratchpad_str;
     switch (con->scratchpad_state) {
         case SCRATCHPAD_NONE:
-            ystr("none");
+            scratchpad_str = "none";
             break;
         case SCRATCHPAD_FRESH:
-            ystr("fresh");
+            scratchpad_str = "fresh";
             break;
         case SCRATCHPAD_CHANGED:
-            ystr("changed");
+            scratchpad_str = "changed";
+            break;
+        default:
+            scratchpad_str = "none";
             break;
     }
+    yyjson_mut_obj_add_str(doc, obj, "scratchpad_state", scratchpad_str);
 
-    ystr("percent");
     if (con->percent == 0.0) {
-        y(null);
+        yyjson_mut_obj_add_null(doc, obj, "percent");
     } else {
-        y(double, con->percent);
+        yyjson_mut_obj_add_real(doc, obj, "percent", con->percent);
     }
 
-    ystr("urgent");
-    y(bool, con->urgent);
+    yyjson_mut_obj_add_bool(doc, obj, "urgent", con->urgent);
 
-    ystr("marks");
-    y(array_open);
+    yyjson_mut_val *marks_arr = yyjson_mut_arr(doc);
     mark_t *mark;
     TAILQ_FOREACH (mark, &(con->marks_head), marks) {
-        ystr(mark->name);
+        yyjson_mut_arr_add_str(doc, marks_arr, mark->name);
     }
-    y(array_close);
+    yyjson_mut_obj_add_val(doc, obj, "marks", marks_arr);
 
-    ystr("focused");
-    y(bool, (con == focused));
+    yyjson_mut_obj_add_bool(doc, obj, "focused", (con == focused));
 
     if (con->type != CT_ROOT && con->type != CT_OUTPUT) {
-        ystr("output");
-        ystr(con_get_output(con)->name);
+        yyjson_mut_obj_add_str(doc, obj, "output", con_get_output(con)->name);
     }
 
-    ystr("layout");
+    const char *layout_str;
     switch (con->layout) {
         case L_DEFAULT:
             DLOG("About to dump layout=default, this is a bug in the code.\n");
             assert(false);
+            layout_str = "default";
             break;
         case L_SPLITV:
-            ystr("splitv");
+            layout_str = "splitv";
             break;
         case L_SPLITH:
-            ystr("splith");
+            layout_str = "splith";
             break;
         case L_STACKED:
-            ystr("stacked");
+            layout_str = "stacked";
             break;
         case L_TABBED:
-            ystr("tabbed");
+            layout_str = "tabbed";
             break;
         case L_DOCKAREA:
-            ystr("dockarea");
+            layout_str = "dockarea";
             break;
         case L_OUTPUT:
-            ystr("output");
+            layout_str = "output";
+            break;
+        default:
+            layout_str = "unknown";
             break;
     }
+    yyjson_mut_obj_add_str(doc, obj, "layout", layout_str);
 
-    ystr("workspace_layout");
+    const char *ws_layout_str;
     switch (con->workspace_layout) {
         case L_DEFAULT:
-            ystr("default");
+            ws_layout_str = "default";
             break;
         case L_STACKED:
-            ystr("stacked");
+            ws_layout_str = "stacked";
             break;
         case L_TABBED:
-            ystr("tabbed");
+            ws_layout_str = "tabbed";
             break;
         default:
             DLOG("About to dump workspace_layout=%d (none of default/stacked/tabbed), this is a bug.\n", con->workspace_layout);
             assert(false);
+            ws_layout_str = "default";
             break;
     }
+    yyjson_mut_obj_add_str(doc, obj, "workspace_layout", ws_layout_str);
 
-    ystr("last_split_layout");
-    switch (con->layout) {
-        case L_SPLITV:
-            ystr("splitv");
-            break;
-        default:
-            ystr("splith");
-            break;
-    }
+    yyjson_mut_obj_add_str(doc, obj, "last_split_layout",
+                           (con->layout == L_SPLITV) ? "splitv" : "splith");
 
-    ystr("border");
+    const char *border_str;
     switch (con->border_style) {
         case BS_NORMAL:
-            ystr("normal");
+            border_str = "normal";
             break;
         case BS_NONE:
-            ystr("none");
+            border_str = "none";
             break;
         case BS_PIXEL:
-            ystr("pixel");
+            border_str = "pixel";
+            break;
+        default:
+            border_str = "unknown";
             break;
     }
+    yyjson_mut_obj_add_str(doc, obj, "border", border_str);
 
-    ystr("current_border_width");
-    y(integer, con->current_border_width);
+    yyjson_mut_obj_add_int(doc, obj, "current_border_width", con->current_border_width);
 
-    dump_rect(gen, "rect", con->rect);
+    yyjson_mut_obj_add_val(doc, obj, "rect", dump_rect(doc, con->rect));
+
     if (con_draw_decoration_into_frame(con)) {
         Rect simulated_deco_rect = con->deco_rect;
         simulated_deco_rect.x = con->rect.x - con->parent->rect.x;
         simulated_deco_rect.y = con->rect.y - con->parent->rect.y;
-        dump_rect(gen, "deco_rect", simulated_deco_rect);
-        dump_rect(gen, "actual_deco_rect", con->deco_rect);
+        yyjson_mut_obj_add_val(doc, obj, "deco_rect", dump_rect(doc, simulated_deco_rect));
+        yyjson_mut_obj_add_val(doc, obj, "actual_deco_rect", dump_rect(doc, con->deco_rect));
     } else {
-        dump_rect(gen, "deco_rect", con->deco_rect);
+        yyjson_mut_obj_add_val(doc, obj, "deco_rect", dump_rect(doc, con->deco_rect));
     }
-    dump_rect(gen, "window_rect", con->window_rect);
-    dump_rect(gen, "geometry", con->geometry);
 
-    ystr("name");
+    yyjson_mut_obj_add_val(doc, obj, "window_rect", dump_rect(doc, con->window_rect));
+    yyjson_mut_obj_add_val(doc, obj, "geometry", dump_rect(doc, con->geometry));
+
     if (con->window && con->window->name) {
-        ystr(i3string_as_utf8(con->window->name));
+        yyjson_mut_obj_add_str(doc, obj, "name", i3string_as_utf8(con->window->name));
     } else if (con->name != NULL) {
-        ystr(con->name);
+        yyjson_mut_obj_add_str(doc, obj, "name", con->name);
     } else {
-        y(null);
+        yyjson_mut_obj_add_null(doc, obj, "name");
     }
 
     if (con->title_format != NULL) {
-        ystr("title_format");
-        ystr(con->title_format);
+        yyjson_mut_obj_add_str(doc, obj, "title_format", con->title_format);
     }
 
-    ystr("window_icon_padding");
-    y(integer, con->window_icon_padding);
+    yyjson_mut_obj_add_int(doc, obj, "window_icon_padding", con->window_icon_padding);
 
     if (con->type == CT_WORKSPACE) {
-        ystr("num");
-        y(integer, con->num);
-
-        dump_gaps(gen, "gaps", con->gaps);
+        yyjson_mut_obj_add_int(doc, obj, "num", con->num);
+        yyjson_mut_obj_add_val(doc, obj, "gaps", dump_gaps(doc, con->gaps));
     }
 
-    ystr("window");
     if (con->window) {
-        y(integer, con->window->id);
+        yyjson_mut_obj_add_uint(doc, obj, "window", con->window->id);
     } else {
-        y(null);
+        yyjson_mut_obj_add_null(doc, obj, "window");
     }
 
-    ystr("window_type");
+    const char *window_type_str = NULL;
     if (con->window) {
         if (con->window->window_type == A__NET_WM_WINDOW_TYPE_NORMAL) {
-            ystr("normal");
+            window_type_str = "normal";
         } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_DOCK) {
-            ystr("dock");
+            window_type_str = "dock";
         } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_DIALOG) {
-            ystr("dialog");
+            window_type_str = "dialog";
         } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_UTILITY) {
-            ystr("utility");
+            window_type_str = "utility";
         } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_TOOLBAR) {
-            ystr("toolbar");
+            window_type_str = "toolbar";
         } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_SPLASH) {
-            ystr("splash");
+            window_type_str = "splash";
         } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_MENU) {
-            ystr("menu");
+            window_type_str = "menu";
         } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU) {
-            ystr("dropdown_menu");
+            window_type_str = "dropdown_menu";
         } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_POPUP_MENU) {
-            ystr("popup_menu");
+            window_type_str = "popup_menu";
         } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_TOOLTIP) {
-            ystr("tooltip");
+            window_type_str = "tooltip";
         } else if (con->window->window_type == A__NET_WM_WINDOW_TYPE_NOTIFICATION) {
-            ystr("notification");
+            window_type_str = "notification";
         } else {
-            ystr("unknown");
+            window_type_str = "unknown";
         }
+        yyjson_mut_obj_add_str(doc, obj, "window_type", window_type_str);
     } else {
-        y(null);
+        yyjson_mut_obj_add_null(doc, obj, "window_type");
     }
 
     if (con->window && !inplace_restart) {
         /* Window properties are useless to preserve when restarting because
          * they will be queried again anyway. However, for i3-save-tree(1),
          * they are very useful and save i3-save-tree dealing with X11. */
-        ystr("window_properties");
-        y(map_open);
+        yyjson_mut_val *props = yyjson_mut_obj(doc);
 
-#define DUMP_PROPERTY(key, prop_name)         \
-    do {                                      \
-        if (con->window->prop_name != NULL) { \
-            ystr(key);                        \
-            ystr(con->window->prop_name);     \
-        }                                     \
-    } while (0)
-
-        DUMP_PROPERTY("class", class_class);
-        DUMP_PROPERTY("instance", class_instance);
-        DUMP_PROPERTY("window_role", role);
-        DUMP_PROPERTY("machine", machine);
-
+        if (con->window->class_class != NULL) {
+            yyjson_mut_obj_add_str(doc, props, "class", con->window->class_class);
+        }
+        if (con->window->class_instance != NULL) {
+            yyjson_mut_obj_add_str(doc, props, "instance", con->window->class_instance);
+        }
+        if (con->window->role != NULL) {
+            yyjson_mut_obj_add_str(doc, props, "window_role", con->window->role);
+        }
+        if (con->window->machine != NULL) {
+            yyjson_mut_obj_add_str(doc, props, "machine", con->window->machine);
+        }
         if (con->window->name != NULL) {
-            ystr("title");
-            ystr(i3string_as_utf8(con->window->name));
+            yyjson_mut_obj_add_str(doc, props, "title", i3string_as_utf8(con->window->name));
         }
 
-        ystr("transient_for");
         if (con->window->transient_for == XCB_NONE) {
-            y(null);
+            yyjson_mut_obj_add_null(doc, props, "transient_for");
         } else {
-            y(integer, con->window->transient_for);
+            yyjson_mut_obj_add_uint(doc, props, "transient_for", con->window->transient_for);
         }
 
-        y(map_close);
+        yyjson_mut_obj_add_val(doc, obj, "window_properties", props);
     }
 
-    ystr("nodes");
-    y(array_open);
+    yyjson_mut_val *nodes_arr = yyjson_mut_arr(doc);
     Con *node;
     if (con->type != CT_DOCKAREA || !inplace_restart) {
         TAILQ_FOREACH (node, &(con->nodes_head), nodes) {
-            dump_node(gen, node, inplace_restart);
+            yyjson_mut_arr_add_val(nodes_arr, dump_node(doc, node, inplace_restart));
         }
     }
-    y(array_close);
+    yyjson_mut_obj_add_val(doc, obj, "nodes", nodes_arr);
 
-    ystr("floating_nodes");
-    y(array_open);
+    yyjson_mut_val *floating_arr = yyjson_mut_arr(doc);
     TAILQ_FOREACH (node, &(con->floating_head), floating_windows) {
-        dump_node(gen, node, inplace_restart);
+        yyjson_mut_arr_add_val(floating_arr, dump_node(doc, node, inplace_restart));
     }
-    y(array_close);
+    yyjson_mut_obj_add_val(doc, obj, "floating_nodes", floating_arr);
 
-    ystr("focus");
-    y(array_open);
+    yyjson_mut_val *focus_arr = yyjson_mut_arr(doc);
     TAILQ_FOREACH (node, &(con->focus_head), focused) {
-        y(integer, (uintptr_t)node);
+        yyjson_mut_arr_add_uint(doc, focus_arr, (uintptr_t)node);
     }
-    y(array_close);
+    yyjson_mut_obj_add_val(doc, obj, "focus", focus_arr);
 
-    ystr("fullscreen_mode");
-    y(integer, con->fullscreen_mode);
+    yyjson_mut_obj_add_int(doc, obj, "fullscreen_mode", con->fullscreen_mode);
+    yyjson_mut_obj_add_bool(doc, obj, "sticky", con->sticky);
 
-    ystr("sticky");
-    y(bool, con->sticky);
-
-    ystr("floating");
+    const char *floating_str;
     switch (con->floating) {
         case FLOATING_AUTO_OFF:
-            ystr("auto_off");
+            floating_str = "auto_off";
             break;
         case FLOATING_AUTO_ON:
-            ystr("auto_on");
+            floating_str = "auto_on";
             break;
         case FLOATING_USER_OFF:
-            ystr("user_off");
+            floating_str = "user_off";
             break;
         case FLOATING_USER_ON:
-            ystr("user_on");
+            floating_str = "user_on";
+            break;
+        default:
+            floating_str = "auto_off";
             break;
     }
+    yyjson_mut_obj_add_str(doc, obj, "floating", floating_str);
 
-    ystr("swallows");
-    y(array_open);
+    yyjson_mut_val *swallows_arr = yyjson_mut_arr(doc);
     Match *match;
     TAILQ_FOREACH (match, &(con->swallow_head), matches) {
         /* We will generate a new restart_mode match specification after this
@@ -670,80 +630,69 @@ void dump_node(yajl_gen gen, Con *con, bool inplace_restart) {
         if (match->restart_mode) {
             continue;
         }
-        y(map_open);
+        yyjson_mut_val *swallow_obj = yyjson_mut_obj(doc);
         if (match->dock != M_DONTCHECK) {
-            ystr("dock");
-            y(integer, match->dock);
-            ystr("insert_where");
-            y(integer, match->insert_where);
+            yyjson_mut_obj_add_int(doc, swallow_obj, "dock", match->dock);
+            yyjson_mut_obj_add_int(doc, swallow_obj, "insert_where", match->insert_where);
         }
 
-#define DUMP_REGEX(re_name)                \
-    do {                                   \
-        if (match->re_name != NULL) {      \
-            ystr(#re_name);                \
-            ystr(match->re_name->pattern); \
-        }                                  \
-    } while (0)
+        if (match->class != NULL) {
+            yyjson_mut_obj_add_str(doc, swallow_obj, "class", match->class->pattern);
+        }
+        if (match->instance != NULL) {
+            yyjson_mut_obj_add_str(doc, swallow_obj, "instance", match->instance->pattern);
+        }
+        if (match->window_role != NULL) {
+            yyjson_mut_obj_add_str(doc, swallow_obj, "window_role", match->window_role->pattern);
+        }
+        if (match->title != NULL) {
+            yyjson_mut_obj_add_str(doc, swallow_obj, "title", match->title->pattern);
+        }
+        if (match->machine != NULL) {
+            yyjson_mut_obj_add_str(doc, swallow_obj, "machine", match->machine->pattern);
+        }
 
-        DUMP_REGEX(class);
-        DUMP_REGEX(instance);
-        DUMP_REGEX(window_role);
-        DUMP_REGEX(title);
-        DUMP_REGEX(machine);
-
-#undef DUMP_REGEX
-        y(map_close);
+        yyjson_mut_arr_add_val(swallows_arr, swallow_obj);
     }
 
     if (inplace_restart) {
         if (con->window != NULL) {
-            y(map_open);
-            ystr("id");
-            y(integer, con->window->id);
-            ystr("restart_mode");
-            y(bool, true);
-            y(map_close);
+            yyjson_mut_val *swallow_obj = yyjson_mut_obj(doc);
+            yyjson_mut_obj_add_uint(doc, swallow_obj, "id", con->window->id);
+            yyjson_mut_obj_add_bool(doc, swallow_obj, "restart_mode", true);
+            yyjson_mut_arr_add_val(swallows_arr, swallow_obj);
         }
     }
-    y(array_close);
+    yyjson_mut_obj_add_val(doc, obj, "swallows", swallows_arr);
 
     if (inplace_restart && con->window != NULL) {
-        ystr("depth");
-        y(integer, con->depth);
+        yyjson_mut_obj_add_int(doc, obj, "depth", con->depth);
     }
 
     if (inplace_restart && con->type == CT_ROOT && previous_workspace_name) {
-        ystr("previous_workspace_name");
-        ystr(previous_workspace_name);
+        yyjson_mut_obj_add_str(doc, obj, "previous_workspace_name", previous_workspace_name);
     }
 
-    y(map_close);
+    return obj;
 }
 
-static void dump_bar_bindings(yajl_gen gen, Barconfig *config) {
+static void dump_bar_bindings(yyjson_mut_doc *doc, yyjson_mut_val *obj, Barconfig *config) {
     if (TAILQ_EMPTY(&(config->bar_bindings))) {
         return;
     }
 
-    ystr("bindings");
-    y(array_open);
+    yyjson_mut_val *arr = yyjson_mut_arr(doc);
 
     struct Barbinding *current;
     TAILQ_FOREACH (current, &(config->bar_bindings), bindings) {
-        y(map_open);
-
-        ystr("input_code");
-        y(integer, current->input_code);
-        ystr("command");
-        ystr(current->command);
-        ystr("release");
-        y(bool, current->release == B_UPON_KEYRELEASE);
-
-        y(map_close);
+        yyjson_mut_val *binding_obj = yyjson_mut_obj(doc);
+        yyjson_mut_obj_add_int(doc, binding_obj, "input_code", current->input_code);
+        yyjson_mut_obj_add_str(doc, binding_obj, "command", current->command);
+        yyjson_mut_obj_add_bool(doc, binding_obj, "release", current->release == B_UPON_KEYRELEASE);
+        yyjson_mut_arr_add_val(arr, binding_obj);
     }
 
-    y(array_close);
+    yyjson_mut_obj_add_val(doc, obj, "bindings", arr);
 }
 
 static char *canonicalize_output_name(char *name) {
@@ -755,171 +704,139 @@ static char *canonicalize_output_name(char *name) {
     return output ? output_primary_name(output) : name;
 }
 
-static void dump_bar_config(yajl_gen gen, Barconfig *config) {
-    y(map_open);
+static yyjson_mut_val *dump_bar_config(yyjson_mut_doc *doc, Barconfig *config) {
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
 
-    ystr("id");
-    ystr(config->id);
+    yyjson_mut_obj_add_str(doc, obj, "id", config->id);
 
     if (config->num_outputs > 0) {
-        ystr("outputs");
-        y(array_open);
+        yyjson_mut_val *outputs_arr = yyjson_mut_arr(doc);
         for (int c = 0; c < config->num_outputs; c++) {
             /* Convert monitor names (RandR ≥ 1.5) or output names
              * (RandR < 1.5) into monitor names. This way, existing
              * configs which use output names transparently keep
              * working. */
-            ystr(canonicalize_output_name(config->outputs[c]));
+            yyjson_mut_arr_add_str(doc, outputs_arr, canonicalize_output_name(config->outputs[c]));
         }
-        y(array_close);
+        yyjson_mut_obj_add_val(doc, obj, "outputs", outputs_arr);
     }
 
     if (!TAILQ_EMPTY(&(config->tray_outputs))) {
-        ystr("tray_outputs");
-        y(array_open);
-
+        yyjson_mut_val *tray_arr = yyjson_mut_arr(doc);
         struct tray_output_t *tray_output;
         TAILQ_FOREACH (tray_output, &(config->tray_outputs), tray_outputs) {
-            ystr(canonicalize_output_name(tray_output->output));
+            yyjson_mut_arr_add_str(doc, tray_arr, canonicalize_output_name(tray_output->output));
         }
-
-        y(array_close);
+        yyjson_mut_obj_add_val(doc, obj, "tray_outputs", tray_arr);
     }
 
-#define YSTR_IF_SET(name)       \
-    do {                        \
-        if (config->name) {     \
-            ystr(#name);        \
-            ystr(config->name); \
-        }                       \
-    } while (0)
+    yyjson_mut_obj_add_int(doc, obj, "tray_padding", config->tray_padding);
 
-    ystr("tray_padding");
-    y(integer, config->tray_padding);
+    if (config->socket_path) {
+        yyjson_mut_obj_add_str(doc, obj, "socket_path", config->socket_path);
+    }
 
-    YSTR_IF_SET(socket_path);
-
-    ystr("mode");
+    const char *mode_str;
     switch (config->mode) {
         case M_HIDE:
-            ystr("hide");
+            mode_str = "hide";
             break;
         case M_INVISIBLE:
-            ystr("invisible");
+            mode_str = "invisible";
             break;
         case M_DOCK:
         default:
-            ystr("dock");
+            mode_str = "dock";
             break;
     }
+    yyjson_mut_obj_add_str(doc, obj, "mode", mode_str);
 
-    ystr("hidden_state");
-    switch (config->hidden_state) {
-        case S_SHOW:
-            ystr("show");
-            break;
-        case S_HIDE:
-        default:
-            ystr("hide");
-            break;
+    yyjson_mut_obj_add_str(doc, obj, "hidden_state",
+                           (config->hidden_state == S_SHOW) ? "show" : "hide");
+
+    yyjson_mut_obj_add_int(doc, obj, "modifier", config->modifier);
+
+    dump_bar_bindings(doc, obj, config);
+
+    yyjson_mut_obj_add_str(doc, obj, "position",
+                           (config->position == P_BOTTOM) ? "bottom" : "top");
+
+    if (config->status_command) {
+        yyjson_mut_obj_add_str(doc, obj, "status_command", config->status_command);
     }
-
-    ystr("modifier");
-    y(integer, config->modifier);
-
-    dump_bar_bindings(gen, config);
-
-    ystr("position");
-    if (config->position == P_BOTTOM) {
-        ystr("bottom");
-    } else {
-        ystr("top");
+    if (config->workspace_command) {
+        yyjson_mut_obj_add_str(doc, obj, "workspace_command", config->workspace_command);
     }
-
-    YSTR_IF_SET(status_command);
-    YSTR_IF_SET(workspace_command);
-    YSTR_IF_SET(font);
+    if (config->font) {
+        yyjson_mut_obj_add_str(doc, obj, "font", config->font);
+    }
 
     if (config->bar_height) {
-        ystr("bar_height");
-        y(integer, config->bar_height);
+        yyjson_mut_obj_add_int(doc, obj, "bar_height", config->bar_height);
     }
 
-    dump_rect(gen, "padding", config->padding);
+    yyjson_mut_obj_add_val(doc, obj, "padding", dump_rect(doc, config->padding));
 
     if (config->separator_symbol) {
-        ystr("separator_symbol");
-        ystr(config->separator_symbol);
+        yyjson_mut_obj_add_str(doc, obj, "separator_symbol", config->separator_symbol);
     }
 
-    ystr("workspace_buttons");
-    y(bool, !config->hide_workspace_buttons);
+    yyjson_mut_obj_add_bool(doc, obj, "workspace_buttons", !config->hide_workspace_buttons);
+    yyjson_mut_obj_add_int(doc, obj, "workspace_min_width", config->workspace_min_width);
+    yyjson_mut_obj_add_bool(doc, obj, "strip_workspace_numbers", config->strip_workspace_numbers);
+    yyjson_mut_obj_add_bool(doc, obj, "strip_workspace_name", config->strip_workspace_name);
+    yyjson_mut_obj_add_bool(doc, obj, "binding_mode_indicator", !config->hide_binding_mode_indicator);
+    yyjson_mut_obj_add_bool(doc, obj, "verbose", config->verbose);
 
-    ystr("workspace_min_width");
-    y(integer, config->workspace_min_width);
+    yyjson_mut_val *colors = yyjson_mut_obj(doc);
 
-    ystr("strip_workspace_numbers");
-    y(bool, config->strip_workspace_numbers);
-
-    ystr("strip_workspace_name");
-    y(bool, config->strip_workspace_name);
-
-    ystr("binding_mode_indicator");
-    y(bool, !config->hide_binding_mode_indicator);
-
-    ystr("verbose");
-    y(bool, config->verbose);
-
-#undef YSTR_IF_SET
-#define YSTR_IF_SET(name)              \
-    do {                               \
-        if (config->colors.name) {     \
-            ystr(#name);               \
-            ystr(config->colors.name); \
-        }                              \
+#define ADD_COLOR_IF_SET(name)                                               \
+    do {                                                                     \
+        if (config->colors.name) {                                           \
+            yyjson_mut_obj_add_str(doc, colors, #name, config->colors.name); \
+        }                                                                    \
     } while (0)
 
-    ystr("colors");
-    y(map_open);
-    YSTR_IF_SET(background);
-    YSTR_IF_SET(statusline);
-    YSTR_IF_SET(separator);
-    YSTR_IF_SET(focused_background);
-    YSTR_IF_SET(focused_statusline);
-    YSTR_IF_SET(focused_separator);
-    YSTR_IF_SET(focused_workspace_border);
-    YSTR_IF_SET(focused_workspace_bg);
-    YSTR_IF_SET(focused_workspace_text);
-    YSTR_IF_SET(active_workspace_border);
-    YSTR_IF_SET(active_workspace_bg);
-    YSTR_IF_SET(active_workspace_text);
-    YSTR_IF_SET(inactive_workspace_border);
-    YSTR_IF_SET(inactive_workspace_bg);
-    YSTR_IF_SET(inactive_workspace_text);
-    YSTR_IF_SET(urgent_workspace_border);
-    YSTR_IF_SET(urgent_workspace_bg);
-    YSTR_IF_SET(urgent_workspace_text);
-    YSTR_IF_SET(binding_mode_border);
-    YSTR_IF_SET(binding_mode_bg);
-    YSTR_IF_SET(binding_mode_text);
-    y(map_close);
+    ADD_COLOR_IF_SET(background);
+    ADD_COLOR_IF_SET(statusline);
+    ADD_COLOR_IF_SET(separator);
+    ADD_COLOR_IF_SET(focused_background);
+    ADD_COLOR_IF_SET(focused_statusline);
+    ADD_COLOR_IF_SET(focused_separator);
+    ADD_COLOR_IF_SET(focused_workspace_border);
+    ADD_COLOR_IF_SET(focused_workspace_bg);
+    ADD_COLOR_IF_SET(focused_workspace_text);
+    ADD_COLOR_IF_SET(active_workspace_border);
+    ADD_COLOR_IF_SET(active_workspace_bg);
+    ADD_COLOR_IF_SET(active_workspace_text);
+    ADD_COLOR_IF_SET(inactive_workspace_border);
+    ADD_COLOR_IF_SET(inactive_workspace_bg);
+    ADD_COLOR_IF_SET(inactive_workspace_text);
+    ADD_COLOR_IF_SET(urgent_workspace_border);
+    ADD_COLOR_IF_SET(urgent_workspace_bg);
+    ADD_COLOR_IF_SET(urgent_workspace_text);
+    ADD_COLOR_IF_SET(binding_mode_border);
+    ADD_COLOR_IF_SET(binding_mode_bg);
+    ADD_COLOR_IF_SET(binding_mode_text);
 
-    y(map_close);
-#undef YSTR_IF_SET
+#undef ADD_COLOR_IF_SET
+
+    yyjson_mut_obj_add_val(doc, obj, "colors", colors);
+
+    return obj;
 }
 
 IPC_HANDLER(tree) {
-    setlocale(LC_NUMERIC, "C");
-    yajl_gen gen = ygenalloc();
-    dump_node(gen, croot, false);
-    setlocale(LC_NUMERIC, "");
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *root = dump_node(doc, croot, false);
+    yyjson_mut_doc_set_root(doc, root);
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_TREE, payload);
-    y(free);
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_TREE, (const uint8_t *)payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -928,8 +845,9 @@ IPC_HANDLER(tree) {
  *
  */
 IPC_HANDLER(get_workspaces) {
-    yajl_gen gen = ygenalloc();
-    y(array_open);
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *arr = yyjson_mut_arr(doc);
+    yyjson_mut_doc_set_root(doc, arr);
 
     Con *focused_ws = con_get_workspace(focused);
 
@@ -941,53 +859,27 @@ IPC_HANDLER(get_workspaces) {
         Con *ws;
         TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) {
             assert(ws->type == CT_WORKSPACE);
-            y(map_open);
+            yyjson_mut_val *ws_obj = yyjson_mut_obj(doc);
 
-            ystr("id");
-            y(integer, (uintptr_t)ws);
+            yyjson_mut_obj_add_uint(doc, ws_obj, "id", (uintptr_t)ws);
+            yyjson_mut_obj_add_int(doc, ws_obj, "num", ws->num);
+            yyjson_mut_obj_add_str(doc, ws_obj, "name", ws->name);
+            yyjson_mut_obj_add_bool(doc, ws_obj, "visible", workspace_is_visible(ws));
+            yyjson_mut_obj_add_bool(doc, ws_obj, "focused", ws == focused_ws);
+            yyjson_mut_obj_add_val(doc, ws_obj, "rect", dump_rect(doc, ws->rect));
+            yyjson_mut_obj_add_str(doc, ws_obj, "output", output->name);
+            yyjson_mut_obj_add_bool(doc, ws_obj, "urgent", ws->urgent);
 
-            ystr("num");
-            y(integer, ws->num);
-
-            ystr("name");
-            ystr(ws->name);
-
-            ystr("visible");
-            y(bool, workspace_is_visible(ws));
-
-            ystr("focused");
-            y(bool, ws == focused_ws);
-
-            ystr("rect");
-            y(map_open);
-            ystr("x");
-            y(integer, ws->rect.x);
-            ystr("y");
-            y(integer, ws->rect.y);
-            ystr("width");
-            y(integer, ws->rect.width);
-            ystr("height");
-            y(integer, ws->rect.height);
-            y(map_close);
-
-            ystr("output");
-            ystr(output->name);
-
-            ystr("urgent");
-            y(bool, ws->urgent);
-
-            y(map_close);
+            yyjson_mut_arr_add_val(arr, ws_obj);
         }
     }
 
-    y(array_close);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
-
-    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_WORKSPACES, payload);
-    y(free);
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_WORKSPACES, (const uint8_t *)payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -996,53 +888,35 @@ IPC_HANDLER(get_workspaces) {
  *
  */
 IPC_HANDLER(get_outputs) {
-    yajl_gen gen = ygenalloc();
-    y(array_open);
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *arr = yyjson_mut_arr(doc);
+    yyjson_mut_doc_set_root(doc, arr);
 
     Output *output;
     TAILQ_FOREACH (output, &outputs, outputs) {
-        y(map_open);
+        yyjson_mut_val *output_obj = yyjson_mut_obj(doc);
 
-        ystr("name");
-        ystr(output_primary_name(output));
+        yyjson_mut_obj_add_str(doc, output_obj, "name", output_primary_name(output));
+        yyjson_mut_obj_add_bool(doc, output_obj, "active", output->active);
+        yyjson_mut_obj_add_bool(doc, output_obj, "primary", output->primary);
+        yyjson_mut_obj_add_val(doc, output_obj, "rect", dump_rect(doc, output->rect));
 
-        ystr("active");
-        y(bool, output->active);
-
-        ystr("primary");
-        y(bool, output->primary);
-
-        ystr("rect");
-        y(map_open);
-        ystr("x");
-        y(integer, output->rect.x);
-        ystr("y");
-        y(integer, output->rect.y);
-        ystr("width");
-        y(integer, output->rect.width);
-        ystr("height");
-        y(integer, output->rect.height);
-        y(map_close);
-
-        ystr("current_workspace");
         Con *ws = NULL;
         if (output->con && (ws = con_get_fullscreen_con(output->con, CF_OUTPUT))) {
-            ystr(ws->name);
+            yyjson_mut_obj_add_str(doc, output_obj, "current_workspace", ws->name);
         } else {
-            y(null);
+            yyjson_mut_obj_add_null(doc, output_obj, "current_workspace");
         }
 
-        y(map_close);
+        yyjson_mut_arr_add_val(arr, output_obj);
     }
 
-    y(array_close);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
-
-    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_OUTPUTS, payload);
-    y(free);
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_OUTPUTS, (const uint8_t *)payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -1051,25 +925,24 @@ IPC_HANDLER(get_outputs) {
  *
  */
 IPC_HANDLER(get_marks) {
-    yajl_gen gen = ygenalloc();
-    y(array_open);
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *arr = yyjson_mut_arr(doc);
+    yyjson_mut_doc_set_root(doc, arr);
 
     Con *con;
     TAILQ_FOREACH (con, &all_cons, all_cons) {
         mark_t *mark;
         TAILQ_FOREACH (mark, &(con->marks_head), marks) {
-            ystr(mark->name);
+            yyjson_mut_arr_add_str(doc, arr, mark->name);
         }
     }
 
-    y(array_close);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
-
-    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_MARKS, payload);
-    y(free);
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_MARKS, (const uint8_t *)payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -1077,43 +950,33 @@ IPC_HANDLER(get_marks) {
  *
  */
 IPC_HANDLER(get_version) {
-    yajl_gen gen = ygenalloc();
-    y(map_open);
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, obj);
 
-    ystr("major");
-    y(integer, MAJOR_VERSION);
+    yyjson_mut_obj_add_int(doc, obj, "major", MAJOR_VERSION);
+    yyjson_mut_obj_add_int(doc, obj, "minor", MINOR_VERSION);
+    yyjson_mut_obj_add_int(doc, obj, "patch", PATCH_VERSION);
+    yyjson_mut_obj_add_str(doc, obj, "human_readable", i3_version);
+    yyjson_mut_obj_add_str(doc, obj, "loaded_config_file_name", current_configpath);
 
-    ystr("minor");
-    y(integer, MINOR_VERSION);
-
-    ystr("patch");
-    y(integer, PATCH_VERSION);
-
-    ystr("human_readable");
-    ystr(i3_version);
-
-    ystr("loaded_config_file_name");
-    ystr(current_configpath);
-
-    ystr("included_config_file_names");
-    y(array_open);
+    yyjson_mut_val *included_arr = yyjson_mut_arr(doc);
     IncludedFile *file;
     TAILQ_FOREACH (file, &included_files, files) {
         if (file == TAILQ_FIRST(&included_files)) {
             /* Skip the first file, which is current_configpath. */
             continue;
         }
-        ystr(file->path);
+        yyjson_mut_arr_add_str(doc, included_arr, file->path);
     }
-    y(array_close);
-    y(map_close);
+    yyjson_mut_obj_add_val(doc, obj, "included_config_file_names", included_arr);
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_VERSION, payload);
-    y(free);
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_VERSION, (const uint8_t *)payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -1122,23 +985,24 @@ IPC_HANDLER(get_version) {
  *
  */
 IPC_HANDLER(get_bar_config) {
-    yajl_gen gen = ygenalloc();
+    yyjson_mut_doc *doc = json_new();
 
     /* If no ID was passed, we return a JSON array with all IDs */
     if (message_size == 0) {
-        y(array_open);
+        yyjson_mut_val *arr = yyjson_mut_arr(doc);
+        yyjson_mut_doc_set_root(doc, arr);
+
         Barconfig *current;
         TAILQ_FOREACH (current, &barconfigs, configs) {
-            ystr(current->id);
+            yyjson_mut_arr_add_str(doc, arr, current->id);
         }
-        y(array_close);
 
-        const unsigned char *payload;
-        ylength length;
-        y(get_buf, &payload, &length);
+        size_t length;
+        char *payload = json_write(doc, &length);
 
-        ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, payload);
-        y(free);
+        ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, (const uint8_t *)payload);
+        free(payload);
+        yyjson_mut_doc_free(doc);
         return;
     }
 
@@ -1161,22 +1025,20 @@ IPC_HANDLER(get_bar_config) {
     if (!config) {
         /* If we did not find a config for the given ID, the reply will contain
          * a null 'id' field. */
-        y(map_open);
-
-        ystr("id");
-        y(null);
-
-        y(map_close);
+        yyjson_mut_val *obj = yyjson_mut_obj(doc);
+        yyjson_mut_doc_set_root(doc, obj);
+        yyjson_mut_obj_add_null(doc, obj, "id");
     } else {
-        dump_bar_config(gen, config);
+        yyjson_mut_val *bar_obj = dump_bar_config(doc, config);
+        yyjson_mut_doc_set_root(doc, bar_obj);
     }
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, payload);
-    y(free);
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, (const uint8_t *)payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -1184,48 +1046,21 @@ IPC_HANDLER(get_bar_config) {
  *
  */
 IPC_HANDLER(get_binding_modes) {
-    yajl_gen gen = ygenalloc();
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *arr = yyjson_mut_arr(doc);
+    yyjson_mut_doc_set_root(doc, arr);
 
-    y(array_open);
     struct Mode *mode;
     SLIST_FOREACH (mode, &modes, modes) {
-        ystr(mode->name);
+        yyjson_mut_arr_add_str(doc, arr, mode->name);
     }
-    y(array_close);
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_BINDING_MODES, payload);
-    y(free);
-}
-
-/*
- * Callback for the YAJL parser (will be called when a string is parsed).
- *
- */
-static int add_subscription(void *extra, const unsigned char *s,
-                            ylength len) {
-    ipc_client *client = extra;
-
-    DLOG("should add subscription to extra %p, sub %.*s\n", client, (int)len, s);
-    int event = client->num_events;
-
-    client->num_events++;
-    client->events = srealloc(client->events, client->num_events * sizeof(char *));
-    /* We copy the string because it is not null-terminated and strndup()
-     * is missing on some BSD systems */
-    client->events[event] = scalloc(len + 1, 1);
-    memcpy(client->events[event], s, len);
-
-    DLOG("client is now subscribed to:\n");
-    for (int i = 0; i < client->num_events; i++) {
-        DLOG("event %s\n", client->events[i]);
-    }
-    DLOG("(done)\n");
-
-    return 1;
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_BINDING_MODES, (const uint8_t *)payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -1234,24 +1069,49 @@ static int add_subscription(void *extra, const unsigned char *s,
  *
  */
 IPC_HANDLER(subscribe) {
-    /* Setup the JSON parser */
-    static yajl_callbacks callbacks = {
-        .yajl_string = add_subscription,
-    };
-
-    const yajl_handle p = yalloc(&callbacks, client);
-    const yajl_status stat = yajl_parse(p, message, message_size);
-    if (stat != yajl_status_ok) {
-        unsigned char *err = yajl_get_error(p, true, message, message_size);
-        ELOG("YAJL parse error: %s\n", err);
-        yajl_free_error(p, err);
-
+    yyjson_read_err err;
+    yyjson_doc *req_doc = yyjson_read_opts((char *)message, message_size, 0, NULL, &err);
+    if (!req_doc) {
+        ELOG("JSON parse error for subscribe: %s (at position %zu)\n", err.msg, err.pos);
         const char *reply = "{\"success\":false}";
         ipc_send_client_message(client, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
-        yajl_free(p);
         return;
     }
-    yajl_free(p);
+
+    yyjson_val *root = yyjson_doc_get_root(req_doc);
+    if (!yyjson_is_arr(root)) {
+        yyjson_doc_free(req_doc);
+        const char *reply = "{\"success\":false}";
+        ipc_send_client_message(client, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
+        return;
+    }
+
+    size_t idx, max;
+    yyjson_val *val;
+    yyjson_arr_foreach(root, idx, max, val) {
+        if (!yyjson_is_str(val)) {
+            continue;
+        }
+        const char *event_str = yyjson_get_str(val);
+        size_t event_len = yyjson_get_len(val);
+
+        DLOG("should add subscription to client %p, sub %.*s\n", client, (int)event_len, event_str);
+        int event = client->num_events;
+
+        client->num_events++;
+        client->events = srealloc(client->events, client->num_events * sizeof(char *));
+        client->events[event] = scalloc(event_len + 1, 1);
+        memcpy(client->events[event], event_str, event_len);
+    }
+
+    yyjson_doc_free(req_doc);
+
+    DLOG("client is now subscribed to:\n");
+    for (int i = 0; i < client->num_events; i++) {
+        DLOG("event %s\n", client->events[i]);
+    }
+    DLOG("(done)\n");
+
     const char *reply = "{\"success\":true}";
     ipc_send_client_message(client, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
 
@@ -1271,44 +1131,37 @@ IPC_HANDLER(subscribe) {
     }
 
     client->first_tick_sent = true;
-    const char *payload = "{\"first\":true,\"payload\":\"\"}";
-    ipc_send_client_message(client, strlen(payload), I3_IPC_EVENT_TICK, (const uint8_t *)payload);
+    const char *tick_payload = "{\"first\":true,\"payload\":\"\"}";
+    ipc_send_client_message(client, strlen(tick_payload), I3_IPC_EVENT_TICK, (const uint8_t *)tick_payload);
 }
 
 /*
  * Returns the raw last loaded i3 configuration file contents.
  */
 IPC_HANDLER(get_config) {
-    yajl_gen gen = ygenalloc();
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, obj);
 
-    y(map_open);
-
-    ystr("config");
     IncludedFile *file = TAILQ_FIRST(&included_files);
-    ystr(file->raw_contents);
+    yyjson_mut_obj_add_str(doc, obj, "config", file->raw_contents);
 
-    ystr("included_configs");
-    y(array_open);
+    yyjson_mut_val *included_arr = yyjson_mut_arr(doc);
     TAILQ_FOREACH (file, &included_files, files) {
-        y(map_open);
-        ystr("path");
-        ystr(file->path);
-        ystr("raw_contents");
-        ystr(file->raw_contents);
-        ystr("variable_replaced_contents");
-        ystr(file->variable_replaced_contents);
-        y(map_close);
+        yyjson_mut_val *file_obj = yyjson_mut_obj(doc);
+        yyjson_mut_obj_add_str(doc, file_obj, "path", file->path);
+        yyjson_mut_obj_add_str(doc, file_obj, "raw_contents", file->raw_contents);
+        yyjson_mut_obj_add_str(doc, file_obj, "variable_replaced_contents", file->variable_replaced_contents);
+        yyjson_mut_arr_add_val(included_arr, file_obj);
     }
-    y(array_close);
+    yyjson_mut_obj_add_val(doc, obj, "included_configs", included_arr);
 
-    y(map_close);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
-
-    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_CONFIG, payload);
-    y(free);
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_CONFIG, (const uint8_t *)payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -1316,104 +1169,76 @@ IPC_HANDLER(get_config) {
  * synchronization point in event-related tests.
  */
 IPC_HANDLER(send_tick) {
-    yajl_gen gen = ygenalloc();
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, obj);
 
-    y(map_open);
+    yyjson_mut_obj_add_bool(doc, obj, "first", false);
+    yyjson_mut_obj_add_strn(doc, obj, "payload", (const char *)message, message_size);
 
-    ystr("first");
-    y(bool, false);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    ystr("payload");
-    yajl_gen_string(gen, (unsigned char *)message, message_size);
-
-    y(map_close);
-
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
-
-    ipc_send_event("tick", I3_IPC_EVENT_TICK, (const char *)payload);
-    y(free);
+    ipc_send_event("tick", I3_IPC_EVENT_TICK, payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 
     const char *reply = "{\"success\":true}";
     ipc_send_client_message(client, strlen(reply), I3_IPC_REPLY_TYPE_TICK, (const uint8_t *)reply);
     DLOG("Sent tick event\n");
 }
 
-struct sync_state {
-    char *last_key;
-    uint32_t rnd;
-    xcb_window_t window;
-};
-
-static int _sync_json_key(void *extra, const unsigned char *val, size_t len) {
-    struct sync_state *state = extra;
-    FREE(state->last_key);
-    state->last_key = scalloc(len + 1, 1);
-    memcpy(state->last_key, val, len);
-    return 1;
-}
-
-static int _sync_json_int(void *extra, long long val) {
-    struct sync_state *state = extra;
-    if (strcasecmp(state->last_key, "rnd") == 0) {
-        state->rnd = val;
-    } else if (strcasecmp(state->last_key, "window") == 0) {
-        state->window = (xcb_window_t)val;
-    }
-    return 1;
-}
-
 IPC_HANDLER(sync) {
-    /* Setup the JSON parser */
-    static yajl_callbacks callbacks = {
-        .yajl_map_key = _sync_json_key,
-        .yajl_integer = _sync_json_int,
-    };
-
-    struct sync_state state = {0};
-    yajl_handle p = yalloc(&callbacks, &state);
-    yajl_status stat = yajl_parse(p, message, message_size);
-    FREE(state.last_key);
-    if (stat != yajl_status_ok) {
-        unsigned char *err = yajl_get_error(p, true, message, message_size);
-        ELOG("YAJL parse error: %s\n", err);
-        yajl_free_error(p, err);
-
+    yyjson_read_err err;
+    yyjson_doc *req_doc = yyjson_read_opts((char *)message, message_size, 0, NULL, &err);
+    if (!req_doc) {
+        ELOG("JSON parse error for sync: %s (at position %zu)\n", err.msg, err.pos);
         const char *reply = "{\"success\":false}";
         ipc_send_client_message(client, strlen(reply), I3_IPC_REPLY_TYPE_SYNC, (const uint8_t *)reply);
-        yajl_free(p);
         return;
     }
-    yajl_free(p);
 
-    DLOG("received IPC sync request (rnd = %d, window = 0x%08x)\n", state.rnd, state.window);
-    sync_respond(state.window, state.rnd);
+    yyjson_val *root = yyjson_doc_get_root(req_doc);
+    uint32_t rnd = 0;
+    xcb_window_t window = 0;
+
+    if (yyjson_is_obj(root)) {
+        yyjson_val *rnd_val = yyjson_obj_get(root, "rnd");
+        if (rnd_val && yyjson_is_int(rnd_val)) {
+            rnd = yyjson_get_int(rnd_val);
+        }
+        yyjson_val *window_val = yyjson_obj_get(root, "window");
+        if (window_val && yyjson_is_int(window_val)) {
+            window = (xcb_window_t)yyjson_get_int(window_val);
+        }
+    }
+
+    yyjson_doc_free(req_doc);
+
+    DLOG("received IPC sync request (rnd = %d, window = 0x%08x)\n", rnd, window);
+    sync_respond(window, rnd);
     const char *reply = "{\"success\":true}";
     ipc_send_client_message(client, strlen(reply), I3_IPC_REPLY_TYPE_SYNC, (const uint8_t *)reply);
 }
 
 IPC_HANDLER(get_binding_state) {
-    yajl_gen gen = ygenalloc();
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, obj);
 
-    y(map_open);
+    yyjson_mut_obj_add_str(doc, obj, "name", current_binding_mode);
 
-    ystr("name");
-    ystr(current_binding_mode);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    y(map_close);
-
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
-
-    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_GET_BINDING_STATE, payload);
-    y(free);
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_GET_BINDING_STATE, (const uint8_t *)payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[13] = {
+static handler_t handlers[13] = {
     handle_run_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -1433,98 +1258,53 @@ handler_t handlers[13] = {
  * Handler for activity on a client connection, receives a message from a
  * client.
  *
- * For now, the maximum message size is 2048. I’m not sure for what the
- * IPC interface will be used in the future, thus I’m not implementing a
- * mechanism for arbitrarily long messages, as it seems like overkill
- * at the moment.
- *
  */
-static void ipc_receive_message(EV_P_ ev_io *w, int revents) {
+static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
     uint32_t message_type;
     uint32_t message_length;
     uint8_t *message = NULL;
-    ipc_client *client = w->data;
+    ipc_client *client = (ipc_client *)w->data;
     assert(client->fd == w->fd);
 
-    int ret = ipc_recv_message(w->fd, &message_type, &message_length, &message);
+    const int ret = ipc_recv_message(client->fd, &message_type, &message_length, &message);
     /* EOF or other error */
     if (ret < 0) {
         /* Was this a spurious read? See ev(3) */
         if (ret == -1 && errno == EAGAIN) {
-            FREE(message);
+            free(message);
             return;
         }
 
-        /* If not, there was some kind of error. We don’t bother and close the
-         * connection. Delete the client from the list of clients. */
+        /* If not, there was some kind of error. We don't bother and
+         * simply close the connection. */
         free_ipc_client(client, -1);
-        FREE(message);
+        free(message);
         return;
     }
 
     if (message_type >= (sizeof(handlers) / sizeof(handler_t))) {
         DLOG("Unhandled message type: %d\n", message_type);
     } else {
-        handler_t h = handlers[message_type];
-        h(client, message, 0, message_length, message_type);
+        handler_t handler = handlers[message_type];
+        handler(client, message, 0, message_length, message_type);
     }
 
-    FREE(message);
+    free(message);
 }
 
 static void ipc_client_timeout(EV_P_ ev_timer *w, int revents) {
-    /* No need to be polite and check for writeability, the other callback would
-     * have been called by now. */
-    ipc_client *client = w->data;
+    /* No need to be polite and check the queue, we can just free_ipc_client()
+     * since we have kill_timeout being too high. */
+    ipc_client *client = (ipc_client *)w->data;
 
-    char *cmdline = NULL;
-#if defined(__linux__) && defined(SO_PEERCRED)
-    struct ucred peercred;
-    socklen_t so_len = sizeof(peercred);
-    if (getsockopt(client->fd, SOL_SOCKET, SO_PEERCRED, &peercred, &so_len) != 0) {
-        goto end;
-    }
-    char *exepath;
-    sasprintf(&exepath, "/proc/%d/cmdline", peercred.pid);
-
-    int fd = open(exepath, O_RDONLY);
-    free(exepath);
-    if (fd == -1) {
-        goto end;
-    }
-    char buf[512] = {'\0'}; /* cut off cmdline for the error message. */
-    const ssize_t n = read(fd, buf, sizeof(buf));
-    close(fd);
-    if (n < 0) {
-        goto end;
-    }
-    for (char *walk = buf; walk < buf + n - 1; walk++) {
-        if (*walk == '\0') {
-            *walk = ' ';
-        }
-    }
-    cmdline = buf;
-
-    if (cmdline) {
-        ELOG("client %p with pid %d and cmdline '%s' on fd %d timed out, killing\n", client, peercred.pid, cmdline, client->fd);
-    }
-
-end:
-#endif
-    if (!cmdline) {
-        ELOG("client %p on fd %d timed out, killing\n", client, client->fd);
-    }
-
+    ELOG("IPC client with pid %d on fd %d timed out, killing\n", client->fd, client->fd);
     free_ipc_client(client, -1);
 }
 
 static void ipc_socket_writeable_cb(EV_P_ ev_io *w, int revents) {
-    DLOG("fd %d writeable\n", w->fd);
     ipc_client *client = (ipc_client *)w->data;
+    assert(client->fd == w->fd);
 
-    /* If this callback is called then there should be a corresponding active
-     * timer. */
-    assert(client->timeout != NULL);
     ipc_push_pending(client);
 }
 
@@ -1535,83 +1315,51 @@ static void ipc_socket_writeable_cb(EV_P_ ev_io *w, int revents) {
  * the list of clients.
  *
  */
-void ipc_new_client(EV_P_ ev_io *w, int revents) {
+void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
     struct sockaddr_un peer;
     socklen_t len = sizeof(struct sockaddr_un);
-    int fd;
-    if ((fd = accept(w->fd, (struct sockaddr *)&peer, &len)) < 0) {
+    const int fd = accept(w->fd, (struct sockaddr *)&peer, &len);
+    if (fd < 0) {
         if (errno != EINTR) {
             perror("accept()");
         }
         return;
     }
 
-    /* Close this file descriptor on exec() */
-    (void)fcntl(fd, F_SETFD, FD_CLOEXEC);
-
-    ipc_new_client_on_fd(EV_A_ fd);
+    (void)ipc_new_client_on_fd(EV_A_ fd);
 }
 
-/*
- * ipc_new_client_on_fd() only sets up the event handler
- * for activity on the new connection and inserts the file descriptor into
- * the list of clients.
- *
- * This variant is useful for the inherited IPC connection when restarting.
- *
- */
 ipc_client *ipc_new_client_on_fd(EV_P_ int fd) {
-    set_nonblock(fd);
+    /* Set non-blocking */
+    const int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) {
+        ELOG("Could not set O_NONBLOCK on fd %d\n", fd);
+        close(fd);
+        return NULL;
+    }
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+        ELOG("Could not set O_NONBLOCK on fd %d\n", fd);
+        close(fd);
+        return NULL;
+    }
 
     ipc_client *client = scalloc(1, sizeof(ipc_client));
     client->fd = fd;
 
-    client->read_callback = scalloc(1, sizeof(ev_io));
+    client->read_callback = scalloc(1, sizeof(struct ev_io));
     client->read_callback->data = client;
     ev_io_init(client->read_callback, ipc_receive_message, fd, EV_READ);
     ev_io_start(EV_A_ client->read_callback);
 
-    client->write_callback = scalloc(1, sizeof(ev_io));
+    client->write_callback = scalloc(1, sizeof(struct ev_io));
     client->write_callback->data = client;
     ev_io_init(client->write_callback, ipc_socket_writeable_cb, fd, EV_WRITE);
 
     DLOG("IPC: new client connected on fd %d\n", fd);
+
     TAILQ_INSERT_TAIL(&all_clients, client, clients);
+
     return client;
-}
-
-/*
- * Generates a json workspace event. Returns a dynamically allocated yajl
- * generator. Free with yajl_gen_free().
- */
-yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old) {
-    setlocale(LC_NUMERIC, "C");
-    yajl_gen gen = ygenalloc();
-
-    y(map_open);
-
-    ystr("change");
-    ystr(change);
-
-    ystr("current");
-    if (current == NULL) {
-        y(null);
-    } else {
-        dump_node(gen, current, false);
-    }
-
-    ystr("old");
-    if (old == NULL) {
-        y(null);
-    } else {
-        dump_node(gen, old, false);
-    }
-
-    y(map_close);
-
-    setlocale(LC_NUMERIC, "");
-
-    return gen;
 }
 
 /*
@@ -1620,15 +1368,31 @@ yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old)
  * previously focused workspace in "old".
  */
 void ipc_send_workspace_event(const char *change, Con *current, Con *old) {
-    yajl_gen gen = ipc_marshal_workspace_event(change, current, old);
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, obj);
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
+    yyjson_mut_obj_add_str(doc, obj, "change", change);
 
-    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
+    if (current == NULL) {
+        yyjson_mut_obj_add_null(doc, obj, "current");
+    } else {
+        yyjson_mut_obj_add_val(doc, obj, "current", dump_node(doc, current, false));
+    }
 
-    y(free);
+    if (old == NULL) {
+        yyjson_mut_obj_add_null(doc, obj, "old");
+    } else {
+        yyjson_mut_obj_add_val(doc, obj, "old", dump_node(doc, old, false));
+    }
+
+    size_t length;
+    char *payload = json_write(doc, &length);
+
+    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, payload);
+
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -1639,26 +1403,19 @@ void ipc_send_window_event(const char *property, Con *con) {
     DLOG("Issue IPC window %s event (con = %p, window = 0x%08x)\n",
          property, con, (con->window ? con->window->id : XCB_WINDOW_NONE));
 
-    setlocale(LC_NUMERIC, "C");
-    yajl_gen gen = ygenalloc();
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, obj);
 
-    y(map_open);
+    yyjson_mut_obj_add_str(doc, obj, "change", property);
+    yyjson_mut_obj_add_val(doc, obj, "container", dump_node(doc, con, false));
 
-    ystr("change");
-    ystr(property);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    ystr("container");
-    dump_node(gen, con, false);
-
-    y(map_close);
-
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
-
-    ipc_send_event("window", I3_IPC_EVENT_WINDOW, (const char *)payload);
-    y(free);
-    setlocale(LC_NUMERIC, "");
+    ipc_send_event("window", I3_IPC_EVENT_WINDOW, payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -1666,18 +1423,16 @@ void ipc_send_window_event(const char *property, Con *con) {
  */
 void ipc_send_barconfig_update_event(Barconfig *barconfig) {
     DLOG("Issue barconfig_update event for id = %s\n", barconfig->id);
-    setlocale(LC_NUMERIC, "C");
-    yajl_gen gen = ygenalloc();
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *bar_obj = dump_bar_config(doc, barconfig);
+    yyjson_mut_doc_set_root(doc, bar_obj);
 
-    dump_bar_config(gen, barconfig);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
-
-    ipc_send_event("barconfig_update", I3_IPC_EVENT_BARCONFIG_UPDATE, (const char *)payload);
-    y(free);
-    setlocale(LC_NUMERIC, "");
+    ipc_send_event("barconfig_update", I3_IPC_EVENT_BARCONFIG_UPDATE, payload);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*
@@ -1686,35 +1441,27 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig) {
 void ipc_send_binding_event(const char *event_type, Binding *bind, const char *modename) {
     DLOG("Issue IPC binding %s event (sym = %s, code = %d)\n", event_type, bind->symbol, bind->keycode);
 
-    setlocale(LC_NUMERIC, "C");
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, obj);
 
-    yajl_gen gen = ygenalloc();
+    yyjson_mut_obj_add_str(doc, obj, "change", event_type);
 
-    y(map_open);
-
-    ystr("change");
-    ystr(event_type);
-
-    ystr("mode");
     if (modename == NULL) {
-        ystr("default");
+        yyjson_mut_obj_add_str(doc, obj, "mode", "default");
     } else {
-        ystr(modename);
+        yyjson_mut_obj_add_str(doc, obj, "mode", modename);
     }
 
-    ystr("binding");
-    dump_binding(gen, bind);
+    yyjson_mut_obj_add_val(doc, obj, "binding", dump_binding(doc, bind));
 
-    y(map_close);
+    size_t length;
+    char *payload = json_write(doc, &length);
 
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
+    ipc_send_event("binding", I3_IPC_EVENT_BINDING, payload);
 
-    ipc_send_event("binding", I3_IPC_EVENT_BINDING, (const char *)payload);
-
-    y(free);
-    setlocale(LC_NUMERIC, "");
+    free(payload);
+    yyjson_mut_doc_free(doc);
 }
 
 /*

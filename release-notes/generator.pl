@@ -30,9 +30,9 @@ my $print_urls = 0;
 my $result = GetOptions('print-urls' => \$print_urls);
 
 sub get_number {
-  my $s = shift;
-  return $1 if $s =~ m/^(\d+)/;
-  return -1;
+    my $s = shift;
+    return $1 if $s =~ m/^(\d+)/;
+    return -1;
 }
 
 sub read_changefiles {
@@ -55,8 +55,7 @@ sub read_changefiles {
         my @lines = <$in>;
         close $in or die "can't close $filename: $!";
 
-        my $content = trim(join("\n  ", map { trim($_) } @lines));
-        die "$filename can't be empty" unless length($content) > 0;
+        die "$filename can't be empty" unless @lines > 0;
 
         my $url = '';
         if ($print_urls) {
@@ -70,7 +69,12 @@ sub read_changefiles {
             $url = $url . "\n";
         }
 
-        $s = $s . '  • ' . $content . "\n" . $url;
+        # Each non-empty line becomes a separate bullet point
+        for my $line (@lines) {
+            my $content = trim($line);
+            next unless length($content) > 0;
+            $s = $s . '  • ' . $content . "\n" . $url;
+        }
     }
     return $s;
 }

@@ -11,7 +11,7 @@
  * libi3/ipc_recv_message.c) serves as an example for how to send your own
  * messages to i3.
  *
- * Additionally, it’s even useful sometimes :-).
+ * Additionally, it's even useful sometimes :-).
  *
  */
 #include "libi3.h"
@@ -26,7 +26,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <yajl/yajl_parse.h>
+#include <yyjson.h>
 
 /*
  * Having verboselog() and errorlog() is necessary when using libi3.
@@ -48,104 +48,79 @@ void errorlog(char *fmt, ...) {
     va_end(args);
 }
 
-static char *last_key = NULL;
-
-typedef struct reply_t {
-    bool success;
-    char *error;
-    char *input;
-    char *errorposition;
-} reply_t;
-
 static int exit_code = 0;
-static reply_t last_reply;
 
-static int reply_boolean_cb(void *params, int val) {
-    if (strcmp(last_key, "success") == 0) {
-        last_reply.success = val;
+/*
+ * Parses the reply to a RUN_COMMAND message and prints errors if any.
+ * Returns true on success, false on JSON parse error.
+ */
+static bool parse_reply(const char *reply, size_t reply_length) {
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)reply, reply_length, 0, NULL, &err);
+    if (!doc) {
+        fprintf(stderr, "JSON parse error: %s (at position %zu)\n", err.msg, err.pos);
+        return false;
     }
-    return 1;
-}
 
-static int reply_string_cb(void *params, const unsigned char *val, size_t len) {
-    char *str = sstrndup((const char *)val, len);
+    yyjson_val *root = yyjson_doc_get_root(doc);
 
-    if (strcmp(last_key, "error") == 0) {
-        last_reply.error = str;
-    } else if (strcmp(last_key, "input") == 0) {
-        last_reply.input = str;
-    } else if (strcmp(last_key, "errorposition") == 0) {
-        last_reply.errorposition = str;
-    } else {
-        free(str);
-    }
-    return 1;
-}
+    /* The reply is an array of results, one per command */
+    if (yyjson_is_arr(root)) {
+        size_t idx, max;
+        yyjson_val *result;
+        yyjson_arr_foreach(root, idx, max, result) {
+            if (!yyjson_is_obj(result)) {
+                continue;
+            }
 
-static int reply_start_map_cb(void *params) {
-    return 1;
-}
+            const bool success = yyjson_get_bool(yyjson_obj_get(result, "success"));
+            if (!success) {
+                yyjson_val *input_val = yyjson_obj_get(result, "input");
+                yyjson_val *errorposition_val = yyjson_obj_get(result, "errorposition");
+                yyjson_val *error_val = yyjson_obj_get(result, "error");
 
-static int reply_end_map_cb(void *params) {
-    if (!last_reply.success) {
-        if (last_reply.input) {
-            fprintf(stderr, "ERROR: Your command: %s\n", last_reply.input);
-            fprintf(stderr, "ERROR:               %s\n", last_reply.errorposition);
+                if (input_val && yyjson_is_str(input_val)) {
+                    fprintf(stderr, "ERROR: Your command: %s\n", unsafe_yyjson_get_str(input_val));
+                }
+                if (errorposition_val && yyjson_is_str(errorposition_val)) {
+                    fprintf(stderr, "ERROR:               %s\n", unsafe_yyjson_get_str(errorposition_val));
+                }
+                if (error_val && yyjson_is_str(error_val)) {
+                    fprintf(stderr, "ERROR: %s\n", unsafe_yyjson_get_str(error_val));
+                }
+                exit_code = 2;
+            }
         }
-        fprintf(stderr, "ERROR: %s\n", last_reply.error);
-        exit_code = 2;
     }
-    return 1;
+
+    yyjson_doc_free(doc);
+    return true;
 }
 
-static int reply_map_key_cb(void *params, const unsigned char *keyVal, size_t keyLen) {
-    free(last_key);
-    last_key = sstrndup((const char *)keyVal, keyLen);
-    return 1;
-}
-
-static yajl_callbacks reply_callbacks = {
-    .yajl_boolean = reply_boolean_cb,
-    .yajl_string = reply_string_cb,
-    .yajl_start_map = reply_start_map_cb,
-    .yajl_map_key = reply_map_key_cb,
-    .yajl_end_map = reply_end_map_cb,
-};
-
-/*******************************************************************************
- * Config reply callbacks
- *******************************************************************************/
-
-static char *config_last_key = NULL;
-
-static int config_string_cb(void *params, const unsigned char *val, size_t len) {
-    char *str = sstrndup((const char *)val, len);
-    if (strcmp(config_last_key, "config") == 0) {
-        fprintf(stdout, "%s", str);
+/*
+ * Parses a GET_CONFIG reply and prints the config to stdout.
+ * Returns true on success, false on JSON parse error.
+ */
+static bool parse_config_reply(const char *reply, size_t reply_length) {
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)reply, reply_length, 0, NULL, &err);
+    if (!doc) {
+        fprintf(stderr, "JSON parse error: %s (at position %zu)\n", err.msg, err.pos);
+        return false;
     }
-    free(str);
-    return 1;
-}
 
-static int config_start_map_cb(void *params) {
-    return 1;
-}
+    yyjson_val *root = yyjson_doc_get_root(doc);
 
-static int config_end_map_cb(void *params) {
-    return 1;
-}
+    if (yyjson_is_obj(root)) {
+        yyjson_val *config_val = yyjson_obj_get(root, "config");
+        if (config_val && yyjson_is_str(config_val)) {
+            fprintf(stdout, "%s", unsafe_yyjson_get_str(config_val));
+        }
+    }
 
-static int config_map_key_cb(void *params, const unsigned char *keyVal, size_t keyLen) {
-    config_last_key = sstrndup((const char *)keyVal, keyLen);
-    return 1;
+    yyjson_doc_free(doc);
+    return true;
 }
-
-static yajl_callbacks config_callbacks = {
-    .yajl_string = config_string_cb,
-    .yajl_start_map = config_start_map_cb,
-    .yajl_map_key = config_map_key_cb,
-    .yajl_end_map = config_end_map_cb,
-};
 
 int main(int argc, char *argv[]) {
     char *socket_path = NULL;
@@ -228,7 +203,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* Use all arguments, separated by whitespace, as payload.
-     * This way, you don’t have to do i3-msg 'mark foo', you can use
+     * This way, you don't have to do i3-msg 'mark foo', you can use
      * i3-msg mark foo */
     while (optind < argc) {
         if (!payload) {
@@ -269,16 +244,8 @@ int main(int argc, char *argv[]) {
      * If not, nicely format the error message. */
     if (reply_type == I3_IPC_REPLY_TYPE_COMMAND) {
         if (!raw_reply) {
-            yajl_handle handle = yajl_alloc(&reply_callbacks, NULL, NULL);
-            yajl_status state = yajl_parse(handle, (const unsigned char *)reply, reply_length);
-            yajl_free(handle);
-
-            switch (state) {
-                case yajl_status_ok:
-                    break;
-                case yajl_status_client_canceled:
-                case yajl_status_error:
-                    errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
+            if (!parse_reply((const char *)reply, reply_length)) {
+                errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
             }
         }
 
@@ -289,16 +256,8 @@ int main(int argc, char *argv[]) {
         if (raw_reply) {
             printf("%.*s\n", reply_length, reply);
         } else {
-            yajl_handle handle = yajl_alloc(&config_callbacks, NULL, NULL);
-            yajl_status state = yajl_parse(handle, (const unsigned char *)reply, reply_length);
-            yajl_free(handle);
-
-            switch (state) {
-                case yajl_status_ok:
-                    break;
-                case yajl_status_client_canceled:
-                case yajl_status_error:
-                    errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
+            if (!parse_config_reply((const char *)reply, reply_length)) {
+                errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
             }
         }
     } else if (reply_type == I3_IPC_REPLY_TYPE_SUBSCRIBE) {

@@ -94,9 +94,6 @@ static void sig_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
 int main(int argc, char **argv) {
     char *socket_path = NULL;
 
-    /* Initialize the standard config to use 0 as default */
-    memset(&config, '\0', sizeof(config_t));
-
     static struct option long_opt[] = {
         {"socket", required_argument, 0, 's'},
         {"bar_id", required_argument, 0, 'b'},

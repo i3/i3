@@ -318,12 +318,12 @@ xcb_util_wm_dep = dependency('xcb-icccm', method: 'pkg-config')
 xcb_util_xrm_dep = dependency('xcb-xrm', method: 'pkg-config')
 xkbcommon_dep = dependency('xkbcommon', method: 'pkg-config')
 xkbcommon_x11_dep = dependency('xkbcommon-x11', method: 'pkg-config')
-yajl_dep = dependency('yajl', method: 'pkg-config')
 libpcre_dep = dependency('libpcre2-8', version: '>=10', method: 'pkg-config')
 cairo_dep = dependency('cairo', version: '>=1.14.4', method: 'pkg-config')
 pangocairo_dep = dependency('pangocairo', method: 'pkg-config')
 glib_dep = dependency('glib-2.0', method: 'pkg-config')
 gobject_dep = dependency('gobject-2.0', method: 'pkg-config')
+yyjson_dep = dependency('yyjson', version: '>=0.7.0', method: 'pkg-config')
 
 ev_dep = cc.find_library('ev')
 
@@ -348,6 +348,7 @@ libi3srcs = [
   'libi3/ipc_recv_message.c',
   'libi3/ipc_send_message.c',
   'libi3/is_debug_build.c',
+  'libi3/json_utils.c',
   'libi3/path_exists.c',
   'libi3/resolve_tilde.c',
   'libi3/root_atom_contents.c',
@@ -478,7 +479,6 @@ common_deps = [
   xcb_util_xrm_dep,
   xkbcommon_dep,
   xkbcommon_x11_dep,
-  yajl_dep,
   libpcre_dep,
   cairo_dep,
   pangocairo_dep,
@@ -486,6 +486,7 @@ common_deps = [
   gobject_dep,
   ev_dep,
   config_h,
+  yyjson_dep,
 ]
 
 executable(

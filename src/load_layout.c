@@ -10,9 +10,7 @@
  */
 #include "all.h"
 
-#include <locale.h>
-
-#include <yajl/yajl_parse.h>
+#include <yyjson.h>
 
 /* TODO: refactor the whole parsing thing */
 
@@ -52,7 +50,7 @@ struct focus_mapping {
 static TAILQ_HEAD(focus_mappings_head, focus_mapping) focus_mappings =
     TAILQ_HEAD_INITIALIZER(focus_mappings);
 
-static int json_start_map(void *ctx) {
+static int json_start_map(void) {
     LOG("start of map, last_key = %s\n", last_key);
     if (parsing_swallows) {
         LOG("creating new swallow\n");
@@ -89,7 +87,7 @@ static int json_start_map(void *ctx) {
     return 1;
 }
 
-static int json_end_map(void *ctx) {
+static int json_end_map(void) {
     LOG("end of map\n");
     if (!parsing_swallows &&
         !parsing_rect &&
@@ -214,7 +212,7 @@ static int json_end_map(void *ctx) {
     return 1;
 }
 
-static int json_end_array(void *ctx) {
+static int json_end_array(void) {
     LOG("end of array\n");
     if (!parsing_swallows && !parsing_focus && !parsing_marks) {
         con_fix_percent(json_node);
@@ -253,7 +251,7 @@ static int json_end_array(void *ctx) {
     return 1;
 }
 
-static int json_key(void *ctx, const unsigned char *val, size_t len) {
+static int json_key(const char *val, size_t len) {
     LOG("key: %.*s\n", (int)len, val);
     FREE(last_key);
     last_key = scalloc(len + 1, 1);
@@ -298,7 +296,7 @@ static int json_key(void *ctx, const unsigned char *val, size_t len) {
     return 1;
 }
 
-static int json_string(void *ctx, const unsigned char *val, size_t len) {
+static int json_string(const char *val, size_t len) {
     LOG("string: %.*s for key %s\n", (int)len, val, last_key);
     if (parsing_swallows) {
         char *sval;
@@ -478,7 +476,7 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
     return 1;
 }
 
-static int json_int(void *ctx, long long val) {
+static int json_int(long long val) {
     LOG("int %lld for key %s\n", val, last_key);
     /* For backwards compatibility with i3 < 4.8 */
     if (strcasecmp(last_key, "type") == 0) {
@@ -569,7 +567,7 @@ static int json_int(void *ctx, long long val) {
     return 1;
 }
 
-static int json_bool(void *ctx, int val) {
+static int json_bool(int val) {
     LOG("bool %d for key %s\n", val, last_key);
     if (strcasecmp(last_key, "focused") == 0 && val) {
         to_focus = json_node;
@@ -589,7 +587,7 @@ static int json_bool(void *ctx, int val) {
     return 1;
 }
 
-static int json_double(void *ctx, double val) {
+static int json_double(double val) {
     LOG("double %f for key %s\n", val, last_key);
     if (strcasecmp(last_key, "percent") == 0) {
         json_node->percent = val;
@@ -597,56 +595,22 @@ static int json_double(void *ctx, double val) {
     return 1;
 }
 
-static json_content_t content_result;
-static int content_level;
-
-static int json_determine_content_deeper(void *ctx) {
-    content_level++;
-    return 1;
-}
-
-static int json_determine_content_shallower(void *ctx) {
-    content_level--;
-    return 1;
-}
-
-static int json_determine_content_string(void *ctx, const unsigned char *val, size_t len) {
-    if (strcasecmp(last_key, "type") != 0 || content_level > 1) {
-        return 1;
-    }
-
-    DLOG("string = %.*s, last_key = %s\n", (int)len, val, last_key);
-    if (strncasecmp((const char *)val, "workspace", len) == 0) {
-        content_result = JSON_CONTENT_WORKSPACE;
-    }
-    return 0;
-}
-
 /*
- * Returns true if the provided JSON could be parsed by yajl.
+ * Returns true if the provided JSON could be parsed successfully.
  *
  */
 bool json_validate(const char *buf, const size_t len) {
-    bool valid = true;
-    yajl_handle hand = yajl_alloc(NULL, NULL, NULL);
-    /* Allowing comments allows for more user-friendly layout files. */
-    yajl_config(hand, yajl_allow_comments, true);
-    /* Allow multiple values, i.e. multiple nodes to attach */
-    yajl_config(hand, yajl_allow_multiple_values, true);
+    yyjson_read_err err;
+    DLOG("validating: %zu %.*s\n", len, (int)len, buf);
+    yyjson_doc *doc = yyjson_read_opts((char *)buf, len, YYJSON_READ_ALLOW_COMMENTS | YYJSON_READ_ALLOW_TRAILING_COMMAS | YYJSON_READ_STOP_WHEN_DONE, NULL, &err);
 
-    setlocale(LC_NUMERIC, "C");
-    if (yajl_parse(hand, (const unsigned char *)buf, len) != yajl_status_ok) {
-        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, len);
-        ELOG("JSON parsing error: %s\n", str);
-        yajl_free_error(hand, str);
-        valid = false;
+    if (!doc) {
+        ELOG("JSON parsing error: %s\n", err.msg);
+        return false;
     }
-    setlocale(LC_NUMERIC, "");
 
-    yajl_complete_parse(hand);
-    yajl_free(hand);
-
-    return valid;
+    yyjson_doc_free(doc);
+    return true;
 }
 
 /* Parses the given JSON file until it encounters the first “type” property to
@@ -654,65 +618,107 @@ bool json_validate(const char *buf, const size_t len) {
  * is important to know when deciding where (and how) to append the contents.
  * */
 json_content_t json_determine_content(const char *buf, const size_t len) {
-    // We default to JSON_CONTENT_CON because it is legal to not include
-    // “"type": "con"” in the JSON files for better readability.
-    content_result = JSON_CONTENT_CON;
-    content_level = 0;
-    static yajl_callbacks callbacks = {
-        .yajl_string = json_determine_content_string,
-        .yajl_map_key = json_key,
-        .yajl_start_array = json_determine_content_deeper,
-        .yajl_start_map = json_determine_content_deeper,
-        .yajl_end_map = json_determine_content_shallower,
-        .yajl_end_array = json_determine_content_shallower,
-    };
-    yajl_handle hand = yajl_alloc(&callbacks, NULL, NULL);
-    /* Allowing comments allows for more user-friendly layout files. */
-    yajl_config(hand, yajl_allow_comments, true);
-    /* Allow multiple values, i.e. multiple nodes to attach */
-    yajl_config(hand, yajl_allow_multiple_values, true);
-    setlocale(LC_NUMERIC, "C");
-    const yajl_status stat = yajl_parse(hand, (const unsigned char *)buf, len);
-    if (stat != yajl_status_ok && stat != yajl_status_client_canceled) {
-        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, len);
-        ELOG("JSON parsing error: %s\n", str);
-        yajl_free_error(hand, str);
+    yyjson_read_err err;
+    const yyjson_read_flag flg = YYJSON_READ_ALLOW_COMMENTS | YYJSON_READ_ALLOW_TRAILING_COMMAS | YYJSON_READ_STOP_WHEN_DONE;
+    yyjson_doc *doc = yyjson_read_opts((char *)buf, len, flg, NULL, &err);
+
+    if (!doc) {
+        ELOG("JSON parsing error: %s\n", err.msg);
+        return JSON_CONTENT_CON;
     }
 
-    setlocale(LC_NUMERIC, "");
-    yajl_complete_parse(hand);
-    yajl_free(hand);
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    if (!yyjson_is_obj(root)) {
+        yyjson_doc_free(doc);
+        return JSON_CONTENT_CON;
+    }
 
-    return content_result;
+    yyjson_val *type_val = yyjson_obj_get(root, "type");
+    if (type_val && yyjson_is_str(type_val)) {
+        const char *type = unsafe_yyjson_get_str(type_val);
+        if (strcmp(type, "workspace") == 0) {
+            yyjson_doc_free(doc);
+            return JSON_CONTENT_WORKSPACE;
+        }
+    }
+
+    yyjson_doc_free(doc);
+    return JSON_CONTENT_CON;
+}
+
+static void traverse_and_invoke_callbacks(yyjson_val *node) {
+    if (!node) {
+        return;
+    }
+    if (unsafe_yyjson_is_bool(node)) {
+        json_bool(unsafe_yyjson_get_bool(node));
+    } else if (unsafe_yyjson_is_int(node)) {
+        json_int(unsafe_yyjson_get_int(node));
+    } else if (unsafe_yyjson_is_real(node)) {
+        json_double(unsafe_yyjson_get_real(node));
+    } else if (unsafe_yyjson_is_str(node)) {
+        const char *str = unsafe_yyjson_get_str(node);
+        json_string(str, unsafe_yyjson_get_len(node));
+    } else if (unsafe_yyjson_is_obj(node)) {
+        json_start_map();
+
+        yyjson_obj_iter iter;
+        yyjson_obj_iter_init(node, &iter);
+
+        yyjson_val *key;
+        while ((key = yyjson_obj_iter_next(&iter))) {
+            yyjson_val *val = yyjson_obj_iter_get_val(key);
+            const char *key_str = unsafe_yyjson_get_str(key);
+            if (key_str == NULL) {
+                continue;  // Skip invalid keys
+            }
+
+            json_key(key_str, unsafe_yyjson_get_len(key)); /* Call key callback */
+            traverse_and_invoke_callbacks(val);            /* Recurse into value */
+        }
+
+        json_end_map();
+    } else if (unsafe_yyjson_is_arr(node)) {
+        yyjson_arr_iter iter;
+        yyjson_arr_iter_init(node, &iter);
+
+        const size_t max = unsafe_yyjson_get_len(node);
+        for (size_t idx = 0; idx < max; idx++) {
+            yyjson_val *val = yyjson_arr_iter_next(&iter);
+            traverse_and_invoke_callbacks(val);  // Recurse into array element
+        }
+
+        json_end_array();
+    }
+}
+
+static char *json_parse_all(const char *js, const size_t len) {
+    char *hdr = (char *)js;
+    size_t size = len;
+    const yyjson_read_flag flg = YYJSON_READ_ALLOW_COMMENTS | YYJSON_READ_ALLOW_TRAILING_COMMAS | YYJSON_READ_STOP_WHEN_DONE;
+
+    while (size > 0) {
+        DLOG("parsing: %.*s\n", (int)size, hdr);
+        yyjson_read_err err;
+        yyjson_doc *doc = yyjson_read_opts(hdr, size, flg, NULL, &err);
+        if (!doc) {
+            if (err.msg && err.code != YYJSON_READ_ERROR_EMPTY_CONTENT) {
+                return sstrdup(err.msg);
+            }
+            return NULL;
+        }
+        yyjson_val *root = yyjson_doc_get_root(doc);
+        traverse_and_invoke_callbacks(root);
+
+        size_t new_size = yyjson_doc_get_read_size(doc);
+        size -= new_size;
+        hdr += new_size; /* move to next position */
+        yyjson_doc_free(doc);
+    }
+    return NULL;
 }
 
 void tree_append_json(Con *con, const char *buf, const size_t len, char **errormsg) {
-    static yajl_callbacks callbacks = {
-        .yajl_boolean = json_bool,
-        .yajl_integer = json_int,
-        .yajl_double = json_double,
-        .yajl_string = json_string,
-        .yajl_start_map = json_start_map,
-        .yajl_map_key = json_key,
-        .yajl_end_map = json_end_map,
-        .yajl_end_array = json_end_array,
-    };
-    yajl_handle hand = yajl_alloc(&callbacks, NULL, NULL);
-    /* Allowing comments allows for more user-friendly layout files. */
-    yajl_config(hand, yajl_allow_comments, true);
-    /* Allow multiple values, i.e. multiple nodes to attach */
-    yajl_config(hand, yajl_allow_multiple_values, true);
-    /* We don't need to validate that the input is valid UTF8 here.
-     * tree_append_json is called in two cases:
-     * 1. With the append_layout command. json_validate is called first and will
-     *    fail on invalid UTF8 characters so we don't need to recheck.
-     * 2. With an in-place restart. The rest of the codebase should be
-     *    responsible for producing valid UTF8 JSON output. If not,
-     *    tree_append_json will just preserve invalid UTF8 strings in the tree
-     *    instead of failing to parse the layout file which could lead to
-     *    problems like in #3156.
-     * Either way, disabling UTF8 validation slightly speeds up yajl. */
-    yajl_config(hand, yajl_dont_validate_strings, true);
     json_node = con;
     to_focus = NULL;
     parsing_gaps = false;
@@ -725,35 +731,26 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
     parsing_geometry = false;
     parsing_focus = false;
     parsing_marks = false;
-    setlocale(LC_NUMERIC, "C");
-    const yajl_status stat = yajl_parse(hand, (const unsigned char *)buf, len);
-    if (stat != yajl_status_ok) {
-        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, len);
-        ELOG("JSON parsing error: %s\n", str);
-        if (errormsg != NULL) {
-            *errormsg = sstrdup((const char *)str);
+
+    char *err = json_parse_all(buf, len);
+    if (err != NULL && errormsg != NULL) {
+        ELOG("JSON parsing error: %s\n", err);
+        *errormsg = err;
+    }
+    while (incomplete-- > 0) {
+        Con *parent = json_node->parent;
+        DLOG("freeing incomplete container %p\n", json_node);
+        if (json_node == to_focus) {
+            to_focus = NULL;
         }
-        yajl_free_error(hand, str);
-        while (incomplete-- > 0) {
-            Con *parent = json_node->parent;
-            DLOG("freeing incomplete container %p\n", json_node);
-            if (json_node == to_focus) {
-                to_focus = NULL;
-            }
-            con_free(json_node);
-            json_node = parent;
-        }
+        con_free(json_node);
+        json_node = parent;
     }
 
     /* In case not all containers were restored, we need to fix the
      * percentages, otherwise i3 will crash immediately when rendering the
      * next time. */
     con_fix_percent(con);
-
-    setlocale(LC_NUMERIC, "");
-    yajl_complete_parse(hand);
-    yajl_free(hand);
-
     if (to_focus) {
         con_activate(to_focus);
     }

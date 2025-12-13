@@ -12,121 +12,55 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <yajl/yajl_parse.h>
+#include <yyjson.h>
 
-/* A datatype to pass through the callbacks to save the state */
-struct mode_json_params {
-    char *cur_key;
-    char *name;
-    bool pango_markup;
-    mode *mode;
-};
-
-/*
- * Parse a string (change)
- *
- */
-static int mode_string_cb(void *params_, const unsigned char *val, size_t len) {
-    struct mode_json_params *params = (struct mode_json_params *)params_;
-
-    if (!strcmp(params->cur_key, "change")) {
-        sasprintf(&(params->name), "%.*s", (int)len, val);
-        FREE(params->cur_key);
-        return 1;
-    }
-
-    FREE(params->cur_key);
-    return 0;
-}
-
-/*
- * Parse a boolean.
- *
- */
-static int mode_boolean_cb(void *params_, int val) {
-    struct mode_json_params *params = (struct mode_json_params *)params_;
-
-    if (strcmp(params->cur_key, "pango_markup") == 0) {
-        DLOG("Setting pango_markup to %d.\n", val);
-        params->pango_markup = val;
-
-        FREE(params->cur_key);
-        return 1;
-    }
-
-    FREE(params->cur_key);
-    return 0;
-}
-
-/*
- * Parse a key.
- *
- * Essentially we just save it in the parsing state
- *
- */
-static int mode_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
-    struct mode_json_params *params = (struct mode_json_params *)params_;
-    FREE(params->cur_key);
-    sasprintf(&(params->cur_key), "%.*s", (int)keyLen, keyVal);
-    return 1;
-}
-
-static int mode_end_map_cb(void *params_) {
-    struct mode_json_params *params = (struct mode_json_params *)params_;
-
-    /* Save the name */
-    params->mode->name = i3string_from_utf8(params->name);
-    i3string_set_markup(params->mode->name, params->pango_markup);
-    /* Save its rendered width */
-    params->mode->name_width = predict_text_width(params->mode->name);
-
-    DLOG("Got mode change: %s\n", i3string_as_utf8(params->mode->name));
-    FREE(params->cur_key);
-
-    return 1;
-}
-
-/* A datastructure to pass all these callbacks to yajl */
-static yajl_callbacks mode_callbacks = {
-    .yajl_string = mode_string_cb,
-    .yajl_boolean = mode_boolean_cb,
-    .yajl_map_key = mode_map_key_cb,
-    .yajl_end_map = mode_end_map_cb,
-};
+/* Simple JSON access macros - return default if missing or wrong type */
+#define json_opt(obj, key, type, def)                                        \
+    ({                                                                       \
+        yyjson_val *_v = yyjson_obj_get(obj, key);                           \
+        (_v && yyjson_is_##type(_v)) ? unsafe_yyjson_get_##type(_v) : (def); \
+    })
 
 /*
  * Parse the received JSON string
  *
  */
 void parse_mode_json(const unsigned char *json, size_t size) {
-    struct mode_json_params params;
-    mode binding;
-    params.cur_key = NULL;
-    params.mode = &binding;
-
-    yajl_handle handle = yajl_alloc(&mode_callbacks, NULL, (void *)&params);
-    yajl_status state = yajl_parse(handle, json, size);
-
-    /* FIXME: Proper error handling for JSON parsing */
-    switch (state) {
-        case yajl_status_ok:
-            break;
-        case yajl_status_client_canceled:
-        case yajl_status_error:
-            ELOG("Could not parse mode event!\n");
-            exit(EXIT_FAILURE);
-            break;
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)json, size, 0, NULL, &err);
+    if (!doc) {
+        ELOG("JSON parse error for mode event: %s (at position %zu)\n", err.msg, err.pos);
+        exit(EXIT_FAILURE);
     }
 
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    if (!yyjson_is_obj(root)) {
+        ELOG("Could not parse mode event: not an object\n");
+        yyjson_doc_free(doc);
+        exit(EXIT_FAILURE);
+    }
+
+    const char *change = json_opt(root, "change", str, NULL);
+    bool pango_markup = json_opt(root, "pango_markup", bool, false);
+    DLOG("pango_markup = %d\n", pango_markup);
+
+    mode binding = {0};
+
+    if (change != NULL) {
+        binding.name = i3string_from_utf8(change);
+        i3string_set_markup(binding.name, pango_markup);
+        binding.name_width = predict_text_width(binding.name);
+        DLOG("Got mode change: %s\n", i3string_as_utf8(binding.name));
+    }
+
+    yyjson_doc_free(doc);
+
     /* We don't want to indicate default binding mode */
-    if (strcmp("default", i3string_as_utf8(params.mode->name)) == 0) {
-        I3STRING_FREE(params.mode->name);
+    if (binding.name && strcmp("default", i3string_as_utf8(binding.name)) == 0) {
+        I3STRING_FREE(binding.name);
+        binding.name = NULL;
     }
 
     /* Set the new binding mode */
     set_current_mode(&binding);
-
-    yajl_free(handle);
-
-    FREE(params.cur_key);
 }

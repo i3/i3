@@ -14,31 +14,26 @@
 #include <stdint.h>
 #include <unistd.h>
 
-// Macros to make the YAJL API a bit easier to use.
-#define y(x, ...) (cmd_output->json_gen != NULL ? yajl_gen_##x(cmd_output->json_gen, ##__VA_ARGS__) : 0)
-#define ystr(str) (cmd_output->json_gen != NULL ? yajl_gen_string(cmd_output->json_gen, (unsigned char *)(str), strlen((str))) : 0)
-#define ysuccess(success)                   \
-    do {                                    \
-        if (cmd_output->json_gen != NULL) { \
-            y(map_open);                    \
-            ystr("success");                \
-            y(bool, success);               \
-            y(map_close);                   \
-        }                                   \
+// Macros to make the yyjson API a bit easier to use.
+#define ysuccess(success)                                                            \
+    do {                                                                             \
+        if (cmd_output->json_doc != NULL && cmd_output->json_arr != NULL) {          \
+            yyjson_mut_val *_obj = yyjson_mut_obj(cmd_output->json_doc);             \
+            yyjson_mut_obj_add_bool(cmd_output->json_doc, _obj, "success", success); \
+            yyjson_mut_arr_add_val(cmd_output->json_arr, _obj);                      \
+        }                                                                            \
     } while (0)
-#define yerror(format, ...)                             \
-    do {                                                \
-        if (cmd_output->json_gen != NULL) {             \
-            char *message;                              \
-            sasprintf(&message, format, ##__VA_ARGS__); \
-            y(map_open);                                \
-            ystr("success");                            \
-            y(bool, false);                             \
-            ystr("error");                              \
-            ystr(message);                              \
-            y(map_close);                               \
-            free(message);                              \
-        }                                               \
+#define yerror(format, ...)                                                          \
+    do {                                                                             \
+        if (cmd_output->json_doc != NULL && cmd_output->json_arr != NULL) {          \
+            char *message;                                                           \
+            sasprintf(&message, format, ##__VA_ARGS__);                              \
+            yyjson_mut_val *_obj = yyjson_mut_obj(cmd_output->json_doc);             \
+            yyjson_mut_obj_add_bool(cmd_output->json_doc, _obj, "success", false);   \
+            yyjson_mut_obj_add_strcpy(cmd_output->json_doc, _obj, "error", message); \
+            yyjson_mut_arr_add_val(cmd_output->json_arr, _obj);                      \
+            free(message);                                                           \
+        }                                                                            \
     } while (0)
 
 /** If an error occurred during parsing of the criteria, we want to exit instead
@@ -1731,12 +1726,12 @@ void cmd_open(I3_CMD) {
     con->layout = L_SPLITH;
     con_activate(con);
 
-    y(map_open);
-    ystr("success");
-    y(bool, true);
-    ystr("id");
-    y(integer, (uintptr_t)con);
-    y(map_close);
+    if (cmd_output->json_doc != NULL && cmd_output->json_arr != NULL) {
+        yyjson_mut_val *obj = yyjson_mut_obj(cmd_output->json_doc);
+        yyjson_mut_obj_add_bool(cmd_output->json_doc, obj, "success", true);
+        yyjson_mut_obj_add_uint(cmd_output->json_doc, obj, "id", (uintptr_t)con);
+        yyjson_mut_arr_add_val(cmd_output->json_arr, obj);
+    }
 
     cmd_output->needs_tree_render = true;
 }

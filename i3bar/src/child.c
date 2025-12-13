@@ -9,7 +9,6 @@
  */
 #include "common.h"
 #include "queue.h"
-#include "yajl_utils.h"
 
 #include <ctype.h> /* isspace */
 #include <err.h>
@@ -26,8 +25,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <yajl/yajl_gen.h>
-#include <yajl/yajl_parse.h>
+#include <yyjson.h>
 
 /* Global variables for child_*() */
 i3bar_child status_child = {0};
@@ -55,26 +53,6 @@ i3bar_child ws_child = {0};
         DLOG_CHILD(ws_child);     \
     } while (0)
 
-/* JSON parser for stdin */
-yajl_handle parser;
-
-/* JSON generator for stdout */
-yajl_gen gen;
-
-typedef struct parser_ctx {
-    /* True if one of the parsed blocks was urgent */
-    bool has_urgent;
-
-    /* A copy of the last JSON map key. */
-    char *last_map_key;
-
-    /* The current block. Will be filled, then copied and put into the list of
-     * blocks. */
-    struct status_block block;
-} parser_ctx;
-
-parser_ctx parser_context;
-
 struct statusline_head statusline_head = TAILQ_HEAD_INITIALIZER(statusline_head);
 /* Used temporarily while reading a statusline */
 struct statusline_head statusline_buffer = TAILQ_HEAD_INITIALIZER(statusline_buffer);
@@ -86,9 +64,8 @@ int child_stdin;
  * If free_resources is set, the fields of each status block will be free'd.
  */
 void clear_statusline(struct statusline_head *head, bool free_resources) {
-    struct status_block *first;
     while (!TAILQ_EMPTY(head)) {
-        first = TAILQ_FIRST(head);
+        struct status_block *first = TAILQ_FIRST(head);
         if (free_resources) {
             I3STRING_FREE(first->full_text);
             I3STRING_FREE(first->short_text);
@@ -105,7 +82,7 @@ void clear_statusline(struct statusline_head *head, bool free_resources) {
     }
 }
 
-static void copy_statusline(struct statusline_head *from, struct statusline_head *to) {
+static void copy_statusline(const struct statusline_head *from, struct statusline_head *to) {
     struct status_block *current;
     TAILQ_FOREACH (current, from, blocks) {
         struct status_block *new_block = smalloc(sizeof(struct status_block));
@@ -177,174 +154,123 @@ static void cleanup(i3bar_child *c) {
     memset(c, 0, sizeof(i3bar_child));
 }
 
-/*
- * The start of a new array is the start of a new status line, so we clear all
- * previous entries from the buffer.
- */
-static int stdin_start_array(void *context) {
-    // the blocks are still used by statusline_head, so we won't free the
-    // resources here.
-    clear_statusline(&statusline_buffer, false);
-    return 1;
+static char *get_string(yyjson_val *obj, const char *key) {
+    const char *str = yyjson_get_str(yyjson_obj_get(obj, key));
+    if (str != NULL && strlen(str) > 0) {
+        return sstrdup(str);
+    }
+    return NULL;
 }
 
 /*
- * The start of a map is the start of a single block of the status line.
- *
+ * Parse a single status block from JSON
  */
-static int stdin_start_map(void *context) {
-    parser_ctx *ctx = context;
-    memset(&(ctx->block), '\0', sizeof(struct status_block));
-
-    /* Default width of the separator block. */
-    if (config.separator_symbol == NULL) {
-        ctx->block.sep_block_width = logical_px(9);
-    } else {
-        ctx->block.sep_block_width = logical_px(8) + separator_symbol_width;
+static void parse_status_block(yyjson_val *block_obj, bool *has_urgent) {
+    if (!yyjson_is_obj(block_obj)) {
+        return;
     }
 
-    /* By default we draw all four borders if a border is set. */
-    ctx->block.border_top = 1;
-    ctx->block.border_right = 1;
-    ctx->block.border_bottom = 1;
-    ctx->block.border_left = 1;
+    struct status_block block = {0};
 
-    return 1;
-}
-
-static int stdin_map_key(void *context, const unsigned char *key, size_t len) {
-    parser_ctx *ctx = context;
-    FREE(ctx->last_map_key);
-    sasprintf(&(ctx->last_map_key), "%.*s", (int)len, key);
-    return 1;
-}
-
-static int stdin_boolean(void *context, int val) {
-    parser_ctx *ctx = context;
-
-    if (!ctx->last_map_key) {
-        return 0;
+    /* Parse string fields */
+    yyjson_val *full_text = yyjson_obj_get(block_obj, "full_text");
+    if (yyjson_is_str(full_text)) {
+        block.full_text = i3string_from_markup_with_length(
+            unsafe_yyjson_get_str(full_text), unsafe_yyjson_get_len(full_text));
     }
 
-    if (strcasecmp(ctx->last_map_key, "urgent") == 0) {
-        ctx->block.urgent = val;
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "separator") == 0) {
-        ctx->block.no_separator = !val;
-        return 1;
+    yyjson_val *short_text = yyjson_obj_get(block_obj, "short_text");
+    if (yyjson_is_str(short_text)) {
+        block.short_text = i3string_from_markup_with_length(
+            unsafe_yyjson_get_str(short_text), unsafe_yyjson_get_len(short_text));
     }
 
-    return 1;
-}
+    block.color = get_string(block_obj, "color");
+    if (block.color && strlen(block.color) < 1) {
+        ELOG("block.color: %s\n", block.color);
+    }
+    block.background = get_string(block_obj, "background");
+    block.border = get_string(block_obj, "border");
+    block.name = get_string(block_obj, "name");
+    block.instance = get_string(block_obj, "instance");
 
-static int stdin_string(void *context, const unsigned char *val, size_t len) {
-    parser_ctx *ctx = context;
-
-    if (!ctx->last_map_key) {
-        return 0;
-    }
-
-    if (strcasecmp(ctx->last_map_key, "full_text") == 0) {
-        ctx->block.full_text = i3string_from_markup_with_length((const char *)val, len);
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "short_text") == 0) {
-        ctx->block.short_text = i3string_from_markup_with_length((const char *)val, len);
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "color") == 0) {
-        sasprintf(&(ctx->block.color), "%.*s", (int)len, val);
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "background") == 0) {
-        sasprintf(&(ctx->block.background), "%.*s", (int)len, val);
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "border") == 0) {
-        sasprintf(&(ctx->block.border), "%.*s", (int)len, val);
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "markup") == 0) {
-        ctx->block.pango_markup = (len == strlen("pango") && !strncasecmp((const char *)val, "pango", strlen("pango")));
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "align") == 0) {
-        if (len == strlen("center") && !strncmp((const char *)val, "center", strlen("center"))) {
-            ctx->block.align = ALIGN_CENTER;
-        } else if (len == strlen("right") && !strncmp((const char *)val, "right", strlen("right"))) {
-            ctx->block.align = ALIGN_RIGHT;
+    yyjson_val *min_width_val = yyjson_obj_get(block_obj, "min_width");
+    if (min_width_val) {
+        const char *min_width = yyjson_get_str(min_width_val);
+        if (min_width) {
+            block.min_width_str = sstrdup(min_width);
         } else {
-            ctx->block.align = ALIGN_LEFT;
+            block.min_width = yyjson_get_int(min_width_val);
         }
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
-        sasprintf(&(ctx->block.min_width_str), "%.*s", (int)len, val);
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "name") == 0) {
-        sasprintf(&(ctx->block.name), "%.*s", (int)len, val);
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "instance") == 0) {
-        sasprintf(&(ctx->block.instance), "%.*s", (int)len, val);
-        return 1;
     }
 
-    return 1;
-}
+    const char *markup = yyjson_get_str(yyjson_obj_get(block_obj, "markup"));
+    block.pango_markup = markup && (strcasecmp(markup, "pango") == 0);
 
-static int stdin_integer(void *context, long long val) {
-    parser_ctx *ctx = context;
-
-    if (!ctx->last_map_key) {
-        return 0;
-    }
-
-    if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
-        ctx->block.min_width = (uint32_t)val;
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "separator_block_width") == 0) {
-        ctx->block.sep_block_width = (uint32_t)val;
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "border_top") == 0) {
-        ctx->block.border_top = (uint32_t)val;
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "border_right") == 0) {
-        ctx->block.border_right = (uint32_t)val;
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "border_bottom") == 0) {
-        ctx->block.border_bottom = (uint32_t)val;
-        return 1;
-    }
-    if (strcasecmp(ctx->last_map_key, "border_left") == 0) {
-        ctx->block.border_left = (uint32_t)val;
-        return 1;
+    yyjson_val *align = yyjson_obj_get(block_obj, "align");
+    if (yyjson_is_str(align)) {
+        const char *a = unsafe_yyjson_get_str(align);
+        if (strcmp(a, "center") == 0) {
+            block.align = ALIGN_CENTER;
+        } else if (strcmp(a, "right") == 0) {
+            block.align = ALIGN_RIGHT;
+        } else {
+            block.align = ALIGN_LEFT;
+        }
     }
 
-    return 1;
-}
+    /* Parse boolean fields */
+    block.urgent = yyjson_get_bool(yyjson_obj_get(block_obj, "urgent"));
+    block.no_separator = yyjson_is_false(yyjson_obj_get(block_obj, "separator"));
 
-/*
- * When a map is finished, we have an entire status block.
- * Move it from the parser's context to the statusline buffer.
- */
-static int stdin_end_map(void *context) {
-    parser_ctx *ctx = context;
+    /* Parse integer fields. */
+
+    /* By default, we draw all four borders if a border is set. */
+    block.border_top = 1;
+    block.border_right = 1;
+    block.border_bottom = 1;
+    block.border_left = 1;
+
+    yyjson_val *sep_width = yyjson_obj_get(block_obj, "separator_block_width");
+    if (yyjson_is_int(sep_width)) {
+        block.sep_block_width = unsafe_yyjson_get_int(sep_width);
+    } else if (config.separator_symbol == NULL) {
+        block.sep_block_width = logical_px(9);
+    } else {
+        block.sep_block_width = logical_px(8) + separator_symbol_width;
+    }
+
+    yyjson_val *border_top = yyjson_obj_get(block_obj, "border_top");
+    if (yyjson_is_int(border_top)) {
+        block.border_top = unsafe_yyjson_get_int(border_top);
+    }
+
+    yyjson_val *border_right = yyjson_obj_get(block_obj, "border_right");
+    if (yyjson_is_int(border_right)) {
+        block.border_right = unsafe_yyjson_get_int(border_right);
+    }
+
+    yyjson_val *border_bottom = yyjson_obj_get(block_obj, "border_bottom");
+    if (yyjson_is_int(border_bottom)) {
+        block.border_bottom = unsafe_yyjson_get_int(border_bottom);
+    }
+
+    yyjson_val *border_left = yyjson_obj_get(block_obj, "border_left");
+    if (yyjson_is_int(border_left)) {
+        block.border_left = unsafe_yyjson_get_int(border_left);
+    }
+
+    /* Create the new block */
     struct status_block *new_block = smalloc(sizeof(struct status_block));
-    memcpy(new_block, &(ctx->block), sizeof(struct status_block));
-    /* Ensure we have a full_text set, so that when it is missing (or null),
-     * i3bar doesn’t crash and the user gets an annoying message. */
+    memcpy(new_block, &block, sizeof(struct status_block));
+
+    /* Ensure we have a full_text set */
     if (!new_block->full_text) {
         new_block->full_text = i3string_from_utf8("SPEC VIOLATION: full_text is NULL!");
     }
+
     if (new_block->urgent) {
-        ctx->has_urgent = true;
+        *has_urgent = true;
     }
 
     if (new_block->min_width_str) {
@@ -362,28 +288,6 @@ static int stdin_end_map(void *context) {
     }
 
     TAILQ_INSERT_TAIL(&statusline_buffer, new_block, blocks);
-
-    return 1;
-}
-
-/*
- * When an array is finished, we have an entire statusline.
- * Copy it from the buffer to the actual statusline.
- */
-static int stdin_end_array(void *context) {
-    DLOG("copying statusline_buffer to statusline_head\n");
-    clear_statusline(&statusline_head, true);
-    copy_statusline(&statusline_buffer, &statusline_head);
-
-    DLOG("dumping statusline:\n");
-    struct status_block *current;
-    TAILQ_FOREACH (current, &statusline_head, blocks) {
-        DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
-        DLOG("short_text = %s\n", (current->short_text == NULL ? NULL : i3string_as_utf8(current->short_text)));
-        DLOG("color = %s\n", current->color);
-    }
-    DLOG("end of dump\n");
-    return 1;
 }
 
 /*
@@ -392,10 +296,10 @@ static int stdin_end_array(void *context) {
  * Returns NULL on EOF.
  *
  */
-static unsigned char *get_buffer(int fd, int *ret_buffer_len) {
+static char *get_buffer(int fd, int *ret_buffer_len) {
     int rec = 0;
     int buffer_len = STDIN_CHUNK_SIZE;
-    unsigned char *buffer = smalloc(buffer_len + 1);
+    char *buffer = smalloc(buffer_len + 1);
     buffer[0] = '\0';
     while (1) {
         const ssize_t n = read(fd, buffer + rec, buffer_len - rec);
@@ -445,26 +349,80 @@ static void read_flat_input(char *buffer, int length) {
     first->full_text = i3string_from_utf8(buffer);
 }
 
-static bool read_json_input(unsigned char *input, int length) {
-    yajl_status status = yajl_parse(parser, input, length);
+static bool read_json_input(const char *input, int length) {
     bool has_urgent = false;
-    if (status != yajl_status_ok) {
-        char *message = (char *)yajl_get_error(parser, 0, input, length);
 
-        /* strip the newline yajl adds to the error message */
-        if (message[strlen(message) - 1] == '\n') {
-            message[strlen(message) - 1] = '\0';
+    /* The i3bar protocol sends a continuous stream formatted as an infinite
+     * JSON array: first '[', then each update is '[{...}]' or ',[{...}]'.
+     * Skip leading whitespace and protocol framing characters. */
+    while (length > 0) {
+        char c = input[0];
+        if (isspace(c) || c == ',') {
+            /* Skip whitespace and commas */
+            input++;
+            length--;
+        } else if (c == '[' && length > 1 && input[1] != '{') {
+            /* Skip '[' only if it's NOT followed by '{' (infinite array opener) */
+            input++;
+            length--;
+        } else {
+            break;
         }
-
-        fprintf(stderr, "[i3bar] Could not parse JSON input (code = %d, message = %s): %.*s\n",
-                status, message, length, input);
-
-        set_statusline_error("Could not parse JSON (%s)", message);
-        yajl_free_error(parser, (unsigned char *)message);
-        draw_bars(false);
-    } else if (parser_context.has_urgent) {
-        has_urgent = true;
     }
+
+    if (length == 0) {
+        return false;
+    }
+
+    /* Skip the closing bracket of the infinite array (sent on shutdown) */
+    if (input[0] == ']') {
+        return false;
+    }
+
+    /* YYJSON_READ_STOP_WHEN_DONE allows trailing content (like newlines) */
+    yyjson_read_err err;
+    yyjson_doc *doc = yyjson_read_opts((char *)input, length, YYJSON_READ_STOP_WHEN_DONE, NULL, &err);
+    if (!doc) {
+        fprintf(stderr, "[i3bar] JSON parse error: %s (at position %zu): %.*s\n", err.msg, err.pos, length, input);
+        set_statusline_error("Could not parse JSON");
+        draw_bars(false);
+        return false;
+    }
+
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    if (!yyjson_is_arr(root)) {
+        fprintf(stderr, "[i3bar] JSON input is not an array: %.*s\n", length, input);
+        set_statusline_error("JSON input is not an array");
+        yyjson_doc_free(doc);
+        draw_bars(false);
+        return false;
+    }
+
+    /* Clear the buffer for the new statusline */
+    clear_statusline(&statusline_buffer, false);
+
+    /* Parse each block */
+    size_t idx, max;
+    yyjson_val *block_obj;
+    yyjson_arr_foreach(root, idx, max, block_obj) {
+        parse_status_block(block_obj, &has_urgent);
+    }
+
+    /* Copy buffer to actual statusline */
+    DLOG("copying statusline_buffer to statusline_head\n");
+    clear_statusline(&statusline_head, true);
+    copy_statusline(&statusline_buffer, &statusline_head);
+
+    DLOG("dumping statusline:\n");
+    struct status_block *current;
+    TAILQ_FOREACH (current, &statusline_head, blocks) {
+        DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
+        DLOG("short_text = %s\n", (current->short_text == NULL ? NULL : i3string_as_utf8(current->short_text)));
+        DLOG("color = %s\n", current->color);
+    }
+    DLOG("end of dump\n");
+
+    yyjson_doc_free(doc);
     return has_urgent;
 }
 
@@ -475,7 +433,7 @@ static bool read_json_input(unsigned char *input, int length) {
  */
 static void stdin_io_cb(int fd) {
     int rec;
-    unsigned char *buffer = get_buffer(fd, &rec);
+    char *buffer = get_buffer(fd, &rec);
     if (buffer == NULL) {
         return;
     }
@@ -483,29 +441,29 @@ static void stdin_io_cb(int fd) {
     if (status_child.version > 0) {
         has_urgent = read_json_input(buffer, rec);
     } else {
-        read_flat_input((char *)buffer, rec);
+        read_flat_input(buffer, rec);
     }
     free(buffer);
     draw_bars(has_urgent);
 }
 
 /*
- * Callbalk for stdin first line. We read the first line to detect
+ * Callback for stdin first line. We read the first line to detect
  * whether this is JSON or plain text
  *
  */
 static void stdin_io_first_line_cb(int fd) {
     int rec;
-    unsigned char *buffer = get_buffer(fd, &rec);
+    char *buffer = get_buffer(fd, &rec);
     if (buffer == NULL) {
         return;
     }
     DLOG("Detecting input type based on buffer *%.*s*\n", rec, buffer);
     /* Detect whether this is JSON or plain text. */
     unsigned int consumed = 0;
-    /* At the moment, we don’t care for the version. This might change
+    /* At the moment, we don't care for the version. This might change
      * in the future, but for now, we just discard it. */
-    parse_json_header(&status_child, buffer, rec, &consumed);
+    parse_json_header(&status_child, (unsigned char *)buffer, rec, &consumed);
     if (status_child.version > 0) {
         /* If hide-on-modifier is set, we start of by sending the status_child
          * a SIGSTOP, because the bars aren't mapped at start */
@@ -518,12 +476,12 @@ static void stdin_io_first_line_cb(int fd) {
          * full_text pointer later. */
         struct status_block *new_block = scalloc(1, sizeof(struct status_block));
         TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
-        read_flat_input((char *)buffer, rec);
+        read_flat_input(buffer, rec);
     }
     free(buffer);
 }
 
-static bool isempty(char *s) {
+static bool isempty(const char *s) {
     while (*s != '\0') {
         if (!isspace(*s)) {
             return false;
@@ -546,12 +504,12 @@ static char *ws_last_json;
 
 static void ws_stdin_io_cb(int fd) {
     int rec;
-    unsigned char *buffer = get_buffer(fd, &rec);
+    char *buffer = get_buffer(fd, &rec);
     if (buffer == NULL) {
         return;
     }
 
-    gchar **strings = g_strsplit((const char *)buffer, "\n", 0);
+    gchar **strings = g_strsplit(buffer, "\n", 0);
     for (int idx = 0; strings[idx] != NULL; idx++) {
         if (ws_child.pending_line == NULL && isempty(strings[idx])) {
             /* In the normal case where the buffer ends with '\n', the last
@@ -664,7 +622,7 @@ static void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
          exit_status);
 
     __attribute__((format(printf, 1, 2))) void (*error_function_pointer)(const char *, ...) = NULL;
-    const char *command_type = "";
+    const char *command_type;
     i3bar_child *c = NULL;
     if (watcher->pid == status_child.pid) {
         command_type = "status_command";
@@ -692,30 +650,6 @@ static void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
 
     cleanup(c);
     draw_bars(false);
-}
-
-static void child_write_output(void) {
-    if (status_child.click_events) {
-        const unsigned char *output;
-        size_t size;
-        ssize_t n;
-
-        yajl_gen_get_buf(gen, &output, &size);
-
-        n = writeall(child_stdin, output, size);
-        if (n != -1) {
-            n = writeall(child_stdin, "\n", 1);
-        }
-
-        yajl_gen_clear(gen);
-
-        if (n == -1) {
-            status_child.click_events = false;
-            kill_child();
-            set_statusline_error("child_write_output failed");
-            draw_bars(false);
-        }
-    }
 }
 
 static pid_t sfork(void) {
@@ -767,20 +701,6 @@ void start_child(char *command) {
     if (command == NULL) {
         return;
     }
-
-    /* Allocate a yajl parser which will be used to parse stdin. */
-    static yajl_callbacks callbacks = {
-        .yajl_boolean = stdin_boolean,
-        .yajl_integer = stdin_integer,
-        .yajl_string = stdin_string,
-        .yajl_start_map = stdin_start_map,
-        .yajl_map_key = stdin_map_key,
-        .yajl_end_map = stdin_end_map,
-        .yajl_start_array = stdin_start_array,
-        .yajl_end_array = stdin_end_array,
-    };
-    parser = yajl_alloc(&callbacks, NULL, &parser_context);
-    gen = yajl_gen_alloc(NULL);
 
     int pipe_in[2];  /* pipe we read from */
     int pipe_out[2]; /* pipe we write to */
@@ -847,8 +767,15 @@ static void child_click_events_initialize(void) {
     DLOG_CHILD(status_child);
 
     if (!status_child.click_events_init) {
-        yajl_gen_array_open(gen);
-        child_write_output();
+        /* Write opening bracket */
+        ssize_t n = writeall(child_stdin, "[", 1);
+        if (n != -1) {
+            n = writeall(child_stdin, "\n", 1);
+        }
+        if (n == -1) {
+            status_child.click_events = false;
+            return;
+        }
         status_child.click_events_init = true;
     }
 }
@@ -864,75 +791,72 @@ void send_block_clicked(int button, const char *name, const char *instance, int 
 
     child_click_events_initialize();
 
-    yajl_gen_map_open(gen);
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *obj = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, obj);
 
     if (name) {
-        ystr("name");
-        ystr(name);
+        yyjson_mut_obj_add_str(doc, obj, "name", name);
     }
 
     if (instance) {
-        ystr("instance");
-        ystr(instance);
+        yyjson_mut_obj_add_str(doc, obj, "instance", instance);
     }
 
-    ystr("button");
-    yajl_gen_integer(gen, button);
+    yyjson_mut_obj_add_int(doc, obj, "button", button);
 
-    ystr("modifiers");
-    yajl_gen_array_open(gen);
+    yyjson_mut_val *modifiers = yyjson_mut_arr(doc);
     if (mods & XCB_MOD_MASK_SHIFT) {
-        ystr("Shift");
+        yyjson_mut_arr_add_str(doc, modifiers, "Shift");
     }
     if (mods & XCB_MOD_MASK_CONTROL) {
-        ystr("Control");
+        yyjson_mut_arr_add_str(doc, modifiers, "Control");
     }
     if (mods & XCB_MOD_MASK_1) {
-        ystr("Mod1");
+        yyjson_mut_arr_add_str(doc, modifiers, "Mod1");
     }
     if (mods & XCB_MOD_MASK_2) {
-        ystr("Mod2");
+        yyjson_mut_arr_add_str(doc, modifiers, "Mod2");
     }
     if (mods & XCB_MOD_MASK_3) {
-        ystr("Mod3");
+        yyjson_mut_arr_add_str(doc, modifiers, "Mod3");
     }
     if (mods & XCB_MOD_MASK_4) {
-        ystr("Mod4");
+        yyjson_mut_arr_add_str(doc, modifiers, "Mod4");
     }
     if (mods & XCB_MOD_MASK_5) {
-        ystr("Mod5");
+        yyjson_mut_arr_add_str(doc, modifiers, "Mod5");
     }
-    yajl_gen_array_close(gen);
+    yyjson_mut_obj_add_val(doc, obj, "modifiers", modifiers);
 
-    ystr("x");
-    yajl_gen_integer(gen, x);
+    yyjson_mut_obj_add_int(doc, obj, "x", x);
+    yyjson_mut_obj_add_int(doc, obj, "y", y);
+    yyjson_mut_obj_add_int(doc, obj, "relative_x", x_rel);
+    yyjson_mut_obj_add_int(doc, obj, "relative_y", y_rel);
+    yyjson_mut_obj_add_int(doc, obj, "output_x", out_x);
+    yyjson_mut_obj_add_int(doc, obj, "output_y", out_y);
+    yyjson_mut_obj_add_int(doc, obj, "width", width);
+    yyjson_mut_obj_add_int(doc, obj, "height", height);
 
-    ystr("y");
-    yajl_gen_integer(gen, y);
+    size_t size;
+    char *output = json_write(doc, &size);
+    ssize_t n = writeall(child_stdin, output, size);
+    if (n != -1) {
+        n = writeall(child_stdin, ",\n", 2);
+    }
+    free(output);
 
-    ystr("relative_x");
-    yajl_gen_integer(gen, x_rel);
+    if (n == -1) {
+        status_child.click_events = false;
+        kill_child();
+        set_statusline_error("child_write_output failed");
+        draw_bars(false);
+    }
 
-    ystr("relative_y");
-    yajl_gen_integer(gen, y_rel);
-
-    ystr("output_x");
-    yajl_gen_integer(gen, out_x);
-
-    ystr("output_y");
-    yajl_gen_integer(gen, out_y);
-
-    ystr("width");
-    yajl_gen_integer(gen, width);
-
-    ystr("height");
-    yajl_gen_integer(gen, height);
-
-    yajl_gen_map_close(gen);
-    child_write_output();
+    yyjson_mut_doc_free(doc);
 }
 
-static bool is_alive(i3bar_child *c) {
+static bool is_alive(const i3bar_child *c) {
     return c->pid > 0;
 }
 

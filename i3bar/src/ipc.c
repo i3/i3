@@ -228,7 +228,7 @@ static void got_bar_config_update(const unsigned char *event, size_t size) {
     char *old_workspace_command = config.workspace_command;
     config.command = NULL;
     config.workspace_command = NULL;
-    bar_display_mode_t old_mode = config.hide_on_modifier;
+    const bar_display_mode_t old_mode = config.hide_on_modifier;
 
     parse_config_json(event, size);
     if (old_mode != config.hide_on_modifier) {

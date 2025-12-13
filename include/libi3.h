@@ -123,14 +123,14 @@ char *root_atom_contents(const char *atomname, xcb_connection_t *provided_conn, 
  * there is no more memory available)
  *
  */
-void *smalloc(size_t size);
+void *smalloc(size_t size) __attribute__((returns_nonnull));
 
 /**
  * Safe-wrapper around calloc which exits if malloc returns NULL (meaning that
  * there is no more memory available)
  *
  */
-void *scalloc(size_t num, size_t size);
+void *scalloc(size_t num, size_t size) __attribute__((returns_nonnull));
 
 /**
  * Safe-wrapper around realloc which exits if realloc returns NULL (meaning
@@ -144,14 +144,14 @@ void *srealloc(void *ptr, size_t size);
  * there is no more memory available)
  *
  */
-char *sstrdup(const char *str);
+char *sstrdup(const char *str) __attribute__((returns_nonnull));
 
 /**
  * Safe-wrapper around strndup which exits if strndup returns NULL (meaning that
  * there is no more memory available)
  *
  */
-char *sstrndup(const char *str, size_t size);
+char *sstrndup(const char *str, size_t size) __attribute__((returns_nonnull));
 
 /**
  * Safe-wrapper around asprintf which exits if it returns -1 (meaning that
@@ -691,3 +691,15 @@ bool boolstr(const char *str);
  *
  */
 uint16_t get_visual_depth(xcb_visualid_t visual_id);
+
+/*
+ * Create a new mutable JSON document using i3's allocator.
+ * The document must be freed with yyjson_mut_doc_free().
+ */
+struct yyjson_mut_doc *json_new(void) __attribute__((returns_nonnull));
+
+/*
+ * Write a mutable JSON document to a string using i3's allocator.
+ * The result must be freed with free().
+ */
+char *json_write(const struct yyjson_mut_doc *doc, size_t *len) __attribute__((returns_nonnull));

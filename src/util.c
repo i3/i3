@@ -14,7 +14,6 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <libgen.h>
-#include <locale.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #if defined(__OpenBSD__)
@@ -217,20 +216,13 @@ static char **add_argument(char **original, char *opt_char, char *opt_arg, char 
     return result;
 }
 
-#define y(x, ...) yajl_gen_##x(gen, ##__VA_ARGS__)
-#define ystr(str) yajl_gen_string(gen, (unsigned char *)str, strlen(str))
-
 static char *store_restart_layout(void) {
-    setlocale(LC_NUMERIC, "C");
-    yajl_gen gen = yajl_gen_alloc(NULL);
+    yyjson_mut_doc *doc = json_new();
+    yyjson_mut_val *root = dump_node(doc, croot, true);
+    yyjson_mut_doc_set_root(doc, root);
 
-    dump_node(gen, croot, true);
-
-    setlocale(LC_NUMERIC, "");
-
-    const unsigned char *payload;
     size_t length;
-    y(get_buf, &payload, &length);
+    char *payload = json_write(doc, &length);
 
     /* create a temporary file if one hasn't been specified, or just
      * resolve the tildes in the specified path */
@@ -238,6 +230,8 @@ static char *store_restart_layout(void) {
     if (config.restart_state_path == NULL) {
         filename = get_process_filename("restart-state");
         if (!filename) {
+            free(payload);
+            yyjson_mut_doc_free(doc);
             return NULL;
         }
     } else {
@@ -258,12 +252,16 @@ static char *store_restart_layout(void) {
     if (fd == -1) {
         perror("open()");
         free(filename);
+        free(payload);
+        yyjson_mut_doc_free(doc);
         return NULL;
     }
 
     if (writeall(fd, payload, length) == -1) {
         ELOG("Could not write restart layout to \"%s\", layout will be lost: %s\n", filename, strerror(errno));
         free(filename);
+        free(payload);
+        yyjson_mut_doc_free(doc);
         close(fd);
         return NULL;
     }
@@ -274,7 +272,8 @@ static char *store_restart_layout(void) {
         DLOG("layout: %.*s\n", (int)length, payload);
     }
 
-    y(free);
+    free(payload);
+    yyjson_mut_doc_free(doc);
 
     return filename;
 }
@@ -451,7 +450,7 @@ ssize_t slurp(const char *path, char **buf) {
         return -1;
     }
     /* Allocate one extra NUL byte to make the buffer usable with C string
-     * functions. yajl doesn’t need this, but this makes slurp safer. */
+     * functions. This makes slurp safer. */
     *buf = scalloc(stbuf.st_size + 1, 1);
     size_t n = fread(*buf, 1, stbuf.st_size, f);
     fclose(f);

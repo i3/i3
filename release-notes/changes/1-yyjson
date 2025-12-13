@@ -1,0 +1,2 @@
+remove yajl dependency, depend on yyjson instead
+JSON layout files now accept trailing commas, making manual editing easier

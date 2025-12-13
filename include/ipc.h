@@ -12,8 +12,7 @@
 #include <config.h>
 
 #include <ev.h>
-#include <yajl/yajl_gen.h>
-#include <yajl/yajl_parse.h>
+#include <yyjson.h>
 
 #include "data.h"
 #include "tree.h"
@@ -104,13 +103,11 @@ typedef enum {
  */
 void ipc_shutdown(shutdown_reason_t reason, int exempt_fd);
 
-void dump_node(yajl_gen gen, Con *con, bool inplace_restart);
-
 /**
- * Generates a json workspace event. Returns a dynamically allocated yajl
- * generator. Free with yajl_gen_free().
+ * Dumps a container node to JSON. Returns a yyjson mutable value that should
+ * be added to a document or freed.
  */
-yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old);
+yyjson_mut_val *dump_node(yyjson_mut_doc *doc, Con *con, bool inplace_restart);
 
 /**
  * For the workspace events we send, along with the usual "change" field, also

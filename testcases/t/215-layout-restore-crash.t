@@ -131,7 +131,7 @@ print $fh <<'EOT';
 EOT
 $fh->flush;
 my $reply = cmd "append_layout $filename";
-ok(!$reply->[0]->{success}, 'IPC reply did not indicate success');
+ok($reply->[0]->{success}, 'IPC reply indicates success (trailing commas now allowed)');
 
 does_i3_live;
 
@@ -139,7 +139,7 @@ does_i3_live;
 close($fh);
 
 ################################################################################
-# another file with a superfluous trailing comma (issue #2755)
+# another file with a trailing comma (issue #2755, now allowed)
 ################################################################################
 
 subtest 'issue 2755' => sub {
@@ -212,11 +212,11 @@ subtest 'issue 2755' => sub {
 EOT
     $fh->flush;
     $reply = cmd "append_layout $filename";
-    ok(!$reply->[0]->{success}, 'IPC reply did not indicate success');
+    ok($reply->[0]->{success}, 'IPC reply indicates success (trailing commas now allowed)');
 
     does_i3_live;
 
-    # Move to a different workspace rendered the half-attached con’s con->parent
+    # Move to a different workspace rendered the half-attached con's con->parent
     # invalid.
     fresh_workspace;
 
