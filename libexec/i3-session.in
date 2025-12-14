@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# is-enabled seems like an elegant way to check for i3.service at first,
+# but on NixOS it returns non-zero ('linked-runtime').
+if [ "$(systemctl --user show -P CanStart @UNIT@ 2>/dev/null)" = "yes" ]
+then
+  # Ensure the X11 environment variables are available
+  # to the systemd user session (required on some distros).
+  systemctl --user import-environment DISPLAY XAUTHORITY
+
+  if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+    dbus-update-activation-environment DISPLAY XAUTHORITY
+  fi
+
+  systemctl --user --wait start @UNIT@
+else
+  i3
+fi

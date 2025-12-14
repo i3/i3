@@ -1,6 +1,9 @@
 [Desktop Entry]
-Name=i3 (with debug log)
+Name=@NAME@
 Comment=improved dynamic tiling window manager
-Exec=i3-with-shmlog
-Type=Application
+Exec=@EXEC@
+TryExec=@EXEC@
+Type=XSession
+X-LightDM-DesktopName=i3
+DesktopNames=i3
 Keywords=tiling;wm;windowmanager;window;manager;

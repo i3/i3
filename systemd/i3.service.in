@@ -1,0 +1,25 @@
+[Unit]
+Description=i3 window manager
+
+# For more details, see the systemd.special man page:
+# https://www.freedesktop.org/software/systemd/man/latest/systemd.special.html
+
+# "The graphical-session-pre target contains services which set up
+# the environment or global configuration of a graphical session,
+# such as SSH/GPG agents (which need to export an environment variable
+# into all desktop processes)."
+Requires=graphical-session-pre.target
+After=graphical-session-pre.target
+
+# When i3.service is activated, activate graphical-session.target, too.
+# When graphical-session.target deactivates, i3.service is deactivated.
+# When i3.service deactivates, nothing keeps graphical-session.target
+# alive anymore, so due to its StopWhenUnneeded property, it deactivates.
+BindsTo=graphical-session.target
+# Only consider graphical-session.target active once i3 has started.
+Before=graphical-session.target
+
+[Service]
+Type=notify
+ExecStart=@EXECSTART@
+ExecReload=@BINDIR@/i3-msg reload
