@@ -23,6 +23,7 @@ use i3test::Util qw(slurp);
 use File::Temp qw(tempfile tempdir);
 use POSIX qw(mkfifo);
 use JSON::XS qw(decode_json);
+use Config;
 
 my $desktopdir = tempdir(CLEANUP => 1);
 
@@ -39,7 +40,7 @@ mkfifo("$tmpdir/fifo", 0600) or BAIL_OUT "Could not create FIFO: $!";
 
 open(my $i3msg_dump, '>', "$tmpdir/i3-msg");
 say $i3msg_dump <<EOT;
-#!/usr/bin/env $^X
+#!$Config{perlpath}
 use strict;
 use warnings;
 use JSON::XS qw(encode_json);
