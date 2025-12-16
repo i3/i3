@@ -610,7 +610,7 @@ xsessions = join_paths(get_option('datadir'), 'xsessions')
 xsession_cdata = configuration_data()
 xsession_cdata.set('NAME', 'i3')
 xsession_cdata.set('UNIT', 'i3.service')
-xsession_cdata.set('EXEC', join_paths(get_option('prefix'), get_option('libexecdir'), 'i3-session'))
+xsession_cdata.set('EXEC', join_paths(get_option('prefix'), get_option('libexecdir'), 'i3', 'i3-session'))
 configure_file(
   input: 'share/xsessions/i3.desktop.in',
   output: 'i3.desktop',
@@ -623,12 +623,12 @@ configure_file(
   output: 'i3-session',
   configuration: xsession_cdata,
   install: true,
-  install_dir: get_option('libexecdir'),
+  install_dir: join_paths(get_option('libexecdir'), 'i3'),
 )
 xsession_log_cdata = configuration_data()
 xsession_log_cdata.set('NAME', 'i3-with-shmlog')
 xsession_log_cdata.set('UNIT', 'i3-with-shmlog.service')
-xsession_log_cdata.set('EXEC', join_paths(get_option('prefix'), get_option('libexecdir'), 'i3-session-with-shmlog'))
+xsession_log_cdata.set('EXEC', join_paths(get_option('prefix'), get_option('libexecdir'), 'i3', 'i3-session-with-shmlog'))
 configure_file(
   input: 'share/xsessions/i3.desktop.in',
   output: 'i3-with-shmlog.desktop',
@@ -641,7 +641,15 @@ configure_file(
   output: 'i3-session-with-shmlog',
   configuration: xsession_log_cdata,
   install: true,
-  install_dir: get_option('libexecdir'),
+  install_dir: join_paths(get_option('libexecdir'), 'i3'),
+)
+
+configure_file(
+  input: 'libexec/xss-lock',
+  output: 'xss-lock',
+  configuration: cdata,
+  install: true,
+  install_dir: join_paths(get_option('libexecdir'), 'i3'),
 )
 
 if systemd_dep.found()
@@ -651,6 +659,7 @@ if systemd_dep.found()
   # but for systemd unit files, we must not use quoting.
   systemd_cdata = configuration_data()
   systemd_cdata.set('BINDIR', join_paths(get_option('prefix'), get_option('bindir')))
+  systemd_cdata.set('LIBEXECDIR', join_paths(get_option('prefix'), get_option('libexecdir')))
   systemd_cdata.set('EXECSTART', join_paths(get_option('prefix'), get_option('bindir'), 'i3'))
   configure_file(
     input: 'systemd/i3.service.in',

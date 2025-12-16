@@ -21,5 +21,5 @@ Before=graphical-session.target
 
 [Service]
 Type=notify
-ExecStart=@EXECSTART@
+ExecStart=/bin/sh -c "PATH=@LIBEXECDIR@/i3:$PATH @EXECSTART@"
 ExecReload=@BINDIR@/i3-msg reload

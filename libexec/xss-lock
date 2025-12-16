@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# This wrapper script ensures that xss-lock receives the XDG session ID,
+# which logind could auto-detect before we started using systemd user
+# services with i3 v4.25. See https://github.com/i3/i3/issues/5186
+
+# Find the real xss-lock in $PATH, skipping this wrapper script.
+IFS=:
+for dir in $PATH
+do
+  [ -z "$dir" ] && dir="."
+  [ -x "$dir/xss-lock" ] || continue
+  [ "$dir/xss-lock" -ef "$0" ] && continue
+  exec "$dir/xss-lock" --session=$XDG_SESSION_ID "$@"
+done
+
+echo "real xss-lock binary not found in \$PATH" >&2
+exit 1
