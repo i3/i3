@@ -325,8 +325,6 @@ pangocairo_dep = dependency('pangocairo', method: 'pkg-config')
 glib_dep = dependency('glib-2.0', method: 'pkg-config')
 gobject_dep = dependency('gobject-2.0', method: 'pkg-config')
 
-systemd_dep = dependency('systemd', required: false)
-
 ev_dep = cc.find_library('ev')
 
 inc = include_directories('include')
@@ -601,74 +599,10 @@ install_subdir(
 )
 
 install_subdir(
-  'share/applications',
+  'share/',
   strip_directory: true,
-  install_dir: join_paths(get_option('datadir'), 'applications'),
+  install_dir: get_option('datadir'),
 )
-
-xsessions = join_paths(get_option('datadir'), 'xsessions')
-xsession_cdata = configuration_data()
-xsession_cdata.set('NAME', 'i3')
-xsession_cdata.set('UNIT', 'i3.service')
-xsession_cdata.set('EXEC', join_paths(get_option('prefix'), get_option('libexecdir'), 'i3-session'))
-configure_file(
-  input: 'share/xsessions/i3.desktop.in',
-  output: 'i3.desktop',
-  configuration: xsession_cdata,
-  install: true,
-  install_dir: xsessions,
-)
-configure_file(
-  input: 'libexec/i3-session.in',
-  output: 'i3-session',
-  configuration: xsession_cdata,
-  install: true,
-  install_dir: get_option('libexecdir'),
-)
-xsession_log_cdata = configuration_data()
-xsession_log_cdata.set('NAME', 'i3-with-shmlog')
-xsession_log_cdata.set('UNIT', 'i3-with-shmlog.service')
-xsession_log_cdata.set('EXEC', join_paths(get_option('prefix'), get_option('libexecdir'), 'i3-session-with-shmlog'))
-configure_file(
-  input: 'share/xsessions/i3.desktop.in',
-  output: 'i3-with-shmlog.desktop',
-  configuration: xsession_log_cdata,
-  install: true,
-  install_dir: xsessions,
-)
-configure_file(
-  input: 'libexec/i3-session.in',
-  output: 'i3-session-with-shmlog',
-  configuration: xsession_log_cdata,
-  install: true,
-  install_dir: get_option('libexecdir'),
-)
-
-if systemd_dep.found()
-  userunitdir = systemd_dep.get_pkgconfig_variable('systemduserunitdir')
-
-  # The global cdata uses set_quoted (for C header files),
-  # but for systemd unit files, we must not use quoting.
-  systemd_cdata = configuration_data()
-  systemd_cdata.set('BINDIR', join_paths(get_option('prefix'), get_option('bindir')))
-  systemd_cdata.set('EXECSTART', join_paths(get_option('prefix'), get_option('bindir'), 'i3'))
-  configure_file(
-    input: 'systemd/i3.service.in',
-    output: 'i3.service',
-    configuration: systemd_cdata,
-    install_dir: userunitdir,
-  )
-
-  systemd_shmlog_cdata = configuration_data()
-  systemd_shmlog_cdata.merge_from(systemd_cdata)
-  systemd_shmlog_cdata.set('EXECSTART', join_paths(get_option('prefix'), get_option('bindir'), 'i3-with-shmlog'))
-  configure_file(
-    input: 'systemd/i3.service.in',
-    output: 'i3-with-shmlog.service',
-    configuration: systemd_shmlog_cdata,
-    install_dir: userunitdir,
-  )
-endif
 
 install_headers(
   'include/i3/ipc.h',
