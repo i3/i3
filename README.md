@@ -84,27 +84,6 @@ export OPENAI_KEY="your-api-key"
 
 This spins up a containerized i3 desktop with AI features and opens it in your browser via noVNC.
 
-## Usage
-
-```bash
-# Get next action suggestion
-ai3 suggest
-
-# Optimize layout
-ai3 layout optimize
-ai3 layout optimize "maximize browser window"
-
-# Chat with AI about your desktop
-ai3 chat "how can I organize these windows better?"
-ai3 chat  # Interactive mode
-
-# Get current status
-ai3 status
-
-# List available tools
-ai3 tools
-```
-
 ## Architecture
 
 ```
@@ -127,7 +106,3 @@ The following i3 operations are exposed as tools:
 - `run_command` - Execute any i3 command
 - `get_outputs` - Get display outputs
 - `screenshot` - Capture current screen
-
-## License
-
-MIT
