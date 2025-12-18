@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#282a36"/>
+      <stop offset="50%" style="stop-color:#1e1f29"/>
+      <stop offset="100%" style="stop-color:#0d0e12"/>
+    </linearGradient>
+    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#bd93f9"/>
+      <stop offset="100%" style="stop-color:#ff79c6"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="15" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#44475a" opacity="0.3"/>
+    </pattern>
+  </defs>
+
+  <rect width="100%" height="100%" fill="url(#bgGradient)"/>
+  <rect width="100%" height="100%" fill="url(#dots)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="1700" cy="150" r="250" fill="#bd93f9" opacity="0.03" filter="url(#glow)"/>
+  <circle cx="150" cy="900" r="300" fill="#ff79c6" opacity="0.03" filter="url(#glow)"/>
+
+  <!-- Title -->
+  <g transform="translate(960, 70)" filter="url(#glow)">
+    <text x="0" y="20" font-family="monospace" font-size="48" font-weight="bold" fill="url(#purpleGradient)" text-anchor="middle"></text>
+  </g>
+
+  <!-- LEFT: AI FEATURES (the star) -->
+  <g transform="translate(80, 130)">
+    <text x="0" y="0" font-family="monospace" font-size="20" font-weight="bold" fill="#bd93f9">★ AI FEATURES</text>
+    <rect x="0" y="10" width="320" height="3" fill="#bd93f9" opacity="0.7"/>
+
+    <text x="0" y="45" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+A</tspan><tspan fill="#6272a4"> .. </tspan>Ask AI (question)</text>
+    <text x="0" y="70" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+S</tspan><tspan fill="#6272a4"> .. </tspan>AI Suggestion</text>
+    <text x="0" y="95" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+O</tspan><tspan fill="#6272a4"> .. </tspan>AI Optimize Layout</text>
+    <text x="0" y="120" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+C</tspan><tspan fill="#6272a4"> .. </tspan>AI Chat (interactive)</text>
+
+    <text x="0" y="170" font-family="monospace" font-size="16" font-weight="bold" fill="#8be9fd">How AI Works</text>
+    <rect x="0" y="180" width="320" height="2" fill="#8be9fd" opacity="0.5"/>
+
+    <text x="0" y="210" font-family="monospace" font-size="13" fill="#6272a4">Ask: Type question, get answer</text>
+    <text x="0" y="235" font-family="monospace" font-size="13" fill="#6272a4">Suggest: AI analyzes windows</text>
+    <text x="0" y="260" font-family="monospace" font-size="13" fill="#6272a4">Optimize: Auto-arrange layout</text>
+    <text x="0" y="285" font-family="monospace" font-size="13" fill="#6272a4">Chat: Full conversation mode</text>
+
+    <text x="0" y="330" font-family="monospace" font-size="16" font-weight="bold" fill="#ff79c6">AI Tip</text>
+    <rect x="0" y="340" width="320" height="2" fill="#ff79c6" opacity="0.5"/>
+
+    <text x="0" y="370" font-family="monospace" font-size="13" fill="#f8f8f2">Each command opens a terminal</text>
+    <text x="0" y="395" font-family="monospace" font-size="13" fill="#f8f8f2">with the AI assistant ready</text>
+  </g>
+
+  <!-- CENTER: Essential Keys -->
+  <g transform="translate(480, 130)">
+    <text x="0" y="0" font-family="monospace" font-size="20" font-weight="bold" fill="#50fa7b">⚡ ESSENTIALS</text>
+    <rect x="0" y="10" width="320" height="3" fill="#50fa7b" opacity="0.7"/>
+
+    <text x="0" y="45" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+Enter</tspan><tspan fill="#6272a4"> . </tspan>Terminal</text>
+    <text x="0" y="70" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+Q</tspan><tspan fill="#6272a4"> .... </tspan>Close Window</text>
+    <text x="0" y="95" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+D</tspan><tspan fill="#6272a4"> .... </tspan>App Launcher</text>
+    <text x="0" y="120" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+R</tspan><tspan fill="#6272a4"> .... </tspan>Restart i3</text>
+
+    <text x="0" y="165" font-family="monospace" font-size="16" font-weight="bold" fill="#ffb86c">Focus and Move</text>
+    <rect x="0" y="175" width="320" height="2" fill="#ffb86c" opacity="0.5"/>
+
+    <text x="0" y="200" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Arrows</tspan><tspan fill="#6272a4"> ..... </tspan>Focus Window</text>
+    <text x="0" y="225" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+Arrows</tspan><tspan fill="#6272a4">  </tspan>Move Window</text>
+
+    <text x="0" y="270" font-family="monospace" font-size="16" font-weight="bold" fill="#f1fa8c">Layout</text>
+    <rect x="0" y="280" width="320" height="2" fill="#f1fa8c" opacity="0.5"/>
+
+    <text x="0" y="305" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+\</tspan><tspan fill="#6272a4"> .......... </tspan>Split Horizontal</text>
+    <text x="0" y="330" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+-</tspan><tspan fill="#6272a4"> .......... </tspan>Split Vertical</text>
+    <text x="0" y="355" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+F</tspan><tspan fill="#6272a4"> .... </tspan>Fullscreen</text>
+    <text x="0" y="380" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+Space</tspan><tspan fill="#6272a4">  </tspan>Toggle Float</text>
+  </g>
+
+  <!-- RIGHT: Workspaces -->
+  <g transform="translate(880, 130)">
+    <text x="0" y="0" font-family="monospace" font-size="20" font-weight="bold" fill="#ff5555">WORKSPACES</text>
+    <rect x="0" y="10" width="320" height="3" fill="#ff5555" opacity="0.7"/>
+
+    <text x="0" y="45" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+1</tspan><tspan fill="#6272a4"> ... </tspan>Workspace 1</text>
+    <text x="0" y="70" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Alt+2</tspan><tspan fill="#6272a4"> .... </tspan>Workspace 2</text>
+    <text x="0" y="95" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Alt+3</tspan><tspan fill="#6272a4"> .... </tspan>Workspace 3</text>
+    <text x="0" y="120" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Alt+4</tspan><tspan fill="#6272a4"> .... </tspan>Workspace 4</text>
+
+    <text x="0" y="160" font-family="monospace" font-size="16" font-weight="bold" fill="#6272a4">Move to Workspace</text>
+    <rect x="0" y="170" width="320" height="2" fill="#6272a4" opacity="0.5"/>
+
+    <text x="0" y="195" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+1</tspan><tspan fill="#6272a4"> .. </tspan>Send to WS 1</text>
+    <text x="0" y="220" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+2</tspan><tspan fill="#6272a4"> .. </tspan>Send to WS 2</text>
+    <text x="0" y="245" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+3</tspan><tspan fill="#6272a4"> .. </tspan>Send to WS 3</text>
+    <text x="0" y="270" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Ctrl+Shift+4</tspan><tspan fill="#6272a4"> .. </tspan>Send to WS 4</text>
+  </g>
+
+  <!-- FAR RIGHT: Quick Reference -->
+  <g transform="translate(1280, 130)">
+    <text x="0" y="0" font-family="monospace" font-size="20" font-weight="bold" fill="#8be9fd">QUICK REFERENCE</text>
+    <rect x="0" y="10" width="320" height="3" fill="#8be9fd" opacity="0.7"/>
+
+    <text x="0" y="45" font-family="monospace" font-size="14" fill="#f8f8f2"><tspan fill="#50fa7b">Mod Key</tspan><tspan fill="#6272a4"> ........ </tspan>Ctrl</text>
+
+    <text x="0" y="90" font-family="monospace" font-size="16" font-weight="bold" fill="#ff79c6">AI Shortcuts</text>
+    <rect x="0" y="100" width="320" height="2" fill="#ff79c6" opacity="0.5"/>
+
+    <text x="0" y="125" font-family="monospace" font-size="13" fill="#f8f8f2"><tspan fill="#bd93f9">A</tspan> = Ask   <tspan fill="#bd93f9">S</tspan> = Suggest</text>
+    <text x="0" y="150" font-family="monospace" font-size="13" fill="#f8f8f2"><tspan fill="#bd93f9">O</tspan> = Optimize   <tspan fill="#bd93f9">C</tspan> = Chat</text>
+    <text x="0" y="175" font-family="monospace" font-size="13" fill="#6272a4">(all with Ctrl+Shift)</text>
+
+    <text x="0" y="220" font-family="monospace" font-size="16" font-weight="bold" fill="#50fa7b">Window Basics</text>
+    <rect x="0" y="230" width="320" height="2" fill="#50fa7b" opacity="0.5"/>
+
+    <text x="0" y="255" font-family="monospace" font-size="13" fill="#f8f8f2">New terminal: <tspan fill="#50fa7b">Ctrl+Shift+Enter</tspan></text>
+    <text x="0" y="280" font-family="monospace" font-size="13" fill="#f8f8f2">Close window: <tspan fill="#50fa7b">Ctrl+Shift+Q</tspan></text>
+    <text x="0" y="305" font-family="monospace" font-size="13" fill="#f8f8f2">Move focus: <tspan fill="#50fa7b">Ctrl+Arrows</tspan></text>
+  </g>
+
+  <!-- Bottom info box -->
+  <g transform="translate(960, 520)">
+    <text x="0" y="50" font-family="monospace" font-size="14" fill="#6272a4" text-anchor="middle">AI Commands: Ctrl+Shift + A (Ask) | S (Suggest) | O (Optimize) | C (Chat)</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="960" y="620" font-family="monospace" font-size="12" fill="#44475a" text-anchor="middle">ai3 - AI-Powered i3wm - Dracula Theme</text>
+</svg>

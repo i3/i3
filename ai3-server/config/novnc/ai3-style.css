@@ -1,0 +1,324 @@
+/*
+ * ai3 noVNC Theme - Dracula Edition
+ * Custom styling for the noVNC web client
+ */
+
+/* ============================================
+   ROOT VARIABLES - Dracula Theme
+   ============================================ */
+:root {
+    --ai3-bg: #282a36;
+    --ai3-bg-dark: #1e1f29;
+    --ai3-bg-darker: #0d0e12;
+    --ai3-fg: #f8f8f2;
+    --ai3-comment: #6272a4;
+    --ai3-purple: #bd93f9;
+    --ai3-pink: #ff79c6;
+    --ai3-cyan: #8be9fd;
+    --ai3-green: #50fa7b;
+    --ai3-yellow: #f1fa8c;
+    --ai3-orange: #ffb86c;
+    --ai3-red: #ff5555;
+
+    /* noVNC specific overrides */
+    --noVNC-theme-bg: var(--ai3-bg);
+    --noVNC-theme-fg: var(--ai3-fg);
+    --noVNC-theme-accent: var(--ai3-purple);
+}
+
+/* ============================================
+   BODY & GENERAL
+   ============================================ */
+body {
+    background: linear-gradient(135deg, var(--ai3-bg) 0%, var(--ai3-bg-dark) 50%, var(--ai3-bg-darker) 100%) !important;
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace !important;
+    color: var(--ai3-fg) !important;
+}
+
+/* ============================================
+   CONTROL BAR (Top bar)
+   ============================================ */
+#noVNC_control_bar {
+    background: linear-gradient(180deg, var(--ai3-bg) 0%, var(--ai3-bg-dark) 100%) !important;
+    border-bottom: 2px solid var(--ai3-purple) !important;
+    box-shadow: 0 4px 20px rgba(189, 147, 249, 0.15) !important;
+}
+
+
+
+/* ============================================
+   CONTROL BAR BUTTONS
+   ============================================ */
+.noVNC_button {
+    background: var(--ai3-bg-dark) !important;
+    border: 1px solid var(--ai3-comment) !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+}
+
+.noVNC_button:hover {
+    background: var(--ai3-purple) !important;
+    border-color: var(--ai3-purple) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(189, 147, 249, 0.3) !important;
+}
+
+.noVNC_button:active {
+    transform: translateY(0) !important;
+}
+
+.noVNC_button img,
+.noVNC_button svg {
+    filter: brightness(0) invert(1) !important;
+}
+
+/* Active/selected button state */
+.noVNC_button.noVNC_selected {
+    background: var(--ai3-purple) !important;
+    border-color: var(--ai3-pink) !important;
+}
+
+/* ============================================
+   PANELS & MODALS
+   ============================================ */
+.noVNC_panel {
+    background: var(--ai3-bg) !important;
+    border: 1px solid var(--ai3-comment) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(189, 147, 249, 0.1) !important;
+    color: var(--ai3-fg) !important;
+}
+
+.noVNC_panel h2 {
+    color: var(--ai3-purple) !important;
+    border-bottom: 1px solid var(--ai3-comment) !important;
+    font-weight: 600 !important;
+}
+
+.noVNC_panel label {
+    color: var(--ai3-fg) !important;
+}
+
+/* ============================================
+   INPUT FIELDS
+   ============================================ */
+.noVNC_panel input[type="text"],
+.noVNC_panel input[type="password"],
+.noVNC_panel input[type="number"],
+.noVNC_panel select,
+.noVNC_panel textarea {
+    background: var(--ai3-bg-dark) !important;
+    border: 1px solid var(--ai3-comment) !important;
+    border-radius: 4px !important;
+    color: var(--ai3-fg) !important;
+    padding: 8px 12px !important;
+    transition: border-color 0.2s ease !important;
+}
+
+.noVNC_panel input:focus,
+.noVNC_panel select:focus,
+.noVNC_panel textarea:focus {
+    border-color: var(--ai3-purple) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(189, 147, 249, 0.2) !important;
+}
+
+/* Checkbox styling */
+.noVNC_panel input[type="checkbox"] {
+    accent-color: var(--ai3-purple) !important;
+}
+
+/* ============================================
+   STATUS BAR
+   ============================================ */
+#noVNC_status {
+    background: var(--ai3-bg-dark) !important;
+    border-top: 1px solid var(--ai3-comment) !important;
+    color: var(--ai3-comment) !important;
+}
+
+#noVNC_status.noVNC_open {
+    background: var(--ai3-green) !important;
+    color: var(--ai3-bg) !important;
+}
+
+#noVNC_status.noVNC_status_error {
+    background: var(--ai3-red) !important;
+    color: var(--ai3-fg) !important;
+}
+
+#noVNC_status.noVNC_status_warn {
+    background: var(--ai3-orange) !important;
+    color: var(--ai3-bg) !important;
+}
+
+/* ============================================
+   CONNECTION SCREEN
+   ============================================ */
+#noVNC_connect_dlg {
+    background: var(--ai3-bg) !important;
+}
+
+#noVNC_connect_button {
+    background: linear-gradient(135deg, var(--ai3-purple) 0%, var(--ai3-pink) 100%) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: var(--ai3-fg) !important;
+    font-weight: 600 !important;
+    padding: 12px 32px !important;
+    font-size: 16px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+}
+
+#noVNC_connect_button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(189, 147, 249, 0.4) !important;
+}
+
+#noVNC_connect_button:active {
+    transform: translateY(0) !important;
+}
+
+/* ============================================
+   LOGO & BRANDING
+   ============================================ */
+#noVNC_logo {
+    display: none !important;
+    /* Hide default logo */
+}
+
+#noVNC_control_bar_anchor .noVNC_logo {
+    display: none !important;
+}
+
+/* ai3 branding - shown on connect screen */
+.noVNC_logo::before {
+    content: 'ai3';
+    font-size: 48px;
+    font-weight: bold;
+    background: linear-gradient(135deg, var(--ai3-purple), var(--ai3-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 20px var(--ai3-purple) !important;
+}
+
+/* ============================================
+   CLIPBOARD PANEL
+   ============================================ */
+#noVNC_clipboard {
+    background: var(--ai3-bg) !important;
+}
+
+#noVNC_clipboard_text {
+    background: var(--ai3-bg-dark) !important;
+    color: var(--ai3-fg) !important;
+    border: 1px solid var(--ai3-comment) !important;
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* ============================================
+   SETTINGS PANEL
+   ============================================ */
+#noVNC_settings {
+    background: var(--ai3-bg) !important;
+}
+
+.noVNC_setting_row {
+    border-bottom: 1px solid var(--ai3-comment) !important;
+}
+
+/* ============================================
+   KEYBOARD SHORTCUTS HINT (Custom)
+   ============================================ */
+.ai3-keybind-hint {
+    position: fixed;
+    bottom: 60px;
+    left: 20px;
+    background: var(--ai3-bg);
+    border: 1px solid var(--ai3-purple);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--ai3-comment);
+    z-index: 1000;
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+}
+
+.ai3-keybind-hint:hover {
+    opacity: 1;
+}
+
+.ai3-keybind-hint strong {
+    color: var(--ai3-purple);
+}
+
+.ai3-keybind-hint kbd {
+    background: var(--ai3-bg-dark);
+    border: 1px solid var(--ai3-comment);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ai3-green);
+}
+
+/* ============================================
+   SCROLLBARS
+   ============================================ */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--ai3-bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--ai3-comment);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ai3-purple);
+}
+
+/* ============================================
+   LOADING SPINNER
+   ============================================ */
+.noVNC_spinner {
+    border-color: var(--ai3-purple) transparent transparent transparent !important;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    .ai3-keybind-hint {
+        display: none;
+    }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes ai3-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px var(--ai3-purple);
+    }
+
+    50% {
+        box-shadow: 0 0 20px var(--ai3-purple), 0 0 30px var(--ai3-pink);
+    }
+}
+
+.noVNC_button.ai3-ai-active {
+    animation: ai3-glow 2s ease-in-out infinite;
+}

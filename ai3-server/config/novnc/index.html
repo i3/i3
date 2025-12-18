@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ai3 - AI-Integrated i3 Window Manager Environment">
+    <meta name="theme-color" content="#282a36">
+
+    <title>ai3 - AI Desktop Environment</title>
+
+    <style>
+        /* ============================================
+           ai3 Splash Screen Theme
+           ============================================ */
+        :root {
+            --bg: #282a36;
+            --bg-dark: #1e1f29;
+            --fg: #f8f8f2;
+            --comment: #6272a4;
+            --purple: #bd93f9;
+            --pink: #ff79c6;
+            --cyan: #8be9fd;
+            --green: #50fa7b;
+            --yellow: #f1fa8c;
+            --orange: #ffb86c;
+            --red: #ff5555;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+            background: linear-gradient(135deg, var(--bg) 0%, var(--bg-dark) 50%, #0d0e12 100%);
+            color: var(--fg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Background animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 80%, rgba(189, 147, 249, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 121, 198, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(139, 233, 253, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 40px;
+            max-width: 600px;
+        }
+
+        /* ASCII Logo */
+        .logo {
+            font-size: 14px;
+            line-height: 1.2;
+            white-space: pre;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, var(--purple), var(--pink), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient-shift 3s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        @keyframes gradient-shift {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--comment);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+
+        /* Connect button */
+        .connect-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 100%);
+            color: var(--fg);
+            border: none;
+            border-radius: 12px;
+            padding: 18px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(189, 147, 249, 0.3);
+        }
+
+        .connect-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(189, 147, 249, 0.5);
+        }
+
+        .connect-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .connect-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--bg-dark);
+            border-top-color: var(--purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            color: var(--comment);
+            font-size: 14px;
+        }
+
+        /* Keybindings section */
+        .keybindings {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(98, 114, 164, 0.3);
+        }
+
+        .keybindings h3 {
+            color: var(--comment);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .keybind-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            text-align: left;
+        }
+
+        .keybind-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(40, 42, 54, 0.6);
+            border-radius: 6px;
+            border: 1px solid rgba(98, 114, 164, 0.2);
+        }
+
+        kbd {
+            background: var(--bg-dark);
+            border: 1px solid var(--comment);
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            color: var(--green);
+            white-space: nowrap;
+        }
+
+        .keybind-label {
+            color: var(--comment);
+            font-size: 12px;
+        }
+
+        /* AI badge */
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-left: 8px;
+        }
+
+        /* Features list */
+        .features {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--comment);
+            font-size: 13px;
+        }
+
+        .feature-icon {
+            width: 20px;
+            height: 20px;
+            color: var(--purple);
+        }
+
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            color: var(--comment);
+            font-size: 11px;
+            opacity: 0.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .logo {
+                font-size: 10px;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .keybind-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .features {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">
+            ██████╗ ██╗██████╗
+            ██╔══██╗██║╚════██╗
+            ███████║██║ █████╔╝
+            ██╔══██║██║ ╚═══██╗
+            ██║ ██║██║██████╔╝
+            ╚═╝ ╚═╝╚═╝╚═════╝ </div>
+
+        <a href="vnc.html?autoconnect=true&resize=scale" class="connect-btn" id="connectBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+            Launch Desktop
+        </a>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p class="loading-text">Connecting to ai3 desktop...</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('connectBtn').addEventListener('click', function (e) {
+            document.getElementById('loading').classList.add('active');
+        });
+    </script>
+</body>
+
+</html>

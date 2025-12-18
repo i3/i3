@@ -1,0 +1,220 @@
+# ai3 i3 Configuration - Browser-Friendly Edition
+# Designed for noVNC access - avoids macOS/browser key conflicts
+
+# ============================================
+# MODIFIER KEY
+# ============================================
+# Use Ctrl as primary modifier - passes through browsers best
+# Alt is secondary, used sparingly (macOS uses Alt for special chars)
+set $mod Ctrl
+
+# ============================================
+# DRACULA COLOR SCHEME
+# ============================================
+set $bg-color            #282a36
+set $inactive-bg-color   #1e1f29
+set $text-color          #f8f8f2
+set $inactive-text-color #6272a4
+set $urgent-bg-color     #ff5555
+set $indicator-color     #bd93f9
+set $focused-border      #bd93f9
+set $unfocused-border    #44475a
+
+font pango:JetBrains Mono 10
+
+# ============================================
+# ESSENTIAL (Ctrl+Shift to avoid conflicts)
+# ============================================
+
+floating_modifier $mod
+
+# Terminal: Ctrl+Shift+Enter (safe - no browser conflict)
+bindsym $mod+Shift+Return exec xterm
+
+# Kill window: Ctrl+Shift+Q (Ctrl+Q would quit browser)
+bindsym $mod+Shift+q kill
+
+# App launcher: Ctrl+Shift+D (Ctrl+D is bookmark)
+bindsym $mod+Shift+d exec --no-startup-id dmenu_run -fn 'JetBrains Mono-11' -nb '#282a36' -nf '#f8f8f2' -sb '#bd93f9' -sf '#282a36'
+
+# ============================================
+# FOCUS (Ctrl+Arrows - generally safe)
+# ============================================
+
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# ============================================
+# MOVE WINDOWS (Ctrl+Shift+Arrows)
+# ============================================
+
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# ============================================
+# LAYOUT (Using safe key combos)
+# ============================================
+
+# Split: Ctrl+\ horizontal, Ctrl+- vertical (safe keys)
+bindsym $mod+backslash split h
+bindsym $mod+minus split v
+
+# Fullscreen: Ctrl+Shift+F (Ctrl+F is find, F11 is browser fullscreen)
+bindsym $mod+Shift+f fullscreen toggle
+
+# Toggle floating: Ctrl+Shift+Space
+bindsym $mod+Shift+space floating toggle
+
+# ============================================
+# WORKSPACES (Ctrl+1-4 - browser safe with Shift)
+# ============================================
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+
+# Switch workspace with Ctrl+Shift+1-4
+bindsym $mod+Shift+1 workspace $ws1
+bindsym $mod+Shift+2 workspace $ws2
+bindsym $mod+Shift+3 workspace $ws3
+bindsym $mod+Shift+4 workspace $ws4
+
+# Move to workspace with Ctrl+Alt+1-4
+bindsym $mod+Mod1+1 move container to workspace $ws1
+bindsym $mod+Mod1+2 move container to workspace $ws2
+bindsym $mod+Mod1+3 move container to workspace $ws3
+bindsym $mod+Mod1+4 move container to workspace $ws4
+
+# ============================================
+# SYSTEM (Ctrl+Shift combos)
+# ============================================
+
+# Reload config: Ctrl+Shift+C
+bindsym $mod+Shift+c reload
+
+# Restart i3: Ctrl+Shift+R (Ctrl+R is refresh)
+bindsym $mod+Shift+r restart
+
+# ============================================
+# ★★★ AI FEATURES ★★★
+# ============================================
+
+# -------------------------------------------
+# AI MODE (Primary way to access AI features)
+# Ctrl+G enters AI mode (G = "GPT/Generate")
+# -------------------------------------------
+
+bindsym $mod+g mode "ai"
+
+mode "ai" {
+    # s = Toggle suggestions
+    bindsym s ai suggest toggle; mode "default"
+
+    # t = Trigger suggestion
+    bindsym t ai suggest trigger; mode "default"
+
+    # a = Accept current suggestion
+    bindsym a ai suggest accept; mode "default"
+
+    # p = Toggle auto-pilot mode (continuous suggestions)
+    bindsym p ai suggest auto; mode "default"
+
+    # o = Optimize layout
+    bindsym o ai optimize; mode "default"
+
+    # i = Info/stats
+    bindsym i ai stats; mode "default"
+
+    # Escape/q = Exit AI mode
+    bindsym Escape mode "default"
+    bindsym q mode "default"
+}
+
+# -------------------------------------------
+# DIRECT AI SHORTCUTS (Ctrl+Shift combos)
+# -------------------------------------------
+
+# Ctrl+Shift+S = Toggle AI Suggestions
+bindsym $mod+Shift+s ai suggest toggle
+
+# Ctrl+Shift+T = Trigger AI Suggestion
+bindsym $mod+Shift+t ai suggest trigger
+
+# Ctrl+Shift+P = Toggle AI Auto-Pilot Mode
+bindsym $mod+Shift+p ai suggest auto
+
+# Ctrl+Shift+O = AI Optimize Layout
+bindsym $mod+Shift+o ai optimize
+
+# Ctrl+Shift+I = Show AI Stats (Info)
+bindsym $mod+Shift+i ai stats
+
+# -------------------------------------------
+# SUGGESTION ACCEPT/DISMISS/REFRESH
+# -------------------------------------------
+
+# When AI shows a suggestion:
+# Ctrl+Shift+A = Accept suggestion
+bindsym $mod+Shift+a ai suggest accept
+# Ctrl+Shift+X = Dismiss suggestion (X = cancel)
+bindsym $mod+Shift+x ai suggest dismiss
+# Ctrl+Shift+N = New suggestion (refresh/discard current)
+bindsym $mod+Shift+n ai suggest refresh
+
+# ============================================
+# WINDOW STYLING
+# ============================================
+
+default_border pixel 3
+default_floating_border pixel 3
+hide_edge_borders smart
+
+client.focused          $focused-border    $bg-color          $text-color          $indicator-color   $focused-border
+client.focused_inactive $unfocused-border  $inactive-bg-color $inactive-text-color $indicator-color   $unfocused-border
+client.unfocused        $unfocused-border  $inactive-bg-color $inactive-text-color $indicator-color   $unfocused-border
+client.urgent           $urgent-bg-color   $urgent-bg-color   $text-color          $indicator-color   $urgent-bg-color
+client.background       $bg-color
+
+# ============================================
+# GAPS
+# ============================================
+gaps inner 10
+gaps outer 5
+smart_gaps on
+
+# ============================================
+# BAR (Taller for AI status display)
+# ============================================
+bar {
+    status_command i3status -c /root/.config/i3status/config
+    position top
+    font pango:JetBrains Mono 11
+    height 28
+    separator_symbol "│"
+    tray_padding 4
+
+    colors {
+        background $bg-color
+        statusline $text-color
+        separator  $inactive-text-color
+
+        focused_workspace  $focused-border    $focused-border    $bg-color
+        active_workspace   $unfocused-border  $unfocused-border  $text-color
+        inactive_workspace $bg-color          $bg-color          $inactive-text-color
+        urgent_workspace   $urgent-bg-color   $urgent-bg-color   $text-color
+        binding_mode       $indicator-color   $indicator-color   $bg-color
+    }
+}
+
+# ============================================
+# STARTUP
+# ============================================
+exec_always --no-startup-id feh --bg-fill /root/Pictures/wallpaper.png 2>/dev/null || true
+exec_always --no-startup-id picom --config /root/.config/picom/picom.conf -b 2>/dev/null || true
+
+for_window [window_role="pop-up"] floating enable
+for_window [window_role="task_dialog"] floating enable
