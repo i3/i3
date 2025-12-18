@@ -1,9 +1,9 @@
+# i3 build artifacts
 *.o
 tags
 include/GENERATED_*.h
 include/all.h.pch
 *~
-*.swp
 *.gcda
 *.gcno
 *.dSYM
@@ -36,17 +36,48 @@ i3-dump-log/i3-dump-log
 libi3.a
 docs/*.pdf
 docs/*.html
-!/docs/refcard.html
+!docs/refcard.html
 i3-command-parser.stamp
 i3-config-parser.stamp
 .clang_complete
 compile_commands.json
-/.ccls-cache
-/.clangd
+.ccls-cache/
+.clangd/
 LAST_VERSION
+build/
 
-# We recommend building in a subdirectory called build.
-# If you chose a different directory name,
-# it is up to you to arrange for it to be ignored by git,
-# e.g. by listing your directory in .git/info/exclude.
-/build
+# Screenshot output
+screenshots/
+*.png
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Environment files with secrets
+.env
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/

@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  # Development container with Docker-in-Docker
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - devcontainer-docker:/var/lib/docker
+    # Required for Docker-in-Docker
+    privileged: true
+    # Keep container running
+    command: sleep infinity
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      - i3-dev-network
+
+  # i3wm container (managed from devcontainer)
+  i3-dev:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: i3-dev
+    environment:
+      - DISPLAY=:99
+      - SCREEN_WIDTH=1920
+      - SCREEN_HEIGHT=1080
+      - SCREEN_DEPTH=24
+      - API_PORT=5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - ..:/opt/i3-src
+      - ../screenshots:/screenshots
+    restart: unless-stopped
+    networks:
+      - i3-dev-network
+    profiles:
+      - i3
+
+volumes:
+  devcontainer-docker:
+
+networks:
+  i3-dev-network:
+    driver: bridge

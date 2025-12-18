@@ -1,0 +1,28 @@
+${c1}        _  _____
+${c1}       (_)|___ /
+${c1}   __ _ _  |_ \
+${c1}  / _` | |___) |
+${c1} | (_| | |____/
+${c1}  \__,_|_|
+${c2}
+${c2} AI-Powered i3wm
+${c2} Browser-Friendly Keys
+${c1} ═══════════════════════
+${c2}  ★ AI FEATURES ★
+${c1} ───────────────────────
+${c2}  F5  ${c1}Toggle AI Suggest
+${c2}  F6  ${c1}Trigger Suggestion
+${c2}  F7  ${c1}AI Optimize Layout
+${c2}  F8  ${c1}Show AI Stats
+${c1} ───────────────────────
+${c2}  Ctrl+Tab    ${c1}Accept
+${c2}  Ctrl+Esc    ${c1}Dismiss
+${c2}  Ctrl+G      ${c1}AI Mode
+${c1} ═══════════════════════
+${c2}  ESSENTIALS
+${c1} ───────────────────────
+${c2}  Ctrl+Shift+Enter ${c1}Term
+${c2}  Ctrl+Shift+Q     ${c1}Kill
+${c2}  Ctrl+Arrows      ${c1}Focus
+${c2}  F1-F4            ${c1}WS 1-4
+${c1} ═══════════════════════

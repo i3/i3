@@ -1,0 +1,97 @@
+! ai3 Xresources - Dracula Theme
+! Terminal colors and settings for URxvt
+
+! ============================================
+! FONT CONFIGURATION
+! ============================================
+
+URxvt.font: xft:JetBrains Mono:size=11:antialias=true:hinting=true
+URxvt.boldFont: xft:JetBrains Mono:bold:size=11:antialias=true:hinting=true
+URxvt.italicFont: xft:JetBrains Mono:italic:size=11:antialias=true:hinting=true
+URxvt.boldItalicFont: xft:JetBrains Mono:bold:italic:size=11:antialias=true:hinting=true
+
+! ============================================
+! WINDOW SETTINGS
+! ============================================
+
+URxvt.scrollBar: false
+URxvt.internalBorder: 15
+URxvt.cursorBlink: true
+URxvt.cursorUnderline: false
+URxvt.letterSpace: 0
+URxvt.lineSpace: 0
+URxvt.geometry: 92x24
+URxvt.saveline: 10000
+URxvt.scrollTtyOutput: false
+URxvt.scrollWithBuffer: true
+URxvt.scrollTtyKeypress: true
+
+! ============================================
+! TRANSPARENCY
+! ============================================
+
+URxvt.depth: 32
+URxvt.background: [90]#282a36
+URxvt.transparent: false
+
+! ============================================
+! DRACULA COLOR SCHEME
+! ============================================
+
+! special
+*.foreground:   #f8f8f2
+*.background:   #282a36
+*.cursorColor:  #f8f8f2
+
+! black
+*.color0:       #21222c
+*.color8:       #6272a4
+
+! red
+*.color1:       #ff5555
+*.color9:       #ff6e6e
+
+! green
+*.color2:       #50fa7b
+*.color10:      #69ff94
+
+! yellow
+*.color3:       #f1fa8c
+*.color11:      #ffffa5
+
+! blue
+*.color4:       #bd93f9
+*.color12:      #d6acff
+
+! magenta
+*.color5:       #ff79c6
+*.color13:      #ff92df
+
+! cyan
+*.color6:       #8be9fd
+*.color14:      #a4ffff
+
+! white
+*.color7:       #f8f8f2
+*.color15:      #ffffff
+
+! ============================================
+! XTERM FALLBACK
+! ============================================
+
+XTerm*faceName: JetBrains Mono
+XTerm*faceSize: 11
+XTerm*renderFont: true
+XTerm*background: #282a36
+XTerm*foreground: #f8f8f2
+XTerm*cursorColor: #f8f8f2
+XTerm*scrollBar: false
+XTerm*rightScrollBar: false
+XTerm*saveLines: 10000
+
+! ============================================
+! GENERAL X SETTINGS
+! ============================================
+
+Xcursor.theme: Adwaita
+Xcursor.size: 16

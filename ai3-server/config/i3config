@@ -1,0 +1,158 @@
+# ai3 i3 Configuration - Python AI Edition
+# Designed for noVNC access with Python-based AI assistant
+
+# ============================================
+# MODIFIER KEY
+# ============================================
+set $mod Ctrl
+
+# ============================================
+# DRACULA COLOR SCHEME
+# ============================================
+set $bg-color            #282a36
+set $inactive-bg-color   #1e1f29
+set $text-color          #f8f8f2
+set $inactive-text-color #6272a4
+set $urgent-bg-color     #ff5555
+set $indicator-color     #bd93f9
+set $focused-border      #bd93f9
+set $unfocused-border    #44475a
+
+font pango:JetBrains Mono 10
+
+# ============================================
+# ESSENTIAL (Ctrl+Shift to avoid conflicts)
+# ============================================
+
+floating_modifier $mod
+
+# Terminal: Ctrl+Shift+Enter
+bindsym $mod+Shift+Return exec xterm
+
+# Kill window: Ctrl+Shift+Q
+bindsym $mod+Shift+q kill
+
+# App launcher: Ctrl+Shift+D
+bindsym $mod+Shift+d exec --no-startup-id dmenu_run -fn 'JetBrains Mono-11' -nb '#282a36' -nf '#f8f8f2' -sb '#bd93f9' -sf '#282a36'
+
+# ============================================
+# FOCUS (Ctrl+Arrows)
+# ============================================
+
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# ============================================
+# MOVE WINDOWS (Ctrl+Shift+Arrows)
+# ============================================
+
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# ============================================
+# LAYOUT
+# ============================================
+
+bindsym $mod+backslash split h
+bindsym $mod+minus split v
+bindsym $mod+Shift+f fullscreen toggle
+bindsym $mod+Shift+space floating toggle
+
+# ============================================
+# WORKSPACES
+# ============================================
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+
+bindsym $mod+Mod1+1 workspace $ws1
+bindsym $mod+Mod1+2 workspace $ws2
+bindsym $mod+Mod1+3 workspace $ws3
+bindsym $mod+Mod1+4 workspace $ws4
+
+bindsym $mod+Shift+1 move container to workspace $ws1
+bindsym $mod+Shift+2 move container to workspace $ws2
+bindsym $mod+Shift+3 move container to workspace $ws3
+bindsym $mod+Shift+4 move container to workspace $ws4
+
+# ============================================
+# SYSTEM
+# ============================================
+
+bindsym $mod+Shift+r restart
+
+# ============================================
+# AI FEATURES - Direct Keybindings
+# ============================================
+
+# Ctrl+Shift+S = Get AI Suggestion (shows in bar)
+bindsym $mod+Shift+s exec /root/.local/bin/ai3-suggest.sh
+
+# Ctrl+Shift+Y = Accept pending suggestion (Yes)
+bindsym $mod+Shift+y exec /root/.local/bin/ai3-accept.sh
+
+# Ctrl+Shift+N = Discard pending suggestion (No)
+bindsym $mod+Shift+n exec /root/.local/bin/ai3-discard.sh
+
+# Ctrl+Shift+O = AI Optimize Layout (runs in background)
+bindsym $mod+Shift+o exec /root/.local/bin/ai3-optimize.sh
+
+# Ctrl+Shift+C = AI Chat (interactive conversation)
+bindsym $mod+Shift+c exec xterm -e /root/.local/bin/ai3-chat.sh
+
+# Ctrl+Shift+A = AI Auto Mode (start autonomous control in terminal)
+bindsym $mod+Shift+a exec xterm -e /root/.local/bin/ai3-auto-start.sh
+
+# Ctrl+Shift+Escape = Stop AI Auto Mode (emergency stop)
+bindsym $mod+Shift+Escape exec /root/.local/bin/ai3-auto-stop.sh
+
+# ============================================
+# WINDOW STYLING
+# ============================================
+
+default_border pixel 3
+default_floating_border pixel 3
+hide_edge_borders smart
+
+client.focused          $focused-border    $bg-color          $text-color          $indicator-color   $focused-border
+client.focused_inactive $unfocused-border  $inactive-bg-color $inactive-text-color $indicator-color   $unfocused-border
+client.unfocused        $unfocused-border  $inactive-bg-color $inactive-text-color $indicator-color   $unfocused-border
+client.urgent           $urgent-bg-color   $urgent-bg-color   $text-color          $indicator-color   $urgent-bg-color
+client.background       $bg-color
+
+# ============================================
+# BAR
+# ============================================
+bar {
+    status_command /root/.local/bin/ai3-status
+    position top
+    font pango:JetBrains Mono 11
+    separator_symbol "│"
+    tray_padding 4
+
+    colors {
+        background $bg-color
+        statusline $text-color
+        separator  $inactive-text-color
+
+        focused_workspace  $focused-border    $focused-border    $bg-color
+        active_workspace   $unfocused-border  $unfocused-border  $text-color
+        inactive_workspace $bg-color          $bg-color          $inactive-text-color
+        urgent_workspace   $urgent-bg-color   $urgent-bg-color   $text-color
+        binding_mode       $indicator-color   $indicator-color   $bg-color
+    }
+}
+
+# ============================================
+# STARTUP
+# ============================================
+exec_always --no-startup-id feh --bg-fill /root/Pictures/wallpaper.png 2>/dev/null || true
+exec_always --no-startup-id picom --config /root/.config/picom/picom.conf -b 2>/dev/null || true
+
+for_window [window_role="pop-up"] floating enable
+for_window [window_role="task_dialog"] floating enable
