@@ -105,14 +105,12 @@ void send_take_focus(xcb_window_t window, xcb_timestamp_t timestamp) {
  *
  */
 void xcb_set_window_rect(xcb_connection_t *conn, const xcb_window_t window, Rect r) {
-    xcb_void_cookie_t cookie = xcb_configure_window(conn, window,
-                                                    XCB_CONFIG_WINDOW_X |
-                                                        XCB_CONFIG_WINDOW_Y |
-                                                        XCB_CONFIG_WINDOW_WIDTH |
-                                                        XCB_CONFIG_WINDOW_HEIGHT,
-                                                    &(r.x));
-    /* ignore events which are generated because we configured a window */
-    add_ignore_event(cookie.sequence, -1);
+    xcb_configure_window(conn, window,
+                         XCB_CONFIG_WINDOW_X |
+                             XCB_CONFIG_WINDOW_Y |
+                             XCB_CONFIG_WINDOW_WIDTH |
+                             XCB_CONFIG_WINDOW_HEIGHT,
+                         &(r.x));
 }
 
 /*
