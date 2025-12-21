@@ -19,6 +19,7 @@ struct workspaces_json_params {
     struct ws_head *workspaces;
     i3_ws *workspaces_walk;
     char *cur_key;
+    bool need_output;
     bool parsing_rect;
 };
 
@@ -160,6 +161,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, const s
             TAILQ_INSERT_TAIL(ws->output->workspaces, ws, tailq);
         }
 
+        params->need_output = false;
         FREE(output_name);
         FREE(params->cur_key);
 
@@ -181,6 +183,7 @@ static int workspaces_start_map_cb(void *params_) {
         new_workspace->num = -1;
 
         params->workspaces_walk = new_workspace;
+        params->need_output = true;
         params->parsing_rect = false;
     } else {
         params->parsing_rect = true;
@@ -202,6 +205,15 @@ static int workspaces_end_map_cb(void *params_) {
         return 1; /* workspace already assigned to output */
     }
 
+    /* If we processed the output field but didn't find the output, the
+     * workspace belongs to an output this bar instance doesn't manage. */
+    if (!params->need_output) {
+        I3STRING_FREE(ws->name);
+        FREE(ws->canonical_name);
+        FREE(params->workspaces_walk);
+        return 1;
+    }
+
     if (!ws->name || SLIST_EMPTY(outputs)) { /* Invalid state */
         I3STRING_FREE(ws->name);
         FREE(ws->canonical_name);
@@ -209,7 +221,7 @@ static int workspaces_end_map_cb(void *params_) {
         return 1;
     }
 
-    /* Handle no output case */
+    /* Handle no output case - fallback to primary */
     ws->output = get_output_by_name("primary");
     if (ws->output == NULL) {
         ws->output = SLIST_FIRST(outputs);
