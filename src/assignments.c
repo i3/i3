@@ -15,6 +15,10 @@
  *
  */
 void run_assignments(i3Window *window) {
+    if (!window) {
+        return;
+    }
+
     DLOG("Checking if any assignments match this window\n");
 
     bool needs_tree_render = false;
