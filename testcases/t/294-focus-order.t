@@ -297,7 +297,7 @@ cmp_tree(
     layout_before => 'S[a b] V[2 3 T[4 5* 6]]',
     layout_after => 'S[a b*]',
     cb => sub {
-        cmd '[class=' . $_[0][3]->id . '] mark 3';
+        cmd '[id=' . $_[0][3]->id . '] mark 3';
         cmd 'move to mark 3';
 
         $windows[0] = $_[0][5];
