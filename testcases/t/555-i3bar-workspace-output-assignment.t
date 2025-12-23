@@ -40,6 +40,9 @@ my $scriptfile = "$tmpdir/i3bar-wrapper.sh";
 open(my $scriptfh, '>', $scriptfile) or BAIL_OUT "Cannot create wrapper: $!";
 print $scriptfh <<"EOF";
 #!/bin/sh
+echo "---- DEBUG: i3bar wrapper ----"
+cat "$scriptfile"
+echo '---- DEBUG: i3bar wrapper ----'
 # Use tee so that the logs also end up in the testsuite log file.
 (i3bar -V "\$@" 2>&1 | tee "$logfile") &
 echo \$! > "$pidfile"
