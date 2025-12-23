@@ -115,6 +115,8 @@ my $win2 = open_window;
 exit_gracefully($pid);
 
 # Kill i3bar explicitly, wait for process exit
+# An xtest sync would not be enough here because we need to wait for i3bar to
+# draw its window.
 my $bar_pid = slurp($pidfile);
 kill 'TERM', $bar_pid;
 my $bar_ended = 0;
