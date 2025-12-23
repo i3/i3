@@ -64,9 +64,10 @@ subtest 'basic border styles' => sub {
     cmd 'border pixel 5';
     is_net_frame_extents($w, [5, 5, 5, 5], "pixel border with 5px width");
 
-    open_window;
+    my $other = open_window;
     is_net_frame_extents($w, [5, 5, 5, 5], "other window does not affect");
-    cmd 'kill';
+    $other->destroy;
+    wait_for_unmap $other;
 
     cmd 'border normal 0';
     is_net_frame_extents($w, [0, 0, 18, 0], "normal border with 0px width");
