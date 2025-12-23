@@ -18,7 +18,7 @@
 # Ticket: #6560
 # Bug still in: 4.25-6-g0e2e8290
 use i3test i3_autostart => 0;
-use File::Temp qw(tempfile tempdir);
+use File::Temp qw(tempdir);
 use POSIX qw(mkfifo);
 use i3test::XTEST;
 
@@ -34,7 +34,8 @@ my $exitfifo = "$tmpdir/fifo";
 mkfifo("$exitfifo", 0600) or BAIL_OUT "Could not create FIFO: $!";
 
 # Create a wrapper script that tracks i3bar's PID and signals when it exits
-my ($scriptfh, $scriptfile) = tempfile(SUFFIX => '.sh', UNLINK => 1);
+my $scriptfile = "$tmpdir/i3bar-wrapper.sh";
+open(my $scriptfh, '>', $scriptfile) or BAIL_OUT "Cannot create wrapper: $!";
 print $scriptfh <<"EOF";
 #!/bin/sh
 i3bar -V "\$@" 2>&1 &
