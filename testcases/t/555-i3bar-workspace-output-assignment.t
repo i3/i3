@@ -17,10 +17,11 @@
 # Verify that i3bar only shows correct workspace buttons in each output.
 # Ticket: #6560
 # Bug still in: 4.25-6-g0e2e8290
-use i3test i3_autostart => 0;
 use File::Temp qw(tempdir);
-use POSIX qw(mkfifo);
+use i3test i3_autostart => 0;
+use i3test::Util qw(slurp);
 use i3test::XTEST;
+use POSIX qw(mkfifo);
 
 ################################################################################
 # Test that a bar configured for primary output only shows workspaces from that
@@ -31,6 +32,7 @@ use i3test::XTEST;
 my $tmpdir = tempdir(CLEANUP => 1);
 my $pidfile = "$tmpdir/i3bar.pid";
 my $exitfifo = "$tmpdir/fifo";
+my $logfile = "$tmpdir/i3bar.log";
 mkfifo("$exitfifo", 0600) or BAIL_OUT "Could not create FIFO: $!";
 
 # Create a wrapper script that tracks i3bar's PID and signals when it exits
@@ -38,7 +40,7 @@ my $scriptfile = "$tmpdir/i3bar-wrapper.sh";
 open(my $scriptfh, '>', $scriptfile) or BAIL_OUT "Cannot create wrapper: $!";
 print $scriptfh <<"EOF";
 #!/bin/sh
-i3bar -V "\$@" 2>&1 &
+i3bar -V "\$@" 2>&1 >"$logfile" &
 echo \$! > "$pidfile"
 wait
 echo done > "$exitfifo"
@@ -130,7 +132,7 @@ ok(defined($result), 'i3bar ended');
 
 exit_gracefully($pid);
 
-my $log = get_i3_log;
+my $log = slurp($logfile);
 
 my @ws2_draws = ($log =~ /Drawing button for WS 2 at/g);
 ok(scalar(@ws2_draws) > 0, "Workspace 2 (on primary) is drawn in the bar");
