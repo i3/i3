@@ -21,6 +21,7 @@ use i3test i3_autostart => 0;
 use File::Temp qw(tempfile);
 use Time::HiRes qw(sleep);
 use i3test::Util qw(slurp);
+use i3test::XTEST;
 
 ################################################################################
 # Test that a bar configured for primary output only shows workspaces from that
@@ -55,16 +56,55 @@ EOT
 
 my $pid = launch_with_config($config);
 
-# Wait for i3bar to start (PID file appears)
-my $bar_started = 0;
-for (1..50) {
-    if (-e $pidfile && -s $pidfile) {
-        $bar_started = 1;
-        last;
+my $i3 = i3(get_socket_path());
+$i3->connect()->recv;
+my $cv = AnyEvent->condvar;
+my $timer = AnyEvent->timer(after => 1, interval => 0, cb => sub { $cv->send(0) });
+$i3->subscribe({
+        window => sub {
+            my ($event) = @_;
+            if ($event->{change} eq 'focus') {
+                $cv->send($event->{container});
+            }
+            if ($event->{change} eq 'new') {
+                if (defined($event->{container}->{window_properties}->{class}) &&
+                    $event->{container}->{window_properties}->{class} eq 'i3bar') {
+                    $cv->send($event->{container});
+                }
+            }
+        },
+    })->recv;
+
+sub i3bar_present {
+    my ($nodes) = @_;
+
+    for my $node (@{$nodes}) {
+	my $props = $node->{window_properties};
+	if (defined($props) && $props->{class} eq 'i3bar') {
+	    return $node->{window};
+	}
     }
-    sleep(0.1);
+
+    return 0 if !@{$nodes};
+
+    my @children = (map { @{$_->{nodes}} } @{$nodes},
+                    map { @{$_->{'floating_nodes'}} } @{$nodes});
+
+    return i3bar_present(\@children);
 }
-ok($bar_started, 'i3bar started (PID file created)');
+
+my $i3bar_window = i3bar_present($i3->get_tree->recv->{nodes});
+if ($i3bar_window) {
+    ok(1, 'i3bar present');
+} else {
+    my $con = $cv->recv;
+    ok($con, 'i3bar appeared');
+    $i3bar_window = $con->{window};
+}
+
+diag('i3bar window = ' . $i3bar_window);
+xtest_sync_with_i3;
+xtest_sync_with($i3bar_window);
 
 # The actual test
 cmd 'workspace 1';
