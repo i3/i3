@@ -18,9 +18,8 @@
 # Ticket: #6560
 # Bug still in: 4.25-6-g0e2e8290
 use i3test i3_autostart => 0;
-use File::Temp qw(tempfile);
-use Time::HiRes qw(sleep);
-use i3test::Util qw(slurp);
+use File::Temp qw(tempfile tempdir);
+use POSIX qw(mkfifo);
 use i3test::XTEST;
 
 ################################################################################
@@ -28,15 +27,20 @@ use i3test::XTEST;
 # output, not from other outputs.
 ################################################################################
 
-# Create temp files for i3bar output and PID tracking
-my (undef, $pidfile) = tempfile(SUFFIX => '.pid', UNLINK => 1);
+# Create temp files for i3bar PID and exit signaling
+my $tmpdir = tempdir(CLEANUP => 1);
+my $pidfile = "$tmpdir/i3bar.pid";
+my $exitfifo = "$tmpdir/fifo";
+mkfifo("$exitfifo", 0600) or BAIL_OUT "Could not create FIFO: $!";
 
-# Create a wrapper script that tracks PID
+# Create a wrapper script that tracks i3bar's PID and signals when it exits
 my ($scriptfh, $scriptfile) = tempfile(SUFFIX => '.sh', UNLINK => 1);
 print $scriptfh <<"EOF";
 #!/bin/sh
-echo \$\$ > "$pidfile"
-exec i3bar -V "\$@"
+i3bar -V "\$@" 2>&1 &
+echo \$! > "$pidfile"
+wait
+echo done > "$exitfifo"
 EOF
 close($scriptfh);
 chmod 0755, $scriptfile;
@@ -63,9 +67,6 @@ my $timer = AnyEvent->timer(after => 1, interval => 0, cb => sub { $cv->send(0) 
 $i3->subscribe({
         window => sub {
             my ($event) = @_;
-            if ($event->{change} eq 'focus') {
-                $cv->send($event->{container});
-            }
             if ($event->{change} eq 'new') {
                 if (defined($event->{container}->{window_properties}->{class}) &&
                     $event->{container}->{window_properties}->{class} eq 'i3bar') {
@@ -112,23 +113,21 @@ my $win1 = open_window;
 cmd 'workspace 2';
 my $win2 = open_window;
 
-exit_gracefully($pid);
+# Kill i3bar gracefully BEFORE exiting i3 to ensure buffers are flushed
+# (if i3 exits first, i3bar gets SIGPIPE and buffers are lost)
+open(my $pidfh, '<', $pidfile) or BAIL_OUT "Cannot read i3bar PID: $!";
+my $bar_pid = <$pidfh>;
+close($pidfh);
+chomp($bar_pid);
+kill('TERM', $bar_pid);
 
-# Kill i3bar explicitly, wait for process exit
-# An xtest sync would not be enough here because we need to wait for i3bar to
-# draw its window.
-my $bar_pid = slurp($pidfile);
-kill 'TERM', $bar_pid;
-my $bar_ended = 0;
-for (1..50) {
-    if (!kill(0, $bar_pid)) {
-        $bar_ended = 1;
-        last;
-    }
-    diag('waiting pid');
-    sleep(0.1);
-}
-ok($bar_ended, 'i3bar ended');
+# Wait for i3bar to exit by reading from the FIFO (blocks until wrapper writes)
+open(my $fifofh, '<', $exitfifo) or BAIL_OUT "Cannot open FIFO: $!";
+my $result = <$fifofh>;
+close($fifofh);
+ok(defined($result), 'i3bar ended');
+
+exit_gracefully($pid);
 
 my $log = get_i3_log;
 
