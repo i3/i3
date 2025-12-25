@@ -909,11 +909,18 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
 }
 
 IPC_HANDLER(tree) {
+#if HAVE_USELOCALE
     locale_t prev_locale = uselocale(numericC);
+#else
+    setlocale(LC_NUMERIC, "C");
+#endif
     yajl_gen gen = ygenalloc();
     dump_node(gen, croot, false);
+#if HAVE_USELOCALE
     uselocale(prev_locale);
-
+#else
+    setlocale(LC_NUMERIC, "");
+#endif
     const unsigned char *payload;
     ylength length;
     y(get_buf, &payload, &length);
@@ -1585,7 +1592,11 @@ ipc_client *ipc_new_client_on_fd(EV_P_ int fd) {
  * generator. Free with yajl_gen_free().
  */
 yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old) {
+#if HAVE_USELOCALE
     locale_t prev_locale = uselocale(numericC);
+#else
+    setlocale(LC_NUMERIC, "C");
+#endif
     yajl_gen gen = ygenalloc();
 
     y(map_open);
@@ -1609,7 +1620,11 @@ yajl_gen ipc_marshal_workspace_event(const char *change, Con *current, Con *old)
 
     y(map_close);
 
+#if HAVE_USELOCALE
     uselocale(prev_locale);
+#else
+    setlocale(LC_NUMERIC, "");
+#endif
 
     return gen;
 }
@@ -1639,7 +1654,11 @@ void ipc_send_window_event(const char *property, Con *con) {
     DLOG("Issue IPC window %s event (con = %p, window = 0x%08x)\n",
          property, con, (con->window ? con->window->id : XCB_WINDOW_NONE));
 
+#if HAVE_USELOCALE
     locale_t prev_locale = uselocale(numericC);
+#else
+    setlocale(LC_NUMERIC, "C");
+#endif
     yajl_gen gen = ygenalloc();
 
     y(map_open);
@@ -1658,7 +1677,11 @@ void ipc_send_window_event(const char *property, Con *con) {
 
     ipc_send_event("window", I3_IPC_EVENT_WINDOW, (const char *)payload);
     y(free);
+#if HAVE_USELOCALE
     uselocale(prev_locale);
+#else
+    setlocale(LC_NUMERIC, "");
+#endif
 }
 
 /*
@@ -1666,7 +1689,11 @@ void ipc_send_window_event(const char *property, Con *con) {
  */
 void ipc_send_barconfig_update_event(Barconfig *barconfig) {
     DLOG("Issue barconfig_update event for id = %s\n", barconfig->id);
+#if HAVE_USELOCALE
     locale_t prev_locale = uselocale(numericC);
+#else
+    setlocale(LC_NUMERIC, "C");
+#endif
     yajl_gen gen = ygenalloc();
 
     dump_bar_config(gen, barconfig);
@@ -1677,7 +1704,11 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig) {
 
     ipc_send_event("barconfig_update", I3_IPC_EVENT_BARCONFIG_UPDATE, (const char *)payload);
     y(free);
+#if HAVE_USELOCALE
     uselocale(prev_locale);
+#else
+    setlocale(LC_NUMERIC, "");
+#endif
 }
 
 /*
@@ -1686,7 +1717,11 @@ void ipc_send_barconfig_update_event(Barconfig *barconfig) {
 void ipc_send_binding_event(const char *event_type, Binding *bind, const char *modename) {
     DLOG("Issue IPC binding %s event (sym = %s, code = %d)\n", event_type, bind->symbol, bind->keycode);
 
+#if HAVE_USELOCALE
     locale_t prev_locale = uselocale(numericC);
+#else
+    setlocale(LC_NUMERIC, "C");
+#endif
 
     yajl_gen gen = ygenalloc();
 
@@ -1714,7 +1749,11 @@ void ipc_send_binding_event(const char *event_type, Binding *bind, const char *m
     ipc_send_event("binding", I3_IPC_EVENT_BINDING, (const char *)payload);
 
     y(free);
+#if HAVE_USELOCALE
     uselocale(prev_locale);
+#else
+    setlocale(LC_NUMERIC, "");
+#endif
 }
 
 /*

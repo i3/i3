@@ -52,6 +52,7 @@ endif
 
 cdata.set('HAVE_STRNDUP', cc.has_function('strndup'))
 cdata.set('HAVE_MKDIRP', cc.has_function('mkdirp'))
+cdata.set('HAVE_USELOCALE', cc.has_function('uselocale'))
 
 # Instead of generating config.h directly, make vcs_tag generate it so that
 # @VCS_TAG@ is replaced.
