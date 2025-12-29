@@ -221,12 +221,14 @@ static char **add_argument(char **original, char *opt_char, char *opt_arg, char 
 #define ystr(str) yajl_gen_string(gen, (unsigned char *)str, strlen(str))
 
 static char *store_restart_layout(void) {
-    locale_t prev_locale = uselocale(numericC);
+    char *prev_locale = sstrdup(setlocale(LC_NUMERIC, NULL));
+    setlocale(LC_NUMERIC, "C");
     yajl_gen gen = yajl_gen_alloc(NULL);
 
     dump_node(gen, croot, true);
 
-    uselocale(prev_locale);
+    setlocale(LC_NUMERIC, prev_locale);
+    free(prev_locale);
 
     const unsigned char *payload;
     size_t length;

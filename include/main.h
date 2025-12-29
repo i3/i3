@@ -10,9 +10,6 @@
 #pragma once
 
 #include <config.h>
-#include <locale.h>
-
-extern locale_t numericC;
 
 /**
  * Enable or disable the main X11 event handling function.
