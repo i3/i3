@@ -525,7 +525,7 @@ static void stdin_io_first_line_cb(int fd) {
 
 static bool isempty(char *s) {
     while (*s != '\0') {
-        if (!isspace(*s)) {
+        if (!isspace((unsigned char)*s)) {
             return false;
         }
         s++;
