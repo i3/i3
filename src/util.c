@@ -67,7 +67,7 @@ __attribute__((__const__)) bool rect_equals(const Rect a, const Rect b) {
 __attribute__((pure)) bool name_is_digits(const char *name) {
     /* positive integers and zero are interpreted as numbers */
     for (size_t i = 0; i < strlen(name); i++) {
-        if (!isdigit(name[i])) {
+        if (!isdigit((unsigned char)name[i])) {
             return false;
         }
     }

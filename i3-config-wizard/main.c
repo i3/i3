@@ -732,7 +732,7 @@ static void finish(void) {
 
         /* Skip leading whitespace */
         char *walk = line;
-        while (isspace(*walk) && walk < (line + len)) {
+        while (isspace((unsigned char)*walk) && walk < (line + len)) {
             /* Pre-output the skipped whitespaces to keep proper indentation */
             fputc(*walk, ks_config);
             walk++;
