@@ -23,6 +23,7 @@
         {
           default = pkgs.mkShell {
             inputsFrom = [ pkgs.i3 ];
+            hardeningDisable = [ "fortify" ];
           };
         }
       );
