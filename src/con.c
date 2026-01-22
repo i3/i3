@@ -1284,6 +1284,13 @@ void con_enable_fullscreen(Con *con, fullscreen_mode_t fullscreen_mode) {
         con_activate(old_focused);
     }
 
+    /* Preserve the floating geometry so we can restore it after leaving fullscreen. */
+    Con *floating_con = con_inside_floating(con);
+    if (floating_con != NULL) {
+        floating_con->saved_floating_rect = floating_con->rect;
+        floating_con->saved_floating_rect_valid = true;
+    }
+
     con_set_fullscreen_mode(con, fullscreen_mode);
 }
 
@@ -1306,6 +1313,14 @@ void con_disable_fullscreen(Con *con) {
     }
 
     con_set_fullscreen_mode(con, CF_NONE);
+
+    /* Restore floating geometry if we previously saved it. */
+    Con *floating_con = con_inside_floating(con);
+    if (floating_con != NULL && floating_con->saved_floating_rect_valid) {
+        DLOG("Restoring floating geometry for %p / %s\n", floating_con, floating_con->name);
+        floating_reposition(floating_con, floating_con->saved_floating_rect);
+        floating_con->saved_floating_rect_valid = false;
+    }
 }
 
 static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fix_coordinates, bool dont_warp, bool ignore_focus, bool fix_percentage) {

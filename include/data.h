@@ -688,6 +688,9 @@ struct Con {
     struct Rect deco_rect;
     /** the geometry this window requested when getting mapped */
     struct Rect geometry;
+    /** saved geometry used to restore floating containers after fullscreen */
+    struct Rect saved_floating_rect;
+    bool saved_floating_rect_valid;
 
     char *name;
 
