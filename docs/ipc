@@ -1200,6 +1200,7 @@ C::
 C++::
 	* https://github.com/Iskustvo/i3-ipcpp[i3-ipc++]
 	* https://github.com/drmgc/i3ipcpp
+	* https://git.sr.ht/~hantz/qi3pc
 Go::
 	* https://github.com/mdirkse/i3ipc-go
 	* https://github.com/i3/go-i3
