@@ -33,15 +33,12 @@ my $old_sum = sum map { $_->{rect}->{width} } @{$nodes};
 cmd 'resize grow left 10 px or 25 ppt';
 cmd 'split v';
 
-sync_with_i3;
 
 my $third = open_window;
 
 cmd 'mode toggle';
-sync_with_i3;
 
 cmd 'kill';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($tmp);
 my $new_sum = sum map { $_->{rect}->{width} } @{$nodes};

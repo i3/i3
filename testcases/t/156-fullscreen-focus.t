@@ -306,7 +306,6 @@ verify_focus($second, 'fullscreen window focused');
 is_num_fullscreen($tmp, 1, '1 fullscreen window');
 
 cmd '[id="' . $first->id . '"] focus';
-sync_with_i3;
 
 verify_focus($first, 'correctly focused using id');
 is_num_fullscreen($tmp, 0, 'no fullscreen windows');
@@ -322,7 +321,6 @@ verify_focus($second, 'fullscreen window focused');
 is_num_fullscreen($tmp, 1, '1 fullscreen window');
 
 cmd 'focus floating';
-sync_with_i3;
 
 verify_focus($first, 'correctly focused using focus floating');
 is_num_fullscreen($tmp, 0, 'no fullscreen windows');
@@ -338,7 +336,6 @@ verify_focus($second, 'fullscreen window focused');
 is_num_fullscreen($tmp, 1, '1 fullscreen window');
 
 cmd 'focus tiling';
-sync_with_i3;
 
 verify_focus($first, 'correctly focused using focus tiling');
 is_num_fullscreen($tmp, 0, 'no fullscreen windows');
@@ -360,7 +357,6 @@ verify_focus($second, 'fullscreen window focused');
 is_num_fullscreen($tmp2, 1, '1 fullscreen window');
 
 cmd '[id="' . $first->id . '"] focus';
-sync_with_i3;
 
 verify_focus($first, 'correctly focused using focus id');
 is_num_fullscreen($tmp, 0, 'no fullscreen windows on first workspace');
@@ -383,7 +379,6 @@ verify_focus($second, 'global window focused');
 is_num_fullscreen($tmp2, 1, '1 fullscreen window');
 
 cmd '[id="' . $first->id . '"] focus';
-sync_with_i3;
 
 verify_focus($first, 'correctly focused using focus id');
 is_num_fullscreen($tmp2, 0, 'no fullscreen windows');

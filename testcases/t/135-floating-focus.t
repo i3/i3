@@ -54,7 +54,7 @@ is($x->input_focus, $second->id, 'second con focused');
 cmd 'floating enable';
 
 # now kill the third one (it's floating). focus should stay unchanged
-cmd '[id="' . $third->id . '"] kill';
+cmd_nosync '[id="' . $third->id . '"] kill';
 
 wait_for_unmap($third);
 
@@ -84,12 +84,12 @@ cmd 'floating enable';
 
 # now kill the second one. focus should fall back to the third one, which is
 # also floating
-cmd 'kill';
+cmd_nosync 'kill';
 wait_for_unmap($second);
 
 is($x->input_focus, $third->id, 'third con focused');
 
-cmd 'kill';
+cmd_nosync 'kill';
 wait_for_unmap($third);
 
 is($x->input_focus, $first->id, 'first con focused after killing all floating cons');
@@ -111,17 +111,16 @@ cmd '[id="' . $second->id . '"] focus';
 cmd 'floating enable';
 cmd '[id="' . $third->id . '"] floating enable';
 
-sync_with_i3;
 is($x->input_focus, $second->id, 'second con focused');
 
 # now kill the second one. focus should fall back to the third one, which is
 # also floating
-cmd 'kill';
+cmd_nosync 'kill';
 wait_for_unmap($second);
 
 is($x->input_focus, $third->id, 'third con focused');
 
-cmd 'kill';
+cmd_nosync 'kill';
 wait_for_unmap($third);
 
 is($x->input_focus, $first->id, 'first con focused after killing all floating cons');
@@ -260,7 +259,6 @@ for my $floating (0, 1){
     fresh_workspace;
     cmd "[id=" . $second->id . "] floating toggle";
     cmd "workspace $tmp";
-    sync_with_i3;
 
     my $workspace = get_ws($tmp);
     is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $second->id, 'second window on first workspace, floating') unless $floating;
@@ -282,7 +280,6 @@ for my $floating (0, 1){
     fresh_workspace;
     cmd "[id=" . $first->id . "] floating toggle";
     cmd "workspace $tmp";
-    sync_with_i3;
 
     my $workspace = get_ws($tmp);
     is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $first->id, 'first window on first workspace, floating') unless $floating;
@@ -306,7 +303,6 @@ for my $floating (0, 1){
     fresh_workspace;
     cmd "[id=" . $third->id . "] floating toggle";
     cmd "workspace $tmp";
-    sync_with_i3;
 
     my $workspace = get_ws($tmp);
     is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $third->id, 'third window on first workspace, floating') unless $floating;
@@ -330,7 +326,6 @@ for my $floating (0, 1){
     fresh_workspace;
     cmd "[id=" . $second->id . "] floating toggle";
     cmd "workspace $tmp";
-    sync_with_i3;
 
     my $workspace = get_ws($tmp);
     is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $second->id, 'second window on first workspace, floating') unless $floating;
@@ -348,7 +343,6 @@ for my $floating (0, 1){
     $first = open_window;
     $second = open_window;
     cmd "split v";
-    sync_with_i3;
     is($x->input_focus, $second->id, "second (floating = $floating) window focused");
     $third = open_window_helper($floating);
     is($x->input_focus, $third->id, 'third (floating) window focused');
@@ -356,7 +350,6 @@ for my $floating (0, 1){
     fresh_workspace;
     cmd "[id=" . $third->id . "] floating toggle";
     cmd "workspace $tmp";
-    sync_with_i3;
 
     my $workspace = get_ws($tmp);
     is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $third->id, 'third window on first workspace, floating') unless $floating;
@@ -373,7 +366,6 @@ sub kill_and_confirm_focus {
     my $focus = shift;
     my $msg = shift;
     cmd "kill";
-    sync_with_i3;
     is($x->input_focus, $focus, $msg);
 }
 
@@ -395,7 +387,6 @@ is($workspace->{nodes}->[1]->{nodes}->[1]->{nodes}->[1]->{nodes}->[0]->{window},
 fresh_workspace;
 cmd "[id=" . $F->id . "] floating enable";
 cmd "workspace $tmp";
-sync_with_i3;
 
 $workspace = get_ws($tmp);
 is($workspace->{floating_nodes}->[0]->{nodes}->[0]->{window}, $F->id, 'F on first workspace, floating');
@@ -405,7 +396,6 @@ is($x->input_focus, $D->id, 'D still focused');
 fresh_workspace;
 cmd "[id=" . $F->id . "] floating disable";
 cmd "workspace $tmp";
-sync_with_i3;
 
 $workspace = get_ws($tmp);
 is($workspace->{nodes}->[1]->{nodes}->[1]->{nodes}->[1]->{nodes}->[1]->{window}, $F->id, 'F where D used to be');

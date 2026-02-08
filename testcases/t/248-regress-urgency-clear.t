@@ -48,15 +48,12 @@ sync_with_i3;
 is($x->input_focus, $second->id, 'second window still focused');
 
 cmd '[urgent=latest] focus';
-sync_with_i3;
 is($x->input_focus, $first->id, 'first window focused');
 
 cmd 'focus right';
-sync_with_i3;
 is($x->input_focus, $second->id, 'second window focused again');
 
 cmd '[urgent=latest] focus';
-sync_with_i3;
 is($x->input_focus, $second->id, 'second window still focused');
 
 done_testing;

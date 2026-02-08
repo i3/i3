@@ -51,27 +51,23 @@ my $ar = $rect->width / $rect->height;
 cmp_float($ar, 2, 'Window set to floating with aspect ratio 2.0');
 
 cmd 'resize set 100';
-sync_with_i3;
 $rect = $win->rect;
 $ar = $rect->width / $rect->height;
 cmp_float($ar, 2, 'Window resized with aspect ratio kept to 2.0');
 
 cmd 'resize set 400 100';
-sync_with_i3;
 $rect = $win->rect;
 $ar = $rect->width / $rect->height;
 cmp_float($ar, 2, 'Window resized with aspect ratio kept to 2.0');
 
 # Also check that it is possible to resize by height only
 cmd 'resize set height 400';
-sync_with_i3;
 $rect = $win->rect;
 $ar = $rect->width / $rect->height;
 is($rect->height, 400, 'Window height is 400px');
 cmp_float($ar, 2, 'Window resized with aspect ratio kept to 2.0');
 
 cmd 'resize grow height 10';
-sync_with_i3;
 $rect = $win->rect;
 $ar = $rect->width / $rect->height;
 is($rect->height, 410, 'Window grew by 10px');
@@ -89,7 +85,6 @@ $ar = $rect->width / $rect->height;
 cmp_float($ar, 1, 'Window set to floating with aspect ratio 1.0');
 
 cmd 'resize set 200';
-sync_with_i3;
 $rect = $win->rect;
 $ar = $rect->width / $rect->height;
 is($rect->width, 200, 'Window width is 200px');
@@ -97,7 +92,6 @@ is($rect->height, 100, 'Window height stayed 100px');
 cmp_float($ar, 2, 'Window resized, aspect ratio changed to 2.0');
 
 cmd 'resize set 100 200';
-sync_with_i3;
 $rect = $win->rect;
 $ar = $rect->width / $rect->height;
 is($rect->width, 100, 'Window width is 100px');
@@ -105,13 +99,11 @@ is($rect->height, 200, 'Window height is 200px');
 cmp_float($ar, 0.5, 'Window resized, aspect ratio changed to 0.5');
 
 cmd 'resize set 500';
-sync_with_i3;
 $rect = $win->rect;
 $ar = $rect->width / $rect->height;
 cmp_float($ar, 2, 'Window resized, aspect ratio changed to maximum 2.0');
 
 cmd 'resize set 100 400';
-sync_with_i3;
 $rect = $win->rect;
 $ar = $rect->width / $rect->height;
 cmp_float($ar, 0.5, 'Window resized, aspect ratio changed to minimum 0.5');

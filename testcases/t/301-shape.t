@@ -101,7 +101,6 @@ $win2 = open_window(rect => [0, 0, 100, 100], background_color => '#00ff00');
 $win2_focus = get_focused($ws);
 set_shape($win2->id);
 cmd 'floating toggle';
-sync_with_i3;
 
 $win1->warp_pointer(75, 25);
 sync_with_i3;

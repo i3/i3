@@ -39,7 +39,6 @@ my $window = open_window;
 sync_with_i3;
 is($x->input_focus, $window->id, 'sanity check: window has input focus');
 cmd 'kill';
-sync_with_i3;
 is($x->input_focus, get_ewmh_window(), 'focus falls back to the EWMH window');
 
 done_testing;

@@ -151,7 +151,6 @@ my ($absolute_before, $top_before) = $floatwin->rect;
 
 cmd 'move left';
 
-sync_with_i3;
 
 my ($absolute, $top) = $floatwin->rect;
 
@@ -165,7 +164,6 @@ $top_before = $top;
 
 cmd 'move right';
 
-sync_with_i3;
 
 ($absolute, $top) = $floatwin->rect;
 
@@ -179,7 +177,6 @@ $top_before = $top;
 
 cmd 'move up';
 
-sync_with_i3;
 
 ($absolute, $top) = $floatwin->rect;
 
@@ -193,7 +190,6 @@ $top_before = $top;
 
 cmd 'move down';
 
-sync_with_i3;
 
 ($absolute, $top) = $floatwin->rect;
 
@@ -211,7 +207,6 @@ $top_before = $top;
 
 cmd 'move left 20 px';
 
-sync_with_i3;
 
 ($absolute, $top) = $floatwin->rect;
 
@@ -229,7 +224,6 @@ $top_before = $top;
 
 cmd 'move right 25 ppt';
 
-sync_with_i3;
 
 ($absolute, $top) = $floatwin->rect;
 

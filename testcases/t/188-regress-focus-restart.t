@@ -32,7 +32,7 @@ is($nodes->[1]->{name}, 'second', 'second node name ok');
 is($focus->[0], $nodes->[0]->{id}, 'first node focused');
 is($focus->[1], $nodes->[1]->{id}, 'second node second in focus stack');
 
-cmd 'restart';
+cmd_nosync 'restart';
 
 does_i3_live;
 

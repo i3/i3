@@ -59,7 +59,6 @@ cmd 'mark target';
 $S = open_window;
 
 cmd 'move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($ws);
 is(@{$nodes}, 2, 'there are two containers');
@@ -78,7 +77,6 @@ cmd 'mark target';
 cmd 'focus left';
 
 cmd 'move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($ws);
 is(@{$nodes}, 2, 'there are two containers');
@@ -109,7 +107,6 @@ $M = open_window;
 cmd 'mark target';
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($source_ws);
 is(@{$nodes}, 0, 'source workspace is empty');
@@ -132,9 +129,9 @@ $M = open_window;
 cmd 'mark target';
 cmd 'workspace ' . $source_ws;
 set_urgency($S, 1);
+sync_with_i3;
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 $source_ws = get_ws($source_ws);
 $target_ws = get_ws($target_ws);
@@ -158,7 +155,6 @@ cmd 'mark target';
 $B = open_window;
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($target_ws);
 is(@{$nodes}, 1, 'there is a tabbed container');
@@ -190,7 +186,6 @@ cmd 'split h';
 $F = open_window;
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($target_ws);
 is(@{$nodes}, 1, 'there is a tabbed container');
@@ -220,7 +215,6 @@ $M = open_window;
 cmd 'mark target';
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($target_ws);
 is(@{$nodes}, 1, 'there is a tabbed container');
@@ -250,7 +244,6 @@ cmd 'mark target';
 cmd 'focus child';
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($target_ws);
 is(@{$nodes}, 1, 'there is a tabbed container');
@@ -281,7 +274,6 @@ cmd 'mark target';
 cmd 'focus ' . $source_ws;
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($target_ws);
 is(@{$nodes}, 2, 'there is a tabbed container and a window');
@@ -300,7 +292,6 @@ $M = open_window;
 cmd 'mark target';
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 is(@{get_ws($target_ws)->{floating_nodes}}, 1, 'target workspace has the container now');
 
@@ -317,7 +308,6 @@ $M = open_floating_window;
 cmd 'mark target';
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($target_ws);
 is(@{$nodes}, 1, 'tiling container moved to the target workspace');
@@ -354,7 +344,6 @@ $M = $S;
 cmd 'mark target';
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 does_i3_live;
 
@@ -371,7 +360,6 @@ $M = $target_ws;
 cmd 'mark target';
 
 cmd '[id="' . $S->{id} . '"] move container to mark target';
-sync_with_i3;
 
 does_i3_live;
 
@@ -396,7 +384,6 @@ $M = open_window;
 cmd 'mark target';
 
 cmd '[con_mark=S] move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($target_ws);
 is(@{$nodes}, 2, 'there is a window and a container with the contents of the original workspace');
@@ -416,7 +403,6 @@ cmd 'mark target';
 cmd 'move container to scratchpad';
 
 cmd '[con_mark=S] move container to mark target';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($ws);
 is(@{$nodes}, 0, 'there are no tiling windows on the workspace');

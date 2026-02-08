@@ -39,7 +39,7 @@ $i3->subscribe({
         }
     })->recv;
 
-cmd 'restart';
+cmd_nosync 'restart';
 
 my $e = $cv->recv;
 

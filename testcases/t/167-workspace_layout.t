@@ -159,7 +159,6 @@ is($content[0]->{layout}, 'stacked', 'layout stacked');
 
 cmd '[id="' . $first->id . '"] kill';
 cmd '[id="' . $second->id . '"] kill';
-sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
 
@@ -187,7 +186,6 @@ is($content[0]->{layout}, 'stacked', 'layout stacked');
 
 cmd '[id="' . $first->id . '"] kill';
 cmd '[id="' . $second->id . '"] kill';
-sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
 
@@ -216,7 +214,6 @@ is($content[0]->{layout}, 'tabbed', 'layout tabbed');
 
 cmd '[id="' . $first->id . '"] kill';
 cmd '[id="' . $second->id . '"] kill';
-sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
 
@@ -245,7 +242,6 @@ is($content[0]->{layout}, 'tabbed', 'layout tabbed');
 
 cmd '[id="' . $first->id . '"] kill';
 cmd '[id="' . $second->id . '"] kill';
-sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
 
@@ -274,7 +270,6 @@ is($content[0]->{layout}, 'stacked', 'layout stacked');
 
 cmd '[id="' . $first->id . '"] kill';
 cmd '[id="' . $second->id . '"] kill';
-sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
 
@@ -302,7 +297,6 @@ is($content[0]->{layout}, 'stacked', 'layout stacked');
 
 cmd '[id="' . $first->id . '"] kill';
 cmd '[id="' . $second->id . '"] kill';
-sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
 
@@ -331,7 +325,6 @@ is($content[0]->{layout}, 'tabbed', 'layout tabbed');
 
 cmd '[id="' . $first->id . '"] kill';
 cmd '[id="' . $second->id . '"] kill';
-sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
 
@@ -360,7 +353,6 @@ is($content[0]->{layout}, 'tabbed', 'layout tabbed');
 
 cmd '[id="' . $first->id . '"] kill';
 cmd '[id="' . $second->id . '"] kill';
-sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'workspace is empty');
 
@@ -406,7 +398,6 @@ foreach $first_layout (@layouts) {
 
     cmd '[id="' . $first->id . '"] kill';
     cmd '[id="' . $second->id . '"] kill';
-    sync_with_i3;
 }
 
 exit_gracefully($pid);
@@ -437,7 +428,6 @@ foreach $first_layout (@layouts) {
 
         cmd '[id="' . $first->id . '"] kill';
         cmd '[id="' . $second->id . '"] kill';
-        sync_with_i3;
     }
 }
 

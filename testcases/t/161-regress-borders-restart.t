@@ -39,7 +39,7 @@ cmd 'border 1pixel';
 is(get_border_style(), 'pixel', 'border style 1pixel after changing');
 
 # perform an inplace-restart
-cmd 'restart';
+cmd_nosync 'restart';
 
 does_i3_live;
 

@@ -35,7 +35,7 @@ my $floating_win = $nodes->{floating_nodes}->[0]->{nodes}->[0];
 is($floating_win->{fullscreen_mode}, 1, 'floating window in fullscreen mode');
 my $old_geometry = $floating_win->{geometry};
 
-cmd 'restart';
+cmd_nosync 'restart';
 
 ($nodes, $focus) = get_ws($tmp);
 $floating_win = $nodes->{floating_nodes}->[0]->{nodes}->[0];

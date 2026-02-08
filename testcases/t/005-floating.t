@@ -55,7 +55,6 @@ $window = open_window(rect => [ 1, 1, 80, 90 ]);
 isa_ok($window, 'X11::XCB::Window');
 
 cmd 'floating enable';
-sync_with_i3;
 
 ($absolute, $top) = $window->rect;
 

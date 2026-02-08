@@ -34,7 +34,6 @@ my $unused = get_unused_workspace();
 
 cmd "mark foo; [con_mark=\"foo\"] move workspace $unused, floating enable";
 
-sync_with_i3;
 
 my $pos = $window->rect;
 

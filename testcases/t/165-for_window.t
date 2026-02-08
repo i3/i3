@@ -206,7 +206,7 @@ $window = open_window(
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
-cmd 'kill';
+cmd_nosync 'kill';
 wait_for_unmap $window;
 $window->destroy;
 

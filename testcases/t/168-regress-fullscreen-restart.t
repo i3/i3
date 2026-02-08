@@ -24,12 +24,10 @@ open_window;
 open_window;
 
 cmd 'layout stacking';
-sync_with_i3;
 
 cmd 'fullscreen';
-sync_with_i3;
 
-cmd 'restart';
+cmd_nosync 'restart';
 
 does_i3_live;
 

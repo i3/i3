@@ -147,7 +147,6 @@ $x->root->warp_pointer(50, 50);
 sync_with_i3;
 
 cmd '[id=' . $A->id . '] kill';
-sync_with_i3;
 end_drag(50, 50);
 
 is(@{get_ws_content($ws1)}, 1, 'One container left in ws1');

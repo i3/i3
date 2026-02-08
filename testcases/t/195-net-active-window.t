@@ -180,7 +180,6 @@ my $win4 = open_window;
 
 cmd '[id="' . $win4->id . '"] focus';
 
-sync_with_i3;
 
 is(get_net_active_window(), $win4->id, 'window 4 is indicated as focused by the root property');
 
@@ -191,7 +190,6 @@ cmd 'split h';
 open_window;
 cmd 'focus parent';
 
-sync_with_i3;
 
 is(get_net_active_window(), 0, 'branch focus is indicated by the root property as "None" window');
 

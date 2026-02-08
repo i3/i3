@@ -165,7 +165,7 @@ is(focused_ws, '6: baz', 'workspace 6 now focused');
 # See if BAF is preserved after restart
 ################################################################################
 
-cmd 'restart';
+cmd_nosync 'restart';
 cmd 'workspace back_and_forth';
 is(focused_ws, '5: foo', 'workspace 5 focused after restart');
 

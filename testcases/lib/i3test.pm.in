@@ -37,6 +37,7 @@ our @EXPORT = qw(
     open_floating_window
     get_dock_clients
     cmd
+    cmd_nosync
     sync_with_i3
     exit_gracefully
     exit_forcefully
@@ -643,12 +644,33 @@ sub get_dock_clients {
 
 Sends the specified command to i3 and returns the output.
 
+After the command completes, C<cmd> automatically calls C<sync_with_i3> to
+ensure the X server has processed all of i3's resulting requests,
+which is required to prevent flaky tests (depending on scheduling).
+
+Use C<cmd_nosync> when auto-sync would break the test. For example:
+before C<wait_for_unmap> (sync would consume the UnmapNotify event)
+or when sending the i3 restart command (sync would hang).
+
   my $ws = unused_workspace;
   cmd "workspace $ws";
   cmd 'focus right';
 
 =cut
 sub cmd {
+    my $result = i3(get_socket_path())->command(@_)->recv;
+    sync_with_i3();
+    return $result;
+}
+
+=head2 cmd_nosync($command)
+
+Like C<cmd>, but without the automatic C<sync_with_i3> call.
+
+Use this when the sync would interfere with the test.
+
+=cut
+sub cmd_nosync {
     i3(get_socket_path())->command(@_)->recv
 }
 
@@ -1008,8 +1030,6 @@ sub kill_all_windows {
     # Sync in case not all windows are managed by i3 just yet.
     sync_with_i3;
     cmd '[title=".*"] kill';
-    # Sync to make sure x_window_kill() calls have taken effect.
-    sync_with_i3;
 }
 
 =head2 events_for($subscribecb, [ $rettype ], [ $eventcbs ])

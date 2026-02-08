@@ -25,7 +25,6 @@ sub kill_and_confirm_focus {
     my $focus = shift;
     my $msg = shift;
     cmd "kill";
-    sync_with_i3;
     is($x->input_focus, $focus, $msg);
 }
 

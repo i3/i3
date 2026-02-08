@@ -41,7 +41,7 @@ is_num_children($tmp, 1, 'window still there');
 # now kill the window
 cmd 'nop now killing the window';
 my $id = $win->{id};
-cmd qq|[con_id="$id"] kill|;
+cmd_nosync qq|[con_id="$id"] kill|;
 
 wait_for_unmap $window;
 
@@ -69,8 +69,6 @@ is_num_children($tmp, 2, 'two windows opened');
 
 cmd '[class="special" title="left"] kill';
 
-sync_with_i3;
-
 is_num_children($tmp, 1, 'one window still there');
 
 ######################################################################
@@ -83,7 +81,7 @@ $left = open_window(name => 'left', wm_class => 'special7');
 ok($left->mapped, 'left window mapped');
 is_num_children($tmp, 1, 'window opened');
 
-cmd '[class="^special[0-9]$"] kill';
+cmd_nosync '[class="^special[0-9]$"] kill';
 wait_for_unmap $left;
 is_num_children($tmp, 0, 'window killed');
 
@@ -97,7 +95,7 @@ $left = open_window(name => 'ä 3', wm_class => 'special7');
 ok($left->mapped, 'left window mapped');
 is_num_children($tmp, 1, 'window opened');
 
-cmd '[title="^\w [3]$"] kill';
+cmd_nosync '[title="^\w [3]$"] kill';
 wait_for_unmap $left;
 is_num_children($tmp, 0, 'window killed');
 
@@ -111,7 +109,7 @@ $left = open_window(name => 'class is empty', wm_class => '');
 ok($left->mapped, 'left window mapped');
 is_num_children($tmp, 1, 'window opened');
 
-cmd '[class="^$"] kill';
+cmd_nosync '[class="^$"] kill';
 wait_for_unmap $left;
 is_num_children($tmp, 0, 'window killed');
 

@@ -279,7 +279,7 @@ $__i3_scratch = get_ws('__i3_scratch');
 my $old_nodes = scalar @{$__i3_scratch->{nodes}};
 my $old_floating_nodes = scalar @{$__i3_scratch->{floating_nodes}};
 
-cmd 'restart';
+cmd_nosync 'restart';
 
 does_i3_live;
 

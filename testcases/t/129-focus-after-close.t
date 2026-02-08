@@ -55,7 +55,6 @@ isnt(get_focused($tmp), $second, 'different container focused');
 ##############################################################
 
 cmd 'kill';
-sync_with_i3;
 
 ($nodes, $focus) = get_ws_content($tmp);
 is($nodes->[1]->{nodes}->[0]->{id}, $second, 'second container found');
@@ -137,7 +136,6 @@ cmd "focus parent";
 
 # try to kill the workspace
 cmd "kill";
-sync_with_i3;
 
 # the workspace should now be empty
 ($nodes, $focus) = get_ws_content($tmp);
@@ -162,7 +160,6 @@ cmd "focus parent";
 
 # try to kill the workspace
 cmd "kill";
-sync_with_i3;
 
 # the workspace should now be empty
 ($nodes, $focus) = get_ws_content($tmp);

@@ -19,7 +19,7 @@
 # Bug still in: 4.16-143-gca82f958
 use i3test;
 
-my $reply = cmd('restart');
+my $reply = cmd_nosync('restart');
 ok($reply->[0]->{success}, 'restart reply received');
 
 done_testing;

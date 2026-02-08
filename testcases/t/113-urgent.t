@@ -221,7 +221,6 @@ for ($type = 1; $type <= 2; $type++) {
     is($urgent, 0, 'no window got the urgent flag');
 
     cmd '[id="' . $win2->id . '"] focus';
-    sync_with_i3;
     set_urgency($win5, 1, $type);
     set_urgency($win6, 1, $type);
     sync_with_i3;
@@ -232,14 +231,12 @@ for ($type = 1; $type <= 2; $type++) {
     is($urgent, 5, '2 windows and 3 split containers got the urgent flag');
 
     cmd '[id="' . $win5->id . '"] focus';
-    sync_with_i3;
 
 # now win5 and still the split parents should be urgent.
     $urgent = count_urgent(get_ws($tmp));
     is($urgent, 4, '1 window and 3 split containers got the urgent flag');
 
     cmd '[id="' . $win6->id . '"] focus';
-    sync_with_i3;
 
 # now now window should be urgent.
     $urgent = count_urgent(get_ws($tmp));
@@ -273,11 +270,9 @@ for ($type = 1; $type <= 2; $type++) {
     $w1 = open_window;
     $w2 = open_window;
     cmd "workspace $ws2";
-    sync_with_i3;
     set_urgency($w1, 1, $type);
     sync_with_i3;
     cmd '[id="' . $w1->id . '"] kill';
-    sync_with_i3;
     my $w = get_ws($ws1);
     is($w->{urgent}, 0, 'Urgent flag no longer set after killing the window ' .
        'from another workspace');
@@ -291,20 +286,16 @@ for ($type = 1; $type <= 2; $type++) {
     $w2 = open_window;
     sync_with_i3;
     cmd '[id="' . $w2->id . '"] focus';
-    sync_with_i3;
     cmd 'split v';
     cmd 'layout stacked';
     my $w3 = open_window;
     sync_with_i3;
     cmd '[id="' . $w2->id . '"] focus';
-    sync_with_i3;
     set_urgency($w3, 1, $type);
     sync_with_i3;
     cmd 'focus parent';
-    sync_with_i3;
     cmd 'move right';
     cmd '[id="' . $w3->id . '"] focus';
-    sync_with_i3;
     $ws = get_ws($tmp);
     ok(!$ws->{urgent}, 'urgent flag not set on workspace');
 
@@ -316,18 +307,15 @@ for ($type = 1; $type <= 2; $type++) {
     my $tmp_source = fresh_workspace;
     my $tmp_target = fresh_workspace;
     cmd 'workspace ' . $tmp_source;
-    sync_with_i3;
     $w1 = open_window;
     $w2 = open_window;
     sync_with_i3;
     cmd '[id="' . $w1->id . '"] focus';
-    sync_with_i3;
     cmd 'mark urgent_con';
     cmd '[id="' . $w2->id . '"] focus';
     set_urgency($w1, 1, $type);
     sync_with_i3;
     cmd '[con_mark="urgent_con"] move container to workspace ' . $tmp_target;
-    sync_with_i3;
     my $source_ws = get_ws($tmp_source);
     my $target_ws = get_ws($tmp_target);
     ok(!$source_ws->{urgent}, 'Source workspace is no longer marked urgent');

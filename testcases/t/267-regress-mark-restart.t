@@ -23,7 +23,7 @@ cmd 'mark foo';
 cmd 'open';
 cmd 'mark bar';
 
-cmd 'restart';
+cmd_nosync 'restart';
 
 diag('Checking if i3 still lives');
 

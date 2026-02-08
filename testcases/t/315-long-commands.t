@@ -34,7 +34,6 @@ my ($absolute_before, $top_before) = $floatwin->rect;
 
 cmd 'move window container to window container to window container to left';
 
-sync_with_i3;
 
 my ($absolute, $top) = $floatwin->rect;
 

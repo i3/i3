@@ -27,7 +27,6 @@ cmd 'scratchpad show';
 my $ws = fresh_workspace;
 open_window;
 cmd 'scratchpad show';
-sync_with_i3;
 is($x->input_focus, $expected_focus->id, 'scratchpad window brought from other workspace is focused');
 
 done_testing;

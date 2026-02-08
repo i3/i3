@@ -190,7 +190,6 @@ $left = open_window;
 sync_with_i3;
 cmd 'splith';
 cmd 'layout stacked';
-sync_with_i3;
 $helper->destroy;
 
 $inner_gaps = 10;
@@ -221,11 +220,9 @@ sync_with_i3;
 
 my $orig_rect = $floating->rect;
 cmd 'border pixel 0';
-sync_with_i3;
 is_deeply(scalar $floating->rect, $orig_rect, 'floating window position unchanged after border pixel 0');
 
 cmd 'layout stacking';
-sync_with_i3;
 is_deeply(scalar $floating->rect, $orig_rect, 'floating window position unchanged after border pixel 0');
 
 exit_gracefully($pid);

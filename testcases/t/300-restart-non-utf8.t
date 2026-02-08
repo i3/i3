@@ -23,7 +23,7 @@ use i3test;
 my $ws = fresh_workspace;
 open_window(name => "\x{AA} <-- invalid");
 
-cmd 'restart';
+cmd_nosync 'restart';
 does_i3_live;
 
 # Confirm that the invalid character got replaced with U+FFFD - "REPLACEMENT

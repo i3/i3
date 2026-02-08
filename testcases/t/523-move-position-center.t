@@ -41,14 +41,12 @@ my $floating = open_floating_window;
 
 # Center the window on the left workspace
 cmd 'move position center';
-sync_with_i3;
 
 is(scalar @{get_ws('left')->{floating_nodes}}, 1, 'one floating node on left ws');
 is(scalar @{get_ws('right')->{floating_nodes}}, 0, 'no floating nodes on right ws');
 
 # Center the window on the right workspace
 cmd 'move workspace right; workspace right; move position center';
-sync_with_i3;
 
 is(scalar @{get_ws('left')->{floating_nodes}}, 0, 'no floating nodes on left ws');
 is(scalar @{get_ws('right')->{floating_nodes}}, 1, 'one floating node on right ws');

@@ -33,7 +33,6 @@ my $win = $content->[0];
 ######################################################################
 cmd '[all] kill';
 
-sync_with_i3;
 
 is_num_children($tmp, 0, 'window killed');
 
@@ -54,7 +53,6 @@ is_num_children($tmp, 2, 'two windows opened');
 
 cmd '[all] kill';
 
-sync_with_i3;
 
 is_num_children($tmp, 0, 'two windows killed');
 
@@ -77,13 +75,11 @@ is_num_children($tmp, 2, 'two windows opened');
 
 cmd '[all title="left"] kill';
 
-sync_with_i3;
 
 is_num_children($tmp, 1, 'one window still there');
 
 cmd '[all] kill';
 
-sync_with_i3;
 
 is_num_children($tmp, 0, 'all windows killed');
 

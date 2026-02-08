@@ -68,7 +68,7 @@ for my $fn (@errorlogfiles) {
 
 diag('socket path before restarting is ' . $socketpath);
 
-cmd 'restart';
+cmd_nosync 'restart';
 
 # The socket path will be different, and we use that for checking whether i3 has restarted yet.
 while (get_socket_path(0) eq $socketpath) {
@@ -154,7 +154,7 @@ cmd 'border none';
 my ($nodes, $focus) = get_ws_content($tmp);
 is($nodes->[0]->{border}, 'none', 'border is none');
 
-cmd 'restart';
+cmd_nosync 'restart';
 
 # The socket path will be different, and we use that for checking whether i3 has restarted yet.
 while (get_socket_path(0) eq $socketpath) {

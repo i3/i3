@@ -30,11 +30,9 @@ my $otmp = fresh_workspace;
 open_window;
 my $float = get_focused($otmp);
 cmd 'mode toggle';
-sync_with_i3;
 
 # move the floating con to first workspace
 cmd "move workspace $tmp";
-sync_with_i3;
 
 # switch to the first ws and check focus
 is(get_focused($tmp), $float, 'floating client correctly focused');

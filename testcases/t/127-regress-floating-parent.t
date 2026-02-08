@@ -29,7 +29,6 @@ cmd 'open';
 my $floating = get_focused($tmp);
 diag("focused floating: " . get_focused($tmp));
 cmd 'mode toggle';
-sync_with_i3;
 
 # kill old container
 cmd qq|[con_id="$old"] focus|;
