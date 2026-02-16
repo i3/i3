@@ -95,6 +95,7 @@ static void draw_text_pango(const char *text, size_t text_len,
     pango_layout_set_width(layout, max_width * PANGO_SCALE);
     pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
     pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
+    pango_layout_set_single_paragraph_mode(layout, true);
 
     if (pango_markup) {
         pango_layout_set_markup(layout, text, text_len);

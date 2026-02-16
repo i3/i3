@@ -121,7 +121,7 @@ void display_running_version(void) {
 
     yajl_handle handle = yajl_alloc(&version_callbacks, NULL, NULL);
 
-    yajl_status state = yajl_parse(handle, (const unsigned char *)reply, (int)reply_length);
+    yajl_status state = yajl_parse(handle, reply, (int)reply_length);
     if (state != yajl_status_ok) {
         errx(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
     }

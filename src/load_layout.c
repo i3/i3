@@ -29,7 +29,7 @@ static bool parsing_window_rect;
 static bool parsing_geometry;
 static bool parsing_focus;
 static bool parsing_marks;
-struct Match *current_swallow;
+Match *current_swallow;
 static bool swallow_is_empty;
 static int num_marks;
 /* We need to save each container that needs to be marked if we want to support
@@ -302,7 +302,7 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
     LOG("string: %.*s for key %s\n", (int)len, val, last_key);
     if (parsing_swallows) {
         char *sval;
-        sasprintf(&sval, "%.*s", len, val);
+        sasprintf(&sval, "%.*s", (int)len, val);
         if (strcasecmp(last_key, "class") == 0) {
             current_swallow->class = regex_new(sval);
             swallow_is_empty = false;
@@ -327,7 +327,7 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         sasprintf(&mark, "%.*s", (int)len, val);
 
         marks = srealloc(marks, (++num_marks) * sizeof(struct pending_marks));
-        marks[num_marks - 1].mark = sstrdup(mark);
+        marks[num_marks - 1].mark = mark;
         marks[num_marks - 1].con_to_be_marked = json_node;
     } else {
         if (strcasecmp(last_key, "name") == 0) {
@@ -634,6 +634,7 @@ bool json_validate(const char *buf, const size_t len) {
     /* Allow multiple values, i.e. multiple nodes to attach */
     yajl_config(hand, yajl_allow_multiple_values, true);
 
+    char *prev_locale = sstrdup(setlocale(LC_NUMERIC, NULL));
     setlocale(LC_NUMERIC, "C");
     if (yajl_parse(hand, (const unsigned char *)buf, len) != yajl_status_ok) {
         unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, len);
@@ -641,7 +642,8 @@ bool json_validate(const char *buf, const size_t len) {
         yajl_free_error(hand, str);
         valid = false;
     }
-    setlocale(LC_NUMERIC, "");
+    setlocale(LC_NUMERIC, prev_locale);
+    free(prev_locale);
 
     yajl_complete_parse(hand);
     yajl_free(hand);
@@ -671,6 +673,7 @@ json_content_t json_determine_content(const char *buf, const size_t len) {
     yajl_config(hand, yajl_allow_comments, true);
     /* Allow multiple values, i.e. multiple nodes to attach */
     yajl_config(hand, yajl_allow_multiple_values, true);
+    char *prev_locale = sstrdup(setlocale(LC_NUMERIC, NULL));
     setlocale(LC_NUMERIC, "C");
     const yajl_status stat = yajl_parse(hand, (const unsigned char *)buf, len);
     if (stat != yajl_status_ok && stat != yajl_status_client_canceled) {
@@ -679,7 +682,8 @@ json_content_t json_determine_content(const char *buf, const size_t len) {
         yajl_free_error(hand, str);
     }
 
-    setlocale(LC_NUMERIC, "");
+    setlocale(LC_NUMERIC, prev_locale);
+    free(prev_locale);
     yajl_complete_parse(hand);
     yajl_free(hand);
 
@@ -725,6 +729,7 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
     parsing_geometry = false;
     parsing_focus = false;
     parsing_marks = false;
+    char *prev_locale = sstrdup(setlocale(LC_NUMERIC, NULL));
     setlocale(LC_NUMERIC, "C");
     const yajl_status stat = yajl_parse(hand, (const unsigned char *)buf, len);
     if (stat != yajl_status_ok) {
@@ -750,7 +755,8 @@ void tree_append_json(Con *con, const char *buf, const size_t len, char **errorm
      * next time. */
     con_fix_percent(con);
 
-    setlocale(LC_NUMERIC, "");
+    setlocale(LC_NUMERIC, prev_locale);
+    free(prev_locale);
     yajl_complete_parse(hand);
     yajl_free(hand);
 

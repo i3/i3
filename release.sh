@@ -1,10 +1,10 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 # This script is used to prepare a new release of i3.
 
 set -eu
 
-export RELEASE_VERSION="4.22"
-export PREVIOUS_VERSION="4.21.1"
+export RELEASE_VERSION="4.25"
+export PREVIOUS_VERSION="4.24"
 export RELEASE_BRANCH="next"
 
 if [ ! -e "../i3.github.io" ]
@@ -152,7 +152,7 @@ git checkout ${RELEASE_BRANCH}
 
 cd ${TMPDIR}
 git clone --quiet ${STARTDIR}/../i3.github.io
-cd i3.github.io
+cd i3.github.io/content
 
 mkdir docs/${PREVIOUS_VERSION}
 tar cf - '--exclude=[0-9]\.[0-9e]*' docs | tar xf - --strip-components=1 -C docs/${PREVIOUS_VERSION}
@@ -163,10 +163,10 @@ cp ${TMPDIR}/i3/i3-${RELEASE_VERSION}.tar.xz* downloads/
 git add downloads/i3-${RELEASE_VERSION}.tar.xz*
 cp ${TMPDIR}/i3/RELEASE-NOTES-${RELEASE_VERSION} downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt
 git add downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt
-sed -i "s,<h2>Documentation for i3 v[^<]*</h2>,<h2>Documentation for i3 v${RELEASE_VERSION}</h2>,g" docs/index.html
-sed -i "s,\(span class=\"version\">\)[^<]*\(</span>\),\1${RELEASE_VERSION}\2,g" index.html
+sed -i "s,<h2>Documentation for i3 v[^<]*</h2>,<h2>Documentation for i3 v${RELEASE_VERSION}</h2>,g" docs/_index.html
+sed -i "s,\(span class=\"version\">\)[^<]*\(</span>\),\1${RELEASE_VERSION}\2,g" _index.html
 sed -i "s,The current stable version is .*$,The current stable version is ${RELEASE_VERSION}.,g" downloads/index.html
-sed -i "s,<tbody>,<tbody>\n  <tr>\n    <td>${RELEASE_VERSION}</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.xz\">i3-${RELEASE_VERSION}.tar.xz</a></td>\n    <td>$(LC_ALL=en_US.UTF-8 ls -lh ../i3/i3-${RELEASE_VERSION}.tar.xz | awk -F " " {'print $5'} | sed 's/K$/ KiB/g' | sed 's/M$/ MiB/g')</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.xz.asc\">signature</a></td>\n    <td>$(date +'%Y-%m-%d')</td>\n    <td><a href=\"/downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt\">release notes</a></td>\n  </tr>\n,g" downloads/index.html
+sed -i "s,<tbody>,<tbody>\n  <tr>\n    <td>${RELEASE_VERSION}</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.xz\">i3-${RELEASE_VERSION}.tar.xz</a></td>\n    <td>$(LC_ALL=en_US.UTF-8 ls -lh downloads/i3-${RELEASE_VERSION}.tar.xz | awk -F " " {'print $5'} | sed 's/K$/ KiB/g' | sed 's/M$/ MiB/g')</td>\n    <td><a href=\"/downloads/i3-${RELEASE_VERSION}.tar.xz.asc\">signature</a></td>\n    <td>$(date +'%Y-%m-%d')</td>\n    <td><a href=\"/downloads/RELEASE-NOTES-${RELEASE_VERSION}.txt\">release notes</a></td>\n  </tr>\n,g" downloads/index.html
 
 git commit -a -m "add ${RELEASE_VERSION} release"
 

@@ -77,7 +77,6 @@ void floating_check_size(Con *floating_con, bool prefer_height) {
     /* Define reasonable minimal and maximal sizes for floating windows */
     const int floating_sane_min_height = 50;
     const int floating_sane_min_width = 75;
-    Rect floating_sane_max_dimensions;
     Con *focused_con = con_descend_focused(floating_con);
 
     DLOG("deco_rect.height = %d\n", focused_con->deco_rect.height);
@@ -148,7 +147,7 @@ void floating_check_size(Con *floating_con, bool prefer_height) {
              * this case according to the ICCCM. */
             double width = floating_con->rect.width - window->base_width - border_rect.width;
             double height = floating_con->rect.height - window->base_height - border_rect.height;
-            const double ar = (double)width / (double)height;
+            const double ar = width / height;
             double new_ar = -1;
             if (min_ar > 0 && ar < min_ar) {
                 new_ar = min_ar;
@@ -208,7 +207,7 @@ void floating_check_size(Con *floating_con, bool prefer_height) {
     /* Unless user requests otherwise (-1), ensure width/height do not exceed
      * configured maxima or, if unconfigured, limit to combined width of all
      * outputs */
-    floating_sane_max_dimensions = total_outputs_dimensions();
+    Rect floating_sane_max_dimensions = total_outputs_dimensions();
     if (config.floating_maximum_height != -1) {
         floating_con->rect.height -= border_rect.height;
         if (config.floating_maximum_height == 0) {

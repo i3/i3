@@ -398,14 +398,14 @@ void handle_button_press(xcb_button_press_event_t *event) {
         /* If the root window is clicked, find the relevant output from the
          * click coordinates and focus the output's active workspace. */
         if (event->event == root && event->response_type == XCB_BUTTON_PRESS) {
-            Con *output, *ws;
+            Con *output;
             TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
                 if (con_is_internal(output) ||
                     !rect_contains(output->rect, event->event_x, event->event_y)) {
                     continue;
                 }
 
-                ws = TAILQ_FIRST(&(output_get_content(output)->focus_head));
+                Con *ws = TAILQ_FIRST(&(output_get_content(output)->focus_head));
                 if (ws != con_get_workspace(focused)) {
                     workspace_show(ws);
                     tree_render();

@@ -21,8 +21,7 @@ void scratchpad_move(Con *con) {
         LOG("'move scratchpad' used on a workspace \"%s\". Calling it "
             "recursively on all windows on this workspace.\n",
             con->name);
-        Con *current;
-        current = TAILQ_FIRST(&(con->focus_head));
+        Con *current = TAILQ_FIRST(&(con->focus_head));
         while (current) {
             Con *next = TAILQ_NEXT(current, focused);
             scratchpad_move(current);

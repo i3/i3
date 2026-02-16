@@ -30,7 +30,7 @@
  * (and ID) should be created, which is the default and encouraged behavior.
  *
  */
-void start_application(const char *command, bool no_startup_id);
+void start_application(const char *command, bool no_startup_id, xcb_window_t window_id);
 
 /**
  * Deletes a startup sequence, ignoring whether its timeout has elapsed.
@@ -56,7 +56,7 @@ void startup_sequence_rename_workspace(const char *old_name, const char *new_nam
  * Gets the stored startup sequence for the _NET_STARTUP_ID of a given window.
  *
  */
-struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
+struct Startup_Sequence *startup_sequence_get(const i3Window *cwindow,
                                               xcb_get_property_reply_t *startup_id_reply, bool ignore_mapped_leader);
 
 /**
@@ -68,10 +68,10 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
  * Returns NULL otherwise.
  *
  */
-char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply);
+char *startup_workspace_for_window(const i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply);
 
 /**
  * Deletes the startup sequence for a window if it exists.
  *
  */
-void startup_sequence_delete_by_window(i3Window *win);
+void startup_sequence_delete_by_window(const i3Window *win);

@@ -15,9 +15,14 @@
 #   (unless you are already familiar with Perl)
 #
 use i3test i3_autostart => 0;
+use POSIX qw(mkfifo);
+use File::Temp qw(:POSIX);
 use X11::XCB qw(PROP_MODE_REPLACE);
 
 my (@nodes);
+
+my $exec_tmp = tmpnam();
+mkfifo($exec_tmp, 0600) or BAIL_OUT "Could not create FIFO in $exec_tmp: $!";
 
 my $config = <<'EOT';
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
@@ -49,6 +54,11 @@ for_window [window_role="i3test"] border none
 
 # test 12
 for_window [workspace="trigger"] floating enable, mark triggered
+EOT
+
+$config .= <<EOT;
+# test 13
+for_window [class="exec"] exec echo "\$I3_WINDOW_ID" > "$exec_tmp"
 EOT
 
 # test all window types
@@ -389,6 +399,21 @@ cmp_ok(@nodes, '==', 1, 'one floating container on this workspace');
 is_deeply($nodes[0]->{nodes}[0]->{marks}, [ 'triggered' ], "mark set for workspace criterion");
 
 kill_all_windows;
+
+##############################################################
+# 13: check that we pass $I3_WINDOW_ID to exec'ed subprocesses
+##############################################################
+
+$window = open_window(wm_class => 'exec');
+
+open my $fh, '<', $exec_tmp
+    or die "couldn't open FIFO $exec_tmp for reading: $!";
+chomp(my $window_id = do { local $/; <$fh> });
+is($window_id, $window->id, "got the expected window id from \$I3_WINDOW_ID");
+
+kill_all_windows;
+
+unlink($exec_tmp);
 
 ##############################################################
 

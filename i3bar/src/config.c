@@ -29,7 +29,7 @@ static bool parsing_padding;
  */
 static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
     FREE(cur_key);
-    sasprintf(&(cur_key), "%.*s", keyLen, keyVal);
+    sasprintf(&(cur_key), "%.*s", (int)keyLen, keyVal);
 
     if (strcmp(cur_key, "bindings") == 0) {
         parsing_bindings = true;

@@ -17,6 +17,7 @@ rm -rf \
    docs/slides-2012-03-16/ \
    testcases/.gitignore \
    travis/ \
+   release-notes/ \
    .clang-format \
    .editorconfig \
    i3bar/.gitignore \

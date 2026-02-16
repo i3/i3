@@ -122,6 +122,7 @@ xtest_key_press(50); # Shift
 start_drag(50, 50);
 end_drag(1050, 50);
 xtest_key_release(50); # Shift
+xtest_sync_with_i3;
 
 is($x->input_focus, $A->id, 'Tiling window still focused');
 is($ws1, focused_ws, 'Same workspace focused');
@@ -192,6 +193,7 @@ xtest_key_press(50); # Shift
 start_drag(50, 50);
 end_drag(1500, 250);  # Center of right output, inner region.
 xtest_key_release(50); # Shift
+xtest_sync_with_i3;
 
 is($ws2, focused_ws, 'Workspace focused after tiling window dragged to it');
 $ws2 = get_ws($ws2);

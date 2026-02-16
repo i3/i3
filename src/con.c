@@ -345,12 +345,11 @@ void con_close(Con *con, kill_window_t kill_window) {
 
     if (con->type == CT_WORKSPACE) {
         DLOG("con = %p is a workspace, closing all children instead.\n", con);
-        Con *child, *nextchild;
-        for (child = TAILQ_FIRST(&(con->focus_head)); child;) {
-            nextchild = TAILQ_NEXT(child, focused);
+        for (Con *child = TAILQ_FIRST(&(con->focus_head)); child;) {
+            Con *next_child = TAILQ_NEXT(child, focused);
             DLOG("killing child = %p.\n", child);
             tree_close_internal(child, kill_window, false);
-            child = nextchild;
+            child = next_child;
         }
 
         return;
@@ -597,8 +596,6 @@ struct bfs_entry {
  *
  */
 Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode) {
-    Con *current, *child;
-
     /* TODO: is breadth-first-search really appropriate? (check as soon as
      * fullscreen levels and fullscreen for containers is implemented) */
     TAILQ_HEAD(bfs_head, bfs_entry) bfs_head = TAILQ_HEAD_INITIALIZER(bfs_head);
@@ -608,7 +605,7 @@ Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode) {
 
     while (!TAILQ_EMPTY(&bfs_head)) {
         entry = TAILQ_FIRST(&bfs_head);
-        current = entry->con;
+        Con *current = entry->con;
         if (current != con && current->fullscreen_mode == fullscreen_mode) {
             /* empty the queue */
             while (!TAILQ_EMPTY(&bfs_head)) {
@@ -622,6 +619,7 @@ Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode) {
         TAILQ_REMOVE(&bfs_head, entry, entries);
         free(entry);
 
+        Con *child;
         TAILQ_FOREACH (child, &(current->nodes_head), nodes) {
             entry = smalloc(sizeof(struct bfs_entry));
             entry->con = child;
@@ -894,9 +892,8 @@ void con_mark(Con *con, const char *mark, mark_mode_t mode) {
     if (mode == MM_REPLACE) {
         DLOG("Removing all existing marks on con = %p.\n", con);
 
-        mark_t *current;
         while (!TAILQ_EMPTY(&(con->marks_head))) {
-            current = TAILQ_FIRST(&(con->marks_head));
+            const mark_t *current = TAILQ_FIRST(&(con->marks_head));
             con_unmark(con, current->name);
         }
     }
@@ -929,9 +926,8 @@ void con_unmark(Con *con, const char *name) {
                 continue;
             }
 
-            mark_t *mark;
             while (!TAILQ_EMPTY(&(current->marks_head))) {
-                mark = TAILQ_FIRST(&(current->marks_head));
+                mark_t *mark = TAILQ_FIRST(&(current->marks_head));
                 FREE(mark->name);
                 TAILQ_REMOVE(&(current->marks_head), mark, marks);
                 FREE(mark);
@@ -1331,9 +1327,8 @@ static bool _con_move_to_con(Con *con, Con *target, bool behind_focused, bool fi
 
     if (con->type == CT_WORKSPACE) {
         /* Re-parent all of the old workspace's floating windows. */
-        Con *child;
         while (!TAILQ_EMPTY(&(source_ws->floating_head))) {
-            child = TAILQ_FIRST(&(source_ws->floating_head));
+            Con *child = TAILQ_FIRST(&(source_ws->floating_head));
             con_move_to_workspace(child, target_ws, true, true, false);
         }
 
@@ -2043,9 +2038,8 @@ void con_set_layout(Con *con, layout_t layout) {
             Con **focus_order = get_focus_order(con);
 
             DLOG("Moving cons\n");
-            Con *child;
             while (!TAILQ_EMPTY(&(con->nodes_head))) {
-                child = TAILQ_FIRST(&(con->nodes_head));
+                Con *child = TAILQ_FIRST(&(con->nodes_head));
                 con_detach(child);
                 con_attach(child, new, true);
             }
@@ -2248,7 +2242,6 @@ static void con_on_remove_child(Con *con) {
     if (children == 0) {
         DLOG("Container empty, closing\n");
         tree_close_internal(con, DONT_KILL_WINDOW, false);
-        return;
     }
 }
 

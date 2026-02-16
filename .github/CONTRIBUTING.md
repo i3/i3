@@ -4,6 +4,34 @@
 
 Note that bug reports and feature requests for related projects should be filed in the corresponding repositories for [i3status](https://github.com/i3/i3status) and [i3lock](https://github.com/i3/i3lock).
 
+## AI contribution policy
+
+i3 accepts contributions created with AI assistance.
+
+Contributions must disclose AI assistance,
+e.g. “Created with help by Claude Opus 4.5”.
+
+By submitting such a contribution, you represent that:
+
+1. You have reviewed and understood the code you are submitting.
+2. You have made sufficient modifications or creative decisions such that
+   you can offer the contribution under the BSD-3-Clause license.
+3. To your knowledge, the contribution does not reproduce
+   copyrighted material from other projects.
+
+Here are a few examples for illustration:
+
+* A purely AI-generated pull request (“vibe-coded”) cannot be accepted, because
+  the copyright status of such output is uncertain and you may not be able to
+  license it under BSD-3-Clause.
+* It is considered impolite to send an LLM’s writing (posting “slop” issues). We
+  want to hear your own voice and see that you have spent enough thoughts and
+  time to write us a message.
+* It can be very effective to ask a coding assistant to confirm and explain a
+  bug, but then verify correctness of the generated explanation by implementing
+  and testing your own solution. This process saves you time for the mechanical
+  steps, but ensures you understood the problem and solution.
+
 ## i3 bug reports
 
 1. Read the [debugging instructions](https://i3wm.org/docs/debugging.html).

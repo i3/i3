@@ -229,7 +229,7 @@ void set_debug_logging(const bool _debug_logging) {
  * This is to be called by *LOG() which includes filename/linenumber/function.
  *
  */
-static void vlog(const bool print, const char *fmt, va_list args) {
+__attribute__((format(printf, 2, 0))) static void vlog(const bool print, const char *fmt, va_list args) {
     /* Precisely one page to not consume too much memory but to hold enough
      * data to be useful. */
     static char message[4096];
@@ -396,7 +396,7 @@ char *current_log_stream_socket_path = NULL;
  * the list of log clients.
  *
  */
-void log_new_client(EV_P_ struct ev_io *w, int revents) {
+void log_new_client(EV_P_ ev_io *w, int revents) {
     struct sockaddr_un peer;
     socklen_t len = sizeof(struct sockaddr_un);
     int fd;

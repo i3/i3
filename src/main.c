@@ -20,7 +20,6 @@
 #include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -47,7 +46,7 @@ int listen_fds;
 
 /* We keep the xcb_prepare watcher around to be able to enable and disable it
  * temporarily for drag_pointer(). */
-static struct ev_prepare *xcb_prepare;
+static ev_prepare *xcb_prepare;
 
 char **start_argv;
 
@@ -117,7 +116,7 @@ I3_REST_ATOMS_XMACRO
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
  *
  */
-static void xcb_got_event(EV_P_ struct ev_io *w, int revents) {
+static void xcb_got_event(EV_P_ ev_io *w, int revents) {
     /* empty, because xcb_prepare_cb are used */
 }
 
@@ -146,8 +145,7 @@ static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
         }
 
         /* Strip off the highest bit (set if the event is generated) */
-        int type = (event->response_type & 0x7F);
-
+        const int type = (event->response_type & 0x7F);
         handle_event(type, event);
 
         free(event);
@@ -238,7 +236,7 @@ static void handle_term_signal(struct ev_loop *loop, ev_signal *signal, int reve
  *
  */
 static void setup_term_handlers(void) {
-    static struct ev_signal signal_watchers[6];
+    static ev_signal signal_watchers[6];
     const size_t num_watchers = sizeof(signal_watchers) / sizeof(signal_watchers[0]);
 
     /* We have to rely on libev functionality here and should not use
@@ -511,8 +509,7 @@ int main(int argc, char *argv[]) {
             err(EXIT_FAILURE, "Could not create socket");
         }
 
-        struct sockaddr_un addr;
-        memset(&addr, 0, sizeof(struct sockaddr_un));
+        struct sockaddr_un addr = {0};
         addr.sun_family = AF_LOCAL;
         strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
         FREE(socket_path);
@@ -539,7 +536,7 @@ int main(int argc, char *argv[]) {
         if (reply_type != I3_IPC_REPLY_TYPE_COMMAND) {
             errx(EXIT_FAILURE, "IPC: received reply of type %d but expected %d (COMMAND)", reply_type, I3_IPC_REPLY_TYPE_COMMAND);
         }
-        printf("%.*s\n", reply_length, reply);
+        printf("%.*s\n", reply_length, (char *)reply);
         FREE(reply);
         return 0;
     }
@@ -551,33 +548,32 @@ int main(int argc, char *argv[]) {
     if (is_debug_build()) {
         struct rlimit limit = {RLIM_INFINITY, RLIM_INFINITY};
         setrlimit(RLIMIT_CORE, &limit);
+        LOG("CORE DUMPS: You are running a development version of i3, so coredumps were automatically enabled (ulimit -c unlimited).\n");
 
+#ifdef __linux__
         /* The following code is helpful, but not required. We thus don’t pay
          * much attention to error handling, non-linux or other edge cases. */
-        LOG("CORE DUMPS: You are running a development version of i3, so coredumps were automatically enabled (ulimit -c unlimited).\n");
-        size_t cwd_size = 1024;
-        char *cwd = smalloc(cwd_size);
-        char *cwd_ret;
-        while ((cwd_ret = getcwd(cwd, cwd_size)) == NULL && errno == ERANGE) {
-            cwd_size = cwd_size * 2;
-            cwd = srealloc(cwd, cwd_size);
-        }
-        if (cwd_ret != NULL) {
+        char *cwd = getcwd(NULL, 0);
+        if (cwd != NULL) {
             LOG("CORE DUMPS: Your current working directory is \"%s\".\n", cwd);
+            free(cwd);
         }
+        const size_t buffer_size = 1024;
+        char *buffer = scalloc(buffer_size, sizeof(char));
+
         int patternfd;
         if ((patternfd = open("/proc/sys/kernel/core_pattern", O_RDONLY)) >= 0) {
-            memset(cwd, '\0', cwd_size);
-            if (read(patternfd, cwd, cwd_size) > 0) {
-                /* a trailing newline is included in cwd */
-                LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
+            if (read(patternfd, buffer, buffer_size - 1) > 0) {
+                /* a trailing newline is included in buffer */
+                LOG("CORE DUMPS: Your core_pattern is: %s", buffer);
             }
             close(patternfd);
         }
-        free(cwd);
+        free(buffer);
+#endif
     }
 
-    LOG("i3 %s starting\n", i3_version);
+    LOG("i3 %s starting\n", _i3_version);
 
     conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn)) {
@@ -766,12 +762,12 @@ int main(int argc, char *argv[]) {
         xcb_set_selection_owner(conn, wm_sn_selection_owner, wm_sn, last_timestamp);
 
         if (selection_reply && selection_reply->owner != XCB_NONE) {
-            unsigned int usleep_time = 100000; /* 0.1 seconds */
-            int check_rounds = 150;            /* Wait for a maximum of 15 seconds */
+            int check_rounds = 150; /* Wait for a maximum of 15 seconds */
             xcb_get_geometry_reply_t *geom_reply = NULL;
 
             DLOG("waiting for old WM_Sn selection owner to exit");
             do {
+                const unsigned int usleep_time = 100000;
                 free(geom_reply);
                 usleep(usleep_time);
                 if (check_rounds-- == 0) {
@@ -792,8 +788,7 @@ int main(int argc, char *argv[]) {
         union {
             xcb_client_message_event_t message;
             char storage[32];
-        } event;
-        memset(&event, 0, sizeof(event));
+        } event = {0};
         event.message.response_type = XCB_CLIENT_MESSAGE;
         event.message.window = root_screen->root;
         event.message.format = 32;
@@ -992,28 +987,28 @@ int main(int argc, char *argv[]) {
 
     scratchpad_fix_resolution();
 
-    xcb_query_pointer_reply_t *pointerreply;
     Output *output = NULL;
-    if (!(pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL))) {
+    xcb_query_pointer_reply_t *pointer_reply = xcb_query_pointer_reply(conn, pointercookie, NULL);
+    if (!pointer_reply) {
         ELOG("Could not query pointer position, using first screen\n");
     } else {
-        DLOG("Pointer at %d, %d\n", pointerreply->root_x, pointerreply->root_y);
-        output = get_output_containing(pointerreply->root_x, pointerreply->root_y);
+        DLOG("Pointer at %d, %d\n", pointer_reply->root_x, pointer_reply->root_y);
+        output = get_output_containing(pointer_reply->root_x, pointer_reply->root_y);
         if (!output) {
             ELOG("ERROR: No screen at (%d, %d), starting on the first screen\n",
-                 pointerreply->root_x, pointerreply->root_y);
+                 pointer_reply->root_x, pointer_reply->root_y);
         }
     }
     if (!output) {
         output = get_first_output();
     }
     con_activate(con_descend_focused(output_get_content(output->con)));
-    free(pointerreply);
+    free(pointer_reply);
 
     tree_render();
 
     /* Listen to the IPC socket for clients */
-    struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
+    ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
     ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
     ev_io_start(main_loop, ipc_io);
 
@@ -1021,11 +1016,11 @@ int main(int argc, char *argv[]) {
     char *log_stream_socket_path = get_process_filename("log-stream-socket");
     int log_socket = create_socket(log_stream_socket_path, &current_log_stream_socket_path);
     free(log_stream_socket_path);
-    struct ev_io *log_io = NULL;
+    ev_io *log_io = NULL;
     if (log_socket == -1) {
         ELOG("Could not create the log socket, i3-dump-log -f will not work\n");
     } else {
-        log_io = scalloc(1, sizeof(struct ev_io));
+        log_io = scalloc(1, sizeof(ev_io));
         ev_io_init(log_io, log_new_client, log_socket, EV_READ);
         ev_io_start(main_loop, log_io);
     }
@@ -1033,7 +1028,7 @@ int main(int argc, char *argv[]) {
     /* Also handle the UNIX domain sockets passed via socket
      * activation. The parameter 0 means "do not remove the
      * environment variables", we need to be able to reexec. */
-    struct ev_io *socket_ipc_io = NULL;
+    ev_io *socket_ipc_io = NULL;
     listen_fds = sd_listen_fds(0);
     if (listen_fds < 0) {
         ELOG("socket activation: Error in sd_listen_fds\n");
@@ -1054,7 +1049,7 @@ int main(int argc, char *argv[]) {
                 ELOG("Could not disable FD_CLOEXEC on fd %d\n", fd);
             }
 
-            socket_ipc_io = scalloc(1, sizeof(struct ev_io));
+            socket_ipc_io = scalloc(1, sizeof(ev_io));
             ev_io_init(socket_ipc_io, ipc_new_client, fd, EV_READ);
             ev_io_start(main_loop, socket_ipc_io);
         }
@@ -1077,8 +1072,8 @@ int main(int argc, char *argv[]) {
     /* Set the ewmh desktop properties. */
     ewmh_update_desktop_properties();
 
-    struct ev_io *xcb_watcher = scalloc(1, sizeof(struct ev_io));
-    xcb_prepare = scalloc(1, sizeof(struct ev_prepare));
+    ev_io *xcb_watcher = scalloc(1, sizeof(struct ev_io));
+    xcb_prepare = scalloc(1, sizeof(ev_prepare));
 
     ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);
@@ -1112,7 +1107,7 @@ int main(int argc, char *argv[]) {
             }
 
             /* Strip off the highest bit (set if the event is generated) */
-            int type = (event->response_type & 0x7F);
+            const int type = (event->response_type & 0x7F);
 
             /* We still need to handle MapRequests which are sent in the
              * timespan starting from when we register as a window manager and
@@ -1177,7 +1172,7 @@ int main(int argc, char *argv[]) {
             struct Autostart *exec = TAILQ_FIRST(&autostarts);
 
             LOG("auto-starting %s\n", exec->command);
-            start_application(exec->command, exec->no_startup_id);
+            start_application(exec->command, exec->no_startup_id, XCB_NONE);
 
             FREE(exec->command);
             TAILQ_REMOVE(&autostarts, exec, autostarts);
@@ -1190,7 +1185,7 @@ int main(int argc, char *argv[]) {
         struct Autostart *exec_always = TAILQ_FIRST(&autostarts_always);
 
         LOG("auto-starting (always!) %s\n", exec_always->command);
-        start_application(exec_always->command, exec_always->no_startup_id);
+        start_application(exec_always->command, exec_always->no_startup_id, XCB_NONE);
 
         FREE(exec_always->command);
         TAILQ_REMOVE(&autostarts_always, exec_always, autostarts_always);
@@ -1206,7 +1201,7 @@ int main(int argc, char *argv[]) {
                   barconfig->verbose ? "-V" : "",
                   barconfig->id, current_socketpath);
         LOG("Starting bar process: %s\n", command);
-        start_application(command, true);
+        start_application(command, true, XCB_NONE);
         free(command);
     }
 

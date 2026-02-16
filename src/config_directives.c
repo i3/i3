@@ -52,8 +52,7 @@ CFGFUN(include, const char *pattern) {
         file->path = sstrdup(resolved_path);
         TAILQ_INSERT_TAIL(&included_files, file, files);
 
-        struct stack stack;
-        memset(&stack, '\0', sizeof(struct stack));
+        struct stack stack = {0};
         struct parser_ctx ctx = {
             .use_nagbar = result->ctx->use_nagbar,
             .stack = &stack,
@@ -79,8 +78,8 @@ CFGFUN(include, const char *pattern) {
             default:
                 /* missing case statement */
                 assert(false);
-                break;
         }
+        result->ctx->variables = ctx.variables; /* In case head was modified */
     }
     wordfree(&p);
 }
@@ -96,7 +95,7 @@ static int criteria_next_state;
  * commands.c for matching target windows of a command.
  *
  */
-CFGFUN(criteria_init, int _state) {
+CFGFUN(criteria_init, const int _state) {
     criteria_next_state = _state;
 
     DLOG("Initializing criteria, current_match = %p, state = %d\n", current_match, _state);
@@ -243,7 +242,7 @@ CFGFUN(for_window, const char *command) {
     TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
 }
 
-static void apply_gaps(gaps_t *gaps, gaps_mask_t mask, int value) {
+static void apply_gaps(gaps_t *gaps, const gaps_mask_t mask, const int value) {
     if (gaps == NULL) {
         return;
     }
@@ -295,19 +294,26 @@ static void create_gaps_assignment(const char *workspace, const gaps_mask_t mask
 static gaps_mask_t gaps_scope_to_mask(const char *scope) {
     if (!strcmp(scope, "inner")) {
         return GAPS_INNER;
-    } else if (!strcmp(scope, "outer")) {
+    }
+    if (!strcmp(scope, "outer")) {
         return GAPS_OUTER;
-    } else if (!strcmp(scope, "vertical")) {
+    }
+    if (!strcmp(scope, "vertical")) {
         return GAPS_VERTICAL;
-    } else if (!strcmp(scope, "horizontal")) {
+    }
+    if (!strcmp(scope, "horizontal")) {
         return GAPS_HORIZONTAL;
-    } else if (!strcmp(scope, "top")) {
+    }
+    if (!strcmp(scope, "top")) {
         return GAPS_TOP;
-    } else if (!strcmp(scope, "right")) {
+    }
+    if (!strcmp(scope, "right")) {
         return GAPS_RIGHT;
-    } else if (!strcmp(scope, "bottom")) {
+    }
+    if (!strcmp(scope, "bottom")) {
         return GAPS_BOTTOM;
-    } else if (!strcmp(scope, "left")) {
+    }
+    if (!strcmp(scope, "left")) {
         return GAPS_LEFT;
     }
     ELOG("Invalid command, cannot process scope %s", scope);
@@ -315,8 +321,8 @@ static gaps_mask_t gaps_scope_to_mask(const char *scope) {
 }
 
 CFGFUN(gaps, const char *workspace, const char *scope, const long value) {
-    int pixels = logical_px(value);
-    gaps_mask_t mask = gaps_scope_to_mask(scope);
+    const int pixels = logical_px(value);
+    const gaps_mask_t mask = gaps_scope_to_mask(scope);
 
     if (workspace == NULL) {
         apply_gaps(&config.gaps, mask, pixels);
@@ -535,9 +541,9 @@ CFGFUN(workspace, const char *workspace, const char *output) {
     struct Workspace_Assignment *assignment;
 
     /* When a new workspace line is encountered, for the first output word,
-     * $workspace from the config.spec is non-NULL. Afterwards, the parser calls
-     * clear_stack() because of the call line. Thus, we have to preserve the
-     * workspace string. */
+     * $workspace from the config.spec is non-NULL. Afterward, the parser calls
+     * parser_clear_stack() because of the call line. Thus, we have to preserve
+     * the workspace string. */
     if (workspace) {
         FREE(current_workspace);
 
@@ -653,7 +659,7 @@ CFGFUN(assign_output, const char *output) {
     TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
 }
 
-CFGFUN(assign, const char *workspace, bool is_number) {
+CFGFUN(assign, const char *workspace, const bool is_number) {
     if (current_match->error != NULL) {
         ELOG("match has error: %s\n", current_match->error);
         return;
@@ -745,7 +751,7 @@ CFGFUN(bar_id, const char *bar_id) {
 }
 
 CFGFUN(bar_output, const char *output) {
-    int new_outputs = current_bar->num_outputs + 1;
+    const int new_outputs = current_bar->num_outputs + 1;
     current_bar->outputs = srealloc(current_bar->outputs, sizeof(char *) * new_outputs);
     current_bar->outputs[current_bar->num_outputs] = sstrdup(output);
     current_bar->num_outputs = new_outputs;
@@ -809,7 +815,7 @@ static void bar_configure_binding(const char *button, const char *release, const
         return;
     }
 
-    int input_code = atoi(button + strlen("button"));
+    const int input_code = atoi(button + strlen("button"));
     if (input_code < 1) {
         ELOG("Button \"%s\" does not seem to be in format 'buttonX'.\n", button);
         return;
@@ -942,7 +948,7 @@ CFGFUN(bar_strip_workspace_name, const char *value) {
 }
 
 CFGFUN(bar_start) {
-    current_bar = scalloc(1, sizeof(struct Barconfig));
+    current_bar = scalloc(1, sizeof(Barconfig));
     TAILQ_INIT(&(current_bar->bar_bindings));
     TAILQ_INIT(&(current_bar->tray_outputs));
     current_bar->tray_padding = 2;

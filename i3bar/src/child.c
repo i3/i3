@@ -215,7 +215,7 @@ static int stdin_start_map(void *context) {
 static int stdin_map_key(void *context, const unsigned char *key, size_t len) {
     parser_ctx *ctx = context;
     FREE(ctx->last_map_key);
-    sasprintf(&(ctx->last_map_key), "%.*s", len, key);
+    sasprintf(&(ctx->last_map_key), "%.*s", (int)len, key);
     return 1;
 }
 
@@ -254,15 +254,15 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
-        sasprintf(&(ctx->block.color), "%.*s", len, val);
+        sasprintf(&(ctx->block.color), "%.*s", (int)len, val);
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "background") == 0) {
-        sasprintf(&(ctx->block.background), "%.*s", len, val);
+        sasprintf(&(ctx->block.background), "%.*s", (int)len, val);
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "border") == 0) {
-        sasprintf(&(ctx->block.border), "%.*s", len, val);
+        sasprintf(&(ctx->block.border), "%.*s", (int)len, val);
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "markup") == 0) {
@@ -280,15 +280,15 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
-        sasprintf(&(ctx->block.min_width_str), "%.*s", len, val);
+        sasprintf(&(ctx->block.min_width_str), "%.*s", (int)len, val);
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "name") == 0) {
-        sasprintf(&(ctx->block.name), "%.*s", len, val);
+        sasprintf(&(ctx->block.name), "%.*s", (int)len, val);
         return 1;
     }
     if (strcasecmp(ctx->last_map_key, "instance") == 0) {
-        sasprintf(&(ctx->block.instance), "%.*s", len, val);
+        sasprintf(&(ctx->block.instance), "%.*s", (int)len, val);
         return 1;
     }
 
@@ -525,7 +525,7 @@ static void stdin_io_first_line_cb(int fd) {
 
 static bool isempty(char *s) {
     while (*s != '\0') {
-        if (!isspace(*s)) {
+        if (!isspace((unsigned char)*s)) {
             return false;
         }
         s++;
@@ -663,7 +663,7 @@ static void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
          watcher->pid,
          exit_status);
 
-    void (*error_function_pointer)(const char *, ...) = NULL;
+    __attribute__((format(printf, 1, 2))) void (*error_function_pointer)(const char *, ...) = NULL;
     const char *command_type = "";
     i3bar_child *c = NULL;
     if (watcher->pid == status_child.pid) {
@@ -735,6 +735,7 @@ static void spipe(int pipedes[2]) {
 
 static void exec_shell(char *command) {
     execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char *)NULL);
+    err(EXIT_FAILURE, "execl return"); /* only reached on error */
 }
 
 static void setup_child_cb(i3bar_child *child) {
@@ -834,7 +835,6 @@ void start_ws_child(char *command) {
 
         setpgid(ws_child.pid, 0);
         exec_shell(command);
-        return;
     }
     /* Parent-process. Reroute streams */
     close(pipe_in[1]);

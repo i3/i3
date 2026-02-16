@@ -1,0 +1,49 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.25   │
+ └──────────────────────────────┘
+
+This is i3 v4.25. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
+
+Most changes in this release cycle have been “behind the scenes”,
+without an observable effect for users. For example, we switched
+to clang-format-20, fixed a number of (benign) memory issues,
+fixed a few flaky tests and maintained our GitHub Actions setup,
+e.g. for the shutdown of baltocdn (our old host for nightly builds).
+
+We also investigated shipping an i3.service systemd user unit,
+but could not make that work without breaking existing setups.
+If distribution maintainers (or anyone) has advice, please share
+(after reading up!) over in https://github.com/i3/i3/issues/5186
+
+ ┌────────────────────────────┐
+ │ Changes in i3 v4.25        │
+ └────────────────────────────┘
+
+  • Set _NET_FRAME_EXTENTS according to the actual decoration size.
+    This improves compatibility with picom and other software.
+  • The command parser is now reentrant, which fixes a few
+    advanced for_window usages (e.g. multiple criteria).
+
+ ┌────────────────────────────┐
+ │ Bugfixes                   │
+ └────────────────────────────┘
+
+  • fix paragraph separators cutting off window titles
+  • fix crash when a container parent is focused
+    and a tiling drag causes it to be killed
+  • fix crash when using for_window [...] reload
+  • fix append_layout when containers use a mark
+  • randr: fix memleak and use-after-free
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  Dmitry, Emeric Planet, FedGuy699, Garrett Marcinak, Michele Piazzai,
+  Orestis Floros, Sergey Vlasov, Vladimir Panteleev, algonell
+
+-- Michael Stapelberg, 2025-12-19

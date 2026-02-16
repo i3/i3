@@ -25,6 +25,9 @@ my $pid = launch_with_config('-default');
 sub net_frame_extents {
     my ($window) = @_;
 
+    # Ensure the previous i3 command has reached X11.
+    sync_with_i3;
+
     my $cookie = $x->get_property(
         0,
         $window->{id},
@@ -61,9 +64,10 @@ subtest 'basic border styles' => sub {
     cmd 'border pixel 5';
     is_net_frame_extents($w, [5, 5, 5, 5], "pixel border with 5px width");
 
-    open_window;
+    my $other = open_window;
     is_net_frame_extents($w, [5, 5, 5, 5], "other window does not affect");
-    cmd 'kill';
+    $other->destroy;
+    wait_for_unmap $other;
 
     cmd 'border normal 0';
     is_net_frame_extents($w, [0, 0, 18, 0], "normal border with 0px width");

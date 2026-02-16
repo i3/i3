@@ -106,7 +106,7 @@ static int outputs_string_cb(void *params_, const unsigned char *val, size_t len
 
     if (!strcmp(params->cur_key, "current_workspace")) {
         char *copy = NULL;
-        sasprintf(&copy, "%.*s", len, val);
+        sasprintf(&copy, "%.*s", (int)len, val);
 
         char *end;
         errno = 0;
@@ -125,7 +125,7 @@ static int outputs_string_cb(void *params_, const unsigned char *val, size_t len
         return 0;
     }
 
-    sasprintf(&(params->outputs_walk->name), "%.*s", len, val);
+    sasprintf(&(params->outputs_walk->name), "%.*s", (int)len, val);
 
     FREE(params->cur_key);
     return 1;
@@ -235,7 +235,7 @@ static int outputs_end_map_cb(void *params_) {
 static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
     struct outputs_json_params *params = (struct outputs_json_params *)params_;
     FREE(params->cur_key);
-    sasprintf(&(params->cur_key), "%.*s", keyLen, keyVal);
+    sasprintf(&(params->cur_key), "%.*s", (int)keyLen, keyVal);
     return 1;
 }
 

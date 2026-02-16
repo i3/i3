@@ -75,9 +75,9 @@ xcb_visualtype_t *visual_type = NULL;
 #define WIN_HEIGHT (15 * font.height + TEXT_PADDING)
 
 #define col_x(col) \
-    (((col)-1) * char_width + TEXT_PADDING)
+    (((col) - 1) * char_width + TEXT_PADDING)
 #define row_y(row) \
-    (((row)-1) * font.height + TEXT_PADDING)
+    (((row) - 1) * font.height + TEXT_PADDING)
 
 enum { STEP_WELCOME,
        STEP_GENERATE } current_step = STEP_WELCOME;
@@ -732,7 +732,7 @@ static void finish(void) {
 
         /* Skip leading whitespace */
         char *walk = line;
-        while (isspace(*walk) && walk < (line + len)) {
+        while (isspace((unsigned char)*walk) && walk < (line + len)) {
             /* Pre-output the skipped whitespaces to keep proper indentation */
             fputc(*walk, ks_config);
             walk++;
