@@ -73,12 +73,7 @@ char *get_exe_path(const char *argv0) {
     /* Fall back to searching $PATH (or _CS_PATH in absence of $PATH). */
     char *path = getenv("PATH");
     if (path == NULL) {
-        /* _CS_PATH is typically something like "/bin:/usr/bin" */
-        while (confstr(_CS_PATH, tmp, tmp_size) > tmp_size) {
-            tmp_size = tmp_size * 2;
-            tmp = srealloc(tmp, tmp_size);
-        }
-        sasprintf(&path, ":%s", tmp);
+		path = sstrdup("@TERMUX_PREFIX@/bin:@TERMUX_PREFIX@/bin/applets");
     } else {
         path = sstrdup(path);
     }
@@ -103,5 +98,5 @@ char *get_exe_path(const char *argv0) {
     free(tmp);
 
     /* Last resort: maybe it’s in /usr/bin? */
-    return sstrdup("/usr/bin/i3-nagbar");
+    return sstrdup("@TERMUX_PREFIX@/bin/i3-nagbar");
 }

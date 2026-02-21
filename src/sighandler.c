@@ -56,7 +56,7 @@ static int margin = 4;
 static int sighandler_backtrace(void) {
     char *tmpdir = getenv("TMPDIR");
     if (tmpdir == NULL)
-        tmpdir = "/tmp";
+        tmpdir = "@TERMUX_PREFIX@/tmp";
 
     pid_t pid_parent = getpid();
 

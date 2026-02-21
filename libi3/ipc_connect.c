@@ -38,7 +38,7 @@ int ipc_connect(const char *socket_path) {
     }
 
     if (path == NULL) {
-        path = sstrdup("/tmp/i3-ipc.sock");
+        path = sstrdup("@TERMUX_PREFIX@/tmp/i3-ipc.sock");
     }
 
     int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);

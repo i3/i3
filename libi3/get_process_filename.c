@@ -48,7 +48,7 @@ char *get_process_filename(const char *prefix) {
              * /tmp/i3-<user>.XXXXXX */
             struct passwd *pw = getpwuid(getuid());
             const char *username = pw ? pw->pw_name : "unknown";
-            sasprintf(&dir, "/tmp/i3-%s.XXXXXX", username);
+            sasprintf(&dir, "@TERMUX_PREFIX@/tmp/i3-%s.XXXXXX", username);
             /* mkdtemp modifies dir */
             if (mkdtemp(dir) == NULL) {
                 perror("mkdtemp()");
