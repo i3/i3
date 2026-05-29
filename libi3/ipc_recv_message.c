@@ -65,6 +65,13 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
         memcpy(message_type, walk, sizeof(uint32_t));
     }
 
+    /* Limit IPC messages to 128 MiB to prevent uncontrolled memory allocation
+     * and denial-of-service attacks. */
+    const uint32_t max_message_size = 128 * 1024 * 1024;
+    if (*reply_length > max_message_size) {
+        ELOG("IPC: message too large (%" PRIu32 " bytes), disconnecting\n", *reply_length);
+        return -3;
+    }
     *reply = smalloc(*reply_length);
 
     read_bytes = 0;
