@@ -731,6 +731,46 @@ Default is +left+
 title_align left|center|right
 ---------------------------------------------
 
+=== Stacked title column width
+
+The title bars of a +stacking+ container can optionally be laid out as a
+vertical column on the left-hand side of the container (similar to the vertical
+tabs found in some web browsers) instead of the classic horizontal bars across
+the top. This is toggled at runtime, per container, with the
++stack_title_position+ command (see <<stack_title_position>>).
+
+This option only controls how wide that column is: each title is clipped to
+roughly the given number of characters, while the focused window fills the
+remaining space to the right of the column. It has no effect while a container
+uses the default top title bars. When unset, a default width of 20 characters
+is used.
+
+*Syntax*:
+---------------------------------------------
+stack_title_width <characters>
+---------------------------------------------
+
+*Example*:
+---------------------------------------------
+stack_title_width 20
+---------------------------------------------
+
+The default title bar position for newly created stacked containers can be set
+with +stack_title_position+. It accepts +top+ (classic horizontal bars, the
+default) or +left+ (vertical column). Existing containers are not affected; use
+the +stack_title_position+ command (see <<stack_title_position>>) to change them
+at runtime, which also overrides this default per container.
+
+*Syntax*:
+---------------------------------------------
+stack_title_position top|left
+---------------------------------------------
+
+*Example*:
+---------------------------------------------
+stack_title_position left
+---------------------------------------------
+
 [[default_border]]
 === Default border style for new windows
 
@@ -2414,6 +2454,31 @@ bindsym $mod+f fullscreen toggle
 
 # Toggle floating/tiling
 bindsym $mod+t floating toggle
+--------------
+
+[[stack_title_position]]
+=== Stacked title bar position
+
+For containers in the +stacking+ layout, the title bars are normally drawn as a
+horizontal strip across the top of the container. The +stack_title_position+
+command switches the enclosing stacked container between those top title bars
+and a vertical column of title bars on the left-hand side (similar to the
+vertical tabs found in some web browsers). The choice is stored per container
+and preserved across an in-place restart. The width of the left column is
+configured with +stack_title_width+ (see <<_stacked_title_column_width>>).
+
+*Syntax*:
+--------------------------------------------
+stack_title_position top|left|toggle
+--------------------------------------------
+
+*Examples*:
+--------------
+# Toggle the focused stack between top and left title bars
+bindsym $mod+Shift+s stack_title_position toggle
+
+# Force the left (vertical) title column
+bindsym $mod+Shift+v stack_title_position left
 --------------
 
 [[_focusing_moving_containers]]

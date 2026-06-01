@@ -415,6 +415,17 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
                 LOG("Unhandled \"layout\": %s\n", buf);
             }
             free(buf);
+        } else if (strcasecmp(last_key, "stack_title_position") == 0) {
+            char *buf = NULL;
+            sasprintf(&buf, "%.*s", (int)len, val);
+            if (strcasecmp(buf, "left") == 0) {
+                json_node->stack_title_position = STACK_TITLE_LEFT;
+            } else if (strcasecmp(buf, "top") == 0) {
+                json_node->stack_title_position = STACK_TITLE_TOP;
+            } else {
+                LOG("Unhandled \"stack_title_position\": %s\n", buf);
+            }
+            free(buf);
         } else if (strcasecmp(last_key, "workspace_layout") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);

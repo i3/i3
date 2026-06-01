@@ -462,6 +462,17 @@ void dump_node(yajl_gen gen, Con *con, bool inplace_restart) {
             break;
     }
 
+    ystr("stack_title_position");
+    switch (con->stack_title_position) {
+        case STACK_TITLE_LEFT:
+            ystr("left");
+            break;
+        case STACK_TITLE_TOP:
+        default:
+            ystr("top");
+            break;
+    }
+
     ystr("workspace_layout");
     switch (con->workspace_layout) {
         case L_DEFAULT:

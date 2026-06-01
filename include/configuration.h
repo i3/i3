@@ -218,6 +218,17 @@ struct Config {
         ALIGN_RIGHT
     } title_align;
 
+    /** Width, in characters, of the title column drawn on the left-hand side
+     * of stacked containers when they use the left/vertical title bars (see
+     * stack_title_position). When unset, a default of 20 characters is used. */
+    int stack_title_width;
+
+    /** Default title bar position for newly created stacked containers: classic
+     * horizontal bars on top (STACK_TITLE_TOP, the default) or a vertical column
+     * on the left (STACK_TITLE_LEFT). Can be overridden per container at runtime
+     * with the stack_title_position command. */
+    stack_title_position_t default_stack_title_position;
+
     /** The default border style for new windows. */
     border_style_t default_border;
 

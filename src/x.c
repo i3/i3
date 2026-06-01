@@ -950,7 +950,27 @@ void x_push_node(Con *con) {
         FREE(state->name);
     }
 
-    if (con->window == NULL && (con->layout == L_STACKED || con->layout == L_TABBED)) {
+    if (con->layout == L_STACKED && con->stack_title_position == STACK_TITLE_LEFT && con->window == NULL) {
+        /* The title bars are laid out as a vertical column on the left-hand
+         * side. Everything below the last title is left uncovered so the desktop
+         * wallpaper shows through. */
+        uint32_t max_y = 0, max_height = 0, max_width = 0;
+        TAILQ_FOREACH (current, &(con->nodes_head), nodes) {
+            Rect *dr = &(current->deco_rect);
+            if (dr->y >= max_y && dr->height >= max_height) {
+                max_y = dr->y;
+                max_height = dr->height;
+            }
+            if (dr->width > max_width) {
+                max_width = dr->width;
+            }
+        }
+        rect.width = max_width;
+        rect.height = max_y + max_height;
+        if (rect.height == 0) {
+            con->mapped = false;
+        }
+    } else if (con->window == NULL && (con->layout == L_STACKED || con->layout == L_TABBED)) {
         /* Calculate the height of all window decorations which will be drawn on to
          * this frame. */
         uint32_t max_y = 0, max_height = 0;

@@ -50,6 +50,8 @@ state INITIAL:
   'force_display_urgency_hint'             -> FORCE_DISPLAY_URGENCY_HINT
   'focus_on_window_activation'             -> FOCUS_ON_WINDOW_ACTIVATION
   'title_align'                            -> TITLE_ALIGN
+  'stack_title_width'                    -> STACK_TITLE_WIDTH
+  'stack_title_position'                 -> STACK_TITLE_POSITION
   'show_marks'                             -> SHOW_MARKS
   'workspace'                              -> WORKSPACE
   'ipc_socket', 'ipc-socket'               -> IPC_SOCKET
@@ -323,6 +325,16 @@ state FORCE_DISPLAY_URGENCY_HINT:
 state TITLE_ALIGN:
   alignment = 'left', 'center', 'right'
       -> call cfg_title_align($alignment)
+
+# stack_title_width <number>
+state STACK_TITLE_WIDTH:
+  width = number
+      -> call cfg_stack_title_width(&width)
+
+# stack_title_position top|left
+state STACK_TITLE_POSITION:
+  position = 'top', 'left'
+      -> call cfg_stack_title_position($position)
 
 # show_marks
 state SHOW_MARKS:

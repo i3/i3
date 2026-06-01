@@ -164,6 +164,7 @@ is(parser_calls('unknown_literal'),
        debuglog
        border
        layout
+       stack_title_position
        append_layout
        workspace
        focus

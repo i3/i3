@@ -109,6 +109,18 @@ typedef enum {
 } layout_t;
 
 /**
+ * Where the title bars of an L_STACKED container are drawn. See
+ * Con::stack_title_position.
+ */
+typedef enum {
+    /* Classic horizontal title bars stacked across the top. */
+    STACK_TITLE_TOP = 0,
+    /* Vertical column of title bars on the left (Firefox-style vertical tabs).
+     * The column width is configured by stack_title_width. */
+    STACK_TITLE_LEFT = 1,
+} stack_title_position_t;
+
+/**
  * Binding input types. See Binding::input_type.
  */
 typedef enum {
@@ -753,6 +765,11 @@ struct Con {
      * layout in workspace_layout and creates a new split container with that
      * layout whenever a new container is attached to the workspace. */
     layout_t layout, last_split_layout, workspace_layout;
+
+    /* For L_STACKED containers: whether the title bars are drawn as the classic
+     * horizontal strip on top or as a vertical column on the left. Toggled at
+     * runtime with the stack_title_position command and saved across restarts. */
+    stack_title_position_t stack_title_position;
 
     border_style_t border_style;
     /* When the border style of a con changes because of motif hints, we don't
