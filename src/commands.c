@@ -1624,6 +1624,47 @@ void cmd_layout(I3_CMD, const char *layout_str) {
 }
 
 /*
+ * Implementation of 'stack_title_position top|left|toggle'.
+ *
+ */
+void cmd_stack_title_position(I3_CMD, const char *position_str) {
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH (current, &OWINDOWS, owindows) {
+        /* Find the nearest enclosing stacked container (including the matched
+         * container itself), mirroring how the user thinks of "the stack". */
+        Con *stack = current->con;
+        while (stack != NULL && stack->layout != L_STACKED) {
+            stack = stack->parent;
+        }
+        if (stack == NULL) {
+            DLOG("con %p is not inside a stacked container, skipping it.\n", current->con);
+            continue;
+        }
+
+        stack_title_position_t pos;
+        if (strcmp(position_str, "top") == 0) {
+            pos = STACK_TITLE_TOP;
+        } else if (strcmp(position_str, "left") == 0) {
+            pos = STACK_TITLE_LEFT;
+        } else {
+            /* "toggle" */
+            pos = (stack->stack_title_position == STACK_TITLE_LEFT)
+                      ? STACK_TITLE_TOP
+                      : STACK_TITLE_LEFT;
+        }
+
+        DLOG("setting stack_title_position of con %p to %d\n", stack, pos);
+        stack->stack_title_position = pos;
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'layout toggle [all|split]'.
  *
  */

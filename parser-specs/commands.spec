@@ -23,6 +23,7 @@ state INITIAL:
   'debuglog' -> DEBUGLOG
   'border' -> BORDER
   'layout' -> LAYOUT
+  'stack_title_position' -> STACK_TITLE_POSITION
   'append_layout' -> APPEND_LAYOUT
   'workspace' -> WORKSPACE
   'focus' -> FOCUS
@@ -150,6 +151,11 @@ state LAYOUT:
       -> call cmd_layout($layout_mode)
   'toggle'
       -> LAYOUT_TOGGLE
+
+# stack_title_position top|left|toggle
+state STACK_TITLE_POSITION:
+  position = 'top', 'left', 'toggle'
+      -> call cmd_stack_title_position($position)
 
 # layout toggle [split|all]
 state LAYOUT_TOGGLE:

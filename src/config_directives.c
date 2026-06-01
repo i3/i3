@@ -535,6 +535,28 @@ CFGFUN(show_marks, const char *value) {
     config.show_marks = boolstr(value);
 }
 
+CFGFUN(stack_title_width, const long width) {
+    /* The value is a per-character column width that gets turned into a pixel
+     * buffer, so clamp it to a sane range: a typo must not request a gigantic
+     * allocation, and we avoid the implementation-defined (int) cast of values
+     * above INT_MAX. */
+    if (width <= 0) {
+        config.stack_title_width = 0;
+    } else if (width > 200) {
+        config.stack_title_width = 200;
+    } else {
+        config.stack_title_width = (int)width;
+    }
+}
+
+CFGFUN(stack_title_position, const char *position) {
+    if (strcmp(position, "left") == 0) {
+        config.default_stack_title_position = STACK_TITLE_LEFT;
+    } else {
+        config.default_stack_title_position = STACK_TITLE_TOP;
+    }
+}
+
 static char *current_workspace = NULL;
 
 CFGFUN(workspace, const char *workspace, const char *output) {

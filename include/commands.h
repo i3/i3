@@ -225,6 +225,14 @@ void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const ch
 void cmd_layout(I3_CMD, const char *layout_str);
 
 /**
+ * Implementation of 'stack_title_position top|left|toggle'. Switches the
+ * enclosing stacked container between horizontal title bars on top and a
+ * vertical title column on the left.
+ *
+ */
+void cmd_stack_title_position(I3_CMD, const char *position_str);
+
+/**
  * Implementation of 'layout toggle [all|split]'.
  *
  */

@@ -42,6 +42,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     new->type = CT_CON;
     new->window = window;
     new->border_style = new->max_user_border_style = config.default_border;
+    new->stack_title_position = config.default_stack_title_position;
     new->current_border_width = -1;
     new->window_icon_padding = -1;
     if (window) {

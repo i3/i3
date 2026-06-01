@@ -32,6 +32,51 @@ int render_deco_height(void) {
     return deco_height;
 }
 
+/* Default width (in characters) of the vertical title column when the user
+ * enabled left title bars but did not configure stack_title_width. */
+#define STACK_TITLE_WIDTH_DEFAULT 20
+
+/*
+ * Returns the width, in pixels, of the vertical title column drawn on the
+ * left-hand side of stacked containers in STACK_TITLE_LEFT mode, derived from
+ * config.stack_title_width (a character count, defaulting to
+ * STACK_TITLE_WIDTH_DEFAULT when unset).
+ *
+ * The result is cached because translating the character count into pixels
+ * requires measuring a sample string, which would otherwise happen once per
+ * child on every render.
+ *
+ */
+static int render_stack_title_width(void) {
+    static int cached_chars = -1;
+    static int cached_font_height = -1;
+    static int cached_width = 0;
+
+    const int chars = config.stack_title_width > 0
+                          ? config.stack_title_width
+                          : STACK_TITLE_WIDTH_DEFAULT;
+
+    if (chars == cached_chars && config.font.height == cached_font_height) {
+        return cached_width;
+    }
+
+    /* Measure a representative run of characters to translate the configured
+     * character count into pixels. '0' is used because its advance width is
+     * close to the average for most fonts. */
+    char *buf = smalloc(chars + 1);
+    memset(buf, '0', chars);
+    buf[chars] = '\0';
+    i3String *sample = i3string_from_utf8(buf);
+    /* Add the padding draw_util_text() leaves on both sides of the title. */
+    cached_width = predict_text_width(sample) + 2 * logical_px(2);
+    I3STRING_FREE(sample);
+    free(buf);
+
+    cached_chars = chars;
+    cached_font_height = config.font.height;
+    return cached_width;
+}
+
 /*
  * "Renders" the given container (and its children), meaning that all rects are
  * updated correctly. Note that this function does not call any xcb_*
@@ -437,10 +482,31 @@ static void render_con_split(Con *con, Con *child, render_params *p, int i) {
 static void render_con_stacked(Con *con, Con *child, render_params *p, int i) {
     assert(con->layout == L_STACKED);
 
+    const int title_width = (con->stack_title_position == STACK_TITLE_LEFT)
+                                ? render_stack_title_width()
+                                : 0;
+
     child->rect.x = p->x;
     child->rect.y = p->y;
     child->rect.width = p->rect.width;
     child->rect.height = p->rect.height;
+
+    if (title_width > 0) {
+        /* Vertical title column on the left, à la Firefox' vertical tabs. Each
+         * title bar is stacked below the previous one in a fixed-width column,
+         * and the (focused) window fills the remaining space to its right. The
+         * title text is clipped to the column width by x_draw_decoration(). */
+        child->deco_rect.x = p->x - con->rect.x;
+        child->deco_rect.y = p->y - con->rect.y + (i * p->deco_height);
+        child->deco_rect.width = min(title_width, (int)p->rect.width);
+        child->deco_rect.height = p->deco_height;
+
+        if (p->children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
+            child->rect.x += child->deco_rect.width;
+            child->rect.width -= child->deco_rect.width;
+        }
+        return;
+    }
 
     child->deco_rect.x = p->x - con->rect.x;
     child->deco_rect.y = p->y - con->rect.y + (i * p->deco_height);
