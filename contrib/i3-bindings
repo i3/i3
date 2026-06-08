@@ -1,0 +1,45 @@
+#!/bin/bash
+
+bindings_json=$(i3-msg -t get_binding_syms 2>/dev/null)
+
+formatted_list=$(echo "$bindings_json" | jq -r '
+    to_entries[] | .key as $mode | .value[] | "\($mode)\t\(.hotkey)\t\(.command)"
+' | perl -e '
+    my @lines;
+    my $mode_l = 0;
+    my $key_l = 0;
+    my $current_mode = "default";
+
+    my @defaults;
+
+    while (<STDIN>) {
+        chomp;
+        my ($mode, $hotkey, $command) = split(/\t/);
+        if ($mode ne $current_mode) {
+          push(@lines, @defaults) if @defaults;
+          @defaults = ();
+          $current_mode = $mode;
+        }
+        $mode_l = length($mode) if $mode_l < length($mode);
+        $key_l = length($hotkey) if $key_l < length($hotkey);
+
+        $command =~ s/mode "default"/mode default/;
+        if ($command eq "mode default") {
+          push @defaults, { m => $mode, h => $hotkey, c => $command };
+          next;
+        }
+        push @lines, { m => $mode, h => $hotkey, c => $command };
+    }
+    push(@lines, @defaults) if @defaults;
+
+    foreach my $row (@lines) {
+        printf("%-${mode_l}s | %-${key_l}s | %s\n", $row->{m}, $row->{h}, $row->{c});
+    }
+')
+
+selected=$(echo "$formatted_list" | rofi -dmenu -i -p "i3 Bindings" -theme-str 'configuration { font: "monospace 12"; }')
+
+if [[ -n "$selected" ]]; then
+  cmd=$(echo "$selected" | cut -d'|' -f3 | xargs)
+  i3-msg "$cmd"
+fi

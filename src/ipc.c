@@ -1204,6 +1204,52 @@ IPC_HANDLER(get_binding_modes) {
 }
 
 /*
+ * Returns a list of configured keybindings, grouped by binding mode.
+ * Each mode contains an array of bindings, preserving their order.
+ * Example output:
+ * {
+ *   "resize": [
+ *     { "hotkey": "1", "command": "resize set width 66 ppt; mode default" },
+ *     { "hotkey": "2", "command": "resize set height 66 ppt" }
+ *   ],
+ *   "default": [
+ *     { "hotkey": "Mod4+h", "command": "split h" },
+ *     { "hotkey": "Mod4+v", "command": "split v" }
+ *   ]
+ * }
+ */
+IPC_HANDLER(get_binding_syms) {
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+    struct Mode *mode;
+    SLIST_FOREACH (mode, &modes, modes) {
+        ystr(mode->name);
+        y(array_open);
+
+        struct Binding *binding;
+        TAILQ_FOREACH (binding, mode->bindings, bindings) {
+            y(map_open);
+            ystr("hotkey");
+            ystr(binding_to_string(binding));
+            ystr("command");
+            ystr(binding->command);
+            y(map_close);
+        }
+
+        y(array_close);
+    }
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_client_message(client, length, I3_IPC_REPLY_TYPE_GET_BINDING_SYMS, payload);
+    y(free);
+}
+
+/*
  * Callback for the YAJL parser (will be called when a string is parsed).
  *
  */
@@ -1415,7 +1461,7 @@ IPC_HANDLER(get_binding_state) {
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[13] = {
+handler_t handlers[14] = {
     handle_run_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -1429,6 +1475,7 @@ handler_t handlers[13] = {
     handle_send_tick,
     handle_sync,
     handle_get_binding_state,
+    handle_get_binding_syms,
 };
 
 /*
