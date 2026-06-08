@@ -1080,3 +1080,115 @@ int *bindings_get_buttons_to_grab(void) {
 
     return buttons;
 }
+
+/**
+ * Converts a modifier bitmask to a human-readable string (e.g., "Mod4+Shift").
+ * Returns a dynamically allocated string that the caller must free.
+ */
+char *modifiers_to_str(uint32_t mask) {
+    struct {
+        const char *name;
+        uint32_t mask;
+    } modifiers[] = {
+        {"Shift", ShiftMask},
+        {"Lock", LockMask},
+        {"Ctrl", ControlMask},
+        {"Mod1", Mod1Mask},
+        {"Mod2", Mod2Mask},
+        {"Mod3", Mod3Mask},
+        {"Mod4", Mod4Mask},
+        {"Mod5", Mod5Mask},
+        {"Group1", I3_XKB_GROUP_MASK_1},
+        {"Group2", I3_XKB_GROUP_MASK_2},
+        {"Group3", I3_XKB_GROUP_MASK_3},
+        {"Group4", I3_XKB_GROUP_MASK_4},
+        {NULL, 0}};
+
+    bool one_group_active = is_only_one_group_active(mask);
+    struct regex *re = regex_new("Group[1-4]");
+
+    const char *modifier_names[12] = {0};
+    int count = 0;
+    int strlength = 0;
+    for (int i = 0; modifiers[i].name != NULL; i++) {
+        if (mask & modifiers[i].mask) {
+            if (one_group_active && regex_matches(re, modifiers[i].name)) {
+                continue;
+            }
+            modifier_names[count] = modifiers[i].name;
+            // +1 for either the + or NULL, alternatively: strlength += count
+            // later on
+            strlength += strlen(modifiers[i].name) + 1;
+            count++;
+        }
+    }
+
+    regex_free(re);
+
+    if (count == 0) {
+        return sstrdup("");
+    }
+
+    char *result = smalloc(strlength * sizeof(char));
+    result[0] = '\0';
+    strcat(result, modifier_names[0]);
+    for (int i = 1; i < count; i++) {
+        strcat(result, "+");
+        strcat(result, modifier_names[i]);
+    }
+
+    return result;
+}
+
+/**
+ * Converts a configuration binding back to a human-readable string.
+ * This is mainly used to expose bindings over ipc
+ */
+char *binding_to_string(const Binding *binding) {
+    char *modifiers_str = modifiers_to_str(binding->event_state_mask);
+    char *result;
+
+    if (binding->input_type == B_KEYBOARD) {
+        if (binding->symbol) {
+            // For bindsym: e.g., "Mod4+h"
+            sasprintf(&result, "%s%s%s",
+                      modifiers_str,
+                      strlen(modifiers_str) > 0 ? "+" : "",
+                      binding->symbol);
+        } else {
+            // For bindcode: e.g., "Mod4+38"
+            sasprintf(&result, "%s%s%d",
+                      modifiers_str,
+                      strlen(modifiers_str) > 0 ? "+" : "",
+                      binding->keycode);
+        }
+    } else {
+        // For mouse bindings: e.g., "Mod4+button1"
+        sasprintf(&result, "%s%s%s",
+                  modifiers_str,
+                  strlen(modifiers_str) > 0 ? "+" : "",
+                  binding->symbol);
+    }
+
+    free(modifiers_str);
+    return result;
+}
+
+/**
+ * Returns true if exactly one group bit is set in the provided mask.
+ */
+bool __attribute__((const)) is_only_one_group_active(uint32_t mask) {
+    /* In binding_in_current_group this is done when no bits are set, treat it
+     * as one group
+     */
+    if ((mask >> 16) == I3_XKB_GROUP_MASK_ANY) {
+        return true;
+    }
+
+    uint32_t group_mask = (mask & (I3_XKB_GROUP_MASK_1 |
+                                   I3_XKB_GROUP_MASK_2 |
+                                   I3_XKB_GROUP_MASK_3 |
+                                   I3_XKB_GROUP_MASK_4));
+
+    return (group_mask != 0) && ((group_mask & (group_mask - 1)) == 0);
+}
