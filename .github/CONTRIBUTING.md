@@ -68,6 +68,9 @@ Here are a few examples for illustration:
 * Use the `next` branch for developing and sending your pull request.
 * Use `clang-format` to format your code.
 * Run the [testsuite](https://i3wm.org/docs/testsuite.html)
+* When giving your commit a title, do not use Conventional Commits (“refactor: …”),
+  instead prefix the commit with the scope of what it changes (“pointer warping: …”):
+  https://sumnerevans.com/posts/software-engineering/stop-using-conventional-commits/
 * If your changes should be reported on the next release's changelog, also
   add a small single-line file starting with a number (see examples) containing
   a short explanation of your change either in the
