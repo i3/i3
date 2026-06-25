@@ -1297,6 +1297,10 @@ void x_push_changes(Con *con) {
             xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
         }
     }
+    /* Change the event mask so that we do not receive EnterNotify events
+     * as a result of reconfiguring windows. */
+    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){ROOT_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW});
+
     bool order_changed = false;
     bool stacking_changed = false;
 
@@ -1393,6 +1397,7 @@ void x_push_changes(Con *con) {
             xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
         }
     }
+    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){ROOT_EVENT_MASK});
 
     x_deco_recurse(con);
 
