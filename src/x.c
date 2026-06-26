@@ -406,7 +406,9 @@ static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p
  * number of rectangles.
  *
  */
-static size_t x_get_border_rectangles(Con *con, xcb_rectangle_t rectangles[4]) {
+static size_t x_get_border_rectangles(Con *con,
+                                      bool include_titlebar,
+                                      xcb_rectangle_t rectangles[4]) {
     size_t count = 0;
     int border_style = con_border_style(con);
 
@@ -439,7 +441,10 @@ static size_t x_get_border_rectangles(Con *con, xcb_rectangle_t rectangles[4]) {
             };
         }
         /* pixel border have an additional line at the top */
-        if (border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
+        bool add_pixel =
+            border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE);
+        bool add_titlebar = include_titlebar && con_draw_decoration_into_frame(con);
+        if (add_pixel || add_titlebar) {
             rectangles[count++] = (xcb_rectangle_t){
                 .x = br.x,
                 .y = 0,
@@ -570,7 +575,7 @@ void x_draw_decoration(Con *con) {
          * children are not freely resizable and we want their background color
          * to "shine through". */
         xcb_rectangle_t rectangles[4];
-        size_t rectangles_count = x_get_border_rectangles(con, rectangles);
+        size_t rectangles_count = x_get_border_rectangles(con, false, rectangles);
         for (size_t i = 0; i < rectangles_count; i++) {
             draw_util_rectangle(&(con->frame_buffer), p->color->child_border,
                                 rectangles[i].x,
@@ -878,7 +883,7 @@ static void x_shape_frame(Con *con, xcb_shape_sk_t shape_kind) {
                       con->window_rect.y + con->border_width,
                       con->window->id);
     xcb_rectangle_t rectangles[4];
-    size_t rectangles_count = x_get_border_rectangles(con, rectangles);
+    size_t rectangles_count = x_get_border_rectangles(con, true, rectangles);
     if (rectangles_count) {
         xcb_shape_rectangles(conn, XCB_SHAPE_SO_UNION, shape_kind,
                              XCB_CLIP_ORDERING_UNSORTED, con->frame.id,
