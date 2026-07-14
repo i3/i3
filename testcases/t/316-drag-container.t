@@ -88,6 +88,33 @@ is($x->input_focus, $A->id, 'Floating window moved to the right workspace');
 is($ws2, focused_ws, 'Empty workspace focused after floating window dragged to it');
 
 ###############################################################################
+# Additional mouse buttons during a drag must not start a nested drag.
+###############################################################################
+
+$ws1 = fresh_workspace(output => 0);
+$A = open_floating_window(rect => [ 30, 30, 50, 50 ]);
+my ($initial_rect) = $A->rect;
+
+start_drag(40, 40);
+xtest_button_press(3, 100, 100);
+xtest_button_release(3, 200, 200);
+xtest_button_release(1, 250, 250);
+xtest_key_release(64); # Alt_L
+xtest_sync_with_i3;
+
+my ($dragged_rect) = $A->rect;
+is($dragged_rect->width, $initial_rect->width,
+   'Additional button did not resize floating window during drag');
+is($dragged_rect->height, $initial_rect->height,
+   'Floating window height unchanged after additional button');
+
+$x->root->warp_pointer(400, 400);
+sync_with_i3;
+my ($after_motion_rect) = $A->rect;
+is_deeply($after_motion_rect, $dragged_rect,
+          'Floating window no longer follows pointer after initiating button release');
+
+###############################################################################
 # Drag tiling container onto an empty workspace.
 ###############################################################################
 

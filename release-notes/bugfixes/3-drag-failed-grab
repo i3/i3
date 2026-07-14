@@ -1,1 +1,1 @@
-abort mouse dragging when the pointer or keyboard cannot be grabbed
+abort mouse dragging when input grabs fail and prevent nested mouse drags
