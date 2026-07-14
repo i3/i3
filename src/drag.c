@@ -73,8 +73,10 @@ static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
 
             case XCB_BUTTON_RELEASE: {
                 const xcb_button_release_event_t *release = (xcb_button_release_event_t *)event;
-                if (release->detail == dragloop->event->detail) {
-                    DLOG("Button %d released, ending drag\n", release->detail);
+                if (dragloop->event->detail == XCB_BUTTON_INDEX_ANY ||
+                    release->detail == dragloop->event->detail) {
+                    DLOG("Button %d released, ending drag initiated by button %d\n",
+                         release->detail, dragloop->event->detail);
                     dragloop->result = DRAG_SUCCESS;
                 } else {
                     DLOG("Ignoring button %d release during drag initiated by button %d\n",
