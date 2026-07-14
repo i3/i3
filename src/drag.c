@@ -199,6 +199,12 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
         return DRAG_ABORT;
     }
 
+    if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
+        ELOG("Could not grab pointer (status = %d)\n", reply->status);
+        free(reply);
+        return DRAG_ABORT;
+    }
+
     free(reply);
 
     /* Grab the keyboard */
@@ -215,6 +221,13 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
     if ((keyb_reply = xcb_grab_keyboard_reply(conn, keyb_cookie, &error)) == NULL) {
         ELOG("Could not grab keyboard (error_code = %d)\n", error->error_code);
         free(error);
+        xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
+        return DRAG_ABORT;
+    }
+
+    if (keyb_reply->status != XCB_GRAB_STATUS_SUCCESS) {
+        ELOG("Could not grab keyboard (status = %d)\n", keyb_reply->status);
+        free(keyb_reply);
         xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
         return DRAG_ABORT;
     }
