@@ -124,7 +124,7 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
  * When the user moves the mouse pointer onto a window, this callback gets called.
  *
  */
-static void handle_enter_notify(xcb_enter_notify_event_t *event) {
+static void handle_enter_notify(xcb_enter_notify_event_t *event, uint32_t full_sequence) {
     Con *con;
 
     last_timestamp = event->time;
@@ -138,7 +138,7 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     }
     /* Some events are not interesting, because they were not generated
      * actively by the user, but by reconfiguration of windows */
-    if (event_is_ignored(event->sequence, XCB_ENTER_NOTIFY)) {
+    if (event_is_ignored(full_sequence, XCB_ENTER_NOTIFY)) {
         DLOG("Event ignored\n");
         return;
     }
@@ -1514,7 +1514,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
 
         /* Enter window = user moved their mouse over the window */
         case XCB_ENTER_NOTIFY:
-            handle_enter_notify((xcb_enter_notify_event_t *)event);
+            handle_enter_notify((xcb_enter_notify_event_t *)event, event->full_sequence);
             break;
 
         /* Client message are sent to the root window. The only interesting
