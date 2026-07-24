@@ -241,8 +241,16 @@ struct Workspace_Assignment {
     TAILQ_ENTRY(Workspace_Assignment) ws_assignments;
 };
 
+typedef struct ignore_event_sequence_t {
+    uint32_t value;
+} ignore_event_sequence_t;
+
+#define ENSURE_FULL_SEQUENCE(sequence)                                    \
+    ((void)sizeof(char[(sizeof(sequence) == sizeof(uint32_t)) ? 1 : -1]), \
+     ((ignore_event_sequence_t){.value = sequence}))
+
 struct Ignore_Event {
-    int sequence;
+    ignore_event_sequence_t sequence;
     int response_type;
     time_t added;
 
