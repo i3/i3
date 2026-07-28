@@ -133,7 +133,7 @@ static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
 
     while ((event = xcb_poll_for_event(conn)) != NULL) {
         if (event->response_type == 0) {
-            if (event_is_ignored(event->sequence, 0)) {
+            if (event_is_ignored(ENSURE_FULL_SEQUENCE(event->full_sequence), 0)) {
                 DLOG("Expected X11 Error received for sequence %x\n", event->sequence);
             } else {
                 xcb_generic_error_t *error = (xcb_generic_error_t *)event;

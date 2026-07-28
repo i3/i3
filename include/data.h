@@ -241,8 +241,24 @@ struct Workspace_Assignment {
     TAILQ_ENTRY(Workspace_Assignment) ws_assignments;
 };
 
+typedef struct ignore_event_sequence_t {
+    uint32_t value;
+} ignore_event_sequence_t;
+
+/**
+ * We want to prevent confusion between a uint16_t sequence and a uint32_t full sequence.
+ * This macro will check that the provided argument has the correct sizeof() and will
+ * otherwise throw an error at compile-time ("Array size is negative"). At runtime,
+ * the macro will cause the argument to be wrapped and returned by use of the comma
+ * operator expression.
+ *
+ */
+#define ENSURE_FULL_SEQUENCE(sequence)                                    \
+    ((void)sizeof(char[(sizeof(sequence) == sizeof(uint32_t)) ? 1 : -1]), \
+     ((ignore_event_sequence_t){.value = sequence}))
+
 struct Ignore_Event {
-    int sequence;
+    ignore_event_sequence_t sequence;
     int response_type;
     time_t added;
 

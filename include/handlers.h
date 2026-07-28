@@ -14,6 +14,8 @@
 
 #include <xcb/randr.h>
 
+#include "data.h"
+
 extern int randr_base;
 extern int xkb_base;
 extern int shape_base;
@@ -26,13 +28,13 @@ extern int shape_base;
  * Every ignored sequence number gets garbage collected after 5 seconds.
  *
  */
-void add_ignore_event(const int sequence, const int response_type);
+void add_ignore_event(const ignore_event_sequence_t sequence, const int response_type);
 
 /**
  * Checks if the given sequence is ignored and returns true if so.
  *
  */
-bool event_is_ignored(const int sequence, const int response_type);
+bool event_is_ignored(const ignore_event_sequence_t sequence, const int response_type);
 
 /**
  * Takes an xcb_generic_event_t and calls the appropriate handler, based on the

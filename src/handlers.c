@@ -35,7 +35,7 @@ static SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
  * Every ignored sequence number gets garbage collected after 5 seconds.
  *
  */
-void add_ignore_event(const int sequence, const int response_type) {
+void add_ignore_event(const ignore_event_sequence_t sequence, const int response_type) {
     struct Ignore_Event *event = smalloc(sizeof(struct Ignore_Event));
 
     event->sequence = sequence;
@@ -49,7 +49,7 @@ void add_ignore_event(const int sequence, const int response_type) {
  * Checks if the given sequence is ignored and returns true if so.
  *
  */
-bool event_is_ignored(const int sequence, const int response_type) {
+bool event_is_ignored(const ignore_event_sequence_t sequence, const int response_type) {
     struct Ignore_Event *event;
     time_t now = time(NULL);
     for (event = SLIST_FIRST(&ignore_events); event != SLIST_END(&ignore_events);) {
@@ -64,7 +64,7 @@ bool event_is_ignored(const int sequence, const int response_type) {
     }
 
     SLIST_FOREACH (event, &ignore_events, ignore_events) {
-        if (event->sequence != sequence) {
+        if (event->sequence.value != sequence.value) {
             continue;
         }
 
@@ -124,7 +124,7 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
  * When the user moves the mouse pointer onto a window, this callback gets called.
  *
  */
-static void handle_enter_notify(xcb_enter_notify_event_t *event) {
+static void handle_enter_notify(xcb_enter_notify_event_t *event, uint32_t full_sequence) {
     Con *con;
 
     last_timestamp = event->time;
@@ -138,7 +138,7 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     }
     /* Some events are not interesting, because they were not generated
      * actively by the user, but by reconfiguration of windows */
-    if (event_is_ignored(event->sequence, XCB_ENTER_NOTIFY)) {
+    if (event_is_ignored(ENSURE_FULL_SEQUENCE(full_sequence), XCB_ENTER_NOTIFY)) {
         DLOG("Event ignored\n");
         return;
     }
@@ -280,11 +280,11 @@ static void handle_mapping_notify(xcb_mapping_notify_event_t *event) {
  * A new window appeared on the screen (=was mapped), so let’s manage it.
  *
  */
-static void handle_map_request(const xcb_map_request_event_t *event) {
+static void handle_map_request(const xcb_map_request_event_t *event, uint32_t full_sequence) {
     xcb_get_window_attributes_cookie_t cookie = xcb_get_window_attributes_unchecked(conn, event->window);
 
     DLOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
-    add_ignore_event(event->sequence, -1);
+    add_ignore_event(ENSURE_FULL_SEQUENCE(full_sequence), -1);
 
     manage_window(event->window, cookie, false);
 }
@@ -479,7 +479,7 @@ static void handle_screen_change(xcb_generic_event_t *e) {
  * now, so we better clean up before.
  *
  */
-static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
+static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event, uint32_t full_sequence) {
     DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
     xcb_get_input_focus_cookie_t cookie;
     Con *con = con_by_window_id(event->window);
@@ -532,7 +532,7 @@ ignore_end:
      *
      * Therefore, we ignore all EnterNotify events which have the same sequence
      * as an UnmapNotify event. */
-    add_ignore_event(event->sequence, XCB_ENTER_NOTIFY);
+    add_ignore_event(ENSURE_FULL_SEQUENCE(full_sequence), XCB_ENTER_NOTIFY);
 
     /* Since we just ignored the sequence of this UnmapNotify, we want to make
      * sure that following events use a different sequence. When putting xterm
@@ -551,7 +551,7 @@ ignore_end:
  * important fields in the event data structure).
  *
  */
-static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
+static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event, uint32_t full_sequence) {
     DLOG("destroy notify for 0x%08x, 0x%08x\n", event->event, event->window);
 
     xcb_unmap_notify_event_t unmap;
@@ -559,7 +559,7 @@ static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
     unmap.event = event->event;
     unmap.window = event->window;
 
-    handle_unmap_notify_event(&unmap);
+    handle_unmap_notify_event(&unmap, full_sequence);
 }
 
 static bool window_name_changed(i3Window *window, char *old_name) {
@@ -1432,11 +1432,11 @@ void handle_event(int type, xcb_generic_event_t *event) {
             translate_keysyms();
             grab_all_keys(conn);
         } else if (state->xkbType == XCB_XKB_MAP_NOTIFY) {
-            if (event_is_ignored(event->sequence, type)) {
+            if (event_is_ignored(ENSURE_FULL_SEQUENCE(event->full_sequence), type)) {
                 DLOG("Ignoring map notify event for sequence %d.\n", state->sequence);
             } else {
                 DLOG("xkb map notify, sequence %d, time %d\n", state->sequence, state->time);
-                add_ignore_event(event->sequence, type);
+                add_ignore_event(ENSURE_FULL_SEQUENCE(event->full_sequence), type);
                 xcb_key_symbols_free(keysyms);
                 keysyms = xcb_key_symbols_alloc(conn);
                 ungrab_all_keys(conn);
@@ -1490,15 +1490,15 @@ void handle_event(int type, xcb_generic_event_t *event) {
             break;
 
         case XCB_MAP_REQUEST:
-            handle_map_request((xcb_map_request_event_t *)event);
+            handle_map_request((xcb_map_request_event_t *)event, event->full_sequence);
             break;
 
         case XCB_UNMAP_NOTIFY:
-            handle_unmap_notify_event((xcb_unmap_notify_event_t *)event);
+            handle_unmap_notify_event((xcb_unmap_notify_event_t *)event, event->full_sequence);
             break;
 
         case XCB_DESTROY_NOTIFY:
-            handle_destroy_notify_event((xcb_destroy_notify_event_t *)event);
+            handle_destroy_notify_event((xcb_destroy_notify_event_t *)event, event->full_sequence);
             break;
 
         case XCB_EXPOSE:
@@ -1514,7 +1514,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
 
         /* Enter window = user moved their mouse over the window */
         case XCB_ENTER_NOTIFY:
-            handle_enter_notify((xcb_enter_notify_event_t *)event);
+            handle_enter_notify((xcb_enter_notify_event_t *)event, event->full_sequence);
             break;
 
         /* Client message are sent to the root window. The only interesting
