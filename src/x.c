@@ -766,7 +766,11 @@ void x_draw_decoration(Con *con) {
 
     x_draw_decoration_after_title(con, p, dest_surface);
 copy_pixmaps:
-    draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+    /* Only copy the container's buffer to its frame if the buffer exists and is initialized.
+     * Otherwise, draw_util_copy_surface would log an error when checking the source. */
+    if (con->frame_buffer.id != XCB_NONE) {
+        draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
+    }
 }
 
 /*
@@ -790,7 +794,10 @@ void x_deco_recurse(Con *con) {
             x_deco_recurse(current);
         }
 
-        if (state->mapped) {
+        /* For non-leaf containers, copy their frame_buffer to their actual frame if the frame is mapped
+         * AND the frame_buffer itself is valid. The frame_buffer might have been cleared if the container
+         * changed type (e.g. from tabbed to split) and no longer needs its own buffer. */
+        if (state->mapped && con->frame_buffer.id != XCB_NONE) {
             draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
         }
     }
