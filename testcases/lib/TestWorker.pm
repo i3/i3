@@ -42,8 +42,8 @@ sub worker {
     if ($pid == 0) {
         close $ipc;
         undef @complete_run::CLEANUP;
-        # reap dead test children
-        $SIG{CHLD} = sub { waitpid -1, POSIX::WNOHANG };
+        # Test children are waited for synchronously in worker_wait().
+        $SIG{CHLD} = 'DEFAULT';
 
         $worker->{ipc} = $ipc_child;
 
@@ -130,12 +130,21 @@ sub worker_wait {
             do $file;
             $test->ok(undef, "$@") if $@;
 
-            # XXX hack, we need to trigger the read watcher once more
-            # to signal eof to TAP::Parser
-            print $EOF;
-
             exit 0;
         }
+
+        # Wait until the test process has exited, including all of its END
+        # blocks. In particular, i3test's END block terminates and reaps the i3
+        # process. Only signal completion afterwards so that complete-run.pl
+        # cannot start the next test on this display while the previous i3 is
+        # still running.
+        my $waited = waitpid $pid, 0;
+        die "waitpid($pid): $!" unless $waited == $pid;
+
+        # XXX hack, we need to trigger the read watcher once more
+        # to signal eof to TAP::Parser
+        syswrite($ipc, $EOF) == length($EOF)
+            or die "could not signal test completion: $!";
     }
 }
 
