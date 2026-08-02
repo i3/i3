@@ -647,20 +647,28 @@ DRAGGING_CB(resize_window_callback) {
     double ratio = (double)old_rect->width / old_rect->height;
 
     /* First guess: We resize by exactly the amount the mouse moved,
-     * taking into account in which corner the client was grabbed */
+     * taking into account in which corner the client was grabbed. An axis
+     * without any border bit set (single-axis resize from a mid-edge grab
+     * zone) keeps its old dimension. */
     if (corner & BORDER_LEFT) {
         dest_width = old_rect->width - (new_x - event->root_x);
-    } else {
+    } else if (corner & BORDER_RIGHT) {
         dest_width = old_rect->width + (new_x - event->root_x);
+    } else {
+        dest_width = old_rect->width;
     }
 
     if (corner & BORDER_TOP) {
         dest_height = old_rect->height - (new_y - event->root_y);
-    } else {
+    } else if (corner & BORDER_BOTTOM) {
         dest_height = old_rect->height + (new_y - event->root_y);
+    } else {
+        dest_height = old_rect->height;
     }
 
-    /* User wants to keep proportions, so we may have to adjust our values */
+    /* User wants to keep proportions, so we may have to adjust our values.
+     * Only reachable with both axis bits set: proportional forces a diagonal
+     * corner in floating_resize_window(). */
     if (params->proportional) {
         dest_width = max(dest_width, (int)(dest_height * ratio));
         dest_height = max(dest_height, (int)(dest_width / ratio));
@@ -669,7 +677,8 @@ DRAGGING_CB(resize_window_callback) {
     con->rect = (Rect){dest_x, dest_y, dest_width, dest_height};
 
     /* Obey window size */
-    floating_check_size(con, false);
+    floating_check_size(con, (corner & (BORDER_TOP | BORDER_BOTTOM)) &&
+                                 !(corner & (BORDER_LEFT | BORDER_RIGHT)));
 
     /* If not the lower right corner is grabbed, we must also reposition
      * the client by exactly the amount we resized it */
@@ -702,22 +711,42 @@ void floating_resize_window(Con *con, const bool proportional,
      * after the user releases the mouse button */
     tree_render();
 
-    /* corner saves the nearest corner to the original click. It contains
-     * a bitmask of the nearest borders (BORDER_LEFT, BORDER_RIGHT, …) */
+    /* corner contains a bitmask of the nearest borders (BORDER_LEFT,
+     * BORDER_RIGHT, …). The window is divided into a 3x3 grid: a grab in a
+     * corner cell resizes diagonally (both axis bits set), a grab in a
+     * mid-edge cell resizes only that axis (single bit). A proportional
+     * resize needs both axes, so it keeps the old nearest-quadrant
+     * behavior, as does a grab in the center cell. */
     border_t corner = 0;
 
-    if (event->event_x <= (int16_t)(con->rect.width / 2)) {
-        corner |= BORDER_LEFT;
-    } else {
-        corner |= BORDER_RIGHT;
+    if (!proportional) {
+        if (event->event_x <= (int16_t)(con->rect.width / 3)) {
+            corner |= BORDER_LEFT;
+        } else if (event->event_x >= (int16_t)(2 * con->rect.width / 3)) {
+            corner |= BORDER_RIGHT;
+        }
+
+        if (event->event_y <= (int16_t)(con->rect.height / 3)) {
+            corner |= BORDER_TOP;
+        } else if (event->event_y >= (int16_t)(2 * con->rect.height / 3)) {
+            corner |= BORDER_BOTTOM;
+        }
     }
 
-    int cursor = 0;
-    if (event->event_y <= (int16_t)(con->rect.height / 2)) {
-        corner |= BORDER_TOP;
+    if (corner == 0) {
+        /* Center cell or proportional: nearest quadrant, diagonal resize. */
+        corner |= (event->event_x <= (int16_t)(con->rect.width / 2)) ? BORDER_LEFT : BORDER_RIGHT;
+        corner |= (event->event_y <= (int16_t)(con->rect.height / 2)) ? BORDER_TOP : BORDER_BOTTOM;
+    }
+
+    int cursor;
+    if (!(corner & (BORDER_TOP | BORDER_BOTTOM))) {
+        cursor = XCURSOR_CURSOR_RESIZE_HORIZONTAL;
+    } else if (!(corner & (BORDER_LEFT | BORDER_RIGHT))) {
+        cursor = XCURSOR_CURSOR_RESIZE_VERTICAL;
+    } else if (corner & BORDER_TOP) {
         cursor = (corner & BORDER_LEFT) ? XCURSOR_CURSOR_TOP_LEFT_CORNER : XCURSOR_CURSOR_TOP_RIGHT_CORNER;
     } else {
-        corner |= BORDER_BOTTOM;
         cursor = (corner & BORDER_LEFT) ? XCURSOR_CURSOR_BOTTOM_LEFT_CORNER : XCURSOR_CURSOR_BOTTOM_RIGHT_CORNER;
     }
 
