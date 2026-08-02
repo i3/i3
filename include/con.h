@@ -587,3 +587,9 @@ void con_merge_into(Con *old, Con *new);
  *
  */
 bool con_inside_stacked_or_tabbed(Con *con);
+
+/**
+ * Returns true if the containers has no configured outer gap.
+ *
+ */
+bool has_outer_gaps(gaps_t gaps);

@@ -90,6 +90,7 @@ my %allowed_keys = map { ($_, 1) } qw(
     fullscreen_mode
     layout
     border
+    border_radius
     current_border_width
     floating
     percent
@@ -121,6 +122,8 @@ sub strip_containers {
     delete $tree->{rect} unless $tree->{type} eq 'floating_con';
 
     delete $tree->{current_border_width} if $tree->{current_border_width} == -1;
+
+    delete $tree->{border_radius} if $tree->{border_radius} == 0;
 
     for my $key (keys %$tree) {
         delete $tree->{$key} unless exists($allowed_keys{$key});
