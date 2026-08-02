@@ -1043,6 +1043,10 @@ void x_push_node(Con *con) {
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
         if (!is_pixmap_needed && con->frame_buffer.id != XCB_NONE) {
+            /* Reset the background to a plain pixel so the window does not
+             * keep a reference to the pixmap we are about to free. */
+            xcb_change_window_attributes(conn, con->frame.id, XCB_CW_BACK_PIXEL,
+                                         (uint32_t[]){root_screen->black_pixel});
             draw_util_surface_free(conn, &(con->frame_buffer));
             xcb_free_pixmap(conn, con->frame_buffer.id);
             con->frame_buffer.id = XCB_NONE;
@@ -1095,6 +1099,14 @@ void x_push_node(Con *con) {
                  * doesn’t hurt performance. */
                 x_deco_recurse(con);
             }
+
+            /* Set the decorated pixmap as the window background so the X
+             * server fills exposed regions (e.g. when the window grows) from
+             * it directly instead of flashing the background pixel, and so a
+             * compositor sees decorated content as soon as the resize takes
+             * effect. */
+            xcb_change_window_attributes(conn, con->frame.id, XCB_CW_BACK_PIXMAP,
+                                         (uint32_t[]){con->frame_buffer.id});
         }
 
         DLOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
