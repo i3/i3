@@ -1034,8 +1034,11 @@ void x_push_node(Con *con) {
          * background and only afterwards change the window size. This reduces
          * flickering. */
 
-        bool has_rect_changed = (state->rect.x != rect.x || state->rect.y != rect.y ||
-                                 state->rect.width != rect.width || state->rect.height != rect.height);
+        /* A move (x/y change) cannot invalidate the pixmap: the decoration is
+         * drawn in frame-local coordinates. Only recreate it when the size
+         * changes. */
+        bool has_size_changed = (state->rect.width != rect.width ||
+                                 state->rect.height != rect.height);
 
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
@@ -1045,7 +1048,7 @@ void x_push_node(Con *con) {
             con->frame_buffer.id = XCB_NONE;
         }
 
-        if (is_pixmap_needed && (has_rect_changed || con->frame_buffer.id == XCB_NONE)) {
+        if (is_pixmap_needed && (has_size_changed || con->frame_buffer.id == XCB_NONE)) {
             if (con->frame_buffer.id == XCB_NONE) {
                 con->frame_buffer.id = xcb_generate_id(conn);
             } else {
