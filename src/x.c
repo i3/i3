@@ -1115,6 +1115,25 @@ void x_push_node(Con *con) {
          * window get lost when resizing it, therefore we want to provide it as
          * fast as possible) */
         xcb_flush(conn);
+
+        /* When the frame grows, resize the child first: a child may extend
+         * beyond its parent (it is simply clipped), so once the frame grows,
+         * the enlarged child instantly covers the newly exposed area instead
+         * of the frame background showing through until the child configure
+         * is processed. This matters especially for borderless frames, whose
+         * background (a transparent pixel on 32-bit visuals) would otherwise
+         * be visible as a flickering strip during interactive resize. */
+        bool child_first = con->window != NULL &&
+                           !rect_equals(state->window_rect, con->window_rect) &&
+                           rect.width >= state->rect.width &&
+                           rect.height >= state->rect.height;
+        if (child_first) {
+            DLOG("setting window rect (%d, %d, %d, %d) (child first)\n",
+                 con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
+            xcb_set_window_rect(conn, con->window->id, con->window_rect);
+            memcpy(&(state->window_rect), &(con->window_rect), sizeof(Rect));
+        }
+
         xcb_set_window_rect(conn, con->frame.id, rect);
         if (con->frame_buffer.id != XCB_NONE) {
             draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
@@ -1125,7 +1144,7 @@ void x_push_node(Con *con) {
         fake_notify = true;
     }
 
-    /* ditto, but for child windows */
+    /* ditto, but for child windows (unless already configured above) */
     if (con->window != NULL &&
         !rect_equals(state->window_rect, con->window_rect)) {
         DLOG("setting window rect (%d, %d, %d, %d)\n",
