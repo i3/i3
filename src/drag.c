@@ -9,9 +9,26 @@
  */
 #include "all.h"
 
+/* Minimum interval between two invocations of the drag callback. Each
+ * invocation typically results in a ConfigureWindow (plus, for resizes, a
+ * backing store reallocation and decoration repaint), so relaying raw motion
+ * events from a high-rate mouse floods the X server and any compositor.
+ * 8ms ≈ 125 updates/s, above common display refresh rates. */
+#define DRAG_CALLBACK_INTERVAL 0.008
+
 /* Custom data structure used to track dragging-related events. */
 struct drag_x11_cb {
     ev_prepare prepare;
+
+    /* Delivers a motion that was deferred by rate-limiting. */
+    ev_timer timer;
+
+    /* ev_now timestamp of the last callback invocation. */
+    double last_callback;
+
+    /* A motion was suppressed by rate-limiting and awaits delivery. */
+    bool has_pending;
+    int pending_x, pending_y;
 
     /* Whether this modal event loop should be exited and with which result. */
     drag_result_t result;
@@ -140,13 +157,30 @@ static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
      * container still exists. The latter might not be true, e.g., if the window closed
      * for any reason while the user was dragging it. */
     if (dragloop->threshold_exceeded && (!dragloop->con || con_exists(dragloop->con))) {
-        dragloop->callback(
-            dragloop->con,
-            &(dragloop->old_rect),
-            last_motion_notify->root_x,
-            last_motion_notify->root_y,
-            dragloop->event,
-            dragloop->extra);
+        if (dragloop->result == DRAGGING &&
+            ev_now(EV_A) - dragloop->last_callback < DRAG_CALLBACK_INTERVAL) {
+            /* Too soon: remember the position and deliver it via the timer so
+             * the drag always settles at the true final pointer position. */
+            dragloop->pending_x = last_motion_notify->root_x;
+            dragloop->pending_y = last_motion_notify->root_y;
+            dragloop->has_pending = true;
+            if (!ev_is_active(&dragloop->timer)) {
+                ev_timer_set(&(dragloop->timer),
+                             dragloop->last_callback + DRAG_CALLBACK_INTERVAL - ev_now(EV_A), 0.);
+                ev_timer_start(EV_A_ & (dragloop->timer));
+            }
+        } else {
+            dragloop->has_pending = false;
+            ev_timer_stop(EV_A_ & (dragloop->timer));
+            dragloop->last_callback = ev_now(EV_A);
+            dragloop->callback(
+                dragloop->con,
+                &(dragloop->old_rect),
+                last_motion_notify->root_x,
+                last_motion_notify->root_y,
+                dragloop->event,
+                dragloop->extra);
+        }
     }
     FREE(last_motion_notify);
 
@@ -158,6 +192,23 @@ static void xcb_drag_prepare_cb(EV_P_ ev_prepare *w, int revents) {
     struct drag_x11_cb *dragloop = w->data;
     while (!drain_drag_events(EV_A, dragloop)) {
         /* repeatedly drain events: draining might produce additional ones */
+    }
+}
+
+static void drag_timer_cb(EV_P_ ev_timer *w, int revents) {
+    struct drag_x11_cb *dragloop = w->data;
+    if (dragloop->has_pending && dragloop->result == DRAGGING &&
+        (!dragloop->con || con_exists(dragloop->con))) {
+        dragloop->has_pending = false;
+        dragloop->last_callback = ev_now(EV_A);
+        dragloop->callback(
+            dragloop->con,
+            &(dragloop->old_rect),
+            dragloop->pending_x,
+            dragloop->pending_y,
+            dragloop->event,
+            dragloop->extra);
+        xcb_flush(conn);
     }
 }
 
@@ -237,12 +288,16 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
     }
     ev_prepare_init(prepare, xcb_drag_prepare_cb);
     prepare->data = &loop;
+    ev_timer_init(&loop.timer, drag_timer_cb, 0., 0.);
+    loop.timer.data = &loop;
     main_set_x11_cb(false);
     ev_prepare_start(main_loop, prepare);
 
     ev_loop(main_loop, 0);
 
     ev_prepare_stop(main_loop, prepare);
+    /* The timer must not outlive this stack frame. */
+    ev_timer_stop(main_loop, &loop.timer);
     main_set_x11_cb(true);
 
     xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME);
