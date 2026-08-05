@@ -327,6 +327,25 @@ Binding *get_binding_from_xcb_event(xcb_generic_event_t *event) {
     /* Remove the CapsLock bit */
     i3_event_state_mask_t state_filtered = event_state & ~XCB_MOD_MASK_LOCK;
     DLOG("(removed capslock, state = 0x%x)\n", state_filtered);
+    /* Strip modifier keys of modifiers. Needed for keyrelease events between modes */
+    struct xkb_state *dummy_state = xkb_state_new(xkb_keymap);
+    xkb_keysym_t event_sym = xkb_state_key_get_one_sym(dummy_state,event_detail);
+    xkb_state_unref(dummy_state);
+    switch(event_sym) {
+        case XKB_KEY_Meta_L:
+        case XKB_KEY_Meta_R:
+        case XKB_KEY_Alt_L:
+        case XKB_KEY_Alt_R:
+        case XKB_KEY_Super_L:
+        case XKB_KEY_Super_R:
+        case XKB_KEY_Control_L:
+        case XKB_KEY_Control_R:
+        case XKB_KEY_Hyper_R:
+        case XKB_KEY_Hyper_L:
+            state_filtered = state_filtered & 0xFF00;
+            break;
+    }
+
     /* Transform the keyboard_group from bit 13 and bit 14 into an
      * i3_xkb_group_mask_t, so that get_binding() can just bitwise AND the
      * configured bindings against |state_filtered|.
