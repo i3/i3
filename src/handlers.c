@@ -942,6 +942,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         uint32_t y_root = event->data.data32[1];
         /* construct fake xcb_button_press_event_t */
         xcb_button_press_event_t fake = {
+            .detail = event->data.data32[3],
             .root_x = x_root,
             .root_y = y_root,
             .event_x = x_root - (con->rect.x),

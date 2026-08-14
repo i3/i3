@@ -64,9 +64,26 @@ static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
         int type = (event->response_type & 0x7F);
 
         switch (type) {
-            case XCB_BUTTON_RELEASE:
-                dragloop->result = DRAG_SUCCESS;
+            case XCB_BUTTON_PRESS: {
+                const xcb_button_press_event_t *press = (xcb_button_press_event_t *)event;
+                DLOG("Ignoring button %d press during drag initiated by button %d\n",
+                     press->detail, dragloop->event->detail);
                 break;
+            }
+
+            case XCB_BUTTON_RELEASE: {
+                const xcb_button_release_event_t *release = (xcb_button_release_event_t *)event;
+                if (dragloop->event->detail == XCB_BUTTON_INDEX_ANY ||
+                    release->detail == dragloop->event->detail) {
+                    DLOG("Button %d released, ending drag initiated by button %d\n",
+                         release->detail, dragloop->event->detail);
+                    dragloop->result = DRAG_SUCCESS;
+                } else {
+                    DLOG("Ignoring button %d release during drag initiated by button %d\n",
+                         release->detail, dragloop->event->detail);
+                }
+                break;
+            }
 
             case XCB_KEY_PRESS:
                 DLOG("A key was pressed during drag, reverting changes.\n");
@@ -96,6 +113,19 @@ static bool drain_drag_events(EV_P, struct drag_x11_cb *dragloop) {
                 FREE(last_motion_notify);
                 last_motion_notify = (xcb_motion_notify_event_t *)event;
                 break;
+
+            case XCB_CLIENT_MESSAGE: {
+                const xcb_client_message_event_t *client_message = (xcb_client_message_event_t *)event;
+                if (client_message->type == A__NET_WM_MOVERESIZE) {
+                    DLOG("Ignoring _NET_WM_MOVERESIZE request during active drag "
+                         "(window = 0x%08x, direction = %d)\n",
+                         client_message->window, client_message->data.data32[2]);
+                    break;
+                }
+
+                handle_event(type, event);
+                break;
+            }
 
             default:
                 DLOG("Passing to original handler\n");
@@ -199,6 +229,13 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
         return DRAG_ABORT;
     }
 
+    if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
+        ELOG("Could not grab pointer (status = %d)\n", reply->status);
+        free(reply);
+        return DRAG_ABORT;
+    }
+
+    DLOG("Pointer grab successful\n");
     free(reply);
 
     /* Grab the keyboard */
@@ -219,6 +256,14 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
         return DRAG_ABORT;
     }
 
+    if (keyb_reply->status != XCB_GRAB_STATUS_SUCCESS) {
+        ELOG("Could not grab keyboard (status = %d)\n", keyb_reply->status);
+        free(keyb_reply);
+        xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
+        return DRAG_ABORT;
+    }
+
+    DLOG("Keyboard grab successful\n");
     free(keyb_reply);
 
     /* Go into our own event loop */
@@ -240,7 +285,10 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
     main_set_x11_cb(false);
     ev_prepare_start(main_loop, prepare);
 
+    DLOG("Entering drag loop (con = %p, button = %d)\n", con, event->detail);
     ev_loop(main_loop, 0);
+    DLOG("Leaving drag loop (con = %p, button = %d, result = %d)\n",
+         con, event->detail, loop.result);
 
     ev_prepare_stop(main_loop, prepare);
     main_set_x11_cb(true);

@@ -59,6 +59,28 @@ sub end_drag {
     xtest_sync_with_i3;
 }
 
+sub net_wm_moveresize {
+    my ($window, $pos_x, $pos_y, $button) = @_;
+
+    my $msg = pack "CCSLLLLLLL",
+        X11::XCB::CLIENT_MESSAGE, # response_type
+        32, # format
+        0, # sequence
+        $window->id, # window
+        $x->atom(name => '_NET_WM_MOVERESIZE')->id, # message type
+        $pos_x, # data32[0] (x_root)
+        $pos_y, # data32[1] (y_root)
+        8, # data32[2] (_NET_WM_MOVERESIZE_MOVE)
+        $button, # data32[3] (initiating button)
+        1; # data32[4] (application source)
+
+    $x->send_event(0, $x->get_root_window(),
+                   X11::XCB::EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
+    # Ensure the ClientMessage is queued before XTEST sends events using its
+    # separate X11 connection.
+    $x->input_focus;
+}
+
 my ($ws1, $ws2);
 my ($A, $B, $tmp);
 my ($A_id, $B_id);
@@ -86,6 +108,91 @@ end_drag(1050, 50);
 
 is($x->input_focus, $A->id, 'Floating window moved to the right workspace');
 is($ws2, focused_ws, 'Empty workspace focused after floating window dragged to it');
+
+###############################################################################
+# Additional mouse buttons during a drag must not start a nested drag.
+###############################################################################
+
+$ws1 = fresh_workspace(output => 0);
+$A = open_floating_window(rect => [ 30, 30, 50, 50 ]);
+my ($initial_rect) = $A->rect;
+
+start_drag(40, 40);
+xtest_button_press(3, 100, 100);
+xtest_button_release(3, 200, 200);
+xtest_button_release(1, 250, 250);
+xtest_key_release(64); # Alt_L
+xtest_sync_with_i3;
+
+my ($dragged_rect) = $A->rect;
+is($dragged_rect->width, $initial_rect->width,
+   'Additional button did not resize floating window during drag');
+is($dragged_rect->height, $initial_rect->height,
+   'Floating window height unchanged after additional button');
+
+$x->root->warp_pointer(400, 400);
+sync_with_i3;
+my ($after_motion_rect) = $A->rect;
+is_deeply($after_motion_rect, $dragged_rect,
+          'Floating window no longer follows pointer after initiating button release');
+
+###############################################################################
+# Client-initiated drags use the button from _NET_WM_MOVERESIZE and reject
+# repeated move requests without losing the initiating button's release.
+###############################################################################
+
+$ws1 = fresh_workspace(output => 0);
+$A = open_floating_window(rect => [ 30, 30, 50, 50 ]);
+($initial_rect) = $A->rect;
+
+$x->root->warp_pointer(40, 40);
+sync_with_i3;
+xtest_button_press(1, 40, 40);
+net_wm_moveresize($A, 40, 40, 1);
+net_wm_moveresize($A, 40, 40, 1);
+$x->root->warp_pointer(100, 100);
+sync_with_i3;
+xtest_button_press(3, 100, 100);
+xtest_button_release(3, 100, 100);
+$x->root->warp_pointer(250, 250);
+sync_with_i3;
+xtest_button_release(1, 250, 250);
+xtest_sync_with_i3;
+
+($dragged_rect) = $A->rect;
+cmp_ok($dragged_rect->x, '>', 150,
+       'Client-initiated drag ignored a different button release');
+$x->root->warp_pointer(400, 400);
+sync_with_i3;
+($after_motion_rect) = $A->rect;
+is_deeply($after_motion_rect, $dragged_rect,
+          'Client-initiated drag ends on its initiating button release');
+
+###############################################################################
+# Older or non-compliant clients may omit the _NET_WM_MOVERESIZE button.
+###############################################################################
+
+$ws1 = fresh_workspace(output => 0);
+$A = open_floating_window(rect => [ 30, 30, 50, 50 ]);
+($initial_rect) = $A->rect;
+
+$x->root->warp_pointer(40, 40);
+sync_with_i3;
+xtest_button_press(1, 40, 40);
+net_wm_moveresize($A, 40, 40, 0);
+$x->root->warp_pointer(250, 250);
+sync_with_i3;
+xtest_button_release(1, 250, 250);
+xtest_sync_with_i3;
+
+($dragged_rect) = $A->rect;
+isnt($dragged_rect->x, $initial_rect->x,
+     'Client-initiated drag with no button moved the floating window');
+$x->root->warp_pointer(400, 400);
+sync_with_i3;
+($after_motion_rect) = $A->rect;
+is_deeply($after_motion_rect, $dragged_rect,
+          'Client-initiated drag with no button ends on a button release');
 
 ###############################################################################
 # Drag tiling container onto an empty workspace.

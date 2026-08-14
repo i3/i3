@@ -1,0 +1,1 @@
+abort mouse dragging when input grabs fail and prevent nested mouse drags
