@@ -210,7 +210,7 @@ static void got_bar_config_update(const unsigned char *event, size_t size) {
     /* check whether this affect this bar instance by checking the bar_id */
     char *expected_id;
     sasprintf(&expected_id, "\"id\":\"%s\"", config.bar_id);
-    char *found_id = strstr((const char *)event, expected_id);
+    const char *found_id = strstr((const char *)event, expected_id);
     FREE(expected_id);
     if (found_id == NULL) {
         return;

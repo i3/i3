@@ -20,7 +20,8 @@
  */
 char *resolve_tilde(const char *path) {
     static glob_t globbuf;
-    char *head, *tail, *result;
+    char *head, *result;
+    const char *tail;
 
     tail = strchr(path, '/');
     head = sstrndup(path, tail ? (size_t)(tail - path) : strlen(path));
