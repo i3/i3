@@ -3096,7 +3096,7 @@ however you don’t need to (simply killing your X session is fine as well).
 *Examples*:
 ----------------------------
 bindsym $mod+Shift+r restart
-bindsym $mod+Shift+w reload
+bindsym $mod+Shift+c reload
 bindsym $mod+Shift+e exit
 ----------------------------
 
