@@ -374,6 +374,12 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
                 LOG("Unhandled \"border\": %s\n", buf);
             }
             free(buf);
+        } else if (strcasecmp(last_key, "border_radius") == 0) {
+            long r;
+            if (!parse_long((const char *)val, &r, 10)) {
+                LOG("Unhandled \"border_radius\": %s\n", val);
+            }
+            json_node->border_radius = r;
         } else if (strcasecmp(last_key, "type") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
@@ -493,9 +499,11 @@ static int json_int(void *ctx, long long val) {
         json_node->num = val;
     }
 
-    if (strcasecmp(last_key, "current_border_width") == 0) {
+    if (strcasecmp(last_key, "border_radius") == 0)
+        json_node->border_radius = val;
+
+    if (strcasecmp(last_key, "current_border_width") == 0)
         json_node->current_border_width = val;
-    }
 
     if (strcasecmp(last_key, "window_icon_padding") == 0) {
         json_node->window_icon_padding = val;
