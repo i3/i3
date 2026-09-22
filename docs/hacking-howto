@@ -47,6 +47,14 @@ Guide → Compiling a Meson project]. In case you’re unfamiliar:
   exit. This can include false-positives. For other options of the +b_sanitize+
   flag see https://mesonbuild.com/Builtin-options.html.
 
+=== Dependencies
+
+Perl modules `+AnyEvent::I3`+ and `+JSON::XS`+ are required for using +i3-save-tree(1)+. You can install these modules with:
+
+--------------------------
+cpan AnyEvent::I3 JSON::XS
+--------------------------
+
 == Pull requests
 
 Please talk to us before working on new features to see whether they will be
