@@ -848,11 +848,17 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         /* http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.4 */
         if (event->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
             /* For compatibility reasons, Wine will request iconic state and cannot ensure that the WM has agreed on it;
-             * immediately revert to normal to avoid being stuck in a paused state. */
-            DLOG("Client has requested iconic state, rejecting. (window = %08x)\n", event->window);
-            long data[] = {XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE};
-            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, event->window,
-                                A_WM_STATE, A_WM_STATE, 32, 2, data);
+             * immediately revert to normal to avoid being stuck in a paused state.
+             * Only do this if the window is actually visible (mapped). */
+            Con *con = con_by_window_id(event->window);
+            if (con != NULL && con->mapped) {
+                DLOG("Client has requested iconic state, rejecting. (window = %08x)\n", event->window);
+                long data[] = {XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE};
+                xcb_change_property(conn, XCB_PROP_MODE_REPLACE, event->window,
+                                    A_WM_STATE, A_WM_STATE, 32, 2, data);
+            } else {
+                DLOG("Client has requested iconic state while unmapped, ignoring. (window = %08x)\n", event->window);
+            }
         } else {
             DLOG("Not handling WM_CHANGE_STATE request. (window = %08x, state = %d)\n", event->window, event->data.data32[0]);
         }
