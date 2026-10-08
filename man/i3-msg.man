@@ -28,7 +28,7 @@ given here. If both fail, it will try to get the socket information
 from the root window and then try /tmp/i3-ipc.sock before exiting
 with an error.
 
-*-t* 'type'::
+*-t, --type* 'type'::
 Send ipc message, see below. This option defaults to "command".
 
 *-m*, *--monitor*::
