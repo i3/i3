@@ -1,0 +1,1 @@
+check if the window is visible (mapped) before rejecting iconic state
