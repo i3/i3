@@ -114,3 +114,20 @@ bool load_keymap(void);
  * The list is terminated by a 0.
  */
 int *bindings_get_buttons_to_grab(void);
+
+/**
+ * Converts a modifier bitmask to a human-readable string (e.g., "Mod4+Shift").
+ * Returns a dynamically allocated string that the caller must free.
+ */
+char *modifiers_to_str(uint32_t mask);
+
+/**
+ * Converts a configuration binding back to a human-readable string.
+ * This is mainly used to expose bindings over ipc
+ */
+char *binding_to_string(const Binding *binding);
+
+/**
+ * Returns true if exactly one group bit is set in the provided mask.
+ */
+bool __attribute__((const)) is_only_one_group_active(uint32_t mask);
