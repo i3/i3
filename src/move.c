@@ -265,8 +265,20 @@ void tree_move(Con *con, direction_t direction) {
     /* 1: get the first parent with the same orientation */
 
     if (con->type == CT_WORKSPACE) {
-        DLOG("Not moving workspace\n");
-        return;
+        /* If there is already a split container for the windows in the workspace, use that. */
+        /* Otherwise, make a split container for them and move that split container. This way, moving multiple windows at a time from a workspace works as expected. */
+        const bool moves_focus = (focused == con);
+        Con *first_child = TAILQ_FIRST(&(con->nodes_head));
+        if (first_child != NULL && !con_is_leaf(first_child) && con_num_children(con) == 1) {
+            con = first_child;
+        } else {
+            if ((con = workspace_encapsulate(con)) == NULL) {
+                return;
+            }
+        }
+        if (moves_focus) {
+            con_focus(con);
+        }
     }
 
     if (con->fullscreen_mode == CF_GLOBAL) {
