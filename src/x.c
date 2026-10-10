@@ -359,22 +359,23 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
 
 static void x_draw_title_border(Con *con, struct deco_render_params *p, surface_t *dest_surface) {
     Rect *dr = &(con->deco_rect);
+    const int border_width = logical_px(1);
 
     /* Left */
     draw_util_rectangle(dest_surface, p->color->border,
-                        dr->x, dr->y, 1, dr->height);
+                        dr->x, dr->y, border_width, dr->height);
 
     /* Right */
     draw_util_rectangle(dest_surface, p->color->border,
-                        dr->x + dr->width - 1, dr->y, 1, dr->height);
+                        dr->x + dr->width - border_width, dr->y, border_width, dr->height);
 
     /* Top */
     draw_util_rectangle(dest_surface, p->color->border,
-                        dr->x, dr->y, dr->width, 1);
+                        dr->x, dr->y, dr->width, border_width);
 
     /* Bottom */
     draw_util_rectangle(dest_surface, p->color->border,
-                        dr->x, dr->y + dr->height - 1, dr->width, 1);
+                        dr->x, dr->y + dr->height - border_width, dr->width, border_width);
 }
 
 static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p, surface_t *dest_surface) {
@@ -702,7 +703,8 @@ void x_draw_decoration(Con *con) {
 
     /* icon_padding is applied horizontally only, the icon will always use all
      * available vertical space. */
-    int icon_size = max(0, con->deco_rect.height - logical_px(2));
+    const int border_width = logical_px(1);
+    int icon_size = max(0, con->deco_rect.height - 2 * border_width);
     int icon_padding = logical_px(max(1, con->window_icon_padding));
     int total_icon_space = icon_size + 2 * icon_padding;
     const bool has_icon = (con->window_icon_padding > -1) && win && win->icon && (total_icon_space < deco_width);
@@ -755,7 +757,7 @@ void x_draw_decoration(Con *con) {
             win->icon,
             dest_surface,
             con->deco_rect.x + icon_offset_x,
-            con->deco_rect.y + logical_px(1),
+            con->deco_rect.y + border_width,
             icon_size,
             icon_size);
     }
