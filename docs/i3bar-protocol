@@ -119,9 +119,10 @@ click_events::
 === Blocks in detail
 
 full_text::
-	The +full_text+ will be displayed by i3bar on the status line. This is the
-	only required key. If +full_text+ is an empty string, the block will be
-	skipped.
+	The +full_text+ will be displayed by i3bar on the status line. This is
+	the only required key, unless the block provides an +image+ instead (see
+	below). If +full_text+ is an empty string and no +image+ is set, the
+	block will be skipped.
 short_text::
 	Where appropriate, the +short_text+ (string) entry should also be
 	provided. It will be used in case the status line needs to be shortened
@@ -131,6 +132,25 @@ short_text::
 	while the prefix changes. When displaying the date, the time is more
 	important than the date (it is more likely that you know which day it
 	is than what time it is).
+image::
+	A block can display an image instead of text. The +image+ (string) entry
+	contains a data URL with a base64-encoded PNG, for example
+	+data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==+.
+	PNG is the only supported image format; other data URLs (for example
+	JPEG or SVG) are not decoded.
+	When +image+ is set and decoded successfully, the image is drawn instead
+	of the text of the block: +full_text+ is not rendered and may be omitted
+	altogether. The image is scaled to fit the height of the bar (minus a
+	one-pixel margin at the top and bottom) while keeping its aspect ratio,
+	and is centered vertically. All other entries of the block
+	(+min_width+, +align+, +border+, +background+, +urgent+, +separator+ and
+	+separator_block_width+) apply to the image just as they do to text.
+	If the image cannot be decoded, i3bar logs an error and renders the block
+	as if +image+ were not set, i.e. +full_text+ is shown. Consider providing
+	a meaningful +full_text+ in addition to +image+ for this case.
+	Note that +short_text+ takes precedence over the image when the status
+	line needs to be shortened (see above), so an image block which also
+	provides +short_text+ will be displayed as text on narrow status lines.
 color::
 	To make the current state of the information easy to spot, colors can
 	be used. For example, the wireless block could be displayed in red
@@ -216,6 +236,15 @@ used to set the minimum width:
  "full_text": "CPU 4%",
  "min_width": "CPU 100%",
  "align": "left"
+}
+------------------------------------------
+
+A block which only displays an image (no text at all) looks like this:
+
+*Example*:
+------------------------------------------
+{
+ "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
 }
 ------------------------------------------
 

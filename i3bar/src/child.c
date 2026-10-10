@@ -92,6 +92,10 @@ void clear_statusline(struct statusline_head *head, bool free_resources) {
         if (free_resources) {
             I3STRING_FREE(first->full_text);
             I3STRING_FREE(first->short_text);
+            if (first->image != NULL) {
+                cairo_surface_destroy(first->image);
+                first->image = NULL;
+            }
             FREE(first->color);
             FREE(first->name);
             FREE(first->instance);
@@ -253,6 +257,10 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         ctx->block.short_text = i3string_from_markup_with_length((const char *)val, len);
         return 1;
     }
+    if (strcasecmp(ctx->last_map_key, "image") == 0) {
+        ctx->block.image = image_surface_from_data_url((const char *)val, len);
+        return 1;
+    }
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
         sasprintf(&(ctx->block.color), "%.*s", (int)len, val);
         return 1;
@@ -339,9 +347,14 @@ static int stdin_end_map(void *context) {
     struct status_block *new_block = smalloc(sizeof(struct status_block));
     memcpy(new_block, &(ctx->block), sizeof(struct status_block));
     /* Ensure we have a full_text set, so that when it is missing (or null),
-     * i3bar doesn’t crash and the user gets an annoying message. */
+     * i3bar doesn’t crash and the user gets an annoying message. A block which
+     * provides an image does not need text, though. */
     if (!new_block->full_text) {
-        new_block->full_text = i3string_from_utf8("SPEC VIOLATION: full_text is NULL!");
+        if (new_block->image != NULL) {
+            new_block->full_text = i3string_from_utf8("");
+        } else {
+            new_block->full_text = i3string_from_utf8("SPEC VIOLATION: full_text is NULL!");
+        }
     }
     if (new_block->urgent) {
         ctx->has_urgent = true;

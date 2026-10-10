@@ -46,6 +46,10 @@ struct status_block {
     i3String *full_text;
     i3String *short_text;
 
+    /* The decoded image of the "image" key (a base64-encoded PNG data URL), if
+     * set. When non-NULL, the image is rendered instead of the text. */
+    cairo_surface_t *image;
+
     bool use_short;
     uint32_t render_length;
 
@@ -86,6 +90,7 @@ struct status_block {
 extern TAILQ_HEAD(statusline_head, status_block) statusline_head;
 
 #include "child.h"
+#include "image.h"
 #include "ipc.h"
 #include "outputs.h"
 #include "util.h"

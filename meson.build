@@ -508,6 +508,7 @@ executable(
   [
     'i3bar/src/child.c',
     'i3bar/src/config.c',
+    'i3bar/src/image.c',
     'i3bar/src/ipc.c',
     'i3bar/src/main.c',
     'i3bar/src/mode.c',
