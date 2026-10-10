@@ -1,0 +1,2 @@
+Mouse-resizing a floating window from the middle third of an edge now resizes
+only that axis; corners keep the diagonal resize.
