@@ -1,0 +1,1 @@
+i3bar: render a base64-encoded PNG in a status block when the new "image" key is set
