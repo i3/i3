@@ -299,6 +299,9 @@ static int json_key(void *ctx, const unsigned char *val, size_t len) {
 }
 
 static int json_string(void *ctx, const unsigned char *val, size_t len) {
+    if (last_key == NULL) {
+        return 1;
+    }
     LOG("string: %.*s for key %s\n", (int)len, val, last_key);
     if (parsing_swallows) {
         char *sval;
@@ -479,6 +482,9 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
 }
 
 static int json_int(void *ctx, long long val) {
+    if (last_key == NULL) {
+        return 1;
+    }
     LOG("int %lld for key %s\n", val, last_key);
     /* For backwards compatibility with i3 < 4.8 */
     if (strcasecmp(last_key, "type") == 0) {
@@ -570,6 +576,9 @@ static int json_int(void *ctx, long long val) {
 }
 
 static int json_bool(void *ctx, int val) {
+    if (last_key == NULL) {
+        return 1;
+    }
     LOG("bool %d for key %s\n", val, last_key);
     if (strcasecmp(last_key, "focused") == 0 && val) {
         to_focus = json_node;
@@ -590,6 +599,9 @@ static int json_bool(void *ctx, int val) {
 }
 
 static int json_double(void *ctx, double val) {
+    if (last_key == NULL) {
+        return 1;
+    }
     LOG("double %f for key %s\n", val, last_key);
     if (strcasecmp(last_key, "percent") == 0) {
         json_node->percent = val;
@@ -611,6 +623,9 @@ static int json_determine_content_shallower(void *ctx) {
 }
 
 static int json_determine_content_string(void *ctx, const unsigned char *val, size_t len) {
+    if (last_key == NULL) {
+        return 1;
+    }
     if (strcasecmp(last_key, "type") != 0 || content_level > 1) {
         return 1;
     }
