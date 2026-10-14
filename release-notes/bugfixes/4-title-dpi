@@ -1,0 +1,1 @@
+fix title border and vertical padding scaling on HiDPI displays, including clipped title icons at fractional scales
