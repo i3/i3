@@ -1,0 +1,3 @@
+Set the decorated frame pixmap as the frame window background (and stop
+recreating the pixmap on pure moves), eliminating black flashes and border
+flicker during interactive floating move/resize, especially under compositors.
