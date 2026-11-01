@@ -246,6 +246,34 @@ Output *get_output_next_wrap(direction_t direction, Output *current) {
 }
 
 /*
+ * Returns the length of the overlap of the segments [a1, a1 + alen) and
+ * [b1, b1 + blen). Returns a non-positive value if they do not overlap.
+ *
+ */
+static int64_t segment_overlap(int64_t a1, int64_t alen, int64_t b1, int64_t blen) {
+    return MIN(a1 + alen, b1 + blen) - MAX(a1, b1);
+}
+
+/*
+ * Returns the position of the given rect along the given direction, such that
+ * a smaller value means "earlier" in that direction.
+ *
+ */
+static int64_t position_in_direction(const Rect *rect, direction_t direction) {
+    switch (direction) {
+        case D_RIGHT:
+            return rect->x;
+        case D_LEFT:
+            return -(int64_t)rect->x;
+        case D_DOWN:
+            return rect->y;
+        case D_UP:
+            return -(int64_t)rect->y;
+    }
+    return 0;
+}
+
+/*
  * Gets the output which is the next one in the given direction.
  *
  * If close_far == CLOSEST_OUTPUT, then the output next to the current one will
@@ -258,59 +286,34 @@ Output *get_output_next_wrap(direction_t direction, Output *current) {
  */
 Output *get_output_next(const direction_t direction, Output *current, output_close_far_t close_far) {
     const Rect *cur = &(current->rect);
+    const int64_t cur_pos = position_in_direction(cur, direction);
     Output *output, *best = NULL;
+    int64_t best_pos = 0, best_overlap = 0;
     TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active) {
             continue;
         }
 
         const Rect *other = &(output->rect);
-        if ((direction == D_RIGHT && other->x > cur->x) ||
-            (direction == D_LEFT && other->x < cur->x)) {
-            /* Skip the output when it doesn’t overlap the other one’s y
-             * coordinate at all. */
-            if ((other->y + other->height) <= cur->y ||
-                (cur->y + cur->height) <= other->y) {
-                continue;
-            }
-        } else if ((direction == D_DOWN && other->y > cur->y) ||
-                   (direction == D_UP && other->y < cur->y)) {
-            /* Skip the output when it doesn’t overlap the other one’s x
-             * coordinate at all. */
-            if ((other->x + other->width) <= cur->x ||
-                (cur->x + cur->width) <= other->x) {
-                continue;
-            }
-        } else {
+        const int64_t pos = position_in_direction(other, direction);
+        if (pos <= cur_pos) {
             continue;
         }
 
-        /* No candidate yet? Start with this one. */
-        if (!best) {
+        /* Length of the edge shared with the current output. */
+        const int64_t overlap = (direction == D_LEFT || direction == D_RIGHT)
+                                    ? segment_overlap(cur->y, cur->height, other->y, other->height)
+                                    : segment_overlap(cur->x, cur->width, other->x, other->width);
+        if (overlap <= 0) { /* No overlap. */
+            continue;
+        }
+
+        /* Prefer closest/farthest. Tie-break with longest shared edge. */
+        const bool better = (close_far == CLOSEST_OUTPUT) ? (pos < best_pos) : (pos > best_pos);
+        if (!best || better || (pos == best_pos && overlap > best_overlap)) {
             best = output;
-            continue;
-        }
-
-        if (close_far == CLOSEST_OUTPUT) {
-            /* Is this output better (closer to the current output) than our
-             * current best bet? */
-            if ((direction == D_RIGHT && other->x < best->rect.x) ||
-                (direction == D_LEFT && other->x > best->rect.x) ||
-                (direction == D_DOWN && other->y < best->rect.y) ||
-                (direction == D_UP && other->y > best->rect.y)) {
-                best = output;
-                continue;
-            }
-        } else {
-            /* Is this output better (farther to the current output) than our
-             * current best bet? */
-            if ((direction == D_RIGHT && other->x > best->rect.x) ||
-                (direction == D_LEFT && other->x < best->rect.x) ||
-                (direction == D_DOWN && other->y > best->rect.y) ||
-                (direction == D_UP && other->y < best->rect.y)) {
-                best = output;
-                continue;
-            }
+            best_pos = pos;
+            best_overlap = overlap;
         }
     }
 
