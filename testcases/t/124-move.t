@@ -256,6 +256,14 @@ cmd 'move position 20 ppt 20 ppt';
 is($floatcon[0]->{rect}->{x}, int($x->root->rect->width * 0.20), "moved to position 20 (ppt) x");
 is($floatcon[0]->{rect}->{y}, int($x->root->rect->height * 0.20), "moved to position 20 (ppt) y");
 
+# Move to a negative position with ppt, partially outside of the output
+cmd 'move position -1 ppt -1 ppt';
+
+@floatcon = @{get_ws($tmp)->{floating_nodes}};
+
+is($floatcon[0]->{rect}->{x}, int($x->root->rect->width * -0.01), "moved to position -1 (ppt) x");
+is($floatcon[0]->{rect}->{y}, int($x->root->rect->height * -0.01), "moved to position -1 (ppt) y");
+
 # Move to absolute center
 cmd 'move absolute position center';
 
