@@ -1830,8 +1830,8 @@ void cmd_move_window_to_position(I3_CMD, const long x, const char *mode_x, const
         Rect newrect = current->con->parent->rect;
         const Con *output = con_get_output(current->con);
 
-        newrect.x = mode_x && strcmp(mode_x, "ppt") == 0 ? output->rect.width * ((double)x / 100.0) : x;
-        newrect.y = mode_y && strcmp(mode_y, "ppt") == 0 ? output->rect.height * ((double)y / 100.0) : y;
+        newrect.x = mode_x && strcmp(mode_x, "ppt") == 0 ? (long)(output->rect.width * ((double)x / 100.0)) : x;
+        newrect.y = mode_y && strcmp(mode_y, "ppt") == 0 ? (long)(output->rect.height * ((double)y / 100.0)) : y;
         DLOG("moving to position %d %s %d %s\n", newrect.x, mode_x, newrect.y, mode_y);
 
         if (!floating_reposition(current->con->parent, newrect)) {
