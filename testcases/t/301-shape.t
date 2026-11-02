@@ -62,52 +62,94 @@ END_OF_C_CODE
 
 init_ctx($x->get_xcb_conn());
 
-my ($ws, $win1, $win1_focus, $win2, $win2_focus);
+my $ws; # set by run_test
+my ($bg_win, $bg_win_focus, $shaped_win, $shaped_win_focus); # set by the subtests
 
-################################################################################
-# Case 1: make floating window, then set shape
-################################################################################
+subtest 'normal border: make floating window, then set shape', \&run_test => sub {
+    $bg_win = open_floating_window(rect => [50, 50, 200, 200], background_color => '#ff0000');
+    $bg_win_focus = get_focused($ws);
 
-$ws = fresh_workspace;
+    $shaped_win = open_floating_window(rect => [100, 100, 100, 100], background_color => '#00ff00');
+    cmd '[id=' . $shaped_win->id . '] border normal 10px';
+    $shaped_win_focus = get_focused($ws);
+    set_shape($shaped_win->id);
+};
 
-$win1 = open_floating_window(rect => [0, 0, 100, 100], background_color => '#ff0000');
-$win1_focus = get_focused($ws);
+subtest 'normal border: set shape first, then make window floating', \&run_test, => sub {
+    $bg_win = open_window(rect => [50, 50, 200, 200], background_color => '#ff0000');
+    $bg_win_focus = get_focused($ws);
+    cmd 'floating toggle';
 
-$win2 = open_floating_window(rect => [0, 0, 100, 100], background_color => '#00ff00');
-$win2_focus = get_focused($ws);
-set_shape($win2->id);
+    $shaped_win = open_window(rect => [100, 100, 100, 100], background_color => '#00ff00');
+    cmd '[id=' . $shaped_win->id . '] border normal 10px';
+    $shaped_win_focus = get_focused($ws);
+    set_shape($shaped_win->id);
+    cmd 'floating toggle';
+};
 
-$win1->warp_pointer(75, 25);
-sync_with_i3;
-is(get_focused($ws), $win1_focus, 'focus switched to the underlying window');
+subtest 'pixel border: make floating window, then set shape', \&run_test => sub {
+    $bg_win = open_floating_window(rect => [50, 50, 200, 200], background_color => '#ff0000');
+    $bg_win_focus = get_focused($ws);
 
-$win1->warp_pointer(25, 25);
-sync_with_i3;
-is(get_focused($ws), $win2_focus, 'focus switched to the top window');
+    $shaped_win = open_floating_window(rect => [100, 100, 100, 100], background_color => '#00ff00');
+    cmd '[id=' . $shaped_win->id . '] border pixel 10px';
+    $shaped_win_focus = get_focused($ws);
+    set_shape($shaped_win->id);
+};
 
-kill_all_windows;
+subtest 'pixel border: set shape first, then make window floating', \&run_test, => sub {
+    $bg_win = open_window(rect => [50, 50, 200, 200], background_color => '#ff0000');
+    $bg_win_focus = get_focused($ws);
+    cmd 'floating toggle';
 
-################################################################################
-# Case 2: set shape first, then make window floating
-################################################################################
-
-$ws = fresh_workspace;
-
-$win1 = open_window(rect => [0, 0, 100, 100], background_color => '#ff0000');
-$win1_focus = get_focused($ws);
-cmd 'floating toggle';
-
-$win2 = open_window(rect => [0, 0, 100, 100], background_color => '#00ff00');
-$win2_focus = get_focused($ws);
-set_shape($win2->id);
-cmd 'floating toggle';
-
-$win1->warp_pointer(75, 25);
-sync_with_i3;
-is(get_focused($ws), $win1_focus, 'focus switched to the underlying window');
-
-$win1->warp_pointer(25, 25);
-sync_with_i3;
-is(get_focused($ws), $win2_focus, 'focus switched to the top window');
+    $shaped_win = open_window(rect => [100, 100, 100, 100], background_color => '#00ff00');
+    cmd '[id=' . $shaped_win->id . '] border pixel 10px';
+    $shaped_win_focus = get_focused($ws);
+    set_shape($shaped_win->id);
+    cmd 'floating toggle';
+};
 
 done_testing;
+
+sub run_test {
+    my ($setup_sub) = @_;
+    $ws = fresh_workspace;
+    $setup_sub->();
+
+    # Test the input region by observing the focus_follows_mouse behavior.
+    # The visual conunterpart (clip region) is not tested, but it uses the same
+    # code path.
+
+    # 4    5    6
+    #  ┌───┬───┐
+    #  │ 1 │ 2 │
+    # 7├───┴───┤8
+    #  │   3   │
+    #  └───────┘
+    #      9
+    my @points_table = (
+        { x =>  25, y =>  25, opaque => 1, name => '1: window zone A' },
+        { x =>  75, y =>  25, opaque => 0, name => '2: window zone B' },
+        { x =>  50, y =>  75, opaque => 0, name => '3: window zone C' },
+
+        { x =>  -5, y =>  -5, opaque => 1, name => '4: titlebar left' },
+        { x =>  50, y =>  -5, opaque => 1, name => '5: titlebar center' },
+        { x => 105, y =>  -5, opaque => 1, name => '6: titlebar right' },
+
+        { x =>  50, y => 105, opaque => 1, name => '7: border left' },
+        { x =>  -5, y =>  50, opaque => 1, name => '8: border right' },
+        { x => 105, y =>  50, opaque => 1, name => '9: border bottom' },
+    );
+
+    for my $p (@points_table) {
+        $shaped_win->warp_pointer($p->{x}, $p->{y});
+        sync_with_i3;
+        if ($p->{opaque}) {
+            is(get_focused($ws), $shaped_win_focus, "opaque      - $p->{name}");
+        } else {
+            is(get_focused($ws), $bg_win_focus,     "passthrough - $p->{name}");
+        }
+    }
+
+    kill_all_windows;
+}
