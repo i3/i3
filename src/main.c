@@ -129,9 +129,17 @@ static void xcb_got_event(EV_P_ ev_io *w, int revents) {
 static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
     /* Process all queued (and possibly new) events before the event loop
        sleeps. */
-    xcb_generic_event_t *event;
-
-    while ((event = xcb_poll_for_event(conn)) != NULL) {
+    while (true) {
+        xcb_generic_event_t *event = xcb_poll_for_event(conn);
+        if (event == NULL) {
+            /* xcb_flush() can read events into xcb’s queue (libxcb polls the
+             * socket for reading and writing at once), so check the queue
+             * again before the event loop sleeps. */
+            xcb_flush(conn);
+            if ((event = xcb_poll_for_queued_event(conn)) == NULL) {
+                break;
+            }
+        }
         if (event->response_type == 0) {
             if (event_is_ignored(ENSURE_FULL_SEQUENCE(event->full_sequence), 0)) {
                 DLOG("Expected X11 Error received for sequence %x\n", event->sequence);
@@ -150,9 +158,6 @@ static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
 
         free(event);
     }
-
-    /* Flush all queued events to X11. */
-    xcb_flush(conn);
 }
 
 /*
