@@ -121,22 +121,6 @@ static void xcb_got_event(EV_P_ ev_io *w, int revents) {
 }
 
 /*
- * Returns the next X11 event, or NULL once xcb’s incoming and outgoing queues
- * are both empty. xcb_flush() can read new events into xcb’s queue (see
- * _xcb_conn_wait in libxcb). The socket is then no longer readable, so the
- * event loop would sleep with those events still queued.
- *
- */
-static xcb_generic_event_t *next_event(void) {
-    xcb_generic_event_t *event = xcb_poll_for_event(conn);
-    if (event == NULL) {
-        xcb_flush(conn);
-        event = xcb_poll_for_queued_event(conn);
-    }
-    return event;
-}
-
-/*
  * Called just before the event loop sleeps. Ensures xcb’s incoming and outgoing
  * queues are empty so that any activity will trigger another event loop
  * iteration, and hence another xcb_prepare_cb invocation.
@@ -145,9 +129,17 @@ static xcb_generic_event_t *next_event(void) {
 static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
     /* Process all queued (and possibly new) events before the event loop
        sleeps. */
-    xcb_generic_event_t *event;
-
-    while ((event = next_event()) != NULL) {
+    while (true) {
+        xcb_generic_event_t *event = xcb_poll_for_event(conn);
+        if (event == NULL) {
+            /* xcb_flush() can read events into xcb’s queue (libxcb polls the
+             * socket for reading and writing at once), so check the queue
+             * again before the event loop sleeps. */
+            xcb_flush(conn);
+            if ((event = xcb_poll_for_queued_event(conn)) == NULL) {
+                break;
+            }
+        }
         if (event->response_type == 0) {
             if (event_is_ignored(ENSURE_FULL_SEQUENCE(event->full_sequence), 0)) {
                 DLOG("Expected X11 Error received for sequence %x\n", event->sequence);
