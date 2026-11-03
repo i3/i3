@@ -522,7 +522,7 @@ void window_update_icon(i3Window *win, xcb_get_property_reply_t *prop) {
     uint32_t *data = NULL;
     uint32_t width = 0, height = 0;
     uint64_t len = 0;
-    const uint32_t pref_size = (uint32_t)(render_deco_height() - logical_px(2));
+    const uint32_t pref_size = (uint32_t)(render_deco_height() - 2 * logical_px(1));
 
     if (!prop || prop->type != XCB_ATOM_CARDINAL || prop->format != 32) {
         DLOG("_NET_WM_ICON is not set\n");
