@@ -75,6 +75,7 @@ to do that).
 | 10 | +SEND_TICK+ | <<_tick_reply,TICK>> | Sends a tick event with the specified payload.
 | 11 | +SYNC+ | <<_sync_reply,SYNC>> | Sends an i3 sync event with the specified random value to the specified window.
 | 12 | +GET_BINDING_STATE+ | <<_binding_state_reply,BINDING_STATE>> | Request the current binding state, i.e. the currently active binding mode name.
+| 12 | +GET_BINDING_SYMS+ | <<_binding_syms_reply,BINDING_SYMS>> | Get all the bindsyms and bindcodes configured in the configuration file
 |======================================================
 
 So, a typical message could look like this:
@@ -156,6 +157,8 @@ SYNC (11)::
 	Reply to the SYNC message.
 GET_BINDING_STATE (12)::
 	Reply to the GET_BINDING_STATE message.
+GET_BINDING_SYMS (13)::
+	Reply to the GET_BINDING_SYMS message.
 
 == Messages and replies
 
@@ -910,6 +913,25 @@ member, which is the name of the currently active binding mode as a string.
 *Example:*
 -------------------
 { "name": "default" }
+-------------------
+
+[[_binding_syms_reply]]
+=== GET_BINDING_SYMS:
+
+Request the current bindkeys and bindcodes.
+
+*Message:*
+
+No payload.
+
+*Reply:*
+
+The binding_syms reply is a map which returns all bindings for all binding
+states.
+
+*Example:*
+-------------------
+{"resize":[{"hotkey":"Mod4+d","command":"mode \"default\""}]}
 -------------------
 
 == Events
