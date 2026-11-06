@@ -1034,18 +1034,25 @@ void x_push_node(Con *con) {
          * background and only afterwards change the window size. This reduces
          * flickering. */
 
-        bool has_rect_changed = (state->rect.x != rect.x || state->rect.y != rect.y ||
-                                 state->rect.width != rect.width || state->rect.height != rect.height);
+        /* A move (x/y change) cannot invalidate the pixmap: the decoration is
+         * drawn in frame-local coordinates. Only recreate it when the size
+         * changes. */
+        bool has_size_changed = (state->rect.width != rect.width ||
+                                 state->rect.height != rect.height);
 
         /* Check if the container has an unneeded pixmap left over from
          * previously having a border or titlebar. */
         if (!is_pixmap_needed && con->frame_buffer.id != XCB_NONE) {
+            /* Reset the background to a plain pixel so the window does not
+             * keep a reference to the pixmap we are about to free. */
+            xcb_change_window_attributes(conn, con->frame.id, XCB_CW_BACK_PIXEL,
+                                         (uint32_t[]){root_screen->black_pixel});
             draw_util_surface_free(conn, &(con->frame_buffer));
             xcb_free_pixmap(conn, con->frame_buffer.id);
             con->frame_buffer.id = XCB_NONE;
         }
 
-        if (is_pixmap_needed && (has_rect_changed || con->frame_buffer.id == XCB_NONE)) {
+        if (is_pixmap_needed && (has_size_changed || con->frame_buffer.id == XCB_NONE)) {
             if (con->frame_buffer.id == XCB_NONE) {
                 con->frame_buffer.id = xcb_generate_id(conn);
             } else {
@@ -1092,6 +1099,14 @@ void x_push_node(Con *con) {
                  * doesn’t hurt performance. */
                 x_deco_recurse(con);
             }
+
+            /* Set the decorated pixmap as the window background so the X
+             * server fills exposed regions (e.g. when the window grows) from
+             * it directly instead of flashing the background pixel, and so a
+             * compositor sees decorated content as soon as the resize takes
+             * effect. */
+            xcb_change_window_attributes(conn, con->frame.id, XCB_CW_BACK_PIXMAP,
+                                         (uint32_t[]){con->frame_buffer.id});
         }
 
         DLOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
@@ -1100,6 +1115,25 @@ void x_push_node(Con *con) {
          * window get lost when resizing it, therefore we want to provide it as
          * fast as possible) */
         xcb_flush(conn);
+
+        /* When the frame grows, resize the child first: a child may extend
+         * beyond its parent (it is simply clipped), so once the frame grows,
+         * the enlarged child instantly covers the newly exposed area instead
+         * of the frame background showing through until the child configure
+         * is processed. This matters especially for borderless frames, whose
+         * background (a transparent pixel on 32-bit visuals) would otherwise
+         * be visible as a flickering strip during interactive resize. */
+        bool child_first = con->window != NULL &&
+                           !rect_equals(state->window_rect, con->window_rect) &&
+                           rect.width >= state->rect.width &&
+                           rect.height >= state->rect.height;
+        if (child_first) {
+            DLOG("setting window rect (%d, %d, %d, %d) (child first)\n",
+                 con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
+            xcb_set_window_rect(conn, con->window->id, con->window_rect);
+            memcpy(&(state->window_rect), &(con->window_rect), sizeof(Rect));
+        }
+
         xcb_set_window_rect(conn, con->frame.id, rect);
         if (con->frame_buffer.id != XCB_NONE) {
             draw_util_copy_surface(&(con->frame_buffer), &(con->frame), 0, 0, 0, 0, con->rect.width, con->rect.height);
@@ -1110,7 +1144,7 @@ void x_push_node(Con *con) {
         fake_notify = true;
     }
 
-    /* ditto, but for child windows */
+    /* ditto, but for child windows (unless already configured above) */
     if (con->window != NULL &&
         !rect_equals(state->window_rect, con->window_rect)) {
         DLOG("setting window rect (%d, %d, %d, %d)\n",
