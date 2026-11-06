@@ -162,6 +162,7 @@ is(parser_calls('unknown_literal'),
        reload
        shmlog
        debuglog
+       border_radius
        border
        layout
        append_layout

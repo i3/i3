@@ -21,6 +21,7 @@ state INITIAL:
   'reload' -> call cmd_reload()
   'shmlog' -> SHMLOG
   'debuglog' -> DEBUGLOG
+  'border_radius' -> BORDER_RADIUS
   'border' -> BORDER
   'layout' -> LAYOUT
   'append_layout' -> APPEND_LAYOUT
@@ -119,6 +120,18 @@ state BORDER_WIDTH:
     -> call cmd_border($border_style, -1)
   border_width = number
     -> call cmd_border($border_style, &border_width)
+
+# border_radius <px>
+# border_radius all <px>
+state BORDER_RADIUS:
+  target = 'all'
+    -> BORDER_RADIUS_WITH_TARGET
+  argument = number
+    -> call cmd_border_radius(&argument, NULL)
+
+state BORDER_RADIUS_WITH_TARGET:
+  argument = number
+    -> call cmd_border_radius(&argument, $target)
 
 # gaps inner|outer|horizontal|vertical|top|right|bottom|left [current] [set|plus|minus|toggle] <px>
 state GAPS:

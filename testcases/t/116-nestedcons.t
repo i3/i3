@@ -69,6 +69,7 @@ my $expected = {
     focused => JSON::XS::false,
     urgent => JSON::XS::false,
     border => 'normal',
+    border_radius => $ignore,
     'floating_nodes' => $ignore,
     workspace_layout => 'default',
     current_border_width => -1,
