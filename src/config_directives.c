@@ -15,8 +15,167 @@
  * Include functions.
  ******************************************************************************/
 
-CFGFUN(include, const char *pattern) {
-    DLOG("include %s\n", pattern);
+/*
+ * Returns the name of a path named by an include directive: its final
+ * component as written (before following symbolic links), ignoring trailing
+ * slashes. In include --override, paths compete under this name.
+ *
+ */
+static char *include_name(const char *path) {
+    size_t len = strlen(path);
+    while (len > 1 && path[len - 1] == '/') {
+        len--;
+    }
+    size_t start = len;
+    while (start > 0 && path[start - 1] != '/') {
+        start--;
+    }
+    if (start == len) {
+        /* The path consists only of slashes. */
+        return sstrdup("/");
+    }
+    return sstrndup(path + start, len - start);
+}
+
+/*
+ * Reads one configuration file named by an include directive, given its
+ * resolved path. Files which were already read while loading this
+ * configuration are skipped.
+ *
+ */
+static void include_file(struct ConfigResultIR *result, const char *resolved_path) {
+    IncludedFile *file;
+    TAILQ_FOREACH (file, &included_files, files) {
+        if (strcmp(file->path, resolved_path) == 0) {
+            LOG("Skipping file %s (already included)\n", resolved_path);
+            return;
+        }
+    }
+
+    LOG("Including config file %s\n", resolved_path);
+
+    file = scalloc(1, sizeof(IncludedFile));
+    file->path = sstrdup(resolved_path);
+    TAILQ_INSERT_TAIL(&included_files, file, files);
+
+    struct stack stack = {0};
+    struct parser_ctx ctx = {
+        .use_nagbar = result->ctx->use_nagbar,
+        .stack = &stack,
+        .variables = result->ctx->variables,
+    };
+    switch (parse_file(&ctx, resolved_path, file)) {
+        case PARSE_FILE_SUCCESS:
+            break;
+
+        case PARSE_FILE_FAILED:
+            ELOG("including config file %s: %s\n", resolved_path, strerror(errno));
+            /* fallthrough */
+
+        case PARSE_FILE_CONFIG_ERRORS:
+            result->has_errors = true;
+            TAILQ_REMOVE(&included_files, file, files);
+            FREE(file->path);
+            FREE(file->raw_contents);
+            FREE(file->variable_replaced_contents);
+            FREE(file);
+            break;
+
+        default:
+            /* missing case statement */
+            assert(false);
+    }
+    result->ctx->variables = ctx.variables; /* In case head was modified */
+}
+
+/*
+ * Handles a plain include: every expanded path which exists is read, in the
+ * order of the expansion.
+ *
+ */
+static void include_plain(struct ConfigResultIR *result, char **words, size_t count) {
+    for (size_t i = 0; i < count; i++) {
+        char resolved_path[PATH_MAX] = {'\0'};
+        if (realpath(words[i], resolved_path) == NULL) {
+            LOG("Skipping %s: %s\n", words[i], strerror(errno));
+            continue;
+        }
+        include_file(result, resolved_path);
+    }
+}
+
+/*
+ * An entry of include --override: a name and the path (as produced by word
+ * expansion) which currently holds that name.
+ *
+ */
+struct override_entry {
+    char *name;
+    const char *path;
+};
+
+static int override_entry_cmp(const void *a, const void *b) {
+    const struct override_entry *first = a;
+    const struct override_entry *second = b;
+    /* strcmp() compares bytes, independent of the locale. */
+    return strcmp(first->name, second->name);
+}
+
+/*
+ * Handles include --override: among all expanded paths sharing a name (see
+ * include_name()), only the last one is used; the others are not read at all.
+ * The remaining paths are read in byte order of their names. A path which
+ * resolves to /dev/null, or a dangling symbolic link, masks its name: nothing
+ * is read for that name.
+ *
+ */
+static void include_override(struct ConfigResultIR *result, char **words, size_t count) {
+    struct override_entry *entries = scalloc(count == 0 ? 1 : count, sizeof(struct override_entry));
+    size_t n = 0;
+    for (size_t i = 0; i < count; i++) {
+        /* lstat() so that dangling symbolic links take part. */
+        struct stat st;
+        if (lstat(words[i], &st) == -1) {
+            LOG("Skipping %s: %s\n", words[i], strerror(errno));
+            continue;
+        }
+
+        char *name = include_name(words[i]);
+        size_t j;
+        for (j = 0; j < n; j++) {
+            if (strcmp(entries[j].name, name) == 0) {
+                break;
+            }
+        }
+        if (j < n) {
+            LOG("Skipping %s (overridden by %s)\n", entries[j].path, words[i]);
+            entries[j].path = words[i];
+            free(name);
+        } else {
+            entries[n].name = name;
+            entries[n].path = words[i];
+            n++;
+        }
+    }
+
+    qsort(entries, n, sizeof(struct override_entry), override_entry_cmp);
+
+    for (size_t i = 0; i < n; i++) {
+        char resolved_path[PATH_MAX] = {'\0'};
+        if (realpath(entries[i].path, resolved_path) == NULL) {
+            LOG("Skipping %s: %s\n", entries[i].path, strerror(errno));
+        } else if (strcmp(resolved_path, "/dev/null") == 0) {
+            LOG("Skipping %s (masked by /dev/null)\n", entries[i].path);
+        } else {
+            include_file(result, resolved_path);
+        }
+        free(entries[i].name);
+    }
+    free(entries);
+}
+
+CFGFUN(include, const char *override, const char *pattern) {
+    DLOG("include %s%s\n", (override ? "--override " : ""), pattern);
 
     wordexp_t p;
     const int ret = wordexp(pattern, &p, 0);
@@ -25,61 +184,10 @@ CFGFUN(include, const char *pattern) {
         result->has_errors = true;
         return;
     }
-    char **w = p.we_wordv;
-    for (size_t i = 0; i < p.we_wordc; i++) {
-        char resolved_path[PATH_MAX] = {'\0'};
-        if (realpath(w[i], resolved_path) == NULL) {
-            LOG("Skipping %s: %s\n", w[i], strerror(errno));
-            continue;
-        }
-
-        bool skip = false;
-        IncludedFile *file;
-        TAILQ_FOREACH (file, &included_files, files) {
-            if (strcmp(file->path, resolved_path) == 0) {
-                skip = true;
-                break;
-            }
-        }
-        if (skip) {
-            LOG("Skipping file %s (already included)\n", resolved_path);
-            continue;
-        }
-
-        LOG("Including config file %s\n", resolved_path);
-
-        file = scalloc(1, sizeof(IncludedFile));
-        file->path = sstrdup(resolved_path);
-        TAILQ_INSERT_TAIL(&included_files, file, files);
-
-        struct stack stack = {0};
-        struct parser_ctx ctx = {
-            .use_nagbar = result->ctx->use_nagbar,
-            .stack = &stack,
-            .variables = result->ctx->variables,
-        };
-        switch (parse_file(&ctx, resolved_path, file)) {
-            case PARSE_FILE_SUCCESS:
-                break;
-
-            case PARSE_FILE_FAILED:
-                ELOG("including config file %s: %s\n", resolved_path, strerror(errno));
-                /* fallthrough */
-
-            case PARSE_FILE_CONFIG_ERRORS:
-                result->has_errors = true;
-                TAILQ_REMOVE(&included_files, file, files);
-                FREE(file->path);
-                FREE(file->raw_contents);
-                FREE(file->variable_replaced_contents);
-                FREE(file);
-                break;
-
-            default:
-                /* missing case statement */
-                assert(false);
-        }
-        result->ctx->variables = ctx.variables; /* In case head was modified */
+    if (override) {
+        include_override(result, p.we_wordv, p.we_wordc);
+    } else {
+        include_plain(result, p.we_wordv, p.we_wordc);
     }
     wordfree(&p);
 }

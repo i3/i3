@@ -140,6 +140,31 @@ static char *single_line(const char *start) {
     return result;
 }
 
+/*
+ * Returns true if the given position, which directly follows the include
+ * keyword or the spaces and tabs after it, holds the --override flag.
+ *
+ * The flag is written in lower case, as a whole word: it has to be separated
+ * from the include keyword by a space or tab, and be followed by a space, a
+ * tab or the end of the line, so that a word which merely starts with it,
+ * such as --override.conf, or is spelled differently, such as --OVERRIDE,
+ * stays a pattern of a plain include.
+ *
+ */
+static bool include_override_flag(const char *input, const char *walk) {
+    static const char override[] = "--override";
+    const size_t len = strlen(override);
+
+    if (walk == input || (walk[-1] != ' ' && walk[-1] != '\t')) {
+        return false;
+    }
+    if (strncmp(walk, override, len) != 0) {
+        return false;
+    }
+    const char after = walk[len];
+    return (after == ' ' || after == '\t' || after == '\r' || after == '\n' || after == '\0');
+}
+
 static void parse_config(struct parser_ctx *ctx, const char *input, struct context *context) {
     /* Dump the entire config file into the debug log. We cannot just use
      * DLOG("%s", input); because one log message must not exceed 4 KiB. */
@@ -192,7 +217,10 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
 
             /* A literal. */
             if (token->name[0] == '\'') {
-                if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
+                /* The only literal of include is its --override flag, which
+                 * counts only as a whole word (see include_override_flag()). */
+                if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0 &&
+                    (ctx->state != INCLUDE || include_override_flag(input, walk))) {
                     if (token->identifier != NULL) {
                         parser_push_string(ctx->stack, token->identifier, token->name + 1);
                     }
@@ -232,6 +260,11 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
 
             if (strcmp(token->name, "string") == 0 ||
                 strcmp(token->name, "word") == 0) {
+                /* A comment directly after the --override flag of include
+                 * leaves the flag on its own, which is an error. */
+                if (ctx->state == INCLUDE_OVERRIDE && *walk == '#') {
+                    continue;
+                }
                 const char *beginning = walk;
                 /* Handle quoted strings (or words). */
                 if (*walk == '"') {

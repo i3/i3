@@ -365,12 +365,16 @@ Since i3 v4.20, it is possible to include other configuration files from your i3
 configuration.
 
 *Syntax*:
------------------
-include <pattern>
------------------
+---------------------------------------
+include <pattern> [<pattern> ...]
+include --override <pattern> [<pattern> ...]
+---------------------------------------
 
 i3 expands `pattern` using shell-like word expansion, specifically using the
 https://manpages.debian.org/wordexp.3[`wordexp(3)` C standard library function].
+Each resulting path is loaded, in the order in which the expansion produced
+them. Paths which do not exist, including dangling symlinks, are skipped
+silently. For `--override`, see <<include_override>>.
 
 *Examples*:
 --------------------------------------------------------------------------------
@@ -397,8 +401,8 @@ include assignments.conf
 --------------------------------------------------------------------------------
 
 If a specified file cannot be read, for example because of a lack of file
-permissions, or because of a dangling symlink, i3 will report an error and
-continue processing your remaining configuration.
+permissions, i3 will report an error and continue processing your remaining
+configuration.
 
 To list all loaded configuration files, run `i3 --moreversion`:
 
@@ -422,14 +426,18 @@ before parsing include directives.
 
 Conceptually, included files can only add to the configuration, not undo the
 effects of already-processed configuration. For example, you can only add new
-key bindings, not overwrite or remove existing key bindings. This means:
+key bindings, not overwrite or remove existing key bindings. (Using
+`include --override` does not change this: it only decides which files are
+read, so that a file can be read instead of another one.) This means:
 
 * The `include` directive is suitable for organizing large configurations into
   separate files, possibly selecting files based on conditionals.
 
 * The `include` directive is not suitable for expressing “use the default
-  configuration with the following changes”. For that case, we still recommend
-  copying and modifying the default config.
+  configuration with the following changes”. If the default configuration is
+  split into files in a directory, `include --override` (see below) lets you
+  replace or disable individual files with your own; otherwise, we still
+  recommend copying and modifying the default config.
 
 [NOTE]
 ====
@@ -441,6 +449,86 @@ configuration directives in its `parse_file()` function. When processing an
 This means the evaluation order of files forms a tree, or one could say i3 uses
 depth-first traversal.
 ====
+
+[[include_override]]
+==== Replacing included files with include --override
+
+Distributions often ship their configuration as a directory of small files and
+let users add their own files in a separate directory. With a plain `include`,
+every matching file is loaded: a file of your own cannot take the place of a
+shipped file, and binding a key that a shipped file already binds results in
+duplicate binding errors.
+
+With `include --override`, the files matched by the patterns of that one line
+compete by file name, so that a file of your own replaces (or disables) the
+shipped file of the same name, similar to systemd drop-in directories:
+
+*Example*:
+--------------------------------------------------------------------------------
+# Load the shipped files, but let a file in ~/.config/i3/config.d replace the
+# shipped file of the same name:
+include --override /usr/share/i3/config.d/* ~/.config/i3/config.d/*
+--------------------------------------------------------------------------------
+
+Given the following files:
+
+--------------------------------------------------------------------------------
+/usr/share/i3/config.d/10-defaults
+/usr/share/i3/config.d/40-keybindings
+/usr/share/i3/config.d/60-bar
+~/.config/i3/config.d/40-keybindings
+~/.config/i3/config.d/50-workspaces
+~/.config/i3/config.d/60-bar -> /dev/null
+--------------------------------------------------------------------------------
+
+i3 loads `/usr/share/i3/config.d/10-defaults`, then
+`~/.config/i3/config.d/40-keybindings` (instead of the shipped file of that
+name, which is not read at all, so your file can bind the same keys without
+errors), then `~/.config/i3/config.d/50-workspaces`. No bar file is loaded,
+because `60-bar` points to `/dev/null`.
+
+The flag must be written in lower case, as a separate word directly after
+`include`. A pattern which merely starts with it (such as `--override.conf`)
+and a flag spelled differently (such as `--OVERRIDE`) are patterns of a plain
+`include`. Everything after the flag is a pattern; the flag without a pattern,
+or followed only by a comment, is an error.
+
+The paths are selected as follows:
+
+* Patterns are expanded exactly like for a plain `include`. Every resulting path
+  which i3 can look up counts, including symbolic links (even dangling ones);
+  the final symbolic link is not followed for this. Paths which do not exist,
+  or which lie in a directory i3 may not search, are skipped silently. A path
+  written with a trailing slash is looked up with the slash, as for a plain
+  `include`: it counts only if it leads to a directory.
+* The name of a path is its final component as written (before any symbolic
+  link is followed), ignoring a trailing slash. Names are compared byte by
+  byte.
+* For each name, only the last path with that name is used (i.e. a later
+  pattern takes precedence over an earlier one). All earlier paths with the
+  same name are ignored entirely: they are not read, so errors in them do not
+  matter.
+* The remaining paths are loaded in byte order (ASCII order) of their names,
+  independent of the order of the patterns and of the locale. For example,
+  `20-Beta` sorts before `20-alpha`, which sorts before `20_z`, which sorts
+  before `3-x`.
+* An empty file disables the file of the same name: it is loaded, but contains
+  nothing. A symbolic link pointing to `/dev/null` (or a dangling symbolic
+  link) also disables it; such a path is not loaded and not listed by
+  `i3 --moreversion`. A symbolic link is dangling when following it stops at
+  an entry which does not exist or is not a directory. A symbolic link which
+  cannot be followed for any other reason (a loop, a name which is too long,
+  a directory which i3 may not search) is skipped like a path of a plain
+  `include`; the earlier paths with its name are still not read.
+* Any other path is loaded exactly like a file of a plain `include`: files
+  which were already loaded are skipped, and files which cannot be read or
+  contain errors are reported.
+
+The competition only takes place between the paths of one `include --override`
+line. Files named by different lines, or by `include` directives within the
+loaded files, never replace each other. Everything is decided anew whenever
+the configuration is loaded, so added, removed or changed files take effect
+when reloading or restarting i3.
 
 === Comments
 

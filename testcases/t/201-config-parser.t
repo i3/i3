@@ -500,6 +500,24 @@ is(parser_calls($config),
    'colors ok');
 
 ################################################################################
+# include, with and without --override
+################################################################################
+
+$config = <<'EOT';
+include ~/.config/i3/config.d/*
+include --override /usr/share/i3/config.d/* ~/.config/i3/config.d/*
+EOT
+
+$expected = <<'EOT';
+cfg_include((null), ~/.config/i3/config.d/*)
+cfg_include(--override, /usr/share/i3/config.d/* ~/.config/i3/config.d/*)
+EOT
+
+is(parser_calls($config),
+   $expected,
+   'include with and without --override ok');
+
+################################################################################
 # Verify that errors don’t harm subsequent valid statements
 ################################################################################
 
