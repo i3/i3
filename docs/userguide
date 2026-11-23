@@ -3106,11 +3106,19 @@ There are two commands to use any existing window as scratchpad window. +move
 scratchpad+ will move a window to the scratchpad workspace. This will make it
 invisible until you show it again. There is no way to open that workspace.
 Instead, when using +scratchpad show+, the window will be shown again, as a
-floating window, centered on your current workspace (using +scratchpad show+ on
+floating window, centered on your current workspace (using +scratchpad show+ with
 a visible scratchpad window will make it hidden again, so you can have a
 keybinding to toggle). Note that this is just a normal floating window, so if
 you want to "remove it from scratchpad", you can simple make it tiling again
 (+floating toggle+).
+
+If you have multiple windows in the scratchpad, repeated calls to +scratchpad
+show+ will first show the window which has been in the scratchpad the longest,
+then hide it, then show the window which now have been in the scratchpad the
+longest, and hide that, and so on.  In essence you will be cycling through all
+the scratchpad windows.  Small exception: if a scratchpad window is visible on
+an output other than the focused output, the scratchpad window will not be
+hidden, but instead move to the focused output.
 
 As the name indicates, this is useful for having a window with your favorite
 editor always at hand. However, you can also use this for other permanently
@@ -3129,10 +3137,10 @@ scratchpad show
 # Make the currently focused window a scratchpad
 bindsym $mod+Shift+minus move scratchpad
 
-# Show the first scratchpad window
+# Show (or hide) the first scratchpad window
 bindsym $mod+minus scratchpad show
 
-# Show the sup-mail scratchpad window, if any.
+# Show (or hide) the sup-mail scratchpad window, if any.
 bindsym mod4+s [title="^Sup ::"] scratchpad show
 ------------------------------------------------
 
