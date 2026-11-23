@@ -100,10 +100,18 @@ state SMART_GAPS:
   enabled = 'inverse_outer'
       -> call cfg_smart_gaps($enabled)
 
-# include <pattern>
+# include [--override] <pattern>
+# The flag counts only as written: in lower case, as a whole word, once, and not
+# from a variable (see include_override_flag() in src/config_parser.c).
 state INCLUDE:
+  override = '--override'
+      -> INCLUDE_OVERRIDE
   pattern = string
-      -> call cfg_include($pattern)
+      -> call cfg_include($override, $pattern)
+
+state INCLUDE_OVERRIDE:
+  pattern = string
+      -> call cfg_include($override, $pattern)
 
 # floating_minimum_size <width> x <height>
 state FLOATING_MINIMUM_SIZE_WIDTH:

@@ -15,8 +15,444 @@
  * Include functions.
  ******************************************************************************/
 
-CFGFUN(include, const char *pattern) {
-    DLOG("include %s\n", pattern);
+/*
+ * A list of strings, used for the names which an include --override line
+ * switches off.
+ *
+ */
+struct string_list {
+    char **items;
+    size_t count;
+};
+
+static bool string_list_contains(const struct string_list *list, const char *item) {
+    for (size_t i = 0; i < list->count; i++) {
+        if (strcmp(list->items[i], item) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void string_list_add(struct string_list *list, const char *item) {
+    if (string_list_contains(list, item)) {
+        return;
+    }
+    list->items = srealloc(list->items, (list->count + 1) * sizeof(char *));
+    list->items[list->count++] = sstrdup(item);
+}
+
+static void string_list_free(struct string_list *list) {
+    for (size_t i = 0; i < list->count; i++) {
+        free(list->items[i]);
+    }
+    FREE(list->items);
+    list->count = 0;
+}
+
+/*
+ * A list of files, used for the files which an include --override line sets
+ * aside. Files are identified by their device and inode numbers, so that a
+ * file is recognized however it is named: by another path, through a symbolic
+ * link or by a hard link.
+ *
+ */
+struct file_list {
+    struct file_id {
+        dev_t dev;
+        ino_t ino;
+    } *items;
+    size_t count;
+};
+
+static bool file_list_contains(const struct file_list *list, const struct stat *st) {
+    for (size_t i = 0; i < list->count; i++) {
+        if (list->items[i].dev == st->st_dev && list->items[i].ino == st->st_ino) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void file_list_add(struct file_list *list, const struct stat *st) {
+    if (file_list_contains(list, st)) {
+        return;
+    }
+    list->items = srealloc(list->items, (list->count + 1) * sizeof(struct file_id));
+    list->items[list->count].dev = st->st_dev;
+    list->items[list->count].ino = st->st_ino;
+    list->count++;
+}
+
+static void file_list_add_all(struct file_list *list, const struct file_list *other) {
+    for (size_t i = 0; i < other->count; i++) {
+        struct stat st = {
+            .st_dev = other->items[i].dev,
+            .st_ino = other->items[i].ino,
+        };
+        file_list_add(list, &st);
+    }
+}
+
+static void file_list_free(struct file_list *list) {
+    FREE(list->items);
+    list->count = 0;
+}
+
+/*
+ * An include --override line whose selected files are currently being read.
+ *
+ * Until the reading started by the line has finished (including all files
+ * included from the selected files, at any depth), the files which lost their
+ * name on the line and the names which are switched off are not read again
+ * below it.
+ *
+ * Files which lost their name, and names which were switched off, on an
+ * include --override line read below it are set aside in the same way for the
+ * rest of its reading: for its selected files which are still pending, and for
+ * every include directive reached afterwards. The files which a plain include
+ * line has already chosen are still read (see include_plain()).
+ *
+ */
+struct override_scope {
+    /* Files which lost their name on this line. */
+    struct file_list displaced;
+    /* Files which lost their name on an include --override line read below
+     * this line. */
+    struct file_list displaced_below;
+    /* Names switched off by this line, or by an include --override line read
+     * below it. */
+    struct string_list disabled;
+
+    SLIST_ENTRY(override_scope) scopes;
+};
+
+/* The include --override lines currently being read, innermost first. */
+static SLIST_HEAD(override_scopes_head, override_scope) override_scopes =
+    SLIST_HEAD_INITIALIZER(override_scopes);
+
+/*
+ * Returns the name of a path named by an include directive: its final
+ * component as written (before following symbolic links), ignoring trailing
+ * slashes. In include --override, paths compete under this name.
+ *
+ */
+static char *include_name(const char *path) {
+    size_t len = strlen(path);
+    while (len > 1 && path[len - 1] == '/') {
+        len--;
+    }
+    size_t start = len;
+    while (start > 0 && path[start - 1] != '/') {
+        start--;
+    }
+    if (start == len) {
+        /* The path consists only of slashes. */
+        return sstrdup("/");
+    }
+    return sstrndup(path + start, len - start);
+}
+
+/*
+ * Returns true if the given name was switched off by an include --override
+ * line which is still being read.
+ *
+ */
+static bool include_name_disabled(const char *name) {
+    struct override_scope *scope;
+    SLIST_FOREACH (scope, &override_scopes, scopes) {
+        if (string_list_contains(&(scope->disabled), name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+ * Returns true if the given file is set aside for the include --override line
+ * of the given scope: because it lost its name on a line enclosing it, or on
+ * a line read below it or below an enclosing line. The files which lost their
+ * name on the line of the scope itself are not considered: they only stay set
+ * aside below that line, not among its own selected files.
+ *
+ */
+static bool include_file_displaced(const struct stat *st, const struct override_scope *own) {
+    struct override_scope *scope;
+    SLIST_FOREACH (scope, &override_scopes, scopes) {
+        if ((scope != own && file_list_contains(&(scope->displaced), st)) ||
+            file_list_contains(&(scope->displaced_below), st)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+ * Reads one configuration file named by an include directive, given its
+ * resolved path. Files which were already read while loading this
+ * configuration are skipped.
+ *
+ */
+static void include_file(struct ConfigResultIR *result, const char *resolved_path) {
+    IncludedFile *file;
+    TAILQ_FOREACH (file, &included_files, files) {
+        if (strcmp(file->path, resolved_path) == 0) {
+            LOG("Skipping file %s (already included)\n", resolved_path);
+            return;
+        }
+    }
+
+    LOG("Including config file %s\n", resolved_path);
+
+    file = scalloc(1, sizeof(IncludedFile));
+    file->path = sstrdup(resolved_path);
+    TAILQ_INSERT_TAIL(&included_files, file, files);
+
+    struct stack stack = {0};
+    struct parser_ctx ctx = {
+        .use_nagbar = result->ctx->use_nagbar,
+        .stack = &stack,
+        .variables = result->ctx->variables,
+    };
+    switch (parse_file(&ctx, resolved_path, file)) {
+        case PARSE_FILE_SUCCESS:
+            break;
+
+        case PARSE_FILE_FAILED:
+            ELOG("including config file %s: %s\n", resolved_path, strerror(errno));
+            /* fallthrough */
+
+        case PARSE_FILE_CONFIG_ERRORS:
+            result->has_errors = true;
+            TAILQ_REMOVE(&included_files, file, files);
+            FREE(file->path);
+            FREE(file->raw_contents);
+            FREE(file->variable_replaced_contents);
+            FREE(file);
+            break;
+
+        default:
+            /* missing case statement */
+            assert(false);
+    }
+    result->ctx->variables = ctx.variables; /* In case head was modified */
+}
+
+/*
+ * Handles a plain include: every expanded path which exists is read, in the
+ * order of the expansion, and resolved only when its turn comes. Paths set
+ * aside by an include --override line which is still being read are skipped
+ * without an error. What is set aside, by name or as a file, is taken
+ * as it is when the line is reached: what an include --override line read
+ * below the first paths sets aside does not affect the later paths.
+ *
+ */
+static void include_plain(struct ConfigResultIR *result, char **words, size_t count) {
+    bool *disabled = scalloc(count == 0 ? 1 : count, sizeof(bool));
+    for (size_t i = 0; i < count; i++) {
+        char *name = include_name(words[i]);
+        disabled[i] = include_name_disabled(name);
+        free(name);
+    }
+    struct file_list displaced = {0};
+    struct override_scope *scope;
+    SLIST_FOREACH (scope, &override_scopes, scopes) {
+        file_list_add_all(&displaced, &(scope->displaced));
+        file_list_add_all(&displaced, &(scope->displaced_below));
+    }
+
+    for (size_t i = 0; i < count; i++) {
+        if (disabled[i]) {
+            LOG("Skipping %s (masked by include --override)\n", words[i]);
+            continue;
+        }
+
+        char resolved_path[PATH_MAX] = {'\0'};
+        if (realpath(words[i], resolved_path) == NULL) {
+            LOG("Skipping %s: %s\n", words[i], strerror(errno));
+            continue;
+        }
+        struct stat st;
+        if (stat(resolved_path, &st) == 0 && file_list_contains(&displaced, &st)) {
+            LOG("Skipping %s (overridden by include --override)\n", words[i]);
+            continue;
+        }
+
+        include_file(result, resolved_path);
+    }
+    file_list_free(&displaced);
+    free(disabled);
+}
+
+/*
+ * An entry of include --override: the name a path competes under, the path
+ * (as produced by word expansion) which currently holds that name, whether
+ * that path is itself a symbolic link and, once the winners are known, the
+ * resolved path of the winner (NULL if it cannot be read: it leads to
+ * /dev/null, it is a link whose target is missing, or it cannot be resolved).
+ *
+ */
+struct override_entry {
+    char *name;
+    const char *path;
+    bool link;
+    char *resolved_path;
+};
+
+static int override_entry_cmp(const void *a, const void *b) {
+    const struct override_entry *first = a;
+    const struct override_entry *second = b;
+    /* strcmp() compares bytes, independent of the locale. */
+    return strcmp(first->name, second->name);
+}
+
+/*
+ * Sets aside a file which lost its name on the include --override line of
+ * the given scope: below that line, and for the rest of the reading of all
+ * enclosing lines.
+ *
+ */
+static void override_displace(struct override_scope *scope, const struct stat *st) {
+    file_list_add(&(scope->displaced), st);
+    for (struct override_scope *enclosing = SLIST_NEXT(scope, scopes);
+         enclosing != NULL;
+         enclosing = SLIST_NEXT(enclosing, scopes)) {
+        file_list_add(&(enclosing->displaced_below), st);
+    }
+}
+
+/*
+ * Switches off a name for the reading of every include --override line still
+ * being read: the innermost line (whose winner switched the name off) and all
+ * enclosing lines, whose selected files of that name have not been read yet.
+ *
+ */
+static void override_disable(const char *name) {
+    struct override_scope *scope;
+    SLIST_FOREACH (scope, &override_scopes, scopes) {
+        string_list_add(&(scope->disabled), name);
+    }
+}
+
+/*
+ * Returns true if a selected file of the include --override line of the given
+ * scope is to be passed over when its turn comes: its name was switched off
+ * or the file was set aside, either by an enclosing line, or in the meantime
+ * by an include --override line read below this line.
+ *
+ */
+static bool override_pending_skipped(const struct override_scope *scope, const struct override_entry *entry) {
+    if (include_name_disabled(entry->name)) {
+        return true;
+    }
+    struct stat st;
+    return (stat(entry->resolved_path, &st) == 0 && include_file_displaced(&st, scope));
+}
+
+/*
+ * Handles include --override: among all expanded paths sharing a name (see
+ * include_name()), only the last one wins. A winner resolving to /dev/null
+ * (e.g. a symlink) or a dangling symlink switches the name off without reading
+ * anything. The remaining winners are read in byte order of their names.
+ *
+ * While the winners are read, the displaced files and the names switched off
+ * stay set aside for everything included from them, and for the rest of the
+ * reading of the enclosing lines (see struct override_scope).
+ *
+ */
+static void include_override(struct ConfigResultIR *result, char **words, size_t count) {
+    struct override_scope *scope = scalloc(1, sizeof(struct override_scope));
+    SLIST_INSERT_HEAD(&override_scopes, scope, scopes);
+
+    struct override_entry *entries = scalloc(count == 0 ? 1 : count, sizeof(struct override_entry));
+    size_t n = 0;
+    for (size_t i = 0; i < count; i++) {
+        /* lstat() so that dangling symbolic links take part. */
+        struct stat st;
+        if (lstat(words[i], &st) == -1) {
+            LOG("Skipping %s: %s\n", words[i], strerror(errno));
+            continue;
+        }
+
+        const bool link = S_ISLNK(st.st_mode);
+        char *name = include_name(words[i]);
+        size_t j;
+        for (j = 0; j < n; j++) {
+            if (strcmp(entries[j].name, name) == 0) {
+                break;
+            }
+        }
+        if (j < n) {
+            /* A later path takes the place of an earlier one, whose file stays
+             * set aside, however it is named again. */
+            LOG("Skipping %s (overridden by %s)\n", entries[j].path, words[i]);
+            char resolved_path[PATH_MAX] = {'\0'};
+            if (realpath(entries[j].path, resolved_path) != NULL &&
+                stat(resolved_path, &st) == 0) {
+                override_displace(scope, &st);
+            }
+            entries[j].path = words[i];
+            entries[j].link = link;
+            free(name);
+        } else {
+            entries[n].name = name;
+            entries[n].path = words[i];
+            entries[n].link = link;
+            n++;
+        }
+    }
+
+    qsort(entries, n, sizeof(struct override_entry), override_entry_cmp);
+
+    /* Names whose winner leads nowhere are switched off before any file is
+     * read, so that they also stay off in files read before them. Only a link
+     * whose target is missing does that: any other path which cannot be
+     * resolved (a link loop, a directory which may not be searched, a name
+     * too long) is skipped as a plain include skips it, and its name stays
+     * on. */
+    for (size_t i = 0; i < n; i++) {
+        char resolved_path[PATH_MAX] = {'\0'};
+        if (realpath(entries[i].path, resolved_path) == NULL) {
+            const int error = errno;
+            if (entries[i].link && (error == ENOENT || error == ENOTDIR)) {
+                LOG("Skipping %s (masked): %s\n", entries[i].path, strerror(error));
+                override_disable(entries[i].name);
+            } else {
+                LOG("Skipping %s: %s\n", entries[i].path, strerror(error));
+            }
+        } else if (strcmp(resolved_path, "/dev/null") == 0) {
+            LOG("Skipping %s (masked by /dev/null)\n", entries[i].path);
+            override_disable(entries[i].name);
+        } else {
+            entries[i].resolved_path = sstrdup(resolved_path);
+        }
+    }
+
+    for (size_t i = 0; i < n; i++) {
+        if (entries[i].resolved_path == NULL) {
+            /* Masked or not resolvable, see above. */
+        } else if (override_pending_skipped(scope, &entries[i])) {
+            LOG("Skipping %s (masked or overridden by include --override)\n", entries[i].path);
+        } else {
+            include_file(result, entries[i].resolved_path);
+        }
+        free(entries[i].name);
+        free(entries[i].resolved_path);
+    }
+    free(entries);
+
+    SLIST_REMOVE_HEAD(&override_scopes, scopes);
+    file_list_free(&(scope->displaced));
+    file_list_free(&(scope->displaced_below));
+    string_list_free(&(scope->disabled));
+    free(scope);
+}
+
+CFGFUN(include, const char *override, const char *pattern) {
+    /* The variables in the patterns of an include --override line were
+     * filled in when the parser reached the line (see parse_config()), from
+     * the values given in the files read so far. */
+    DLOG("include %s%s\n", (override ? "--override " : ""), pattern);
 
     wordexp_t p;
     const int ret = wordexp(pattern, &p, 0);
@@ -25,61 +461,10 @@ CFGFUN(include, const char *pattern) {
         result->has_errors = true;
         return;
     }
-    char **w = p.we_wordv;
-    for (size_t i = 0; i < p.we_wordc; i++) {
-        char resolved_path[PATH_MAX] = {'\0'};
-        if (realpath(w[i], resolved_path) == NULL) {
-            LOG("Skipping %s: %s\n", w[i], strerror(errno));
-            continue;
-        }
-
-        bool skip = false;
-        IncludedFile *file;
-        TAILQ_FOREACH (file, &included_files, files) {
-            if (strcmp(file->path, resolved_path) == 0) {
-                skip = true;
-                break;
-            }
-        }
-        if (skip) {
-            LOG("Skipping file %s (already included)\n", resolved_path);
-            continue;
-        }
-
-        LOG("Including config file %s\n", resolved_path);
-
-        file = scalloc(1, sizeof(IncludedFile));
-        file->path = sstrdup(resolved_path);
-        TAILQ_INSERT_TAIL(&included_files, file, files);
-
-        struct stack stack = {0};
-        struct parser_ctx ctx = {
-            .use_nagbar = result->ctx->use_nagbar,
-            .stack = &stack,
-            .variables = result->ctx->variables,
-        };
-        switch (parse_file(&ctx, resolved_path, file)) {
-            case PARSE_FILE_SUCCESS:
-                break;
-
-            case PARSE_FILE_FAILED:
-                ELOG("including config file %s: %s\n", resolved_path, strerror(errno));
-                /* fallthrough */
-
-            case PARSE_FILE_CONFIG_ERRORS:
-                result->has_errors = true;
-                TAILQ_REMOVE(&included_files, file, files);
-                FREE(file->path);
-                FREE(file->raw_contents);
-                FREE(file->variable_replaced_contents);
-                FREE(file);
-                break;
-
-            default:
-                /* missing case statement */
-                assert(false);
-        }
-        result->ctx->variables = ctx.variables; /* In case head was modified */
+    if (override) {
+        include_override(result, p.we_wordv, p.we_wordc);
+    } else {
+        include_plain(result, p.we_wordv, p.we_wordc);
     }
     wordfree(&p);
 }

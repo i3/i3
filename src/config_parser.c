@@ -140,6 +140,62 @@ static char *single_line(const char *start) {
     return result;
 }
 
+/*
+ * Returns true if the n bytes at the given position of the input of
+ * parse_config() were copied as they are from the file which is being parsed,
+ * one after the other, and not from the value of a variable (see
+ * replace_variables()). Without a file (the input is a string), every byte
+ * counts as written.
+ *
+ */
+static bool config_written(const struct parser_ctx *ctx, const char *input, const char *walk, size_t n) {
+    if (ctx->origins == NULL) {
+        return true;
+    }
+    const ssize_t *origins = ctx->origins + (walk - input);
+    for (size_t i = 0; i < n; i++) {
+        if (origins[i] < 0 || origins[i] != origins[0] + (ssize_t)i) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/*
+ * Returns true if the given position, which directly follows the include
+ * keyword or the spaces and tabs after it, holds the --override flag.
+ *
+ * The flag is written in lower case, as a whole word: it has to be separated
+ * from the include keyword by a space or tab, and be followed by a space, a
+ * tab or the end of the line, so that a word which merely starts with it,
+ * such as --override.conf, or is spelled differently, such as --OVERRIDE,
+ * stays a pattern of a plain include. It also has to be written in the file
+ * as it is: a flag which comes from the value of a variable is a pattern of a
+ * plain include, too.
+ *
+ */
+static bool include_override_flag(const struct parser_ctx *ctx, const char *input, const char *walk) {
+    static const char override[] = "--override";
+    const size_t len = strlen(override);
+
+    if (walk == input || (walk[-1] != ' ' && walk[-1] != '\t')) {
+        return false;
+    }
+    if (strncmp(walk, override, len) != 0) {
+        return false;
+    }
+    const char after = walk[len];
+    if (after != ' ' && after != '\t' && after != '\r' && after != '\n' && after != '\0') {
+        return false;
+    }
+    /* The blank before the flag, the flag and what follows it. */
+    return config_written(ctx, input, walk - 1, len + (after == '\0' ? 1 : 2));
+}
+
+#ifndef TEST_PARSER
+static const char *include_override_fill(struct parser_ctx *ctx, const char **input, const char *walk);
+#endif
+
 static void parse_config(struct parser_ctx *ctx, const char *input, struct context *context) {
     /* Dump the entire config file into the debug log. We cannot just use
      * DLOG("%s", input); because one log message must not exceed 4 KiB. */
@@ -163,7 +219,7 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
     ctx->statelist_idx = 1;
 
     const char *walk = input;
-    const size_t len = strlen(input);
+    size_t len = strlen(input);
     int c;
     const cmdp_token *token;
     bool token_handled;
@@ -192,11 +248,22 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
 
             /* A literal. */
             if (token->name[0] == '\'') {
-                if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
+                /* The only literal of include is its --override flag, which
+                 * counts only as written (see include_override_flag()). */
+                if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0 &&
+                    (ctx->state != INCLUDE || include_override_flag(ctx, input, walk))) {
                     if (token->identifier != NULL) {
                         parser_push_string(ctx->stack, token->identifier, token->name + 1);
                     }
                     walk += strlen(token->name) - 1;
+#ifndef TEST_PARSER
+                    if (ctx->state == INCLUDE) {
+                        /* Fill in the variables of the patterns now that the
+                         * line is reached. */
+                        walk = include_override_fill(ctx, &input, walk);
+                        len = strlen(input);
+                    }
+#endif
                     next_state(token, ctx);
                     token_handled = true;
                     break;
@@ -232,6 +299,12 @@ static void parse_config(struct parser_ctx *ctx, const char *input, struct conte
 
             if (strcmp(token->name, "string") == 0 ||
                 strcmp(token->name, "word") == 0) {
+                /* A comment directly after the --override flag of include
+                 * leaves the flag on its own, which is an error. */
+                if (ctx->state == INCLUDE_OVERRIDE && *walk == '#' &&
+                    config_written(ctx, input, walk, 1)) {
+                    continue;
+                }
                 const char *beginning = walk;
                 /* Handle quoted strings (or words). */
                 if (*walk == '"') {
@@ -606,6 +679,170 @@ void free_variables(struct parser_ctx *ctx) {
     }
 }
 
+/*
+ * Returns a newly allocated copy of the len bytes at input in which every
+ * occurrence of a variable (compared case-insensitively) is replaced by its
+ * value. Where the name of one variable is the beginning of another, the
+ * longer one is replaced (see upsert_variable()). A value is not searched for
+ * further variables.
+ *
+ * If origins is not NULL, it is set to a newly allocated array which holds,
+ * for every byte of the result, the offset of the input byte it was copied
+ * from, plus base, or -1 for the bytes of a value.
+ *
+ */
+static char *replace_variables(struct variables_head *variables, const char *input, size_t len,
+                               ssize_t base, ssize_t **origins) {
+    char *copy = sstrndup(input, len);
+    len = strlen(copy);
+
+    size_t size = len + 1;
+    char *result = smalloc(size);
+    ssize_t *result_origins = smalloc(size * sizeof(ssize_t));
+    size_t result_len = 0;
+
+    const char *walk = copy;
+    while (*walk != '\0') {
+        /* Find the next variable. */
+        struct Variable *current;
+        const struct Variable *nearest = NULL;
+        size_t distance = strlen(walk);
+        SLIST_FOREACH (current, variables, variables) {
+            const char *match = strcasestr(walk, current->key);
+            if (match != NULL && (size_t)(match - walk) < distance) {
+                distance = (match - walk);
+                nearest = current;
+            }
+        }
+
+        /* Copy until the next variable, then copy its value. */
+        const size_t value_len = (nearest != NULL ? strlen(nearest->value) : 0);
+        if (result_len + distance + value_len + 1 > size) {
+            size = result_len + distance + value_len + 1 + len;
+            result = srealloc(result, size);
+            result_origins = srealloc(result_origins, size * sizeof(ssize_t));
+        }
+        for (size_t i = 0; i < distance; i++) {
+            result[result_len] = walk[i];
+            result_origins[result_len++] = base + (ssize_t)(walk - copy) + (ssize_t)i;
+        }
+        walk += distance;
+        if (nearest == NULL) {
+            break;
+        }
+        for (size_t i = 0; i < value_len; i++) {
+            result[result_len] = nearest->value[i];
+            result_origins[result_len++] = -1;
+        }
+        walk += strlen(nearest->key);
+    }
+    result[result_len] = '\0';
+    result_origins[result_len] = -1;
+    free(copy);
+
+    if (origins != NULL) {
+        *origins = result_origins;
+    } else {
+        free(result_origins);
+    }
+    return result;
+}
+
+/*
+ * Replaces the bytes from offset from to offset to of the contents which are
+ * being parsed by the given text, whose bytes come from the given origins (see
+ * replace_variables()).
+ *
+ */
+static void config_splice(struct parser_ctx *ctx, size_t from, size_t to, const char *text, const ssize_t *text_origins) {
+    const size_t len = strlen(ctx->contents);
+    const size_t text_len = strlen(text);
+    const size_t new_len = len - (to - from) + text_len;
+
+    char *contents = smalloc(new_len + 1);
+    ssize_t *origins = smalloc((new_len + 1) * sizeof(ssize_t));
+    memcpy(contents, ctx->contents, from);
+    memcpy(origins, ctx->origins, from * sizeof(ssize_t));
+    memcpy(contents + from, text, text_len);
+    memcpy(origins + from, text_origins, text_len * sizeof(ssize_t));
+    memcpy(contents + from + text_len, ctx->contents + to, len - to + 1);
+    memcpy(origins + from + text_len, ctx->origins + to, (len - to + 1) * sizeof(ssize_t));
+
+    free(ctx->contents);
+    free(ctx->origins);
+    ctx->contents = contents;
+    ctx->origins = origins;
+}
+
+/*
+ * Returns true if the pattern which starts at the given position (after the
+ * spaces and tabs before it) is a quoted string which is still open at the
+ * position end, matching the quoted strings of parse_config().
+ *
+ */
+static bool include_quote_open(const char *walk, const char *end) {
+    walk += strspn(walk, " \t");
+    if (walk >= end || *walk != '"') {
+        return false;
+    }
+    walk++;
+    while (walk < end && (*walk != '"' || *(walk - 1) == '\\')) {
+        walk++;
+    }
+    return (walk == end);
+}
+
+/*
+ * Called by parse_config() when it reaches the --override flag of an include
+ * line, with the position after the flag. Fills in the variables of the rest
+ * of the line as they are now, from the text written in the file, so that a
+ * file read earlier can define where later files are found. Until then, the
+ * line held the values in place when the file was opened, like every other
+ * line.
+ *
+ * The rest of the line is filled in up to its line terminator. If it starts a
+ * quoted string which is still open there, the following lines are filled in
+ * too, up to the one in which the string ends. The patterns are then taken from
+ * the filled-in text exactly as from any other include line, and the contents
+ * keep the line as it was filled in, for the variable-replaced contents of the
+ * file. Returns the position after the flag in the changed contents, which
+ * are also stored in input.
+ *
+ */
+static const char *include_override_fill(struct parser_ctx *ctx, const char **input, const char *walk) {
+    if (ctx->origins == NULL) {
+        return walk;
+    }
+    const size_t start = walk - *input;
+    /* The flag was written in the file (see include_override_flag()). */
+    ssize_t raw = ctx->origins[start - 1] + 1;
+    size_t pos = start;
+    while (true) {
+        const ssize_t raw_end = raw + strcspn(ctx->raw + raw, "\r\n");
+        size_t end = pos;
+        while (ctx->contents[end] != '\0' && ctx->origins[end] != raw_end) {
+            end++;
+        }
+
+        ssize_t *filled_origins;
+        char *filled = replace_variables(&(ctx->variables), ctx->raw + raw, raw_end - raw, raw, &filled_origins);
+        config_splice(ctx, pos, end, filled, filled_origins);
+        pos += strlen(filled);
+        free(filled);
+        free(filled_origins);
+
+        if (ctx->contents[pos] == '\0' ||
+            !include_quote_open(ctx->contents + start, ctx->contents + pos)) {
+            break;
+        }
+        /* The line terminator is part of the quoted string. */
+        raw = raw_end + 1;
+        pos++;
+    }
+    *input = ctx->contents;
+    return ctx->contents + start;
+}
+
 static bool try_chdir(const char *path) {
     bool result = true;
     char *dir = NULL;
@@ -752,75 +989,26 @@ static parse_file_result_t parse_file_inner(struct parser_ctx *ctx, const char *
         database = NULL;
     }
 
-    /* For every custom variable, see how often it occurs in the file and
-     * how much extra bytes it requires when replaced. */
-    struct Variable *current;
-    int extra_bytes = 0;
-    /* We need to copy the buffer because we need to invalidate the
-     * variables (otherwise we will count them twice, which is bad when
-     * 'extra' is negative) */
-    char *bufcopy = sstrdup(buf);
-    SLIST_FOREACH (current, &(ctx->variables), variables) {
-        const int extra = (strlen(current->value) - strlen(current->key));
-        for (char *next = bufcopy;
-             next < (bufcopy + stbuf.st_size) &&
-             (next = strcasestr(next, current->key)) != NULL;) {
-            /* We need to invalidate variables completely (otherwise we may count
-             * the same variable more than once, thus causing buffer overflow or
-             * allocation failure) with spaces (variable names cannot contain spaces) */
-            const char *end = next + strlen(current->key);
-            while (next < end) {
-                *next++ = ' ';
-            }
-            extra_bytes += extra;
-        }
-    }
-    FREE(bufcopy);
-
-    /* Then, allocate a new buffer and copy the file over to the new one,
-     * but replace occurrences of our variables */
-    const char *walk = buf;
-    char *new = scalloc(stbuf.st_size + extra_bytes + 1, 1);
-    char *destwalk = new;
-    while (walk < (buf + stbuf.st_size)) {
-        /* Find the next variable */
-        SLIST_FOREACH (current, &(ctx->variables), variables) {
-            current->next_match = strcasestr(walk, current->key);
-        }
-        const struct Variable *nearest = NULL;
-        int distance = stbuf.st_size;
-        SLIST_FOREACH (current, &(ctx->variables), variables) {
-            if (current->next_match == NULL) {
-                continue;
-            }
-            if ((current->next_match - walk) < distance) {
-                distance = (current->next_match - walk);
-                nearest = current;
-            }
-        }
-        if (nearest == NULL) {
-            /* If there are no more variables, we just copy the rest */
-            strncpy(destwalk, walk, (buf + stbuf.st_size) - walk);
-            destwalk += (buf + stbuf.st_size) - walk;
-            *destwalk = '\0';
-            break;
-        } else {
-            /* Copy until the next variable, then copy its value */
-            strncpy(destwalk, walk, distance);
-            strcpy(destwalk + distance, nearest->value);
-            walk += distance + strlen(nearest->key);
-            destwalk += distance + strlen(nearest->value);
-        }
-    }
-
-    included_file->variable_replaced_contents = sstrdup(new);
+    /* Replace the variables in the whole file. The patterns of include
+     * --override lines are filled in again when the parser reaches them (see
+     * include_override_fill()), so the parser keeps the written text and,
+     * for every byte, where it came from. */
+    ctx->raw = buf;
+    ctx->contents = replace_variables(&(ctx->variables), buf, strlen(buf), 0, &(ctx->origins));
 
     struct context *context = scalloc(1, sizeof(struct context));
     context->filename = f;
-    parse_config(ctx, new, context);
+    parse_config(ctx, ctx->contents, context);
     if (ctx->has_errors) {
         context->has_errors = true;
     }
+
+    /* Every include --override line which was reached appears as it was
+     * filled in at that point. */
+    included_file->variable_replaced_contents = ctx->contents;
+    ctx->contents = NULL;
+    FREE(ctx->origins);
+    ctx->raw = NULL;
 
     check_for_duplicate_bindings(context);
 
@@ -833,7 +1021,6 @@ static parse_file_result_t parse_file_inner(struct parser_ctx *ctx, const char *
 
     FREE(context->line_copy);
     free(context);
-    free(new);
     free(buf);
 
     if (has_errors) {

@@ -41,6 +41,15 @@ struct parser_ctx {
 
     struct variables_head variables;
 
+    /* The contents of the file which is being parsed, as written (after line
+     * continuations are joined). */
+    const char *raw;
+    /* The contents which are being parsed, with the variables replaced. */
+    char *contents;
+    /* For every byte of contents, the offset of the byte of raw it was copied
+     * from, or -1 if it is part of the value of a variable. */
+    ssize_t *origins;
+
     bool has_errors;
 };
 
