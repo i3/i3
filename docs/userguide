@@ -530,6 +530,62 @@ loaded files, never replace each other. Everything is decided anew whenever
 the configuration is loaded, so added, removed or changed files take effect
 when reloading or restarting i3.
 
+While the files selected by an `include --override` line are being loaded
+(including all files they include in turn, at any depth), the decisions of the
+line stay in effect below it:
+
+* A file which lost its name on the line is not loaded by any `include`
+  directive below the line, regardless of how it is named there: by another
+  path, through a symbolic link, by a hard link, or relative to the including
+  file.
+* A name which the line disabled using `/dev/null` or a dangling symbolic link
+  stays disabled below the line: no path with that name is loaded by any
+  `include` directive below it. Only the name as written counts: a path with a
+  different name is loaded, even if it is a symbolic link to a file with the
+  disabled name. A symbolic link which cannot be followed for another reason
+  (such as a loop) does not disable its name.
+* Paths skipped for either reason are skipped without an error, even if they
+  could not be read or contain errors.
+* An empty file does not disable its name below the line; only the files it
+  replaced are skipped.
+
+When an `include --override` line nested below another one disables a name
+using `/dev/null` or a dangling symbolic link, the name also stays disabled for
+every enclosing `include --override` line which is still being loaded: a
+selected file with that name which is still pending (not yet loaded) is
+skipped. Files which were already loaded are not affected, and an empty file
+does not have this effect. This also applies through a plain `include` in
+between, but a plain `include` decides which of its paths to load when i3
+reaches it: the files it named are still loaded, even if a line below it
+disables their name.
+
+In the same way, when an `include --override` line nested below another one
+(directly or through other `include` directives) replaces a file, the replaced
+file stays skipped for every enclosing `include --override` line which is still
+being loaded: if such a line selected that file and has not loaded it yet, it
+is skipped, however the enclosing line named it (by another path, through a
+symbolic link or by a hard link). Only that file is skipped, not a different
+file with the same name, and this also holds when the replacing file is empty.
+As with disabled names, the files named by a plain `include` in between are
+still loaded. Without this, a shipped file which a nested line replaced would
+still be loaded afterwards, and the key bindings of both files would be
+reported as duplicates.
+
+These decisions end when the files selected by the line have been loaded: a
+later line which names the same files again decides on its own.
+
+*Example*:
+--------------------------------------------------------------------------------
+# ~/.config/i3/config
+include --override /usr/share/i3/config.d/* ~/.config/i3/config.d/*
+
+# ~/.config/i3/config.d/50-workspaces
+include ~/.config/i3/extra/*
+
+# ~/.config/i3/extra/60-bar is not loaded, because 60-bar is disabled by the
+# include --override line above, which is still being loaded.
+--------------------------------------------------------------------------------
+
 === Comments
 
 It is possible and recommended to use comments in your configuration file to

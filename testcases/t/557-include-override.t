@@ -17,7 +17,9 @@
 # Verifies the include --override directive: among the files matched by one
 # line, the last file with a given name wins, empty files and links to
 # /dev/null disable a name, and the winners are loaded in byte order. The flag
-# counts only in lower case and as a whole word.
+# counts only in lower case and as a whole word. While the winners are loaded,
+# displaced files and disabled names stay skipped below the line, and for the
+# pending winners of enclosing lines.
 #
 use File::Temp qw(tempfile tempdir);
 use Cwd qw(abs_path);
@@ -213,5 +215,158 @@ EOT
 ($ret, $out) = check_config($config);
 is($ret, 0, 'a looping link replaces the file of its name');
 is($out, '', 'no errors for a looping link');
+
+################################################################################
+# While the files selected by a line are loaded, displaced files and disabled
+# names are not loaded again below it, and a nested line disabling a name
+# skips the pending files of that name of enclosing lines.
+################################################################################
+
+my $ssys = "$dir/scope-sys";
+my $suser = "$dir/scope-user";
+my $nested = "$dir/nested";
+my $masks = "$dir/masks";
+mkdir $ssys;
+mkdir $suser;
+mkdir $nested;
+mkdir $masks;
+
+write_file("$ssys/20-b", "this_is_not_a_directive\n");
+write_file("$suser/20-b", "set \$unused b\n");
+write_file("$ssys/40-null", "this_is_not_a_directive\n");
+symlink('/dev/null', "$suser/40-null");
+symlink("$ssys/20-b", "$nested/alias");
+write_file("$nested/40-null", "set \$unused nested\n");
+write_file("$suser/10-entry", "include $nested/alias\ninclude $nested/40-null\n");
+
+$config = <<EOT;
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+include --override $ssys/* $suser/*
+EOT
+
+is_deeply(included_files($config),
+    [ "$suser/10-entry", "$suser/20-b" ],
+    'displaced files and disabled names are not loaded below the line');
+
+($ret, $out) = check_config($config);
+is($ret, 0, 'displaced files are not read below the line');
+is($out, '', 'no errors for files skipped below the line');
+
+$config = <<EOT;
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+include --override $ssys/* $suser/*
+include $nested/40-null
+EOT
+
+is_deeply(included_files($config),
+    [ "$suser/10-entry", "$suser/20-b", "$nested/40-null" ],
+    'decisions of a line end with the line');
+
+write_file("$nested/05-entry", "include --override $masks/*\n");
+write_file("$nested/50-slot", "set \$unused slot\n");
+write_file("$nested/60-tail", "set \$unused tail\n");
+symlink('/dev/null', "$masks/50-slot");
+
+$config = <<EOT;
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+include --override $nested/05-entry $nested/50-slot $nested/60-tail
+EOT
+
+is_deeply(included_files($config),
+    [ "$nested/05-entry", "$nested/60-tail" ],
+    'a nested line disables pending files of enclosing lines');
+
+write_file("$nested/07-plain", "include $nested/05-entry $nested/50-slot\n");
+
+$config = <<EOT;
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+include --override $nested/07-plain
+EOT
+
+is_deeply(included_files($config),
+    [ "$nested/07-plain", "$nested/05-entry", "$nested/50-slot" ],
+    'files named by a plain include are loaded despite a nested disable');
+
+################################################################################
+# A file replaced on a nested line is skipped below that line however it is
+# named (including by a hard link), and stays skipped for the pending files of
+# enclosing lines, but only that file.
+################################################################################
+
+my $asys = "$dir/aside-sys";
+my $auser = "$dir/aside-user";
+my $aalt = "$dir/aside-alt";
+my $aother = "$dir/aside-other";
+mkdir $asys;
+mkdir $auser;
+mkdir $aalt;
+mkdir $aother;
+
+write_file("$asys/40-slot", "this_is_not_a_directive\n");
+write_file("$aalt/40-slot", "set \$unused alt\n");
+write_file("$aother/40-slot", "set \$unused other\n");
+link("$asys/40-slot", "$aother/45-hardlink") or die "link: $!";
+write_file("$auser/10-entry", "include --override $asys/40-slot $aalt/40-slot\n");
+write_file("$auser/20-entry", "include $aother/45-hardlink\n");
+
+$config = <<EOT;
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+include --override $auser/10-entry $aother/45-hardlink
+EOT
+
+is_deeply(included_files($config),
+    [ "$auser/10-entry", "$aalt/40-slot" ],
+    'a file replaced on a nested line is skipped for enclosing lines');
+
+($ret, $out) = check_config($config);
+is($ret, 0, 'a file replaced on a nested line is not read afterwards');
+
+$config = <<EOT;
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+include --override $auser/10-entry $aother/40-slot
+EOT
+
+is_deeply(included_files($config),
+    [ "$auser/10-entry", "$aalt/40-slot", "$aother/40-slot" ],
+    'a different file with the same name is still loaded');
+
+$config = <<EOT;
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+include --override $asys/* $aother/40-slot $auser/20-entry
+EOT
+
+is_deeply(included_files($config),
+    [ "$auser/20-entry", "$aother/40-slot" ],
+    'a displaced file is skipped below the line when named by a hard link');
+
+################################################################################
+# Below the line, a looping link does not disable its name, unlike a dangling
+# link.
+################################################################################
+
+my $lextra = "$dir/loop-extra";
+mkdir $lextra;
+
+symlink("$dir/does-not-exist", "$luser/70-dangling");
+write_file("$lextra/60-loop", "set \$unused loop\n");
+write_file("$lextra/70-dangling", "set \$unused dangling\n");
+write_file("$luser/10-entry", "include $lextra/*\n");
+
+$config = <<EOT;
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+include --override $lsys/* $luser/*
+EOT
+
+is_deeply(included_files($config),
+    [ "$luser/10-entry", "$lextra/60-loop" ],
+    'a looping link does not disable its name, a dangling link does');
 
 done_testing;
