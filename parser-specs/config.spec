@@ -101,8 +101,8 @@ state SMART_GAPS:
       -> call cfg_smart_gaps($enabled)
 
 # include [--override] <pattern>
-# The flag counts only in lower case and as a whole word (see
-# include_override_flag() in src/config_parser.c).
+# The flag counts only as written: in lower case, as a whole word, once, and not
+# from a variable (see include_override_flag() in src/config_parser.c).
 state INCLUDE:
   override = '--override'
       -> INCLUDE_OVERRIDE

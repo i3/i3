@@ -830,7 +830,8 @@ raw_contents (string)::
 	The raw contents of the file as i3 read them.
 variable_replaced_contents (string)::
 	The contents of the file after i3 replaced all variables. This is useful
-	for debugging variable replacement.
+	for debugging variable replacement. An +include --override+ line is
+	shown as its variables were filled in when i3 reached the line.
 
 *Example:*
 -------------------

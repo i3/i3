@@ -449,6 +449,9 @@ static void include_override(struct ConfigResultIR *result, char **words, size_t
 }
 
 CFGFUN(include, const char *override, const char *pattern) {
+    /* The variables in the patterns of an include --override line were
+     * filled in when the parser reached the line (see parse_config()), from
+     * the values given in the files read so far. */
     DLOG("include %s%s\n", (override ? "--override " : ""), pattern);
 
     wordexp_t p;

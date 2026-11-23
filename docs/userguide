@@ -419,7 +419,10 @@ Loaded i3 config:
 Variables are shared between all config files, but beware of the following limitation:
 
 * You can define a variable and use it within an included file.
-* You cannot use (in the parent file) a variable that was defined within an included file.
+* You cannot use (in the parent file) a variable that was defined within an
+  included file, neither in a plain `include` nor in any other directive. Only
+  the patterns of an `include --override` line can use such a variable (see
+  <<include_override_variables>>).
 
 This is a technical limitation: variable expansion happens in a separate stage
 before parsing include directives.
@@ -488,8 +491,9 @@ errors), then `~/.config/i3/config.d/50-workspaces`. No bar file is loaded,
 because `60-bar` points to `/dev/null`.
 
 The flag must be written in lower case, as a separate word directly after
-`include`. A pattern which merely starts with it (such as `--override.conf`)
-and a flag spelled differently (such as `--OVERRIDE`) are patterns of a plain
+`include`, in the configuration file itself. A pattern which merely starts with
+it (such as `--override.conf`), a flag spelled differently (such as
+`--OVERRIDE`) and a flag which comes from a variable are patterns of a plain
 `include`. Everything after the flag is a pattern; the flag without a pattern,
 or followed only by a comment, is an error.
 
@@ -585,6 +589,51 @@ include ~/.config/i3/extra/*
 # ~/.config/i3/extra/60-bar is not loaded, because 60-bar is disabled by the
 # include --override line above, which is still being loaded.
 --------------------------------------------------------------------------------
+
+[[include_override_variables]]
+*Variables in include --override*:
+
+Unlike in all other directives, the variables in the patterns of an
+`include --override` line are not replaced before the file containing the line
+is parsed. They are filled in when i3 reaches the line, using the values set in
+the files loaded so far (in the order in which they were loaded) and in the file
+containing the line (wherever in that file they are set). This means a value
+set in a file which was loaded earlier, whether by a plain `include` or by an
+`include --override` line and at any depth, can be used by a later
+`include --override` line:
+
+--------------------------------------------------------------------------------
+# /usr/share/i3/config.d/05-paths
+set $themes /usr/share/i3/themes.d
+
+# ~/.config/i3/config
+include --override /usr/share/i3/config.d/* ~/.config/i3/config.d/*
+include --override $themes/* ~/.config/i3/themes.d/*
+--------------------------------------------------------------------------------
+
+When a variable is set again in a file loaded later, the newer value replaces
+the earlier one for every `include --override` line reached afterwards. The
+files loaded by a line do not change which files that line itself selected.
+
+A value set only in a file which was displaced, or which was disabled, does not
+count, because that file is never loaded. An earlier value of the variable then
+stays in effect.
+
+As in all other directives, variable names are compared case-insensitively, and
+where the name of one variable is the beginning of another, the longer one is
+used. A variable which was not set is left as it is (so that, for example,
+`$HOME` is expanded from the environment). The patterns are taken from the
+filled-in line exactly as from a plain `include` line, so a value may, for
+example, be quoted, contain wildcards or name several paths. A relative value is
+interpreted relative to the directory of the file containing the
+`include --override` line, not the file which set it. If the expansion of the
+filled-in pattern fails, i3 reports an error naming the filled-in pattern and
+continues with your remaining configuration. Values are filled in anew whenever
+the configuration is loaded.
+
+In the `variable_replaced_contents` of the `GET_CONFIG` IPC reply (see
+https://i3wm.org/docs/ipc.html#_config_reply[the IPC documentation]), each
+`include --override` line is shown as it was filled in when i3 reached it.
 
 === Comments
 
